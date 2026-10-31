@@ -1,0 +1,9 @@
+{
+  "name": "7AM Gym & Vegan Hub",
+  "short_name": "7AM Gym",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#10b981",
+  "description": "Daily 7:00 AM Workout, USMC Pull-Ups, Rest Timer, and Simple 3-Meal Vegan Tracker"
+}

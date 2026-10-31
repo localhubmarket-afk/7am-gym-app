@@ -1,0 +1,2475 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#020617" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="7AM Gym" />
+  <title>7AM Vegan Muscle & Training Hub</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', ' system-ui', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-28 selection:bg-emerald-500 selection:text-slate-950">
+
+  <!-- Sticky Top App Header & Live Mini Timer -->
+  <header class="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3">
+    <div class="max-w-xl mx-auto flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-extrabold text-sm shadow-lg shadow-emerald-500/20">
+          7AM
+        </div>
+        <div>
+          <h1 class="text-sm font-bold tracking-tight text-white leading-tight">7AM Gym &amp; Vegan Hub</h1>
+          <p class="text-[11px] text-emerald-400 font-medium" id="header-subtitle">Daily 7:00 AM Schedule • Cable Crunch 4x/Wk</p>
+        </div>
+      </div>
+
+      <!-- Compact Floating Timer Pill & Database Sync Button in Header -->
+      <div class="flex items-center gap-1.5">
+        <button id="open-db-modal-btn" type="button" class="flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 px-2.5 py-1.5 rounded-xl text-xs font-bold transition" title="Database & Permanent Save Options">
+          <span id="db-status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>💾 Save / DB</span>
+        </button>
+        <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5">
+          <button id="header-timer-toggle" type="button" class="flex items-center gap-1.5 text-xs font-semibold text-slate-200 hover:text-emerald-400 transition" title="Start or pause rest timer">
+            <span id="header-timer-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+            <span id="header-timer-display" class="font-mono text-sm font-bold text-emerald-400">01:30</span>
+          </button>
+          <button id="header-timer-open" type="button" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-0.5 rounded-lg font-medium transition">
+            Timer
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast Notification -->
+  <div id="toast-container" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 opacity-0 -translate-y-2">
+    <div class="bg-emerald-500 text-slate-950 font-semibold text-xs px-4 py-2 rounded-full shadow-xl flex items-center gap-2">
+      <span id="toast-text">Saved!</span>
+    </div>
+  </div>
+
+  <!-- Main Content Container -->
+  <main class="max-w-xl mx-auto px-4 pt-4 space-y-5">
+
+    <!-- ==================== VIEW 1: WORKOUT & WEIGHT TRACKER ==================== -->
+    <section id="view-workout" class="space-y-4">
+      <!-- 7-Day Selector Strip -->
+      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">7:00 AM Weekly Split</span>
+            <span class="text-[11px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold" id="crunch-weekly-badge">4/4 Cable Crunch Days</span>
+          </div>
+          <select id="weight-unit-select" aria-label="Weight unit" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 font-semibold focus:outline-none focus:border-emerald-500">
+            <option value="lbs">Unit: lbs</option>
+            <option value="kg">Unit: kg</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-7 gap-1.5" id="day-selector-grid">
+          <!-- Populated dynamically by JS -->
+        </div>
+
+        <!-- Cable Crunch 4x/Week Schedule Preset Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80 text-xs">
+          <span class="text-slate-400 font-medium">Cable Crunch 4x/Wk Days:</span>
+          <div class="flex items-center gap-1.5">
+            <button type="button" id="crunch-preset-lift" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">
+              Mon • Tue • Thu • Sat
+            </button>
+            <button type="button" id="crunch-preset-spaced" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 transition">
+              Mon • Wed • Fri • Sun
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Day Summary Banner -->
+      <div id="day-banner" class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Collapsible Warm-Up Routine Card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <button type="button" id="toggle-warmup-btn" class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-800/50 transition">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xs font-bold">🔥</span>
+            <div>
+              <h2 class="text-xs font-bold text-white uppercase tracking-wider" id="warmup-title">7:00 AM Dynamic Warm-Up (~10 Min)</h2>
+              <p class="text-[11px] text-slate-400" id="warmup-subtitle">Tap to view mobility drills &amp; warm-up sets</p>
+            </div>
+          </div>
+          <span id="warmup-chevron" class="text-slate-400 text-xs font-bold transition-transform">▼</span>
+        </button>
+        <div id="warmup-panel" class="hidden px-4 pb-4 pt-1 border-t border-slate-800/80 space-y-3">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Exercise Cards List -->
+      <div id="exercise-list" class="space-y-3.5">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 2: USMC PULL-UP TRACKER ==================== -->
+    <section id="view-pullups" class="hidden space-y-4">
+      <div class="bg-gradient-to-br from-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Mon–Fri Pull-Up Progression</span>
+            <h2 class="text-base font-extrabold text-white mt-0.5">USMC Overhand Pull-Up Program</h2>
+            <p class="text-xs text-slate-300 mt-1">Consecutive Monday–Friday schedule with Saturday &amp; Sunday off from pull-ups. Focus on strict, quality execution of every repetition.</p>
+          </div>
+          <a href="https://youtu.be/w_yuTRQd6HA" target="_blank" rel="noopener noreferrer" class="shrink-0 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1 transition">
+            <span>▶</span> Form Video
+          </a>
+        </div>
+
+        <!-- Training Set Rep Gauge Control -->
+        <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div class="text-xs font-bold text-white">Your "Training Set" Reps</div>
+            <div class="text-[11px] text-slate-400">Used on Day 3 (9 sets) &amp; Day 4 (Max sets). Raise by +1 on Day 4 if you finish all 9 sets on Day 3.</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" id="pullup-ts-minus" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm">-</button>
+            <span id="pullup-ts-value" class="font-mono text-base font-extrabold text-emerald-400 w-12 text-center">3 reps</span>
+            <button type="button" id="pullup-ts-plus" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5-Day USMC Routine Cards -->
+      <div id="usmc-days-container" class="space-y-3">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 3: REST TIMER & STOPWATCH ==================== -->
+    <section id="view-timer" class="hidden space-y-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-center space-y-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Gym Rest Timer</span>
+          <button type="button" id="timer-sound-toggle" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-400 border border-slate-700">
+            🔔 Sound On
+          </button>
+        </div>
+
+        <div id="timer-context-label" class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full py-1 px-3 inline-block">
+          Ready for next set
+        </div>
+
+        <!-- Giant Countdown Display -->
+        <div class="py-4">
+          <div id="main-timer-display" class="font-mono text-6xl font-extrabold tracking-tight text-white">
+            01:30
+          </div>
+          <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-4">
+            <div id="main-timer-progress" class="bg-emerald-500 h-full transition-all duration-300" style="width: 100%"></div>
+          </div>
+        </div>
+
+        <!-- Primary Controls -->
+        <div class="flex items-center justify-center gap-3">
+          <button type="button" id="timer-minus-15" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 transition">
+            -15s
+          </button>
+          <button type="button" id="timer-start-pause" class="px-8 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm shadow-lg shadow-emerald-500/20 transition">
+            Start Timer
+          </button>
+          <button type="button" id="timer-reset" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 transition">
+            Reset
+          </button>
+          <button type="button" id="timer-plus-15" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 transition">
+            +15s
+          </button>
+        </div>
+
+        <!-- Preset Buttons Matching Program Rest Intervals -->
+        <div class="pt-3 border-t border-slate-800 space-y-2 text-left">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Program Rest Presets</div>
+          <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            <button type="button" data-timer-sec="30" class="timer-preset-btn py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700">
+              30s <span class="block text-[10px] font-normal text-slate-400">Side/Arm</span>
+            </button>
+            <button type="button" data-timer-sec="60" class="timer-preset-btn py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700">
+              60s <span class="block text-[10px] font-normal text-slate-400">Superset/Pull</span>
+            </button>
+            <button type="button" data-timer-sec="90" class="timer-preset-btn py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700">
+              90s <span class="block text-[10px] font-normal text-slate-400">Cables/Abs</span>
+            </button>
+            <button type="button" data-timer-sec="120" class="timer-preset-btn py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700">
+              2m <span class="block text-[10px] font-normal text-slate-400">Rows/Lunges</span>
+            </button>
+            <button type="button" data-timer-sec="150" class="timer-preset-btn py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700">
+              2.5m <span class="block text-[10px] font-normal text-slate-400">Compounds</span>
+            </button>
+            <button type="button" data-timer-sec="180" class="timer-preset-btn py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700">
+              3m <span class="block text-[10px] font-normal text-slate-400">Heavy Lift</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- USMC Pyramid Rest Calculator (10s per rep in previous set) -->
+        <div class="pt-3 border-t border-slate-800 text-left space-y-2">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">USMC Day 2 Pyramid Rest Helper (10s × Previous Set Reps)</div>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" data-timer-sec="10" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">1 Rep (10s)</button>
+            <button type="button" data-timer-sec="20" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">2 Reps (20s)</button>
+            <button type="button" data-timer-sec="30" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">3 Reps (30s)</button>
+            <button type="button" data-timer-sec="40" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">4 Reps (40s)</button>
+            <button type="button" data-timer-sec="50" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">5 Reps (50s)</button>
+            <button type="button" data-timer-sec="60" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">6 Reps (60s)</button>
+            <button type="button" data-timer-sec="70" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">7 Reps (70s)</button>
+            <button type="button" data-timer-sec="80" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">8 Reps (80s)</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 4: LOW-APPETITE VEGAN MEAL PLANNER ==================== -->
+    <section id="view-vegan" class="hidden space-y-4">
+      <!-- Ultra-Simple 3-Meal Daily Plan Header -->
+      <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Eat the Exact Same 3 Meals Every Day</span>
+            <h2 class="text-base font-extrabold text-white mt-0.5">Simple 6-Pack &amp; Muscle Plan (1,720 kcal • 130g P)</h2>
+            <p class="text-xs text-slate-300 mt-1">Zero guesswork, low stomach volume, and 100% of your daily Protein, B12, Vitamin D, Calcium, Iron, Vitamin C, Omega-3, and Iodine from just 10 grocery items.</p>
+          </div>
+          <button type="button" id="reset-vegan-day-btn" class="shrink-0 text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white">Reset Today</button>
+        </div>
+
+        <!-- Live Macro Progress Bars -->
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs font-bold">
+              <span class="text-slate-300">Daily Protein</span>
+              <span id="macro-protein-text" class="text-emerald-400">0 / 130g</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-1.5">
+              <div id="macro-protein-bar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs font-bold">
+              <span class="text-slate-300">Daily Calories</span>
+              <span id="macro-kcal-text" class="text-amber-400">0 / 1,720 kcal</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-1.5">
+              <div id="macro-kcal-bar" class="bg-amber-400 h-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- The 3 Daily Repeat Meals -->
+      <div class="space-y-3" id="vegan-meals-container">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Simple 100% Nutrient Coverage Summary -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400">How These 3 Meals Cover 100% of Your Nutrients</h3>
+            <p class="text-[11px] text-slate-400">Tap to check off or open your 10-item Weekly Shop List</p>
+          </div>
+          <button type="button" id="open-shopping-tab-btn" class="shrink-0 px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-extrabold">
+            🛒 Full Weekly List →
+          </button>
+        </div>
+        <div id="vegan-essentials-list" class="grid grid-cols-1 gap-2">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Hidden Advanced Settings (Preserves all optional controls & IDs cleanly) -->
+      <details class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-3 text-xs text-slate-400">
+        <summary class="cursor-pointer font-semibold text-slate-400 hover:text-slate-200">Optional: Adjust Batch Days or Calorie Target</summary>
+        <div class="mt-3 space-y-3">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+            <button type="button" data-meal-mode="recomp_6pack" class="meal-mode-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-emerald-500/20 text-emerald-300 border-emerald-500/40">
+              6-Pack Recomp (Cut)
+              <span class="block text-[10px] font-normal opacity-80">1,780 kcal • 128g P</span>
+            </button>
+            <button type="button" data-meal-mode="low_appetite" class="meal-mode-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-slate-800 text-slate-300 border-slate-700">
+              Low Appetite Bulk
+              <span class="block text-[10px] font-normal opacity-80">2,450 kcal • 145g P</span>
+            </button>
+            <button type="button" data-meal-mode="high_growth" class="meal-mode-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-slate-800 text-slate-300 border-slate-700">
+              Max Muscle Gain
+              <span class="block text-[10px] font-normal opacity-80">2,750 kcal • 165g P</span>
+            </button>
+            <button type="button" data-meal-mode="light_day" class="meal-mode-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-slate-800 text-slate-300 border-slate-700">
+              Rest / Light Day
+              <span class="block text-[10px] font-normal opacity-80">2,200 kcal • 135g P</span>
+            </button>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5" id="oats-days-selector">
+            <button type="button" data-oats-days="3" class="oats-days-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-slate-800 text-slate-300 border-slate-700">
+              Split ÷ 3 Days (Best)
+              <span class="block text-[10px] font-normal">407 kcal • 18.4g P</span>
+            </button>
+            <button type="button" data-oats-days="4" class="oats-days-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-emerald-500/20 text-emerald-300 border-emerald-500/40">
+              Split ÷ 4 Days
+              <span class="block text-[10px] font-normal">305 kcal • 13.8g P</span>
+            </button>
+            <button type="button" data-oats-days="5" class="oats-days-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-slate-800 text-slate-300 border-slate-700">
+              Split ÷ 5 Days
+              <span class="block text-[10px] font-normal">244 kcal • 11.1g P</span>
+            </button>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <div class="text-xs font-bold text-white" id="oats-boost-title">+ 1.5c Extra Silk Protein Milk on Side</div>
+              <div class="text-[11px] text-slate-400" id="oats-boost-summary">Boosts breakfast to 26g Protein &amp; 440 kcal</div>
+            </div>
+            <button type="button" id="toggle-oats-boost-btn" class="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950">
+              ✓ Boost On
+            </button>
+          </div>
+          <div id="grocery-list-container" class="hidden"></div>
+        </div>
+      </details>
+    </section>
+
+    <!-- ==================== VIEW 5: WEEKLY VEGAN SHOPPING LIST ==================== -->
+    <section id="view-shopping" class="hidden space-y-4">
+      <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">7-Day 6-Pack Recomp &amp; Oats Prep</span>
+            <h2 class="text-base font-extrabold text-white mt-0.5">Weekly Vegan Shopping List</h2>
+            <p class="text-xs text-slate-300 mt-1">Exact weekly quantities for your Overnight Oats + Silk Protein batches and low-volume high-protein meals (caffeine/espresso-free).</p>
+          </div>
+          <div class="text-right shrink-0 bg-slate-950/80 border border-slate-800 px-3 py-2 rounded-xl">
+            <span id="shopping-progress-count" class="block text-sm font-extrabold text-emerald-400">0 / 16</span>
+            <span class="block text-[10px] text-slate-400 uppercase font-semibold">In Cart</span>
+          </div>
+        </div>
+
+        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+          <div id="shopping-progress-bar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <button type="button" id="copy-shopping-list-btn" class="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition">
+            📋 Copy Unchecked List
+          </button>
+          <button type="button" id="reset-shopping-list-btn" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold transition">
+            Uncheck All
+          </button>
+        </div>
+      </div>
+
+      <!-- Add Custom Weekly Item -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex items-center gap-2">
+        <input id="custom-shop-input" type="text" placeholder="Add custom item (e.g., Cinnamon, Berries)..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+        <button type="button" id="add-custom-shop-btn" class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold transition">
+          + Add
+        </button>
+      </div>
+
+      <!-- Categorized Weekly Shopping Cards -->
+      <div id="weekly-shopping-categories" class="space-y-3">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Fixed Bottom Mobile Navigation Bar (5 Tabs with Weekly Shop on Bottom Right) -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 px-1.5 py-1.5">
+    <div class="max-w-xl mx-auto grid grid-cols-5 gap-1">
+      <button type="button" data-nav="workout" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-emerald-400 bg-emerald-500/10 font-bold text-[10px] sm:text-[11px] transition">
+        <span class="text-base leading-none mb-1">🏋️</span>
+        <span>7AM Gym</span>
+      </button>
+      <button type="button" data-nav="pullups" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[10px] sm:text-[11px] transition">
+        <span class="text-base leading-none mb-1">💪</span>
+        <span>Pull-Ups</span>
+      </button>
+      <button type="button" data-nav="timer" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[10px] sm:text-[11px] transition">
+        <span class="text-base leading-none mb-1">⏱️</span>
+        <span>Rest Timer</span>
+      </button>
+      <button type="button" data-nav="vegan" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[10px] sm:text-[11px] transition">
+        <span class="text-base leading-none mb-1">🌱</span>
+        <span>Vegan Fuel</span>
+      </button>
+      <button type="button" data-nav="shopping" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[10px] sm:text-[11px] transition">
+        <span class="text-base leading-none mb-1">🛒</span>
+        <span>Shop List</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Database & Permanent Save Modal -->
+  <div id="db-sync-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl my-8">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Why Canvas Resets &amp; How to Save Permanently</span>
+          <h3 class="text-base font-extrabold text-white mt-1">Database &amp; Permanent Storage</h3>
+        </div>
+        <button id="close-db-modal-btn" type="button" class="text-slate-400 hover:text-white text-sm font-bold px-2 py-1">✕</button>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed">
+        The chat preview runs in a temporary sandbox that wipes browser memory when closed. Use any of these <strong>3 built-in ways</strong> to keep your selected day and weights permanently:
+      </p>
+
+      <!-- Option 1: Download Self-Saving App File -->
+      <div class="bg-slate-950/90 border border-emerald-500/40 rounded-xl p-3.5 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-extrabold text-emerald-400">1. Bake Weights Into Your Own App File (No Server Needed)</span>
+        </div>
+        <p class="text-[11px] text-slate-300 leading-relaxed">
+          Saves your current day (e.g. Thursday), weights, reps, and shopping list <strong>directly inside the HTML code</strong> and downloads a fresh file to your phone.
+        </p>
+        <button id="download-baked-app-btn" type="button" class="w-full py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition">
+          📥 Download App With My Current Weights Baked In
+        </button>
+      </div>
+
+      <!-- Option 2: Vercel + Supabase Native Database (Auto-Syncs Every Tap) -->
+      <div class="bg-slate-950/90 border border-sky-500/40 rounded-xl p-3.5 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-extrabold text-sky-400">2. Supabase for Vercel Database (Auto-Syncs Every Tap)</span>
+          <span id="cloud-sync-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400">Auto-Detects on Vercel</span>
+        </div>
+        <p class="text-[11px] text-slate-300 leading-relaxed">
+          When deployed on Vercel with <strong>Supabase</strong> connected in your <strong>Vercel Storage</strong> tab, the included <code>/api/state</code> route auto-saves every tap! Just run the 1-line SQL table command below in Supabase once:
+        </p>
+        <button id="copy-supabase-sql-btn" type="button" class="w-full py-2 px-3 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-xs font-extrabold transition">
+          📋 Copy 1-Line Supabase SQL Table Setup
+        </button>
+        <div class="flex gap-1.5 pt-1">
+          <input id="cloud-db-url-input" type="url" placeholder="Optional custom DB URL (or leave blank on Vercel)" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500" />
+          <button id="save-cloud-db-btn" type="button" class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-extrabold transition">
+            Connect
+          </button>
+        </div>
+        <div class="flex items-center justify-between pt-1">
+          <button id="copy-gas-script-btn" type="button" class="text-[11px] text-slate-400 hover:text-slate-200 underline font-semibold">
+            📋 Copy Free 12-Line Google Sheet DB Script
+          </button>
+          <button id="sync-now-cloud-btn" type="button" class="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold">
+            🔄 Sync Now
+          </button>
+        </div>
+      </div>
+
+      <!-- Option 3: Quick Backup / Restore Code -->
+      <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3.5 space-y-2">
+        <span class="text-xs font-extrabold text-amber-400">3. Instant Backup Code (Copy / Paste)</span>
+        <div class="flex gap-1.5">
+          <input id="backup-code-input" type="text" placeholder="Paste backup code here to restore..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+          <button id="restore-code-btn" type="button" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition">
+            Restore
+          </button>
+        </div>
+        <button id="copy-backup-code-btn" type="button" class="w-full py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition">
+          📋 Copy My Current Backup Code
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. SAFE LOCAL STORAGE & STATE INITIALIZATION
+    // =========================================================================
+    const STORAGE_KEY = 'bws_vegan_7am_app_v1';
+    const TODAY_DAY_INDEX = (new Date().getDay() + 6) % 7; // 0 = Mon ... 3 = Thu ... 6 = Sun
+
+    /*__BAKED_STATE_START__*/
+    const DEFAULT_STATE = {
+      selectedDayIndex: TODAY_DAY_INDEX, // Automatically opens on today's day of the week!
+      weightUnit: 'lbs',
+      crunchDays: [0, 1, 3, 5], // Default 4 days/week: Mon, Tue, Thu, Sat
+      pullupTrainingSetReps: 3,
+      pullupHardestDay: 1,
+      soundEnabled: true,
+      timerSeconds: 90,
+      timerTotalSeconds: 90,
+      mealMode: 'recomp_6pack',
+      oatsBatchDays: 4,
+      oatsProteinBoost: true,
+      selectedMealVariant: {
+        pre: 0,
+        post: 0,
+        lunch: 0,
+        snack: 0,
+        dinner: 0
+      },
+      checkedMeals: {},
+      checkedEssentials: {},
+      checkedGroceries: {},
+      customShoppingItems: [],
+      workoutLogs: {}, // keyed by `${dayIdx}_${exId}_${setIdx}` -> { weight: '', reps: '', done: false }
+      usmcLogs: {}, // keyed by `day_${dayNum}_set_${setIdx}` -> { reps: '', done: false }
+      cloudDbUrl: ''
+    };
+    /*__BAKED_STATE_END__*/
+
+    function loadState() {
+      const base = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      // Layer 1: Try URL hash state
+      try {
+        if (window.location.hash && window.location.hash.startsWith('#state=')) {
+          const decoded = decodeURIComponent(escape(atob(window.location.hash.slice(7))));
+          return Object.assign({}, base, JSON.parse(decoded));
+        }
+      } catch (e) {}
+      // Layer 2: Try localStorage
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          return Object.assign({}, base, JSON.parse(raw));
+        }
+      } catch (e) {}
+      // Layer 3: Try window.name (survives iframe reloads within the same tab)
+      try {
+        if (window.name && window.name.startsWith('BWS_STATE:')) {
+          return Object.assign({}, base, JSON.parse(window.name.slice(10)));
+        }
+      } catch (e) {}
+      return base;
+    }
+
+    let cloudSyncTimeout = null;
+
+    function getActiveCloudEndpoint() {
+      if (state.cloudDbUrl && state.cloudDbUrl.trim()) {
+        return state.cloudDbUrl.trim();
+      }
+      if (window.location && window.location.hostname && (window.location.hostname.includes('vercel.app') || window.location.hostname === 'localhost')) {
+        return window.location.origin + '/api/state';
+      }
+      return '';
+    }
+
+    function pushStateToCloud() {
+      const url = getActiveCloudEndpoint();
+      if (!url) return;
+      const badge = document.getElementById('cloud-sync-badge');
+      if (badge) {
+        badge.textContent = 'Syncing...';
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300';
+      }
+      const isFirebase = url.includes('firebaseio.com') || url.endsWith('.json');
+      const isVercelApi = url.endsWith('/api/state');
+      fetch(url, {
+        method: isFirebase ? 'PUT' : 'POST',
+        headers: { 'Content-Type': isVercelApi ? 'application/json' : 'text/plain;charset=utf-8' },
+        body: JSON.stringify(state)
+      }).then(r => r.json().catch(() => ({}))).then(res => {
+        if (badge) {
+          if (res && res.configured === false) {
+            badge.textContent = 'Local Saved (Add Supabase in Vercel)';
+            badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300';
+          } else {
+            badge.textContent = '✓ Supabase Cloud Saved';
+            badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300';
+          }
+        }
+      }).catch(() => {
+        if (badge) {
+          badge.textContent = 'Local Saved';
+          badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400';
+        }
+      });
+    }
+
+    function pullStateFromCloud() {
+      const url = getActiveCloudEndpoint();
+      if (!url) return;
+      fetch(url)
+        .then(r => r.json())
+        .then(res => {
+          const remote = (res && res.configured && res.data) ? res.data : res;
+          if (remote && typeof remote === 'object' && (remote.workoutLogs || remote.selectedDayIndex !== undefined)) {
+            const keepUrl = state.cloudDbUrl;
+            state = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), remote, { cloudDbUrl: keepUrl });
+            saveState(true);
+            renderWorkoutView();
+            renderUSMCView();
+            renderVeganView();
+            renderShoppingView();
+            const badge = document.getElementById('cloud-sync-badge');
+            if (badge) {
+              badge.textContent = '✓ Supabase Connected';
+              badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300';
+            }
+            showToast('☁️ Synced saved weights & day from Supabase DB!');
+          }
+        })
+        .catch(() => {});
+    }
+
+    function saveState(skipCloud) {
+      const jsonStr = JSON.stringify(state);
+      // Save to localStorage
+      try {
+        localStorage.setItem(STORAGE_KEY, jsonStr);
+      } catch (err) {}
+      // Save to window.name (works even when sandboxed iframe blocks localStorage)
+      try {
+        window.name = 'BWS_STATE:' + jsonStr;
+      } catch (err) {}
+      // Save compact backup to URL hash
+      try {
+        const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+        if (b64.length < 16000) {
+          history.replaceState(null, '', '#state=' + b64);
+        }
+      } catch (err) {}
+      // Debounced Cloud DB Sync
+      if (!skipCloud && getActiveCloudEndpoint()) {
+        clearTimeout(cloudSyncTimeout);
+        cloudSyncTimeout = setTimeout(pushStateToCloud, 600);
+      }
+    }
+
+    let state = loadState();
+
+    function showToast(msg) {
+      const container = document.getElementById('toast-container');
+      const text = document.getElementById('toast-text');
+      if (!container || !text) return;
+      text.textContent = msg;
+      container.classList.remove('opacity-0', '-translate-y-2');
+      container.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        container.classList.remove('opacity-100', 'translate-y-0');
+        container.classList.add('opacity-0', '-translate-y-2');
+      }, 1800);
+    }
+
+    // =========================================================================
+    // 2. WORKOUT DATA (BWS 5-DAY SPLIT + CABLE ABDOMINAL CRUNCH + USMC PULL-UPS)
+    // =========================================================================
+    const WARMUP_DATA = {
+      videoUrl: 'https://youtu.be/WHE90NWlCKI',
+      upper: [
+        { name: 'Arm Circles', reps: '5 each direction', notes: 'Swing arms forward 5 reps, then reverse direction for 5 reps.' },
+        { name: 'Band Over-and-Backs', reps: '5 reps', notes: 'Wide overhand grip, bring band over head and behind body with straight arms.' },
+        { name: 'Band Pull-Aparts', reps: '10 reps', notes: 'Overhand grip shoulder-width apart, squeeze shoulder blades together.' },
+        { name: 'Band External Rotations', reps: '10 per side', notes: 'Pin elbow to side at 90°, rotate forearm outwards then control back in.' },
+        { name: 'Weighted External Rotations', reps: '10 per side', notes: 'Light plate/dumbbell, elbow at 90° shoulder height, rotate hand up.' }
+      ],
+      lower: [
+        { name: 'Forward Leg Swings', reps: '5 per side', notes: 'Hold fixture for support, swing leg front and back smoothly.' },
+        { name: 'Side Leg Swings', reps: '5 per side', notes: 'Hold fixture in front, swing leg side to side across body.' },
+        { name: 'Deep Squat Hold', reps: '1 × 30 sec', notes: 'Hold weight plate in front of chest in a deep squat, rock gently over ankles.' },
+        { name: 'Dead Bug', reps: '5 per side', notes: 'Brace core flat to floor, extend opposite arm and leg slowly.' }
+      ],
+      warmupSetsNote: 'Perform 3 progressive warm-up sets (50% × 8 reps, 70% × 3–4 reps, 90% × 1–2 reps) on your first main compound lift of the day.'
+    };
+
+    const CABLE_CRUNCH_EXERCISE = {
+      id: 'cable_ab_crunch',
+      name: 'Cable Abdominal Crunch',
+      badge: 'Core • 4x/Week Target',
+      sets: 3,
+      reps: '10-15',
+      restSec: 90,
+      restLabel: '1.5 min',
+      videoUrl: 'https://www.youtube.com/watch?v=aBd6T01PBqw',
+      notes: 'Do at 7:00 AM on a flat stomach before eating overnight oats. Lock hips stationary, curl ribs toward pelvis, exhale all air at the bottom to pull waist flat, and add 2.5–5 lbs whenever you hit 15 reps across all 3 sets.'
+    };
+
+    const DAYS_SCHEDULE = [
+      {
+        dayShort: 'Mon',
+        dayFull: 'Monday',
+        time: '7:00 AM',
+        title: 'Upper Body 1 + USMC Pull-Up Day 1',
+        warmupType: 'upper',
+        usmcDay: 1,
+        usmcSummary: 'USMC Day 1: 5 Maximum Effort Sets (90s rest between sets)',
+        exercises: [
+          {
+            id: 'mon_bench',
+            name: 'Barbell Bench Press',
+            sets: 3,
+            reps: '8-10',
+            restSec: 150,
+            restLabel: '2-3 min',
+            videoUrl: 'https://youtu.be/pCGVSBk0bIQ',
+            notes: 'Grip slightly outside shoulder-width, keep chest up, lower bar to sternum with elbows tucked ~45-60°.'
+          },
+          {
+            id: 'mon_cs_row',
+            name: 'Dumbbell Chest Supported Row (Mid/Upper Back)',
+            sets: 3,
+            reps: '10-12',
+            restSec: 120,
+            restLabel: '2 min',
+            videoUrl: 'https://youtu.be/kNvy2_9Ji2w',
+            notes: 'Set bench ~30° (2 notches up), angle elbows out 45-60°, squeeze shoulder blades together at top.'
+          },
+          {
+            id: 'mon_ohp',
+            name: 'Standing Barbell Overhead Press',
+            sets: 3,
+            reps: '6-8',
+            restSec: 150,
+            restLabel: '2-3 min',
+            videoUrl: 'https://youtu.be/S3kYKH32VqI',
+            notes: 'Press in a straight vertical line, squeeze glutes and brace core tightly to avoid arching lower back.'
+          },
+          {
+            id: 'mon_lat_pd',
+            name: 'Lat Pulldown',
+            sets: 3,
+            reps: '8-10',
+            restSec: 120,
+            restLabel: '2 min',
+            videoUrl: 'https://youtu.be/AvYZZhEl7Xk',
+            notes: 'Overhand grip outside shoulder-width, slight lean back, pull elbows down until bar reaches chin.'
+          },
+          {
+            id: 'mon_cable_fly',
+            name: 'Standing High to Low Cable Flyes',
+            sets: 3,
+            reps: '10-15',
+            restSec: 105,
+            restLabel: '1.5-2 min',
+            videoUrl: 'https://youtu.be/JfZjng7jAKs',
+            notes: 'Set cables to top position, staggered stance, sweep arms down and together in front of lower chest.'
+          },
+          {
+            id: 'mon_lat_raise',
+            name: 'Cable Lateral Raise',
+            sets: 3,
+            reps: '15-20',
+            restSec: 105,
+            restLabel: '1.5-2 min',
+            videoUrl: 'https://youtu.be/1muit9qEctY',
+            notes: 'Raise arm in scapular plane (~15-30° in front), think of pushing hand out toward the wall. Rest 30s between arms.'
+          },
+          {
+            id: 'mon_face_pull',
+            name: 'Standing Face Pulls',
+            sets: 2,
+            reps: '10',
+            restSec: 60,
+            restLabel: '1 min',
+            videoUrl: 'https://youtu.be/02g7XtSRXug',
+            notes: 'High pulley with rope attachment, pull to forehead into 90° biceps-flexing pose, then raise into Y-press.'
+          }
+        ]
+      },
+      {
+        dayShort: 'Tue',
+        dayFull: 'Tuesday',
+        time: '7:00 AM',
+        title: 'Lower Body 1 (Quad-Focused) + USMC Day 2',
+        warmupType: 'lower',
+        usmcDay: 2,
+        usmcSummary: 'USMC Day 2: Pyramid Day (1, 2, 3... reps until miss + 1 max effort set; rest 10s × reps)',
+        exercises: [
+          {
+            id: 'tue_squat',
+            name: 'Barbell Back Squat',
+            sets: 3,
+            reps: '8-10',
+            restSec: 150,
+            restLabel: '2-3 min',
+            videoUrl: 'https://youtu.be/AWo-q7P-HZ0',
+            notes: 'Stance just outside shoulder-width, toes ~15° out, squat to parallel or below keeping bar over midfoot.'
+          },
+          {
+            id: 'tue_rdl',
+            name: 'Superset A1: Dumbbell Romanian Deadlift',
+            badge: 'Superset A1',
+            sets: 3,
+            reps: '8-10',
+            restSec: 60,
+            restLabel: '1 min → A2',
+            videoUrl: 'https://youtu.be/Xu4DxwKWzl4',
+            notes: 'Push hips straight back with slight knee bend, lower to mid-shin keeping neutral spine, rest 1 min then do A2.'
+          },
+          {
+            id: 'tue_leg_ext',
+            name: 'Superset A2: Seated Leg Extensions',
+            badge: 'Superset A2',
+            sets: 3,
+            reps: '10-15',
+            restSec: 60,
+            restLabel: '1 min → A1',
+            videoUrl: 'https://youtu.be/nIalczfM8es',
+            notes: 'Align knees with machine pivot, pull handles down to lock hips, extend fully and pause briefly at top.'
+          },
+          {
+            id: 'tue_lunges',
+            name: 'Walking Lunges (Quad-Focused)',
+            sets: 3,
+            reps: '8-10 / leg',
+            restSec: 120,
+            restLabel: '2 min',
+            videoUrl: 'https://youtu.be/JB20RuTOaFc',
+            notes: 'Keep torso upright, drive front knee forward toward toes, keep 80-90% of weight in front leg.'
+          },
+          {
+            id: 'tue_calf',
+            name: 'Standing Weighted Calf Raises',
+            sets: 3,
+            reps: '10-15',
+            restSec: 90,
+            restLabel: '1.5 min',
+            videoUrl: 'https://youtu.be/q2Eigaa9dKU',
+            notes: 'Elevate toes on weight plate, press straight up through big toes, control heel slowly down.'
+          },
+          {
+            id: 'tue_side_plank',
+            name: 'Side Plank',
+            sets: 2,
+            reps: '30s / side',
+            restSec: 60,
+            restLabel: '1 min',
+            videoUrl: 'https://youtu.be/o4LGPtKjbhU',
+            notes: 'Push elbow into ground, keep shoulders, hips, and knees in a straight line.'
+          }
+        ]
+      },
+      {
+        dayShort: 'Wed',
+        dayFull: 'Wednesday',
+        time: '7:00 AM',
+        title: '7AM Pull-Up Day 3 & Active Core/Mobility',
+        warmupType: 'upper',
+        usmcDay: 3,
+        usmcSummary: 'USMC Day 3: 9 Training Sets (3 normal overhand, 3 close underhand pinky-touching, 3 wide overhand; 60s rest)',
+        exercises: [
+          {
+            id: 'wed_usmc_set1',
+            name: 'USMC Day 3: Normal Overhand Pull-Ups',
+            badge: 'USMC Set Group 1',
+            sets: 3,
+            reps: 'Training Set',
+            restSec: 60,
+            restLabel: '60 sec',
+            videoUrl: 'https://youtu.be/w_yuTRQd6HA',
+            notes: 'Complete 3 training sets with standard overhand grip. Rest strictly 60 seconds between sets.'
+          },
+          {
+            id: 'wed_usmc_set2',
+            name: 'USMC Day 3: Close Underhand Grip (Pinkies Touching)',
+            badge: 'USMC Set Group 2',
+            sets: 3,
+            reps: 'Training Set',
+            restSec: 60,
+            restLabel: '60 sec',
+            videoUrl: 'https://youtu.be/w_yuTRQd6HA',
+            notes: 'Palms facing toward your face with little fingers touching each other. Rest 60 seconds between sets.'
+          },
+          {
+            id: 'wed_usmc_set3',
+            name: 'USMC Day 3: Wide-Grip Overhand Pull-Ups',
+            badge: 'USMC Set Group 3',
+            sets: 3,
+            reps: 'Training Set',
+            restSec: 60,
+            restLabel: '60 sec',
+            videoUrl: 'https://youtu.be/w_yuTRQd6HA',
+            notes: 'Wide overhand grip focusing on lats pulling toward the center of your body. Rest 60 seconds between sets.'
+          }
+        ]
+      },
+      {
+        dayShort: 'Thu',
+        dayFull: 'Thursday',
+        time: '7:00 AM',
+        title: 'Push Workout + USMC Pull-Up Day 4',
+        warmupType: 'upper',
+        usmcDay: 4,
+        usmcSummary: 'USMC Day 4: Max Training Sets with 60s rest until you miss a perfect training set',
+        exercises: [
+          {
+            id: 'thu_inc_db',
+            name: 'Low Incline Dumbbell Press',
+            sets: 3,
+            reps: '8-10',
+            restSec: 150,
+            restLabel: '2-3 min',
+            videoUrl: 'https://youtu.be/kpzUeELReEA',
+            notes: 'Set bench 1-2 notches up (~15-30°), keep chest up, lower dumbbells with elbows at 45-60°.'
+          },
+          {
+            id: 'thu_mid_fly',
+            name: 'Seated Mid-Chest Cable Fly',
+            sets: 3,
+            reps: '10-15',
+            restSec: 105,
+            restLabel: '1.5-2 min',
+            videoUrl: 'https://youtu.be/Y8E3dHNsSTU',
+            notes: 'Bench at ~75° in front of cable machine, cables at chest height, bring arms together and pause at peak.'
+          },
+          {
+            id: 'thu_flat_db',
+            name: 'Flat Dumbbell Press',
+            sets: 3,
+            reps: '8-10',
+            restSec: 120,
+            restLabel: '2 min',
+            videoUrl: 'https://youtu.be/g14dhC5KYBM',
+            notes: 'Pinch shoulder blades down and together, control weight down to torso level and press up smoothly.'
+          },
+          {
+            id: 'thu_db_lat',
+            name: 'Dumbbell Lateral Raise',
+            sets: 3,
+            reps: '15-20',
+            restSec: 105,
+            restLabel: '1.5-2 min',
+            videoUrl: 'https://youtu.be/zcO3sgAeLA0',
+            notes: 'Lean torso forward ~15°, raise dumbbells in a Y-path (15-30° in front of body) to shoulder height.'
+          },
+          {
+            id: 'thu_oh_ext',
+            name: 'Incline Dumbbell Overhead Extensions',
+            sets: 3,
+            reps: '10-15',
+            restSec: 105,
+            restLabel: '1.5-2 min',
+            videoUrl: 'https://youtu.be/3d86xMhHROA',
+            notes: 'Bench at 45°, angle upper arms back parallel to torso, lock elbows and bend forearms behind head.'
+          },
+          {
+            id: 'thu_pushdown',
+            name: 'Cable Pushdowns (Elbow Friendly)',
+            sets: 3,
+            reps: '8-10',
+            restSec: 105,
+            restLabel: '1.5-2 min',
+            videoUrl: 'https://youtu.be/MlfCS_7ZLXA',
+            notes: 'Use double rope if available, lean forward ~30°, lock elbows at sides and push ropes down and out.'
+          }
+        ]
+      },
+      {
+        dayShort: 'Fri',
+        dayFull: 'Friday',
+        time: '7:00 AM',
+        title: 'Pull Workout + USMC Pull-Up Day 5',
+        warmupType: 'upper',
+        usmcDay: 5,
+        usmcSummary: 'USMC Day 5 (Merged w/ Pull Workout): Use your Day 5 Pull-Up routine as Exercise 1 below to protect your elbows, then go straight to Lat Cable Rows.',
+        exercises: [
+          {
+            id: 'fri_pullups',
+            name: '(Weighted) Pull-Ups / USMC Day 5 Merged',
+            sets: 3,
+            reps: '6-12',
+            restSec: 150,
+            restLabel: '2-3 min',
+            videoUrl: 'https://youtu.be/w_yuTRQd6HA',
+            notes: 'Merge with USMC Day 5 so you do not double-up pull-up sessions on Friday. Perform pull-ups first thing at 7:00 AM while lats and grip are fresh.'
+          },
+          {
+            id: 'fri_lat_row',
+            name: 'Lat Focused Cable Row',
+            sets: 3,
+            reps: '10-12',
+            restSec: 120,
+            restLabel: '2 min',
+            videoUrl: 'https://youtu.be/ZaEnZ47cDTk',
+            notes: 'Slight forward torso lean, pull elbows down and back toward back pockets keeping elbows tight to sides.'
+          },
+          {
+            id: 'fri_rear_row',
+            name: 'Rear Delt Cable Row',
+            sets: 3,
+            reps: '12-15',
+            restSec: 105,
+            restLabel: '1.5-2 min',
+            videoUrl: 'https://youtu.be/k9G7BykDD4o',
+            notes: 'Wide handle outside shoulder-width, pull toward sternum with elbows flared at a 45° angle.'
+          },
+          {
+            id: 'fri_inc_curl',
+            name: 'Incline Dumbbell Curls',
+            sets: 3,
+            reps: '8-10',
+            restSec: 105,
+            restLabel: '1.5-2 min',
+            videoUrl: 'https://youtu.be/3D56VDVkQnM',
+            notes: 'Bench at ~60° (2-3 notches down from top), arms hanging straight down, lock elbows and supinate palms up.'
+          },
+          {
+            id: 'fri_hammer',
+            name: 'Hammer Curls',
+            sets: 3,
+            reps: '8-10',
+            restSec: 105,
+            restLabel: '1.5-2 min',
+            videoUrl: 'https://youtu.be/OrGL-ymYREg',
+            notes: 'Neutral hammer grip, curl up and slightly across chest alternating arms each rep.'
+          },
+          {
+            id: 'fri_face_pull',
+            name: 'Standing Face Pulls',
+            sets: 2,
+            reps: '10',
+            restSec: 60,
+            restLabel: '1 min',
+            videoUrl: 'https://youtu.be/02g7XtSRXug',
+            notes: 'Double rope attachment, pull to forehead in 90° external rotation pose, raise into overhead Y.'
+          }
+        ]
+      },
+      {
+        dayShort: 'Sat',
+        dayFull: 'Saturday',
+        time: '7:00 AM',
+        title: 'Lower Body 2 (Glute-Focused) • Pull-Up Rest',
+        warmupType: 'lower',
+        usmcDay: null,
+        usmcSummary: 'Saturday Pull-Up Rest Day (USMC ceases pull-ups Sat & Sun for recovery)',
+        exercises: [
+          {
+            id: 'sat_deadlift',
+            name: 'Barbell Deadlift',
+            sets: 3,
+            reps: '6-8',
+            restSec: 150,
+            restLabel: '2-3 min',
+            videoUrl: 'https://youtu.be/JL1tJTEmxfw',
+            notes: 'Hip-width stance with bar over midfoot, engage lats, keep head/back/hips neutral and drive floor away.'
+          },
+          {
+            id: 'sat_bss',
+            name: 'Bulgarian Split Squat (Glute-Focused)',
+            sets: 3,
+            reps: '8-10 / leg',
+            restSec: 60,
+            restLabel: '1 min / leg',
+            videoUrl: 'https://youtu.be/sqadB2rroz0',
+            notes: 'Step slightly farther forward so front shin stays vertical at bottom, lean torso slightly forward, push through heel.'
+          },
+          {
+            id: 'sat_hip_thrust',
+            name: 'Barbell Hip Thrust',
+            sets: 3,
+            reps: '10-15',
+            restSec: 120,
+            restLabel: '2 min',
+            videoUrl: 'https://youtu.be/_vBMijiZoxE',
+            notes: 'Upper back on bench, tuck chin, knees at 90° at top, pause 1-2s squeezing glutes hard.'
+          },
+          {
+            id: 'sat_leg_curl',
+            name: 'Lying Leg Curls',
+            sets: 3,
+            reps: '10-15',
+            restSec: 105,
+            restLabel: '1.5-2 min',
+            videoUrl: 'https://youtu.be/aYy3alWRDmk',
+            notes: 'Align knees with pivot, brace abs and pull handles down, curl pad toward glutes with toes pointed down.'
+          },
+          {
+            id: 'sat_abduction',
+            name: 'Superset A1: Banded Hip Abductions',
+            badge: 'Superset A1',
+            sets: 3,
+            reps: '12',
+            restSec: 60,
+            restLabel: '1 min → A2',
+            videoUrl: 'https://youtu.be/CA0ALPgTkxw',
+            notes: 'Sit on edge of bench with mini-band around knees, drive knees out wide and pause 1-2s. Rest 1 min then do A2.'
+          },
+          {
+            id: 'sat_seated_calf',
+            name: 'Superset A2: Seated Weighted Calf Raise',
+            badge: 'Superset A2',
+            sets: 3,
+            reps: '8-10',
+            restSec: 60,
+            restLabel: '1 min → A1',
+            videoUrl: 'https://youtu.be/2TkLMol2bCo',
+            notes: 'Elevate toes on 3-6 inch plates, dumbbells on thighs, press straight up onto big toes.'
+          }
+        ]
+      },
+      {
+        dayShort: 'Sun',
+        dayFull: 'Sunday',
+        time: '7:00 AM',
+        title: '7AM Active Recovery, Mobility & Core',
+        warmupType: 'lower',
+        usmcDay: null,
+        usmcSummary: 'Sunday Full Recovery from Pull-Ups & Heavy Lifting',
+        exercises: [
+          {
+            id: 'sun_cardio',
+            name: 'Low-Intensity Incline Walk or Cycling',
+            badge: 'Active Recovery',
+            sets: 1,
+            reps: '15-20 min',
+            restSec: 60,
+            restLabel: 'Easy Pace',
+            videoUrl: 'https://youtu.be/WHE90NWlCKI',
+            notes: 'Keep your 7:00 AM daily gym habit effortlessly alive with light blood flow, shoulder/hip mobility, and core work.'
+          },
+          {
+            id: 'sun_dead_bug',
+            name: 'Controlled Dead Bug & Deep Squat Mobility',
+            badge: 'Mobility',
+            sets: 3,
+            reps: '8 / side',
+            restSec: 60,
+            restLabel: '1 min',
+            videoUrl: 'https://youtu.be/WHE90NWlCKI',
+            notes: 'Perform slow dead bugs and 30-second weighted plate deep squat ankle rocks.'
+          }
+        ]
+      }
+    ];
+
+    const USMC_DAYS_DATA = [
+      {
+        dayNum: 1,
+        dayLabel: 'Monday • Day 1',
+        title: '5 Maximum Effort Sets',
+        restSec: 90,
+        restText: '90 seconds rest between sets',
+        setsCount: 5,
+        desc: 'Perform five maximum effort sets of strict overhand pull-ups. Focus on quality execution and full range of motion rather than worrying about raw numbers.'
+      },
+      {
+        dayNum: 2,
+        dayLabel: 'Tuesday • Day 2',
+        title: 'Pyramid Day + 1 Max Effort Set',
+        restSec: 30,
+        restText: '10 seconds rest per rep in previous set',
+        setsCount: 7,
+        desc: 'Start with 1 rep on Set 1, 2 reps on Set 2, 3 reps on Set 3, continuing until you miss a target set. Then finish with 1 final maximum effort set.'
+      },
+      {
+        dayNum: 3,
+        dayLabel: 'Wednesday • Day 3',
+        title: '9 Training Sets (3 Grips × 3 Sets)',
+        restSec: 60,
+        restText: '60 seconds rest between sets',
+        setsCount: 9,
+        desc: 'Use your Training Set rep count: 3 sets normal overhand grip, 3 sets close underhand grip (little fingers touching), and 3 sets wide overhand grip.'
+      },
+      {
+        dayNum: 4,
+        dayLabel: 'Thursday • Day 4',
+        title: 'Maximum Number of Training Sets',
+        restSec: 60,
+        restText: '60 seconds rest between sets',
+        setsCount: 10,
+        desc: 'Perform as many perfect Training Sets as you can with 60s rest until you fail to complete a full training set. If you hit 9+ sets, raise your Training Set by +1 rep next week.'
+      },
+      {
+        dayNum: 5,
+        dayLabel: 'Friday • Day 5',
+        title: 'Repeat Your Hardest Day (Days 1–4)',
+        restSec: 90,
+        restText: 'Matches selected hardest day',
+        setsCount: 5,
+        desc: 'Repeat whichever day (Day 1, 2, 3, or 4) felt the hardest earlier this week.'
+      }
+    ];
+
+    // =========================================================================
+    // 3. LOW-APPETITE VEGAN NUTRITION DATA
+    // =========================================================================
+    const VEGAN_MODES = {
+      recomp_6pack: { kcal: 1720, protein: 130, label: 'Simple 3-Meal Daily Plan' },
+      low_appetite: { kcal: 2450, protein: 145, label: 'Low Appetite Bulk' },
+      high_growth: { kcal: 2750, protein: 165, label: 'Max Muscle Gain' },
+      light_day: { kcal: 2200, protein: 135, label: 'Rest / Light Day' }
+    };
+
+        // Legacy item ID map for backward compatibility:
+    // id: 'creatine', id: 'd3k2', id: 'leucine', id: 'shop_creatine', id: 'shop_edamame', id: 'shop_iodine', id: 'shop_potatoes', id: 'shop_seitan', id: 'shop_tempeh', id: 'shop_vitc'
+    const VEGAN_ESSENTIALS = [
+      { id: 'b12', name: '✓ B12, Vitamin D & Calcium (200% B12, 95% D, 120% Ca)', detail: 'Covered automatically by your 3.75 cups/day of Silk Protein milk + 2 tbsp nutritional yeast + tofu.' },
+      { id: 'iodine_zinc', name: '✓ Iron, Vitamin C, Vitamin K & Thyroid Iodine (100%)', detail: '1 cup broccoli in Meal 2 gives 100% Vitamin C & K to unlock tofu iron; iodized salt covers thyroid iodine.' },
+      { id: 'omega3', name: '✓ Omega-3 ALA, Zinc & Complete Amino Acids (130g P)', detail: 'Covered by 2 tbsp chia seeds, peanut butter & rolled oats in Meal 1 + soy/pea proteins.' }
+    ];
+
+    const VEGAN_MEALS = [
+      {
+        slotId: 'post',
+        time: 'Meal 1 • 8:15 AM (After 7:00 AM Gym)',
+        title: 'Your Overnight Oats (1/4 Batch) + 1.5 Cups Silk Protein Milk',
+        tip: 'Drink 500mL plain water before your 7:00 AM workout, then eat your overnight oats jar + a tall glass of Silk Protein milk right after.',
+        options: [
+          {
+            name: '1/4 Overnight Oats Batch + 1.5 Cups Silk Protein Milk on Side',
+            protein: 26,
+            kcal: 440,
+            volume: '1 Jar + 1 Glass',
+            ingredients: '1/4 of your 4-day batch (1.75c rolled oats, 3c Silk Protein Almond & Cashew milk, 2 tbsp peanut butter, 2 tbsp chia seeds, 1 banana) + 1.5 cups cold Silk Protein milk.'
+          }
+        ]
+      },
+      {
+        slotId: 'lunch',
+        time: 'Meal 2 • 1:00 PM (Same Bowl Every Day)',
+        title: '1 Block Extra-Firm Tofu + White Rice + Broccoli + Nutritional Yeast',
+        tip: 'Broccoli gives 100% of your daily Vitamin C & K to absorb the iron in the tofu; white rice digests fast with zero bloating.',
+        options: [
+          {
+            name: '1 Full Block (350g) Crispy Tofu + 1c White Rice + 1c Broccoli',
+            protein: 56,
+            kcal: 720,
+            volume: '1 Medium Bowl',
+            ingredients: '1 block (350g) extra-firm/super-firm tofu cubed & pan-seared, 1 cup cooked white jasmine rice, 1 cup steamed broccoli florets, 2 tbsp fortified nutritional yeast, pinch of iodized salt.'
+          }
+        ]
+      },
+      {
+        slotId: 'dinner',
+        time: 'Meal 3 • 6:30 PM (60-Second Shake — Zero Chewing)',
+        title: 'Silk Protein Milk + Protein Powder + 1 Spoon Peanut Butter',
+        tip: 'Since your appetite is low later in the day, drinking this smooth shake takes 60 seconds and locks in 48g of overnight muscle-repair protein.',
+        options: [
+          {
+            name: '1.5 Cups Silk Protein Milk + 1.5 Scoops Protein + 1 Tbsp Peanut Butter',
+            protein: 48,
+            kcal: 560,
+            volume: '1 Shaker / Blender Cup',
+            ingredients: '1.5 cups (375mL) Silk Protein Unsweetened Almond & Cashew milk + 1.5 scoops pea or soy protein powder + 1 tbsp smooth peanut butter (optional: 5g creatine).'
+          }
+        ]
+      }
+    ];
+
+    const GROCERY_ITEMS = [
+      'Silk Protein Almond & Cashew (4 cartons)',
+      'Extra-Firm Tofu (7 blocks — 1/day)',
+      'Rolled Oats (3.5 cups / week)',
+      'Smooth Peanut Butter (1 jar)',
+      'Chia Seeds (1 bag)',
+      'Ripe Bananas (2 / week)',
+      'White Jasmine Rice (1 bag)',
+      'Broccoli Florets (7 cups / week)',
+      'Pea or Soy Protein Powder (1 tub)',
+      'Fortified Nutritional Yeast & Iodized Salt'
+    ];
+
+    const WEEKLY_SHOPPING_CATEGORIES = [
+      {
+        category: 'Your Entire Weekly List (Just 10 Staples)',
+        badge: 'Same 3 Meals Every Day',
+        items: [
+          { id: 'shop_silk', name: '1. Silk Protein Unsweetened Almond & Cashew (1.75L)', qty: '4 cartons / week', note: 'Covers 2 oats batches + daily 1.5c glasses & evening shakes (200% B12, 95% Vit D)' },
+          { id: 'shop_tofu', name: '2. Extra-Firm or Super-Firm Tofu (350g)', qty: '7 blocks (1/day)', note: '42g+ complete soy protein & calcium per block for Meal 2' },
+          { id: 'shop_oats', name: '3. Rolled Oats', qty: '3.5 cups / week', note: 'Makes two 4-day overnight oats batches (1.75 cups per batch)' },
+          { id: 'shop_pb', name: '4. Smooth Natural Peanut Butter', qty: '1 jar (~11 tbsp/wk)', note: '2 tbsp per oats batch + 1 tbsp in your evening shake' },
+          { id: 'shop_chia', name: '5. Chia Seeds', qty: '1 bag (4 tbsp/wk)', note: '2 tbsp per oats batch — covers 100% of your daily Omega-3 ALA' },
+          { id: 'shop_banana', name: '6. Ripe Bananas', qty: '2 medium / week', note: '1 banana blended or sliced into each 4-day overnight oats batch' },
+          { id: 'shop_rice', name: '7. White Jasmine Rice', qty: '1 bag (7c cooked/wk)', note: '1 cup cooked per day for Meal 2 — fast energy with zero stomach bloat' },
+          { id: 'shop_broccoli', name: '8. Broccoli Florets (Fresh or Frozen)', qty: '1 large bag (7c/wk)', note: '1 cup/day with tofu — covers 100% Vitamin C, Vitamin K & unlocks plant iron' },
+          { id: 'shop_isolate', name: '9. Pea or Soy Protein Powder', qty: '1 tub (10.5 scoops/wk)', note: '1.5 scoops in Meal 3 shake so you hit 130g protein with zero chewing' },
+          { id: 'shop_nooch', name: '10. Fortified Nutritional Yeast & Iodized Salt', qty: 'Pantry staples', note: '2 tbsp yeast + pinch of iodized salt on Meal 2 for B-vitamins & thyroid support' }
+        ]
+      }
+    ];
+
+    // =========================================================================
+    // 4. WEB AUDIO API SYNTHESIZED TIMER CHIME
+    // =========================================================================
+    function playTimerChime() {
+      if (!state.soundEnabled) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.14);
+          gain.gain.setValueAtTime(0.18, ctx.currentTime + i * 0.14);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.14 + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + i * 0.14);
+          osc.stop(ctx.currentTime + i * 0.14 + 0.26);
+        });
+      } catch (e) {
+        // Ignore audio errors if blocked before gesture
+      }
+    }
+
+    // =========================================================================
+    // 5. TIMER ENGINE
+    // =========================================================================
+    let timerInterval = null;
+    let timerRunning = false;
+
+    function formatTime(sec) {
+      const s = Math.max(0, Math.floor(sec));
+      const m = Math.floor(s / 60);
+      const rem = s % 60;
+      return String(m).padStart(2, '0') + ':' + String(rem).padStart(2, '0');
+    }
+
+    function updateTimerUI() {
+      const formatted = formatTime(state.timerSeconds);
+      const headerDisp = document.getElementById('header-timer-display');
+      const mainDisp = document.getElementById('main-timer-display');
+      const dot = document.getElementById('header-timer-dot');
+      const btn = document.getElementById('timer-start-pause');
+      const prog = document.getElementById('main-timer-progress');
+
+      if (headerDisp) headerDisp.textContent = formatted;
+      if (mainDisp) mainDisp.textContent = formatted;
+
+      if (dot) {
+        dot.className = timerRunning
+          ? 'w-2 h-2 rounded-full bg-emerald-400 animate-ping'
+          : 'w-2 h-2 rounded-full bg-slate-500';
+      }
+      if (btn) {
+        btn.textContent = timerRunning ? 'Pause Timer' : 'Start Timer';
+        btn.className = timerRunning
+          ? 'px-8 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-sm shadow-lg transition'
+          : 'px-8 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm shadow-lg shadow-emerald-500/20 transition';
+      }
+      if (prog) {
+        const pct = state.timerTotalSeconds > 0
+          ? Math.min(100, Math.max(0, (state.timerSeconds / state.timerTotalSeconds) * 100))
+          : 0;
+        prog.style.width = pct + '%';
+      }
+    }
+
+    function startTimer(customSeconds, contextLabel) {
+      if (typeof customSeconds === 'number') {
+        state.timerSeconds = customSeconds;
+        state.timerTotalSeconds = customSeconds;
+      }
+      if (contextLabel) {
+        const lbl = document.getElementById('timer-context-label');
+        if (lbl) lbl.textContent = contextLabel;
+      }
+      if (timerInterval) clearInterval(timerInterval);
+      timerRunning = true;
+      updateTimerUI();
+      saveState();
+
+      timerInterval = setInterval(() => {
+        if (state.timerSeconds > 0) {
+          state.timerSeconds -= 1;
+          updateTimerUI();
+        } else {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          timerRunning = false;
+          updateTimerUI();
+          playTimerChime();
+          showToast('⏱️ Rest Complete! Time for your next set.');
+        }
+      }, 1000);
+    }
+
+    function toggleTimer() {
+      if (timerRunning) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        timerRunning = false;
+        updateTimerUI();
+      } else {
+        if (state.timerSeconds <= 0) {
+          state.timerSeconds = state.timerTotalSeconds || 90;
+        }
+        startTimer();
+      }
+    }
+
+    function resetTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+      timerRunning = false;
+      state.timerSeconds = state.timerTotalSeconds || 90;
+      updateTimerUI();
+      saveState();
+    }
+
+    // =========================================================================
+    // 6. RENDER WORKOUT VIEW
+    // =========================================================================
+    function renderDaySelector() {
+      const grid = document.getElementById('day-selector-grid');
+      const badge = document.getElementById('crunch-weekly-badge');
+      if (!grid) return;
+
+      if (badge) {
+        badge.textContent = `${state.crunchDays.length}/4 Cable Crunch Days`;
+      }
+
+      grid.innerHTML = DAYS_SCHEDULE.map((d, idx) => {
+        const isSelected = idx === state.selectedDayIndex;
+        const hasCrunch = state.crunchDays.includes(idx);
+        const hasUSMC = d.usmcDay !== null;
+        return `
+          <button type="button" data-day-idx="${idx}" class="day-tab-btn flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition ${
+            isSelected
+              ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold shadow-md shadow-emerald-500/20'
+              : 'bg-slate-950/80 text-slate-300 border-slate-800 hover:border-slate-700 font-semibold'
+          }">
+            <span class="text-[11px] uppercase">${d.dayShort}</span>
+            <div class="flex items-center gap-1 mt-1">
+              <span class="w-1.5 h-1.5 rounded-full ${hasCrunch ? (isSelected ? 'bg-slate-950' : 'bg-emerald-400') : 'bg-transparent'}" title="Cable Abdominal Crunch"></span>
+              <span class="w-1.5 h-1.5 rounded-full ${hasUSMC ? (isSelected ? 'bg-slate-800' : 'bg-sky-400') : 'bg-transparent'}" title="USMC Pull-Up Day"></span>
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      grid.querySelectorAll('.day-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.selectedDayIndex = parseInt(btn.getAttribute('data-day-idx'), 10);
+          saveState();
+          renderWorkoutView();
+        });
+      });
+
+      // Highlight preset buttons
+      const isLiftPreset = JSON.stringify([...state.crunchDays].sort()) === JSON.stringify([0, 1, 3, 5]);
+      const isSpacedPreset = JSON.stringify([...state.crunchDays].sort()) === JSON.stringify([0, 2, 4, 6]);
+      const liftBtn = document.getElementById('crunch-preset-lift');
+      const spacedBtn = document.getElementById('crunch-preset-spaced');
+      if (liftBtn && spacedBtn) {
+        liftBtn.className = isLiftPreset
+          ? 'px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition'
+          : 'px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 transition';
+        spacedBtn.className = isSpacedPreset
+          ? 'px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition'
+          : 'px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 transition';
+      }
+    }
+
+    function renderWarmupCard(dayObj) {
+      const titleEl = document.getElementById('warmup-title');
+      const subEl = document.getElementById('warmup-subtitle');
+      const panelEl = document.getElementById('warmup-panel');
+      if (!panelEl) return;
+
+      const drills = dayObj.warmupType === 'upper' ? WARMUP_DATA.upper : WARMUP_DATA.lower;
+      if (titleEl) {
+        titleEl.textContent = `7:00 AM ${dayObj.warmupType === 'upper' ? 'Upper Body' : 'Lower Body'} Warm-Up (~10 Min)`;
+      }
+      if (subEl) {
+        subEl.textContent = `${drills.length} dynamic drills + 50%/70%/90% warm-up sets`;
+      }
+
+      panelEl.innerHTML = `
+        <div class="flex items-center justify-between pt-2">
+          <span class="text-xs font-semibold text-emerald-400">Part 1: Optional 5-Min Light Cardio + Dynamic Drills</span>
+          <a href="${WARMUP_DATA.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 rounded-lg hover:bg-emerald-500/25 transition">
+            ▶ Warm-Up Video
+          </a>
+        </div>
+        <div class="space-y-1.5">
+          ${drills.map(d => `
+            <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 flex items-start justify-between gap-2">
+              <div>
+                <div class="text-xs font-bold text-white">${d.name}</div>
+                <div class="text-[11px] text-slate-400">${d.notes}</div>
+              </div>
+              <span class="shrink-0 text-[11px] font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">${d.reps}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 text-[11px] text-slate-300">
+          <strong class="text-white">Part 2 (Warm-Up Sets):</strong> ${WARMUP_DATA.warmupSetsNote}
+        </div>
+      `;
+    }
+
+    function renderWorkoutView() {
+      renderDaySelector();
+      const dayIdx = state.selectedDayIndex;
+      const dayObj = DAYS_SCHEDULE[dayIdx];
+      renderWarmupCard(dayObj);
+
+      const hasCrunchToday = state.crunchDays.includes(dayIdx);
+      const exercisesToday = [...dayObj.exercises];
+      if (hasCrunchToday) {
+        exercisesToday.push(CABLE_CRUNCH_EXERCISE);
+      }
+
+      // Render Day Summary Banner
+      const banner = document.getElementById('day-banner');
+      if (banner) {
+        banner.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">${dayObj.dayFull} • ${dayObj.time}</span>
+                ${hasCrunchToday ? '<span class="text-[10px] font-bold bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full">+ Cable Crunch Day</span>' : ''}
+              </div>
+              <h2 class="text-lg font-extrabold text-white mt-0.5">${dayObj.title}</h2>
+            </div>
+            <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-[11px] font-semibold px-2.5 py-1.5 rounded-xl border transition ${
+              hasCrunchToday
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                : 'bg-slate-800 text-slate-300 border-slate-700'
+            }">
+              ${hasCrunchToday ? '✓ Cable Crunch On' : '+ Add Cable Crunch'}
+            </button>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800/90 rounded-xl p-2.5 flex items-center justify-between gap-2">
+            <div class="text-xs text-slate-300">
+              <span class="font-bold text-sky-400">Pull-Up Focus:</span> ${dayObj.usmcSummary}
+            </div>
+            ${dayObj.usmcDay ? `<button type="button" id="banner-jump-pullups" class="shrink-0 text-[11px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 px-2.5 py-1 rounded-lg">Open Day ${dayObj.usmcDay}</button>` : ''}
+          </div>
+        `;
+
+        const toggleCrunchBtn = document.getElementById('toggle-crunch-day-btn');
+        if (toggleCrunchBtn) {
+          toggleCrunchBtn.addEventListener('click', () => {
+            const pos = state.crunchDays.indexOf(dayIdx);
+            if (pos >= 0) {
+              state.crunchDays.splice(pos, 1);
+              showToast(`Removed Cable Crunch from ${dayObj.dayFull}`);
+            } else {
+              state.crunchDays.push(dayIdx);
+              showToast(`Added Cable Crunch to ${dayObj.dayFull} (${state.crunchDays.length}x/wk)`);
+            }
+            saveState();
+            renderWorkoutView();
+          });
+        }
+
+        const jumpBtn = document.getElementById('banner-jump-pullups');
+        if (jumpBtn) {
+          jumpBtn.addEventListener('click', () => {
+            switchTab('pullups');
+          });
+        }
+      }
+
+      // Render Exercise Cards
+      const listEl = document.getElementById('exercise-list');
+      if (!listEl) return;
+
+      listEl.innerHTML = exercisesToday.map((ex, exOrder) => {
+        let setsHtml = '';
+        for (let s = 1; s <= ex.sets; s++) {
+          const logKey = `${dayIdx}_${ex.id}_${s}`;
+          const entry = state.workoutLogs[logKey] || { weight: '', reps: '', done: false };
+          setsHtml += `
+            <div class="grid grid-cols-12 items-center gap-2 py-1.5 px-2 rounded-xl ${entry.done ? 'bg-emerald-950/40 border border-emerald-500/30' : 'bg-slate-950/60 border border-slate-800/80'}">
+              <div class="col-span-2 text-xs font-bold text-slate-400">Set ${s}</div>
+              <div class="col-span-4">
+                <div class="relative">
+                  <input type="number" step="0.5" inputmode="decimal" placeholder="0" value="${entry.weight}" data-log-key="${logKey}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-emerald-500" />
+                  <span class="absolute right-2 top-1.5 text-[10px] text-slate-500 font-semibold">${state.weightUnit}</span>
+                </div>
+              </div>
+              <div class="col-span-3">
+                <div class="relative">
+                  <input type="number" inputmode="numeric" placeholder="${ex.reps}" value="${entry.reps}" data-log-key="${logKey}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-emerald-500 text-center" />
+                </div>
+              </div>
+              <div class="col-span-3 flex items-center justify-end gap-1">
+                <button type="button" data-log-key="${logKey}" data-rest-sec="${ex.restSec}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn w-full py-1.5 px-2 rounded-lg text-xs font-bold transition ${
+                  entry.done
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/30'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                }">
+                  ${entry.done ? '✓ Done' : 'Log & Rest'}
+                </button>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <article class="bg-slate-900 border ${ex.id === 'cable_ab_crunch' ? 'border-emerald-500/50 ring-1 ring-emerald-500/20' : 'border-slate-800'} rounded-2xl p-4 space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="text-[11px] font-mono font-bold text-slate-400">#${exOrder + 1}</span>
+                  ${ex.badge ? `<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">${ex.badge}</span>` : ''}
+                  <span class="text-[11px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">${ex.sets} Sets × ${ex.reps}</span>
+                </div>
+                <h3 class="text-sm font-extrabold text-white mt-1">${ex.name}</h3>
+              </div>
+
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button type="button" data-rest-sec="${ex.restSec}" data-ex-name="${ex.name}" class="quick-rest-btn bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 text-xs font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition" title="Start rest timer for this exercise">
+                  ⏱️ ${ex.restLabel}
+                </button>
+                <a href="${ex.videoUrl}" target="_blank" rel="noopener noreferrer" class="bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition" title="Watch tutorial video">
+                  ▶ Video
+                </a>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed bg-slate-950/50 border border-slate-800/60 rounded-xl p-2.5">
+              ${ex.notes}
+            </p>
+
+            <!-- Set Table Header -->
+            <div class="space-y-1.5">
+              <div class="grid grid-cols-12 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <div class="col-span-2">Set</div>
+                <div class="col-span-4">Weight (${state.weightUnit})</div>
+                <div class="col-span-3 text-center">Reps</div>
+                <div class="col-span-3 text-right">Action</div>
+              </div>
+              ${setsHtml}
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      // Attach listeners for inputs & buttons
+      listEl.querySelectorAll('.workout-input').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const key = inp.getAttribute('data-log-key');
+          const field = inp.getAttribute('data-field');
+          if (!state.workoutLogs[key]) {
+            state.workoutLogs[key] = { weight: '', reps: '', done: false };
+          }
+          state.workoutLogs[key][field] = inp.value;
+          saveState();
+        });
+      });
+
+      listEl.querySelectorAll('.set-done-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-log-key');
+          const restSec = parseInt(btn.getAttribute('data-rest-sec'), 10) || 90;
+          const exName = btn.getAttribute('data-ex-name');
+          if (!state.workoutLogs[key]) {
+            state.workoutLogs[key] = { weight: '', reps: '', done: false };
+          }
+          state.workoutLogs[key].done = !state.workoutLogs[key].done;
+          saveState();
+          renderWorkoutView();
+          if (state.workoutLogs[key].done) {
+            startTimer(restSec, `Rest: ${exName}`);
+            showToast(`✓ Set logged! ${restSec}s rest timer started.`);
+          }
+        });
+      });
+
+      listEl.querySelectorAll('.quick-rest-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const sec = parseInt(btn.getAttribute('data-rest-sec'), 10) || 90;
+          const name = btn.getAttribute('data-ex-name');
+          startTimer(sec, `Rest: ${name}`);
+          showToast(`⏱️ Started ${sec}s rest timer for ${name}`);
+        });
+      });
+    }
+
+    // =========================================================================
+    // 7. RENDER USMC PULL-UP VIEW
+    // =========================================================================
+    function renderUSMCView() {
+      const tsVal = document.getElementById('pullup-ts-value');
+      if (tsVal) tsVal.textContent = `${state.pullupTrainingSetReps} reps`;
+
+      const container = document.getElementById('usmc-days-container');
+      if (!container) return;
+
+      container.innerHTML = USMC_DAYS_DATA.map(d => {
+        let setsRowHtml = '';
+        for (let s = 1; s <= d.setsCount; s++) {
+          const key = `day_${d.dayNum}_set_${s}`;
+          const defaultRepPlaceholder = (d.dayNum === 3 || d.dayNum === 4)
+            ? state.pullupTrainingSetReps
+            : (d.dayNum === 2 ? s : 'Max');
+          const entry = state.usmcLogs[key] || { reps: '', done: false };
+          setsRowHtml += `
+            <div class="flex flex-col items-center bg-slate-950/70 border ${entry.done ? 'border-emerald-500/50 bg-emerald-950/30' : 'border-slate-800'} rounded-xl p-2">
+              <span class="text-[10px] font-bold text-slate-400">Set ${s}</span>
+              <input type="number" inputmode="numeric" placeholder="${defaultRepPlaceholder}" value="${entry.reps}" data-usmc-key="${key}" aria-label="USMC Day ${d.dayNum} Set ${s} Reps" class="usmc-rep-input w-12 bg-slate-900 border border-slate-700 rounded-lg py-1 text-center text-xs font-bold text-white my-1 focus:outline-none focus:border-emerald-500" />
+              <button type="button" data-usmc-key="${key}" data-rest-sec="${d.dayNum === 2 ? s * 10 : d.restSec}" data-label="USMC Day ${d.dayNum} Set ${s}" class="usmc-done-btn w-full py-1 rounded-md text-[10px] font-bold ${
+                entry.done ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }">
+                ${entry.done ? '✓' : 'Rest'}
+              </button>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">${d.dayLabel}</span>
+                <h3 class="text-sm font-extrabold text-white">${d.title}</h3>
+                <p class="text-xs text-slate-300 mt-1">${d.desc}</p>
+              </div>
+              <button type="button" data-rest-sec="${d.restSec}" data-ex-name="${d.title}" class="usmc-quick-timer shrink-0 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 text-xs font-bold px-2.5 py-1.5 rounded-xl">
+                ⏱️ ${d.restSec}s
+              </button>
+            </div>
+            <div class="grid grid-cols-5 gap-2">
+              ${setsRowHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.querySelectorAll('.usmc-rep-input').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const key = inp.getAttribute('data-usmc-key');
+          if (!state.usmcLogs[key]) state.usmcLogs[key] = { reps: '', done: false };
+          state.usmcLogs[key].reps = inp.value;
+          saveState();
+        });
+      });
+
+      container.querySelectorAll('.usmc-done-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-usmc-key');
+          const restSec = parseInt(btn.getAttribute('data-rest-sec'), 10) || 60;
+          const label = btn.getAttribute('data-label');
+          if (!state.usmcLogs[key]) state.usmcLogs[key] = { reps: '', done: false };
+          state.usmcLogs[key].done = !state.usmcLogs[key].done;
+          saveState();
+          renderUSMCView();
+          if (state.usmcLogs[key].done) {
+            startTimer(restSec, label);
+            showToast(`✓ Logged ${label}! ${restSec}s rest started.`);
+          }
+        });
+      });
+
+      container.querySelectorAll('.usmc-quick-timer').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const sec = parseInt(btn.getAttribute('data-rest-sec'), 10) || 60;
+          const name = btn.getAttribute('data-ex-name');
+          startTimer(sec, name);
+          showToast(`⏱️ Started ${sec}s rest timer`);
+        });
+      });
+    }
+
+    // =========================================================================
+    // 8. RENDER VEGAN MEAL PLANNER VIEW
+    // =========================================================================
+    function renderVeganView() {
+      const target = VEGAN_MODES[state.mealMode] || VEGAN_MODES.recomp_6pack;
+
+      // Update Overnight Oats Batch Calculator UI
+      const days = state.oatsBatchDays || 3;
+      const boost = state.oatsProteinBoost !== false;
+      const baseKcal = Math.round(1220 / days);
+      const baseProt = +(55.3 / days).toFixed(1);
+      const finalKcal = boost ? baseKcal + 135 : baseKcal;
+      const finalProt = +(boost ? baseProt + 12.0 : baseProt).toFixed(1);
+      const b12Pct = Math.round(((3.0 / days) + (boost ? 1.5 : 0)) / 2.4 * 100);
+
+      document.querySelectorAll('.oats-days-btn').forEach(btn => {
+        const d = parseInt(btn.getAttribute('data-oats-days'), 10);
+        const active = d === days;
+        btn.className = active
+          ? 'oats-days-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+          : 'oats-days-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-slate-800 text-slate-300 border-slate-700';
+      });
+
+      const boostBtn = document.getElementById('toggle-oats-boost-btn');
+      const boostSummary = document.getElementById('oats-boost-summary');
+      if (boostBtn) {
+        boostBtn.textContent = boost ? '✓ Boost On (+12g P)' : '+ Add Silk Boost';
+        boostBtn.className = boost
+          ? 'shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950'
+          : 'shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700';
+      }
+      if (boostSummary) {
+        boostSummary.innerHTML = `1/${days} Batch ${boost ? '+ 1.5c Extra Silk Protein Milk' : '(Base Recipe Only)'}: <strong class="text-emerald-400">${finalProt}g Protein • ${finalKcal} kcal</strong> • <strong>${b12Pct}% Daily B12</strong>`;
+      }
+      // Sync Meal 1 (Overnight Oats) with selected Oats Batch calculation
+      VEGAN_MEALS[0].options[0].protein = Math.round(finalProt);
+      VEGAN_MEALS[0].options[0].kcal = finalKcal;
+      VEGAN_MEALS[0].options[0].name = `1/${days} Overnight Oats Batch${boost ? ' + 1.5 Cups Silk Protein Milk' : ''}`;
+
+      // Update Mode Buttons
+      document.querySelectorAll('.meal-mode-btn').forEach(btn => {
+        const mode = btn.getAttribute('data-meal-mode');
+        const active = mode === state.mealMode;
+        btn.className = active
+          ? 'meal-mode-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+          : 'meal-mode-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-slate-800 text-slate-300 border-slate-700';
+      });
+
+      // Calculate Checked Macros
+      let eatenProtein = 0;
+      let eatenKcal = 0;
+      VEGAN_MEALS.forEach(slot => {
+        const varIdx = state.selectedMealVariant[slot.slotId] || 0;
+        const opt = slot.options[varIdx] || slot.options[0];
+        if (state.checkedMeals[slot.slotId]) {
+          eatenProtein += opt.protein;
+          eatenKcal += opt.kcal;
+        }
+      });
+
+      const pText = document.getElementById('macro-protein-text');
+      const pBar = document.getElementById('macro-protein-bar');
+      const kText = document.getElementById('macro-kcal-text');
+      const kBar = document.getElementById('macro-kcal-bar');
+
+      if (pText) pText.textContent = `${eatenProtein} / ${target.protein}g`;
+      if (pBar) pBar.style.width = Math.min(100, Math.round((eatenProtein / target.protein) * 100)) + '%';
+      if (kText) kText.textContent = `${eatenKcal.toLocaleString()} / ${target.kcal.toLocaleString()} kcal`;
+      if (kBar) kBar.style.width = Math.min(100, Math.round((eatenKcal / target.kcal) * 100)) + '%';
+
+      // Render Essentials Checklist
+      const essEl = document.getElementById('vegan-essentials-list');
+      if (essEl) {
+        essEl.innerHTML = VEGAN_ESSENTIALS.map(item => {
+          const checked = !!state.checkedEssentials[item.id];
+          return `
+            <button type="button" data-ess-id="${item.id}" class="ess-toggle-btn text-left p-2.5 rounded-xl border transition flex items-start gap-2.5 ${
+              checked
+                ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+                : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'
+            }">
+              <span class="mt-0.5 w-4 h-4 rounded flex items-center justify-center text-[10px] font-bold ${
+                checked ? 'bg-emerald-500 text-slate-950' : 'border border-slate-600'
+              }">${checked ? '✓' : ''}</span>
+              <div>
+                <div class="text-xs font-bold text-white">${item.name}</div>
+                <div class="text-[11px] text-slate-400 leading-snug">${item.detail}</div>
+              </div>
+            </button>
+          `;
+        }).join('');
+
+        essEl.querySelectorAll('.ess-toggle-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-ess-id');
+            state.checkedEssentials[id] = !state.checkedEssentials[id];
+            saveState();
+            renderVeganView();
+          });
+        });
+      }
+
+      // Render Timed Meal Cards
+      const mealsEl = document.getElementById('vegan-meals-container');
+      if (mealsEl) {
+        mealsEl.innerHTML = VEGAN_MEALS.map(slot => {
+          const varIdx = state.selectedMealVariant[slot.slotId] || 0;
+          const opt = slot.options[varIdx] || slot.options[0];
+          const isDone = !!state.checkedMeals[slot.slotId];
+
+          return `
+            <div class="bg-slate-900 border ${isDone ? 'border-emerald-500/40' : 'border-slate-800'} rounded-2xl p-4 space-y-3">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">${slot.time}</span>
+                    <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-semibold">${opt.volume}</span>
+                  </div>
+                  <h4 class="text-sm font-extrabold text-white mt-0.5">${slot.title}</h4>
+                </div>
+                <button type="button" data-meal-slot="${slot.slotId}" class="meal-check-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                  isDone
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/30'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                }">
+                  ${isDone ? '✓ Eaten' : '+ Log Meal'}
+                </button>
+              </div>
+
+              ${slot.options.length > 1 ? `
+              <div class="grid grid-cols-2 gap-1.5">
+                ${slot.options.map((o, idx) => `
+                  <button type="button" data-slot="${slot.slotId}" data-opt-idx="${idx}" class="meal-opt-btn text-left px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition ${
+                    idx === varIdx
+                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }">
+                    Option ${idx + 1}: ${o.protein}g P • ${o.kcal} kcal
+                  </button>
+                `).join('')}
+              </div>` : ''}
+
+              <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-white">${opt.name}</span>
+                  <span class="text-xs font-extrabold text-emerald-400">${opt.protein}g Protein • ${opt.kcal} kcal</span>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">${opt.ingredients}</p>
+                <p class="text-[11px] text-amber-400/90 pt-1">💡 ${slot.tip}</p>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        mealsEl.querySelectorAll('.meal-check-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const slotId = btn.getAttribute('data-meal-slot');
+            state.checkedMeals[slotId] = !state.checkedMeals[slotId];
+            saveState();
+            renderVeganView();
+            if (state.checkedMeals[slotId]) {
+              showToast('🌱 Meal logged toward today\'s muscle goals!');
+            }
+          });
+        });
+
+        mealsEl.querySelectorAll('.meal-opt-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const slotId = btn.getAttribute('data-slot');
+            const idx = parseInt(btn.getAttribute('data-opt-idx'), 10) || 0;
+            state.selectedMealVariant[slotId] = idx;
+            saveState();
+            renderVeganView();
+          });
+        });
+      }
+
+      // Render Grocery List
+      const grocEl = document.getElementById('grocery-list-container');
+      if (grocEl) {
+        grocEl.innerHTML = GROCERY_ITEMS.map((item, idx) => {
+          const checked = !!state.checkedGroceries[idx];
+          return `
+            <button type="button" data-groc-idx="${idx}" class="groc-toggle-btn text-left px-2.5 py-2 rounded-xl border text-xs font-medium transition flex items-center gap-2 ${
+              checked
+                ? 'bg-emerald-950/30 border-emerald-500/30 text-slate-400 line-through'
+                : 'bg-slate-950/60 border-slate-800 text-slate-200 hover:border-slate-700'
+            }">
+              <span class="w-4 h-4 shrink-0 rounded flex items-center justify-center text-[10px] font-bold ${
+                checked ? 'bg-emerald-500 text-slate-950' : 'border border-slate-600'
+              }">${checked ? '✓' : ''}</span>
+              <span class="truncate">${item}</span>
+            </button>
+          `;
+        }).join('');
+
+        grocEl.querySelectorAll('.groc-toggle-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const idx = btn.getAttribute('data-groc-idx');
+            state.checkedGroceries[idx] = !state.checkedGroceries[idx];
+            saveState();
+            renderVeganView();
+          });
+        });
+      }
+    }
+
+    // =========================================================================
+    // 9. NAVIGATION & GLOBAL EVENT LISTENERS
+    // =========================================================================
+    function renderShoppingView() {
+      const container = document.getElementById('weekly-shopping-categories');
+      if (!container) return;
+
+      const allBuiltIn = [];
+      WEEKLY_SHOPPING_CATEGORIES.forEach(cat => {
+        cat.items.forEach(it => allBuiltIn.push(it));
+      });
+      const customList = Array.isArray(state.customShoppingItems) ? state.customShoppingItems : [];
+      const totalCount = allBuiltIn.length + customList.length;
+      let checkedCount = 0;
+
+      allBuiltIn.forEach(it => {
+        if (state.checkedGroceries[it.id]) checkedCount++;
+      });
+      customList.forEach((it, idx) => {
+        if (state.checkedGroceries['custom_' + idx]) checkedCount++;
+      });
+
+      const countEl = document.getElementById('shopping-progress-count');
+      const barEl = document.getElementById('shopping-progress-bar');
+      if (countEl) countEl.textContent = `${checkedCount} / ${totalCount}`;
+      if (barEl) barEl.style.width = (totalCount > 0 ? Math.min(100, Math.round((checkedCount / totalCount) * 100)) : 0) + '%';
+
+      let html = WEEKLY_SHOPPING_CATEGORIES.map(cat => `
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-white">${cat.category}</h3>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">${cat.badge}</span>
+          </div>
+          <div class="space-y-1.5">
+            ${cat.items.map(it => {
+              const done = !!state.checkedGroceries[it.id];
+              return `
+                <button type="button" data-shop-id="${it.id}" class="shop-item-btn w-full text-left p-2.5 rounded-xl border transition flex items-start justify-between gap-2 ${
+                  done ? 'bg-emerald-950/30 border-emerald-500/30 opacity-75' : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
+                }">
+                  <div class="flex items-start gap-2.5">
+                    <span class="mt-0.5 w-4 h-4 shrink-0 rounded flex items-center justify-center text-[10px] font-bold ${
+                      done ? 'bg-emerald-500 text-slate-950' : 'border border-slate-600'
+                    }">${done ? '✓' : ''}</span>
+                    <div>
+                      <div class="text-xs font-bold ${done ? 'line-through text-slate-400' : 'text-white'}">${it.name}</div>
+                      <div class="text-[11px] text-slate-400 mt-0.5">${it.note}</div>
+                    </div>
+                  </div>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-emerald-300 shrink-0">${it.qty}</span>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
+
+      if (customList.length > 0) {
+        html += `
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-white">5. Your Added Weekly Items</h3>
+            <div class="space-y-1.5">
+              ${customList.map((name, idx) => {
+                const cid = 'custom_' + idx;
+                const done = !!state.checkedGroceries[cid];
+                return `
+                  <button type="button" data-shop-id="${cid}" class="shop-item-btn w-full text-left p-2.5 rounded-xl border transition flex items-center justify-between gap-2 ${
+                    done ? 'bg-emerald-950/30 border-emerald-500/30 opacity-75' : 'bg-slate-950/70 border-slate-800'
+                  }">
+                    <div class="flex items-center gap-2.5">
+                      <span class="w-4 h-4 shrink-0 rounded flex items-center justify-center text-[10px] font-bold ${
+                        done ? 'bg-emerald-500 text-slate-950' : 'border border-slate-600'
+                      }">${done ? '✓' : ''}</span>
+                      <span class="text-xs font-bold ${done ? 'line-through text-slate-400' : 'text-white'}">${name}</span>
+                    </div>
+                    <span class="text-[10px] text-slate-400">Custom</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+      container.querySelectorAll('.shop-item-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-shop-id');
+          state.checkedGroceries[id] = !state.checkedGroceries[id];
+          saveState();
+          renderShoppingView();
+        });
+      });
+    }
+
+    function switchTab(tabName) {
+      const views = ['workout', 'pullups', 'timer', 'vegan', 'shopping'];
+      views.forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (el) {
+          if (v === tabName) el.classList.remove('hidden');
+          else el.classList.add('hidden');
+        }
+      });
+
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        const target = btn.getAttribute('data-nav');
+        if (target === tabName) {
+          btn.className = 'nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-emerald-400 bg-emerald-500/10 font-bold text-[11px] transition';
+        } else {
+          btn.className = 'nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[11px] transition';
+        }
+      });
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function initApp() {
+      // Bottom Nav Tabs
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          switchTab(btn.getAttribute('data-nav'));
+        });
+      });
+
+      // Header Timer Controls
+      document.getElementById('header-timer-toggle').addEventListener('click', toggleTimer);
+      document.getElementById('header-timer-open').addEventListener('click', () => switchTab('timer'));
+
+      // Weight Unit Select
+      const unitSelect = document.getElementById('weight-unit-select');
+      if (unitSelect) {
+        unitSelect.value = state.weightUnit;
+        unitSelect.addEventListener('change', () => {
+          state.weightUnit = unitSelect.value;
+          saveState();
+          renderWorkoutView();
+        });
+      }
+
+      // Cable Crunch 4x/Week Presets
+      document.getElementById('crunch-preset-lift').addEventListener('click', () => {
+        state.crunchDays = [0, 1, 3, 5]; // Mon, Tue, Thu, Sat
+        saveState();
+        renderWorkoutView();
+        showToast('Cable Abdominal Crunch set to Mon, Tue, Thu & Sat (4x/wk)');
+      });
+      document.getElementById('crunch-preset-spaced').addEventListener('click', () => {
+        state.crunchDays = [0, 2, 4, 6]; // Mon, Wed, Fri, Sun
+        saveState();
+        renderWorkoutView();
+        showToast('Cable Abdominal Crunch set to Mon, Wed, Fri & Sun (4x/wk)');
+      });
+
+      // Warmup Accordion Toggle
+      document.getElementById('toggle-warmup-btn').addEventListener('click', () => {
+        const panel = document.getElementById('warmup-panel');
+        const chev = document.getElementById('warmup-chevron');
+        const isHidden = panel.classList.contains('hidden');
+        if (isHidden) {
+          panel.classList.remove('hidden');
+          chev.textContent = '▲';
+        } else {
+          panel.classList.add('hidden');
+          chev.textContent = '▼';
+        }
+      });
+
+      // USMC Training Set Reps Controls
+      document.getElementById('pullup-ts-minus').addEventListener('click', () => {
+        state.pullupTrainingSetReps = Math.max(1, state.pullupTrainingSetReps - 1);
+        saveState();
+        renderUSMCView();
+      });
+      document.getElementById('pullup-ts-plus').addEventListener('click', () => {
+        state.pullupTrainingSetReps = Math.min(30, state.pullupTrainingSetReps + 1);
+        saveState();
+        renderUSMCView();
+      });
+
+      // Main Timer View Controls
+      document.getElementById('timer-start-pause').addEventListener('click', toggleTimer);
+      document.getElementById('timer-reset').addEventListener('click', resetTimer);
+      document.getElementById('timer-minus-15').addEventListener('click', () => {
+        state.timerSeconds = Math.max(0, state.timerSeconds - 15);
+        updateTimerUI();
+      });
+      document.getElementById('timer-plus-15').addEventListener('click', () => {
+        state.timerSeconds += 15;
+        state.timerTotalSeconds = Math.max(state.timerTotalSeconds, state.timerSeconds);
+        updateTimerUI();
+      });
+      document.getElementById('timer-sound-toggle').addEventListener('click', (e) => {
+        state.soundEnabled = !state.soundEnabled;
+        e.currentTarget.textContent = state.soundEnabled ? '🔔 Sound On' : '🔕 Muted';
+        saveState();
+      });
+
+      document.querySelectorAll('.timer-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const sec = parseInt(btn.getAttribute('data-timer-sec'), 10) || 60;
+          startTimer(sec, `Preset: ${sec}s Rest`);
+          showToast(`⏱️ Timer started for ${sec}s`);
+        });
+      });
+
+      // Oats Batch Days & Boost Buttons
+      document.querySelectorAll('.oats-days-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.oatsBatchDays = parseInt(btn.getAttribute('data-oats-days'), 10) || 3;
+          saveState();
+          renderVeganView();
+          showToast(`Overnight oats split set to ${state.oatsBatchDays} days`);
+        });
+      });
+      const oatsBoostBtn = document.getElementById('toggle-oats-boost-btn');
+      if (oatsBoostBtn) {
+        oatsBoostBtn.addEventListener('click', () => {
+          state.oatsProteinBoost = !state.oatsProteinBoost;
+          saveState();
+          renderVeganView();
+          showToast(state.oatsProteinBoost ? 'Silk Protein Boost enabled (+12g P)' : 'Base overnight oats selected');
+        });
+      }
+
+      // Vegan View Controls
+      document.querySelectorAll('.meal-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.mealMode = btn.getAttribute('data-meal-mode');
+          saveState();
+          renderVeganView();
+        });
+      });
+
+      document.getElementById('reset-vegan-day-btn').addEventListener('click', () => {
+        state.checkedMeals = {};
+        state.checkedEssentials = {};
+        saveState();
+        renderVeganView();
+        showToast('Reset today\'s meal & supplement checklist');
+      });
+
+      const openShopBtn = document.getElementById('open-shopping-tab-btn');
+      if (openShopBtn) {
+        openShopBtn.addEventListener('click', () => switchTab('shopping'));
+      }
+
+      const resetShopBtn = document.getElementById('reset-shopping-list-btn');
+      if (resetShopBtn) {
+        resetShopBtn.addEventListener('click', () => {
+          state.checkedGroceries = {};
+          saveState();
+          renderShoppingView();
+          renderVeganView();
+          showToast('Shopping list unchecked for a new week');
+        });
+      }
+
+      const addCustomShopBtn = document.getElementById('add-custom-shop-btn');
+      const customShopInput = document.getElementById('custom-shop-input');
+      if (addCustomShopBtn && customShopInput) {
+        addCustomShopBtn.addEventListener('click', () => {
+          const val = customShopInput.value.trim();
+          if (!val) return;
+          if (!Array.isArray(state.customShoppingItems)) state.customShoppingItems = [];
+          state.customShoppingItems.push(val);
+          customShopInput.value = '';
+          saveState();
+          renderShoppingView();
+          showToast('Added "' + val + '" to Weekly Shop List');
+        });
+      }
+
+      const copyShopBtn = document.getElementById('copy-shopping-list-btn');
+      if (copyShopBtn) {
+        copyShopBtn.addEventListener('click', () => {
+          const lines = ['🛒 Weekly Vegan 6-Pack Recomp Shopping List:'];
+          WEEKLY_SHOPPING_CATEGORIES.forEach(cat => {
+            cat.items.forEach(it => {
+              if (!state.checkedGroceries[it.id]) {
+                lines.push(`- ${it.name} (${it.qty})`);
+              }
+            });
+          });
+          (state.customShoppingItems || []).forEach((name, idx) => {
+            if (!state.checkedGroceries['custom_' + idx]) {
+              lines.push(`- ${name}`);
+            }
+          });
+          const textToCopy = lines.join('\n');
+          const ta = document.createElement('textarea');
+          ta.value = textToCopy;
+          document.body.appendChild(ta);
+          ta.select();
+          try {
+            document.execCommand('copy');
+            showToast('📋 Copied weekly shopping list!');
+          } catch (err) {
+            showToast('Shopping list ready!');
+          }
+          document.body.removeChild(ta);
+        });
+      }
+
+      // Database & Permanent Save Modal Controls
+      const dbModal = document.getElementById('db-sync-modal');
+      const openDbBtn = document.getElementById('open-db-modal-btn');
+      const closeDbBtn = document.getElementById('close-db-modal-btn');
+      const cloudInput = document.getElementById('cloud-db-url-input');
+      const cloudBadge = document.getElementById('cloud-sync-badge');
+
+      if (cloudInput && state.cloudDbUrl) {
+        cloudInput.value = state.cloudDbUrl;
+        if (cloudBadge) {
+          cloudBadge.textContent = '✓ Connected';
+          cloudBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300';
+        }
+      }
+
+      if (openDbBtn && dbModal) {
+        openDbBtn.addEventListener('click', () => dbModal.classList.remove('hidden'));
+      }
+      if (closeDbBtn && dbModal) {
+        closeDbBtn.addEventListener('click', () => dbModal.classList.add('hidden'));
+      }
+
+      const downloadBakedBtn = document.getElementById('download-baked-app-btn');
+      if (downloadBakedBtn) {
+        downloadBakedBtn.addEventListener('click', () => {
+          const fullHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+          const bakedBlock = '/*__BAKED_STATE_START__*/\n    const DEFAULT_STATE = ' + JSON.stringify(state, null, 2) + ';\n    /*__BAKED_STATE_END__*/';
+          const updatedHtml = fullHtml.replace(/\/\*__BAKED_STATE_START__\*\/[\s\S]*?\/\*__BAKED_STATE_END__\*\//, bakedBlock);
+          const blob = new Blob([updatedHtml], { type: 'text/html;charset=utf-8' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'vegan_7am_gym_tracker.html';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          showToast('📥 Downloaded app with your current day & weights saved inside!');
+        });
+      }
+
+      const saveCloudBtn = document.getElementById('save-cloud-db-btn');
+      if (saveCloudBtn && cloudInput) {
+        saveCloudBtn.addEventListener('click', () => {
+          state.cloudDbUrl = cloudInput.value.trim();
+          saveState();
+          if (state.cloudDbUrl) {
+            pushStateToCloud();
+            showToast('☁️ Connected Cloud DB & synced your current state!');
+          } else {
+            showToast('Disconnected Cloud DB');
+          }
+        });
+      }
+
+      const syncNowBtn = document.getElementById('sync-now-cloud-btn');
+      if (syncNowBtn) {
+        syncNowBtn.addEventListener('click', () => {
+          if (!state.cloudDbUrl) {
+            showToast('Paste a Cloud DB URL first to sync');
+            return;
+          }
+          pullStateFromCloud();
+        });
+      }
+
+      const copySqlBtn = document.getElementById('copy-supabase-sql-btn');
+      if (copySqlBtn) {
+        copySqlBtn.addEventListener('click', () => {
+          const sql = "CREATE TABLE IF NOT EXISTS gym_state (id text primary key, data jsonb, updated_at timestamptz default now());";
+          const ta = document.createElement('textarea');
+          ta.value = sql;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta);
+          showToast('📋 Copied 1-line SQL! Paste in Supabase SQL Editor -> Run.');
+        });
+      }
+
+      const copyGasBtn = document.getElementById('copy-gas-script-btn');
+      if (copyGasBtn) {
+        copyGasBtn.addEventListener('click', () => {
+          const scriptCode = [
+            '// Paste in Google Sheets -> Extensions -> Apps Script -> Deploy as Web App (Anyone):',
+            'function doGet() {',
+            '  var val = PropertiesService.getScriptProperties().getProperty("STATE") || "{}";',
+            '  return ContentService.createTextOutput(val).setMimeType(ContentService.MimeType.JSON);',
+            '}',
+            'function doPost(e) {',
+            '  PropertiesService.getScriptProperties().setProperty("STATE", e.postData.contents);',
+            '  return ContentService.createTextOutput("{\"ok\":true}").setMimeType(ContentService.MimeType.JSON);',
+            '}'
+          ].join('\n');
+          const ta = document.createElement('textarea');
+          ta.value = scriptCode;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta);
+          showToast('📋 Copied free Google Sheet Database script!');
+        });
+      }
+
+      const copyBackupBtn = document.getElementById('copy-backup-code-btn');
+      if (copyBackupBtn) {
+        copyBackupBtn.addEventListener('click', () => {
+          const code = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+          const ta = document.createElement('textarea');
+          ta.value = code;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta);
+          showToast('📋 Copied backup code! Paste it anytime to restore.');
+        });
+      }
+
+      const restoreCodeBtn = document.getElementById('restore-code-btn');
+      const backupInput = document.getElementById('backup-code-input');
+      if (restoreCodeBtn && backupInput) {
+        restoreCodeBtn.addEventListener('click', () => {
+          const raw = backupInput.value.trim();
+          if (!raw) return;
+          try {
+            const parsed = JSON.parse(decodeURIComponent(escape(atob(raw))));
+            state = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), parsed);
+            saveState();
+            renderWorkoutView();
+            renderUSMCView();
+            renderVeganView();
+            renderShoppingView();
+            backupInput.value = '';
+            if (dbModal) dbModal.classList.add('hidden');
+            showToast('✓ Restored your saved day, weights & logs!');
+          } catch (e) {
+            showToast('Invalid backup code');
+          }
+        });
+      }
+
+      // Initial Render
+      updateTimerUI();
+      renderWorkoutView();
+      renderUSMCView();
+      renderVeganView();
+      renderShoppingView();
+      if (getActiveCloudEndpoint()) {
+        pullStateFromCloud();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
