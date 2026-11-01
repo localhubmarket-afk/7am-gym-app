@@ -105,14 +105,39 @@
     <section id="view-workout" class="space-y-4">
       <!-- 7-Day Selector Strip -->
       <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-3">
+        <!-- Multi-Week Progression Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-800/80">
+          <div class="flex items-center gap-2">
+            <label for="week-select" class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">📅 Training Week:</label>
+            <select id="week-select" aria-label="Select training week" class="bg-slate-950 border border-emerald-500/40 text-white text-xs rounded-xl px-2.5 py-1.5 font-extrabold focus:outline-none focus:border-emerald-400">
+              <option value="1">Week 1</option>
+              <option value="2">Week 2</option>
+              <option value="3">Week 3</option>
+              <option value="4">Week 4</option>
+              <option value="5">Week 5</option>
+              <option value="6">Week 6</option>
+              <option value="7">Week 7</option>
+              <option value="8">Week 8</option>
+              <option value="9">Week 9</option>
+              <option value="10">Week 10</option>
+              <option value="11">Week 11</option>
+              <option value="12">Week 12</option>
+            </select>
+            <span id="week-status-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">In Progress</span>
+          </div>
+          <button type="button" id="finish-week-btn" class="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-extrabold transition">
+            ✓ Finish Week → Next
+          </button>
+        </div>
+
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="text-xs font-bold uppercase tracking-wider text-slate-400">7:00 AM Weekly Split</span>
             <span class="text-[11px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold" id="crunch-weekly-badge">4/4 Cable Crunch Days</span>
           </div>
           <select id="weight-unit-select" aria-label="Weight unit" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 font-semibold focus:outline-none focus:border-emerald-500">
-            <option value="lbs">Unit: lbs</option>
-            <option value="kg">Unit: kg</option>
+            <option value="lbs">Default: lbs</option>
+            <option value="kg">Default: kg</option>
           </select>
         </div>
 
@@ -154,6 +179,19 @@
         <div id="warmup-panel" class="hidden px-4 pb-4 pt-1 border-t border-slate-800/80 space-y-3">
           <!-- Populated by JS -->
         </div>
+      </div>
+
+      <!-- Quick Exercise & Machine Jump Dropdown Bar -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2 flex-1 min-w-[200px]">
+          <label for="exercise-jump-select" class="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0">🎯 Jump / Machine:</label>
+          <select id="exercise-jump-select" aria-label="Jump to exercise or machine" class="flex-1 bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-xl px-2.5 py-1.5 font-semibold focus:outline-none focus:border-emerald-500">
+            <!-- Populated by JS -->
+          </select>
+        </div>
+        <button type="button" id="toggle-all-images-btn" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold transition">
+          📸 Show/Hide All Diagrams
+        </button>
       </div>
 
       <!-- Exercise Cards List -->
@@ -559,7 +597,12 @@
       checkedEssentials: {},
       checkedGroceries: {},
       customShoppingItems: [],
-      workoutLogs: {}, // keyed by `${dayIdx}_${exId}_${setIdx}` -> { weight: '', reps: '', done: false }
+      currentWeek: 1,
+      completedWeeks: {}, // keyed by week number -> boolean
+      exerciseUnitPrefs: {}, // keyed by exId -> 'lbs' | 'kg' (locked on first execution!)
+      openImagePanels: {}, // keyed by exId -> boolean (whether visual diagram dropdown is open)
+      convertedExercises: {}, // keyed by exId -> boolean (true only when user switches lbs <-> kg)
+      workoutLogs: {}, // keyed by `w${week}_${dayIdx}_${exId}_${setIdx}` or legacy `${dayIdx}_${exId}_${setIdx}` -> { weight: '', reps: '', done: false, unit: 'lbs'|'kg' }
       usmcLogs: {}, // keyed by `day_${dayNum}_set_${setIdx}` -> { reps: '', done: false }
       cloudDbUrl: ''
     };
@@ -1451,31 +1494,456 @@
     }
 
     // =========================================================================
+    // 5B. EQUIPMENT DRAWINGS, VISUAL DIAGRAMS & LBS <-> KG CONVERSION
+    // =========================================================================
+    const EXERCISE_META = {
+      mon_bench: {
+        equipType: 'barbell_bench',
+        equipLabel: 'Flat Bench + Barbell Rack',
+        defaultWeightLbs: 135,
+        step1Cue: 'Eyes directly under bar • Grip slightly wider than shoulders • Pinch blades down & arch slightly',
+        step2Cue: 'Lower bar to sternum with elbows at 45–60° angle • Drive up & slightly back'
+      },
+      mon_cs_row: {
+        equipType: 'incline_db',
+        equipLabel: 'Incline Bench (30° / Notch 2) + Dumbbells',
+        defaultWeightLbs: 45,
+        step1Cue: 'Set bench to ~30° (2nd notch up) • Lay chest on pad with neutral thumbless DB grip',
+        step2Cue: 'Pull elbows back at 45–60° angle away from torso • Squeeze shoulder blades at top'
+      },
+      mon_ohp: {
+        equipType: 'barbell_rack',
+        equipLabel: 'Squat/Power Rack + Barbell',
+        defaultWeightLbs: 85,
+        step1Cue: 'Bar at armpit height in rack • Grip just outside shoulders • Forearms vertical',
+        step2Cue: 'Squeeze glutes & core • Press straight overhead (tilt chin back slightly as bar passes)'
+      },
+      mon_lat_pd: {
+        equipType: 'lat_pulldown',
+        equipLabel: 'Lat Pulldown Machine (Wide Bar)',
+        defaultWeightLbs: 120,
+        step1Cue: 'Lock thighs under pad • Overhand grip outside shoulder-width • Slight backward lean',
+        step2Cue: 'Pull elbows down into sides until bar reaches chin • Control all the way up'
+      },
+      mon_cable_fly: {
+        equipType: 'cable_dual_high',
+        equipLabel: 'Dual Cable Tower (Set to Top Pulleys)',
+        defaultWeightLbs: 25,
+        step1Cue: 'Both pulleys at highest notch • Step forward in staggered stance • Align cables with forearms',
+        step2Cue: 'Sweep arms down and inward in front of hips • Squeeze lower chest hard'
+      },
+      mon_lat_raise: {
+        equipType: 'cable_single_low',
+        equipLabel: 'Single Cable Pulley (Set to Bottom)',
+        defaultWeightLbs: 15,
+        step1Cue: 'Attach single handle at bottom pulley • Stand sideways with cable running behind legs',
+        step2Cue: 'Raise arm in 15–30° scapular plane to shoulder height • Rest 30s between arms'
+      },
+      mon_face_pull: {
+        equipType: 'cable_rope_high',
+        equipLabel: 'High Cable Pulley + Double Rope',
+        defaultWeightLbs: 25,
+        step1Cue: 'Pulley at top position • Grab rope with neutral grip and step back',
+        step2Cue: 'Pull to forehead into 90° biceps-flexing pose • Raise overhead into a Y'
+      },
+      tue_squat: {
+        equipType: 'barbell_rack',
+        equipLabel: 'Squat Rack + Barbell (+ Heel Plates)',
+        defaultWeightLbs: 165,
+        step1Cue: 'Bar on upper traps • Stance just outside shoulders with toes pointed ~15° out',
+        step2Cue: 'Sit hips & knees down to parallel or below • Keep bar path vertical over midfoot'
+      },
+      tue_rdl: {
+        equipType: 'dumbbells',
+        equipLabel: 'Pair of Dumbbells (Superset w/ Leg Ext)',
+        defaultWeightLbs: 60,
+        step1Cue: 'Stand shoulder-width with toes 15° out • Hold dumbbells at sides',
+        step2Cue: 'Push hips straight back (slight knee bend) for 2–3s until mid-shin • Rest 1m -> A2'
+      },
+      tue_leg_ext: {
+        equipType: 'leg_ext_machine',
+        equipLabel: 'Seated Leg Extension Machine',
+        defaultWeightLbs: 110,
+        step1Cue: 'Align knee joint with machine pivot • Shin pad just above ankle at 90°',
+        step2Cue: 'Pull handles down, extend legs straight up, pause 1s at top • Rest 1m -> A1'
+      },
+      tue_lunges: {
+        equipType: 'dumbbells',
+        equipLabel: 'Pair of Dumbbells (Open Floor Space)',
+        defaultWeightLbs: 40,
+        step1Cue: 'Stand tall holding dumbbells at sides • Brace core',
+        step2Cue: 'Step forward driving front knee toward toes (80–90% weight in front foot)'
+      },
+      tue_calf: {
+        equipType: 'calf_plate_db',
+        equipLabel: 'Dumbbells or Barbell + Weight Plate on Floor',
+        defaultWeightLbs: 50,
+        step1Cue: 'Elevate balls of feet on a 5–25 lb weight plate or step platform',
+        step2Cue: 'Push high onto big toes, pause 1s, lower heel slowly to full stretch'
+      },
+      tue_side_plank: {
+        equipType: 'floor_mat',
+        equipLabel: 'Floor Mat (Bodyweight Core)',
+        defaultWeightLbs: 0,
+        step1Cue: 'Lie on side supported on forearm/elbow • Stack or stagger feet',
+        step2Cue: 'Lift hips into a straight line • Hold 30s per side'
+      },
+      wed_pullup_focus: {
+        equipType: 'pullup_bar',
+        equipLabel: 'Overhead Pull-Up Bar',
+        defaultWeightLbs: 0,
+        step1Cue: '3 sets normal overhand • 3 sets close supinated (pinkies touching) • 3 sets wide overhand',
+        step2Cue: 'Rest 60 seconds between each of the 9 training sets'
+      },
+      wed_dead_bug: {
+        equipType: 'floor_mat',
+        equipLabel: 'Floor Mat + Weight Plate',
+        defaultWeightLbs: 10,
+        step1Cue: 'Flatten lower back into mat with arms & knees raised at 90°',
+        step2Cue: 'Extend opposite arm and leg slowly without letting lower back arch'
+      },
+      thu_inc_db: {
+        equipType: 'incline_db',
+        equipLabel: 'Incline Bench (15–30° / Notch 1–2) + Dumbbells',
+        defaultWeightLbs: 60,
+        step1Cue: 'Set bench 1–2 notches up from flat (15–30°) • Pinch shoulder blades back',
+        step2Cue: 'Lower dumbbells with elbows tucked 45–60° • Press up bringing biceps together'
+      },
+      thu_cable_fly: {
+        equipType: 'cable_mid_bench',
+        equipLabel: 'Dual Cable Tower (Chest Height) + 75° Incline Bench',
+        defaultWeightLbs: 25,
+        step1Cue: 'Place bench in center of cable tower set to 75° (1 notch below vertical) • Cables at chest height',
+        step2Cue: 'Bring arms straight together in front of chest • Pause 1s at peak contraction'
+      },
+      thu_flat_db: {
+        equipType: 'flat_db_bench',
+        equipLabel: 'Flat Bench + Pair of Dumbbells',
+        defaultWeightLbs: 65,
+        step1Cue: 'Kick dumbbells up onto flat bench • Pinch shoulder blades down & plant feet',
+        step2Cue: 'Lower to torso level at 45–60° elbow angle • Press up to lockout'
+      },
+      thu_lat_raise: {
+        equipType: 'dumbbells',
+        equipLabel: 'Pair of Light/Moderate Dumbbells',
+        defaultWeightLbs: 20,
+        step1Cue: 'Stand shoulder-width, slight knee bend, lean torso forward ~15°',
+        step2Cue: 'Raise arms in a wide Y-path (15–30° forward) to shoulder height'
+      },
+      thu_inc_ext: {
+        equipType: 'incline_db',
+        equipLabel: 'Incline Bench (45° / Notch 2–3) + Dumbbells',
+        defaultWeightLbs: 25,
+        step1Cue: 'Set bench to 45° • Angle straight arms back parallel to torso and lock elbows',
+        step2Cue: 'Bend forearms behind head for full stretch, then extend using only triceps'
+      },
+      thu_pushdown: {
+        equipType: 'cable_rope_high',
+        equipLabel: 'High Cable Pulley + Double Rope',
+        defaultWeightLbs: 45,
+        step1Cue: 'Pulley at top • Use two ropes (or long rope), step back & lean forward 30°',
+        step2Cue: 'Keep elbows pinned at sides • Push rope down and outward'
+      },
+      fri_pullups: {
+        equipType: 'pullup_bar',
+        equipLabel: 'Pull-Up Bar (+ Dip Belt if Weighted)',
+        defaultWeightLbs: 0,
+        step1Cue: 'Overhand grip slightly wider than shoulders • Legs together, glutes & abs tight',
+        step2Cue: 'Depress shoulders and drive elbows down toward back pockets until chin clears bar'
+      },
+      fri_lat_row: {
+        equipType: 'seated_row',
+        equipLabel: 'Seated Cable Row Machine (Close/Neutral Handle)',
+        defaultWeightLbs: 120,
+        step1Cue: 'Sit with knees slightly bent • Lean torso slightly forward and brace core',
+        step2Cue: 'Pull elbows down and back tight against sides until they reach torso level'
+      },
+      fri_rear_row: {
+        equipType: 'seated_row_wide',
+        equipLabel: 'Seated Cable Row Machine (Wide Bar Attachment)',
+        defaultWeightLbs: 85,
+        step1Cue: 'Attach wide bar so grip is outside shoulder-width • Sit tall',
+        step2Cue: 'Pull toward sternum keeping elbows flared out at a 45° angle behind body'
+      },
+      fri_inc_curl: {
+        equipType: 'incline_db',
+        equipLabel: 'Incline Bench (60°) + Pair of Dumbbells',
+        defaultWeightLbs: 25,
+        step1Cue: 'Set bench to ~60° (2–3 notches down from vertical) • Arms hang straight down behind torso',
+        step2Cue: 'Keep elbows locked in place • Curl up while rotating palms toward ceiling'
+      },
+      fri_hammer: {
+        equipType: 'dumbbells',
+        equipLabel: 'Pair of Dumbbells',
+        defaultWeightLbs: 30,
+        step1Cue: 'Stand tall holding dumbbells with neutral hammer grip (palms facing in)',
+        step2Cue: 'Curl up and slightly across chest alternating arms while keeping elbows pinned'
+      },
+      fri_face_pull: {
+        equipType: 'cable_rope_high',
+        equipLabel: 'High Cable Pulley + Double Rope',
+        defaultWeightLbs: 25,
+        step1Cue: 'High pulley with rope attachment • Neutral grip',
+        step2Cue: 'Pull to forehead in 90° external rotation pose • Raise into overhead Y'
+      },
+      sat_deadlift: {
+        equipType: 'barbell_floor',
+        equipLabel: 'Barbell on Floor (Bumper Plates)',
+        defaultWeightLbs: 205,
+        step1Cue: 'Hip-width stance with bar over midfoot • Grip just outside knees • Wedge chest up',
+        step2Cue: 'Engage lats ("bend the bar"), push floor away keeping bar close to shins & thighs'
+      },
+      sat_bss: {
+        equipType: 'flat_db_bench',
+        equipLabel: 'Flat Bench / Pad + Pair of Dumbbells',
+        defaultWeightLbs: 35,
+        step1Cue: 'Rear foot elevated on bench • Sit & extend legs + 1–2 inches forward to set stance',
+        step2Cue: 'Lean torso slightly forward • Lower until front thigh is parallel with vertical shin'
+      },
+      sat_hip_thrust: {
+        equipType: 'hip_thrust',
+        equipLabel: 'Flat Bench + Padded Barbell',
+        defaultWeightLbs: 155,
+        step1Cue: 'Upper back on bench • Padded barbell over hips • Feet set so knees hit 90° at top',
+        step2Cue: 'Tuck chin, drive through heels to full lockout, pause 1–2s squeezing glutes'
+      },
+      sat_leg_curl: {
+        equipType: 'leg_curl_machine',
+        equipLabel: 'Lying Leg Curl Machine',
+        defaultWeightLbs: 90,
+        step1Cue: 'Align knees with machine pivot • Pad rests just above back of heels',
+        step2Cue: 'Contract abs, pull handles down, curl pad to glutes with toes pointed down'
+      },
+      sat_abduction: {
+        equipType: 'mini_band',
+        equipLabel: 'Mini Resistance Band + Bench (Superset A1)',
+        defaultWeightLbs: 0,
+        step1Cue: 'Wrap mini-band around knees • Sit on edge of bench with feet outside shoulder-width',
+        step2Cue: 'Drive knees out wide against band, pause 1–2s • Rest 1m -> Seated Calf (A2)'
+      },
+      sat_seated_calf: {
+        equipType: 'calf_plate_db',
+        equipLabel: 'Flat Bench + 3–6" Stacked Plates + Dumbbells (Superset A2)',
+        defaultWeightLbs: 55,
+        step1Cue: 'Sit on bench with balls of feet on stacked weight plates • Dumbbells on knees',
+        step2Cue: 'Push straight up onto big toes, then control heels down for full stretch'
+      },
+      sun_cardio: {
+        equipType: 'cardio_bike',
+        equipLabel: 'Treadmill or Stationary Bike',
+        defaultWeightLbs: 0,
+        step1Cue: 'Set comfortable incline walk or light cycling resistance',
+        step2Cue: 'Maintain easy Zone 1–2 recovery pace for 15–20 minutes'
+      },
+      sun_dead_bug: {
+        equipType: 'floor_mat',
+        equipLabel: 'Floor Mat + Light Weight Plate',
+        defaultWeightLbs: 10,
+        step1Cue: 'Hold plate in deep squat for 30s ankle rocks, then lie flat on mat',
+        step2Cue: 'Perform slow, controlled contralateral dead bugs'
+      },
+      cable_ab_crunch: {
+        equipType: 'cable_rope_high',
+        equipLabel: 'High Cable Pulley + Rope Attachment + Floor Mat',
+        defaultWeightLbs: 60,
+        step1Cue: 'Kneel 2 ft in front of high pulley • Hold rope handles beside ears/temples',
+        step2Cue: 'Lock hips stationary • Exhale & curl ribcage down toward pelvis, pause 1s at bottom'
+      }
+    };
+
+    function getEquipmentSvg(equipType) {
+      const svgs = {
+        barbell_bench: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 34h36M10 34v8M38 34v8M14 14v20M34 14v20"/><line x1="4" y1="18" x2="44" y2="18" stroke-width="2.8"/><rect x="7" y="13" width="4" height="10" rx="1" fill="currentColor"/><rect x="37" y="13" width="4" height="10" rx="1" fill="currentColor"/></svg>`,
+        incline_db: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-sky-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="36" x2="26" y2="16" stroke-width="3"/><line x1="26" y1="36" x2="40" y2="36" stroke-width="3"/><line x1="14" y1="36" x2="14" y2="42"/><line x1="36" y1="36" x2="36" y2="42"/><path d="M8 14h10M10 11v6M16 11v6" stroke="#34d399" stroke-width="2.4"/></svg>`,
+        barbell_rack: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-amber-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v34M36 8v34M8 42h32M12 12h24"/><line x1="4" y1="22" x2="44" y2="22" stroke="#34d399" stroke-width="2.8"/><rect x="6" y="17" width="4" height="10" rx="1" fill="#34d399"/><rect x="38" y="17" width="4" height="10" rx="1" fill="#34d399"/></svg>`,
+        lat_pulldown: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8h20v34H14"/><circle cx="24" cy="12" r="2.5"/><line x1="24" y1="14.5" x2="24" y2="22"/><path d="M12 22l12-2 12 2" stroke="#38bdf8" stroke-width="2.6"/><rect x="28" y="26" width="6" height="12" rx="1"/><line x1="18" y1="34" x2="28" y2="34" stroke-width="2.8"/></svg>`,
+        cable_dual_high: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-sky-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="8" width="7" height="34" rx="1"/><rect x="35" y="8" width="7" height="34" rx="1"/><line x1="13" y1="12" x2="35" y2="12"/><path d="M13 12l8 14M35 12l-8 14" stroke="#34d399" stroke-dasharray="2 2"/><circle cx="21" cy="27" r="2" fill="#34d399"/><circle cx="27" cy="27" r="2" fill="#34d399"/></svg>`,
+        cable_single_low: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-sky-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="8" width="10" height="34" rx="1"/><circle cx="20" cy="36" r="2.5" fill="#f59e0b"/><path d="M22 36l16-12" stroke="#34d399" stroke-width="2.4"/><circle cx="39" cy="23" r="2.5"/></svg>`,
+        cable_rope_high: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="10" height="34" rx="1"/><circle cx="18" cy="12" r="2.5" fill="#f59e0b"/><line x1="20" y1="12" x2="30" y2="20" stroke="#38bdf8"/><path d="M30 20l-4 8M30 20l6 8" stroke="#34d399" stroke-width="2.6"/><circle cx="26" cy="29" r="2" fill="currentColor"/><circle cx="36" cy="29" r="2" fill="currentColor"/></svg>`,
+        cable_mid_bench: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-sky-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="8" width="6" height="34" rx="1"/><rect x="36" y="8" width="6" height="34" rx="1"/><line x1="22" y1="36" x2="26" y2="16" stroke="#34d399" stroke-width="3"/><line x1="20" y1="36" x2="30" y2="36" stroke="#34d399" stroke-width="3"/><circle cx="12" cy="24" r="2" fill="#f59e0b"/><circle cx="36" cy="24" r="2" fill="#f59e0b"/></svg>`,
+        dumbbells: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="18" x2="36" y2="18"/><rect x="8" y="13" width="4" height="10" rx="1" fill="currentColor"/><rect x="36" y="13" width="4" height="10" rx="1" fill="currentColor"/><line x1="12" y1="32" x2="36" y2="32"/><rect x="8" y="27" width="4" height="10" rx="1" fill="currentColor"/><rect x="36" y="27" width="4" height="10" rx="1" fill="currentColor"/></svg>`,
+        flat_db_bench: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="32" x2="40" y2="32" stroke-width="3.2"/><line x1="14" y1="32" x2="14" y2="40"/><line x1="34" y1="32" x2="34" y2="40"/><line x1="16" y1="16" x2="32" y2="16" stroke="#38bdf8" stroke-width="2.4"/><rect x="13" y="12" width="3" height="8" rx="1" fill="#38bdf8"/><rect x="32" y="12" width="3" height="8" rx="1" fill="#38bdf8"/></svg>`,
+        leg_ext_machine: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-amber-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14l4 14h12" stroke-width="3"/><line x1="16" y1="28" x2="16" y2="40"/><circle cx="30" cy="28" r="3" fill="#34d399"/><line x1="30" y1="28" x2="36" y2="38" stroke="#34d399" stroke-width="2.6"/><circle cx="37" cy="38" r="2.5" fill="currentColor"/></svg>`,
+        leg_curl_machine: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-amber-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 28h18l12 4" stroke-width="3"/><line x1="12" y1="28" x2="12" y2="40"/><line x1="32" y1="30" x2="32" y2="40"/><path d="M36 30l-6-12" stroke="#34d399" stroke-width="2.6"/><circle cx="29" cy="17" r="2.5" fill="#34d399"/></svg>`,
+        seated_row: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-sky-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="10" width="8" height="30" rx="1"/><line x1="16" y1="36" x2="40" y2="36" stroke-width="2.8"/><line x1="16" y1="24" x2="32" y2="24" stroke="#34d399" stroke-width="2.2"/><path d="M32 20l4 4-4 4" stroke="#34d399" stroke-width="2.4"/></svg>`,
+        seated_row_wide: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-sky-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="10" width="8" height="30" rx="1"/><line x1="16" y1="22" x2="32" y2="22" stroke="#34d399"/><line x1="32" y1="14" x2="32" y2="30" stroke="#f59e0b" stroke-width="3"/></svg>`,
+        pullup_bar: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 40V10h28v30"/><line x1="6" y1="14" x2="42" y2="14" stroke="#34d399" stroke-width="3"/><circle cx="24" cy="22" r="3"/><path d="M18 14l3 10h6l3-10"/></svg>`,
+        barbell_floor: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-amber-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="28" x2="44" y2="28" stroke-width="2.8"/><rect x="8" y="16" width="5" height="24" rx="1.5" fill="currentColor"/><rect x="35" y="16" width="5" height="24" rx="1.5" fill="currentColor"/><line x1="4" y1="40" x2="44" y2="40" stroke="#64748b"/></svg>`,
+        hip_thrust: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="24" width="12" height="14" rx="2"/><path d="M18 26h14l6 12" stroke="#38bdf8" stroke-width="2.8"/><circle cx="25" cy="24" r="4" fill="#f59e0b"/></svg>`,
+        calf_plate_db: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="34" width="28" height="6" rx="1" fill="#334155"/><path d="M18 14h12M20 11v6M28 11v6" stroke="#34d399" stroke-width="2.4"/><path d="M24 34V22m-4 4l4-4 4 4" stroke="#f59e0b"/></svg>`,
+        mini_band: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="24" cy="24" rx="14" ry="8" stroke="#34d399" stroke-width="3"/><path d="M6 24h4M38 24h4" stroke="#f59e0b"/></svg>`,
+        floor_mat: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-sky-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="28" width="36" height="6" rx="2" fill="#1e293b"/><path d="M14 26l14-6 8 6" stroke="#34d399" stroke-width="2.6"/><circle cx="12" cy="24" r="2.5" fill="#34d399"/></svg>`,
+        cardio_bike: `<svg viewBox="0 0 48 48" class="w-9 h-9 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="34" r="6"/><circle cx="34" cy="34" r="6"/><path d="M14 34l8-14h10l-6 14M20 14h6"/></svg>`
+      };
+      return svgs[equipType] || svgs.dumbbells;
+    }
+
+    function getStepVisualDiagramHtml(ex, meta) {
+      return `
+        <div class="bg-slate-950 border border-emerald-500/30 rounded-xl p-3 space-y-2.5">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Visual Setup &amp; Execution</span>
+              <span class="text-xs font-bold text-white">${meta.equipLabel}</span>
+            </div>
+            <button type="button" data-hide-img="${ex.id}" class="hide-img-btn px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-[11px] font-extrabold transition">
+              ✕ Hide Image
+            </button>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <!-- Step 1 Visual Panel -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 flex items-start gap-2.5">
+              <div class="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 flex flex-col items-center justify-center shrink-0 p-1">
+                ${getEquipmentSvg(meta.equipType)}
+              </div>
+              <div>
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">STEP 1: SETUP &amp; MACHINE</span>
+                <p class="text-[11px] text-slate-200 mt-1 leading-snug">${meta.step1Cue}</p>
+              </div>
+            </div>
+            <!-- Step 2 Visual Panel -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 flex items-start gap-2.5">
+              <div class="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 flex flex-col items-center justify-center shrink-0">
+                <svg viewBox="0 0 40 40" class="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 28c4-12 16-12 20 0"/><path d="M26 14l4-4 4 4"/><line x1="30" y1="10" x2="30" y2="22" stroke="#f59e0b"/>
+                </svg>
+              </div>
+              <div>
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">STEP 2: EXECUTION CUES</span>
+                <p class="text-[11px] text-slate-200 mt-1 leading-snug">${meta.step2Cue}</p>
+              </div>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-relaxed pt-0.5">
+            <strong class="text-slate-200">Form Note:</strong> ${ex.notes}
+          </p>
+        </div>
+      `;
+    }
+
+    // Round converted weights to practical gym increments (nearest 2.5 or 1)
+    function convertAndRoundWeight(val, fromUnit) {
+      const num = parseFloat(val);
+      if (!num || isNaN(num) || num <= 0) return null;
+      if (fromUnit === 'lbs') {
+        const rawKg = num / 2.20462;
+        const roundedKg = Math.round(rawKg / 2.5) * 2.5 || Math.round(rawKg);
+        return {
+          targetUnit: 'kg',
+          rounded: roundedKg,
+          exact: +rawKg.toFixed(1),
+          label: `≈ ${roundedKg} kg`
+        };
+      } else {
+        const rawLbs = num * 2.20462;
+        const roundedLbs = Math.round(rawLbs / 2.5) * 2.5 || Math.round(rawLbs);
+        return {
+          targetUnit: 'lbs',
+          rounded: roundedLbs,
+          exact: +rawLbs.toFixed(1),
+          label: `≈ ${roundedLbs} lbs`
+        };
+      }
+    }
+
+    function getExerciseUnit(exId) {
+      if (state.exerciseUnitPrefs && state.exerciseUnitPrefs[exId]) {
+        return state.exerciseUnitPrefs[exId];
+      }
+      return state.weightUnit || 'lbs';
+    }
+
+    function getLogEntry(week, dayIdx, exId, setIdx) {
+      const weekKey = `w${week}_${dayIdx}_${exId}_${setIdx}`;
+      if (state.workoutLogs[weekKey]) {
+        return state.workoutLogs[weekKey];
+      }
+      // Backward compatibility for Week 1 logs saved under legacy key
+      if (week === 1) {
+        const legacyKey = `${dayIdx}_${exId}_${setIdx}`;
+        if (state.workoutLogs[legacyKey]) {
+          return state.workoutLogs[legacyKey];
+        }
+      }
+      return null;
+    }
+
+    function getPreviousWeekSuggestion(currentWeek, dayIdx, exId, setIdx) {
+      for (let w = currentWeek - 1; w >= 1; w--) {
+        const prev = getLogEntry(w, dayIdx, exId, setIdx);
+        if (prev && (prev.weight !== '' || prev.reps !== '')) {
+          return {
+            week: w,
+            weight: prev.weight,
+            reps: prev.reps,
+            unit: prev.unit || getExerciseUnit(exId)
+          };
+        }
+      }
+      return null;
+    }
+
+    // =========================================================================
     // 6. RENDER WORKOUT VIEW
     // =========================================================================
+    function getDayCompletionStatus(week, dIdx) {
+      const dayObj = DAYS_SCHEDULE[dIdx];
+      if (!dayObj) return { status: 'none', doneSets: 0, totalSets: 0 };
+      const exList = [...dayObj.exercises];
+      if (state.crunchDays.includes(dIdx)) {
+        exList.push(CABLE_CRUNCH_EXERCISE);
+      }
+      let totalSets = 0;
+      let doneSets = 0;
+      exList.forEach(ex => {
+        totalSets += ex.sets;
+        for (let s = 1; s <= ex.sets; s++) {
+          const entry = getLogEntry(week, dIdx, ex.id, s);
+          if (entry && entry.done) doneSets++;
+        }
+      });
+      if (totalSets > 0 && doneSets === totalSets) {
+        return { status: 'complete', doneSets, totalSets };
+      }
+      if (doneSets > 0) {
+        return { status: 'partial', doneSets, totalSets };
+      }
+      return { status: 'none', doneSets: 0, totalSets };
+    }
+
     function renderDaySelector() {
       const grid = document.getElementById('day-selector-grid');
       const badge = document.getElementById('crunch-weekly-badge');
       if (!grid) return;
 
+      const week = state.currentWeek || 1;
       if (badge) {
-        badge.textContent = `${state.crunchDays.length}/4 Cable Crunch Days`;
+        badge.innerHTML = `<span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> Done</span> <span class="inline-flex items-center gap-1 ml-1.5"><span class="w-2 h-2 rounded-full bg-orange-400 inline-block"></span> Partial</span>`;
       }
 
       grid.innerHTML = DAYS_SCHEDULE.map((d, idx) => {
         const isSelected = idx === state.selectedDayIndex;
-        const hasCrunch = state.crunchDays.includes(idx);
-        const hasUSMC = d.usmcDay !== null;
+        const prog = getDayCompletionStatus(week, idx);
+        let statusDotHtml = `<span class="w-2 h-2 rounded-full ${isSelected ? 'bg-slate-900/40' : 'bg-slate-800'}" title="Not started"></span>`;
+        if (prog.status === 'complete') {
+          statusDotHtml = `<span class="inline-flex items-center gap-0.5" title="Workout Complete (${prog.doneSets}/${prog.totalSets} sets)"><span class="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ${isSelected ? 'ring-slate-950' : 'ring-red-500/40'}"></span><span class="text-[9px] font-extrabold ${isSelected ? 'text-red-950' : 'text-red-400'}">✓</span></span>`;
+        } else if (prog.status === 'partial') {
+          statusDotHtml = `<span class="w-2.5 h-2.5 rounded-full bg-orange-400 ring-2 ${isSelected ? 'ring-slate-950' : 'ring-orange-400/30'}" title="Partially Complete (${prog.doneSets}/${prog.totalSets} sets)"></span>`;
+        }
+
         return `
           <button type="button" data-day-idx="${idx}" class="day-tab-btn flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition ${
             isSelected
               ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold shadow-md shadow-emerald-500/20'
-              : 'bg-slate-950/80 text-slate-300 border-slate-800 hover:border-slate-700 font-semibold'
+              : (prog.status === 'complete'
+                  ? 'bg-red-950/30 text-white border-red-500/50 font-bold'
+                  : (prog.status === 'partial'
+                      ? 'bg-orange-950/25 text-white border-orange-400/50 font-bold'
+                      : 'bg-slate-950/80 text-slate-300 border-slate-800 hover:border-slate-700 font-semibold'))
           }">
             <span class="text-[11px] uppercase">${d.dayShort}</span>
-            <div class="flex items-center gap-1 mt-1">
-              <span class="w-1.5 h-1.5 rounded-full ${hasCrunch ? (isSelected ? 'bg-slate-950' : 'bg-emerald-400') : 'bg-transparent'}" title="Cable Abdominal Crunch"></span>
-              <span class="w-1.5 h-1.5 rounded-full ${hasUSMC ? (isSelected ? 'bg-slate-800' : 'bg-sky-400') : 'bg-transparent'}" title="USMC Pull-Up Day"></span>
+            <div class="flex items-center justify-center mt-1.5 h-3">
+              ${statusDotHtml}
             </div>
           </button>
         `;
@@ -1543,10 +2011,19 @@
     }
 
     function renderWorkoutView() {
+      if (!state.currentWeek) state.currentWeek = 1;
+      if (!state.completedWeeks) state.completedWeeks = {};
+      if (!state.exerciseUnitPrefs) state.exerciseUnitPrefs = {};
+      if (!state.openImagePanels) state.openImagePanels = {};
+
       renderDaySelector();
+      const week = state.currentWeek;
       const dayIdx = state.selectedDayIndex;
       const dayObj = DAYS_SCHEDULE[dayIdx];
       renderWarmupCard(dayObj);
+
+      const weekSel = document.getElementById('week-select');
+      if (weekSel) weekSel.value = String(week);
 
       const hasCrunchToday = state.crunchDays.includes(dayIdx);
       const exercisesToday = [...dayObj.exercises];
@@ -1554,17 +2031,57 @@
         exercisesToday.push(CABLE_CRUNCH_EXERCISE);
       }
 
+      // Count sets completed today in current week
+      let todayTotalSets = 0;
+      let todayDoneSets = 0;
+      exercisesToday.forEach(ex => {
+        todayTotalSets += ex.sets;
+        for (let s = 1; s <= ex.sets; s++) {
+          const entry = getLogEntry(week, dayIdx, ex.id, s);
+          if (entry && entry.done) todayDoneSets++;
+        }
+      });
+
+      const weekBadge = document.getElementById('week-status-badge');
+      if (weekBadge) {
+        if (state.completedWeeks[week]) {
+          weekBadge.textContent = `✓ Week ${week} Completed`;
+          weekBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        } else {
+          weekBadge.textContent = `Week ${week} • ${todayDoneSets}/${todayTotalSets} Sets Today`;
+          weekBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300';
+        }
+      }
+
+      // Populate Quick Exercise & Machine Jump Dropdown
+      const jumpSelect = document.getElementById('exercise-jump-select');
+      if (jumpSelect) {
+        jumpSelect.innerHTML = `<option value="">Select exercise to jump to or see machine (${exercisesToday.length} today)...</option>` +
+          exercisesToday.map((ex, idx) => {
+            const meta = EXERCISE_META[ex.id] || { equipLabel: 'Gym Equipment' };
+            return `<option value="ex-card-${ex.id}">#${idx + 1} ${ex.name} — [${meta.equipLabel}]</option>`;
+          }).join('');
+      }
+
+      const isDayAllDone = todayTotalSets > 0 && todayDoneSets === todayTotalSets;
+      const isDayPartial = todayDoneSets > 0 && todayDoneSets < todayTotalSets;
+
       // Render Day Summary Banner
       const banner = document.getElementById('day-banner');
       if (banner) {
         banner.innerHTML = `
           <div class="flex items-start justify-between gap-2">
             <div>
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">${dayObj.dayFull} • ${dayObj.time}</span>
-                ${hasCrunchToday ? '<span class="text-[10px] font-bold bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full">+ Cable Crunch Day</span>' : ''}
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">Week ${week} • ${dayObj.dayFull} • ${dayObj.time}</span>
+                ${isDayAllDone ? '<span class="inline-flex items-center gap-1 text-[10px] font-extrabold bg-red-500 text-white px-2.5 py-0.5 rounded-full shadow-sm shadow-red-500/40">✓ DAY COMPLETE</span>' : ''}
+                ${isDayPartial ? `<span class="inline-flex items-center gap-1 text-[10px] font-extrabold bg-orange-400 text-slate-950 px-2 py-0.5 rounded-full">● ${todayDoneSets}/${todayTotalSets} Sets</span>` : ''}
+                ${hasCrunchToday ? '<span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">+ Cable Crunch</span>' : ''}
               </div>
-              <h2 class="text-lg font-extrabold text-white mt-0.5">${dayObj.title}</h2>
+              <h2 class="text-lg font-extrabold text-white mt-0.5 flex items-center gap-2">
+                <span>${dayObj.title}</span>
+                ${isDayAllDone ? '<span class="text-red-500 text-xl leading-none" title="All exercises logged for today">✔</span>' : ''}
+              </h2>
             </div>
             <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-[11px] font-semibold px-2.5 py-1.5 rounded-xl border transition ${
               hasCrunchToday
@@ -1611,70 +2128,165 @@
       if (!listEl) return;
 
       listEl.innerHTML = exercisesToday.map((ex, exOrder) => {
+        const meta = EXERCISE_META[ex.id] || {
+          equipType: 'dumbbells',
+          equipLabel: 'Gym Equipment',
+          defaultWeightLbs: 45,
+          step1Cue: 'Set up equipment and brace core.',
+          step2Cue: ex.notes
+        };
+        if (!state.convertedExercises) state.convertedExercises = {};
+        const exUnit = getExerciseUnit(ex.id);
+        const unitLocked = !!(state.exerciseUnitPrefs && state.exerciseUnitPrefs[ex.id]);
+        const showConversionHelper = !!state.convertedExercises[ex.id];
+        const isImgOpen = !!state.openImagePanels[ex.id];
+
+        let exDoneSets = 0;
         let setsHtml = '';
         for (let s = 1; s <= ex.sets; s++) {
-          const logKey = `${dayIdx}_${ex.id}_${s}`;
-          const entry = state.workoutLogs[logKey] || { weight: '', reps: '', done: false };
+          const logKey = `w${week}_${dayIdx}_${ex.id}_${s}`;
+          const existing = getLogEntry(week, dayIdx, ex.id, s);
+          const prevSuggestion = getPreviousWeekSuggestion(week, dayIdx, ex.id, s);
+
+          // Determine displayed weight (if empty in Week N>1, pre-fill/suggest from previous week!)
+          let displayWeight = existing && existing.weight !== undefined && existing.weight !== '' ? existing.weight : '';
+          let displayReps = existing && existing.reps !== undefined && existing.reps !== '' ? existing.reps : '';
+          let isSuggestedFromPrev = false;
+
+          if (displayWeight === '' && prevSuggestion && prevSuggestion.weight !== '') {
+            if (prevSuggestion.unit && prevSuggestion.unit !== exUnit) {
+              const conv = convertAndRoundWeight(prevSuggestion.weight, prevSuggestion.unit);
+              displayWeight = conv ? String(conv.rounded) : prevSuggestion.weight;
+            } else {
+              displayWeight = prevSuggestion.weight;
+            }
+            isSuggestedFromPrev = true;
+          }
+          if (displayReps === '' && prevSuggestion && prevSuggestion.reps !== '') {
+            displayReps = prevSuggestion.reps;
+          }
+
+          const defaultPlaceholder = exUnit === 'kg'
+            ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0)
+            : meta.defaultWeightLbs;
+
+          const sourceUnit = exUnit === 'kg' ? 'lbs' : 'kg';
+          const weightToShowConv = existing && existing.prevRawWeight ? existing.prevRawWeight : (displayWeight !== '' ? displayWeight : defaultPlaceholder);
+          const convObj = showConversionHelper
+            ? (existing && existing.exactConverted
+                ? { rounded: displayWeight, exact: existing.exactConverted, targetUnit: exUnit }
+                : convertAndRoundWeight(weightToShowConv, sourceUnit))
+            : null;
+          const isDone = !!(existing && existing.done);
+          if (isDone) exDoneSets++;
+
           setsHtml += `
-            <div class="grid grid-cols-12 items-center gap-2 py-1.5 px-2 rounded-xl ${entry.done ? 'bg-emerald-950/40 border border-emerald-500/30' : 'bg-slate-950/60 border border-slate-800/80'}">
-              <div class="col-span-2 text-xs font-bold text-slate-400">Set ${s}</div>
-              <div class="col-span-4">
-                <div class="relative">
-                  <input type="number" step="0.5" inputmode="decimal" placeholder="0" value="${entry.weight}" data-log-key="${logKey}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-emerald-500" />
-                  <span class="absolute right-2 top-1.5 text-[10px] text-slate-500 font-semibold">${state.weightUnit}</span>
+            <div class="py-2 px-2.5 rounded-xl space-y-1.5 ${isDone ? 'bg-emerald-950/40 border border-emerald-500/30' : 'bg-slate-950/60 border border-slate-800/80'}">
+              <div class="grid grid-cols-12 items-center gap-2">
+                <div class="col-span-2">
+                  <span class="text-xs font-bold ${isDone ? 'text-emerald-400' : 'text-slate-300'}">Set ${s}</span>
+                  ${isSuggestedFromPrev ? `<span class="block text-[9px] font-bold text-amber-400">Wk ${prevSuggestion.week}</span>` : ''}
+                </div>
+                <div class="col-span-4">
+                  <div class="relative">
+                    <input type="number" step="0.5" inputmode="decimal" placeholder="${defaultPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full bg-slate-900 border ${isSuggestedFromPrev && !isDone ? 'border-amber-500/50' : 'border-slate-700'} rounded-lg pl-2.5 pr-9 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-emerald-500" />
+                    <span class="absolute right-2 top-1.5 text-[10px] text-emerald-400 font-extrabold uppercase">${exUnit}</span>
+                  </div>
+                </div>
+                <div class="col-span-3">
+                  <input type="number" inputmode="numeric" placeholder="${ex.reps}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-emerald-500 text-center" />
+                </div>
+                <div class="col-span-3 flex items-center justify-end">
+                  <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${ex.restSec}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn w-full py-1.5 px-2 rounded-lg text-xs font-extrabold transition ${
+                    isDone
+                      ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/30'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                  }">
+                    ${isDone ? '✓ Done' : 'Log & Rest'}
+                  </button>
                 </div>
               </div>
-              <div class="col-span-3">
-                <div class="relative">
-                  <input type="number" inputmode="numeric" placeholder="${ex.reps}" value="${entry.reps}" data-log-key="${logKey}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-emerald-500 text-center" />
-                </div>
-              </div>
-              <div class="col-span-3 flex items-center justify-end gap-1">
-                <button type="button" data-log-key="${logKey}" data-rest-sec="${ex.restSec}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn w-full py-1.5 px-2 rounded-lg text-xs font-bold transition ${
-                  entry.done
-                    ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/30'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-                }">
-                  ${entry.done ? '✓ Done' : 'Log & Rest'}
-                </button>
-              </div>
+
+              ${(showConversionHelper && convObj) || prevSuggestion ? `
+              <div class="flex flex-wrap items-center justify-between gap-1 pt-0.5 text-[10px]">
+                ${showConversionHelper && convObj ? `
+                <div class="flex items-center gap-1.5">
+                  <span data-conv-badge="${logKey}" class="font-semibold text-sky-300 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-md">
+                    ⇄ Rounded: <strong>${convObj.rounded} ${exUnit}</strong> (exact ${convObj.exact} ${exUnit})
+                  </span>
+                  <button type="button" data-convert-set="${logKey}" data-ex-id="${ex.id}" data-rounded-val="${convObj.rounded}" data-target-unit="${exUnit}" class="convert-set-btn text-[10px] font-bold text-slate-300 hover:text-white bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">Use ${convObj.rounded} ${exUnit}</button>
+                </div>` : '<div></div>'}
+                ${prevSuggestion ? `<span class="text-amber-300/90 font-medium">💡 Wk ${prevSuggestion.week}: ${prevSuggestion.weight || defaultPlaceholder} ${prevSuggestion.unit || exUnit} × ${prevSuggestion.reps || ex.reps}</span>` : ''}
+              </div>` : ''}
             </div>
           `;
         }
 
+        const isExComplete = exDoneSets === ex.sets;
+
         return `
-          <article class="bg-slate-900 border ${ex.id === 'cable_ab_crunch' ? 'border-emerald-500/50 ring-1 ring-emerald-500/20' : 'border-slate-800'} rounded-2xl p-4 space-y-3">
-            <div class="flex items-start justify-between gap-2">
-              <div>
-                <div class="flex flex-wrap items-center gap-1.5">
-                  <span class="text-[11px] font-mono font-bold text-slate-400">#${exOrder + 1}</span>
-                  ${ex.badge ? `<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">${ex.badge}</span>` : ''}
-                  <span class="text-[11px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">${ex.sets} Sets × ${ex.reps}</span>
+          <article id="ex-card-${ex.id}" class="bg-slate-900 border ${isExComplete ? 'border-red-500/50' : (ex.id === 'cable_ab_crunch' ? 'border-emerald-500/50 ring-1 ring-emerald-500/20' : 'border-slate-800')} rounded-2xl p-4 space-y-3 scroll-mt-20">
+            <!-- Exercise Header with Machine Drawing & Equipment Tag -->
+            <div class="flex items-start justify-between gap-2.5">
+              <div class="flex items-start gap-2.5">
+                <div class="w-11 h-11 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0 shadow-inner" title="${meta.equipLabel}">
+                  ${getEquipmentSvg(meta.equipType)}
                 </div>
-                <h3 class="text-sm font-extrabold text-white mt-1">${ex.name}</h3>
+                <div>
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-[11px] font-mono font-bold text-slate-400">#${exOrder + 1}</span>
+                    ${isExComplete ? `<span class="text-[10px] font-extrabold bg-red-500 text-white px-2 py-0.5 rounded-full">✓ Done</span>` : ''}
+                    ${ex.badge ? `<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">${ex.badge}</span>` : ''}
+                    <span class="text-[11px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">${ex.sets} Sets × ${ex.reps}</span>
+                  </div>
+                  <h3 class="text-sm font-extrabold text-white mt-0.5 leading-snug">${ex.name}</h3>
+                  <div class="inline-flex items-center gap-1 mt-1 text-[11px] font-semibold text-sky-300 bg-sky-500/10 border border-sky-500/25 px-2 py-0.5 rounded-lg">
+                    <span>🛠️</span>
+                    <span class="text-white font-bold">${meta.equipLabel}</span>
+                  </div>
+                </div>
               </div>
 
-              <div class="flex items-center gap-1.5 shrink-0">
-                <button type="button" data-rest-sec="${ex.restSec}" data-ex-name="${ex.name}" class="quick-rest-btn bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 text-xs font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition" title="Start rest timer for this exercise">
-                  ⏱️ ${ex.restLabel}
-                </button>
-                <a href="${ex.videoUrl}" target="_blank" rel="noopener noreferrer" class="bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition" title="Watch tutorial video">
-                  ▶ Video
-                </a>
+              <!-- Per-Exercise Default Unit Selector (Remembers First Execution!) -->
+              <div class="flex flex-col items-end gap-1.5 shrink-0">
+                <div class="inline-flex rounded-xl bg-slate-950 border border-slate-800 p-0.5" title="Machine unit (automatically saved as default for this exercise)">
+                  <button type="button" data-ex-unit-btn="${ex.id}" data-unit-val="lbs" class="ex-unit-toggle px-2 py-1 rounded-lg text-[10px] font-extrabold transition ${
+                    exUnit === 'lbs' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                  }">LBS</button>
+                  <button type="button" data-ex-unit-btn="${ex.id}" data-unit-val="kg" class="ex-unit-toggle px-2 py-1 rounded-lg text-[10px] font-extrabold transition ${
+                    exUnit === 'kg' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                  }">KG</button>
+                </div>
+                <span class="text-[9px] text-slate-400">${unitLocked ? `★ Default: ${exUnit.toUpperCase()}` : 'Tap machine unit'}</span>
               </div>
             </div>
 
-            <p class="text-xs text-slate-300 leading-relaxed bg-slate-950/50 border border-slate-800/60 rounded-xl p-2.5">
-              ${ex.notes}
-            </p>
+            <!-- Action Bar: Dropdown Visual Setup Image Toggle, Rest Timer & Video Link -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <button type="button" data-toggle-img="${ex.id}" class="toggle-img-btn flex-1 bg-slate-950 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-between transition">
+                <span>📸 ${isImgOpen ? 'Hide Setup & Form Image' : 'Show Setup & Form Image'}</span>
+                <span class="text-[10px] text-emerald-400 font-extrabold">${isImgOpen ? '▲ Hide' : '▼ View'}</span>
+              </button>
+              <button type="button" data-rest-sec="${ex.restSec}" data-ex-name="${ex.name}" class="quick-rest-btn bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 text-xs font-bold px-2.5 py-2 rounded-xl flex items-center gap-1 transition">
+                ⏱️ ${ex.restLabel}
+              </button>
+              <a href="${ex.videoUrl}" target="_blank" rel="noopener noreferrer" class="bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-bold px-2.5 py-2 rounded-xl flex items-center gap-1 transition">
+                ▶ Video
+              </a>
+            </div>
 
-            <!-- Set Table Header -->
+            <!-- Collapsible Visual Diagram Dropdown Panel (With Hide Button!) -->
+            <div id="img-panel-${ex.id}" class="${isImgOpen ? 'block' : 'hidden'}">
+              ${getStepVisualDiagramHtml(ex, meta)}
+            </div>
+
+            <!-- Set Table Header & Set Rows -->
             <div class="space-y-1.5">
               <div class="grid grid-cols-12 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 <div class="col-span-2">Set</div>
-                <div class="col-span-4">Weight (${state.weightUnit})</div>
+                <div class="col-span-4">Weight (${exUnit.toUpperCase()})</div>
                 <div class="col-span-3 text-center">Reps</div>
-                <div class="col-span-3 text-right">Action</div>
+                <div class="col-span-3 text-right">Log &amp; Rest</div>
               </div>
               ${setsHtml}
             </div>
@@ -1682,33 +2294,183 @@
         `;
       }).join('');
 
-      // Attach listeners for inputs & buttons
+      // Attach listeners for inputs & live lbs <-> kg conversion
       listEl.querySelectorAll('.workout-input').forEach(inp => {
         inp.addEventListener('input', () => {
           const key = inp.getAttribute('data-log-key');
+          const exId = inp.getAttribute('data-ex-id');
+          const setIdx = parseInt(inp.getAttribute('data-set-idx'), 10);
           const field = inp.getAttribute('data-field');
+          const exUnit = getExerciseUnit(exId);
+
+          // Lock in default unit for this exercise on first execution
+          if (!state.exerciseUnitPrefs[exId]) {
+            state.exerciseUnitPrefs[exId] = exUnit;
+          }
+
           if (!state.workoutLogs[key]) {
-            state.workoutLogs[key] = { weight: '', reps: '', done: false };
+            state.workoutLogs[key] = { weight: '', reps: '', done: false, unit: exUnit };
           }
           state.workoutLogs[key][field] = inp.value;
+          state.workoutLogs[key].unit = exUnit;
+
+          // Also keep Week 1 legacy key in sync if on Week 1
+          if (week === 1) {
+            const legacyKey = `${dayIdx}_${exId}_${setIdx}`;
+            state.workoutLogs[legacyKey] = Object.assign({}, state.workoutLogs[key]);
+          }
+
+          // Live update rounded conversion badge for this row
+          if (field === 'weight') {
+            const badgeEl = listEl.querySelector(`[data-conv-badge="${key}"]`);
+            const convObj = convertAndRoundWeight(inp.value, exUnit);
+            if (badgeEl) {
+              badgeEl.innerHTML = convObj
+                ? `⇄ Rounded: <strong>${convObj.rounded} ${convObj.targetUnit}</strong> (exact ${convObj.exact} ${convObj.targetUnit})`
+                : 'Enter weight for lbs ⇄ kg conversion';
+            }
+          }
+
           saveState();
         });
       });
 
+      // Per-Exercise Unit Toggle (LBS / KG) — Only shows rounded suggestion when unit is switched!
+      listEl.querySelectorAll('.ex-unit-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-ex-unit-btn');
+          const newUnit = btn.getAttribute('data-unit-val');
+          const oldUnit = getExerciseUnit(exId);
+          if (oldUnit === newUnit) return;
+
+          if (!state.convertedExercises) state.convertedExercises = {};
+          state.convertedExercises[exId] = true;
+          state.exerciseUnitPrefs[exId] = newUnit;
+
+          const exObj = exercisesToday.find(e => e.id === exId);
+          const meta = EXERCISE_META[exId] || { defaultWeightLbs: 45 };
+          if (exObj) {
+            for (let s = 1; s <= exObj.sets; s++) {
+              const k = `w${week}_${dayIdx}_${exId}_${s}`;
+              const entry = getLogEntry(week, dayIdx, exId, s) || { weight: '', reps: '', done: false };
+              const rawVal = entry.weight !== '' ? entry.weight : (oldUnit === 'lbs' ? meta.defaultWeightLbs : Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5);
+              const conv = convertAndRoundWeight(rawVal, oldUnit);
+              if (conv) {
+                state.workoutLogs[k] = Object.assign({}, entry, {
+                  weight: String(conv.rounded),
+                  prevRawWeight: rawVal,
+                  exactConverted: conv.exact,
+                  unit: newUnit
+                });
+                if (week === 1) {
+                  state.workoutLogs[`${dayIdx}_${exId}_${s}`] = Object.assign({}, state.workoutLogs[k]);
+                }
+              }
+            }
+          }
+
+          saveState();
+          renderWorkoutView();
+          showToast(`Converted ${oldUnit.toUpperCase()} → ${newUnit.toUpperCase()} (rounded)`);
+        });
+      });
+
+      // 1-Tap Use Converted Weight Button on Set Row
+      listEl.querySelectorAll('.convert-set-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-ex-id');
+          const targetUnit = btn.getAttribute('data-target-unit');
+          const roundedVal = btn.getAttribute('data-rounded-val');
+          const key = btn.getAttribute('data-convert-set');
+          state.exerciseUnitPrefs[exId] = targetUnit;
+          if (!state.workoutLogs[key]) {
+            state.workoutLogs[key] = { weight: roundedVal, reps: '', done: false, unit: targetUnit };
+          } else {
+            state.workoutLogs[key].weight = roundedVal;
+            state.workoutLogs[key].unit = targetUnit;
+          }
+          saveState();
+          renderWorkoutView();
+          showToast(`Switched to ${roundedVal} ${targetUnit.toUpperCase()} (rounded)`);
+        });
+      });
+
+      // Show / Hide Setup & Form Image Dropdown Panel
+      listEl.querySelectorAll('.toggle-img-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-toggle-img');
+          state.openImagePanels[exId] = !state.openImagePanels[exId];
+          saveState();
+          renderWorkoutView();
+        });
+      });
+      listEl.querySelectorAll('.hide-img-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-hide-img');
+          state.openImagePanels[exId] = false;
+          saveState();
+          renderWorkoutView();
+        });
+      });
+
+      // Log Set & Start Rest Timer (Also saves suggested weight if input wasn't manually edited!)
       listEl.querySelectorAll('.set-done-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const key = btn.getAttribute('data-log-key');
+          const exId = btn.getAttribute('data-ex-id');
+          const setIdx = parseInt(btn.getAttribute('data-set-idx'), 10);
           const restSec = parseInt(btn.getAttribute('data-rest-sec'), 10) || 90;
           const exName = btn.getAttribute('data-ex-name');
-          if (!state.workoutLogs[key]) {
-            state.workoutLogs[key] = { weight: '', reps: '', done: false };
+          const exUnit = getExerciseUnit(exId);
+
+          // Lock in default unit on first execution of this exercise
+          if (!state.exerciseUnitPrefs[exId]) {
+            state.exerciseUnitPrefs[exId] = exUnit;
           }
+
+          const weightInput = listEl.querySelector(`input[data-log-key="${key}"][data-field="weight"]`);
+          const repsInput = listEl.querySelector(`input[data-log-key="${key}"][data-field="reps"]`);
+
+          if (!state.workoutLogs[key]) {
+            state.workoutLogs[key] = { weight: '', reps: '', done: false, unit: exUnit };
+          }
+          if (weightInput && weightInput.value !== '') {
+            state.workoutLogs[key].weight = weightInput.value;
+          } else if (weightInput && weightInput.placeholder) {
+            state.workoutLogs[key].weight = weightInput.placeholder;
+          }
+          if (repsInput && repsInput.value !== '') {
+            state.workoutLogs[key].reps = repsInput.value;
+          }
+          state.workoutLogs[key].unit = exUnit;
           state.workoutLogs[key].done = !state.workoutLogs[key].done;
+
+          // Auto-copy Set 1 weight to Sets 2 & 3 if they are still blank in this week
+          if (setIdx === 1 && state.workoutLogs[key].done && state.workoutLogs[key].weight) {
+            const exObj = exercisesToday.find(e => e.id === exId);
+            if (exObj) {
+              for (let nextS = 2; nextS <= exObj.sets; nextS++) {
+                const nextKey = `w${week}_${dayIdx}_${exId}_${nextS}`;
+                if (!state.workoutLogs[nextKey] || state.workoutLogs[nextKey].weight === '') {
+                  state.workoutLogs[nextKey] = Object.assign(
+                    {},
+                    state.workoutLogs[nextKey] || { reps: state.workoutLogs[key].reps || '', done: false },
+                    { weight: state.workoutLogs[key].weight, unit: exUnit }
+                  );
+                }
+              }
+            }
+          }
+
+          if (week === 1) {
+            state.workoutLogs[`${dayIdx}_${exId}_${setIdx}`] = Object.assign({}, state.workoutLogs[key]);
+          }
+
           saveState();
           renderWorkoutView();
           if (state.workoutLogs[key].done) {
             startTimer(restSec, `Rest: ${exName}`);
-            showToast(`✓ Set logged! ${restSec}s rest timer started.`);
+            showToast(`✓ Logged ${state.workoutLogs[key].weight} ${exUnit}! ${restSec}s rest started.`);
           }
         });
       });
@@ -2143,6 +2905,64 @@
       // Header Timer Controls
       document.getElementById('header-timer-toggle').addEventListener('click', toggleTimer);
       document.getElementById('header-timer-open').addEventListener('click', () => switchTab('timer'));
+
+      // Multi-Week Selector & Finish Week Button
+      const weekSelect = document.getElementById('week-select');
+      if (weekSelect) {
+        weekSelect.value = String(state.currentWeek || 1);
+        weekSelect.addEventListener('change', () => {
+          state.currentWeek = parseInt(weekSelect.value, 10) || 1;
+          saveState();
+          renderWorkoutView();
+          showToast(`Switched to Week ${state.currentWeek} (weights suggested from previous week)`);
+        });
+      }
+
+      const finishWeekBtn = document.getElementById('finish-week-btn');
+      if (finishWeekBtn) {
+        finishWeekBtn.addEventListener('click', () => {
+          const cur = state.currentWeek || 1;
+          if (!state.completedWeeks) state.completedWeeks = {};
+          state.completedWeeks[cur] = true;
+          const nextW = Math.min(12, cur + 1);
+          state.currentWeek = nextW;
+          saveState();
+          renderWorkoutView();
+          showToast(`🎉 Week ${cur} Complete! Opened Week ${nextW} with your previous weights pre-filled.`);
+        });
+      }
+
+      const jumpSelect = document.getElementById('exercise-jump-select');
+      if (jumpSelect) {
+        jumpSelect.addEventListener('change', () => {
+          const targetId = jumpSelect.value;
+          if (!targetId) return;
+          const exId = targetId.replace('ex-card-', '');
+          state.openImagePanels[exId] = true;
+          saveState();
+          renderWorkoutView();
+          const cardEl = document.getElementById(targetId);
+          if (cardEl) {
+            cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      }
+
+      const toggleAllImgsBtn = document.getElementById('toggle-all-images-btn');
+      if (toggleAllImgsBtn) {
+        toggleAllImgsBtn.addEventListener('click', () => {
+          const dayObj = DAYS_SCHEDULE[state.selectedDayIndex];
+          const exList = [...dayObj.exercises];
+          if (state.crunchDays.includes(state.selectedDayIndex)) exList.push(CABLE_CRUNCH_EXERCISE);
+          const anyOpen = exList.some(e => state.openImagePanels[e.id]);
+          exList.forEach(e => {
+            state.openImagePanels[e.id] = !anyOpen;
+          });
+          saveState();
+          renderWorkoutView();
+          showToast(!anyOpen ? '📸 Opened all visual setup diagrams' : '🙈 Hid all setup diagrams');
+        });
+      }
 
       // Weight Unit Select
       const unitSelect = document.getElementById('weight-unit-select');
