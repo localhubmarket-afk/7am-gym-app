@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="dark overflow-x-hidden">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -36,9 +36,18 @@
     };
   </script>
   <style>
-    body {
+    html, body {
       font-family: 'Inter', sans-serif;
       -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+      max-width: 100vw;
+      width: 100%;
+      position: relative;
+    }
+    select {
+      max-width: 100%;
+      min-width: 0;
+      text-overflow: ellipsis;
     }
     .no-scrollbar::-webkit-scrollbar {
       display: none;
@@ -57,7 +66,7 @@
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen pb-28 selection:bg-emerald-500 selection:text-slate-950">
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-28 overflow-x-hidden w-full max-w-full selection:bg-emerald-500 selection:text-slate-950">
 
   <!-- Sticky Top App Header & Live Mini Timer -->
   <header class="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3">
@@ -99,7 +108,7 @@
   </div>
 
   <!-- Main Content Container -->
-  <main class="max-w-xl mx-auto px-4 pt-4 space-y-5">
+  <main class="max-w-xl w-full mx-auto px-4 pt-4 space-y-5 overflow-x-hidden">
 
     <!-- ==================== VIEW 1: WORKOUT & WEIGHT TRACKER ==================== -->
     <section id="view-workout" class="space-y-4">
@@ -182,14 +191,14 @@
       </div>
 
       <!-- Quick Exercise & Machine Jump Dropdown Bar -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2">
-        <div class="flex items-center gap-2 flex-1 min-w-[200px]">
-          <label for="exercise-jump-select" class="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0">🎯 Jump / Machine:</label>
-          <select id="exercise-jump-select" aria-label="Jump to exercise or machine" class="flex-1 bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-xl px-2.5 py-1.5 font-semibold focus:outline-none focus:border-emerald-500">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 overflow-hidden">
+        <div class="flex items-center gap-2 w-full sm:flex-1 min-w-0">
+          <label for="exercise-jump-select" class="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0">🎯 Jump:</label>
+          <select id="exercise-jump-select" aria-label="Jump to exercise or machine" class="flex-1 min-w-0 w-full max-w-full truncate bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-xl px-2.5 py-1.5 font-semibold focus:outline-none focus:border-emerald-500">
             <!-- Populated by JS -->
           </select>
         </div>
-        <button type="button" id="toggle-all-images-btn" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold transition">
+        <button type="button" id="toggle-all-images-btn" class="w-full sm:w-auto px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold transition">
           📸 Show/Hide All Diagrams
         </button>
       </div>
@@ -205,9 +214,9 @@
       <div class="bg-gradient-to-br from-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-4 space-y-3">
         <div class="flex items-start justify-between gap-2">
           <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Mon–Fri Pull-Up Progression</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Days 1–5 Pull-Up Progression</span>
             <h2 class="text-base font-extrabold text-white mt-0.5">USMC Overhand Pull-Up Program</h2>
-            <p class="text-xs text-slate-300 mt-1">Consecutive Monday–Friday schedule with Saturday &amp; Sunday off from pull-ups. Focus on strict, quality execution of every repetition.</p>
+            <p class="text-xs text-slate-300 mt-1">Consecutive Days 1–5 schedule with Days 6 &amp; 7 off from pull-ups. Focus on strict, quality execution of every repetition.</p>
           </div>
           <a href="https://youtu.be/w_yuTRQd6HA" target="_blank" rel="noopener noreferrer" class="shrink-0 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1 transition">
             <span>▶</span> Form Video
@@ -322,9 +331,9 @@
       <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-4 space-y-3">
         <div class="flex items-start justify-between gap-2">
           <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Eat the Exact Same 3 Meals Every Day</span>
-            <h2 class="text-base font-extrabold text-white mt-0.5">Simple 6-Pack &amp; Muscle Plan (1,720 kcal • 130g P)</h2>
-            <p class="text-xs text-slate-300 mt-1">Zero guesswork, low stomach volume, and 100% of your daily Protein, B12, Vitamin D, Calcium, Iron, Vitamin C, Omega-3, and Iodine from just 10 grocery items.</p>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">100% Kitchen Scale Grams (g) • Low-Appetite Plan</span>
+            <h2 class="text-base font-extrabold text-white mt-0.5">Light 6-Pack &amp; Muscle Plan (1,520 kcal • 139g P)</h2>
+            <p class="text-xs text-slate-300 mt-1">Every ingredient measured in exact grams (g) for your scale — Bob’s Red Mill Protein Oats (40g/day), Pea Protein Isolate (75g/day), Extra-Firm Tofu (175g/day), Silk Protein Milk (900g/day), and Nori Seaweed (5g/day).</p>
           </div>
           <button type="button" id="reset-vegan-day-btn" class="shrink-0 text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white">Reset Today</button>
         </div>
@@ -411,8 +420,8 @@
           </div>
           <div class="flex items-center justify-between gap-2">
             <div>
-              <div class="text-xs font-bold text-white" id="oats-boost-title">+ 1.5c Extra Silk Protein Milk on Side</div>
-              <div class="text-[11px] text-slate-400" id="oats-boost-summary">Boosts breakfast to 26g Protein &amp; 440 kcal</div>
+              <div class="text-xs font-bold text-white" id="oats-boost-title">+ 30g Pea Protein Isolate in 360g Silk Protein Milk</div>
+              <div class="text-[11px] text-slate-400" id="oats-boost-summary">Boosts breakfast to 53g Protein &amp; 585 kcal</div>
             </div>
             <button type="button" id="toggle-oats-boost-btn" class="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950">
               ✓ Boost On
@@ -778,8 +787,8 @@
 
     const DAYS_SCHEDULE = [
       {
-        dayShort: 'Mon',
-        dayFull: 'Monday',
+        dayShort: 'Day 1',
+        dayFull: 'Day 1',
         time: '7:00 AM',
         title: 'Upper Body 1 + USMC Pull-Up Day 1',
         warmupType: 'upper',
@@ -859,8 +868,8 @@
         ]
       },
       {
-        dayShort: 'Tue',
-        dayFull: 'Tuesday',
+        dayShort: 'Day 2',
+        dayFull: 'Day 2',
         time: '7:00 AM',
         title: 'Lower Body 1 (Quad-Focused) + USMC Day 2',
         warmupType: 'lower',
@@ -932,8 +941,8 @@
         ]
       },
       {
-        dayShort: 'Wed',
-        dayFull: 'Wednesday',
+        dayShort: 'Day 3',
+        dayFull: 'Day 3',
         time: '7:00 AM',
         title: '7AM Pull-Up Day 3 & Active Core/Mobility',
         warmupType: 'upper',
@@ -976,8 +985,8 @@
         ]
       },
       {
-        dayShort: 'Thu',
-        dayFull: 'Thursday',
+        dayShort: 'Day 4',
+        dayFull: 'Day 4',
         time: '7:00 AM',
         title: 'Push Workout + USMC Pull-Up Day 4',
         warmupType: 'upper',
@@ -1047,8 +1056,8 @@
         ]
       },
       {
-        dayShort: 'Fri',
-        dayFull: 'Friday',
+        dayShort: 'Day 5',
+        dayFull: 'Day 5',
         time: '7:00 AM',
         title: 'Pull Workout + USMC Pull-Up Day 5',
         warmupType: 'upper',
@@ -1118,13 +1127,13 @@
         ]
       },
       {
-        dayShort: 'Sat',
-        dayFull: 'Saturday',
+        dayShort: 'Day 6',
+        dayFull: 'Day 6',
         time: '7:00 AM',
         title: 'Lower Body 2 (Glute-Focused) • Pull-Up Rest',
         warmupType: 'lower',
         usmcDay: null,
-        usmcSummary: 'Saturday Pull-Up Rest Day (USMC ceases pull-ups Sat & Sun for recovery)',
+        usmcSummary: 'Day 6 Pull-Up Rest Day (USMC ceases pull-ups Days 6 & 7 for recovery)',
         exercises: [
           {
             id: 'sat_deadlift',
@@ -1191,13 +1200,13 @@
         ]
       },
       {
-        dayShort: 'Sun',
-        dayFull: 'Sunday',
+        dayShort: 'Day 7',
+        dayFull: 'Day 7',
         time: '7:00 AM',
         title: '7AM Active Recovery, Mobility & Core',
         warmupType: 'lower',
         usmcDay: null,
-        usmcSummary: 'Sunday Full Recovery from Pull-Ups & Heavy Lifting',
+        usmcSummary: 'Day 7 Full Recovery from Pull-Ups & Heavy Lifting',
         exercises: [
           {
             id: 'sun_cardio',
@@ -1228,7 +1237,7 @@
     const USMC_DAYS_DATA = [
       {
         dayNum: 1,
-        dayLabel: 'Monday • Day 1',
+        dayLabel: 'Day 1 • Pull-Up Session 1',
         title: '5 Maximum Effort Sets',
         restSec: 90,
         restText: '90 seconds rest between sets',
@@ -1237,7 +1246,7 @@
       },
       {
         dayNum: 2,
-        dayLabel: 'Tuesday • Day 2',
+        dayLabel: 'Day 2 • Pull-Up Session 2',
         title: 'Pyramid Day + 1 Max Effort Set',
         restSec: 30,
         restText: '10 seconds rest per rep in previous set',
@@ -1246,7 +1255,7 @@
       },
       {
         dayNum: 3,
-        dayLabel: 'Wednesday • Day 3',
+        dayLabel: 'Day 3 • Pull-Up Session 3',
         title: '9 Training Sets (3 Grips × 3 Sets)',
         restSec: 60,
         restText: '60 seconds rest between sets',
@@ -1255,7 +1264,7 @@
       },
       {
         dayNum: 4,
-        dayLabel: 'Thursday • Day 4',
+        dayLabel: 'Day 4 • Pull-Up Session 4',
         title: 'Maximum Number of Training Sets',
         restSec: 60,
         restText: '60 seconds rest between sets',
@@ -1264,7 +1273,7 @@
       },
       {
         dayNum: 5,
-        dayLabel: 'Friday • Day 5',
+        dayLabel: 'Day 5 • Pull-Up Session 5',
         title: 'Repeat Your Hardest Day (Days 1–4)',
         restSec: 90,
         restText: 'Matches selected hardest day',
@@ -1277,96 +1286,96 @@
     // 3. LOW-APPETITE VEGAN NUTRITION DATA
     // =========================================================================
     const VEGAN_MODES = {
-      recomp_6pack: { kcal: 1720, protein: 130, label: 'Simple 3-Meal Daily Plan' },
+      recomp_6pack: { kcal: 1520, protein: 139, label: 'Light Shake + ½-Block Tofu Plan' },
       low_appetite: { kcal: 2450, protein: 145, label: 'Low Appetite Bulk' },
       high_growth: { kcal: 2750, protein: 165, label: 'Max Muscle Gain' },
       light_day: { kcal: 2200, protein: 135, label: 'Rest / Light Day' }
     };
 
-        // Legacy item ID map for backward compatibility:
-    // id: 'creatine', id: 'd3k2', id: 'leucine', id: 'shop_creatine', id: 'shop_edamame', id: 'shop_iodine', id: 'shop_potatoes', id: 'shop_seitan', id: 'shop_tempeh', id: 'shop_vitc'
+    // Legacy item ID map for backward compatibility:
+    // id: 'creatine', id: 'shop_nooch', id: 'd3k2', id: 'leucine', id: 'shop_creatine', id: 'shop_edamame', id: 'shop_iodine', id: 'shop_potatoes', id: 'shop_seitan', id: 'shop_tempeh', id: 'shop_vitc', id: 'shop_isolate'
     const VEGAN_ESSENTIALS = [
-      { id: 'b12', name: '✓ B12, Vitamin D & Calcium (200% B12, 95% D, 120% Ca)', detail: 'Covered automatically by your 3.75 cups/day of Silk Protein milk + 2 tbsp nutritional yeast + tofu.' },
-      { id: 'iodine_zinc', name: '✓ Iron, Vitamin C, Vitamin K & Thyroid Iodine (100%)', detail: '1 cup broccoli in Meal 2 gives 100% Vitamin C & K to unlock tofu iron; iodized salt covers thyroid iodine.' },
-      { id: 'omega3', name: '✓ Omega-3 ALA, Zinc & Complete Amino Acids (130g P)', detail: 'Covered by 2 tbsp chia seeds, peanut butter & rolled oats in Meal 1 + soy/pea proteins.' }
+      { id: 'b12', name: '✓ B12, Vitamin D & Calcium (200% B12, 95% D, 120% Ca)', detail: 'Covered automatically by your 900g/day of Silk Protein milk (180g in oats + 720g in shakes) + 12g nutritional yeast + 175g tofu.' },
+      { id: 'iodine_zinc', name: '✓ Thyroid Iodine (5g Nori Seaweed) + Iron & Vitamin C (75g Broccoli)', detail: '5g of Nori seaweed (2 sheets) covers 100% daily iodine (no salt needed); 75g broccoli unlocks iron in pea protein, oats & tofu.' },
+      { id: 'omega3', name: '✓ Omega-3 ALA & 139g Complete Protein (All in Grams)', detail: '75g/day Pea Protein Isolate (60g P) + 40g/day Bob’s Red Mill Protein Oats + 175g/day tofu + 6g/day chia seeds & 24g/day peanut butter.' }
     ];
 
     const VEGAN_MEALS = [
       {
         slotId: 'post',
         time: 'Meal 1 • 8:15 AM (After 7:00 AM Gym)',
-        title: 'Your Overnight Oats (1/4 Batch) + 1.5 Cups Silk Protein Milk',
-        tip: 'Drink 500mL plain water before your 7:00 AM workout, then eat your overnight oats jar + a tall glass of Silk Protein milk right after.',
+        title: '264g Protein Overnight Oats (1/4 Batch) + 30g Pea Protein in 360g Silk Milk',
+        tip: '4-Day Batch Recipe (1,056g total): Mix 160g Bob’s Red Mill Protein Oats + 720g Silk Protein Milk + 32g peanut butter + 24g chia seeds + 120g peeled banana. Eat 264g (1/4 batch) each morning with your 30g Pea Protein + 360g Silk Milk shake.',
         options: [
           {
-            name: '1/4 Overnight Oats Batch + 1.5 Cups Silk Protein Milk on Side',
-            protein: 26,
-            kcal: 440,
-            volume: '1 Jar + 1 Glass',
-            ingredients: '1/4 of your 4-day batch (1.75c rolled oats, 3c Silk Protein Almond & Cashew milk, 2 tbsp peanut butter, 2 tbsp chia seeds, 1 banana) + 1.5 cups cold Silk Protein milk.'
+            name: '264g Protein Oats Jar + 30g Pea Protein + 360g Silk Milk',
+            protein: 53,
+            kcal: 585,
+            volume: '264g Jar + 390g Shake',
+            ingredients: '264g Overnight Oats (daily share: 40g Bob’s Red Mill Gluten Free Protein Oats, 180g Silk Protein Almond & Cashew milk, 8g peanut butter, 6g chia seeds, 30g banana = 330 kcal & 17g P) + 30g Pea Protein Isolate (24g P, 120 kcal) shaken in 360g cold Silk Protein milk (12g P, 135 kcal).'
           }
         ]
       },
       {
         slotId: 'lunch',
-        time: 'Meal 2 • 1:00 PM (Same Bowl Every Day)',
-        title: '1 Block Extra-Firm Tofu + White Rice + Broccoli + Nutritional Yeast',
-        tip: 'Broccoli gives 100% of your daily Vitamin C & K to absorb the iron in the tofu; white rice digests fast with zero bloating.',
+        time: 'Meal 2 • 1:00 PM (Small 422g Bowl — Cut in Half!)',
+        title: '175g Extra-Firm Tofu + 150g Cooked Rice + 75g Broccoli + 5g Nori Seaweed',
+        tip: 'Weighing 175g tofu (½ of a 350g block) and 150g cooked rice keeps your lunch bowl light! Crumble 5g Nori seaweed (2 sheets) on top for 100% daily iodine without salt.',
         options: [
           {
-            name: '1 Full Block (350g) Crispy Tofu + 1c White Rice + 1c Broccoli',
-            protein: 56,
-            kcal: 720,
-            volume: '1 Medium Bowl',
-            ingredients: '1 block (350g) extra-firm/super-firm tofu cubed & pan-seared, 1 cup cooked white jasmine rice, 1 cup steamed broccoli florets, 2 tbsp fortified nutritional yeast, pinch of iodized salt.'
+            name: '175g Tofu + 150g Cooked White Rice + 75g Broccoli + 5g Nori + 12g Yeast',
+            protein: 34,
+            kcal: 525,
+            volume: '422g Small Bowl',
+            ingredients: '175g extra-firm tofu (21g P) + 150g cooked white jasmine rice (55g dry weight = 4g P) + 75g steamed broccoli (1.5g P, 100% Vit C) + 5g roasted Nori seaweed (2 sheets = 1g P, 100% iodine) + 12g fortified nutritional yeast (6g P) + 5g sesame oil or tamari.'
           }
         ]
       },
       {
         slotId: 'dinner',
-        time: 'Meal 3 • 6:30 PM (60-Second Shake — Zero Chewing)',
-        title: 'Silk Protein Milk + Protein Powder + 1 Spoon Peanut Butter',
-        tip: 'Since your appetite is low later in the day, drinking this smooth shake takes 60 seconds and locks in 48g of overnight muscle-repair protein.',
+        time: 'Meal 3 • 6:30 PM (Zero-Chew Evening Recovery)',
+        title: '45g Pea Protein Isolate + 360g Silk Protein Milk + 16g Peanut Butter',
+        tip: 'Zero cooking and zero chewing at night when your appetite is lowest — weigh 45g powder + 360g Silk milk on your scale, shake for 10 seconds, and eat 16g peanut butter.',
         options: [
           {
-            name: '1.5 Cups Silk Protein Milk + 1.5 Scoops Protein + 1 Tbsp Peanut Butter',
-            protein: 48,
-            kcal: 560,
-            volume: '1 Shaker / Blender Cup',
-            ingredients: '1.5 cups (375mL) Silk Protein Unsweetened Almond & Cashew milk + 1.5 scoops pea or soy protein powder + 1 tbsp smooth peanut butter (optional: 5g creatine).'
+            name: '45g Pea Protein Isolate + 360g Silk Protein Milk + 16g Smooth Peanut Butter',
+            protein: 52,
+            kcal: 410,
+            volume: '405g Shake + 16g PB',
+            ingredients: '45g Pea Protein Isolate (36g P, 180 kcal) shaken in 360g Silk Protein Unsweetened Almond & Cashew milk (12g P, 135 kcal) + 16g smooth peanut butter (4g P, 95 kcal).'
           }
         ]
       }
     ];
 
     const GROCERY_ITEMS = [
-      'Silk Protein Almond & Cashew (4 cartons)',
-      'Extra-Firm Tofu (7 blocks — 1/day)',
-      'Rolled Oats (3.5 cups / week)',
-      'Smooth Peanut Butter (1 jar)',
-      'Chia Seeds (1 bag)',
-      'Ripe Bananas (2 / week)',
-      'White Jasmine Rice (1 bag)',
-      'Broccoli Florets (7 cups / week)',
-      'Pea or Soy Protein Powder (1 tub)',
-      'Fortified Nutritional Yeast & Iodized Salt'
+      'Pea Protein Isolate (525g/wk — 75g/day)',
+      'Bob’s Red Mill Protein Oats (280g/wk — 40g/day)',
+      'Silk Protein Milk (6,300g/wk — 900g/day)',
+      'Extra-Firm Tofu (1,225g/wk — 175g/day)',
+      'Roasted Nori Seaweed (35g/wk — 5g/day)',
+      'Smooth Peanut Butter (168g/wk — 24g/day)',
+      'Chia Seeds (42g/wk — 6g/day)',
+      'Ripe Bananas (210g peeled/wk — 30g/day)',
+      'White Jasmine Rice (385g dry / 1,050g cooked/wk)',
+      'Broccoli (525g/wk) & Nutritional Yeast (84g/wk)'
     ];
 
     const WEEKLY_SHOPPING_CATEGORIES = [
       {
-        category: 'Your Entire Weekly List (Just 10 Staples)',
-        badge: 'Same 3 Meals Every Day',
+        category: 'Your Entire Weekly List in Grams (10 Staples)',
+        badge: '100% in Grams (g) • Saves ~$20/wk',
         items: [
-          { id: 'shop_silk', name: '1. Silk Protein Unsweetened Almond & Cashew (1.75L)', qty: '4 cartons / week', note: 'Covers 2 oats batches + daily 1.5c glasses & evening shakes (200% B12, 95% Vit D)' },
-          { id: 'shop_tofu', name: '2. Extra-Firm or Super-Firm Tofu (350g)', qty: '7 blocks (1/day)', note: '42g+ complete soy protein & calcium per block for Meal 2' },
-          { id: 'shop_oats', name: '3. Rolled Oats', qty: '3.5 cups / week', note: 'Makes two 4-day overnight oats batches (1.75 cups per batch)' },
-          { id: 'shop_pb', name: '4. Smooth Natural Peanut Butter', qty: '1 jar (~11 tbsp/wk)', note: '2 tbsp per oats batch + 1 tbsp in your evening shake' },
-          { id: 'shop_chia', name: '5. Chia Seeds', qty: '1 bag (4 tbsp/wk)', note: '2 tbsp per oats batch — covers 100% of your daily Omega-3 ALA' },
-          { id: 'shop_banana', name: '6. Ripe Bananas', qty: '2 medium / week', note: '1 banana blended or sliced into each 4-day overnight oats batch' },
-          { id: 'shop_rice', name: '7. White Jasmine Rice', qty: '1 bag (7c cooked/wk)', note: '1 cup cooked per day for Meal 2 — fast energy with zero stomach bloat' },
-          { id: 'shop_broccoli', name: '8. Broccoli Florets (Fresh or Frozen)', qty: '1 large bag (7c/wk)', note: '1 cup/day with tofu — covers 100% Vitamin C, Vitamin K & unlocks plant iron' },
-          { id: 'shop_isolate', name: '9. Pea or Soy Protein Powder', qty: '1 tub (10.5 scoops/wk)', note: '1.5 scoops in Meal 3 shake so you hit 130g protein with zero chewing' },
-          { id: 'shop_nooch', name: '10. Fortified Nutritional Yeast & Iodized Salt', qty: 'Pantry staples', note: '2 tbsp yeast + pinch of iodized salt on Meal 2 for B-vitamins & thyroid support' }
+          { id: 'shop_isolate', name: '1. Pea Protein Isolate Powder (1,000g bag)', qty: '525g / week (75g/day)', note: '30g at 8:15 AM + 45g at 6:30 PM = 60g pure protein/day for ~$9.45/wk with zero fiber bloat' },
+          { id: 'shop_oats', name: '2. Bob’s Red Mill Gluten Free Protein Oats (907g bag)', qty: '280g / week (40g/day)', note: '160g per 4-day batch (40g/day = 8g P/day) — boosts each 4-day batch to 68g protein' },
+          { id: 'shop_silk', name: '3. Silk Protein Unsweetened Almond & Cashew (1,750g carton)', qty: '6,300g / week (900g/day)', note: '180g/day in oats + 360g morning shake + 360g evening shake (4 cartons/wk; 200% B12, 95% Vit D)' },
+          { id: 'shop_tofu', name: '4. Sunrise or Rooster Extra-Firm Tofu (350g–454g block)', qty: '1,225g / week (175g/day)', note: 'Weigh 175g/day (½ of a 350g block) for Meal 2 — only 3.5 blocks/week (~$10–$12/wk)!' },
+          { id: 'shop_iodine', name: '5. Roasted Seaweed Snacks / Nori Sheets', qty: '35g / week (5g/day)', note: '5g/day (2 sheets) crumbled on Meal 2 covers 100% thyroid iodine (replaces iodized salt)' },
+          { id: 'shop_pb', name: '6. Smooth Natural Peanut Butter (500g–1,000g jar)', qty: '168g / week (24g/day)', note: '32g per 4-day oats batch (8g/day) + 16g/day in the evening with your shake' },
+          { id: 'shop_chia', name: '7. Chia Seeds', qty: '42g / week (6g/day)', note: '24g per 4-day oats batch (6g/day) — covers 100% of your daily Omega-3 ALA' },
+          { id: 'shop_banana', name: '8. Ripe Bananas (Peeled Weight)', qty: '210g / week (30g/day)', note: '120g peeled banana (1 medium) per 4-day overnight oats batch' },
+          { id: 'shop_rice', name: '9. White Jasmine Rice', qty: '385g dry / week (1,050g cooked)', note: '55g dry rice/day (= 150g cooked rice/day) for Meal 2 — fast energy with zero stomach bloat' },
+          { id: 'shop_broccoli', name: '10. Broccoli Florets + Fortified Nutritional Yeast', qty: '525g broccoli + 84g yeast / wk', note: '75g steamed broccoli/day (100% Vit C to unlock iron) + 12g nutritional yeast/day (+6g P)' }
         ]
       }
     ];
@@ -1399,10 +1408,38 @@
     }
 
     // =========================================================================
-    // 5. TIMER ENGINE
+    // 5. BACKGROUND-SAFE WALL-CLOCK TIMER ENGINE (NEVER STOPS ON TAB SWITCH)
     // =========================================================================
     let timerInterval = null;
     let timerRunning = false;
+    let timerWorker = null;
+    let wakeLockSentinel = null;
+
+    async function requestWakeLock() {
+      if ('wakeLock' in navigator && document.visibilityState === 'visible') {
+        try {
+          wakeLockSentinel = await navigator.wakeLock.request('screen');
+        } catch (e) {}
+      }
+    }
+
+    function releaseWakeLock() {
+      if (wakeLockSentinel) {
+        try { wakeLockSentinel.release(); } catch (e) {}
+        wakeLockSentinel = null;
+      }
+    }
+
+    // Create a lightweight Web Worker ticker so mobile browsers don't freeze background tabs
+    try {
+      const workerBlob = new Blob([
+        "let id=null;self.onmessage=function(e){if(e.data==='start'){if(id)clearInterval(id);id=setInterval(()=>self.postMessage('tick'),250);}else if(e.data==='stop'){if(id)clearInterval(id);id=null;}};"
+      ], { type: 'application/javascript' });
+      timerWorker = new Worker(URL.createObjectURL(workerBlob));
+      timerWorker.onmessage = () => syncWallClockTimer();
+    } catch (e) {
+      timerWorker = null;
+    }
 
     function formatTime(sec) {
       const s = Math.max(0, Math.floor(sec));
@@ -1421,6 +1458,7 @@
 
       if (headerDisp) headerDisp.textContent = formatted;
       if (mainDisp) mainDisp.textContent = formatted;
+      document.title = timerRunning ? `(${formatted}) 7AM Gym` : '7AM Vegan Muscle & Training Hub';
 
       if (dot) {
         dot.className = timerRunning
@@ -1441,41 +1479,74 @@
       }
     }
 
+    function syncWallClockTimer() {
+      if (!timerRunning || !state.timerEndTime) return;
+      const remainingMs = state.timerEndTime - Date.now();
+      if (remainingMs > 0) {
+        const nextSec = Math.max(0, Math.ceil(remainingMs / 1000));
+        if (nextSec !== state.timerSeconds) {
+          state.timerSeconds = nextSec;
+          updateTimerUI();
+        }
+      } else {
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = null;
+        if (timerWorker) {
+          try { timerWorker.postMessage('stop'); } catch (e) {}
+        }
+        timerRunning = false;
+        state.timerRunning = false;
+        state.timerEndTime = null;
+        state.timerSeconds = 0;
+        releaseWakeLock();
+        updateTimerUI();
+        saveState();
+        playTimerChime();
+        if (navigator.vibrate) {
+          try { navigator.vibrate([250, 120, 250]); } catch (e) {}
+        }
+        showToast('⏱️ Rest Complete! Time for your next set.');
+      }
+    }
+
     function startTimer(customSeconds, contextLabel) {
       if (typeof customSeconds === 'number') {
         state.timerSeconds = customSeconds;
         state.timerTotalSeconds = customSeconds;
       }
       if (contextLabel) {
+        state.timerContextLabel = contextLabel;
         const lbl = document.getElementById('timer-context-label');
         if (lbl) lbl.textContent = contextLabel;
       }
       if (timerInterval) clearInterval(timerInterval);
       timerRunning = true;
+      state.timerRunning = true;
+      state.timerEndTime = Date.now() + (state.timerSeconds * 1000);
+      requestWakeLock();
       updateTimerUI();
       saveState();
 
-      timerInterval = setInterval(() => {
-        if (state.timerSeconds > 0) {
-          state.timerSeconds -= 1;
-          updateTimerUI();
-        } else {
-          clearInterval(timerInterval);
-          timerInterval = null;
-          timerRunning = false;
-          updateTimerUI();
-          playTimerChime();
-          showToast('⏱️ Rest Complete! Time for your next set.');
-        }
-      }, 1000);
+      if (timerWorker) {
+        try { timerWorker.postMessage('start'); } catch (e) {}
+      }
+      timerInterval = setInterval(syncWallClockTimer, 250);
     }
 
     function toggleTimer() {
       if (timerRunning) {
-        clearInterval(timerInterval);
+        syncWallClockTimer();
+        if (timerInterval) clearInterval(timerInterval);
         timerInterval = null;
+        if (timerWorker) {
+          try { timerWorker.postMessage('stop'); } catch (e) {}
+        }
         timerRunning = false;
+        state.timerRunning = false;
+        state.timerEndTime = null;
+        releaseWakeLock();
         updateTimerUI();
+        saveState();
       } else {
         if (state.timerSeconds <= 0) {
           state.timerSeconds = state.timerTotalSeconds || 90;
@@ -1487,11 +1558,27 @@
     function resetTimer() {
       if (timerInterval) clearInterval(timerInterval);
       timerInterval = null;
+      if (timerWorker) {
+        try { timerWorker.postMessage('stop'); } catch (e) {}
+      }
       timerRunning = false;
+      state.timerRunning = false;
+      state.timerEndTime = null;
       state.timerSeconds = state.timerTotalSeconds || 90;
+      releaseWakeLock();
       updateTimerUI();
       saveState();
     }
+
+    // Immediately sync timer whenever phone switches back to browser tab, unlocks screen, or focuses window
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        syncWallClockTimer();
+        if (timerRunning) requestWakeLock();
+      }
+    });
+    window.addEventListener('focus', syncWallClockTimer);
+    window.addEventListener('pageshow', syncWallClockTimer);
 
     // =========================================================================
     // 5B. EQUIPMENT DRAWINGS, VISUAL DIAGRAMS & LBS <-> KG CONVERSION
@@ -1918,31 +2005,31 @@
 
       const week = state.currentWeek || 1;
       if (badge) {
-        badge.innerHTML = `<span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> Done</span> <span class="inline-flex items-center gap-1 ml-1.5"><span class="w-2 h-2 rounded-full bg-orange-400 inline-block"></span> Partial</span>`;
+        badge.innerHTML = `<span class="inline-flex items-center gap-1 text-slate-300"><span class="w-2 h-2 rounded-full bg-rose-400/75 inline-block"></span> Done</span> <span class="inline-flex items-center gap-1 ml-1.5 text-slate-300"><span class="w-2 h-2 rounded-full bg-amber-300/75 inline-block"></span> Partial</span>`;
       }
 
       grid.innerHTML = DAYS_SCHEDULE.map((d, idx) => {
         const isSelected = idx === state.selectedDayIndex;
         const prog = getDayCompletionStatus(week, idx);
-        let statusDotHtml = `<span class="w-2 h-2 rounded-full ${isSelected ? 'bg-slate-900/40' : 'bg-slate-800'}" title="Not started"></span>`;
+        let statusDotHtml = `<span class="w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-slate-900/35' : 'bg-slate-800'}" title="Not started"></span>`;
         if (prog.status === 'complete') {
-          statusDotHtml = `<span class="inline-flex items-center gap-0.5" title="Workout Complete (${prog.doneSets}/${prog.totalSets} sets)"><span class="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ${isSelected ? 'ring-slate-950' : 'ring-red-500/40'}"></span><span class="text-[9px] font-extrabold ${isSelected ? 'text-red-950' : 'text-red-400'}">✓</span></span>`;
+          statusDotHtml = `<span class="inline-flex items-center gap-0.5" title="Workout Complete (${prog.doneSets}/${prog.totalSets} sets)"><span class="w-2 h-2 rounded-full ${isSelected ? 'bg-rose-950/80' : 'bg-rose-400/75'}"></span><span class="text-[8px] font-bold ${isSelected ? 'text-rose-950' : 'text-rose-300/90'}">✓</span></span>`;
         } else if (prog.status === 'partial') {
-          statusDotHtml = `<span class="w-2.5 h-2.5 rounded-full bg-orange-400 ring-2 ${isSelected ? 'ring-slate-950' : 'ring-orange-400/30'}" title="Partially Complete (${prog.doneSets}/${prog.totalSets} sets)"></span>`;
+          statusDotHtml = `<span class="w-2 h-2 rounded-full ${isSelected ? 'bg-amber-900/75' : 'bg-amber-300/75'}" title="Partially Complete (${prog.doneSets}/${prog.totalSets} sets)"></span>`;
         }
 
         return `
-          <button type="button" data-day-idx="${idx}" class="day-tab-btn flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition ${
+          <button type="button" data-day-idx="${idx}" class="day-tab-btn flex flex-col items-center justify-center py-2 px-0.5 rounded-xl border transition ${
             isSelected
               ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold shadow-md shadow-emerald-500/20'
               : (prog.status === 'complete'
-                  ? 'bg-red-950/30 text-white border-red-500/50 font-bold'
+                  ? 'bg-slate-900/90 text-slate-100 border-rose-400/25 font-bold'
                   : (prog.status === 'partial'
-                      ? 'bg-orange-950/25 text-white border-orange-400/50 font-bold'
+                      ? 'bg-slate-900/90 text-slate-200 border-amber-300/25 font-bold'
                       : 'bg-slate-950/80 text-slate-300 border-slate-800 hover:border-slate-700 font-semibold'))
           }">
-            <span class="text-[11px] uppercase">${d.dayShort}</span>
-            <div class="flex items-center justify-center mt-1.5 h-3">
+            <span class="text-[10px] sm:text-[11px] uppercase tracking-tight whitespace-nowrap">${d.dayShort}</span>
+            <div class="flex items-center justify-center mt-1 h-3">
               ${statusDotHtml}
             </div>
           </button>
@@ -1963,6 +2050,8 @@
       const liftBtn = document.getElementById('crunch-preset-lift');
       const spacedBtn = document.getElementById('crunch-preset-spaced');
       if (liftBtn && spacedBtn) {
+        liftBtn.textContent = 'Day 1 • Day 2 • Day 4 • Day 6';
+        spacedBtn.textContent = 'Day 1 • Day 3 • Day 5 • Day 7';
         liftBtn.className = isLiftPreset
           ? 'px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition'
           : 'px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 transition';
@@ -2056,10 +2145,10 @@
       // Populate Quick Exercise & Machine Jump Dropdown
       const jumpSelect = document.getElementById('exercise-jump-select');
       if (jumpSelect) {
-        jumpSelect.innerHTML = `<option value="">Select exercise to jump to or see machine (${exercisesToday.length} today)...</option>` +
+        jumpSelect.innerHTML = `<option value="">Jump to exercise (${exercisesToday.length} today)...</option>` +
           exercisesToday.map((ex, idx) => {
             const meta = EXERCISE_META[ex.id] || { equipLabel: 'Gym Equipment' };
-            return `<option value="ex-card-${ex.id}">#${idx + 1} ${ex.name} — [${meta.equipLabel}]</option>`;
+            return `<option value="ex-card-${ex.id}">#${idx + 1} ${ex.name} (${meta.equipLabel})</option>`;
           }).join('');
       }
 
@@ -2074,13 +2163,13 @@
             <div>
               <div class="flex flex-wrap items-center gap-2">
                 <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">Week ${week} • ${dayObj.dayFull} • ${dayObj.time}</span>
-                ${isDayAllDone ? '<span class="inline-flex items-center gap-1 text-[10px] font-extrabold bg-red-500 text-white px-2.5 py-0.5 rounded-full shadow-sm shadow-red-500/40">✓ DAY COMPLETE</span>' : ''}
-                ${isDayPartial ? `<span class="inline-flex items-center gap-1 text-[10px] font-extrabold bg-orange-400 text-slate-950 px-2 py-0.5 rounded-full">● ${todayDoneSets}/${todayTotalSets} Sets</span>` : ''}
+                ${isDayAllDone ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold bg-rose-500/15 text-rose-300 border border-rose-400/30 px-2.5 py-0.5 rounded-full">✓ Day Complete</span>' : ''}
+                ${isDayPartial ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-400/15 text-amber-200 border border-amber-300/30 px-2 py-0.5 rounded-full">● ${todayDoneSets}/${todayTotalSets} Sets</span>` : ''}
                 ${hasCrunchToday ? '<span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">+ Cable Crunch</span>' : ''}
               </div>
               <h2 class="text-lg font-extrabold text-white mt-0.5 flex items-center gap-2">
                 <span>${dayObj.title}</span>
-                ${isDayAllDone ? '<span class="text-red-500 text-xl leading-none" title="All exercises logged for today">✔</span>' : ''}
+                ${isDayAllDone ? '<span class="text-rose-300/90 text-base leading-none" title="All exercises logged for today">✓</span>' : ''}
               </h2>
             </div>
             <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-[11px] font-semibold px-2.5 py-1.5 rounded-xl border transition ${
@@ -2202,7 +2291,7 @@
                       ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/30'
                       : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
                   }">
-                    ${isDone ? '✓ Done' : 'Log & Rest'}
+                    ${isDone ? '✓ Done' : (exOrder === exercisesToday.length - 1 && s === ex.sets ? 'Log & Finish' : 'Log & Rest')}
                   </button>
                 </div>
               </div>
@@ -2225,7 +2314,7 @@
         const isExComplete = exDoneSets === ex.sets;
 
         return `
-          <article id="ex-card-${ex.id}" class="bg-slate-900 border ${isExComplete ? 'border-red-500/50' : (ex.id === 'cable_ab_crunch' ? 'border-emerald-500/50 ring-1 ring-emerald-500/20' : 'border-slate-800')} rounded-2xl p-4 space-y-3 scroll-mt-20">
+          <article id="ex-card-${ex.id}" class="bg-slate-900 border ${isExComplete ? 'border-rose-400/25' : (ex.id === 'cable_ab_crunch' ? 'border-emerald-500/50 ring-1 ring-emerald-500/20' : 'border-slate-800')} rounded-2xl p-4 space-y-3 scroll-mt-20">
             <!-- Exercise Header with Machine Drawing & Equipment Tag -->
             <div class="flex items-start justify-between gap-2.5">
               <div class="flex items-start gap-2.5">
@@ -2235,7 +2324,7 @@
                 <div>
                   <div class="flex flex-wrap items-center gap-1.5">
                     <span class="text-[11px] font-mono font-bold text-slate-400">#${exOrder + 1}</span>
-                    ${isExComplete ? `<span class="text-[10px] font-extrabold bg-red-500 text-white px-2 py-0.5 rounded-full">✓ Done</span>` : ''}
+                    ${isExComplete ? `<span class="text-[10px] font-bold bg-rose-500/15 text-rose-300 border border-rose-400/30 px-2 py-0.5 rounded-full">✓ Done</span>` : ''}
                     ${ex.badge ? `<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">${ex.badge}</span>` : ''}
                     <span class="text-[11px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">${ex.sets} Sets × ${ex.reps}</span>
                   </div>
@@ -2466,11 +2555,27 @@
             state.workoutLogs[`${dayIdx}_${exId}_${setIdx}`] = Object.assign({}, state.workoutLogs[key]);
           }
 
+          // Check if this is the very last set of the day (final set of the last exercise, e.g., Cable Crunch Set 3, or all sets for today done)
+          const lastExToday = exercisesToday[exercisesToday.length - 1];
+          const isLastSetOfLastEx = !!(lastExToday && exId === lastExToday.id && setIdx === lastExToday.sets);
+          const allSetsDoneToday = exercisesToday.every(e => {
+            for (let idxS = 1; idxS <= e.sets; idxS++) {
+              const entry = getLogEntry(week, dayIdx, e.id, idxS);
+              if (!entry || !entry.done) return false;
+            }
+            return true;
+          });
+
           saveState();
           renderWorkoutView();
           if (state.workoutLogs[key].done) {
-            startTimer(restSec, `Rest: ${exName}`);
-            showToast(`✓ Logged ${state.workoutLogs[key].weight} ${exUnit}! ${restSec}s rest started.`);
+            if (isLastSetOfLastEx || allSetsDoneToday) {
+              resetTimer();
+              showToast(`🎉 Final set of the day logged (${state.workoutLogs[key].weight} ${exUnit})! Workout complete — no rest timer needed.`);
+            } else {
+              startTimer(restSec, `Rest: ${exName}`);
+              showToast(`✓ Logged ${state.workoutLogs[key].weight} ${exUnit}! ${restSec}s rest started.`);
+            }
           }
         });
       });
@@ -2579,10 +2684,10 @@
       // Update Overnight Oats Batch Calculator UI
       const days = state.oatsBatchDays || 3;
       const boost = state.oatsProteinBoost !== false;
-      const baseKcal = Math.round(1220 / days);
-      const baseProt = +(55.3 / days).toFixed(1);
-      const finalKcal = boost ? baseKcal + 135 : baseKcal;
-      const finalProt = +(boost ? baseProt + 12.0 : baseProt).toFixed(1);
+      const baseKcal = Math.round(1320 / days);
+      const baseProt = +(67.8 / days).toFixed(1);
+      const finalKcal = boost ? baseKcal + 255 : baseKcal;
+      const finalProt = +(boost ? baseProt + 36.0 : baseProt).toFixed(1);
       const b12Pct = Math.round(((3.0 / days) + (boost ? 1.5 : 0)) / 2.4 * 100);
 
       document.querySelectorAll('.oats-days-btn').forEach(btn => {
@@ -2601,13 +2706,14 @@
           ? 'shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950'
           : 'shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700';
       }
+      const jarGrams = Math.round(1056 / days);
       if (boostSummary) {
-        boostSummary.innerHTML = `1/${days} Batch ${boost ? '+ 1.5c Extra Silk Protein Milk' : '(Base Recipe Only)'}: <strong class="text-emerald-400">${finalProt}g Protein • ${finalKcal} kcal</strong> • <strong>${b12Pct}% Daily B12</strong>`;
+        boostSummary.innerHTML = `${jarGrams}g Jar (1/${days} Batch) ${boost ? '+ 30g Pea Protein in 360g Silk Milk' : '(Base Oats Jar Only)'}: <strong class="text-emerald-400">${finalProt}g Protein • ${finalKcal} kcal</strong> • <strong>${b12Pct}% Daily B12</strong>`;
       }
       // Sync Meal 1 (Overnight Oats) with selected Oats Batch calculation
       VEGAN_MEALS[0].options[0].protein = Math.round(finalProt);
       VEGAN_MEALS[0].options[0].kcal = finalKcal;
-      VEGAN_MEALS[0].options[0].name = `1/${days} Overnight Oats Batch${boost ? ' + 1.5 Cups Silk Protein Milk' : ''}`;
+      VEGAN_MEALS[0].options[0].name = `${jarGrams}g Protein Oats Jar (1/${days} Batch)${boost ? ' + 30g Pea Protein + 360g Silk Milk' : ''}`;
 
       // Update Mode Buttons
       document.querySelectorAll('.meal-mode-btn').forEach(btn => {
@@ -2980,13 +3086,13 @@
         state.crunchDays = [0, 1, 3, 5]; // Mon, Tue, Thu, Sat
         saveState();
         renderWorkoutView();
-        showToast('Cable Abdominal Crunch set to Mon, Tue, Thu & Sat (4x/wk)');
+        showToast('Cable Abdominal Crunch set to Day 1, Day 2, Day 4 & Day 6 (4x/wk)');
       });
       document.getElementById('crunch-preset-spaced').addEventListener('click', () => {
         state.crunchDays = [0, 2, 4, 6]; // Mon, Wed, Fri, Sun
         saveState();
         renderWorkoutView();
-        showToast('Cable Abdominal Crunch set to Mon, Wed, Fri & Sun (4x/wk)');
+        showToast('Cable Abdominal Crunch set to Day 1, Day 3, Day 5 & Day 7 (4x/wk)');
       });
 
       // Warmup Accordion Toggle
@@ -3019,13 +3125,23 @@
       document.getElementById('timer-start-pause').addEventListener('click', toggleTimer);
       document.getElementById('timer-reset').addEventListener('click', resetTimer);
       document.getElementById('timer-minus-15').addEventListener('click', () => {
+        syncWallClockTimer();
         state.timerSeconds = Math.max(0, state.timerSeconds - 15);
+        if (timerRunning) {
+          state.timerEndTime = Date.now() + (state.timerSeconds * 1000);
+        }
         updateTimerUI();
+        saveState();
       });
       document.getElementById('timer-plus-15').addEventListener('click', () => {
+        syncWallClockTimer();
         state.timerSeconds += 15;
-        state.timerTotalSeconds = Math.max(state.timerTotalSeconds, state.timerSeconds);
+        state.timerTotalSeconds = Math.max(state.timerTotalSeconds || 90, state.timerSeconds);
+        if (timerRunning) {
+          state.timerEndTime = Date.now() + (state.timerSeconds * 1000);
+        }
         updateTimerUI();
+        saveState();
       });
       document.getElementById('timer-sound-toggle').addEventListener('click', (e) => {
         state.soundEnabled = !state.soundEnabled;
@@ -3276,6 +3392,28 @@
             showToast('Invalid backup code');
           }
         });
+      }
+
+      // Resume active wall-clock timer if tab was reloaded or restored on phone
+      if (state.timerContextLabel) {
+        const lbl = document.getElementById('timer-context-label');
+        if (lbl) lbl.textContent = state.timerContextLabel;
+      }
+      if (state.timerRunning && state.timerEndTime) {
+        const remMs = state.timerEndTime - Date.now();
+        if (remMs > 0) {
+          state.timerSeconds = Math.ceil(remMs / 1000);
+          timerRunning = true;
+          requestWakeLock();
+          if (timerWorker) {
+            try { timerWorker.postMessage('start'); } catch (e) {}
+          }
+          timerInterval = setInterval(syncWallClockTimer, 250);
+        } else {
+          state.timerRunning = false;
+          state.timerEndTime = null;
+          state.timerSeconds = 0;
+        }
       }
 
       // Initial Render
