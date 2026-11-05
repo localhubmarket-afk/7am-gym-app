@@ -380,15 +380,14 @@
         </div>
       </div>
 
-      <!-- Ultra-Simple 3-Meal Daily Plan Header -->
-      <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-4 space-y-3">
-        <div class="flex items-start justify-between gap-2">
+      <!-- Compact Daily Macro Progress HUD (Zero Redundant Paragraph Clutter!) -->
+      <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">100% Kitchen Scale Grams (g) • Low-Appetite Plan</span>
-            <h2 class="text-base font-extrabold text-white mt-0.5">Light 6-Pack &amp; Muscle Plan (1,495 kcal • 138g P)</h2>
-            <p class="text-xs text-slate-300 mt-1">Every ingredient measured in exact grams (g) for your scale — 6:35 AM Pre-Gym Shake (30g Pea Protein Isolate + 360g Cold Silk Milk), 8:15 AM Post-Gym Overnight Oats (264g jar), Extra-Firm Tofu (175g/day), Toasted Sesame Oil (5g/day), and Iodized Table Salt (1.5g/day Windsor Iodized — not sea/pink salt).</p>
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">100% Kitchen Scale Grams (g) • Low-Appetite Plan</span>
+            <h2 class="text-sm sm:text-base font-extrabold text-white leading-tight">Light 6-Pack &amp; Muscle Plan (1,495 kcal • 138g P)</h2>
           </div>
-          <div class="flex flex-col items-end gap-1.5 shrink-0">
+          <div class="flex items-center gap-1.5 shrink-0">
             <button type="button" id="log-all-vegan-day-btn" class="text-[11px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 transition">✓ Log All 3</button>
             <button type="button" id="reset-vegan-day-btn" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white">Reset Today</button>
           </div>
@@ -4039,12 +4038,84 @@
       const anyFormulaOpenToday = VEGAN_MEALS.some(s => !!state.openMealFormulas[`${dayIdx}_${s.slotId}`]);
 
       if (gymTimeBar) {
+        const isGymEditorOpen = !!state.openVeganGymTimeEditor;
+        const shakeDone = isIngredientChecked(week, dayIdx, 'post', 'm1_protein_shake');
+        const oatsDone = isIngredientChecked(week, dayIdx, 'post', 'm1_oats_jar');
+        const lunchDone = isMealCheckedForDay(week, dayIdx, 'lunch');
+        const dinnerDone = isMealCheckedForDay(week, dayIdx, 'dinner');
+        const gymProg = getDayCompletionStatus(week, dayIdx);
+        const gymDone = gymProg.status === 'complete';
+
+        // Build chronological 5-step visual timeline pills (replaces the wall of prose!)
+        let timelineSteps = [];
+        if (adaptiveSched.period === 'morning') {
+          timelineSteps = [
+            { icon: '🥤', time: adaptiveSched.preShakeStr, label: 'Pre-Shake', done: shakeDone },
+            { icon: '🏋️', time: adaptiveSched.start12, label: 'Gym', done: gymDone, isGym: true },
+            { icon: '🥣', time: adaptiveSched.oatsStr, label: 'Oats Jar', done: oatsDone },
+            { icon: '🥗', time: adaptiveSched.slots.lunch.time12, label: 'Tofu Bowl', done: lunchDone },
+            { icon: '🌙', time: adaptiveSched.slots.dinner.time12, label: 'PM Shake', done: dinnerDone }
+          ];
+        } else if (adaptiveSched.period === 'midday') {
+          timelineSteps = [
+            { icon: '🥣', time: adaptiveSched.oatsStr, label: 'Oats Jar', done: oatsDone },
+            { icon: '🥤', time: adaptiveSched.preShakeStr, label: 'Pre-Shake', done: shakeDone },
+            { icon: '🏋️', time: adaptiveSched.start12, label: 'Gym', done: gymDone, isGym: true },
+            { icon: '🥗', time: adaptiveSched.slots.lunch.time12, label: 'Post-Bowl', done: lunchDone },
+            { icon: '🌙', time: adaptiveSched.slots.dinner.time12, label: 'PM Shake', done: dinnerDone }
+          ];
+        } else {
+          timelineSteps = [
+            { icon: '🥣', time: adaptiveSched.oatsStr, label: 'Oats Jar', done: oatsDone },
+            { icon: '🥗', time: adaptiveSched.slots.lunch.time12, label: 'Tofu Bowl', done: lunchDone },
+            { icon: '🥤', time: adaptiveSched.preShakeStr, label: 'Pre-Shake', done: shakeDone },
+            { icon: '🏋️', time: adaptiveSched.start12, label: 'Gym', done: gymDone, isGym: true },
+            { icon: '⚡', time: adaptiveSched.slots.dinner.time12, label: 'Post-Shake', done: dinnerDone }
+          ];
+        }
+
+        const timelineHtml = timelineSteps.map((st, idx) => `
+          <div class="flex items-center gap-1 shrink-0">
+            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border ${
+              st.done
+                ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+                : (st.isGym ? 'bg-sky-500/15 border-sky-500/35 text-sky-300' : 'bg-slate-900 border-slate-800 text-slate-200')
+            }">
+              <span>${st.done ? '✓' : st.icon}</span>
+              <span class="font-extrabold">${st.time}</span>
+              <span class="opacity-80">${st.label}</span>
+            </span>
+            ${idx < timelineSteps.length - 1 ? '<span class="text-slate-600 text-[10px]">→</span>' : ''}
+          </div>
+        `).join('');
+
         gymTimeBar.innerHTML = `
+          <!-- Compact 1-Line Synced Timeline Header + Progressive Disclosure Gym Time Toggle -->
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="text-[11px] font-extrabold text-emerald-400">${adaptiveSched.periodTitle}</span>
               <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-sky-300">${dayGymSched.updatedLabel || 'Default 7:00 AM Gym'}</span>
             </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" id="toggle-vegan-gym-editor-btn" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition ${isGymEditorOpen ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-emerald-300 border-emerald-500/35 hover:bg-slate-800'}">
+                ⏱️ ${isGymEditorOpen ? 'Hide Gym Time ▴' : `Change Gym Time (${adaptiveSched.start12}) ▾`}
+              </button>
+              <button type="button" id="toggle-all-meal-checklists-btn" class="px-2 py-1 rounded-lg text-[10px] font-extrabold border transition ${allChecklistsHiddenToday ? 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'}">
+                ${allChecklistsHiddenToday ? '▼ Show Checklists' : '▲ Hide Checklists'}
+              </button>
+              <button type="button" id="toggle-all-meal-formulas-btn" class="px-2 py-1 rounded-lg text-[10px] font-extrabold border transition ${anyFormulaOpenToday ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">
+                ${anyFormulaOpenToday ? '▲ Hide Tips' : '▼ Show Tips'}
+              </button>
+            </div>
+          </div>
+
+          <!-- Visual 5-Step Daily Chrono-Timeline Strip (Scans in 1 Second — Replaces Prose Paragraph!) -->
+          <div class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+            ${timelineHtml}
+          </div>
+
+          <!-- Collapsible 15-Minute Gym Time Picker Drawer (Hidden Unless You Tap Change Gym Time!) -->
+          <div class="${isGymEditorOpen ? 'pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-1.5' : 'hidden'}" style="display: ${isGymEditorOpen ? 'flex' : 'none'};">
             <div class="flex flex-wrap items-center gap-1">
               <button type="button" data-vegan-gym-preset="07:00" class="vegan-gym-preset-btn px-2 py-1 rounded-lg text-[10px] font-extrabold border transition ${dayGymSched.startTime === '07:00' ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">🌅 7:00 AM</button>
               <button type="button" data-vegan-gym-preset="12:00" class="vegan-gym-preset-btn px-2 py-1 rounded-lg text-[10px] font-extrabold border transition ${dayGymSched.startTime === '12:00' ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">☀️ 12:00 PM</button>
@@ -4057,25 +4128,18 @@
                 </select>
                 <button type="button" data-vegan-step-mins="15" class="vegan-gym-step-btn px-1.5 py-1 text-[10px] font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Later by 15 mins">+15m</button>
               </div>
-              <button type="button" id="vegan-sync-finished-now-btn" class="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 transition" title="Set workout end time to right now (snapped to 15m) & schedule post-workout meal +15m">⚡ Finished Gym Now</button>
             </div>
-          </div>
-          <p class="text-[11px] text-slate-300 leading-snug">
-            <strong class="text-emerald-300">Auto-Adapted Meal Plan:</strong> ${adaptiveSched.periodAdvice}
-          </p>
-          <!-- Global 1-Tap View Toggles for Ingredient Checklists & Full Formulas/Tips -->
-          <div class="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-800/80">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Card View Controls:</span>
-            <div class="flex flex-wrap items-center gap-1.5">
-              <button type="button" id="toggle-all-meal-checklists-btn" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition ${allChecklistsHiddenToday ? 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'}">
-                ${allChecklistsHiddenToday ? '▼ Show All Ingredient Checklists' : '▲ Hide All Ingredient Checklists'}
-              </button>
-              <button type="button" id="toggle-all-meal-formulas-btn" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition ${anyFormulaOpenToday ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">
-                ${anyFormulaOpenToday ? '▲ Hide All Formulas & Tips' : '▼ Show All Formulas & Tips'}
-              </button>
-            </div>
+            <button type="button" id="vegan-sync-finished-now-btn" class="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 transition" title="Set workout end time to right now (snapped to 15m) & schedule post-workout meal +15m">⚡ Finished Gym Now</button>
           </div>
         `;
+
+        const toggleEditorBtn = document.getElementById('toggle-vegan-gym-editor-btn');
+        if (toggleEditorBtn) {
+          toggleEditorBtn.addEventListener('click', () => {
+            state.openVeganGymTimeEditor = !state.openVeganGymTimeEditor;
+            renderVeganView();
+          });
+        }
 
         gymTimeBar.querySelectorAll('.vegan-gym-preset-btn').forEach(btn => {
           btn.addEventListener('click', () => {
