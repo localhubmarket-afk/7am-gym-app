@@ -63,6 +63,9 @@
     input[type="number"] {
       -moz-appearance: textfield;
     }
+    .hidden {
+      display: none !important;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-28 overflow-x-hidden w-full max-w-full selection:bg-emerald-500 selection:text-slate-950">
@@ -687,27 +690,36 @@
 
     function loadState() {
       const base = JSON.parse(JSON.stringify(DEFAULT_STATE));
-      // Layer 1: Try URL hash state
-      try {
-        if (window.location.hash && window.location.hash.startsWith('#state=')) {
-          const decoded = decodeURIComponent(escape(atob(window.location.hash.slice(7))));
-          return Object.assign({}, base, JSON.parse(decoded));
-        }
-      } catch (e) {}
-      // Layer 2: Try localStorage
+      let loaded = null;
+      // Layer 1: Try localStorage first (most up-to-date, no URL length cap)
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
-          return Object.assign({}, base, JSON.parse(raw));
+          loaded = JSON.parse(raw);
         }
       } catch (e) {}
-      // Layer 3: Try window.name (survives iframe reloads within the same tab)
-      try {
-        if (window.name && window.name.startsWith('BWS_STATE:')) {
-          return Object.assign({}, base, JSON.parse(window.name.slice(10)));
-        }
-      } catch (e) {}
-      return base;
+      // Layer 2: Try window.name (survives iframe reloads within the same tab)
+      if (!loaded) {
+        try {
+          if (window.name && window.name.startsWith('BWS_STATE:')) {
+            loaded = JSON.parse(window.name.slice(10));
+          }
+        } catch (e) {}
+      }
+      // Layer 3: Try URL hash state fallback
+      if (!loaded) {
+        try {
+          if (window.location.hash && window.location.hash.startsWith('#state=')) {
+            const decoded = decodeURIComponent(escape(atob(window.location.hash.slice(7))));
+            loaded = JSON.parse(decoded);
+          }
+        } catch (e) {}
+      }
+      const merged = Object.assign({}, base, loaded || {});
+      // Always start with all Setup & Image panels hidden so no exercise ever gets stuck open
+      merged.openImagePanels = {};
+      if (!merged.cardCollapsedState) merged.cardCollapsedState = {};
+      return merged;
     }
 
     let cloudSyncTimeout = null;
@@ -763,7 +775,8 @@
           const remote = (res && res.configured && res.data) ? res.data : res;
           if (remote && typeof remote === 'object' && (remote.workoutLogs || remote.selectedDayIndex !== undefined)) {
             const keepUrl = state.cloudDbUrl;
-            state = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), remote, { cloudDbUrl: keepUrl });
+            const currentOpenPanels = state.openImagePanels || {};
+            state = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), remote, { cloudDbUrl: keepUrl, openImagePanels: currentOpenPanels });
             saveState(true);
             renderWorkoutView();
             renderUSMCView();
@@ -2045,7 +2058,45 @@
       return svgs[equipType] || svgs.dumbbells;
     }
 
-    function getStepVisualDiagramHtml(ex, meta) {
+    function getExercisePanelKey(dayIdx, exId) {
+      return `${dayIdx}_${exId}`;
+    }
+
+    function isExerciseImgOpen(dayIdx, exId) {
+      if (!state.openImagePanels) state.openImagePanels = {};
+      const key = getExercisePanelKey(dayIdx, exId);
+      return !!state.openImagePanels[key];
+    }
+
+    function setExerciseImgOpen(dayIdx, exId, isOpen) {
+      if (!state.openImagePanels) state.openImagePanels = {};
+      const key = getExercisePanelKey(dayIdx, exId);
+      state.openImagePanels[key] = !!isOpen;
+      delete state.openImagePanels[exId];
+    }
+
+    function isExerciseSetsCollapsed(dayIdx, exId, isExComplete) {
+      if (!state.cardCollapsedState) state.cardCollapsedState = {};
+      const key = getExercisePanelKey(dayIdx, exId);
+      if (state.cardCollapsedState[key] === "collapsed") return true;
+      if (state.cardCollapsedState[key] === "expanded") return false;
+      return !!(isExComplete && state.autoCollapseDone !== false);
+    }
+
+    function toggleExerciseSetsCollapsed(dayIdx, exId, isExComplete) {
+      if (!state.cardCollapsedState) state.cardCollapsedState = {};
+      const key = getExercisePanelKey(dayIdx, exId);
+      const currentlyCollapsed = isExerciseSetsCollapsed(dayIdx, exId, isExComplete);
+      const nextCollapsed = !currentlyCollapsed;
+      state.cardCollapsedState[key] = nextCollapsed ? "collapsed" : "expanded";
+      if (nextCollapsed) {
+        setExerciseImgOpen(dayIdx, exId, false);
+      }
+      return nextCollapsed;
+    }
+
+    function getStepVisualDiagramHtml(ex, meta, dayIdx = state.selectedDayIndex) {
+      const panelKey = getExercisePanelKey(dayIdx, ex.id);
       return `
         <div class="bg-slate-950 border border-emerald-500/30 rounded-xl p-3 space-y-2.5">
           <div class="flex items-center justify-between border-b border-slate-800 pb-2">
@@ -2053,8 +2104,8 @@
               <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Visual Setup &amp; Execution</span>
               <span class="text-xs font-bold text-white">${meta.equipLabel}</span>
             </div>
-            <button type="button" data-hide-img="${ex.id}" class="hide-img-btn px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-[11px] font-extrabold transition">
-              ✕ Hide Image
+            <button type="button" data-hide-img="${ex.id}" data-day-idx="${dayIdx}" data-panel-key="${panelKey}" class="hide-img-btn px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-[11px] font-extrabold transition">
+              ✕ Hide Setup &amp; Image
             </button>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -2625,7 +2676,8 @@
         const exUnit = getExerciseUnit(ex.id);
         const unitLocked = !!(state.exerciseUnitPrefs && state.exerciseUnitPrefs[ex.id]);
         const showConversionHelper = !!state.convertedExercises[ex.id];
-        const isImgOpen = !!state.openImagePanels[ex.id];
+        const panelKey = getExercisePanelKey(dayIdx, ex.id);
+        const isImgOpen = isExerciseImgOpen(dayIdx, ex.id);
 
         let exDoneSets = 0;
         let setsHtml = '';
@@ -2722,19 +2774,16 @@
           `;
         }
 
-        if (!state.manualCollapsedCards) state.manualCollapsedCards = {};
         const isExComplete = exDoneSets === ex.sets;
         const isUpNext = ex.id === upNextExId;
-        const isCollapsedDone = isExComplete
-          ? ((state.autoCollapseDone !== false) && !state.expandedDoneCards[ex.id])
-          : !!state.manualCollapsedCards[ex.id];
+        const isCollapsedDone = isExerciseSetsCollapsed(dayIdx, ex.id, isExComplete);
 
         return `
           <article id="ex-card-${ex.id}" class="bg-slate-900 border ${isExComplete ? 'border-rose-400/25 bg-slate-900/60' : (isUpNext ? 'border-emerald-400/70 ring-2 ring-emerald-500/20 shadow-lg shadow-emerald-950/50' : (ex.id === 'cable_ab_crunch' ? 'border-emerald-500/50' : 'border-slate-800'))} rounded-2xl p-3.5 sm:p-4 space-y-3 scroll-mt-28 transition-all">
-            <!-- Exercise Header with Machine Drawing & Equipment Tag -->
+            <!-- Exercise Header (Machine Icon & Setup Pill Hidden When Setup & Image Is Hidden!) -->
             <div class="flex items-start justify-between gap-2.5">
               <div class="flex items-start gap-2.5">
-                <div class="w-11 h-11 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0 shadow-inner" title="${meta.equipLabel}">
+                <div id="hdr-img-${panelKey}" class="${isImgOpen ? 'flex' : 'hidden'} w-11 h-11 rounded-xl bg-slate-950 border border-slate-800 items-center justify-center shrink-0 shadow-inner" style="display: ${isImgOpen ? 'flex' : 'none'};" title="${meta.equipLabel}">
                   ${getEquipmentSvg(meta.equipType)}
                 </div>
                 <div>
@@ -2747,7 +2796,7 @@
                   </div>
                   <h3 class="text-sm font-extrabold text-white mt-0.5 leading-snug">${ex.name}</h3>
                   <div class="flex flex-wrap items-center gap-1.5 mt-1">
-                    <div class="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-300 bg-sky-500/10 border border-sky-500/25 px-2 py-0.5 rounded-lg">
+                    <div id="hdr-setup-${panelKey}" class="${isImgOpen ? 'inline-flex' : 'hidden'} items-center gap-1 text-[11px] font-semibold text-sky-300 bg-sky-500/10 border border-sky-500/25 px-2 py-0.5 rounded-lg" style="display: ${isImgOpen ? 'inline-flex' : 'none'};">
                       <span>🛠️</span>
                       <span class="text-white font-bold">${meta.equipLabel}</span>
                     </div>
@@ -2788,15 +2837,15 @@
             <!-- Show / Edit Sets Collapse Bar (Available on Pull-Ups & Every Exercise!) -->
             <div class="flex items-center justify-between bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-1.5 text-xs">
               <span class="text-slate-300 font-medium">${isExComplete ? `✓ All ${ex.sets} sets logged for today` : `${exDoneSets} of ${ex.sets} sets logged`}</span>
-              <button type="button" data-expand-done="${ex.id}" data-is-complete="${isExComplete ? '1' : '0'}" class="expand-done-btn text-emerald-400 hover:text-emerald-300 font-bold text-[11px]">
+              <button type="button" data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${isExComplete ? '1' : '0'}" class="expand-done-btn text-emerald-400 hover:text-emerald-300 font-bold text-[11px]">
                 ${isCollapsedDone ? '▼ Show / Edit Sets' : '▲ Hide Sets'}
               </button>
             </div>
 
-            <div class="${isCollapsedDone ? 'hidden' : 'space-y-3'}">
+            <div id="sets-wrap-${panelKey}" class="${isCollapsedDone ? 'hidden' : 'space-y-3'}" style="display: ${isCollapsedDone ? 'none' : 'block'};">
               <!-- Action Bar: Dropdown Visual Setup & Image Toggle, Rest Timer & Video Link -->
               <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-                <button type="button" data-toggle-img="${ex.id}" class="toggle-img-btn flex-1 bg-slate-950 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-between transition">
+                <button type="button" data-toggle-img="${ex.id}" data-day-idx="${dayIdx}" data-panel-key="${panelKey}" class="toggle-img-btn flex-1 bg-slate-950 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-between transition">
                   <span>📸 ${isImgOpen ? 'Hide Setup & Image' : 'Show Setup & Image'}</span>
                   <span class="text-[10px] text-emerald-400 font-extrabold">${isImgOpen ? '▲ Hide' : '▼ View'}</span>
                 </button>
@@ -2809,8 +2858,8 @@
               </div>
 
               <!-- Collapsible Visual Diagram Dropdown Panel (With Hide Button!) -->
-              <div id="img-panel-${ex.id}" class="${isImgOpen ? 'block' : 'hidden'}">
-                ${getStepVisualDiagramHtml(ex, meta)}
+              <div id="img-panel-${ex.id}" data-panel-id="${panelKey}" class="${isImgOpen ? 'block' : 'hidden'}" style="display: ${isImgOpen ? 'block' : 'none'};">
+                ${getStepVisualDiagramHtml(ex, meta, dayIdx)}
               </div>
 
               <!-- Set Table Header & Set Rows -->
@@ -2941,41 +2990,30 @@
         });
       });
 
-      // Show / Hide Setup & Image Dropdown Panel
+      // Show / Hide Setup & Image Dropdown Panel (Works for All Exercises, Pull-Ups & Daily Abs on Every Day!)
       listEl.querySelectorAll('.toggle-img-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.preventDefault();
           const exId = btn.getAttribute('data-toggle-img');
-          if (!state.openImagePanels) state.openImagePanels = {};
-          const nextOpen = !state.openImagePanels[exId];
-          state.openImagePanels[exId] = nextOpen;
-          const panel = document.getElementById(`img-panel-${exId}`);
-          if (panel) {
-            if (nextOpen) {
-              panel.classList.remove('hidden');
-              panel.classList.add('block');
-            } else {
-              panel.classList.remove('block');
-              panel.classList.add('hidden');
-            }
-          }
+          const dIdx = parseInt(btn.getAttribute('data-day-idx'), 10);
+          const targetDay = isNaN(dIdx) ? dayIdx : dIdx;
+          const nextOpen = !isExerciseImgOpen(targetDay, exId);
+          setExerciseImgOpen(targetDay, exId, nextOpen);
           saveState();
           renderWorkoutView();
+          if (PULLUP_EX_ID_TO_DAY[exId]) renderUSMCView();
         });
       });
       listEl.querySelectorAll('.hide-img-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.preventDefault();
           const exId = btn.getAttribute('data-hide-img');
-          if (!state.openImagePanels) state.openImagePanels = {};
-          state.openImagePanels[exId] = false;
-          const panel = document.getElementById(`img-panel-${exId}`);
-          if (panel) {
-            panel.classList.remove('block');
-            panel.classList.add('hidden');
-          }
+          const dIdx = parseInt(btn.getAttribute('data-day-idx'), 10);
+          const targetDay = isNaN(dIdx) ? dayIdx : dIdx;
+          setExerciseImgOpen(targetDay, exId, false);
           saveState();
           renderWorkoutView();
+          if (PULLUP_EX_ID_TO_DAY[exId]) renderUSMCView();
         });
       });
 
@@ -3091,24 +3129,18 @@
         });
       });
 
-      // UX Feature: Expand / Collapse Exercise Sets (Works on Pull-Ups & All Exercises Anytime!)
+      // UX Feature: Expand / Collapse Exercise Sets (Works on Pull-Ups, Daily Abs & All Exercises Anytime!)
       listEl.querySelectorAll('.expand-done-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
           const exId = btn.getAttribute('data-expand-done');
+          const dIdx = parseInt(btn.getAttribute('data-day-idx'), 10);
+          const targetDay = isNaN(dIdx) ? dayIdx : dIdx;
           const isComp = btn.getAttribute('data-is-complete') === '1';
-          if (!state.expandedDoneCards) state.expandedDoneCards = {};
-          if (!state.manualCollapsedCards) state.manualCollapsedCards = {};
-          if (isComp) {
-            state.expandedDoneCards[exId] = !state.expandedDoneCards[exId];
-          } else {
-            state.manualCollapsedCards[exId] = !state.manualCollapsedCards[exId];
-          }
-          // If collapsing the card, also close its setup image panel so nothing stays visible
-          if ((isComp && !state.expandedDoneCards[exId]) || (!isComp && state.manualCollapsedCards[exId])) {
-            state.openImagePanels[exId] = false;
-          }
+          toggleExerciseSetsCollapsed(targetDay, exId, isComp);
           saveState();
           renderWorkoutView();
+          if (PULLUP_EX_ID_TO_DAY[exId]) renderUSMCView();
         });
       });
 
@@ -3248,16 +3280,12 @@
           `;
         }
 
-        if (!state.expandedDoneCards) state.expandedDoneCards = {};
-        if (!state.manualCollapsedCards) state.manualCollapsedCards = {};
-        if (!state.openImagePanels) state.openImagePanels = {};
+        const dayIdxForPullup = mapInfo ? mapInfo.dayIdx : (d.dayNum - 1);
         const exIdForDay = mapInfo ? mapInfo.exId : `day${d.dayNum}_pullups`;
         const metaForDay = EXERCISE_META[exIdForDay] || EXERCISE_META.day1_pullups;
         const isCardDone = doneSetsCount === d.setsCount;
-        const isCardCollapsed = isCardDone
-          ? ((state.autoCollapseDone !== false) && !state.expandedDoneCards[exIdForDay])
-          : !!state.manualCollapsedCards[exIdForDay];
-        const isUsmcImgOpen = !!state.openImagePanels[exIdForDay];
+        const isCardCollapsed = isExerciseSetsCollapsed(dayIdxForPullup, exIdForDay, isCardDone);
+        const isUsmcImgOpen = isExerciseImgOpen(dayIdxForPullup, exIdForDay);
 
         return `
           <div class="bg-slate-900 border ${isCardDone ? 'border-rose-400/30' : 'border-slate-800'} rounded-2xl p-4 space-y-3">
@@ -3279,18 +3307,18 @@
 
             <div class="flex items-center justify-between bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-1.5 text-xs">
               <span class="text-slate-300 font-medium">${isCardDone ? `✓ All ${d.setsCount} sets logged` : `${doneSetsCount} of ${d.setsCount} sets logged`}</span>
-              <button type="button" data-usmc-collapse="${exIdForDay}" data-is-complete="${isCardDone ? '1' : '0'}" class="usmc-collapse-btn text-emerald-400 hover:text-emerald-300 font-bold text-[11px]">
+              <button type="button" data-usmc-collapse="${exIdForDay}" data-day-idx="${dayIdxForPullup}" data-is-complete="${isCardDone ? '1' : '0'}" class="usmc-collapse-btn text-emerald-400 hover:text-emerald-300 font-bold text-[11px]">
                 ${isCardCollapsed ? '▼ Show / Edit Sets' : '▲ Hide Sets'}
               </button>
             </div>
 
-            <div class="${isCardCollapsed ? 'hidden' : 'space-y-3'}">
-              <button type="button" data-usmc-toggle-img="${exIdForDay}" class="usmc-toggle-img-btn w-full bg-slate-950 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-between transition">
+            <div class="${isCardCollapsed ? 'hidden' : 'space-y-3'}" style="display: ${isCardCollapsed ? 'none' : 'block'};">
+              <button type="button" data-usmc-toggle-img="${exIdForDay}" data-day-idx="${dayIdxForPullup}" class="usmc-toggle-img-btn w-full bg-slate-950 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-between transition">
                 <span>📸 ${isUsmcImgOpen ? 'Hide Setup & Image' : 'Show Setup & Image'}</span>
                 <span class="text-[10px] text-emerald-400 font-extrabold">${isUsmcImgOpen ? '▲ Hide' : '▼ View'}</span>
               </button>
-              <div class="${isUsmcImgOpen ? 'block' : 'hidden'}">
-                ${getStepVisualDiagramHtml({ id: exIdForDay, notes: d.desc }, metaForDay)}
+              <div class="${isUsmcImgOpen ? 'block' : 'hidden'}" style="display: ${isUsmcImgOpen ? 'block' : 'none'};">
+                ${getStepVisualDiagramHtml({ id: exIdForDay, notes: d.desc }, metaForDay, dayIdxForPullup)}
               </div>
               <div class="grid grid-cols-5 gap-2">
                 ${setsRowHtml}
@@ -3337,17 +3365,12 @@
       });
 
       container.querySelectorAll('.usmc-collapse-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
           const exId = btn.getAttribute('data-usmc-collapse');
+          const dIdx = parseInt(btn.getAttribute('data-day-idx'), 10) || 0;
           const isComp = btn.getAttribute('data-is-complete') === '1';
-          if (isComp) {
-            state.expandedDoneCards[exId] = !state.expandedDoneCards[exId];
-          } else {
-            state.manualCollapsedCards[exId] = !state.manualCollapsedCards[exId];
-          }
-          if ((isComp && !state.expandedDoneCards[exId]) || (!isComp && state.manualCollapsedCards[exId])) {
-            state.openImagePanels[exId] = false;
-          }
+          toggleExerciseSetsCollapsed(dIdx, exId, isComp);
           saveState();
           renderUSMCView();
           renderWorkoutView();
@@ -3355,9 +3378,12 @@
       });
 
       container.querySelectorAll('.usmc-toggle-img-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
           const exId = btn.getAttribute('data-usmc-toggle-img');
-          state.openImagePanels[exId] = !state.openImagePanels[exId];
+          const dIdx = parseInt(btn.getAttribute('data-day-idx'), 10) || 0;
+          const nextOpen = !isExerciseImgOpen(dIdx, exId);
+          setExerciseImgOpen(dIdx, exId, nextOpen);
           saveState();
           renderUSMCView();
           renderWorkoutView();
@@ -3365,9 +3391,11 @@
       });
 
       container.querySelectorAll('.hide-img-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
           const exId = btn.getAttribute('data-hide-img');
-          state.openImagePanels[exId] = false;
+          const dIdx = parseInt(btn.getAttribute('data-day-idx'), 10) || 0;
+          setExerciseImgOpen(dIdx, exId, false);
           saveState();
           renderUSMCView();
           renderWorkoutView();
@@ -3876,12 +3904,9 @@
           const targetId = jumpSelect.value;
           if (!targetId) return;
           const exId = targetId.replace('ex-card-', '');
-          if (state.manualCollapsedCards && state.manualCollapsedCards[exId]) {
-            state.manualCollapsedCards[exId] = false;
-          }
-          if (state.expandedDoneCards) {
-            state.expandedDoneCards[exId] = true;
-          }
+          const dIdx = state.selectedDayIndex || 0;
+          if (!state.cardCollapsedState) state.cardCollapsedState = {};
+          state.cardCollapsedState[getExercisePanelKey(dIdx, exId)] = "expanded";
           saveState();
           renderWorkoutView();
           const cardEl = document.getElementById(targetId);
@@ -3895,9 +3920,10 @@
       if (toggleFocusBtn) {
         toggleFocusBtn.addEventListener('click', () => {
           state.autoCollapseDone = state.autoCollapseDone === false ? true : false;
-          if (state.autoCollapseDone) state.expandedDoneCards = {};
+          if (state.autoCollapseDone) state.cardCollapsedState = {};
           saveState();
           renderWorkoutView();
+          renderUSMCView();
           showToast(state.autoCollapseDone ? '🎯 Auto-Collapse Done enabled (saves screen space)' : '📋 All completed exercises expanded');
         });
       }
@@ -3929,16 +3955,18 @@
       const toggleAllImgsBtn = document.getElementById('toggle-all-images-btn');
       if (toggleAllImgsBtn) {
         toggleAllImgsBtn.addEventListener('click', () => {
-          const dayObj = DAYS_SCHEDULE[state.selectedDayIndex];
+          const dIdx = state.selectedDayIndex || 0;
+          const dayObj = DAYS_SCHEDULE[dIdx];
           const exList = [...dayObj.exercises];
-          if (state.crunchDays.includes(state.selectedDayIndex)) exList.push(CABLE_CRUNCH_EXERCISE);
-          const anyOpen = exList.some(e => state.openImagePanels[e.id]);
+          if (state.crunchDays.includes(dIdx)) exList.push(CABLE_CRUNCH_EXERCISE);
+          const anyOpen = exList.some(e => isExerciseImgOpen(dIdx, e.id));
           exList.forEach(e => {
-            state.openImagePanels[e.id] = !anyOpen;
+            setExerciseImgOpen(dIdx, e.id, !anyOpen);
           });
           saveState();
           renderWorkoutView();
-          showToast(!anyOpen ? '📸 Opened all visual setup diagrams' : '🙈 Hid all setup diagrams');
+          renderUSMCView();
+          showToast(!anyOpen ? '📸 Showed Setup & Image for today' : '🙈 Hid all Setup & Image panels');
         });
       }
 
