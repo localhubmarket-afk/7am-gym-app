@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark overflow-x-hidden">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -39,10 +39,9 @@
     html, body {
       font-family: 'Inter', sans-serif;
       -webkit-tap-highlight-color: transparent;
-      overflow-x: hidden;
+      overflow-x: clip;
       max-width: 100vw;
       width: 100%;
-      position: relative;
     }
     select {
       max-width: 100%;
@@ -68,57 +67,74 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-28 overflow-x-hidden w-full max-w-full selection:bg-emerald-500 selection:text-slate-950">
 
-  <!-- Sticky Top App Header & Live Mini Timer -->
-  <header class="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3">
-    <div class="max-w-xl mx-auto flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-extrabold text-sm shadow-lg shadow-emerald-500/20">
-          7AM
+  <!-- Fixed Top App Header & Always-Visible Pinned Rest Timer HUD -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/90 shadow-xl shadow-slate-950/80">
+    <div class="max-w-xl mx-auto px-3.5 pt-2.5 pb-2 space-y-2">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-extrabold text-xs shrink-0 shadow-md shadow-emerald-500/20">
+            7AM
+          </div>
+          <div class="min-w-0">
+            <h1 class="text-xs sm:text-sm font-bold tracking-tight text-white leading-tight truncate">7AM Gym &amp; Vegan Hub</h1>
+            <p class="text-[10px] text-emerald-400 font-medium truncate" id="header-subtitle">Aligned 5-Day Split • Pull-Ups #1 • Daily Abs</p>
+          </div>
         </div>
-        <div>
-          <h1 class="text-sm font-bold tracking-tight text-white leading-tight">7AM Gym &amp; Vegan Hub</h1>
-          <p class="text-[11px] text-emerald-400 font-medium" id="header-subtitle">Daily 7:00 AM Schedule • Cable Crunch 4x/Wk</p>
-        </div>
-      </div>
 
-      <!-- Compact Floating Timer Pill & Database Sync Button in Header -->
-      <div class="flex items-center gap-1.5">
-        <button id="open-db-modal-btn" type="button" class="flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 px-2.5 py-1.5 rounded-xl text-xs font-bold transition" title="Database & Permanent Save Options">
-          <span id="db-status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          <span>💾 Save / DB</span>
-        </button>
-        <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5">
-          <button id="header-timer-toggle" type="button" class="flex items-center gap-1.5 text-xs font-semibold text-slate-200 hover:text-emerald-400 transition" title="Start or pause rest timer">
-            <span id="header-timer-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
-            <span id="header-timer-display" class="font-mono text-sm font-bold text-emerald-400">01:30</span>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="open-db-modal-btn" type="button" class="flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 px-2.5 py-1 rounded-xl text-[11px] font-bold transition" title="Database & Permanent Save Options">
+            <span id="db-status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>💾 Save / DB</span>
           </button>
-          <button id="header-timer-open" type="button" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-0.5 rounded-lg font-medium transition">
+          <button id="header-timer-open" type="button" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-1 rounded-xl font-semibold transition">
             Timer
           </button>
         </div>
       </div>
+
+      <!-- Always-Pinned Interactive Rest Timer Bar (No Scrolling Needed!) -->
+      <div class="bg-slate-900/95 border border-slate-800 rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <button id="header-timer-toggle" type="button" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500/50 transition shrink-0" title="Tap to Start or Pause Rest Timer">
+            <span id="header-timer-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+            <span id="header-timer-display" class="font-mono text-sm sm:text-base font-extrabold text-emerald-400 tracking-tight">01:30</span>
+          </button>
+          <span id="pinned-timer-context" class="text-[11px] font-semibold text-slate-300 truncate">Tap any set or Start to time rest</span>
+        </div>
+
+        <div class="flex items-center gap-1 shrink-0">
+          <button id="pinned-jump-next-btn" type="button" class="px-2 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[10px] font-extrabold transition" title="Jump to next incomplete set">▶ Next</button>
+          <button id="pinned-timer-minus" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 transition" title="Subtract 15 seconds">-15s</button>
+          <button id="pinned-timer-play" type="button" class="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-extrabold transition">Start</button>
+          <button id="pinned-timer-plus" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 transition" title="Add 15 seconds">+15s</button>
+          <button id="pinned-timer-reset" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-400 hover:text-white transition" title="Reset timer">↺</button>
+        </div>
+      </div>
+    </div>
+    <!-- Live Pinned Top Countdown Progress Strip -->
+    <div class="w-full bg-slate-900 h-1 overflow-hidden">
+      <div id="header-timer-progress" class="bg-emerald-500 h-full transition-all duration-300" style="width: 100%"></div>
     </div>
   </header>
 
   <!-- Toast Notification -->
-  <div id="toast-container" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 opacity-0 -translate-y-2">
+  <div id="toast-container" class="fixed top-28 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 opacity-0 -translate-y-2">
     <div class="bg-emerald-500 text-slate-950 font-semibold text-xs px-4 py-2 rounded-full shadow-xl flex items-center gap-2">
       <span id="toast-text">Saved!</span>
     </div>
   </div>
 
-  <!-- Main Content Container -->
-  <main class="max-w-xl w-full mx-auto px-4 pt-4 space-y-5 overflow-x-hidden">
+  <!-- Main Content Container (Padded for Fixed Top Header + Timer Bar) -->
+  <main class="max-w-xl w-full mx-auto px-4 pt-28 space-y-5 overflow-x-hidden">
 
     <!-- ==================== VIEW 1: WORKOUT & WEIGHT TRACKER ==================== -->
     <section id="view-workout" class="space-y-4">
-      <!-- 7-Day Selector Strip -->
-      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-3">
-        <!-- Multi-Week Progression Bar -->
-        <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-800/80">
+      <!-- Streamlined 7-Day Cycle & Week Selector Card -->
+      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-2">
-            <label for="week-select" class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">📅 Training Week:</label>
-            <select id="week-select" aria-label="Select training week" class="bg-slate-950 border border-emerald-500/40 text-white text-xs rounded-xl px-2.5 py-1.5 font-extrabold focus:outline-none focus:border-emerald-400">
+            <label for="week-select" class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">📅 Week:</label>
+            <select id="week-select" aria-label="Select training week" class="bg-slate-950 border border-emerald-500/40 text-white text-xs rounded-xl px-2.5 py-1 font-extrabold focus:outline-none focus:border-emerald-400">
               <option value="1">Week 1</option>
               <option value="2">Week 2</option>
               <option value="3">Week 3</option>
@@ -134,38 +150,44 @@
             </select>
             <span id="week-status-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">In Progress</span>
           </div>
-          <button type="button" id="finish-week-btn" class="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-extrabold transition">
-            ✓ Finish Week → Next
-          </button>
-        </div>
-
-        <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">7:00 AM Weekly Split</span>
-            <span class="text-[11px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold" id="crunch-weekly-badge">4/4 Cable Crunch Days</span>
+            <span class="text-[10px] bg-slate-950 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-full font-semibold" id="crunch-weekly-badge">Done / Partial</span>
           </div>
-          <select id="weight-unit-select" aria-label="Weight unit" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 font-semibold focus:outline-none focus:border-emerald-500">
-            <option value="lbs">Default: lbs</option>
-            <option value="kg">Default: kg</option>
-          </select>
         </div>
 
         <div class="grid grid-cols-7 gap-1.5" id="day-selector-grid">
           <!-- Populated dynamically by JS -->
         </div>
 
-        <!-- Cable Crunch 4x/Week Schedule Preset Bar -->
-        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80 text-xs">
-          <span class="text-slate-400 font-medium">Cable Crunch 4x/Wk Days:</span>
-          <div class="flex items-center gap-1.5">
-            <button type="button" id="crunch-preset-lift" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">
-              Mon • Tue • Thu • Sat
-            </button>
-            <button type="button" id="crunch-preset-spaced" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 transition">
-              Mon • Wed • Fri • Sun
-            </button>
+        <!-- Collapsible Secondary Settings Drawer (Progressive Disclosure — Keeps Screen Clean!) -->
+        <details class="pt-1 border-t border-slate-800/70 text-xs">
+          <summary class="cursor-pointer text-[11px] font-semibold text-slate-400 hover:text-slate-200 flex items-center justify-between py-0.5">
+            <span>⚙️ Week, Unit &amp; Daily Abs Settings</span>
+            <span class="text-[10px] text-emerald-400">Tap to open ▾</span>
+          </summary>
+          <div class="pt-2.5 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <select id="weight-unit-select" aria-label="Weight unit" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:border-emerald-500">
+                <option value="lbs">Default: lbs</option>
+                <option value="kg">Default: kg</option>
+              </select>
+              <button type="button" id="finish-week-btn" class="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-extrabold transition">
+                ✓ Finish Week → Next
+              </button>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span class="text-slate-400 font-medium">Daily Abs Schedule:</span>
+              <div class="flex items-center gap-1.5">
+                <button type="button" id="crunch-preset-lift" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">
+                  Mon • Tue • Thu • Sat
+                </button>
+                <button type="button" id="crunch-preset-spaced" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 transition">
+                  Mon • Wed • Fri • Sun
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        </details>
       </div>
 
       <!-- Day Summary Banner -->
@@ -198,9 +220,14 @@
             <!-- Populated by JS -->
           </select>
         </div>
-        <button type="button" id="toggle-all-images-btn" class="w-full sm:w-auto px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold transition">
-          📸 Show/Hide All Diagrams
-        </button>
+        <div class="flex items-center gap-1.5 w-full sm:w-auto">
+          <button type="button" id="toggle-focus-collapse-btn" class="flex-1 sm:flex-initial px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-[11px] font-bold transition" title="Automatically collapse finished exercises to save screen space">
+            🎯 Auto-Collapse Done: ON
+          </button>
+          <button type="button" id="toggle-all-images-btn" class="flex-1 sm:flex-initial px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold transition">
+            📸 Show/Hide All Diagrams
+          </button>
+        </div>
       </div>
 
       <!-- Exercise Cards List -->
@@ -327,15 +354,36 @@
 
     <!-- ==================== VIEW 4: LOW-APPETITE VEGAN MEAL PLANNER ==================== -->
     <section id="view-vegan" class="hidden space-y-4">
+      <!-- Synced Day 1 – Day 7 Selector Strip with Soft Completion Dots -->
+      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400" id="vegan-week-day-title">🌱 Week 1 • Day 1 Fuel</span>
+            <span id="vegan-day-status-pill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">0/3 Meals</span>
+          </div>
+          <div class="flex items-center gap-2 text-[10px] font-semibold text-slate-300 bg-slate-950 border border-slate-800 px-2.5 py-0.5 rounded-full">
+            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-400/75 inline-block"></span> Done (3/3)</span>
+            <span class="inline-flex items-center gap-1 ml-1"><span class="w-2 h-2 rounded-full bg-amber-300/75 inline-block"></span> Partial</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-7 gap-1.5" id="vegan-day-selector-grid">
+          <!-- Populated dynamically by JS -->
+        </div>
+      </div>
+
       <!-- Ultra-Simple 3-Meal Daily Plan Header -->
       <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-4 space-y-3">
         <div class="flex items-start justify-between gap-2">
           <div>
             <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">100% Kitchen Scale Grams (g) • Low-Appetite Plan</span>
             <h2 class="text-base font-extrabold text-white mt-0.5">Light 6-Pack &amp; Muscle Plan (1,520 kcal • 139g P)</h2>
-            <p class="text-xs text-slate-300 mt-1">Every ingredient measured in exact grams (g) for your scale — Bob’s Red Mill Protein Oats (40g/day), Pea Protein Isolate (75g/day), Extra-Firm Tofu (175g/day), Silk Protein Milk (900g/day), and Nori Seaweed (5g/day).</p>
+            <p class="text-xs text-slate-300 mt-1">Every ingredient measured in exact grams (g) for your scale — Bob’s Red Mill Protein Oats (40g/day), Pea Protein Isolate (75g/day), Extra-Firm Tofu (175g/day), Silk Protein Milk (900g/day), Nori Seaweed (5g/day), Sesame Oil (2.5g) &amp; Tamari (2.5g).</p>
           </div>
-          <button type="button" id="reset-vegan-day-btn" class="shrink-0 text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white">Reset Today</button>
+          <div class="flex flex-col items-end gap-1.5 shrink-0">
+            <button type="button" id="log-all-vegan-day-btn" class="text-[11px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 transition">✓ Log All 3</button>
+            <button type="button" id="reset-vegan-day-btn" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white">Reset Today</button>
+          </div>
         </div>
 
         <!-- Live Macro Progress Bars -->
@@ -360,6 +408,20 @@
           </div>
         </div>
       </div>
+
+      <!-- Interactive 4-Day Scale Batch Prep Checklist (Oats + Rice) -->
+      <details id="batch-prep-drawer" class="bg-slate-900 border border-emerald-500/30 rounded-2xl p-3.5 text-xs">
+        <summary class="cursor-pointer font-extrabold text-emerald-300 flex items-center justify-between">
+          <span>🥣 4-Day Kitchen Scale Batch Prep Mode (Oats + Rice)</span>
+          <span class="text-[10px] bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full text-emerald-300">Tap on Prep Days (Day 1 &amp; Day 5) ▾</span>
+        </summary>
+        <div class="mt-3 space-y-2.5 pt-2.5 border-t border-slate-800">
+          <p class="text-[11px] text-slate-300">Place your mixing container or rice pot on your scale, press <strong>Tare (0g)</strong> after each step, and tap to check off:</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="batch-prep-checklist">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </details>
 
       <!-- The 3 Daily Repeat Meals -->
       <div class="space-y-3" id="vegan-meals-container">
@@ -451,9 +513,12 @@
           <div id="shopping-progress-bar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 0%"></div>
         </div>
 
-        <div class="flex items-center gap-2 pt-1">
+        <div class="flex flex-wrap items-center gap-2 pt-1">
           <button type="button" id="copy-shopping-list-btn" class="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition">
             📋 Copy Unchecked List
+          </button>
+          <button type="button" id="check-pantry-staples-btn" class="py-2 px-3 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold transition" title="Check off long-lasting pantry bottles/bags you already have at home">
+            ✓ Have Pantry Staples
           </button>
           <button type="button" id="reset-shopping-list-btn" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold transition">
             Uncheck All
@@ -586,7 +651,7 @@
     const DEFAULT_STATE = {
       selectedDayIndex: TODAY_DAY_INDEX, // Automatically opens on today's day of the week!
       weightUnit: 'lbs',
-      crunchDays: [0, 1, 3, 5], // Default 4 days/week: Mon, Tue, Thu, Sat
+      crunchDays: [0, 1, 2, 3, 4, 5, 6], // Daily Cable Abdominal Crunch (all 7 days, pre-filled from previous day!)
       pullupTrainingSetReps: 3,
       pullupHardestDay: 1,
       soundEnabled: true,
@@ -609,6 +674,8 @@
       currentWeek: 1,
       completedWeeks: {}, // keyed by week number -> boolean
       exerciseUnitPrefs: {}, // keyed by exId -> 'lbs' | 'kg' (locked on first execution!)
+      autoCollapseDone: true, // UX Focus Mode: collapses finished exercises into a 1-line summary bar
+      expandedDoneCards: {}, // keyed by exId -> boolean (manual expand override when done)
       openImagePanels: {}, // keyed by exId -> boolean (whether visual diagram dropdown is open)
       convertedExercises: {}, // keyed by exId -> boolean (true only when user switches lbs <-> kg)
       workoutLogs: {}, // keyed by `w${week}_${dayIdx}_${exId}_${setIdx}` or legacy `${dayIdx}_${exId}_${setIdx}` -> { weight: '', reps: '', done: false, unit: 'lbs'|'kg' }
@@ -737,6 +804,10 @@
     }
 
     let state = loadState();
+    if (!state.migratedDailyAbsV3) {
+      state.crunchDays = [0, 1, 2, 3, 4, 5, 6];
+      state.migratedDailyAbsV3 = true;
+    }
 
     function showToast(msg) {
       const container = document.getElementById('toast-container');
@@ -775,8 +846,8 @@
 
     const CABLE_CRUNCH_EXERCISE = {
       id: 'cable_ab_crunch',
-      name: 'Cable Abdominal Crunch',
-      badge: 'Core • 4x/Week Target',
+      name: 'Cable Abdominal Crunch (Daily Core)',
+      badge: 'Daily Abs • Pre-fills Prev Day',
       sets: 3,
       reps: '10-15',
       restSec: 90,
@@ -788,13 +859,25 @@
     const DAYS_SCHEDULE = [
       {
         dayShort: 'Day 1',
+        daySub: 'Upper 1',
         dayFull: 'Day 1',
         time: '7:00 AM',
         title: 'Upper Body 1 + USMC Pull-Up Day 1',
         warmupType: 'upper',
         usmcDay: 1,
-        usmcSummary: 'USMC Day 1: 5 Maximum Effort Sets (90s rest between sets)',
+        usmcSummary: 'Exercise #1 Today: USMC Day 1 — 5 Maximum Effort Overhand Pull-Up Sets (90s rest)',
         exercises: [
+          {
+            id: 'day1_pullups',
+            name: 'USMC Pull-Up Day 1: 5 Max Effort Sets (First Exercise)',
+            badge: 'Pull-Ups First • #1',
+            sets: 5,
+            reps: 'Max Reps',
+            restSec: 90,
+            restLabel: '90 sec',
+            videoUrl: 'https://youtu.be/w_yuTRQd6HA',
+            notes: 'Perform first thing at 7:00 AM while your lats and grip are fresh! 5 sets of maximum strict overhand reps with 90s rest between sets.'
+          },
           {
             id: 'mon_bench',
             name: 'Barbell Bench Press',
@@ -803,17 +886,17 @@
             restSec: 150,
             restLabel: '2-3 min',
             videoUrl: 'https://youtu.be/pCGVSBk0bIQ',
-            notes: 'Grip slightly outside shoulder-width, keep chest up, lower bar to sternum with elbows tucked ~45-60°.'
+            notes: 'Grip slightly outside shoulder-width, keep chest up, lower bar to level of nipples, avoid flaring elbows out.'
           },
           {
             id: 'mon_cs_row',
-            name: 'Dumbbell Chest Supported Row (Mid/Upper Back)',
+            name: 'Dumbbell Chest Supported Row (Mid/Upper Back Focused)',
             sets: 3,
             reps: '10-12',
             restSec: 120,
             restLabel: '2 min',
             videoUrl: 'https://youtu.be/kNvy2_9Ji2w',
-            notes: 'Set bench ~30° (2 notches up), angle elbows out 45-60°, squeeze shoulder blades together at top.'
+            notes: 'Set bench 2 notches up from bottom (~30°), angle elbows out 45-60°, squeeze shoulder blades together.'
           },
           {
             id: 'mon_ohp',
@@ -823,7 +906,7 @@
             restSec: 150,
             restLabel: '2-3 min',
             videoUrl: 'https://youtu.be/S3kYKH32VqI',
-            notes: 'Press in a straight vertical line, squeeze glutes and brace core tightly to avoid arching lower back.'
+            notes: 'Press in straight line up, keep core and glutes engaged, avoid arching back.'
           },
           {
             id: 'mon_lat_pd',
@@ -833,17 +916,17 @@
             restSec: 120,
             restLabel: '2 min',
             videoUrl: 'https://youtu.be/AvYZZhEl7Xk',
-            notes: 'Overhand grip outside shoulder-width, slight lean back, pull elbows down until bar reaches chin.'
+            notes: 'Grip outside shoulder width, lean back slightly, pull bar to just under chin.'
           },
           {
             id: 'mon_cable_fly',
-            name: 'Standing High to Low Cable Flyes',
+            name: 'Standing High To Low Cable Flyes',
             sets: 3,
             reps: '10-15',
             restSec: 105,
             restLabel: '1.5-2 min',
             videoUrl: 'https://youtu.be/JfZjng7jAKs',
-            notes: 'Set cables to top position, staggered stance, sweep arms down and together in front of lower chest.'
+            notes: 'Set cables to highest position, use staggered stance, squeeze arms together down in front of you.'
           },
           {
             id: 'mon_lat_raise',
@@ -853,7 +936,7 @@
             restSec: 105,
             restLabel: '1.5-2 min',
             videoUrl: 'https://youtu.be/1muit9qEctY',
-            notes: 'Raise arm in scapular plane (~15-30° in front), think of pushing hand out toward the wall. Rest 30s between arms.'
+            notes: 'Raise arm in scapular plane, align cable with arm, think of pushing hand "out" not "up". Rest 30s between arms.'
           },
           {
             id: 'mon_face_pull',
@@ -863,19 +946,31 @@
             restSec: 60,
             restLabel: '1 min',
             videoUrl: 'https://youtu.be/02g7XtSRXug',
-            notes: 'High pulley with rope attachment, pull to forehead into 90° biceps-flexing pose, then raise into Y-press.'
+            notes: 'Use double rope attachment if possible, use light weight, perform without Y-raise to make it easier.'
           }
         ]
       },
       {
         dayShort: 'Day 2',
+        daySub: 'Lower 1',
         dayFull: 'Day 2',
         time: '7:00 AM',
-        title: 'Lower Body 1 (Quad-Focused) + USMC Day 2',
+        title: 'Lower Body 1 (Quad-Focused) + USMC Pull-Up Day 2',
         warmupType: 'lower',
         usmcDay: 2,
-        usmcSummary: 'USMC Day 2: Pyramid Day (1, 2, 3... reps until miss + 1 max effort set; rest 10s × reps)',
+        usmcSummary: 'Exercise #1 Today: USMC Day 2 — Pyramid Sets (1, 2, 3, 4... + Max Effort Set; rest 10s × reps)',
         exercises: [
+          {
+            id: 'day2_pullups',
+            name: 'USMC Pull-Up Day 2: Pyramid Sets (First Exercise)',
+            badge: 'Pull-Ups First • #1',
+            sets: 5,
+            reps: 'Pyramid 1→Max',
+            restSec: 60,
+            restLabel: '10s × reps',
+            videoUrl: 'https://youtu.be/w_yuTRQd6HA',
+            notes: 'Perform first thing before Barbell Squats! Start at 1 rep and add +1 rep each set until you miss a target, then do 1 final max-effort set (rest 10s per rep).'
+          },
           {
             id: 'tue_squat',
             name: 'Barbell Back Squat',
@@ -884,29 +979,31 @@
             restSec: 150,
             restLabel: '2-3 min',
             videoUrl: 'https://youtu.be/AWo-q7P-HZ0',
-            notes: 'Stance just outside shoulder-width, toes ~15° out, squat to parallel or below keeping bar over midfoot.'
+            notes: 'Experiment with foot stance, squat down to at least parallel, elevate heels onto weight plates if needed.'
           },
           {
             id: 'tue_rdl',
-            name: 'Superset A1: Dumbbell Romanian Deadlift',
+            name: 'A1. Dumbbell Romanian Deadlift',
             badge: 'Superset A1',
+            supersetPair: 'tue_leg_ext',
             sets: 3,
             reps: '8-10',
             restSec: 60,
             restLabel: '1 min → A2',
             videoUrl: 'https://youtu.be/Xu4DxwKWzl4',
-            notes: 'Push hips straight back with slight knee bend, lower to mid-shin keeping neutral spine, rest 1 min then do A2.'
+            notes: 'Perform dumbbell romanian deadlift, rest 1 minute, perform seated leg extensions (A2), rest 1 minute, then repeat for a total of 3 times.'
           },
           {
             id: 'tue_leg_ext',
-            name: 'Superset A2: Seated Leg Extensions',
+            name: 'A2. Seated Leg Extensions',
             badge: 'Superset A2',
+            supersetPair: 'tue_rdl',
             sets: 3,
             reps: '10-15',
             restSec: 60,
             restLabel: '1 min → A1',
             videoUrl: 'https://youtu.be/nIalczfM8es',
-            notes: 'Align knees with machine pivot, pull handles down to lock hips, extend fully and pause briefly at top.'
+            notes: 'Align knees with machine pivot, pull handles down, extend legs straight forward and pause briefly at top. Rest 1 min then return to A1.'
           },
           {
             id: 'tue_lunges',
@@ -916,17 +1013,17 @@
             restSec: 120,
             restLabel: '2 min',
             videoUrl: 'https://youtu.be/JB20RuTOaFc',
-            notes: 'Keep torso upright, drive front knee forward toward toes, keep 80-90% of weight in front leg.'
+            notes: 'Take steps forward, keep torso upright, drive knee forward towards toes (keep 80-90% of weight in front leg).'
           },
           {
             id: 'tue_calf',
-            name: 'Standing Weighted Calf Raises',
+            name: 'Standing Weighted Calf Raises (Barbell or Dumbbell)',
             sets: 3,
             reps: '10-15',
             restSec: 90,
             restLabel: '1.5 min',
             videoUrl: 'https://youtu.be/q2Eigaa9dKU',
-            notes: 'Elevate toes on weight plate, press straight up through big toes, control heel slowly down.'
+            notes: 'Feet hip width apart, elevate toes on weight plate, press up on big toes and control heel slowly down.'
           },
           {
             id: 'tue_side_plank',
@@ -936,63 +1033,31 @@
             restSec: 60,
             restLabel: '1 min',
             videoUrl: 'https://youtu.be/o4LGPtKjbhU',
-            notes: 'Push elbow into ground, keep shoulders, hips, and knees in a straight line.'
+            notes: 'Push elbow into ground, keep body straight, add rotations to make it harder.'
           }
         ]
       },
       {
         dayShort: 'Day 3',
+        daySub: 'Push',
         dayFull: 'Day 3',
         time: '7:00 AM',
-        title: '7AM Pull-Up Day 3 & Active Core/Mobility',
+        title: 'Push Workout + USMC Pull-Up Day 3',
         warmupType: 'upper',
         usmcDay: 3,
-        usmcSummary: 'USMC Day 3: 9 Training Sets (3 normal overhand, 3 close underhand pinky-touching, 3 wide overhand; 60s rest)',
+        usmcSummary: 'Exercise #1 Today: USMC Day 3 — 9 Training Grip Sets (3 Normal Overhand, 3 Close Underhand Pinkies-Touching, 3 Wide Overhand; 60s rest)',
         exercises: [
           {
-            id: 'wed_usmc_set1',
-            name: 'USMC Day 3: Normal Overhand Pull-Ups',
-            badge: 'USMC Set Group 1',
-            sets: 3,
+            id: 'day3_pullups',
+            name: 'USMC Pull-Up Day 3: 9 Training Grip Sets (First Exercise)',
+            badge: 'Pull-Ups First • #1',
+            sets: 9,
             reps: 'Training Set',
             restSec: 60,
             restLabel: '60 sec',
             videoUrl: 'https://youtu.be/w_yuTRQd6HA',
-            notes: 'Complete 3 training sets with standard overhand grip. Rest strictly 60 seconds between sets.'
+            notes: 'Perform first thing before Push presses! Sets 1–3: Normal Overhand Grip • Sets 4–6: Close Underhand (pinkies touching) • Sets 7–9: Wide Overhand Grip. Rest 60s between sets.'
           },
-          {
-            id: 'wed_usmc_set2',
-            name: 'USMC Day 3: Close Underhand Grip (Pinkies Touching)',
-            badge: 'USMC Set Group 2',
-            sets: 3,
-            reps: 'Training Set',
-            restSec: 60,
-            restLabel: '60 sec',
-            videoUrl: 'https://youtu.be/w_yuTRQd6HA',
-            notes: 'Palms facing toward your face with little fingers touching each other. Rest 60 seconds between sets.'
-          },
-          {
-            id: 'wed_usmc_set3',
-            name: 'USMC Day 3: Wide-Grip Overhand Pull-Ups',
-            badge: 'USMC Set Group 3',
-            sets: 3,
-            reps: 'Training Set',
-            restSec: 60,
-            restLabel: '60 sec',
-            videoUrl: 'https://youtu.be/w_yuTRQd6HA',
-            notes: 'Wide overhand grip focusing on lats pulling toward the center of your body. Rest 60 seconds between sets.'
-          }
-        ]
-      },
-      {
-        dayShort: 'Day 4',
-        dayFull: 'Day 4',
-        time: '7:00 AM',
-        title: 'Push Workout + USMC Pull-Up Day 4',
-        warmupType: 'upper',
-        usmcDay: 4,
-        usmcSummary: 'USMC Day 4: Max Training Sets with 60s rest until you miss a perfect training set',
-        exercises: [
           {
             id: 'thu_inc_db',
             name: 'Low Incline Dumbbell Press',
@@ -1001,7 +1066,7 @@
             restSec: 150,
             restLabel: '2-3 min',
             videoUrl: 'https://youtu.be/kpzUeELReEA',
-            notes: 'Set bench 1-2 notches up (~15-30°), keep chest up, lower dumbbells with elbows at 45-60°.'
+            notes: 'Set bench 1-2 notches up from bottom (~15-30°), keep chest up, avoid flaring elbows out.'
           },
           {
             id: 'thu_mid_fly',
@@ -1011,7 +1076,7 @@
             restSec: 105,
             restLabel: '1.5-2 min',
             videoUrl: 'https://youtu.be/Y8E3dHNsSTU',
-            notes: 'Bench at ~75° in front of cable machine, cables at chest height, bring arms together and pause at peak.'
+            notes: 'Set bench 1 notch down from highest (~75°), set cables to chest height, squeeze arms together, pause at end position.'
           },
           {
             id: 'thu_flat_db',
@@ -1021,7 +1086,7 @@
             restSec: 120,
             restLabel: '2 min',
             videoUrl: 'https://youtu.be/g14dhC5KYBM',
-            notes: 'Pinch shoulder blades down and together, control weight down to torso level and press up smoothly.'
+            notes: 'Keep chest up, avoid flaring elbows out, control the weight up and down.'
           },
           {
             id: 'thu_db_lat',
@@ -1031,7 +1096,7 @@
             restSec: 105,
             restLabel: '1.5-2 min',
             videoUrl: 'https://youtu.be/zcO3sgAeLA0',
-            notes: 'Lean torso forward ~15°, raise dumbbells in a Y-path (15-30° in front of body) to shoulder height.'
+            notes: 'Lean torso forward slightly (~15°), raise arms in scapular plane, avoid using momentum.'
           },
           {
             id: 'thu_oh_ext',
@@ -1041,7 +1106,7 @@
             restSec: 105,
             restLabel: '1.5-2 min',
             videoUrl: 'https://youtu.be/3d86xMhHROA',
-            notes: 'Bench at 45°, angle upper arms back parallel to torso, lock elbows and bend forearms behind head.'
+            notes: 'Set bench to 45 degrees (2-3 notches up), move arms parallel to torso, keep elbow locked.'
           },
           {
             id: 'thu_pushdown',
@@ -1051,28 +1116,30 @@
             restSec: 105,
             restLabel: '1.5-2 min',
             videoUrl: 'https://youtu.be/MlfCS_7ZLXA',
-            notes: 'Use double rope if available, lean forward ~30°, lock elbows at sides and push ropes down and out.'
+            notes: 'Use two rope attachments if possible, lean torso forward ~30°, keep elbow locked, push down and out.'
           }
         ]
       },
       {
-        dayShort: 'Day 5',
-        dayFull: 'Day 5',
+        dayShort: 'Day 4',
+        daySub: 'Pull',
+        dayFull: 'Day 4',
         time: '7:00 AM',
-        title: 'Pull Workout + USMC Pull-Up Day 5',
+        title: 'Pull Workout + USMC Pull-Up Day 4',
         warmupType: 'upper',
-        usmcDay: 5,
-        usmcSummary: 'USMC Day 5 (Merged w/ Pull Workout): Use your Day 5 Pull-Up routine as Exercise 1 below to protect your elbows, then go straight to Lat Cable Rows.',
+        usmcDay: 4,
+        usmcSummary: 'Exercise #1 Today: (Weighted) Pull-Ups / USMC Day 4 — Max Training Sets with 60s–150s rest',
         exercises: [
           {
             id: 'fri_pullups',
-            name: '(Weighted) Pull-Ups / USMC Day 5 Merged',
-            sets: 3,
-            reps: '6-12',
-            restSec: 150,
-            restLabel: '2-3 min',
+            name: '(Weighted) Pull-Ups + USMC Pull-Up Day 4 (First Exercise)',
+            badge: 'Pull-Ups First • #1',
+            sets: 5,
+            reps: '6-12 / TS',
+            restSec: 120,
+            restLabel: '1-2.5 min',
             videoUrl: 'https://youtu.be/w_yuTRQd6HA',
-            notes: 'Merge with USMC Day 5 so you do not double-up pull-up sessions on Friday. Perform pull-ups first thing at 7:00 AM while lats and grip are fresh.'
+            notes: 'First exercise of Pull Day! Grip outside shoulder-width, pull until chin clears bar (combines your Pull Workout Pull-Ups with USMC Day 4 Max Training Sets).'
           },
           {
             id: 'fri_lat_row',
@@ -1082,7 +1149,7 @@
             restSec: 120,
             restLabel: '2 min',
             videoUrl: 'https://youtu.be/ZaEnZ47cDTk',
-            notes: 'Slight forward torso lean, pull elbows down and back toward back pockets keeping elbows tight to sides.'
+            notes: 'Lean torso forward slightly, pull elbows down toward back pockets, keep elbows tight to sides.'
           },
           {
             id: 'fri_rear_row',
@@ -1092,7 +1159,7 @@
             restSec: 105,
             restLabel: '1.5-2 min',
             videoUrl: 'https://youtu.be/k9G7BykDD4o',
-            notes: 'Wide handle outside shoulder-width, pull toward sternum with elbows flared at a 45° angle.'
+            notes: 'Use wide handle outside shoulder-width apart, pull elbows at 45 degree angle toward sternum, pull as far back as possible.'
           },
           {
             id: 'fri_inc_curl',
@@ -1102,7 +1169,7 @@
             restSec: 105,
             restLabel: '1.5-2 min',
             videoUrl: 'https://youtu.be/3D56VDVkQnM',
-            notes: 'Bench at ~60° (2-3 notches down from top), arms hanging straight down, lock elbows and supinate palms up.'
+            notes: 'Move bench 2-3 notches down from top position (~60°), alternate arms or curl together keeping elbows locked.'
           },
           {
             id: 'fri_hammer',
@@ -1112,7 +1179,7 @@
             restSec: 105,
             restLabel: '1.5-2 min',
             videoUrl: 'https://youtu.be/OrGL-ymYREg',
-            notes: 'Neutral hammer grip, curl up and slightly across chest alternating arms each rep.'
+            notes: 'Use hammer grip, pull up and across chest, alternate arms each rep.'
           },
           {
             id: 'fri_face_pull',
@@ -1122,19 +1189,31 @@
             restSec: 60,
             restLabel: '1 min',
             videoUrl: 'https://youtu.be/02g7XtSRXug',
-            notes: 'Double rope attachment, pull to forehead in 90° external rotation pose, raise into overhead Y.'
+            notes: 'Use double rope attachment if possible, use light weight, perform without Y-raise to make it easier.'
           }
         ]
       },
       {
-        dayShort: 'Day 6',
-        dayFull: 'Day 6',
+        dayShort: 'Day 5',
+        daySub: 'Lower 2',
+        dayFull: 'Day 5',
         time: '7:00 AM',
-        title: 'Lower Body 2 (Glute-Focused) • Pull-Up Rest',
+        title: 'Lower Body 2 (Glute-Focused) + USMC Pull-Up Day 5',
         warmupType: 'lower',
-        usmcDay: null,
-        usmcSummary: 'Day 6 Pull-Up Rest Day (USMC ceases pull-ups Days 6 & 7 for recovery)',
+        usmcDay: 5,
+        usmcSummary: 'Exercise #1 Today: USMC Day 5 — Repeat the Pull-Up Routine from Days 1–4 You Found Hardest',
         exercises: [
+          {
+            id: 'day5_pullups',
+            name: 'USMC Pull-Up Day 5: Repeat Hardest Day (First Exercise)',
+            badge: 'Pull-Ups First • #1',
+            sets: 5,
+            reps: 'Max / TS',
+            restSec: 90,
+            restLabel: '60-90 sec',
+            videoUrl: 'https://youtu.be/w_yuTRQd6HA',
+            notes: 'Perform first thing before Barbell Deadlifts while your grip and lats are fresh! Repeat whichever USMC day (Day 1, 2, 3, or 4) felt toughest this week.'
+          },
           {
             id: 'sat_deadlift',
             name: 'Barbell Deadlift',
@@ -1143,7 +1222,7 @@
             restSec: 150,
             restLabel: '2-3 min',
             videoUrl: 'https://youtu.be/JL1tJTEmxfw',
-            notes: 'Hip-width stance with bar over midfoot, engage lats, keep head/back/hips neutral and drive floor away.'
+            notes: 'Hip-width stance, grip outside knees, keep head/back/hips in straight line and push the floor away.'
           },
           {
             id: 'sat_bss',
@@ -1153,7 +1232,7 @@
             restSec: 60,
             restLabel: '1 min / leg',
             videoUrl: 'https://youtu.be/sqadB2rroz0',
-            notes: 'Step slightly farther forward so front shin stays vertical at bottom, lean torso slightly forward, push through heel.'
+            notes: 'Use wider foot stance, lean torso forward slightly, do a set on one leg then rest 1 min then do the other leg.'
           },
           {
             id: 'sat_hip_thrust',
@@ -1163,7 +1242,7 @@
             restSec: 120,
             restLabel: '2 min',
             videoUrl: 'https://youtu.be/_vBMijiZoxE',
-            notes: 'Upper back on bench, tuck chin, knees at 90° at top, pause 1-2s squeezing glutes hard.'
+            notes: 'Squeeze glutes hard, knees 90 degrees at top position, do not go all the way down each rep.'
           },
           {
             id: 'sat_leg_curl',
@@ -1173,40 +1252,66 @@
             restSec: 105,
             restLabel: '1.5-2 min',
             videoUrl: 'https://youtu.be/aYy3alWRDmk',
-            notes: 'Align knees with pivot, brace abs and pull handles down, curl pad toward glutes with toes pointed down.'
+            notes: 'Pull down on handles, avoid over-arching lower back, control the weight up and down.'
           },
           {
             id: 'sat_abduction',
-            name: 'Superset A1: Banded Hip Abductions',
+            name: 'A1. Banded Hip Abductions',
             badge: 'Superset A1',
+            supersetPair: 'sat_seated_calf',
             sets: 3,
             reps: '12',
             restSec: 60,
             restLabel: '1 min → A2',
             videoUrl: 'https://youtu.be/CA0ALPgTkxw',
-            notes: 'Sit on edge of bench with mini-band around knees, drive knees out wide and pause 1-2s. Rest 1 min then do A2.'
+            notes: 'Perform banded hip abductions, rest 1 minute, perform seated weighted calf raises (A2), rest 1 minute, then repeat for a total of 3 times.'
           },
           {
             id: 'sat_seated_calf',
-            name: 'Superset A2: Seated Weighted Calf Raise',
+            name: 'A2. Seated Weighted Calf Raise',
             badge: 'Superset A2',
+            supersetPair: 'sat_abduction',
             sets: 3,
             reps: '8-10',
             restSec: 60,
             restLabel: '1 min → A1',
             videoUrl: 'https://youtu.be/2TkLMol2bCo',
-            notes: 'Elevate toes on 3-6 inch plates, dumbbells on thighs, press straight up onto big toes.'
+            notes: 'Elevate toes on 3-6 inch weight plates, dumbbells on thighs, press straight up onto big toes. Rest 1 min then return to A1.'
+          }
+        ]
+      },
+      {
+        dayShort: 'Day 6',
+        daySub: 'Rest 1',
+        dayFull: 'Day 6',
+        time: '7:00 AM',
+        title: 'Active Recovery Day 1 + Daily Abs',
+        warmupType: 'lower',
+        usmcDay: null,
+        usmcSummary: 'Pull-Up & Heavy Lifting Recovery Day (Take after Lower Body 1 or on Day 6)',
+        exercises: [
+          {
+            id: 'wed_dead_bug',
+            name: 'Dynamic Hip/Shoulder Mobility & Dead Bugs',
+            badge: 'Recovery & Mobility',
+            sets: 2,
+            reps: '5-8 / side',
+            restSec: 60,
+            restLabel: '1 min',
+            videoUrl: 'https://youtu.be/WHE90NWlCKI',
+            notes: 'Light mobility + 30s deep squat ankle rocks before logging your Daily Cable Abdominal Crunch below.'
           }
         ]
       },
       {
         dayShort: 'Day 7',
+        daySub: 'Rest 2',
         dayFull: 'Day 7',
         time: '7:00 AM',
-        title: '7AM Active Recovery, Mobility & Core',
+        title: 'Active Recovery Day 2 + Daily Abs',
         warmupType: 'lower',
         usmcDay: null,
-        usmcSummary: 'Day 7 Full Recovery from Pull-Ups & Heavy Lifting',
+        usmcSummary: 'Pull-Up & Heavy Lifting Recovery Day (Take after Lower Body 2 or on Day 7)',
         exercises: [
           {
             id: 'sun_cardio',
@@ -1217,18 +1322,7 @@
             restSec: 60,
             restLabel: 'Easy Pace',
             videoUrl: 'https://youtu.be/WHE90NWlCKI',
-            notes: 'Keep your 7:00 AM daily gym habit effortlessly alive with light blood flow, shoulder/hip mobility, and core work.'
-          },
-          {
-            id: 'sun_dead_bug',
-            name: 'Controlled Dead Bug & Deep Squat Mobility',
-            badge: 'Mobility',
-            sets: 3,
-            reps: '8 / side',
-            restSec: 60,
-            restLabel: '1 min',
-            videoUrl: 'https://youtu.be/WHE90NWlCKI',
-            notes: 'Perform slow dead bugs and 30-second weighted plate deep squat ankle rocks.'
+            notes: 'Keep your 7:00 AM daily gym habit alive with light blood flow, mobility, and your Daily Cable Abdominal Crunch.'
           }
         ]
       }
@@ -1293,7 +1387,7 @@
     };
 
     // Legacy item ID map for backward compatibility:
-    // id: 'creatine', id: 'shop_nooch', id: 'd3k2', id: 'leucine', id: 'shop_creatine', id: 'shop_edamame', id: 'shop_iodine', id: 'shop_potatoes', id: 'shop_seitan', id: 'shop_tempeh', id: 'shop_vitc', id: 'shop_isolate'
+    // id: 'creatine', id: 'shop_nooch', id: 'd3k2', id: 'leucine', id: 'shop_creatine', id: 'shop_edamame', id: 'shop_iodine', id: 'shop_potatoes', id: 'shop_seitan', id: 'shop_tempeh', id: 'shop_vitc', id: 'shop_isolate', id: 'sun_dead_bug', id: 'wed_usmc_set1', id: 'wed_usmc_set2', id: 'wed_usmc_set3'
     const VEGAN_ESSENTIALS = [
       { id: 'b12', name: '✓ B12, Vitamin D & Calcium (200% B12, 95% D, 120% Ca)', detail: 'Covered automatically by your 900g/day of Silk Protein milk (180g in oats + 720g in shakes) + 12g nutritional yeast + 175g tofu.' },
       { id: 'iodine_zinc', name: '✓ Thyroid Iodine (5g Nori Seaweed) + Iron & Vitamin C (75g Broccoli)', detail: '5g of Nori seaweed (2 sheets) covers 100% daily iodine (no salt needed); 75g broccoli unlocks iron in pea protein, oats & tofu.' },
@@ -1327,7 +1421,7 @@
             protein: 34,
             kcal: 525,
             volume: '422g Small Bowl',
-            ingredients: '175g extra-firm tofu (21g P) + 150g cooked white jasmine rice (55g dry weight = 4g P) + 75g steamed broccoli (1.5g P, 100% Vit C) + 5g roasted Nori seaweed (2 sheets = 1g P, 100% iodine) + 12g fortified nutritional yeast (6g P) + 5g sesame oil or tamari.'
+            ingredients: '175g extra-firm tofu (21g P) + 150g cooked white jasmine rice (55g dry weight = 4g P) + 75g steamed broccoli (1.5g P, 100% Vit C) + 5g roasted Nori seaweed (2 sheets = 1g P, 100% iodine) + 12g fortified nutritional yeast (6g P) + 2.5g toasted sesame oil + 2.5g low-sodium tamari / soy sauce.'
           }
         ]
       },
@@ -1349,33 +1443,59 @@
     ];
 
     const GROCERY_ITEMS = [
-      'Pea Protein Isolate (525g/wk — 75g/day)',
-      'Bob’s Red Mill Protein Oats (280g/wk — 40g/day)',
       'Silk Protein Milk (6,300g/wk — 900g/day)',
       'Extra-Firm Tofu (1,225g/wk — 175g/day)',
-      'Roasted Nori Seaweed (35g/wk — 5g/day)',
-      'Smooth Peanut Butter (168g/wk — 24g/day)',
-      'Chia Seeds (42g/wk — 6g/day)',
+      'Broccoli Florets (525g/wk — 75g/day)',
       'Ripe Bananas (210g peeled/wk — 30g/day)',
+      'Bob’s Red Mill Protein Oats (280g/wk — 40g/day)',
       'White Jasmine Rice (385g dry / 1,050g cooked/wk)',
-      'Broccoli (525g/wk) & Nutritional Yeast (84g/wk)'
+      'Smooth Peanut Butter (168g/wk — 24g/day)',
+      'Organic Chia Seeds (42g/wk — 6g/day)',
+      'Fortified Nutritional Yeast (84g/wk — 12g/day)',
+      'Roasted Nori Seaweed (35g/wk — 5g/day)',
+      'Toasted Sesame Oil (18g/wk — 2.5g/day)',
+      'Low-Sodium Tamari / Soy Sauce (18g/wk — 2.5g/day)',
+      'Pea Protein Isolate (525g/wk — 75g/day)'
     ];
+
+    const PANTRY_STAPLE_SHOP_IDS = ['shop_oats', 'shop_rice', 'shop_pb', 'shop_chia', 'shop_sesame', 'shop_tamari', 'shop_isolate'];
 
     const WEEKLY_SHOPPING_CATEGORIES = [
       {
-        category: 'Your Entire Weekly List in Grams (10 Staples)',
-        badge: '100% in Grams (g) • Saves ~$20/wk',
+        category: 'Aisle 1: Produce & Refrigerated Cooler (Weekly Fresh Run)',
+        badge: '4 Fresh Staples • No Frills / Walmart',
         items: [
-          { id: 'shop_isolate', name: '1. Pea Protein Isolate Powder (1,000g bag)', qty: '525g / week (75g/day)', note: '30g at 8:15 AM + 45g at 6:30 PM = 60g pure protein/day for ~$9.45/wk with zero fiber bloat' },
-          { id: 'shop_oats', name: '2. Bob’s Red Mill Gluten Free Protein Oats (907g bag)', qty: '280g / week (40g/day)', note: '160g per 4-day batch (40g/day = 8g P/day) — boosts each 4-day batch to 68g protein' },
-          { id: 'shop_silk', name: '3. Silk Protein Unsweetened Almond & Cashew (1,750g carton)', qty: '6,300g / week (900g/day)', note: '180g/day in oats + 360g morning shake + 360g evening shake (4 cartons/wk; 200% B12, 95% Vit D)' },
-          { id: 'shop_tofu', name: '4. Sunrise or Rooster Extra-Firm Tofu (350g–454g block)', qty: '1,225g / week (175g/day)', note: 'Weigh 175g/day (½ of a 350g block) for Meal 2 — only 3.5 blocks/week (~$10–$12/wk)!' },
-          { id: 'shop_iodine', name: '5. Roasted Seaweed Snacks / Nori Sheets', qty: '35g / week (5g/day)', note: '5g/day (2 sheets) crumbled on Meal 2 covers 100% thyroid iodine (replaces iodized salt)' },
-          { id: 'shop_pb', name: '6. Smooth Natural Peanut Butter (500g–1,000g jar)', qty: '168g / week (24g/day)', note: '32g per 4-day oats batch (8g/day) + 16g/day in the evening with your shake' },
-          { id: 'shop_chia', name: '7. Chia Seeds', qty: '42g / week (6g/day)', note: '24g per 4-day oats batch (6g/day) — covers 100% of your daily Omega-3 ALA' },
-          { id: 'shop_banana', name: '8. Ripe Bananas (Peeled Weight)', qty: '210g / week (30g/day)', note: '120g peeled banana (1 medium) per 4-day overnight oats batch' },
-          { id: 'shop_rice', name: '9. White Jasmine Rice', qty: '385g dry / week (1,050g cooked)', note: '55g dry rice/day (= 150g cooked rice/day) for Meal 2 — fast energy with zero stomach bloat' },
-          { id: 'shop_broccoli', name: '10. Broccoli Florets + Fortified Nutritional Yeast', qty: '525g broccoli + 84g yeast / wk', note: '75g steamed broccoli/day (100% Vit C to unlock iron) + 12g nutritional yeast/day (+6g P)' }
+          { id: 'shop_silk', name: '1. Silk Protein Unsweetened Almond & Cashew (1,750g carton)', qty: '6,300g / week (900g/day)', note: '180g/day in oats + 360g morning shake + 360g evening shake (4 cartons/wk; 200% B12, 95% Vit D)' },
+          { id: 'shop_tofu', name: '2. Sunrise or Rooster Extra-Firm Tofu (350g–454g block)', qty: '1,225g / week (175g/day)', note: 'Weigh 175g/day (½ of a 350g block) for Meal 2 — only 2.7 to 3.5 blocks/week!' },
+          { id: 'shop_broccoli', name: '3. Broccoli Florets (Fresh Crown or Frozen Bag)', qty: '525g / week (75g/day)', note: '75g steamed broccoli/day for Meal 2 (100% daily Vitamin C to unlock iron in tofu, oats & pea protein)' },
+          { id: 'shop_banana', name: '4. Ripe Bananas (Peeled Weight)', qty: '210g / week (30g/day)', note: '120g peeled banana (1 medium) per 4-day overnight oats batch (~2 medium bananas/wk)' }
+        ]
+      },
+      {
+        category: 'Aisle 2: Dry Pantry, Grains, Seeds & Nutritional Yeast',
+        badge: '5 Pantry Staples • Bulk / Costco / No Frills',
+        items: [
+          { id: 'shop_oats', name: '5. Bob’s Red Mill Gluten Free Protein Oats (907g bag)', qty: '280g / week (40g/day)', note: '160g per 4-day batch (40g/day = 8g P/day) — 1 bag lasts 3.2 weeks' },
+          { id: 'shop_rice', name: '6. White Jasmine Rice', qty: '385g dry / week (1,050g cooked)', note: '55g dry rice/day (= 150g cooked rice/day) for Meal 2 — 4-day batch = 220g dry + 330g water' },
+          { id: 'shop_pb', name: '7. Smooth Natural Peanut Butter (500g–1,000g jar)', qty: '168g / week (24g/day)', note: '32g per 4-day oats batch (8g/day) + 16g/day in the evening with your Meal 3 shake' },
+          { id: 'shop_chia', name: '8. Organic Whole Chia Seeds', qty: '42g / week (6g/day)', note: '24g per 4-day oats batch (6g/day) — covers 100% of your daily Omega-3 ALA' },
+          { id: 'shop_nooch', name: '9. Fortified Nutritional Yeast Flakes (142g shaker or bulk)', qty: '84g / week (12g/day)', note: '12g/day sprinkled on Meal 2 tofu & rice bowl (+6g protein & B-complex vitamins)' }
+        ]
+      },
+      {
+        category: 'Aisle 3: Asian Aisle, Seaweed & Condiments (Nothing Missing!)',
+        badge: '3 Flavor & Iodine Staples',
+        items: [
+          { id: 'shop_iodine', name: '10. Roasted Seaweed Snacks / Sushi Nori Sheets', qty: '35g / week (5g/day)', note: '5g/day (2 sheets) crumbled on Meal 2 covers 100% thyroid iodine (replaces iodized salt)' },
+          { id: 'shop_sesame', name: '11. Toasted Sesame Oil (Bottle)', qty: '18g / week (2.5g/day)', note: '2.5g drizzled on Meal 2 tofu, rice & broccoli bowl for rich aroma & healthy fats (1 bottle lasts ~14 wks)' },
+          { id: 'shop_tamari', name: '12. Low-Sodium Tamari or Soy Sauce (Bottle)', qty: '18g / week (2.5g/day)', note: '2.5g drizzled on Meal 2 bowl for savory umami flavor with Nori seaweed & nutritional yeast' }
+        ]
+      },
+      {
+        category: 'Aisle 4: Online / Bulk Protein Supplement',
+        badge: '1 Bulk Staple • Yupik / Canadian Protein',
+        items: [
+          { id: 'shop_isolate', name: '13. Pea Protein Isolate Powder (1,000g bag)', qty: '525g / week (75g/day)', note: '30g in Meal 1 shake + 45g in Meal 3 shake = 60g pure protein/day with zero fiber bloat' }
         ]
       }
     ];
@@ -1455,10 +1575,22 @@
       const dot = document.getElementById('header-timer-dot');
       const btn = document.getElementById('timer-start-pause');
       const prog = document.getElementById('main-timer-progress');
+      const headerProg = document.getElementById('header-timer-progress');
+      const pinnedPlay = document.getElementById('pinned-timer-play');
+      const pinnedCtx = document.getElementById('pinned-timer-context');
 
       if (headerDisp) headerDisp.textContent = formatted;
       if (mainDisp) mainDisp.textContent = formatted;
       document.title = timerRunning ? `(${formatted}) 7AM Gym` : '7AM Vegan Muscle & Training Hub';
+
+      if (pinnedCtx) {
+        pinnedCtx.textContent = timerRunning
+          ? (state.timerContextLabel || 'Rest Timer Running')
+          : (state.timerContextLabel ? `Paused: ${state.timerContextLabel}` : 'Tap any set or Start to time rest');
+        pinnedCtx.className = timerRunning
+          ? 'text-[11px] font-bold text-emerald-300 truncate'
+          : 'text-[11px] font-semibold text-slate-400 truncate';
+      }
 
       if (dot) {
         dot.className = timerRunning
@@ -1471,12 +1603,31 @@
           ? 'px-8 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-sm shadow-lg transition'
           : 'px-8 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm shadow-lg shadow-emerald-500/20 transition';
       }
-      if (prog) {
-        const pct = state.timerTotalSeconds > 0
-          ? Math.min(100, Math.max(0, (state.timerSeconds / state.timerTotalSeconds) * 100))
-          : 0;
-        prog.style.width = pct + '%';
+      if (pinnedPlay) {
+        pinnedPlay.textContent = timerRunning ? 'Pause' : 'Start';
+        pinnedPlay.className = timerRunning
+          ? 'px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-extrabold transition'
+          : 'px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-extrabold transition';
       }
+      const pct = state.timerTotalSeconds > 0
+        ? Math.min(100, Math.max(0, (state.timerSeconds / state.timerTotalSeconds) * 100))
+        : 0;
+      if (prog) prog.style.width = pct + '%';
+      if (headerProg) {
+        headerProg.style.width = pct + '%';
+        headerProg.className = timerRunning
+          ? 'bg-emerald-400 h-full transition-all duration-300'
+          : 'bg-slate-700 h-full transition-all duration-300';
+      }
+      // Also update all inline Daily Pull-Up Timer displays across Workout Banner, Exercise #1 Card, and Pull-Ups Window
+      document.querySelectorAll('.live-pullup-timer-readout').forEach(el => {
+        el.textContent = formatted;
+      });
+      document.querySelectorAll('.live-pullup-timer-dot').forEach(el => {
+        el.className = timerRunning
+          ? 'live-pullup-timer-dot w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block'
+          : 'live-pullup-timer-dot w-2 h-2 rounded-full bg-sky-400 inline-block';
+      });
     }
 
     function syncWallClockTimer() {
@@ -1696,7 +1847,35 @@
         step1Cue: 'Set bench 1–2 notches up from flat (15–30°) • Pinch shoulder blades back',
         step2Cue: 'Lower dumbbells with elbows tucked 45–60° • Press up bringing biceps together'
       },
-      thu_cable_fly: {
+      day1_pullups: {
+        equipType: 'pullup_bar',
+        equipLabel: 'Overhead Pull-Up Bar (Exercise #1)',
+        defaultWeightLbs: 0,
+        step1Cue: 'Overhand grip slightly wider than shoulders • Hang with legs together, glutes & abs braced',
+        step2Cue: 'Pull shoulders down and drive elbows into back pockets until chin clears bar • 5 Max Sets (90s rest)'
+      },
+      day2_pullups: {
+        equipType: 'pullup_bar',
+        equipLabel: 'Overhead Pull-Up Bar (Exercise #1)',
+        defaultWeightLbs: 0,
+        step1Cue: 'Overhand grip • Pyramid progression: Set 1 = 1 rep, Set 2 = 2 reps, Set 3 = 3 reps...',
+        step2Cue: 'Rest 10s × reps performed • When you miss a target, do 1 final max-effort set'
+      },
+      day3_pullups: {
+        equipType: 'pullup_bar',
+        equipLabel: 'Overhead Pull-Up Bar (Exercise #1 • 3 Grips)',
+        defaultWeightLbs: 0,
+        step1Cue: 'Sets 1–3: Normal Overhand • Sets 4–6: Close Underhand (pinkies touching) • Sets 7–9: Wide Overhand',
+        step2Cue: 'Use your Training Set rep count for all 9 sets • Rest strictly 60 seconds between sets'
+      },
+      day5_pullups: {
+        equipType: 'pullup_bar',
+        equipLabel: 'Overhead Pull-Up Bar (Exercise #1)',
+        defaultWeightLbs: 0,
+        step1Cue: 'Overhand grip • Repeat whichever Pull-Up Day (Day 1, 2, 3, or 4) felt hardest this week',
+        step2Cue: 'Complete before Barbell Deadlifts while your grip and lats are fresh'
+      },
+      thu_mid_fly: {
         equipType: 'cable_mid_bench',
         equipLabel: 'Dual Cable Tower (Chest Height) + 75° Incline Bench',
         defaultWeightLbs: 25,
@@ -1710,14 +1889,14 @@
         step1Cue: 'Kick dumbbells up onto flat bench • Pinch shoulder blades down & plant feet',
         step2Cue: 'Lower to torso level at 45–60° elbow angle • Press up to lockout'
       },
-      thu_lat_raise: {
+      thu_db_lat: {
         equipType: 'dumbbells',
         equipLabel: 'Pair of Light/Moderate Dumbbells',
         defaultWeightLbs: 20,
         step1Cue: 'Stand shoulder-width, slight knee bend, lean torso forward ~15°',
         step2Cue: 'Raise arms in a wide Y-path (15–30° forward) to shoulder height'
       },
-      thu_inc_ext: {
+      thu_oh_ext: {
         equipType: 'incline_db',
         equipLabel: 'Incline Bench (45° / Notch 2–3) + Dumbbells',
         defaultWeightLbs: 25,
@@ -1940,27 +2119,171 @@
       return state.weightUnit || 'lbs';
     }
 
+    // Two-Way Sync Mapping between Daily Pull-Ups (Exercise #1 on Days 1-5) and the Pull-Ups Window (USMC Days 1-5)
+    const PULLUP_DAY_TO_EX_ID = {
+      1: { dayIdx: 0, exId: 'day1_pullups' },
+      2: { dayIdx: 1, exId: 'day2_pullups' },
+      3: { dayIdx: 2, exId: 'day3_pullups' },
+      4: { dayIdx: 3, exId: 'fri_pullups' },
+      5: { dayIdx: 4, exId: 'day5_pullups' }
+    };
+    const PULLUP_EX_ID_TO_DAY = {
+      day1_pullups: 1,
+      day2_pullups: 2,
+      day3_pullups: 3,
+      fri_pullups: 4,
+      day5_pullups: 5
+    };
+
+    function parseTargetRepsNumber(repsStr, pullupDayNum, setIdx) {
+      if (pullupDayNum) {
+        const def = getPullupDefaultReps(pullupDayNum, setIdx);
+        return !isNaN(parseInt(def, 10)) ? String(parseInt(def, 10)) : String(state.pullupTrainingSetReps || 5);
+      }
+      const s = String(repsStr || '10');
+      const rangeMatch = s.match(/(\d+)\s*-\s*(\d+)/);
+      if (rangeMatch) return rangeMatch[2];
+      const singleMatch = s.match(/(\d+)/);
+      return singleMatch ? singleMatch[1] : '10';
+    }
+
+    function getPullupDefaultReps(dayNum, setIdx) {
+      if (dayNum === 2) return setIdx < 5 ? String(setIdx) : 'Max';
+      if (dayNum === 3 || dayNum === 4) return String(state.pullupTrainingSetReps || 3);
+      return 'Max';
+    }
+
+    function getPullupSetRestSec(dayNum, setIdx, repsVal, fallbackSec) {
+      if (dayNum === 2) {
+        const r = parseInt(repsVal, 10) || setIdx;
+        return Math.max(10, r * 10);
+      }
+      return fallbackSec || (dayNum === 1 ? 90 : 60);
+    }
+
+    function syncPullupStateBothWays(week, dayNum, setIdx, dataObj) {
+      const mapInfo = PULLUP_DAY_TO_EX_ID[dayNum];
+      if (!mapInfo) return;
+      const w = week || state.currentWeek || 1;
+      const wKey = `w${w}_${mapInfo.dayIdx}_${mapInfo.exId}_${setIdx}`;
+      const uWeekKey = `w${w}_day_${dayNum}_set_${setIdx}`;
+      const uLegacyKey = `day_${dayNum}_set_${setIdx}`;
+
+      const prevW = state.workoutLogs[wKey] || {};
+      const prevU = state.usmcLogs[uWeekKey] || state.usmcLogs[uLegacyKey] || {};
+      const merged = {
+        weight: dataObj.weight !== undefined ? dataObj.weight : (prevW.weight !== undefined && prevW.weight !== '' ? prevW.weight : '0'),
+        reps: dataObj.reps !== undefined ? dataObj.reps : (prevW.reps !== undefined && prevW.reps !== '' ? prevW.reps : (prevU.reps || '')),
+        done: dataObj.done !== undefined ? !!dataObj.done : !!(prevW.done || prevU.done),
+        unit: dataObj.unit || prevW.unit || getExerciseUnit(mapInfo.exId)
+      };
+
+      state.workoutLogs[wKey] = Object.assign({}, prevW, merged);
+      if (w === 1) {
+        state.workoutLogs[`${mapInfo.dayIdx}_${mapInfo.exId}_${setIdx}`] = Object.assign({}, state.workoutLogs[wKey]);
+      }
+      state.usmcLogs[uWeekKey] = { reps: merged.reps, done: merged.done, weight: merged.weight };
+      state.usmcLogs[uLegacyKey] = { reps: merged.reps, done: merged.done, weight: merged.weight };
+    }
+
     function getLogEntry(week, dayIdx, exId, setIdx) {
+      const pullupDayNum = PULLUP_EX_ID_TO_DAY[exId];
+      if (pullupDayNum) {
+        const wKey = `w${week}_${dayIdx}_${exId}_${setIdx}`;
+        const uWeekKey = `w${week}_day_${pullupDayNum}_set_${setIdx}`;
+        const uLegacyKey = `day_${pullupDayNum}_set_${setIdx}`;
+        const wEntry = state.workoutLogs[wKey] || (week === 1 ? state.workoutLogs[`${dayIdx}_${exId}_${setIdx}`] : null);
+        const uEntry = state.usmcLogs[uWeekKey] || (week === 1 ? state.usmcLogs[uLegacyKey] : null);
+        if (wEntry || uEntry) {
+          return {
+            weight: (wEntry && wEntry.weight !== undefined && wEntry.weight !== '') ? wEntry.weight : ((uEntry && uEntry.weight) || '0'),
+            reps: (wEntry && wEntry.reps !== undefined && wEntry.reps !== '') ? wEntry.reps : ((uEntry && uEntry.reps) || ''),
+            done: !!(wEntry ? wEntry.done : (uEntry && uEntry.done)),
+            unit: (wEntry && wEntry.unit) || getExerciseUnit(exId)
+          };
+        }
+      }
       const weekKey = `w${week}_${dayIdx}_${exId}_${setIdx}`;
       if (state.workoutLogs[weekKey]) {
         return state.workoutLogs[weekKey];
       }
-      // Backward compatibility for Week 1 logs saved under legacy key
       if (week === 1) {
         const legacyKey = `${dayIdx}_${exId}_${setIdx}`;
         if (state.workoutLogs[legacyKey]) {
           return state.workoutLogs[legacyKey];
         }
       }
+      // If a unique non-daily exercise (e.g. Push, Pull, or Lower Body 2) was logged before Day 3-5 alignment, preserve it seamlessly!
+      if (exId !== 'cable_ab_crunch') {
+        for (let d = 0; d < 7; d++) {
+          if (d === dayIdx) continue;
+          const altKey = `w${week}_${d}_${exId}_${setIdx}`;
+          if (state.workoutLogs[altKey]) return state.workoutLogs[altKey];
+          if (week === 1 && state.workoutLogs[`${d}_${exId}_${setIdx}`]) {
+            return state.workoutLogs[`${d}_${exId}_${setIdx}`];
+          }
+        }
+      }
+      return null;
+    }
+
+    // For Daily Cable Abdominal Crunch: Pre-fill from the DAY BEFORE (or most recent prior day/week!)
+    function getPreviousDayAbSuggestion(currentWeek, currentDayIdx, setIdx) {
+      // 1. Check earlier days in currentWeek (from yesterday back to Day 1)
+      for (let d = currentDayIdx - 1; d >= 0; d--) {
+        const prev = getLogEntry(currentWeek, d, 'cable_ab_crunch', setIdx);
+        if (prev && (prev.weight !== '' || prev.reps !== '')) {
+          return {
+            sourceLabel: `Day ${d + 1}`,
+            isDailyPrev: true,
+            weight: prev.weight,
+            reps: prev.reps,
+            unit: prev.unit || getExerciseUnit('cable_ab_crunch')
+          };
+        }
+      }
+      // 2. Check previous weeks from Day 7 down to Day 1
+      for (let w = currentWeek - 1; w >= 1; w--) {
+        for (let d = 6; d >= 0; d--) {
+          const prev = getLogEntry(w, d, 'cable_ab_crunch', setIdx);
+          if (prev && (prev.weight !== '' || prev.reps !== '')) {
+            return {
+              sourceLabel: `Wk ${w} • Day ${d + 1}`,
+              isDailyPrev: true,
+              weight: prev.weight,
+              reps: prev.reps,
+              unit: prev.unit || getExerciseUnit('cable_ab_crunch')
+            };
+          }
+        }
+      }
+      // 3. Also check later days in currentWeek if user logged days out of sequence
+      for (let d = 6; d > currentDayIdx; d--) {
+        const prev = getLogEntry(currentWeek, d, 'cable_ab_crunch', setIdx);
+        if (prev && (prev.weight !== '' || prev.reps !== '')) {
+          return {
+            sourceLabel: `Day ${d + 1}`,
+            isDailyPrev: true,
+            weight: prev.weight,
+            reps: prev.reps,
+            unit: prev.unit || getExerciseUnit('cable_ab_crunch')
+          };
+        }
+      }
       return null;
     }
 
     function getPreviousWeekSuggestion(currentWeek, dayIdx, exId, setIdx) {
+      if (exId === 'cable_ab_crunch') {
+        return getPreviousDayAbSuggestion(currentWeek, dayIdx, setIdx);
+      }
       for (let w = currentWeek - 1; w >= 1; w--) {
         const prev = getLogEntry(w, dayIdx, exId, setIdx);
         if (prev && (prev.weight !== '' || prev.reps !== '')) {
           return {
             week: w,
+            sourceLabel: `Wk ${w}`,
+            isDailyPrev: false,
             weight: prev.weight,
             reps: prev.reps,
             unit: prev.unit || getExerciseUnit(exId)
@@ -1968,6 +2291,24 @@
         }
       }
       return null;
+    }
+
+    // Pro Feature: Live Barbell Plate Calculator per side (45 lb / 20 kg Olympic Bar)
+    const BARBELL_EX_IDS = ['mon_bench', 'mon_ohp', 'tue_squat', 'sat_deadlift', 'sat_hip_thrust'];
+    function getBarbellPlateBreakdown(totalWeight, unit) {
+      const w = parseFloat(totalWeight);
+      const bar = unit === 'kg' ? 20 : 45;
+      if (!w || isNaN(w) || w <= bar) return null;
+      let perSide = (w - bar) / 2;
+      const plates = unit === 'kg' ? [25, 20, 15, 10, 5, 2.5, 1.25] : [45, 35, 25, 10, 5, 2.5];
+      const out = [];
+      for (const p of plates) {
+        while (perSide >= p - 0.01) {
+          out.push(p);
+          perSide -= p;
+        }
+      }
+      return out.length > 0 ? out.join(' + ') + ` ${unit}/side` : null;
     }
 
     // =========================================================================
@@ -2029,7 +2370,8 @@
                       : 'bg-slate-950/80 text-slate-300 border-slate-800 hover:border-slate-700 font-semibold'))
           }">
             <span class="text-[10px] sm:text-[11px] uppercase tracking-tight whitespace-nowrap">${d.dayShort}</span>
-            <div class="flex items-center justify-center mt-1 h-3">
+            <span class="text-[8px] font-semibold opacity-75 tracking-tight whitespace-nowrap">${d.daySub || ''}</span>
+            <div class="flex items-center justify-center mt-1 h-2.5">
               ${statusDotHtml}
             </div>
           </button>
@@ -2041,21 +2383,22 @@
           state.selectedDayIndex = parseInt(btn.getAttribute('data-day-idx'), 10);
           saveState();
           renderWorkoutView();
+          renderVeganView();
         });
       });
 
-      // Highlight preset buttons
-      const isLiftPreset = JSON.stringify([...state.crunchDays].sort()) === JSON.stringify([0, 1, 3, 5]);
-      const isSpacedPreset = JSON.stringify([...state.crunchDays].sort()) === JSON.stringify([0, 2, 4, 6]);
+      // Highlight Daily Abs preset buttons
+      const isDailyPreset = state.crunchDays.length === 7;
+      const isFiveDayPreset = JSON.stringify([...state.crunchDays].sort()) === JSON.stringify([0, 1, 2, 3, 4]);
       const liftBtn = document.getElementById('crunch-preset-lift');
       const spacedBtn = document.getElementById('crunch-preset-spaced');
       if (liftBtn && spacedBtn) {
-        liftBtn.textContent = 'Day 1 • Day 2 • Day 4 • Day 6';
-        spacedBtn.textContent = 'Day 1 • Day 3 • Day 5 • Day 7';
-        liftBtn.className = isLiftPreset
+        liftBtn.textContent = '✓ Every Day (Days 1–7)';
+        spacedBtn.textContent = '5 Lift Days (Days 1–5)';
+        liftBtn.className = isDailyPreset
           ? 'px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition'
           : 'px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 transition';
-        spacedBtn.className = isSpacedPreset
+        spacedBtn.className = isFiveDayPreset
           ? 'px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition'
           : 'px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 transition';
       }
@@ -2155,6 +2498,16 @@
       const isDayAllDone = todayTotalSets > 0 && todayDoneSets === todayTotalSets;
       const isDayPartial = todayDoneSets > 0 && todayDoneSets < todayTotalSets;
 
+      const dayPct = todayTotalSets > 0 ? Math.min(100, Math.round((todayDoneSets / todayTotalSets) * 100)) : 0;
+      const focusToggleBtn = document.getElementById('toggle-focus-collapse-btn');
+      if (focusToggleBtn) {
+        const isAuto = state.autoCollapseDone !== false;
+        focusToggleBtn.textContent = isAuto ? '🎯 Auto-Collapse Done: ON' : '🎯 Auto-Collapse Done: OFF';
+        focusToggleBtn.className = isAuto
+          ? 'flex-1 sm:flex-initial px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-[11px] font-bold transition'
+          : 'flex-1 sm:flex-initial px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-bold transition';
+      }
+
       // Render Day Summary Banner
       const banner = document.getElementById('day-banner');
       if (banner) {
@@ -2180,11 +2533,28 @@
               ${hasCrunchToday ? '✓ Cable Crunch On' : '+ Add Cable Crunch'}
             </button>
           </div>
-          <div class="bg-slate-950/70 border border-slate-800/90 rounded-xl p-2.5 flex items-center justify-between gap-2">
-            <div class="text-xs text-slate-300">
+          <!-- Live Day Set Progress Bar -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-semibold text-slate-300">Today's Workout Progress: <strong class="text-white">${todayDoneSets} / ${todayTotalSets} sets</strong></span>
+              <span class="font-mono font-bold text-emerald-400">${dayPct}%</span>
+            </div>
+            <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+              <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-300" style="width: ${dayPct}%"></div>
+            </div>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800/90 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2">
+            <div class="text-xs text-slate-300 flex-1 min-w-[180px]">
               <span class="font-bold text-sky-400">Pull-Up Focus:</span> ${dayObj.usmcSummary}
             </div>
-            ${dayObj.usmcDay ? `<button type="button" id="banner-jump-pullups" class="shrink-0 text-[11px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 px-2.5 py-1 rounded-lg">Open Day ${dayObj.usmcDay}</button>` : ''}
+            ${dayObj.usmcDay ? `
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button type="button" id="banner-pullup-timer-btn" data-pullup-sec="${dayObj.usmcDay === 1 ? 90 : 60}" data-pullup-label="USMC Day ${dayObj.usmcDay} Pull-Ups" class="inline-flex items-center gap-1.5 text-[11px] font-extrabold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/35 px-2.5 py-1 rounded-lg transition" title="Start or pause pull-up rest timer">
+                <span class="live-pullup-timer-dot w-2 h-2 rounded-full ${timerRunning ? 'bg-emerald-400 animate-ping' : 'bg-sky-400'} inline-block"></span>
+                <span>⏱️ <span class="live-pullup-timer-readout font-mono">${formatTime(state.timerSeconds)}</span> (${dayObj.usmcDay === 1 ? '90s' : (dayObj.usmcDay === 2 ? '10s×Rep' : '60s')})</span>
+              </button>
+              <button type="button" id="banner-jump-pullups" class="shrink-0 text-[11px] font-bold bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 px-2.5 py-1 rounded-lg transition">Open Day ${dayObj.usmcDay}</button>
+            </div>` : ''}
           </div>
         `;
 
@@ -2204,6 +2574,21 @@
           });
         }
 
+        const bannerTimerBtn = document.getElementById('banner-pullup-timer-btn');
+        if (bannerTimerBtn) {
+          bannerTimerBtn.addEventListener('click', () => {
+            const sec = parseInt(bannerTimerBtn.getAttribute('data-pullup-sec'), 10) || 60;
+            const lbl = bannerTimerBtn.getAttribute('data-pullup-label') || 'Daily Pull-Ups';
+            if (timerRunning) {
+              toggleTimer();
+              showToast('⏸️ Pull-up timer paused');
+            } else {
+              startTimer(sec, `Rest: ${lbl}`);
+              showToast(`⏱️ Started ${sec}s rest timer for ${lbl}`);
+            }
+          });
+        }
+
         const jumpBtn = document.getElementById('banner-jump-pullups');
         if (jumpBtn) {
           jumpBtn.addEventListener('click', () => {
@@ -2212,9 +2597,20 @@
         }
       }
 
-      // Render Exercise Cards
+      // Render Exercise Cards (with Active Exercise Spotlight & Auto-Collapse Completed Cards)
       const listEl = document.getElementById('exercise-list');
       if (!listEl) return;
+      if (!state.expandedDoneCards) state.expandedDoneCards = {};
+
+      let upNextExId = null;
+      for (const candidateEx of exercisesToday) {
+        let allDone = true;
+        for (let s = 1; s <= candidateEx.sets; s++) {
+          const e = getLogEntry(week, dayIdx, candidateEx.id, s);
+          if (!e || !e.done) { allDone = false; break; }
+        }
+        if (!allDone) { upNextExId = candidateEx.id; break; }
+      }
 
       listEl.innerHTML = exercisesToday.map((ex, exOrder) => {
         const meta = EXERCISE_META[ex.id] || {
@@ -2255,6 +2651,15 @@
             displayReps = prevSuggestion.reps;
           }
 
+          const pullupDayNum = PULLUP_EX_ID_TO_DAY[ex.id] || 0;
+          const repPlaceholder = pullupDayNum ? getPullupDefaultReps(pullupDayNum, s) : ex.reps;
+          const setLabelText = (pullupDayNum === 3)
+            ? `Set ${s} <span class="block text-[8px] font-semibold text-sky-400">${s <= 3 ? 'Overhand' : (s <= 6 ? 'Close Pinky' : 'Wide Grip')}</span>`
+            : `Set ${s}`;
+          const setRestSeconds = pullupDayNum
+            ? getPullupSetRestSec(pullupDayNum, s, displayReps, ex.restSec)
+            : ex.restSec;
+
           const defaultPlaceholder = exUnit === 'kg'
             ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0)
             : meta.defaultWeightLbs;
@@ -2273,20 +2678,25 @@
             <div class="py-2 px-2.5 rounded-xl space-y-1.5 ${isDone ? 'bg-emerald-950/40 border border-emerald-500/30' : 'bg-slate-950/60 border border-slate-800/80'}">
               <div class="grid grid-cols-12 items-center gap-2">
                 <div class="col-span-2">
-                  <span class="text-xs font-bold ${isDone ? 'text-emerald-400' : 'text-slate-300'}">Set ${s}</span>
-                  ${isSuggestedFromPrev ? `<span class="block text-[9px] font-bold text-amber-400">Wk ${prevSuggestion.week}</span>` : ''}
+                  <span class="text-xs font-bold ${isDone ? 'text-emerald-400' : 'text-slate-300'}">${setLabelText}</span>
+                  ${isSuggestedFromPrev ? `<span class="block text-[9px] font-bold ${prevSuggestion.isDailyPrev ? 'text-emerald-400' : 'text-amber-400'}">${prevSuggestion.isDailyPrev ? 'Prev Day' : `Wk ${prevSuggestion.week}`}</span>` : ''}
                 </div>
                 <div class="col-span-4">
-                  <div class="relative">
-                    <input type="number" step="0.5" inputmode="decimal" placeholder="${defaultPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full bg-slate-900 border ${isSuggestedFromPrev && !isDone ? 'border-amber-500/50' : 'border-slate-700'} rounded-lg pl-2.5 pr-9 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-emerald-500" />
-                    <span class="absolute right-2 top-1.5 text-[10px] text-emerald-400 font-extrabold uppercase">${exUnit}</span>
+                  <div class="flex items-center bg-slate-900 border ${isSuggestedFromPrev && !isDone ? 'border-amber-500/50' : 'border-slate-700'} rounded-lg overflow-hidden">
+                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-2.5" class="step-adj-btn px-1.5 py-1.5 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Decrease weight by 2.5">−</button>
+                    <input type="number" step="0.5" inputmode="decimal" placeholder="${defaultPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full min-w-0 bg-transparent py-1.5 text-center text-xs font-bold text-white focus:outline-none" />
+                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="2.5" class="step-adj-btn px-1.5 py-1.5 text-xs font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Increase weight by 2.5">+</button>
                   </div>
                 </div>
                 <div class="col-span-3">
-                  <input type="number" inputmode="numeric" placeholder="${ex.reps}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-emerald-500 text-center" />
+                  <div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
+                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn px-1.5 py-1.5 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Decrease reps by 1">−</button>
+                    <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full min-w-0 bg-transparent py-1.5 text-xs font-bold text-white focus:outline-none text-center" />
+                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn px-1.5 py-1.5 text-xs font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Increase reps by 1">+</button>
+                  </div>
                 </div>
                 <div class="col-span-3 flex items-center justify-end">
-                  <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${ex.restSec}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn w-full py-1.5 px-2 rounded-lg text-xs font-extrabold transition ${
+                  <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${setRestSeconds}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn w-full py-1.5 px-2 rounded-lg text-xs font-extrabold transition ${
                     isDone
                       ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/30'
                       : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
@@ -2305,16 +2715,18 @@
                   </span>
                   <button type="button" data-convert-set="${logKey}" data-ex-id="${ex.id}" data-rounded-val="${convObj.rounded}" data-target-unit="${exUnit}" class="convert-set-btn text-[10px] font-bold text-slate-300 hover:text-white bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">Use ${convObj.rounded} ${exUnit}</button>
                 </div>` : '<div></div>'}
-                ${prevSuggestion ? `<span class="text-amber-300/90 font-medium">💡 Wk ${prevSuggestion.week}: ${prevSuggestion.weight || defaultPlaceholder} ${prevSuggestion.unit || exUnit} × ${prevSuggestion.reps || ex.reps}</span>` : ''}
+                ${prevSuggestion ? `<span class="${prevSuggestion.isDailyPrev ? 'text-emerald-300/95' : 'text-amber-300/90'} font-medium">💡 ${prevSuggestion.isDailyPrev ? `Prev (${prevSuggestion.sourceLabel})` : `Wk ${prevSuggestion.week}`}: ${prevSuggestion.weight || defaultPlaceholder} ${prevSuggestion.unit || exUnit} × ${prevSuggestion.reps || ex.reps}</span>` : ''}
               </div>` : ''}
             </div>
           `;
         }
 
         const isExComplete = exDoneSets === ex.sets;
+        const isUpNext = ex.id === upNextExId;
+        const isCollapsedDone = isExComplete && (state.autoCollapseDone !== false) && !state.expandedDoneCards[ex.id];
 
         return `
-          <article id="ex-card-${ex.id}" class="bg-slate-900 border ${isExComplete ? 'border-rose-400/25' : (ex.id === 'cable_ab_crunch' ? 'border-emerald-500/50 ring-1 ring-emerald-500/20' : 'border-slate-800')} rounded-2xl p-4 space-y-3 scroll-mt-20">
+          <article id="ex-card-${ex.id}" class="bg-slate-900 border ${isExComplete ? 'border-rose-400/25 bg-slate-900/60' : (isUpNext ? 'border-emerald-400/70 ring-2 ring-emerald-500/20 shadow-lg shadow-emerald-950/50' : (ex.id === 'cable_ab_crunch' ? 'border-emerald-500/50' : 'border-slate-800'))} rounded-2xl p-3.5 sm:p-4 space-y-3 scroll-mt-28 transition-all">
             <!-- Exercise Header with Machine Drawing & Equipment Tag -->
             <div class="flex items-start justify-between gap-2.5">
               <div class="flex items-start gap-2.5">
@@ -2324,14 +2736,30 @@
                 <div>
                   <div class="flex flex-wrap items-center gap-1.5">
                     <span class="text-[11px] font-mono font-bold text-slate-400">#${exOrder + 1}</span>
-                    ${isExComplete ? `<span class="text-[10px] font-bold bg-rose-500/15 text-rose-300 border border-rose-400/30 px-2 py-0.5 rounded-full">✓ Done</span>` : ''}
+                    ${isUpNext ? `<span class="text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full">▶ Up Next (${exDoneSets + 1}/${ex.sets})</span>` : ''}
+                    ${isExComplete ? `<span class="text-[10px] font-bold bg-rose-500/15 text-rose-300 border border-rose-400/30 px-2 py-0.5 rounded-full">✓ ${ex.sets}/${ex.sets} Done</span>` : ''}
                     ${ex.badge ? `<span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">${ex.badge}</span>` : ''}
                     <span class="text-[11px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">${ex.sets} Sets × ${ex.reps}</span>
                   </div>
                   <h3 class="text-sm font-extrabold text-white mt-0.5 leading-snug">${ex.name}</h3>
-                  <div class="inline-flex items-center gap-1 mt-1 text-[11px] font-semibold text-sky-300 bg-sky-500/10 border border-sky-500/25 px-2 py-0.5 rounded-lg">
-                    <span>🛠️</span>
-                    <span class="text-white font-bold">${meta.equipLabel}</span>
+                  <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                    <div class="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-300 bg-sky-500/10 border border-sky-500/25 px-2 py-0.5 rounded-lg">
+                      <span>🛠️</span>
+                      <span class="text-white font-bold">${meta.equipLabel}</span>
+                    </div>
+                    ${PULLUP_EX_ID_TO_DAY[ex.id] ? `
+                    <button type="button" data-rest-sec="${ex.restSec}" data-ex-name="${ex.name}" class="quick-rest-btn inline-flex items-center gap-1.5 text-[10px] font-extrabold text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 px-2.5 py-0.5 rounded-lg transition" title="Start pull-up rest timer">
+                      <span class="live-pullup-timer-dot w-2 h-2 rounded-full ${timerRunning ? 'bg-emerald-400 animate-ping' : 'bg-sky-400'} inline-block"></span>
+                      <span>⏱️ Timer: <span class="live-pullup-timer-readout font-mono">${formatTime(state.timerSeconds)}</span> (${ex.restLabel})</span>
+                    </button>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-sky-300 bg-sky-500/10 border border-sky-500/25 px-2 py-0.5 rounded-lg">🔄 Synced w/ Pull-Ups Tab</span>
+                    ` : ''}
+                    ${BARBELL_EX_IDS.includes(ex.id) ? (() => {
+                      const s1Entry = getLogEntry(week, dayIdx, ex.id, 1) || getPreviousWeekSuggestion(week, dayIdx, ex.id, 1);
+                      const s1W = s1Entry && s1Entry.weight ? s1Entry.weight : (exUnit === 'kg' ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : meta.defaultWeightLbs);
+                      const plates = getBarbellPlateBreakdown(s1W, exUnit);
+                      return `<span data-plate-badge="${ex.id}" class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-lg">${plates ? `💿 Plates: ${plates}` : '💿 Olympic Bar'}</span>`;
+                    })() : ''}
                   </div>
                 </div>
               </div>
@@ -2346,38 +2774,51 @@
                     exUnit === 'kg' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
                   }">KG</button>
                 </div>
+                <button type="button" data-overload-ex="${ex.id}" class="overload-bump-btn text-[10px] font-extrabold text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 px-2 py-0.5 rounded-lg transition" title="Add progressive overload (+2.5 / +5 weight or +1 rep)">
+                  🚀 +${meta.defaultWeightLbs === 0 ? '1 Rep' : '2.5'}
+                </button>
                 <span class="text-[9px] text-slate-400">${unitLocked ? `★ Default: ${exUnit.toUpperCase()}` : 'Tap machine unit'}</span>
               </div>
             </div>
 
-            <!-- Action Bar: Dropdown Visual Setup Image Toggle, Rest Timer & Video Link -->
-            <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-              <button type="button" data-toggle-img="${ex.id}" class="toggle-img-btn flex-1 bg-slate-950 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-between transition">
-                <span>📸 ${isImgOpen ? 'Hide Setup & Form Image' : 'Show Setup & Form Image'}</span>
-                <span class="text-[10px] text-emerald-400 font-extrabold">${isImgOpen ? '▲ Hide' : '▼ View'}</span>
+            ${isExComplete ? `
+            <div class="flex items-center justify-between bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-1.5 text-xs">
+              <span class="text-slate-300 font-medium">All ${ex.sets} sets logged for today</span>
+              <button type="button" data-expand-done="${ex.id}" class="expand-done-btn text-emerald-400 hover:text-emerald-300 font-bold text-[11px]">
+                ${isCollapsedDone ? '▼ Show / Edit Sets' : '▲ Collapse Card'}
               </button>
-              <button type="button" data-rest-sec="${ex.restSec}" data-ex-name="${ex.name}" class="quick-rest-btn bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 text-xs font-bold px-2.5 py-2 rounded-xl flex items-center gap-1 transition">
-                ⏱️ ${ex.restLabel}
-              </button>
-              <a href="${ex.videoUrl}" target="_blank" rel="noopener noreferrer" class="bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-bold px-2.5 py-2 rounded-xl flex items-center gap-1 transition">
-                ▶ Video
-              </a>
-            </div>
+            </div>` : ''}
 
-            <!-- Collapsible Visual Diagram Dropdown Panel (With Hide Button!) -->
-            <div id="img-panel-${ex.id}" class="${isImgOpen ? 'block' : 'hidden'}">
-              ${getStepVisualDiagramHtml(ex, meta)}
-            </div>
-
-            <!-- Set Table Header & Set Rows -->
-            <div class="space-y-1.5">
-              <div class="grid grid-cols-12 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                <div class="col-span-2">Set</div>
-                <div class="col-span-4">Weight (${exUnit.toUpperCase()})</div>
-                <div class="col-span-3 text-center">Reps</div>
-                <div class="col-span-3 text-right">Log &amp; Rest</div>
+            <div class="${isCollapsedDone ? 'hidden' : 'space-y-3'}">
+              <!-- Action Bar: Dropdown Visual Setup Image Toggle, Rest Timer & Video Link -->
+              <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <button type="button" data-toggle-img="${ex.id}" class="toggle-img-btn flex-1 bg-slate-950 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-between transition">
+                  <span>📸 ${isImgOpen ? 'Hide Setup & Form Image' : 'Show Setup & Form Image'}</span>
+                  <span class="text-[10px] text-emerald-400 font-extrabold">${isImgOpen ? '▲ Hide' : '▼ View'}</span>
+                </button>
+                <button type="button" data-rest-sec="${ex.restSec}" data-ex-name="${ex.name}" class="quick-rest-btn bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 text-xs font-bold px-2.5 py-2 rounded-xl flex items-center gap-1 transition">
+                  ⏱️ ${ex.restLabel}
+                </button>
+                <a href="${ex.videoUrl}" target="_blank" rel="noopener noreferrer" class="bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-bold px-2.5 py-2 rounded-xl flex items-center gap-1 transition">
+                  ▶ Video
+                </a>
               </div>
-              ${setsHtml}
+
+              <!-- Collapsible Visual Diagram Dropdown Panel (With Hide Button!) -->
+              <div id="img-panel-${ex.id}" class="${isImgOpen ? 'block' : 'hidden'}">
+                ${getStepVisualDiagramHtml(ex, meta)}
+              </div>
+
+              <!-- Set Table Header & Set Rows -->
+              <div class="space-y-1.5">
+                <div class="grid grid-cols-12 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <div class="col-span-2">Set</div>
+                  <div class="col-span-4 text-center">Weight (${exUnit.toUpperCase()})</div>
+                  <div class="col-span-3 text-center">Reps</div>
+                  <div class="col-span-3 text-right">1-Tap Log</div>
+                </div>
+                ${setsHtml}
+              </div>
             </div>
           </article>
         `;
@@ -2408,8 +2849,13 @@
             const legacyKey = `${dayIdx}_${exId}_${setIdx}`;
             state.workoutLogs[legacyKey] = Object.assign({}, state.workoutLogs[key]);
           }
+          // If this is a Daily Pull-Up exercise, sync two-way with the Pull-Ups window!
+          if (PULLUP_EX_ID_TO_DAY[exId]) {
+            syncPullupStateBothWays(week, PULLUP_EX_ID_TO_DAY[exId], setIdx, state.workoutLogs[key]);
+            renderUSMCView();
+          }
 
-          // Live update rounded conversion badge for this row
+          // Live update rounded conversion badge & Barbell Plate Calculator
           if (field === 'weight') {
             const badgeEl = listEl.querySelector(`[data-conv-badge="${key}"]`);
             const convObj = convertAndRoundWeight(inp.value, exUnit);
@@ -2417,6 +2863,13 @@
               badgeEl.innerHTML = convObj
                 ? `⇄ Rounded: <strong>${convObj.rounded} ${convObj.targetUnit}</strong> (exact ${convObj.exact} ${convObj.targetUnit})`
                 : 'Enter weight for lbs ⇄ kg conversion';
+            }
+            if (setIdx === 1 && BARBELL_EX_IDS.includes(exId)) {
+              const plateEl = listEl.querySelector(`[data-plate-badge="${exId}"]`);
+              if (plateEl) {
+                const plates = getBarbellPlateBreakdown(inp.value, exUnit);
+                plateEl.textContent = plates ? `💿 Plates: ${plates}` : '💿 Olympic Bar';
+              }
             }
           }
 
@@ -2528,8 +2981,12 @@
           } else if (weightInput && weightInput.placeholder) {
             state.workoutLogs[key].weight = weightInput.placeholder;
           }
+          const exObjForSet = exercisesToday.find(e => e.id === exId);
+          const pDayForSet = PULLUP_EX_ID_TO_DAY[exId] || 0;
           if (repsInput && repsInput.value !== '') {
             state.workoutLogs[key].reps = repsInput.value;
+          } else if (!state.workoutLogs[key].reps) {
+            state.workoutLogs[key].reps = parseTargetRepsNumber(exObjForSet ? exObjForSet.reps : '10', pDayForSet, setIdx);
           }
           state.workoutLogs[key].unit = exUnit;
           state.workoutLogs[key].done = !state.workoutLogs[key].done;
@@ -2555,6 +3012,16 @@
             state.workoutLogs[`${dayIdx}_${exId}_${setIdx}`] = Object.assign({}, state.workoutLogs[key]);
           }
 
+          const pullupDayNum = PULLUP_EX_ID_TO_DAY[exId] || 0;
+          if (pullupDayNum) {
+            // If reps input was empty on a pull-up set and placeholder is numeric, store placeholder reps
+            if (!state.workoutLogs[key].reps && repsInput && repsInput.placeholder && !isNaN(parseInt(repsInput.placeholder, 10))) {
+              state.workoutLogs[key].reps = String(parseInt(repsInput.placeholder, 10));
+            }
+            syncPullupStateBothWays(week, pullupDayNum, setIdx, state.workoutLogs[key]);
+            renderUSMCView();
+          }
+
           // Check if this is the very last set of the day (final set of the last exercise, e.g., Cable Crunch Set 3, or all sets for today done)
           const lastExToday = exercisesToday[exercisesToday.length - 1];
           const isLastSetOfLastEx = !!(lastExToday && exId === lastExToday.id && setIdx === lastExToday.sets);
@@ -2573,9 +3040,124 @@
               resetTimer();
               showToast(`🎉 Final set of the day logged (${state.workoutLogs[key].weight} ${exUnit})! Workout complete — no rest timer needed.`);
             } else {
-              startTimer(restSec, `Rest: ${exName}`);
-              showToast(`✓ Logged ${state.workoutLogs[key].weight} ${exUnit}! ${restSec}s rest started.`);
+              const exObj = exercisesToday.find(e => e.id === exId);
+              if (exObj && exObj.supersetPair) {
+                const pairEx = exercisesToday.find(e => e.id === exObj.supersetPair);
+                const pairName = pairEx ? pairEx.name : 'Superset Partner';
+                startTimer(restSec, `Superset Rest → Next: ${pairName}`);
+                showToast(`✓ Logged! 60s Superset rest → Go to ${pairName}`);
+                setTimeout(() => {
+                  const pairCard = document.getElementById(`ex-card-${exObj.supersetPair}`);
+                  if (pairCard) pairCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 350);
+              } else {
+                const effectiveRest = pullupDayNum
+                  ? getPullupSetRestSec(pullupDayNum, setIdx, state.workoutLogs[key].reps, restSec)
+                  : restSec;
+                startTimer(effectiveRest, `Rest: ${exName}`);
+                showToast(pullupDayNum
+                  ? `✓ Synced Pull-Up Set ${setIdx} (${state.workoutLogs[key].reps || 'Max'} reps)! ${effectiveRest}s rest started.`
+                  : `✓ Logged ${state.workoutLogs[key].weight} ${exUnit} × ${state.workoutLogs[key].reps}! ${effectiveRest}s rest started.`);
+              }
             }
+          } else {
+            resetTimer();
+            showToast('↩️ Set unchecked & rest timer stopped');
+          }
+        });
+      });
+
+      // UX Feature: Expand / Collapse Done Exercise Card
+      listEl.querySelectorAll('.expand-done-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-expand-done');
+          if (!state.expandedDoneCards) state.expandedDoneCards = {};
+          state.expandedDoneCards[exId] = !state.expandedDoneCards[exId];
+          saveState();
+          renderWorkoutView();
+        });
+      });
+
+      // UX Feature: Thumb-Friendly - / + Stepper Buttons for Weight & Reps (Zero Keyboard Needed!)
+      listEl.querySelectorAll('.step-adj-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-step-key');
+          const exId = btn.getAttribute('data-ex-id');
+          const setIdx = parseInt(btn.getAttribute('data-set-idx'), 10);
+          const field = btn.getAttribute('data-field');
+          const delta = parseFloat(btn.getAttribute('data-delta')) || 0;
+          const exUnit = getExerciseUnit(exId);
+          const exObj = exercisesToday.find(e => e.id === exId);
+          const meta = EXERCISE_META[exId] || { defaultWeightLbs: 45 };
+          const pullupDayNum = PULLUP_EX_ID_TO_DAY[exId] || 0;
+
+          const inp = listEl.querySelector(`input[data-log-key="${key}"][data-field="${field}"]`);
+          const curEntry = getLogEntry(week, dayIdx, exId, setIdx) || { weight: '', reps: '', done: false, unit: exUnit };
+
+          if (field === 'weight') {
+            const defW = exUnit === 'kg' ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0) : meta.defaultWeightLbs;
+            const baseW = (inp && inp.value !== '') ? parseFloat(inp.value) : (parseFloat(curEntry.weight) || defW);
+            const nextW = Math.max(0, +(baseW + delta).toFixed(1));
+            curEntry.weight = String(nextW);
+            if (inp) inp.value = String(nextW);
+          } else {
+            const defR = parseInt(parseTargetRepsNumber(exObj ? exObj.reps : '10', pullupDayNum, setIdx), 10) || 10;
+            const baseR = (inp && inp.value !== '') ? parseInt(inp.value, 10) : (parseInt(curEntry.reps, 10) || defR);
+            const nextR = Math.max(1, baseR + Math.round(delta));
+            curEntry.reps = String(nextR);
+            if (inp) inp.value = String(nextR);
+          }
+
+          curEntry.unit = exUnit;
+          state.workoutLogs[key] = curEntry;
+          if (week === 1) {
+            state.workoutLogs[`${dayIdx}_${exId}_${setIdx}`] = Object.assign({}, curEntry);
+          }
+          if (pullupDayNum) {
+            syncPullupStateBothWays(week, pullupDayNum, setIdx, curEntry);
+            renderUSMCView();
+          }
+          saveState();
+          renderWorkoutView();
+        });
+      });
+
+      // Pro Feature: 1-Tap Progressive Overload Bump (+2.5 weight or +1 rep on bodyweight pull-ups)
+      listEl.querySelectorAll('.overload-bump-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-overload-ex');
+          const exObj = exercisesToday.find(e => e.id === exId);
+          const meta = EXERCISE_META[exId] || { defaultWeightLbs: 45 };
+          const exUnit = getExerciseUnit(exId);
+          if (!exObj) return;
+
+          if (meta.defaultWeightLbs === 0) {
+            // Bodyweight / Pull-up exercise -> bump reps by +1
+            for (let s = 1; s <= exObj.sets; s++) {
+              const k = `w${week}_${dayIdx}_${exId}_${s}`;
+              const cur = getLogEntry(week, dayIdx, exId, s) || getPreviousWeekSuggestion(week, dayIdx, exId, s) || { weight: '0', reps: String(state.pullupTrainingSetReps || 5), done: false };
+              const nextReps = (parseInt(cur.reps, 10) || state.pullupTrainingSetReps || 5) + 1;
+              state.workoutLogs[k] = Object.assign({}, cur, { reps: String(nextReps), unit: exUnit });
+              if (PULLUP_EX_ID_TO_DAY[exId]) {
+                syncPullupStateBothWays(week, PULLUP_EX_ID_TO_DAY[exId], s, state.workoutLogs[k]);
+              }
+            }
+            saveState();
+            renderWorkoutView();
+            renderUSMCView();
+            showToast('🚀 Progressive Overload: Added +1 rep across sets (synced w/ Pull-Ups tab)!');
+          } else {
+            const step = 2.5;
+            for (let s = 1; s <= exObj.sets; s++) {
+              const k = `w${week}_${dayIdx}_${exId}_${s}`;
+              const cur = getLogEntry(week, dayIdx, exId, s) || getPreviousWeekSuggestion(week, dayIdx, exId, s) || { weight: '', reps: '', done: false };
+              const baseW = parseFloat(cur.weight) || (exUnit === 'kg' ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : meta.defaultWeightLbs);
+              const nextW = +(baseW + step).toFixed(1);
+              state.workoutLogs[k] = Object.assign({}, cur, { weight: String(nextW), unit: exUnit });
+            }
+            saveState();
+            renderWorkoutView();
+            showToast(`🚀 Progressive Overload: Added +${step} ${exUnit.toUpperCase()} across sets!`);
           }
         });
       });
@@ -2600,37 +3182,55 @@
       const container = document.getElementById('usmc-days-container');
       if (!container) return;
 
+      const week = state.currentWeek || 1;
+
       container.innerHTML = USMC_DAYS_DATA.map(d => {
+        const mapInfo = PULLUP_DAY_TO_EX_ID[d.dayNum];
+        let doneSetsCount = 0;
         let setsRowHtml = '';
         for (let s = 1; s <= d.setsCount; s++) {
           const key = `day_${d.dayNum}_set_${s}`;
-          const defaultRepPlaceholder = (d.dayNum === 3 || d.dayNum === 4)
-            ? state.pullupTrainingSetReps
-            : (d.dayNum === 2 ? s : 'Max');
-          const entry = state.usmcLogs[key] || { reps: '', done: false };
+          const defaultRepPlaceholder = getPullupDefaultReps(d.dayNum, s);
+          const syncedEntry = mapInfo
+            ? (getLogEntry(week, mapInfo.dayIdx, mapInfo.exId, s) || { reps: '', done: false })
+            : (state.usmcLogs[key] || { reps: '', done: false });
+          if (syncedEntry.done) doneSetsCount++;
+          const dynRest = getPullupSetRestSec(d.dayNum, s, syncedEntry.reps, d.restSec);
+          const gripHint = d.dayNum === 3
+            ? `<span class="text-[8px] font-semibold text-sky-400">${s <= 3 ? 'Overhand' : (s <= 6 ? 'Close' : 'Wide')}</span>`
+            : '';
+
           setsRowHtml += `
-            <div class="flex flex-col items-center bg-slate-950/70 border ${entry.done ? 'border-emerald-500/50 bg-emerald-950/30' : 'border-slate-800'} rounded-xl p-2">
-              <span class="text-[10px] font-bold text-slate-400">Set ${s}</span>
-              <input type="number" inputmode="numeric" placeholder="${defaultRepPlaceholder}" value="${entry.reps}" data-usmc-key="${key}" aria-label="USMC Day ${d.dayNum} Set ${s} Reps" class="usmc-rep-input w-12 bg-slate-900 border border-slate-700 rounded-lg py-1 text-center text-xs font-bold text-white my-1 focus:outline-none focus:border-emerald-500" />
-              <button type="button" data-usmc-key="${key}" data-rest-sec="${d.dayNum === 2 ? s * 10 : d.restSec}" data-label="USMC Day ${d.dayNum} Set ${s}" class="usmc-done-btn w-full py-1 rounded-md text-[10px] font-bold ${
-                entry.done ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            <div class="flex flex-col items-center bg-slate-950/70 border ${syncedEntry.done ? 'border-emerald-500/50 bg-emerald-950/30' : 'border-slate-800'} rounded-xl p-2">
+              <span class="text-[10px] font-bold ${syncedEntry.done ? 'text-emerald-400' : 'text-slate-400'}">Set ${s}</span>
+              ${gripHint}
+              <input type="number" inputmode="numeric" placeholder="${defaultRepPlaceholder}" value="${syncedEntry.reps || ''}" data-usmc-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" aria-label="USMC Day ${d.dayNum} Set ${s} Reps" class="usmc-rep-input w-12 bg-slate-900 border border-slate-700 rounded-lg py-1 text-center text-xs font-bold text-white my-1 focus:outline-none focus:border-emerald-500" />
+              <button type="button" data-usmc-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" data-rest-sec="${dynRest}" data-label="USMC Day ${d.dayNum} Set ${s}" class="usmc-done-btn w-full py-1 rounded-md text-[10px] font-bold ${
+                syncedEntry.done ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }">
-                ${entry.done ? '✓' : 'Rest'}
+                ${syncedEntry.done ? '✓ Done' : `⏱️ ${dynRest}s`}
               </button>
             </div>
           `;
         }
 
+        const isCardDone = doneSetsCount === d.setsCount;
+
         return `
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <div class="bg-slate-900 border ${isCardDone ? 'border-rose-400/30' : 'border-slate-800'} rounded-2xl p-4 space-y-3">
             <div class="flex items-start justify-between gap-2">
               <div>
-                <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">${d.dayLabel}</span>
-                <h3 class="text-sm font-extrabold text-white">${d.title}</h3>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Week ${week} • ${d.dayLabel}</span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isCardDone ? 'bg-rose-500/15 text-rose-300 border border-rose-400/30' : 'bg-slate-800 text-slate-300'}">${doneSetsCount}/${d.setsCount} Sets</span>
+                  <span class="text-[10px] font-semibold text-sky-300 bg-sky-500/10 border border-sky-500/25 px-2 py-0.5 rounded-full">🔄 Synced w/ Day ${d.dayNum} Exercise #1</span>
+                </div>
+                <h3 class="text-sm font-extrabold text-white mt-0.5">${d.title}</h3>
                 <p class="text-xs text-slate-300 mt-1">${d.desc}</p>
               </div>
-              <button type="button" data-rest-sec="${d.restSec}" data-ex-name="${d.title}" class="usmc-quick-timer shrink-0 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 text-xs font-bold px-2.5 py-1.5 rounded-xl">
-                ⏱️ ${d.restSec}s
+              <button type="button" data-rest-sec="${d.restSec}" data-ex-name="${d.title}" class="usmc-quick-timer shrink-0 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/35 text-xs font-extrabold px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition">
+                <span class="live-pullup-timer-dot w-2 h-2 rounded-full ${timerRunning ? 'bg-emerald-400 animate-ping' : 'bg-sky-400'} inline-block"></span>
+                <span>⏱️ <span class="live-pullup-timer-readout font-mono">${formatTime(state.timerSeconds)}</span> (${d.restSec}s)</span>
               </button>
             </div>
             <div class="grid grid-cols-5 gap-2">
@@ -2642,25 +3242,36 @@
 
       container.querySelectorAll('.usmc-rep-input').forEach(inp => {
         inp.addEventListener('input', () => {
-          const key = inp.getAttribute('data-usmc-key');
-          if (!state.usmcLogs[key]) state.usmcLogs[key] = { reps: '', done: false };
-          state.usmcLogs[key].reps = inp.value;
+          const dayNum = parseInt(inp.getAttribute('data-day-num'), 10);
+          const setIdx = parseInt(inp.getAttribute('data-set-idx'), 10);
+          syncPullupStateBothWays(week, dayNum, setIdx, { reps: inp.value });
           saveState();
+          renderWorkoutView();
         });
       });
 
       container.querySelectorAll('.usmc-done-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          const key = btn.getAttribute('data-usmc-key');
-          const restSec = parseInt(btn.getAttribute('data-rest-sec'), 10) || 60;
+          const dayNum = parseInt(btn.getAttribute('data-day-num'), 10);
+          const setIdx = parseInt(btn.getAttribute('data-set-idx'), 10);
           const label = btn.getAttribute('data-label');
-          if (!state.usmcLogs[key]) state.usmcLogs[key] = { reps: '', done: false };
-          state.usmcLogs[key].done = !state.usmcLogs[key].done;
+          const mapInfo = PULLUP_DAY_TO_EX_ID[dayNum];
+          const cur = mapInfo ? (getLogEntry(week, mapInfo.dayIdx, mapInfo.exId, setIdx) || { reps: '', done: false }) : { reps: '', done: false };
+          const defaultReps = getPullupDefaultReps(dayNum, setIdx);
+          const nextDone = !cur.done;
+          const finalReps = (cur.reps !== undefined && cur.reps !== '')
+            ? cur.reps
+            : (!isNaN(parseInt(defaultReps, 10)) ? String(parseInt(defaultReps, 10)) : '');
+
+          syncPullupStateBothWays(week, dayNum, setIdx, { reps: finalReps, done: nextDone });
           saveState();
           renderUSMCView();
-          if (state.usmcLogs[key].done) {
-            startTimer(restSec, label);
-            showToast(`✓ Logged ${label}! ${restSec}s rest started.`);
+          renderWorkoutView();
+
+          if (nextDone) {
+            const restSec = getPullupSetRestSec(dayNum, setIdx, finalReps, parseInt(btn.getAttribute('data-rest-sec'), 10) || 60);
+            startTimer(restSec, `Rest: ${label}`);
+            showToast(`✓ Synced ${label} (${finalReps || 'Max'} reps)! ${restSec}s rest started.`);
           }
         });
       });
@@ -2669,8 +3280,8 @@
         btn.addEventListener('click', () => {
           const sec = parseInt(btn.getAttribute('data-rest-sec'), 10) || 60;
           const name = btn.getAttribute('data-ex-name');
-          startTimer(sec, name);
-          showToast(`⏱️ Started ${sec}s rest timer`);
+          startTimer(sec, `Rest: ${name}`);
+          showToast(`⏱️ Started ${sec}s pull-up rest timer`);
         });
       });
     }
@@ -2724,17 +3335,139 @@
           : 'meal-mode-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-slate-800 text-slate-300 border-slate-700';
       });
 
-      // Calculate Checked Macros
+      const week = state.currentWeek || 1;
+      const dayIdx = state.selectedDayIndex || 0;
+      const dayObj = DAYS_SCHEDULE[dayIdx] || DAYS_SCHEDULE[0];
+
+      function isMealCheckedForDay(w, d, slotId) {
+        const k = `w${w}_d${d}_${slotId}`;
+        if (state.checkedMeals[k] !== undefined) return !!state.checkedMeals[k];
+        if (w === 1 && d === 0 && state.checkedMeals[slotId] !== undefined) return !!state.checkedMeals[slotId];
+        return false;
+      }
+
+      function setMealCheckedForDay(w, d, slotId, val) {
+        const k = `w${w}_d${d}_${slotId}`;
+        state.checkedMeals[k] = !!val;
+        if (w === 1 && d === 0) state.checkedMeals[slotId] = !!val;
+      }
+
+      // Render Synced Day 1 – Day 7 Strip in Vegan Fuel with Soft Rose (Done) & Amber (Partial) Dots
+      const veganDayGrid = document.getElementById('vegan-day-selector-grid');
+      if (veganDayGrid) {
+        veganDayGrid.innerHTML = DAYS_SCHEDULE.map((d, idx) => {
+          const isSelected = idx === dayIdx;
+          let mDone = 0;
+          VEGAN_MEALS.forEach(sl => {
+            if (isMealCheckedForDay(week, idx, sl.slotId)) mDone++;
+          });
+          const mTotal = VEGAN_MEALS.length;
+          let dotHtml = `<span class="w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-slate-900/35' : 'bg-slate-800'}" title="0/${mTotal} meals logged"></span>`;
+          if (mDone === mTotal) {
+            dotHtml = `<span class="inline-flex items-center gap-0.5" title="All ${mTotal} meals logged"><span class="w-2 h-2 rounded-full ${isSelected ? 'bg-rose-950/80' : 'bg-rose-400/75'}"></span><span class="text-[8px] font-bold ${isSelected ? 'text-rose-950' : 'text-rose-300/90'}">✓</span></span>`;
+          } else if (mDone > 0) {
+            dotHtml = `<span class="w-2 h-2 rounded-full ${isSelected ? 'bg-amber-900/75' : 'bg-amber-300/75'}" title="${mDone}/${mTotal} meals logged"></span>`;
+          }
+
+          return `
+            <button type="button" data-vegan-day-idx="${idx}" class="vegan-day-tab-btn flex flex-col items-center justify-center py-2 px-0.5 rounded-xl border transition ${
+              isSelected
+                ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold shadow-md shadow-emerald-500/20'
+                : (mDone === mTotal
+                    ? 'bg-slate-900/90 text-slate-100 border-rose-400/25 font-bold'
+                    : (mDone > 0
+                        ? 'bg-slate-900/90 text-slate-200 border-amber-300/25 font-bold'
+                        : 'bg-slate-950/80 text-slate-300 border-slate-800 hover:border-slate-700 font-semibold'))
+            }">
+              <span class="text-[10px] sm:text-[11px] uppercase tracking-tight whitespace-nowrap">${d.dayShort}</span>
+              <span class="text-[8px] font-semibold opacity-75 tracking-tight whitespace-nowrap">${idx === 0 || idx === 4 ? '🥣 Prep' : d.daySub || ''}</span>
+              <div class="flex items-center justify-center mt-1 h-2.5">
+                ${dotHtml}
+              </div>
+            </button>
+          `;
+        }).join('');
+
+        veganDayGrid.querySelectorAll('.vegan-day-tab-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.selectedDayIndex = parseInt(btn.getAttribute('data-vegan-day-idx'), 10) || 0;
+            saveState();
+            renderVeganView();
+            renderWorkoutView();
+          });
+        });
+      }
+
+      // Render Interactive 4-Day Scale Batch Prep Checklist
+      const prepListEl = document.getElementById('batch-prep-checklist');
+      if (prepListEl) {
+        if (!state.checkedBatchPrep) state.checkedBatchPrep = {};
+        const prepSteps = [
+          { id: 'prep_oats', label: '1. Oats Jar Batch: +160g Bob’s Protein Oats', sub: 'Tare scale to 0g, pour dry oats' },
+          { id: 'prep_silk', label: '2. Oats Jar Batch: +720g Silk Protein Milk', sub: 'Tare scale to 0g, pour cold milk' },
+          { id: 'prep_pb_chia', label: '3. Oats Jar Batch: +32g PB & +24g Chia Seeds', sub: 'Tare between each, stir well' },
+          { id: 'prep_banana', label: '4. Oats Jar Batch: +120g Peeled Banana', sub: 'Divide 1,056g batch into 4 jars (264g each)' },
+          { id: 'prep_rice_dry', label: '5. 4-Day Rice Batch: +220g Dry Jasmine Rice', sub: 'Rinse in pot, drain, place on scale' },
+          { id: 'prep_rice_water', label: '6. 4-Day Rice Batch: +330g Water → Cook', sub: 'Yields ~600g cooked (4 × 150g lunch bowls)' }
+        ];
+        prepListEl.innerHTML = prepSteps.map(st => {
+          const done = !!state.checkedBatchPrep[st.id];
+          return `
+            <button type="button" data-prep-id="${st.id}" class="prep-step-btn text-left p-2 rounded-xl border transition flex items-start gap-2 ${
+              done ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' : 'bg-slate-950/70 border-slate-800 text-slate-200 hover:border-slate-700'
+            }">
+              <span class="mt-0.5 w-4 h-4 shrink-0 rounded flex items-center justify-center text-[10px] font-bold ${
+                done ? 'bg-emerald-500 text-slate-950' : 'border border-slate-600'
+              }">${done ? '✓' : ''}</span>
+              <div>
+                <div class="text-[11px] font-bold ${done ? 'line-through text-slate-400' : 'text-white'}">${st.label}</div>
+                <div class="text-[10px] text-slate-400">${st.sub}</div>
+              </div>
+            </button>
+          `;
+        }).join('');
+
+        prepListEl.querySelectorAll('.prep-step-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const pid = btn.getAttribute('data-prep-id');
+            state.checkedBatchPrep[pid] = !state.checkedBatchPrep[pid];
+            saveState();
+            renderVeganView();
+          });
+        });
+      }
+
+      // Calculate Checked Macros for Selected Day (Day 1..Day 7)
       let eatenProtein = 0;
       let eatenKcal = 0;
+      let todayMealsDone = 0;
       VEGAN_MEALS.forEach(slot => {
         const varIdx = state.selectedMealVariant[slot.slotId] || 0;
         const opt = slot.options[varIdx] || slot.options[0];
-        if (state.checkedMeals[slot.slotId]) {
+        if (isMealCheckedForDay(week, dayIdx, slot.slotId)) {
           eatenProtein += opt.protein;
           eatenKcal += opt.kcal;
+          todayMealsDone++;
         }
       });
+
+      const veganTitleEl = document.getElementById('vegan-week-day-title');
+      if (veganTitleEl) {
+        veganTitleEl.textContent = `🌱 Week ${week} • ${dayObj.dayFull} (${dayObj.daySub || 'Fuel'})`;
+      }
+      const veganPillEl = document.getElementById('vegan-day-status-pill');
+      if (veganPillEl) {
+        if (todayMealsDone === VEGAN_MEALS.length) {
+          veganPillEl.textContent = `✓ ${todayMealsDone}/${VEGAN_MEALS.length} Meals Complete`;
+          veganPillEl.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-400/30';
+        } else if (todayMealsDone > 0) {
+          veganPillEl.textContent = `● ${todayMealsDone}/${VEGAN_MEALS.length} Meals Logged`;
+          veganPillEl.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-400/15 text-amber-200 border border-amber-300/30';
+        } else {
+          veganPillEl.textContent = `0/${VEGAN_MEALS.length} Meals Today`;
+          veganPillEl.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300';
+        }
+      }
 
       const pText = document.getElementById('macro-protein-text');
       const pBar = document.getElementById('macro-protein-bar');
@@ -2778,13 +3511,13 @@
         });
       }
 
-      // Render Timed Meal Cards
+      // Render Timed Meal Cards for Selected Day
       const mealsEl = document.getElementById('vegan-meals-container');
       if (mealsEl) {
         mealsEl.innerHTML = VEGAN_MEALS.map(slot => {
           const varIdx = state.selectedMealVariant[slot.slotId] || 0;
           const opt = slot.options[varIdx] || slot.options[0];
-          const isDone = !!state.checkedMeals[slot.slotId];
+          const isDone = isMealCheckedForDay(week, dayIdx, slot.slotId);
 
           return `
             <div class="bg-slate-900 border ${isDone ? 'border-emerald-500/40' : 'border-slate-800'} rounded-2xl p-4 space-y-3">
@@ -2833,11 +3566,12 @@
         mealsEl.querySelectorAll('.meal-check-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const slotId = btn.getAttribute('data-meal-slot');
-            state.checkedMeals[slotId] = !state.checkedMeals[slotId];
+            const curVal = isMealCheckedForDay(week, dayIdx, slotId);
+            setMealCheckedForDay(week, dayIdx, slotId, !curVal);
             saveState();
             renderVeganView();
-            if (state.checkedMeals[slotId]) {
-              showToast('🌱 Meal logged toward today\'s muscle goals!');
+            if (!curVal) {
+              showToast(`🌱 Logged ${slotId.toUpperCase()} meal for ${dayObj.dayFull}!`);
             }
           });
         });
@@ -3054,6 +3788,41 @@
         });
       }
 
+      const toggleFocusBtn = document.getElementById('toggle-focus-collapse-btn');
+      if (toggleFocusBtn) {
+        toggleFocusBtn.addEventListener('click', () => {
+          state.autoCollapseDone = state.autoCollapseDone === false ? true : false;
+          if (state.autoCollapseDone) state.expandedDoneCards = {};
+          saveState();
+          renderWorkoutView();
+          showToast(state.autoCollapseDone ? '🎯 Auto-Collapse Done enabled (saves screen space)' : '📋 All completed exercises expanded');
+        });
+      }
+
+      const pinnedNextBtn = document.getElementById('pinned-jump-next-btn');
+      if (pinnedNextBtn) {
+        pinnedNextBtn.addEventListener('click', () => {
+          switchTab('workout');
+          const week = state.currentWeek || 1;
+          const dayIdx = state.selectedDayIndex;
+          const dayObj = DAYS_SCHEDULE[dayIdx];
+          const exList = [...dayObj.exercises];
+          if (state.crunchDays.includes(dayIdx)) exList.push(CABLE_CRUNCH_EXERCISE);
+          for (const ex of exList) {
+            for (let s = 1; s <= ex.sets; s++) {
+              const e = getLogEntry(week, dayIdx, ex.id, s);
+              if (!e || !e.done) {
+                const card = document.getElementById(`ex-card-${ex.id}`);
+                if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                showToast(`▶ Jumped to ${ex.name} (Set ${s})`);
+                return;
+              }
+            }
+          }
+          showToast('🎉 All sets for today are complete!');
+        });
+      }
+
       const toggleAllImgsBtn = document.getElementById('toggle-all-images-btn');
       if (toggleAllImgsBtn) {
         toggleAllImgsBtn.addEventListener('click', () => {
@@ -3081,18 +3850,18 @@
         });
       }
 
-      // Cable Crunch 4x/Week Presets
+      // Daily Cable Abdominal Crunch Schedule Presets
       document.getElementById('crunch-preset-lift').addEventListener('click', () => {
-        state.crunchDays = [0, 1, 3, 5]; // Mon, Tue, Thu, Sat
+        state.crunchDays = [0, 1, 2, 3, 4, 5, 6]; // Every Day (Days 1–7)
         saveState();
         renderWorkoutView();
-        showToast('Cable Abdominal Crunch set to Day 1, Day 2, Day 4 & Day 6 (4x/wk)');
+        showToast('Cable Abdominal Crunch set to Daily (Days 1–7) — auto-prefills from previous day!');
       });
       document.getElementById('crunch-preset-spaced').addEventListener('click', () => {
-        state.crunchDays = [0, 2, 4, 6]; // Mon, Wed, Fri, Sun
+        state.crunchDays = [0, 1, 2, 3, 4]; // All 5 Lifting Days (Days 1–5)
         saveState();
         renderWorkoutView();
-        showToast('Cable Abdominal Crunch set to Day 1, Day 3, Day 5 & Day 7 (4x/wk)');
+        showToast('Cable Abdominal Crunch set to All 5 Lifting Days (Days 1–5)!');
       });
 
       // Warmup Accordion Toggle
@@ -3109,21 +3878,48 @@
         }
       });
 
-      // USMC Training Set Reps Controls
+      // USMC Training Set Reps Controls (Synced with Daily Pull-Up Exercise #1)
       document.getElementById('pullup-ts-minus').addEventListener('click', () => {
         state.pullupTrainingSetReps = Math.max(1, state.pullupTrainingSetReps - 1);
         saveState();
         renderUSMCView();
+        renderWorkoutView();
       });
       document.getElementById('pullup-ts-plus').addEventListener('click', () => {
         state.pullupTrainingSetReps = Math.min(30, state.pullupTrainingSetReps + 1);
         saveState();
         renderUSMCView();
+        renderWorkoutView();
       });
 
-      // Main Timer View Controls
+      // Main Timer View & Pinned Top Bar Controls
       document.getElementById('timer-start-pause').addEventListener('click', toggleTimer);
       document.getElementById('timer-reset').addEventListener('click', resetTimer);
+      const pinnedPlayBtn = document.getElementById('pinned-timer-play');
+      const pinnedResetBtn = document.getElementById('pinned-timer-reset');
+      const pinnedMinusBtn = document.getElementById('pinned-timer-minus');
+      const pinnedPlusBtn = document.getElementById('pinned-timer-plus');
+      if (pinnedPlayBtn) pinnedPlayBtn.addEventListener('click', toggleTimer);
+      if (pinnedResetBtn) pinnedResetBtn.addEventListener('click', resetTimer);
+      if (pinnedMinusBtn) {
+        pinnedMinusBtn.addEventListener('click', () => {
+          syncWallClockTimer();
+          state.timerSeconds = Math.max(0, state.timerSeconds - 15);
+          if (timerRunning) state.timerEndTime = Date.now() + (state.timerSeconds * 1000);
+          updateTimerUI();
+          saveState();
+        });
+      }
+      if (pinnedPlusBtn) {
+        pinnedPlusBtn.addEventListener('click', () => {
+          syncWallClockTimer();
+          state.timerSeconds += 15;
+          state.timerTotalSeconds = Math.max(state.timerTotalSeconds || 90, state.timerSeconds);
+          if (timerRunning) state.timerEndTime = Date.now() + (state.timerSeconds * 1000);
+          updateTimerUI();
+          saveState();
+        });
+      }
       document.getElementById('timer-minus-15').addEventListener('click', () => {
         syncWallClockTimer();
         state.timerSeconds = Math.max(0, state.timerSeconds - 15);
@@ -3185,13 +3981,46 @@
         });
       });
 
+      const logAllVeganBtn = document.getElementById('log-all-vegan-day-btn');
+      if (logAllVeganBtn) {
+        logAllVeganBtn.addEventListener('click', () => {
+          const w = state.currentWeek || 1;
+          const d = state.selectedDayIndex || 0;
+          VEGAN_MEALS.forEach(sl => {
+            state.checkedMeals[`w${w}_d${d}_${sl.slotId}`] = true;
+            if (w === 1 && d === 0) state.checkedMeals[sl.slotId] = true;
+          });
+          saveState();
+          renderVeganView();
+          showToast(`✓ All 3 meals logged for Day ${d + 1} (1,520 kcal • 139g P)!`);
+        });
+      }
+
       document.getElementById('reset-vegan-day-btn').addEventListener('click', () => {
-        state.checkedMeals = {};
+        const w = state.currentWeek || 1;
+        const d = state.selectedDayIndex || 0;
+        VEGAN_MEALS.forEach(sl => {
+          delete state.checkedMeals[`w${w}_d${d}_${sl.slotId}`];
+          if (w === 1 && d === 0) delete state.checkedMeals[sl.slotId];
+        });
         state.checkedEssentials = {};
         saveState();
         renderVeganView();
-        showToast('Reset today\'s meal & supplement checklist');
+        showToast(`Reset meals for Day ${d + 1}`);
       });
+
+      const checkPantryBtn = document.getElementById('check-pantry-staples-btn');
+      if (checkPantryBtn) {
+        checkPantryBtn.addEventListener('click', () => {
+          PANTRY_STAPLE_SHOP_IDS.forEach(id => {
+            state.checkedGroceries[id] = true;
+          });
+          saveState();
+          renderShoppingView();
+          renderVeganView();
+          showToast('✓ Checked off 7 long-lasting pantry staples — only fresh weekly items remain!');
+        });
+      }
 
       const openShopBtn = document.getElementById('open-shopping-tab-btn');
       if (openShopBtn) {
@@ -3286,7 +4115,7 @@
           const blob = new Blob([updatedHtml], { type: 'text/html;charset=utf-8' });
           const a = document.createElement('a');
           a.href = URL.createObjectURL(blob);
-          a.download = 'vegan_7am_gym_tracker.html';
+          a.download = 'index.html';
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
