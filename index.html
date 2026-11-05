@@ -76,10 +76,10 @@
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 min-w-0">
           <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-extrabold text-xs shrink-0 shadow-md shadow-emerald-500/20">
-            7AM
+            GYM
           </div>
           <div class="min-w-0">
-            <h1 class="text-xs sm:text-sm font-bold tracking-tight text-white leading-tight truncate">7AM Gym &amp; Vegan Hub</h1>
+            <h1 class="text-xs sm:text-sm font-bold tracking-tight text-white leading-tight truncate">Gym &amp; Vegan Hub</h1>
             <p class="text-[10px] text-emerald-400 font-medium truncate" id="header-subtitle">Aligned 5-Day Split • Pull-Ups #1 • Daily Abs</p>
           </div>
         </div>
@@ -373,6 +373,11 @@
         <div class="grid grid-cols-7 gap-1.5" id="vegan-day-selector-grid">
           <!-- Populated dynamically by JS -->
         </div>
+
+        <!-- Smart Gym Time & Auto-Meal Timing Sync Bar (Default 7:00 AM, Adapts to Morning / Midday / Evening) -->
+        <div id="vegan-gym-time-bar" class="bg-slate-950/90 border border-emerald-500/30 rounded-xl p-2.5 space-y-2">
+          <!-- Populated dynamically by JS -->
+        </div>
       </div>
 
       <!-- Ultra-Simple 3-Meal Daily Plan Header -->
@@ -380,8 +385,8 @@
         <div class="flex items-start justify-between gap-2">
           <div>
             <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">100% Kitchen Scale Grams (g) • Low-Appetite Plan</span>
-            <h2 class="text-base font-extrabold text-white mt-0.5">Light 6-Pack &amp; Muscle Plan (1,520 kcal • 139g P)</h2>
-            <p class="text-xs text-slate-300 mt-1">Every ingredient measured in exact grams (g) for your scale — Bob’s Red Mill Protein Oats (40g/day), Pea Protein Isolate (75g/day), Extra-Firm Tofu (175g/day), Silk Protein Milk (900g/day), Nori Seaweed (5g/day), Sesame Oil (2.5g) &amp; Tamari (2.5g).</p>
+            <h2 class="text-base font-extrabold text-white mt-0.5">Light 6-Pack &amp; Muscle Plan (1,495 kcal • 138g P)</h2>
+            <p class="text-xs text-slate-300 mt-1">Every ingredient measured in exact grams (g) for your scale — 6:35 AM Pre-Gym Shake (30g Pea Protein Isolate + 360g Cold Silk Milk), 8:15 AM Post-Gym Overnight Oats (264g jar), Extra-Firm Tofu (175g/day), Toasted Sesame Oil (5g/day), and Iodized Table Salt (1.5g/day Windsor Iodized — not sea/pink salt).</p>
           </div>
           <div class="flex flex-col items-end gap-1.5 shrink-0">
             <button type="button" id="log-all-vegan-day-btn" class="text-[11px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 transition">✓ Log All 3</button>
@@ -436,7 +441,7 @@
         <div class="flex items-center justify-between gap-2">
           <div>
             <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400">How These 3 Meals Cover 100% of Your Nutrients</h3>
-            <p class="text-[11px] text-slate-400">Tap to check off or open your 10-item Weekly Shop List</p>
+            <p class="text-[11px] text-slate-400">Tap to check off or open your 12-item Weekly Shop List</p>
           </div>
           <button type="button" id="open-shopping-tab-btn" class="shrink-0 px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-extrabold">
             🛒 Full Weekly List →
@@ -504,7 +509,7 @@
           <div>
             <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">7-Day 6-Pack Recomp &amp; Oats Prep</span>
             <h2 class="text-base font-extrabold text-white mt-0.5">Weekly Vegan Shopping List</h2>
-            <p class="text-xs text-slate-300 mt-1">Exact weekly quantities for your Overnight Oats + Silk Protein batches and low-volume high-protein meals (caffeine/espresso-free).</p>
+            <p class="text-xs text-slate-300 mt-1">Exact weekly quantities for your Overnight Oats + Silk Protein batches and low-volume high-protein meals (caffeine-free).</p>
           </div>
           <div class="text-right shrink-0 bg-slate-950/80 border border-slate-800 px-3 py-2 rounded-xl">
             <span id="shopping-progress-count" class="block text-sm font-extrabold text-emerald-400">0 / 16</span>
@@ -550,7 +555,7 @@
     <div class="max-w-xl mx-auto grid grid-cols-5 gap-1">
       <button type="button" data-nav="workout" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-emerald-400 bg-emerald-500/10 font-bold text-[10px] sm:text-[11px] transition">
         <span class="text-base leading-none mb-1">🏋️</span>
-        <span>7AM Gym</span>
+        <span>Gym</span>
       </button>
       <button type="button" data-nav="pullups" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[10px] sm:text-[11px] transition">
         <span class="text-base leading-none mb-1">💪</span>
@@ -671,6 +676,10 @@
         dinner: 0
       },
       checkedMeals: {},
+      checkedMealIngredients: {}, // keyed by `w${w}_d${d}_${slotId}_${ingId}` -> boolean
+      hiddenMealChecklists: {}, // keyed by `${d}_${slotId}` -> boolean (true when Ingredient Scale Checklist is hidden)
+      openMealFormulas: {}, // keyed by `${d}_${slotId}` -> boolean (true when Full Formula & Timing Tip is shown; hidden by default or toggleable!)
+      gymScheduleByDay: {}, // keyed by `w${w}_d${d}` -> { startTime: "07:00", endTime: "08:00", mode: "default"|"manual"|"auto_start"|"auto_end", updatedLabel: "" }
       checkedEssentials: {},
       checkedGroceries: {},
       customShoppingItems: [],
@@ -1394,48 +1403,125 @@
     // 3. LOW-APPETITE VEGAN NUTRITION DATA
     // =========================================================================
     const VEGAN_MODES = {
-      recomp_6pack: { kcal: 1520, protein: 139, label: 'Light Shake + ½-Block Tofu Plan' },
+      recomp_6pack: { kcal: 1495, protein: 138, label: 'Light Shake + ½-Block Tofu Plan' },
       low_appetite: { kcal: 2450, protein: 145, label: 'Low Appetite Bulk' },
       high_growth: { kcal: 2750, protein: 165, label: 'Max Muscle Gain' },
       light_day: { kcal: 2200, protein: 135, label: 'Rest / Light Day' }
     };
 
     // Legacy item ID map for backward compatibility:
-    // id: 'creatine', id: 'shop_nooch', id: 'd3k2', id: 'leucine', id: 'shop_creatine', id: 'shop_edamame', id: 'shop_iodine', id: 'shop_potatoes', id: 'shop_seitan', id: 'shop_tempeh', id: 'shop_vitc', id: 'shop_isolate', id: 'sun_dead_bug', id: 'wed_usmc_set1', id: 'wed_usmc_set2', id: 'wed_usmc_set3'
+    // id: 'm1_pea_isolate', id: 'm1_silk_milk', id: 'm3_pea_isolate', id: 'm3_silk_milk', id: 'shop_tamari', id: 'creatine', id: 'shop_nooch', id: 'd3k2', id: 'leucine', id: 'shop_creatine', id: 'shop_edamame', id: 'shop_iodine', id: 'shop_potatoes', id: 'shop_seitan', id: 'shop_tempeh', id: 'shop_vitc', id: 'shop_isolate', id: 'sun_dead_bug', id: 'wed_usmc_set1', id: 'wed_usmc_set2', id: 'wed_usmc_set3'
     const VEGAN_ESSENTIALS = [
-      { id: 'b12', name: '✓ B12, Vitamin D & Calcium (200% B12, 95% D, 120% Ca)', detail: 'Covered automatically by your 900g/day of Silk Protein milk (180g in oats + 720g in shakes) + 12g nutritional yeast + 175g tofu.' },
-      { id: 'iodine_zinc', name: '✓ Thyroid Iodine (5g Nori Seaweed) + Iron & Vitamin C (75g Broccoli)', detail: '5g of Nori seaweed (2 sheets) covers 100% daily iodine (no salt needed); 75g broccoli unlocks iron in pea protein, oats & tofu.' },
-      { id: 'omega3', name: '✓ Omega-3 ALA & 139g Complete Protein (All in Grams)', detail: '75g/day Pea Protein Isolate (60g P) + 40g/day Bob’s Red Mill Protein Oats + 175g/day tofu + 6g/day chia seeds & 24g/day peanut butter.' }
+      { id: 'b12', name: '✓ B12, Vitamin D & Calcium (200% B12, 95% D, 120% Ca)', detail: 'Covered automatically by your 900g/day of Silk Protein milk (180g in oats + 360g pre-gym shake + 360g evening shake) + 12g nutritional yeast + 175g tofu.' },
+      { id: 'iodine_zinc', name: '✓ Thyroid Iodine (1.5g Iodized Table Salt) + Iron & Vitamin C (75g Broccoli)', detail: '1.5g (~¼ tsp) of Iodized Table Salt (Windsor Iodized Salt — NOT sea salt or pink Himalayan salt) covers 100% daily thyroid iodine; 75g broccoli unlocks iron in pea protein, oats & tofu.' },
+      { id: 'omega3', name: '✓ Omega-3 ALA & 138g Complete Protein (All in Grams)', detail: '75g/day Pea Protein Isolate (60g P) + 40g/day Bob’s Red Mill Protein Oats + 175g/day tofu + 6g/day chia seeds, 24g/day peanut butter & 5g/day toasted sesame oil.' }
     ];
 
     const VEGAN_MEALS = [
       {
         slotId: 'post',
-        time: 'Meal 1 • 8:15 AM (After 7:00 AM Gym)',
-        title: '264g Protein Overnight Oats (1/4 Batch) + 30g Pea Protein in 360g Silk Milk',
-        tip: '4-Day Batch Recipe (1,056g total): Mix 160g Bob’s Red Mill Protein Oats + 720g Silk Protein Milk + 32g peanut butter + 24g chia seeds + 120g peeled banana. Eat 264g (1/4 batch) each morning with your 30g Pea Protein + 360g Silk Milk shake.',
+        time: 'Meal 1 • 6:35 AM Pre-Gym Shake + 8:15 AM Post-Gym Oats',
+        title: '30g Pea Protein in 360g Cold Silk Milk (Pre-Gym) + 264g Overnight Oats Jar (Post-Gym)',
+        tip: 'Take your 390g Shake (30g Pea Protein Isolate + 360g cold Silk Milk) 25 mins before the gym for fast amino acids with zero stomach bulk, then eat your 264g Overnight Oats Jar (1/4 batch) 15 mins after finishing your workout.',
         options: [
           {
-            name: '264g Protein Oats Jar + 30g Pea Protein + 360g Silk Milk',
+            name: '390g Pre-Gym Shake + 264g Post-Gym Overnight Oats Jar (1/4 Batch)',
             protein: 53,
             kcal: 585,
-            volume: '264g Jar + 390g Shake',
-            ingredients: '264g Overnight Oats (daily share: 40g Bob’s Red Mill Gluten Free Protein Oats, 180g Silk Protein Almond & Cashew milk, 8g peanut butter, 6g chia seeds, 30g banana = 330 kcal & 17g P) + 30g Pea Protein Isolate (24g P, 120 kcal) shaken in 360g cold Silk Protein milk (12g P, 135 kcal).'
+            volume: '390g Shake + 264g Jar',
+            ingredients: '264g Overnight Oats (daily share: 40g Bob’s Red Mill Gluten Free Protein Oats, 180g Silk Protein Almond & Cashew milk, 8g peanut butter, 6g chia seeds, 30g banana = 330 kcal & 17g P) + 30g Pea Protein Isolate (24g P, 120 kcal) shaken in 360g cold Silk Protein milk (12g P, 135 kcal).',
+            items: [
+              {
+                id: 'm1_protein_shake',
+                weight: '390g Shake',
+                label: '⏰ 6:35 AM (25m before Gym): 30g Pea Protein Isolate Shaken in 360g Cold Silk Protein Milk (36g P, 255 kcal)',
+                subPills: [
+                  '30g Pea Protein Isolate (24g P, 120 kcal)',
+                  '360g Cold Silk Protein Almond & Cashew Milk (12g P, 135 kcal • 100% B12)'
+                ],
+                protein: 36,
+                kcal: 255
+              },
+              {
+                id: 'm1_oats_jar',
+                weight: '264g Jar',
+                label: '⏰ 8:15 AM (15m after Gym): 264g Overnight Oats (daily share: 1/4 batch = 330 kcal & 17g P)',
+                subPills: [
+                  '40g Bob’s Red Mill Gluten Free Protein Oats',
+                  '180g Silk Protein Almond & Cashew milk',
+                  '8g peanut butter',
+                  '6g chia seeds',
+                  '30g banana'
+                ],
+                protein: 17,
+                kcal: 330
+              }
+            ]
           }
         ]
       },
       {
         slotId: 'lunch',
-        time: 'Meal 2 • 1:00 PM (Small 422g Bowl — Cut in Half!)',
-        title: '175g Extra-Firm Tofu + 150g Cooked Rice + 75g Broccoli + 5g Nori Seaweed',
-        tip: 'Weighing 175g tofu (½ of a 350g block) and 150g cooked rice keeps your lunch bowl light! Crumble 5g Nori seaweed (2 sheets) on top for 100% daily iodine without salt.',
+        time: 'Meal 2 • 1:00 PM (Small 418g Bowl — Cut in Half!)',
+        title: '175g Extra-Firm Tofu + 150g Cooked Rice + 75g Broccoli + 12g Yeast + 5g Sesame Oil + 1.5g Iodized Salt',
+        tip: 'Weighing 175g tofu (½ of a 350g block) and 150g cooked rice keeps your bowl light! Season with 1.5g (~¼ tsp) Iodized Table Salt (Windsor Iodized — not sea/pink salt) for 100% daily thyroid iodine plus 5g toasted sesame oil.',
         options: [
           {
-            name: '175g Tofu + 150g Cooked White Rice + 75g Broccoli + 5g Nori + 12g Yeast',
-            protein: 34,
-            kcal: 525,
-            volume: '422g Small Bowl',
-            ingredients: '175g extra-firm tofu (21g P) + 150g cooked white jasmine rice (55g dry weight = 4g P) + 75g steamed broccoli (1.5g P, 100% Vit C) + 5g roasted Nori seaweed (2 sheets = 1g P, 100% iodine) + 12g fortified nutritional yeast (6g P) + 2.5g toasted sesame oil + 2.5g low-sodium tamari / soy sauce.'
+            name: '175g Tofu + 150g Cooked White Rice + 75g Broccoli + 12g Yeast + 5g Sesame Oil + 1.5g Iodized Salt',
+            protein: 33,
+            kcal: 500,
+            volume: '418g Small Bowl',
+            ingredients: '175g extra-firm tofu (21g P, 190 kcal) + 150g cooked white jasmine rice (55g dry weight = 4g P, 195 kcal) + 75g steamed broccoli (1.5g P, 25 kcal, 100% Vit C) + 12g fortified nutritional yeast (6g P, 45 kcal) + 5g toasted sesame oil (45 kcal) + 1.5g iodized table salt (Windsor Iodized Salt — NOT sea or Himalayan salt = 100% daily thyroid iodine).',
+            items: [
+              {
+                id: 'm2_tofu',
+                weight: '175g Tofu',
+                label: '175g Extra-Firm Tofu (½ of a 350g block)',
+                subPills: ['Cubed & pan-seared or air-fried'],
+                protein: 21,
+                kcal: 190
+              },
+              {
+                id: 'm2_rice',
+                weight: '150g Rice',
+                label: '150g Cooked White Jasmine Rice (55g dry weight)',
+                subPills: ['1/4 of your 4-day cooked rice batch'],
+                protein: 4,
+                kcal: 195
+              },
+              {
+                id: 'm2_broccoli',
+                weight: '75g Veg',
+                label: '75g Steamed Broccoli Florets',
+                subPills: ['100% Daily Vitamin C — unlocks iron absorption'],
+                protein: 1.5,
+                kcal: 25
+              },
+              {
+                id: 'm2_nooch',
+                weight: '12g Yeast',
+                label: '12g Fortified Nutritional Yeast Flakes',
+                subPills: ['Sprinkled on top for savory cheesy umami & B-vitamins'],
+                protein: 6,
+                kcal: 45
+              },
+              {
+                id: 'm2_sauce',
+                weight: '5g Oil',
+                label: '5g Toasted Sesame Oil',
+                subPills: ['5g (1 tsp) toasted sesame oil drizzled over bowl for rich aroma & healthy fats'],
+                protein: 0,
+                kcal: 45
+              },
+              {
+                id: 'm2_nori',
+                weight: '1.5g Salt',
+                label: '1.5g Iodized Table Salt (Windsor Iodized Salt — NOT sea or Himalayan salt)',
+                subPills: ['~1/4 tsp iodized table salt covers 100% Daily Thyroid Iodine (sea/pink salt has no iodine)'],
+                protein: 0,
+                kcal: 0
+              }
+            ]
           }
         ]
       },
@@ -1450,7 +1536,28 @@
             protein: 52,
             kcal: 410,
             volume: '405g Shake + 16g PB',
-            ingredients: '45g Pea Protein Isolate (36g P, 180 kcal) shaken in 360g Silk Protein Unsweetened Almond & Cashew milk (12g P, 135 kcal) + 16g smooth peanut butter (4g P, 95 kcal).'
+            ingredients: '45g Pea Protein Isolate (36g P, 180 kcal) shaken in 360g Silk Protein Unsweetened Almond & Cashew milk (12g P, 135 kcal) + 16g smooth peanut butter (4g P, 95 kcal).',
+            items: [
+              {
+                id: 'm3_protein_shake',
+                weight: '405g Shake',
+                label: '45g Pea Protein Isolate Shaken in 360g Cold Silk Protein Milk',
+                subPills: [
+                  '45g Pea Protein Isolate (36g P, 180 kcal)',
+                  '360g Cold Silk Protein Unsweetened Almond & Cashew Milk (12g P, 135 kcal)'
+                ],
+                protein: 48,
+                kcal: 315
+              },
+              {
+                id: 'm3_pb',
+                weight: '16g PB',
+                label: '+ 16g Smooth Natural Peanut Butter (4g P, 95 kcal)',
+                subPills: ['Healthy fats eaten alongside shake to slow overnight amino acid release'],
+                protein: 4,
+                kcal: 95
+              }
+            ]
           }
         ]
       }
@@ -1466,20 +1573,19 @@
       'Smooth Peanut Butter (168g/wk — 24g/day)',
       'Organic Chia Seeds (42g/wk — 6g/day)',
       'Fortified Nutritional Yeast (84g/wk — 12g/day)',
-      'Roasted Nori Seaweed (35g/wk — 5g/day)',
-      'Toasted Sesame Oil (18g/wk — 2.5g/day)',
-      'Low-Sodium Tamari / Soy Sauce (18g/wk — 2.5g/day)',
+      'Iodized Table Salt — Windsor Iodized (10.5g/wk — 1.5g/day)',
+      'Toasted Sesame Oil (35g/wk — 5g/day)',
       'Pea Protein Isolate (525g/wk — 75g/day)'
     ];
 
-    const PANTRY_STAPLE_SHOP_IDS = ['shop_oats', 'shop_rice', 'shop_pb', 'shop_chia', 'shop_sesame', 'shop_tamari', 'shop_isolate'];
+    const PANTRY_STAPLE_SHOP_IDS = ['shop_oats', 'shop_rice', 'shop_pb', 'shop_chia', 'shop_iodine', 'shop_sesame', 'shop_isolate'];
 
     const WEEKLY_SHOPPING_CATEGORIES = [
       {
         category: 'Aisle 1: Produce & Refrigerated Cooler (Weekly Fresh Run)',
         badge: '4 Fresh Staples • No Frills / Walmart',
         items: [
-          { id: 'shop_silk', name: '1. Silk Protein Unsweetened Almond & Cashew (1,750g carton)', qty: '6,300g / week (900g/day)', note: '180g/day in oats + 360g morning shake + 360g evening shake (4 cartons/wk; 200% B12, 95% Vit D)' },
+          { id: 'shop_silk', name: '1. Silk Protein Unsweetened Almond & Cashew (1,750g carton)', qty: '6,300g / week (900g/day)', note: '180g/day in oats + 360g pre-workout shake + 360g evening shake (4 cartons/wk; 200% B12, 95% Vit D)' },
           { id: 'shop_tofu', name: '2. Sunrise or Rooster Extra-Firm Tofu (350g–454g block)', qty: '1,225g / week (175g/day)', note: 'Weigh 175g/day (½ of a 350g block) for Meal 2 — only 2.7 to 3.5 blocks/week!' },
           { id: 'shop_broccoli', name: '3. Broccoli Florets (Fresh Crown or Frozen Bag)', qty: '525g / week (75g/day)', note: '75g steamed broccoli/day for Meal 2 (100% daily Vitamin C to unlock iron in tofu, oats & pea protein)' },
           { id: 'shop_banana', name: '4. Ripe Bananas (Peeled Weight)', qty: '210g / week (30g/day)', note: '120g peeled banana (1 medium) per 4-day overnight oats batch (~2 medium bananas/wk)' }
@@ -1497,19 +1603,18 @@
         ]
       },
       {
-        category: 'Aisle 3: Asian Aisle, Seaweed & Condiments (Nothing Missing!)',
-        badge: '3 Flavor & Iodine Staples',
+        category: 'Aisle 3: Baking & Oil Aisle (Iodized Salt & Toasted Sesame Oil)',
+        badge: '2 Flavor & Iodine Staples',
         items: [
-          { id: 'shop_iodine', name: '10. Roasted Seaweed Snacks / Sushi Nori Sheets', qty: '35g / week (5g/day)', note: '5g/day (2 sheets) crumbled on Meal 2 covers 100% thyroid iodine (replaces iodized salt)' },
-          { id: 'shop_sesame', name: '11. Toasted Sesame Oil (Bottle)', qty: '18g / week (2.5g/day)', note: '2.5g drizzled on Meal 2 tofu, rice & broccoli bowl for rich aroma & healthy fats (1 bottle lasts ~14 wks)' },
-          { id: 'shop_tamari', name: '12. Low-Sodium Tamari or Soy Sauce (Bottle)', qty: '18g / week (2.5g/day)', note: '2.5g drizzled on Meal 2 bowl for savory umami flavor with Nori seaweed & nutritional yeast' }
+          { id: 'shop_iodine', name: '10. Iodized Table Salt (Windsor Iodized Salt — NOT sea or pink Himalayan salt)', qty: '10.5g / week (1.5g/day)', note: '1.5g/day (~¼ tsp) on Meal 2 covers 100% daily thyroid iodine (sea/kosher/Himalayan salt has no added iodine; 1kg box lasts >1 year!)' },
+          { id: 'shop_sesame', name: '11. Toasted Sesame Oil (Bottle)', qty: '35g / week (5g/day)', note: '5g/day (1 tsp) drizzled on Meal 2 tofu, rice & broccoli bowl for rich aroma & healthy fats' }
         ]
       },
       {
         category: 'Aisle 4: Online / Bulk Protein Supplement',
-        badge: '1 Bulk Staple • Yupik / Canadian Protein',
+        badge: '1 Bulk Staple • Yupik / Micro Ingredients / Canadian Protein',
         items: [
-          { id: 'shop_isolate', name: '13. Pea Protein Isolate Powder (1,000g bag)', qty: '525g / week (75g/day)', note: '30g in Meal 1 shake + 45g in Meal 3 shake = 60g pure protein/day with zero fiber bloat' }
+          { id: 'shop_isolate', name: '12. Pea Protein Isolate Powder (1,000g–2,268g bag)', qty: '525g / week (75g/day)', note: '30g in Pre-Gym Shake (25m before gym) + 45g in Meal 3 Shake = 60g pure protein/day with zero fiber bloat' }
         ]
       }
     ];
@@ -1595,7 +1700,7 @@
 
       if (headerDisp) headerDisp.textContent = formatted;
       if (mainDisp) mainDisp.textContent = formatted;
-      document.title = timerRunning ? `(${formatted}) 7AM Gym` : '7AM Vegan Muscle & Training Hub';
+      document.title = timerRunning ? `(${formatted}) Gym` : 'Gym & Vegan Muscle Hub';
 
       if (pinnedCtx) {
         pinnedCtx.textContent = timerRunning
@@ -2391,6 +2496,288 @@
       return { status: 'none', doneSets: 0, totalSets };
     }
 
+    // =========================================================================
+    // 5B. SMART 15-MINUTE GYM TIME & ADAPTIVE CHRONO-NUTRITION ENGINE
+    // =========================================================================
+    function roundTo15Minutes(totalMins) {
+      const clamped = ((Math.round(totalMins / 15) * 15) % 1440 + 1440) % 1440;
+      return clamped;
+    }
+
+    function parseHHMMToMinutes(hhmm) {
+      if (!hhmm || typeof hhmm !== "string") return 420; // 07:00 default
+      const parts = hhmm.split(":");
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) || 0;
+      if (isNaN(h)) return 420;
+      return roundTo15Minutes(Math.max(0, Math.min(1439, h * 60 + m)));
+    }
+
+    function minutesToHHMM(totalMins) {
+      const clamped = roundTo15Minutes(totalMins);
+      const h = Math.floor(clamped / 60);
+      const m = clamped % 60;
+      return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+    }
+
+    function formatMinutesTo12Hr(totalMins) {
+      const clamped = ((Math.round(totalMins) % 1440) + 1440) % 1440;
+      const h24 = Math.floor(clamped / 60);
+      const m = clamped % 60;
+      const ampm = h24 >= 12 ? "PM" : "AM";
+      const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+      return h12 + ":" + String(m).padStart(2, "0") + " " + ampm;
+    }
+
+    function build15MinGymTimeOptionsHtml(selectedHHMM) {
+      const selMins = parseHHMMToMinutes(selectedHHMM || "07:00");
+      const selNormalized = minutesToHHMM(selMins);
+      let opts = "";
+      // Generate every 15-minute slot from 5:00 AM (300m) to 10:45 PM (1365m)
+      for (let mins = 300; mins <= 1365; mins += 15) {
+        const hhmm = minutesToHHMM(mins);
+        const label12 = formatMinutesTo12Hr(mins);
+        const tag = mins === 420 ? " (Default)" : (mins === 720 ? " (Midday)" : (mins === 915 ? " (Afternoon)" : (mins === 1050 ? " (Evening)" : "")));
+        opts += `<option value="${hhmm}" ${hhmm === selNormalized ? "selected" : ""}>${label12}${tag}</option>`;
+      }
+      return opts;
+    }
+
+    function getNowHHMM() {
+      const now = new Date();
+      const rawMins = now.getHours() * 60 + now.getMinutes();
+      return minutesToHHMM(roundTo15Minutes(rawMins));
+    }
+
+    function getDayGymSchedule(week, dayIdx) {
+      if (!state.gymScheduleByDay) state.gymScheduleByDay = {};
+      const key = `w${week}_d${dayIdx}`;
+      const saved = state.gymScheduleByDay[key];
+      if (saved && saved.startTime) {
+        const sMins = parseHHMMToMinutes(saved.startTime);
+        const eMins = saved.endTime ? parseHHMMToMinutes(saved.endTime) : (sMins + 60);
+        return {
+          startTime: minutesToHHMM(sMins),
+          endTime: minutesToHHMM(eMins),
+          mode: saved.mode || "manual",
+          updatedLabel: saved.updatedLabel || `Gym at ${formatMinutesTo12Hr(sMins)}`
+        };
+      }
+      return {
+        startTime: "07:00",
+        endTime: "08:00",
+        mode: "default",
+        updatedLabel: "Default 7:00 AM Gym"
+      };
+    }
+
+    function setManualDayGymStartTime(week, dayIdx, startHHMM, sourceLabel) {
+      if (!state.gymScheduleByDay) state.gymScheduleByDay = {};
+      const startMins = parseHHMMToMinutes(startHHMM || "07:00");
+      const endMins = Math.min(1425, startMins + 60);
+      const normStart = minutesToHHMM(startMins);
+      const key = `w${week}_d${dayIdx}`;
+      state.gymScheduleByDay[key] = {
+        startTime: normStart,
+        endTime: minutesToHHMM(endMins),
+        mode: normStart === "07:00" && !sourceLabel ? "default" : "manual",
+        updatedLabel: sourceLabel || (normStart === "07:00" ? "Default 7:00 AM Gym" : `Custom Gym: ${formatMinutesTo12Hr(startMins)} – ${formatMinutesTo12Hr(endMins)}`)
+      };
+    }
+
+    function stepDayGymStartTimeBy15Min(week, dayIdx, deltaMins) {
+      const cur = getDayGymSchedule(week, dayIdx);
+      const curMins = parseHHMMToMinutes(cur.startTime);
+      const nextMins = Math.max(300, Math.min(1365, roundTo15Minutes(curMins + deltaMins)));
+      setManualDayGymStartTime(week, dayIdx, minutesToHHMM(nextMins));
+      return getAdaptiveMealScheduleForDay(week, dayIdx);
+    }
+
+    function autoSyncGymTimeFromSetLog(week, dayIdx, isFirstSetToday, isFinalSetToday) {
+      if (!state.gymScheduleByDay) state.gymScheduleByDay = {};
+      const key = `w${week}_d${dayIdx}`;
+      const existing = getDayGymSchedule(week, dayIdx);
+      const nowHHMM = getNowHHMM();
+      const nowMins = parseHHMMToMinutes(nowHHMM);
+
+      if (isFinalSetToday) {
+        const startMins = existing.mode === "auto_start"
+          ? parseHHMMToMinutes(existing.startTime)
+          : Math.max(300, roundTo15Minutes(nowMins - 60));
+        state.gymScheduleByDay[key] = {
+          startTime: minutesToHHMM(startMins),
+          endTime: minutesToHHMM(nowMins),
+          mode: "auto_end",
+          updatedLabel: `⚡ Auto-synced from Last Exercise (${formatMinutesTo12Hr(startMins)}–${formatMinutesTo12Hr(nowMins)})`
+        };
+      } else if (isFirstSetToday) {
+        const endMins = Math.min(1425, roundTo15Minutes(nowMins + 60));
+        state.gymScheduleByDay[key] = {
+          startTime: minutesToHHMM(nowMins),
+          endTime: minutesToHHMM(endMins),
+          mode: "auto_start",
+          updatedLabel: `⚡ Auto-synced from First Exercise (${formatMinutesTo12Hr(nowMins)}–${formatMinutesTo12Hr(endMins)})`
+        };
+      }
+      return getAdaptiveMealScheduleForDay(week, dayIdx);
+    }
+
+    function getAdaptiveMealScheduleForDay(week, dayIdx) {
+      const sched = getDayGymSchedule(week, dayIdx);
+      const startMins = parseHHMMToMinutes(sched.startTime);
+      const endMins = parseHHMMToMinutes(sched.endTime || minutesToHHMM(startMins + 60));
+      const start12 = formatMinutesTo12Hr(startMins);
+      const end12 = formatMinutesTo12Hr(endMins);
+      // Pre-workout shake is always 25 mins before gym start (e.g., 6:35 AM for 7:00 AM gym, 11:35 AM for 12:00 PM gym, 2:50 PM for 3:15 PM gym, 5:05 PM for 5:30 PM gym)
+      const preShakeMins = Math.max(0, startMins - 25);
+      const preShakeStr = formatMinutesTo12Hr(preShakeMins);
+
+      // 1. Morning Gym: before 11:00 AM (Default 7:00 AM – 8:00 AM -> 6:35 AM Pre-Gym Shake + 8:15 AM Post-Gym Oats)
+      if (startMins < 660) {
+        const oatsMins = roundTo15Minutes(endMins + 15); // default 8:15 AM (15m after 7:00 AM–8:00 AM gym)
+        const m2Mins = roundTo15Minutes(Math.max(oatsMins + 270, 780)); // default 1:00 PM
+        const m3Mins = roundTo15Minutes(Math.max(m2Mins + 330, 1110)); // default 6:30 PM
+        const oatsStr = formatMinutesTo12Hr(oatsMins);
+        const m2Str = formatMinutesTo12Hr(m2Mins);
+        const m3Str = formatMinutesTo12Hr(m3Mins);
+        return {
+          period: "morning",
+          start12,
+          end12,
+          preShakeStr,
+          oatsStr,
+          shakeFirst: true,
+          periodTitle: `🌅 Morning Gym (${start12} – ${end12})`,
+          periodAdvice: `Drink your 390g Pre-Gym Shake (30g Pea Protein Isolate + 360g Cold Silk Milk) at ${preShakeStr} (25m before ${start12} Gym) for fast amino acids with zero stomach bulk for abs, then eat your 264g Overnight Oats Jar at ${oatsStr} (15m after finishing at ${end12}).`,
+          nextPostWorkoutSlot: "post",
+          nextPostWorkoutTime12: oatsStr,
+          slots: {
+            post: {
+              time12: `${preShakeStr} & ${oatsStr}`,
+              headerText: `Meal 1 • ${preShakeStr} Pre-Gym Shake + ${oatsStr} Post-Gym Oats (Around ${start12}–${end12} Gym)`,
+              roleBadge: "⚡ Pre + Post Gym",
+              isPostWorkoutTarget: true,
+              contextTip: `Drink your 30g Pea Isolate + 360g Cold Silk Milk shake at ${preShakeStr} (25 mins before your ${start12} workout), then eat your 264g Overnight Oats jar at ${oatsStr} (15 mins after finishing at ${end12}).`,
+              batchTip: `4-Day Batch Recipe (1,056g total): Mix 160g Bob’s Red Mill Protein Oats + 720g Silk Protein Milk + 32g peanut butter + 24g chia seeds + 120g peeled banana. Drink your 390g shake at ${preShakeStr} and eat 264g (1/4 batch) oats at ${oatsStr}.`
+            },
+            lunch: {
+              time12: m2Str,
+              headerText: `Meal 2 • ${m2Str} (Small 418g Savoury Bowl)`,
+              roleBadge: "🥗 Midday Micronutrients",
+              isPostWorkoutTarget: false,
+              contextTip: `Midday whole-food bowl at ${m2Str}: 175g tofu + 150g rice + 75g broccoli (Vitamin C) + 12g yeast + 5g toasted sesame oil + 1.5g Iodized Table Salt (100% thyroid iodine).`,
+              batchTip: `Weighing 175g tofu (½ of a 350g block) and 150g cooked rice keeps your ${m2Str} bowl light! Season with 1.5g Windsor Iodized Table Salt + 5g toasted sesame oil.`
+            },
+            dinner: {
+              time12: m3Str,
+              headerText: `Meal 3 • ${m3Str} (Zero-Chew Evening Recovery)`,
+              roleBadge: "🌙 Overnight Repair",
+              isPostWorkoutTarget: false,
+              contextTip: `Zero chewing at ${m3Str} when appetite is lowest — 45g isolate + 360g Silk milk shaken together + 16g peanut butter.`,
+              batchTip: `Zero cooking at ${m3Str} — weigh 45g powder + 360g Silk milk on your scale, shake for 10 seconds, and eat 16g peanut butter.`
+            }
+          }
+        };
+      }
+
+      // 2. Midday Gym: 11:00 AM – 2:15 PM (e.g., 12:00 PM – 1:00 PM -> 8:15 AM Morning Oats + 11:35 AM Pre-Gym Shake, then 1:15 PM Post-Gym Bowl)
+      if (startMins < 870) {
+        const oatsMins = 495; // 8:15 AM morning breakfast oats
+        const m2Mins = roundTo15Minutes(endMins + 15); // 15m after midday gym (e.g., 1:15 PM)
+        const m3Mins = roundTo15Minutes(Math.max(m2Mins + 315, 1110)); // e.g., 6:30 PM
+        const oatsStr = formatMinutesTo12Hr(oatsMins);
+        const m2Str = formatMinutesTo12Hr(m2Mins);
+        const m3Str = formatMinutesTo12Hr(m3Mins);
+        return {
+          period: "midday",
+          start12,
+          end12,
+          preShakeStr,
+          oatsStr,
+          shakeFirst: false,
+          periodTitle: `☀️ Midday Gym (${start12} – ${end12})`,
+          periodAdvice: `Eat your 264g Overnight Oats Jar at ${oatsStr} for morning glycogen, then drink your 390g Pre-Gym Shake at ${preShakeStr} (25m before ${start12} Gym). Right after finishing at ${end12}, your next meal is Meal 2 at ${m2Str}.`,
+          nextPostWorkoutSlot: "lunch",
+          nextPostWorkoutTime12: m2Str,
+          slots: {
+            post: {
+              time12: `${oatsStr} & ${preShakeStr}`,
+              headerText: `Meal 1 • ${oatsStr} Morning Oats + ${preShakeStr} Pre-Gym Shake (25m before ${start12} Gym)`,
+              roleBadge: "🔋 Morning + Pre-Gym",
+              isPostWorkoutTarget: false,
+              contextTip: `Eat your 264g Overnight Oats Jar at ${oatsStr} for morning energy, then drink your 30g Pea Isolate + 360g Cold Silk Milk shake at ${preShakeStr} (25 mins before your ${start12}–${end12} workout).`,
+              batchTip: `4-Day Batch Recipe (1,056g total): Eat 264g (1/4 batch) oats at ${oatsStr}, and drink your 390g Pea Isolate + Silk Milk shake at ${preShakeStr} (25m before gym).`
+            },
+            lunch: {
+              time12: m2Str,
+              headerText: `Meal 2 • ${m2Str} (Post-Workout Bowl • 15m after ${start12}–${end12} Gym)`,
+              roleBadge: "⚡ Next Meal (Post-Workout)",
+              isPostWorkoutTarget: true,
+              contextTip: `Eat at ${m2Str} (15 mins after finishing your ${start12}–${end12} workout): warm tofu, jasmine rice, broccoli, 5g toasted sesame oil & 1.5g Iodized Table Salt.`,
+              batchTip: `Weighing 175g tofu (½ of a 350g block) and 150g cooked rice makes your ${m2Str} post-workout bowl fast and light!`
+            },
+            dinner: {
+              time12: m3Str,
+              headerText: `Meal 3 • ${m3Str} (Zero-Chew Evening Recovery)`,
+              roleBadge: "🌙 Overnight Repair",
+              isPostWorkoutTarget: false,
+              contextTip: `Easy liquid recovery at ${m3Str}: 45g pea isolate + 360g Silk milk shaken together + 16g peanut butter.`,
+              batchTip: `Zero cooking at ${m3Str} — shake 45g powder + 360g Silk milk for 10 seconds and eat 16g peanut butter.`
+            }
+          }
+        };
+      }
+
+      // 3. Afternoon & Evening Gym: 2:30 PM onwards (e.g., 3:15 PM – 4:15 PM or 5:30 PM – 6:30 PM)
+      const isAfternoon = startMins < 1020; // 2:30 PM – 4:45 PM (like 3:15 PM!)
+      const oatsMins = 495; // 8:15 AM morning breakfast oats
+      const m2Mins = roundTo15Minutes(Math.max(720, startMins - 195)); // ~3h 15m before gym (e.g., 12:00 PM for 3:15 PM gym, or 2:15 PM for 5:30 PM gym)
+      const m3Mins = roundTo15Minutes(Math.min(1425, endMins + 15)); // 15m after finishing workout (e.g., 4:30 PM for 3:15 PM gym, or 6:45 PM for 5:30 PM gym!)
+      const oatsStr = formatMinutesTo12Hr(oatsMins);
+      const m2Str = formatMinutesTo12Hr(m2Mins);
+      const m3Str = formatMinutesTo12Hr(m3Mins);
+      const periodLabel = isAfternoon ? "🕒 Afternoon Gym" : "🌆 Evening Gym";
+
+      return {
+        period: isAfternoon ? "afternoon" : "evening",
+        start12,
+        end12,
+        preShakeStr,
+        oatsStr,
+        shakeFirst: false,
+        periodTitle: `${periodLabel} (${start12} – ${end12})`,
+        periodAdvice: `Eat your 264g Overnight Oats at ${oatsStr} and Meal 2 Bowl at ${m2Str} (~3.25 hrs before gym), then drink your 390g Pre-Gym Shake at ${preShakeStr} (25m before ${start12} Gym). Right after your last exercise at ${end12}, your next meal is Meal 3 at ${m3Str}!`,
+        nextPostWorkoutSlot: "dinner",
+        nextPostWorkoutTime12: m3Str,
+        slots: {
+          post: {
+            time12: `${oatsStr} & ${preShakeStr}`,
+            headerText: `Meal 1 • ${oatsStr} Morning Oats + ${preShakeStr} Pre-Gym Shake (25m before ${start12} Gym)`,
+            roleBadge: "🌅 Morning + Pre-Gym",
+            isPostWorkoutTarget: false,
+            contextTip: `Eat your 264g Overnight Oats Jar at ${oatsStr}, then drink your 30g Pea Isolate + 360g Cold Silk Milk shake at ${preShakeStr} (25 mins before your ${start12}–${end12} workout) for fast amino acids with zero stomach bulk.`,
+            batchTip: `4-Day Batch Recipe (1,056g total): Eat 264g (1/4 batch) oats at ${oatsStr}, and save your 390g Pea Isolate + Silk Milk shake for ${preShakeStr} (25m before gym).`
+          },
+          lunch: {
+            time12: m2Str,
+            headerText: `Meal 2 • ${m2Str} (Pre-Workout Bowl • before ${start12} Gym)`,
+            roleBadge: "🥗 Midday Fuel",
+            isPostWorkoutTarget: false,
+            contextTip: `Eat at ${m2Str} (~3.25 hrs before your ${start12}–${end12} workout) so solid food is digested before Daily Cable Abdominal Crunches: 175g tofu + 150g rice + 75g broccoli + 12g yeast + 5g toasted sesame oil + 1.5g Iodized Table Salt.`,
+            batchTip: `Weighing 175g tofu (½ of a 350g block) and 150g cooked rice at ${m2Str} digests cleanly before your ${start12} gym session.`
+          },
+          dinner: {
+            time12: m3Str,
+            headerText: `Meal 3 • ${m3Str} (Post-Workout Recovery • 15m after ${start12}–${end12} Gym)`,
+            roleBadge: "⚡ Next Meal (Post-Workout)",
+            isPostWorkoutTarget: true,
+            contextTip: `Eat at ${m3Str} (15 mins after finishing your ${start12}–${end12} workout): zero chewing required — 45g Pea Protein Isolate + 360g Silk Milk (48g P) + 16g PB (4g P) immediately drives muscle recovery!`,
+            batchTip: `Post-workout shake at ${m3Str}: weigh 45g powder + 360g cold Silk milk in your shaker, shake for 10 seconds, and eat 16g peanut butter.`
+          }
+        }
+      };
+    }
+
     function renderDaySelector() {
       const grid = document.getElementById('day-selector-grid');
       const badge = document.getElementById('crunch-weekly-badge');
@@ -2463,8 +2850,10 @@
       if (!panelEl) return;
 
       const drills = dayObj.warmupType === 'upper' ? WARMUP_DATA.upper : WARMUP_DATA.lower;
+      const curSched = getDayGymSchedule(state.currentWeek || 1, state.selectedDayIndex || 0);
+      const curStart12 = formatMinutesTo12Hr(parseHHMMToMinutes(curSched.startTime));
       if (titleEl) {
-        titleEl.textContent = `7:00 AM ${dayObj.warmupType === 'upper' ? 'Upper Body' : 'Lower Body'} Warm-Up (~10 Min)`;
+        titleEl.textContent = `${curStart12} ${dayObj.warmupType === 'upper' ? 'Upper Body' : 'Lower Body'} Warm-Up (~10 Min)`;
       }
       if (subEl) {
         subEl.textContent = `${drills.length} dynamic drills + 50%/70%/90% warm-up sets`;
@@ -2560,14 +2949,17 @@
           : 'flex-1 sm:flex-initial px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-bold transition';
       }
 
-      // Render Day Summary Banner
+      // Render Day Summary Banner (With Editable Gym Time & Auto-Meal Sync Status!)
+      const dayGymSched = getDayGymSchedule(week, dayIdx);
+      const gymStart12 = formatMinutesTo12Hr(parseHHMMToMinutes(dayGymSched.startTime));
+      const adaptiveMealPreview = getAdaptiveMealScheduleForDay(week, dayIdx);
       const banner = document.getElementById('day-banner');
       if (banner) {
         banner.innerHTML = `
           <div class="flex items-start justify-between gap-2">
             <div>
               <div class="flex flex-wrap items-center gap-2">
-                <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">Week ${week} • ${dayObj.dayFull} • ${dayObj.time}</span>
+                <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">Week ${week} • ${dayObj.dayFull} • ${gymStart12} Gym</span>
                 ${isDayAllDone ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold bg-rose-500/15 text-rose-300 border border-rose-400/30 px-2.5 py-0.5 rounded-full">✓ Day Complete</span>' : ''}
                 ${isDayPartial ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-400/15 text-amber-200 border border-amber-300/30 px-2 py-0.5 rounded-full">● ${todayDoneSets}/${todayTotalSets} Sets</span>` : ''}
                 ${hasCrunchToday ? '<span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">+ Cable Crunch</span>' : ''}
@@ -2608,6 +3000,26 @@
               <button type="button" id="banner-jump-pullups" class="shrink-0 text-[11px] font-bold bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 px-2.5 py-1 rounded-lg transition">Open Day ${dayObj.usmcDay}</button>
             </div>` : ''}
           </div>
+          <!-- Gym Time (15-Minute Increments Only!) & Auto-Meal Sync Row -->
+          <div class="bg-slate-950/80 border border-emerald-500/25 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="font-extrabold text-emerald-400">⏱️ Gym Time (15m steps):</span>
+              <button type="button" data-gym-preset="07:00" class="banner-gym-preset-btn px-2 py-0.5 rounded-lg font-bold border transition ${dayGymSched.startTime === '07:00' ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">🌅 7:00 AM</button>
+              <button type="button" data-gym-preset="12:00" class="banner-gym-preset-btn px-2 py-0.5 rounded-lg font-bold border transition ${dayGymSched.startTime === '12:00' ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">☀️ 12:00 PM</button>
+              <button type="button" data-gym-preset="15:15" class="banner-gym-preset-btn px-2 py-0.5 rounded-lg font-bold border transition ${dayGymSched.startTime === '15:15' ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">🕒 3:15 PM</button>
+              <button type="button" data-gym-preset="17:30" class="banner-gym-preset-btn px-2 py-0.5 rounded-lg font-bold border transition ${dayGymSched.startTime === '17:30' ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">🌆 5:30 PM</button>
+              <div class="inline-flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
+                <button type="button" data-banner-step-mins="-15" class="banner-gym-step-btn px-1.5 py-0.5 text-[10px] font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Earlier by 15 mins">−15m</button>
+                <select id="banner-gym-time-input" aria-label="Select gym time in 15-minute increments" class="bg-slate-900 text-white px-1.5 py-0.5 text-[11px] font-extrabold focus:outline-none">
+                  ${build15MinGymTimeOptionsHtml(dayGymSched.startTime)}
+                </select>
+                <button type="button" data-banner-step-mins="15" class="banner-gym-step-btn px-1.5 py-0.5 text-[10px] font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Later by 15 mins">+15m</button>
+              </div>
+            </div>
+            <button type="button" id="banner-open-vegan-fuel-btn" class="text-[10px] font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded-lg transition">
+              🌱 Post-Workout Meal: <strong>${adaptiveMealPreview.nextPostWorkoutTime12}</strong> →
+            </button>
+          </div>
         `;
 
         const toggleCrunchBtn = document.getElementById('toggle-crunch-day-btn');
@@ -2645,6 +3057,49 @@
         if (jumpBtn) {
           jumpBtn.addEventListener('click', () => {
             switchTab('pullups');
+          });
+        }
+
+        banner.querySelectorAll('.banner-gym-preset-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const t = btn.getAttribute('data-gym-preset') || '07:00';
+            setManualDayGymStartTime(week, dayIdx, t);
+            saveState();
+            renderWorkoutView();
+            renderVeganView();
+            const schedNow = getAdaptiveMealScheduleForDay(week, dayIdx);
+            showToast(`⏱️ Gym set to ${formatMinutesTo12Hr(parseHHMMToMinutes(t))} — Post-workout meal adjusted to ${schedNow.nextPostWorkoutTime12}!`);
+          });
+        });
+
+        const bannerTimeInput = document.getElementById('banner-gym-time-input');
+        if (bannerTimeInput) {
+          bannerTimeInput.addEventListener('change', () => {
+            if (!bannerTimeInput.value) return;
+            setManualDayGymStartTime(week, dayIdx, bannerTimeInput.value);
+            saveState();
+            renderWorkoutView();
+            renderVeganView();
+            const schedNow = getAdaptiveMealScheduleForDay(week, dayIdx);
+            showToast(`⏱️ Gym set to ${schedNow.start12} — Post-workout meal auto-set to ${schedNow.nextPostWorkoutTime12}!`);
+          });
+        }
+
+        banner.querySelectorAll('.banner-gym-step-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const delta = parseInt(btn.getAttribute('data-banner-step-mins'), 10) || 15;
+            const schedNow = stepDayGymStartTimeBy15Min(week, dayIdx, delta);
+            saveState();
+            renderWorkoutView();
+            renderVeganView();
+            showToast(`⏱️ Gym shifted to ${schedNow.start12} — Post-workout meal auto-set to ${schedNow.nextPostWorkoutTime12}!`);
+          });
+        });
+
+        const openFuelBtn = document.getElementById('banner-open-vegan-fuel-btn');
+        if (openFuelBtn) {
+          openFuelBtn.addEventListener('click', () => {
+            switchTab('vegan');
           });
         }
       }
@@ -3084,23 +3539,35 @@
             renderUSMCView();
           }
 
+          // Count how many sets are done today after this tap
+          let doneSetsCountNow = 0;
+          exercisesToday.forEach(e => {
+            for (let idxS = 1; idxS <= e.sets; idxS++) {
+              const entry = getLogEntry(week, dayIdx, e.id, idxS);
+              if (entry && entry.done) doneSetsCountNow++;
+            }
+          });
+          const isFirstSetToday = state.workoutLogs[key].done && doneSetsCountNow === 1;
+
           // Check if this is the very last set of the day (final set of the last exercise, e.g., Cable Crunch Set 3, or all sets for today done)
           const lastExToday = exercisesToday[exercisesToday.length - 1];
           const isLastSetOfLastEx = !!(lastExToday && exId === lastExToday.id && setIdx === lastExToday.sets);
-          const allSetsDoneToday = exercisesToday.every(e => {
-            for (let idxS = 1; idxS <= e.sets; idxS++) {
-              const entry = getLogEntry(week, dayIdx, e.id, idxS);
-              if (!entry || !entry.done) return false;
-            }
-            return true;
-          });
+          const allSetsDoneToday = doneSetsCountNow === todayTotalSets && todayTotalSets > 0;
+          const isFinalSetToday = state.workoutLogs[key].done && (isLastSetOfLastEx || allSetsDoneToday);
+
+          let syncedMealSched = null;
+          if (isFirstSetToday || isFinalSetToday) {
+            syncedMealSched = autoSyncGymTimeFromSetLog(week, dayIdx, isFirstSetToday, isFinalSetToday);
+          }
 
           saveState();
           renderWorkoutView();
+          renderVeganView();
           if (state.workoutLogs[key].done) {
-            if (isLastSetOfLastEx || allSetsDoneToday) {
+            if (isFinalSetToday) {
               resetTimer();
-              showToast(`🎉 Final set of the day logged (${state.workoutLogs[key].weight} ${exUnit})! Workout complete — no rest timer needed.`);
+              const nextMealTime = syncedMealSched ? syncedMealSched.nextPostWorkoutTime12 : '8:15 AM';
+              showToast(`🎉 Final set logged! Post-workout meal auto-set to ${nextMealTime} in Vegan Fuel.`);
             } else {
               const exObj = exercisesToday.find(e => e.id === exId);
               if (exObj && exObj.supersetPair) {
@@ -3418,13 +3885,13 @@
     function renderVeganView() {
       const target = VEGAN_MODES[state.mealMode] || VEGAN_MODES.recomp_6pack;
 
-      // Update Overnight Oats Batch Calculator UI
-      const days = state.oatsBatchDays || 3;
+      // Update Overnight Oats Batch Calculator UI (Default 4-day batch = 264g jar)
+      const days = state.oatsBatchDays || 4;
       const boost = state.oatsProteinBoost !== false;
       const baseKcal = Math.round(1320 / days);
-      const baseProt = +(67.8 / days).toFixed(1);
+      const baseProt = Math.round(68 / days);
       const finalKcal = boost ? baseKcal + 255 : baseKcal;
-      const finalProt = +(boost ? baseProt + 36.0 : baseProt).toFixed(1);
+      const finalProt = boost ? baseProt + 36 : baseProt;
       const b12Pct = Math.round(((3.0 / days) + (boost ? 1.5 : 0)) / 2.4 * 100);
 
       document.querySelectorAll('.oats-days-btn').forEach(btn => {
@@ -3444,13 +3911,64 @@
           : 'shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700';
       }
       const jarGrams = Math.round(1056 / days);
+      const oatsShareG = Math.round(160 / days);
+      const milkShareG = Math.round(720 / days);
+      const pbShareG = Math.round(32 / days);
+      const chiaShareG = Math.round(24 / days);
+      const bananaShareG = Math.round(120 / days);
+
       if (boostSummary) {
         boostSummary.innerHTML = `${jarGrams}g Jar (1/${days} Batch) ${boost ? '+ 30g Pea Protein in 360g Silk Milk' : '(Base Oats Jar Only)'}: <strong class="text-emerald-400">${finalProt}g Protein • ${finalKcal} kcal</strong> • <strong>${b12Pct}% Daily B12</strong>`;
       }
-      // Sync Meal 1 (Overnight Oats) with selected Oats Batch calculation
-      VEGAN_MEALS[0].options[0].protein = Math.round(finalProt);
+      // Sync Meal 1 (Pre-Gym Shake + Overnight Oats) with selected Oats Batch & today's Gym Time
+      const curWeekForM1 = state.currentWeek || 1;
+      const curDayForM1 = state.selectedDayIndex || 0;
+      const curAdaptForM1 = getAdaptiveMealScheduleForDay(curWeekForM1, curDayForM1);
+      const preShakeTimeLabel = curAdaptForM1.preShakeStr || "6:35 AM";
+      const oatsTimeLabel = curAdaptForM1.oatsStr || "8:15 AM";
+      const isMorningGym = !!curAdaptForM1.shakeFirst;
+
+      VEGAN_MEALS[0].title = isMorningGym
+        ? `${preShakeTimeLabel} Pre-Gym Shake (30g Pea + 360g Silk Milk) + ${oatsTimeLabel} Post-Gym Oats (${jarGrams}g Jar)`
+        : `${oatsTimeLabel} Morning Oats (${jarGrams}g Jar) + ${preShakeTimeLabel} Pre-Gym Shake (30g Pea + 360g Silk Milk)`;
+      VEGAN_MEALS[0].options[0].protein = finalProt;
       VEGAN_MEALS[0].options[0].kcal = finalKcal;
+      VEGAN_MEALS[0].options[0].volume = isMorningGym
+        ? `${boost ? '390g Shake + ' : ''}${jarGrams}g Jar`
+        : `${jarGrams}g Jar${boost ? ' + 390g Shake' : ''}`;
       VEGAN_MEALS[0].options[0].name = `${jarGrams}g Protein Oats Jar (1/${days} Batch)${boost ? ' + 30g Pea Protein + 360g Silk Milk' : ''}`;
+      VEGAN_MEALS[0].options[0].ingredients = `${jarGrams}g Overnight Oats (daily share: ${oatsShareG}g Bob’s Red Mill Gluten Free Protein Oats, ${milkShareG}g Silk Protein Almond & Cashew milk, ${pbShareG}g peanut butter, ${chiaShareG}g chia seeds, ${bananaShareG}g banana = ${baseKcal} kcal & ${baseProt}g P)${boost ? ' + 30g Pea Protein Isolate (24g P, 120 kcal) shaken in 360g cold Silk Protein milk (12g P, 135 kcal).' : '.'}`;
+
+      const oatsItemCard = {
+        id: 'm1_oats_jar',
+        weight: `${jarGrams}g Jar`,
+        label: `⏰ ${oatsTimeLabel} (${isMorningGym ? `15m after ${curAdaptForM1.end12} Gym` : 'Morning Breakfast'}): ${jarGrams}g Overnight Oats (daily share: 1/${days} batch = ${baseKcal} kcal & ${baseProt}g P)`,
+        subPills: [
+          `${oatsShareG}g Bob’s Red Mill Gluten Free Protein Oats`,
+          `${milkShareG}g Silk Protein Almond & Cashew milk`,
+          `${pbShareG}g peanut butter`,
+          `${chiaShareG}g chia seeds`,
+          `${bananaShareG}g banana`
+        ],
+        protein: baseProt,
+        kcal: baseKcal
+      };
+
+      const shakeItemCard = {
+        id: 'm1_protein_shake',
+        weight: '390g Shake',
+        label: `⏰ ${preShakeTimeLabel} (25m before ${curAdaptForM1.start12} Gym): 30g Pea Protein Isolate Shaken in 360g Cold Silk Protein Milk (36g P, 255 kcal)`,
+        subPills: [
+          '30g Pea Protein Isolate (24g P, 120 kcal)',
+          '360g Cold Silk Protein Almond & Cashew Milk (12g P, 135 kcal • 100% B12)'
+        ],
+        protein: 36,
+        kcal: 255
+      };
+
+      VEGAN_MEALS[0].options[0].items = boost
+        ? (isMorningGym ? [shakeItemCard, oatsItemCard] : [oatsItemCard, shakeItemCard])
+        : [oatsItemCard];
 
       // Update Mode Buttons
       document.querySelectorAll('.meal-mode-btn').forEach(btn => {
@@ -3464,18 +3982,177 @@
       const week = state.currentWeek || 1;
       const dayIdx = state.selectedDayIndex || 0;
       const dayObj = DAYS_SCHEDULE[dayIdx] || DAYS_SCHEDULE[0];
+      if (!state.checkedMealIngredients) state.checkedMealIngredients = {};
+
+      function isIngredientChecked(w, d, slotId, ingId) {
+        const ingKey = `w${w}_d${d}_${slotId}_${ingId}`;
+        if (state.checkedMealIngredients[ingKey] !== undefined) {
+          return !!state.checkedMealIngredients[ingKey];
+        }
+        // Fallback to parent meal checked state
+        const mealKey = `w${w}_d${d}_${slotId}`;
+        if (state.checkedMeals[mealKey] !== undefined) return !!state.checkedMeals[mealKey];
+        if (w === 1 && d === 0 && state.checkedMeals[slotId] !== undefined) return !!state.checkedMeals[slotId];
+        return false;
+      }
 
       function isMealCheckedForDay(w, d, slotId) {
+        const slot = VEGAN_MEALS.find(s => s.slotId === slotId);
+        const opt = slot ? slot.options[0] : null;
+        if (opt && opt.items && opt.items.length > 0) {
+          return opt.items.every(it => isIngredientChecked(w, d, slotId, it.id));
+        }
         const k = `w${w}_d${d}_${slotId}`;
         if (state.checkedMeals[k] !== undefined) return !!state.checkedMeals[k];
         if (w === 1 && d === 0 && state.checkedMeals[slotId] !== undefined) return !!state.checkedMeals[slotId];
         return false;
       }
 
+      function isMealPartiallyCheckedForDay(w, d, slotId) {
+        const slot = VEGAN_MEALS.find(s => s.slotId === slotId);
+        const opt = slot ? slot.options[0] : null;
+        if (!opt || !opt.items || opt.items.length === 0) return false;
+        const checkedCount = opt.items.filter(it => isIngredientChecked(w, d, slotId, it.id)).length;
+        return checkedCount > 0 && checkedCount < opt.items.length;
+      }
+
       function setMealCheckedForDay(w, d, slotId, val) {
         const k = `w${w}_d${d}_${slotId}`;
         state.checkedMeals[k] = !!val;
         if (w === 1 && d === 0) state.checkedMeals[slotId] = !!val;
+        const slot = VEGAN_MEALS.find(s => s.slotId === slotId);
+        const opt = slot ? slot.options[0] : null;
+        if (opt && opt.items) {
+          opt.items.forEach(it => {
+            state.checkedMealIngredients[`w${w}_d${d}_${slotId}_${it.id}`] = !!val;
+          });
+        }
+      }
+
+      // Render Smart 15-Minute Gym Time & Auto-Meal Sync Bar in Vegan Fuel
+      if (!state.hiddenMealChecklists) state.hiddenMealChecklists = {};
+      if (!state.openMealFormulas) state.openMealFormulas = {};
+      const gymTimeBar = document.getElementById('vegan-gym-time-bar');
+      const dayGymSched = getDayGymSchedule(week, dayIdx);
+      const adaptiveSched = getAdaptiveMealScheduleForDay(week, dayIdx);
+      const allChecklistsHiddenToday = VEGAN_MEALS.every(s => !!state.hiddenMealChecklists[`${dayIdx}_${s.slotId}`]);
+      const anyFormulaOpenToday = VEGAN_MEALS.some(s => !!state.openMealFormulas[`${dayIdx}_${s.slotId}`]);
+
+      if (gymTimeBar) {
+        gymTimeBar.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-[11px] font-extrabold text-emerald-400">${adaptiveSched.periodTitle}</span>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-sky-300">${dayGymSched.updatedLabel || 'Default 7:00 AM Gym'}</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-1">
+              <button type="button" data-vegan-gym-preset="07:00" class="vegan-gym-preset-btn px-2 py-1 rounded-lg text-[10px] font-extrabold border transition ${dayGymSched.startTime === '07:00' ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">🌅 7:00 AM</button>
+              <button type="button" data-vegan-gym-preset="12:00" class="vegan-gym-preset-btn px-2 py-1 rounded-lg text-[10px] font-extrabold border transition ${dayGymSched.startTime === '12:00' ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">☀️ 12:00 PM</button>
+              <button type="button" data-vegan-gym-preset="15:15" class="vegan-gym-preset-btn px-2 py-1 rounded-lg text-[10px] font-extrabold border transition ${dayGymSched.startTime === '15:15' ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">🕒 3:15 PM</button>
+              <button type="button" data-vegan-gym-preset="17:30" class="vegan-gym-preset-btn px-2 py-1 rounded-lg text-[10px] font-extrabold border transition ${dayGymSched.startTime === '17:30' ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">🌆 5:30 PM</button>
+              <div class="inline-flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
+                <button type="button" data-vegan-step-mins="-15" class="vegan-gym-step-btn px-1.5 py-1 text-[10px] font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Earlier by 15 mins">−15m</button>
+                <select id="vegan-gym-time-input" aria-label="Change gym workout time in 15-minute steps" class="bg-slate-900 text-white px-1.5 py-1 text-[11px] font-extrabold focus:outline-none">
+                  ${build15MinGymTimeOptionsHtml(dayGymSched.startTime)}
+                </select>
+                <button type="button" data-vegan-step-mins="15" class="vegan-gym-step-btn px-1.5 py-1 text-[10px] font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Later by 15 mins">+15m</button>
+              </div>
+              <button type="button" id="vegan-sync-finished-now-btn" class="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 transition" title="Set workout end time to right now (snapped to 15m) & schedule post-workout meal +15m">⚡ Finished Gym Now</button>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-300 leading-snug">
+            <strong class="text-emerald-300">Auto-Adapted Meal Plan:</strong> ${adaptiveSched.periodAdvice}
+          </p>
+          <!-- Global 1-Tap View Toggles for Ingredient Checklists & Full Formulas/Tips -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-800/80">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Card View Controls:</span>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button type="button" id="toggle-all-meal-checklists-btn" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition ${allChecklistsHiddenToday ? 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'}">
+                ${allChecklistsHiddenToday ? '▼ Show All Ingredient Checklists' : '▲ Hide All Ingredient Checklists'}
+              </button>
+              <button type="button" id="toggle-all-meal-formulas-btn" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition ${anyFormulaOpenToday ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">
+                ${anyFormulaOpenToday ? '▲ Hide All Formulas & Tips' : '▼ Show All Formulas & Tips'}
+              </button>
+            </div>
+          </div>
+        `;
+
+        gymTimeBar.querySelectorAll('.vegan-gym-preset-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const t = btn.getAttribute('data-vegan-gym-preset') || '07:00';
+            setManualDayGymStartTime(week, dayIdx, t);
+            saveState();
+            renderVeganView();
+            renderWorkoutView();
+            const updated = getAdaptiveMealScheduleForDay(week, dayIdx);
+            showToast(`⏱️ Gym set to ${updated.start12} — Next post-workout meal: ${updated.nextPostWorkoutTime12}!`);
+          });
+        });
+
+        gymTimeBar.querySelectorAll('.vegan-gym-step-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const delta = parseInt(btn.getAttribute('data-vegan-step-mins'), 10) || 15;
+            const updated = stepDayGymStartTimeBy15Min(week, dayIdx, delta);
+            saveState();
+            renderVeganView();
+            renderWorkoutView();
+            showToast(`⏱️ Gym shifted to ${updated.start12} — Next post-workout meal: ${updated.nextPostWorkoutTime12}!`);
+          });
+        });
+
+        const veganTimeInput = document.getElementById('vegan-gym-time-input');
+        if (veganTimeInput) {
+          veganTimeInput.addEventListener('change', () => {
+            if (!veganTimeInput.value) return;
+            setManualDayGymStartTime(week, dayIdx, veganTimeInput.value);
+            saveState();
+            renderVeganView();
+            renderWorkoutView();
+            const updated = getAdaptiveMealScheduleForDay(week, dayIdx);
+            showToast(`⏱️ Gym set to ${updated.start12} — Next post-workout meal: ${updated.nextPostWorkoutTime12}!`);
+          });
+        }
+
+        const finishedNowBtn = document.getElementById('vegan-sync-finished-now-btn');
+        if (finishedNowBtn) {
+          finishedNowBtn.addEventListener('click', () => {
+            const updated = autoSyncGymTimeFromSetLog(week, dayIdx, false, true);
+            saveState();
+            renderVeganView();
+            renderWorkoutView();
+            showToast(`⚡ Synced to ${updated.end12} finish! Next post-workout meal set to ${updated.nextPostWorkoutTime12}.`);
+          });
+        }
+
+        const toggleAllChecklistsBtn = document.getElementById('toggle-all-meal-checklists-btn');
+        if (toggleAllChecklistsBtn) {
+          toggleAllChecklistsBtn.addEventListener('click', () => {
+            const nextHide = !allChecklistsHiddenToday;
+            for (let d = 0; d < 7; d++) {
+              VEGAN_MEALS.forEach(s => {
+                state.hiddenMealChecklists[`${d}_${s.slotId}`] = nextHide;
+              });
+            }
+            saveState();
+            renderVeganView();
+            showToast(nextHide ? '🙈 Hid Ingredient Scale Checklists across all meals & days' : '📋 Showed Ingredient Scale Checklists across all meals & days');
+          });
+        }
+
+        const toggleAllFormulasBtn = document.getElementById('toggle-all-meal-formulas-btn');
+        if (toggleAllFormulasBtn) {
+          toggleAllFormulasBtn.addEventListener('click', () => {
+            const nextOpen = !anyFormulaOpenToday;
+            for (let d = 0; d < 7; d++) {
+              VEGAN_MEALS.forEach(s => {
+                state.openMealFormulas[`${d}_${s.slotId}`] = nextOpen;
+              });
+            }
+            saveState();
+            renderVeganView();
+            showToast(nextOpen ? '💡 Opened Full Formula & Timing Tips on all meals' : '🙈 Hid Full Formula & Timing Tips on all meals');
+          });
+        }
       }
 
       // Render Synced Day 1 – Day 7 Strip in Vegan Fuel with Soft Rose (Done) & Amber (Partial) Dots
@@ -3484,14 +4161,16 @@
         veganDayGrid.innerHTML = DAYS_SCHEDULE.map((d, idx) => {
           const isSelected = idx === dayIdx;
           let mDone = 0;
+          let mPartial = 0;
           VEGAN_MEALS.forEach(sl => {
             if (isMealCheckedForDay(week, idx, sl.slotId)) mDone++;
+            else if (isMealPartiallyCheckedForDay(week, idx, sl.slotId)) mPartial++;
           });
           const mTotal = VEGAN_MEALS.length;
           let dotHtml = `<span class="w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-slate-900/35' : 'bg-slate-800'}" title="0/${mTotal} meals logged"></span>`;
           if (mDone === mTotal) {
             dotHtml = `<span class="inline-flex items-center gap-0.5" title="All ${mTotal} meals logged"><span class="w-2 h-2 rounded-full ${isSelected ? 'bg-rose-950/80' : 'bg-rose-400/75'}"></span><span class="text-[8px] font-bold ${isSelected ? 'text-rose-950' : 'text-rose-300/90'}">✓</span></span>`;
-          } else if (mDone > 0) {
+          } else if (mDone > 0 || mPartial > 0) {
             dotHtml = `<span class="w-2 h-2 rounded-full ${isSelected ? 'bg-amber-900/75' : 'bg-amber-300/75'}" title="${mDone}/${mTotal} meals logged"></span>`;
           }
 
@@ -3563,19 +4242,31 @@
         });
       }
 
-      // Calculate Checked Macros for Selected Day (Day 1..Day 7)
+      // Calculate Checked Macros for Selected Day (Supports Per-Ingredient & Per-Meal Green Checkmarks!)
       let eatenProtein = 0;
       let eatenKcal = 0;
       let todayMealsDone = 0;
       VEGAN_MEALS.forEach(slot => {
         const varIdx = state.selectedMealVariant[slot.slotId] || 0;
         const opt = slot.options[varIdx] || slot.options[0];
-        if (isMealCheckedForDay(week, dayIdx, slot.slotId)) {
+        if (opt.items && opt.items.length > 0) {
+          opt.items.forEach(it => {
+            if (isIngredientChecked(week, dayIdx, slot.slotId, it.id)) {
+              eatenProtein += it.protein;
+              eatenKcal += it.kcal;
+            }
+          });
+          if (isMealCheckedForDay(week, dayIdx, slot.slotId)) {
+            todayMealsDone++;
+          }
+        } else if (isMealCheckedForDay(week, dayIdx, slot.slotId)) {
           eatenProtein += opt.protein;
           eatenKcal += opt.kcal;
           todayMealsDone++;
         }
       });
+      eatenProtein = +eatenProtein.toFixed(1);
+      eatenKcal = Math.round(eatenKcal);
 
       const veganTitleEl = document.getElementById('vegan-week-day-title');
       if (veganTitleEl) {
@@ -3637,53 +4328,110 @@
         });
       }
 
-      // Render Timed Meal Cards for Selected Day
+      // Render Timed Meal Cards for Selected Day (With Adaptive Timing + Per-Ingredient Green Checkmarks!)
       const mealsEl = document.getElementById('vegan-meals-container');
       if (mealsEl) {
-        mealsEl.innerHTML = VEGAN_MEALS.map(slot => {
+        mealsEl.innerHTML = VEGAN_MEALS.map((slot, mealIdx) => {
           const varIdx = state.selectedMealVariant[slot.slotId] || 0;
           const opt = slot.options[varIdx] || slot.options[0];
           const isDone = isMealCheckedForDay(week, dayIdx, slot.slotId);
+          const isPartial = isMealPartiallyCheckedForDay(week, dayIdx, slot.slotId);
+          const slotSched = (adaptiveSched && adaptiveSched.slots && adaptiveSched.slots[slot.slotId]) || {
+            headerText: slot.time,
+            roleBadge: `Meal ${mealIdx + 1}`,
+            isPostWorkoutTarget: mealIdx === 0,
+            contextTip: slot.tip
+          };
+
+          const itemsList = opt.items || [];
+          const doneIngCount = itemsList.filter(it => isIngredientChecked(week, dayIdx, slot.slotId, it.id)).length;
+
+          const ingredientsChecklistHtml = itemsList.map(it => {
+            const ingDone = isIngredientChecked(week, dayIdx, slot.slotId, it.id);
+            const subPillsHtml = (it.subPills || []).map(sp => `
+              <span class="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-lg border ${
+                ingDone
+                  ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-200'
+                  : 'bg-slate-900 border-slate-800 text-slate-200'
+              }">
+                <span class="text-emerald-400 font-extrabold">✓</span>
+                <span>${sp}</span>
+              </span>
+            `).join('');
+
+            return `
+              <button type="button" data-meal-slot="${slot.slotId}" data-ing-id="${it.id}" class="meal-ing-check-btn w-full text-left p-2.5 rounded-xl border transition flex items-start justify-between gap-2.5 ${
+                ingDone
+                  ? 'bg-emerald-950/45 border-emerald-500/45 text-emerald-100'
+                  : 'bg-slate-900/90 border-slate-800/90 hover:border-emerald-500/35 text-slate-100'
+              }">
+                <div class="flex items-start gap-2.5 min-w-0 flex-1">
+                  <span class="mt-0.5 w-5 h-5 shrink-0 rounded-md flex items-center justify-center text-xs font-extrabold transition ${
+                    ingDone
+                      ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/40'
+                      : 'bg-emerald-500/15 border border-emerald-500/45 text-emerald-400'
+                  }">✓</span>
+                  <div class="min-w-0 flex-1 space-y-1.5">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <span class="text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">${it.weight}</span>
+                      <span class="text-xs font-bold ${ingDone ? 'line-through text-emerald-200/80' : 'text-white'}">${it.label}</span>
+                    </div>
+                    ${subPillsHtml ? `<div class="flex flex-wrap gap-1">${subPillsHtml}</div>` : ''}
+                  </div>
+                </div>
+                <span class="shrink-0 text-[10px] font-extrabold px-2 py-1 rounded-lg bg-slate-950 border border-slate-800 text-emerald-400 whitespace-nowrap">
+                  ${it.protein}g P • ${it.kcal} kcal
+                </span>
+              </button>
+            `;
+          }).join('');
 
           return `
-            <div class="bg-slate-900 border ${isDone ? 'border-emerald-500/40' : 'border-slate-800'} rounded-2xl p-4 space-y-3">
+            <div class="bg-slate-900 border ${isDone ? 'border-emerald-500/50 bg-slate-900/80' : (slotSched.isPostWorkoutTarget ? 'border-emerald-400/70 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/40' : 'border-slate-800')} rounded-2xl p-4 space-y-3 transition-all">
               <div class="flex items-start justify-between gap-2">
                 <div>
-                  <div class="flex items-center gap-2">
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">${slot.time}</span>
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">${slotSched.headerText}</span>
+                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${slotSched.isPostWorkoutTarget ? 'bg-emerald-500 text-slate-950' : 'bg-sky-500/15 text-sky-300 border border-sky-500/30'}">${slotSched.roleBadge}</span>
                     <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-semibold">${opt.volume}</span>
                   </div>
-                  <h4 class="text-sm font-extrabold text-white mt-0.5">${slot.title}</h4>
+                  <h4 class="text-sm font-extrabold text-white mt-1 leading-snug">${slot.title}</h4>
+                  <div class="flex flex-wrap items-center gap-2 mt-1">
+                    <span class="text-xs font-extrabold text-emerald-400">${opt.protein}g Protein • ${opt.kcal} kcal</span>
+                    <span class="text-[10px] font-semibold text-slate-400">(${doneIngCount}/${itemsList.length} ingredients checked)</span>
+                  </div>
                 </div>
-                <button type="button" data-meal-slot="${slot.slotId}" class="meal-check-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                <button type="button" data-meal-slot="${slot.slotId}" class="meal-check-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${
                   isDone
                     ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/30'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                    : (isPartial
+                        ? 'bg-amber-400/20 text-amber-200 border border-amber-400/40'
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700')
                 }">
-                  ${isDone ? '✓ Eaten' : '+ Log Meal'}
+                  ${isDone ? '✓ Eaten' : (isPartial ? `✓ Finish (${doneIngCount}/${itemsList.length})` : '+ Log Meal')}
                 </button>
               </div>
 
-              ${slot.options.length > 1 ? `
-              <div class="grid grid-cols-2 gap-1.5">
-                ${slot.options.map((o, idx) => `
-                  <button type="button" data-slot="${slot.slotId}" data-opt-idx="${idx}" class="meal-opt-btn text-left px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold transition ${
-                    idx === varIdx
-                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
-                  }">
-                    Option ${idx + 1}: ${o.protein}g P • ${o.kcal} kcal
-                  </button>
-                `).join('')}
-              </div>` : ''}
-
-              <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 space-y-1.5">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-bold text-white">${opt.name}</span>
-                  <span class="text-xs font-extrabold text-emerald-400">${opt.protein}g Protein • ${opt.kcal} kcal</span>
+              <!-- Collapsible Green-Checkmark Ingredient Scale Checklist & Collapsible Full Formula / Timing Tip -->
+              <div class="bg-slate-950/75 border border-slate-800/90 rounded-xl p-2.5 space-y-2">
+                <div class="flex flex-wrap items-center justify-between gap-2 px-1">
+                  <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">✓ Ingredient Scale Checklist (Tap to check off)</span>
+                  <div class="flex items-center gap-2">
+                    <button type="button" data-toggle-meal-checklist="${slot.slotId}" class="toggle-meal-checklist-btn text-[10px] font-extrabold text-emerald-400 hover:text-emerald-300 transition">
+                      ${state.hiddenMealChecklists[`${dayIdx}_${slot.slotId}`] ? '▼ Show Ingredient Checklist' : '▲ Hide Ingredient Checklist'}
+                    </button>
+                    <button type="button" data-toggle-meal-formula="${slot.slotId}" class="toggle-meal-formula-btn text-[10px] font-extrabold text-amber-300 hover:text-amber-200 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-lg transition">
+                      ${state.openMealFormulas[`${dayIdx}_${slot.slotId}`] ? '▲ Hide Formula & Tip' : '▼ Show Formula & Tip'}
+                    </button>
+                  </div>
                 </div>
-                <p class="text-xs text-slate-300 leading-relaxed">${opt.ingredients}</p>
-                <p class="text-[11px] text-amber-400/90 pt-1">💡 ${slot.tip}</p>
+                <div class="${state.hiddenMealChecklists[`${dayIdx}_${slot.slotId}`] ? 'hidden' : 'space-y-1.5'}" style="display: ${state.hiddenMealChecklists[`${dayIdx}_${slot.slotId}`] ? 'none' : 'block'};">
+                  ${ingredientsChecklistHtml}
+                </div>
+                <div class="${state.openMealFormulas[`${dayIdx}_${slot.slotId}`] ? 'pt-1.5 border-t border-slate-800/80 px-1 space-y-1' : 'hidden'}" style="display: ${state.openMealFormulas[`${dayIdx}_${slot.slotId}`] ? 'block' : 'none'};">
+                  <p class="text-[11px] text-slate-300 leading-relaxed"><strong class="text-emerald-300">Full Formula:</strong> ${opt.ingredients}</p>
+                  <p class="text-[11px] text-amber-300/95 leading-snug">💡 <strong>Timing &amp; Prep Tip:</strong> ${slotSched.contextTip} ${slotSched.batchTip || slot.tip}</p>
+                </div>
               </div>
             </div>
           `;
@@ -3697,8 +4445,28 @@
             saveState();
             renderVeganView();
             if (!curVal) {
-              showToast(`🌱 Logged ${slotId.toUpperCase()} meal for ${dayObj.dayFull}!`);
+              showToast(`🌱 Logged all ingredients for ${slotId.toUpperCase()} meal (${dayObj.dayFull})!`);
             }
+          });
+        });
+
+        mealsEl.querySelectorAll('.meal-ing-check-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const slotId = btn.getAttribute('data-meal-slot');
+            const ingId = btn.getAttribute('data-ing-id');
+            const cur = isIngredientChecked(week, dayIdx, slotId, ingId);
+            const nextVal = !cur;
+            state.checkedMealIngredients[`w${week}_d${dayIdx}_${slotId}_${ingId}`] = nextVal;
+            // Sync parent meal checked status if all ingredients are now checked/unchecked
+            const slot = VEGAN_MEALS.find(s => s.slotId === slotId);
+            const opt = slot ? slot.options[0] : null;
+            if (opt && opt.items) {
+              const allChecked = opt.items.every(it => isIngredientChecked(week, dayIdx, slotId, it.id));
+              state.checkedMeals[`w${week}_d${dayIdx}_${slotId}`] = allChecked;
+              if (week === 1 && dayIdx === 0) state.checkedMeals[slotId] = allChecked;
+            }
+            saveState();
+            renderVeganView();
           });
         });
 
@@ -3707,6 +4475,26 @@
             const slotId = btn.getAttribute('data-slot');
             const idx = parseInt(btn.getAttribute('data-opt-idx'), 10) || 0;
             state.selectedMealVariant[slotId] = idx;
+            saveState();
+            renderVeganView();
+          });
+        });
+
+        mealsEl.querySelectorAll('.toggle-meal-checklist-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const slotId = btn.getAttribute('data-toggle-meal-checklist');
+            const k = `${dayIdx}_${slotId}`;
+            state.hiddenMealChecklists[k] = !state.hiddenMealChecklists[k];
+            saveState();
+            renderVeganView();
+          });
+        });
+
+        mealsEl.querySelectorAll('.toggle-meal-formula-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const slotId = btn.getAttribute('data-toggle-meal-formula');
+            const k = `${dayIdx}_${slotId}`;
+            state.openMealFormulas[k] = !state.openMealFormulas[k];
             saveState();
             renderVeganView();
           });
@@ -4117,27 +4905,41 @@
         logAllVeganBtn.addEventListener('click', () => {
           const w = state.currentWeek || 1;
           const d = state.selectedDayIndex || 0;
+          if (!state.checkedMealIngredients) state.checkedMealIngredients = {};
           VEGAN_MEALS.forEach(sl => {
             state.checkedMeals[`w${w}_d${d}_${sl.slotId}`] = true;
             if (w === 1 && d === 0) state.checkedMeals[sl.slotId] = true;
+            const opt = sl.options[0];
+            if (opt && opt.items) {
+              opt.items.forEach(it => {
+                state.checkedMealIngredients[`w${w}_d${d}_${sl.slotId}_${it.id}`] = true;
+              });
+            }
           });
           saveState();
           renderVeganView();
-          showToast(`✓ All 3 meals logged for Day ${d + 1} (1,520 kcal • 139g P)!`);
+          showToast(`✓ All 3 meals & ingredients logged for Day ${d + 1} (1,495 kcal • 138g P)!`);
         });
       }
 
       document.getElementById('reset-vegan-day-btn').addEventListener('click', () => {
         const w = state.currentWeek || 1;
         const d = state.selectedDayIndex || 0;
+        if (!state.checkedMealIngredients) state.checkedMealIngredients = {};
         VEGAN_MEALS.forEach(sl => {
           delete state.checkedMeals[`w${w}_d${d}_${sl.slotId}`];
           if (w === 1 && d === 0) delete state.checkedMeals[sl.slotId];
+          const opt = sl.options[0];
+          if (opt && opt.items) {
+            opt.items.forEach(it => {
+              delete state.checkedMealIngredients[`w${w}_d${d}_${sl.slotId}_${it.id}`];
+            });
+          }
         });
         state.checkedEssentials = {};
         saveState();
         renderVeganView();
-        showToast(`Reset meals for Day ${d + 1}`);
+        showToast(`Reset meals & ingredients for Day ${d + 1}`);
       });
 
       const checkPantryBtn = document.getElementById('check-pantry-staples-btn');
