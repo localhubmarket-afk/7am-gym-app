@@ -686,7 +686,8 @@
       completedWeeks: {}, // keyed by week number -> boolean
       exerciseUnitPrefs: {},
       barbellConfig: {}, // keyed by exId -> 'lbs' | 'kg' (locked on first execution!)
-      autoCollapseDone: true, // UX Focus Mode: collapses finished exercises into a 1-line summary bar
+      autoCollapseDone: true,
+      defaultAllHidden: true, // UX Focus Mode: collapses finished exercises into a 1-line summary bar
       expandedDoneCards: {}, // keyed by exId -> boolean (manual expand override when done)
       manualCollapsedCards: {}, // keyed by exId -> boolean (allows collapsing Pull-Ups or any exercise anytime!)
       openImagePanels: {}, // keyed by exId -> boolean (whether visual diagram dropdown is open)
@@ -2185,7 +2186,8 @@
       const key = getExercisePanelKey(dayIdx, exId);
       if (state.cardCollapsedState[key] === "collapsed") return true;
       if (state.cardCollapsedState[key] === "expanded") return false;
-      return !!(isExComplete && state.autoCollapseDone !== false);
+      if (isExComplete && state.autoCollapseDone !== false) return true;
+      return state.defaultAllHidden !== false;
     }
 
     function toggleExerciseSetsCollapsed(dayIdx, exId, isExComplete) {
@@ -3118,9 +3120,9 @@
       const dayPct = todayTotalSets > 0 ? Math.min(100, Math.round((todayDoneSets / todayTotalSets) * 100)) : 0;
       const focusToggleBtn = document.getElementById('toggle-focus-collapse-btn');
       if (focusToggleBtn) {
-        const isAuto = state.autoCollapseDone !== false;
-        focusToggleBtn.textContent = isAuto ? '🎯 Auto-Collapse Done: ON' : '🎯 Auto-Collapse Done: OFF';
-        focusToggleBtn.className = isAuto
+        const isDefHidden = state.defaultAllHidden !== false;
+        focusToggleBtn.textContent = isDefHidden ? '🙈 Default Hidden (Auto-Next): ON' : '📂 Show All Exercises: ON';
+        focusToggleBtn.className = isDefHidden
           ? 'flex-1 sm:flex-initial px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-[11px] font-bold transition'
           : 'flex-1 sm:flex-initial px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-bold transition';
       }
@@ -3525,13 +3527,16 @@
               </div>
             </div>
 
-            <!-- Show / Edit Sets Collapse Bar (Available on Pull-Ups & Every Exercise!) -->
-            <div class="flex items-center justify-between bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-1.5 text-xs">
-              <span class="text-slate-300 font-medium">${isExComplete ? `✓ All ${ex.sets} sets logged for today` : `${exDoneSets} of ${ex.sets} sets logged`}</span>
-              <button type="button" data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${isExComplete ? '1' : '0'}" class="expand-done-btn text-emerald-400 hover:text-emerald-300 font-bold text-[11px]">
-                ${isCollapsedDone ? '▼ Show / Edit Sets' : '▲ Hide Sets'}
-              </button>
-            </div>
+            <!-- Show / Edit Sets Full-Width Clickable Bar (Shows Quick Weight Preview When Hidden!) -->
+            <button type="button" data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${isExComplete ? '1' : '0'}" class="expand-done-btn w-full flex items-center justify-between bg-slate-950/85 hover:bg-slate-950 border ${isUpNext && isCollapsedDone ? 'border-emerald-500/40' : 'border-slate-800'} rounded-xl px-3 py-2 text-xs transition">
+              <span class="text-slate-300 font-medium text-left">
+                ${isExComplete ? `✓ All ${ex.sets} sets logged` : `${exDoneSets} of ${ex.sets} sets logged`}
+                ${meta.defaultWeightLbs > 0 ? `<span class="text-slate-400 ml-1">• <strong class="text-amber-300">${set1EffectiveTotal} ${exUnit}</strong></span>` : ''}
+              </span>
+              <span class="text-emerald-400 hover:text-emerald-300 font-extrabold text-[11px] shrink-0">
+                ${isCollapsedDone ? (isUpNext ? '▶ Open Active Exercise ▼' : '▼ Show / Edit Sets') : '▲ Hide Sets'}
+              </span>
+            </button>
 
             <div id="sets-wrap-${panelKey}" class="${isCollapsedDone ? 'hidden' : 'space-y-3'}" style="display: ${isCollapsedDone ? 'none' : 'block'};">
               <!-- Action Bar: Dropdown Visual Setup & Image Toggle, Rest Timer & Video Link -->
@@ -4065,6 +4070,41 @@
             renderUSMCView();
           }
 
+          // Check if ALL sets of THIS exercise are now done -> Auto-hide this exercise & Auto-open the next exercise!
+          let exSetsDoneNow = 0;
+          const totalExSets = exObjForSet ? exObjForSet.sets : 3;
+          for (let idxS = 1; idxS <= totalExSets; idxS++) {
+            const entry = getLogEntry(week, dayIdx, exId, idxS);
+            if (entry && entry.done) exSetsDoneNow++;
+          }
+          const isThisExJustCompleted = state.workoutLogs[key].done && exSetsDoneNow === totalExSets;
+          let autoOpenedNextEx = null;
+
+          if (isThisExJustCompleted && state.autoCollapseDone !== false) {
+            if (!state.cardCollapsedState) state.cardCollapsedState = {};
+            state.cardCollapsedState[getExercisePanelKey(dayIdx, exId)] = "collapsed";
+            setExerciseImgOpen(dayIdx, exId, false);
+
+            // Find the next incomplete exercise in today's list and automatically expand it!
+            const curExPos = exercisesToday.findIndex(e => e.id === exId);
+            const orderedCandidates = [
+              ...exercisesToday.slice(curExPos + 1),
+              ...exercisesToday.slice(0, curExPos)
+            ];
+            for (const cand of orderedCandidates) {
+              let candAllDone = true;
+              for (let cs = 1; cs <= cand.sets; cs++) {
+                const ce = getLogEntry(week, dayIdx, cand.id, cs);
+                if (!ce || !ce.done) { candAllDone = false; break; }
+              }
+              if (!candAllDone) {
+                autoOpenedNextEx = cand;
+                state.cardCollapsedState[getExercisePanelKey(dayIdx, cand.id)] = "expanded";
+                break;
+              }
+            }
+          }
+
           // Count how many sets are done today after this tap
           let doneSetsCountNow = 0;
           exercisesToday.forEach(e => {
@@ -4089,6 +4129,13 @@
           saveState();
           renderWorkoutView();
           renderVeganView();
+
+          if (autoOpenedNextEx) {
+            setTimeout(() => {
+              const nextCard = document.getElementById(`ex-card-${autoOpenedNextEx.id}`);
+              if (nextCard) nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 280);
+          }
           if (state.workoutLogs[key].done) {
             if (isFinalSetToday) {
               resetTimer();
@@ -5318,12 +5365,14 @@
       const toggleFocusBtn = document.getElementById('toggle-focus-collapse-btn');
       if (toggleFocusBtn) {
         toggleFocusBtn.addEventListener('click', () => {
-          state.autoCollapseDone = state.autoCollapseDone === false ? true : false;
-          if (state.autoCollapseDone) state.cardCollapsedState = {};
+          state.defaultAllHidden = state.defaultAllHidden === false ? true : false;
+          state.cardCollapsedState = {};
           saveState();
           renderWorkoutView();
           renderUSMCView();
-          showToast(state.autoCollapseDone ? '🎯 Auto-Collapse Done enabled (saves screen space)' : '📋 All completed exercises expanded');
+          showToast(state.defaultAllHidden
+            ? '🙈 Default All Hidden: ON (Tap any exercise to open • Auto-opens next when finished!)'
+            : '📂 Show All Exercises: ON (Completed exercises still auto-hide when finished!)');
         });
       }
 
