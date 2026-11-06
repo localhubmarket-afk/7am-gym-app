@@ -2627,24 +2627,20 @@
     function renderBarbellSetEquationInnerHtml(mathObj, logKey, exId) {
       return `
         <div class="flex flex-wrap items-center justify-between gap-1.5">
-          <span class="font-extrabold text-amber-300">
-            🧮 <span class="text-white">${mathObj.bar} ${mathObj.unit} Barbell</span> + <span class="text-sky-300">${mathObj.bothSides} ${mathObj.unit} Both Sides</span> (<span class="text-emerald-300">${mathObj.perSide} ${mathObj.unit}/side</span> × 2) = <span class="text-amber-300 underline decoration-amber-500/50">${mathObj.total} ${mathObj.unit} Total</span>
+          <span class="text-[11px] font-bold text-slate-200">
+            <span class="text-amber-300 font-extrabold">${mathObj.bar}</span> Bar + <span class="text-sky-300 font-extrabold">${mathObj.bothSides}</span> Sides (<span class="text-emerald-300 font-extrabold">${mathObj.perSide}</span>/side) = <span class="text-amber-300 font-extrabold">${mathObj.total} ${mathObj.unit}</span> <span class="text-slate-400 font-normal">(≈ ${mathObj.totalOther} ${mathObj.otherUnit})</span>
           </span>
-          <span class="text-[10px] font-bold text-sky-300 bg-sky-500/10 border border-sky-500/20 px-1.5 py-0.5 rounded">
-            ⇄ ${mathObj.dualText}
-          </span>
-        </div>
-        <div class="flex flex-wrap items-center justify-between gap-1.5 text-[10px] text-slate-300 pt-1">
           <div class="flex flex-wrap items-center gap-1">
-            <span class="text-slate-400 font-semibold">💿 Plates per side:</span>
+            <span class="text-[10px] text-slate-400 font-semibold">💿/side:</span>
             ${mathObj.plateChipsHtml}
           </div>
-          ${mathObj.needsMicroPlate && logKey && exId ? `
-            <button type="button" data-round-std-key="${logKey}" data-round-std-ex="${exId}" data-round-std-side="${mathObj.nearestStandardSide}" class="bar-round-std-btn px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 font-extrabold transition">
-              ⚠️ Non-standard plate (${mathObj.perSide}/${mathObj.unit}) → Tap for ${mathObj.nearestStandardSide} ${mathObj.unit}/side (${mathObj.nearestStandardTotal} ${mathObj.unit})
-            </button>
-          ` : `<span class="text-slate-400">🔒 Total is auto-calculated (Bar + Both Sides)</span>`}
         </div>
+        ${mathObj.needsMicroPlate && logKey && exId ? `
+        <div class="pt-1">
+          <button type="button" data-round-std-key="${logKey}" data-round-std-ex="${exId}" data-round-std-side="${mathObj.nearestStandardSide}" class="bar-round-std-btn w-full text-center px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 text-[10px] font-extrabold transition">
+            ⚠️ Round ${mathObj.perSide} ${mathObj.unit}/side → ${mathObj.nearestStandardSide} ${mathObj.unit}/side (${mathObj.nearestStandardTotal} ${mathObj.unit} Total)
+          </button>
+        </div>` : ''}
       `;
     }
 
@@ -3317,6 +3313,7 @@
         const isBarbellEx = BARBELL_EX_IDS.includes(ex.id);
         const barCfg = isBarbellEx ? getBarbellConfig(ex.id) : null;
         const barWeight = isBarbellEx ? getBarbellBarWeight(ex.id, exUnit) : 0;
+        if (isBarbellEx && !barCfg.openCustomSets) barCfg.openCustomSets = {};
 
         let exDoneSets = 0;
         let setsHtml = '';
@@ -3368,7 +3365,7 @@
           const barMath = isBarbellEx ? computeBarbellMath(effectiveTotalWeight, ex.id, exUnit) : null;
           const sideStep = exUnit === 'kg' ? 1.25 : 2.5;
           const bothStep = exUnit === 'kg' ? 2.5 : 5;
-          const barStep = exUnit === 'kg' ? 2.5 : 5;
+          const isCustomSetOpen = !!(isBarbellEx && barCfg && barCfg.openCustomSets && barCfg.openCustomSets[s]);
 
           const sourceUnit = exUnit === 'kg' ? 'lbs' : 'kg';
           const weightToShowConv = existing && existing.prevRawWeight ? existing.prevRawWeight : (displayWeight !== '' ? displayWeight : defaultTotalPlaceholder);
@@ -3381,19 +3378,25 @@
           if (isDone) exDoneSets++;
 
           setsHtml += `
-            <div class="py-2.5 px-2.5 rounded-xl space-y-2 ${isDone ? 'bg-emerald-950/40 border border-emerald-500/30' : 'bg-slate-950/60 border border-slate-800/80'}">
+            <div class="py-2 px-2.5 rounded-xl space-y-1.5 ${isDone ? 'bg-emerald-950/40 border border-emerald-500/30' : 'bg-slate-950/60 border border-slate-800/80'}">
               <div class="grid grid-cols-12 items-center gap-2">
                 <div class="col-span-2">
                   <span class="text-xs font-bold ${isDone ? 'text-emerald-400' : 'text-slate-300'}">${setLabelText}</span>
                   ${isSuggestedFromPrev ? `<span class="block text-[9px] font-bold ${prevSuggestion.isDailyPrev ? 'text-emerald-400' : 'text-amber-400'}">${prevSuggestion.isDailyPrev ? 'Prev Day' : `Wk ${prevSuggestion.week}`}</span>` : ''}
+                  ${isBarbellEx && s > 1 ? `
+                    <button type="button" data-toggle-custom-set="${ex.id}" data-set-idx="${s}" class="toggle-custom-set-btn block text-[9px] font-bold ${isCustomSetOpen ? 'text-amber-300' : 'text-slate-400 hover:text-slate-200'} mt-0.5 transition" title="Customize plates for Set ${s} only (e.g., drop set)">
+                      ${isCustomSetOpen ? '▲ Same as Set 1' : '✎ Drop/Custom'}
+                    </button>
+                  ` : ''}
                 </div>
                 <div class="col-span-4">
                   ${isBarbellEx && barMath ? `
-                    <!-- Read-Only Calculated Total Display (NO Adjustable Total Box!) -->
+                    <!-- Read-Only Calculated Total Display (Controlled by the Plate Builder above Set 1!) -->
                     <input type="hidden" value="${barMath.total}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" class="workout-input-ro-total" />
-                    <div data-barbell-ro-total="${logKey}" class="flex flex-col items-center justify-center bg-slate-900/95 border border-amber-500/35 rounded-lg py-1 px-2 text-center select-none" title="Read-Only Total = Barbell + Total of Both Sides (Adjust using the 3 boxes below)">
-                      <span class="text-[8px] font-extrabold uppercase tracking-wider text-slate-400">🔒 Total (Read-Only)</span>
+                    <div data-barbell-ro-total="${logKey}" class="flex flex-col items-center justify-center bg-slate-900/95 border border-amber-500/35 rounded-lg py-1 px-2 text-center select-none" title="Read-Only Total = Barbell + Both Sides (Adjust in the Barbell & Plate Builder above Set 1)">
+                      <span class="text-[8px] font-extrabold uppercase tracking-wider text-slate-400">🔒 TOTAL (READ-ONLY)</span>
                       <span class="text-xs font-extrabold text-amber-300">${barMath.total} ${exUnit} <span class="text-[10px] font-semibold text-sky-300">(≈ ${barMath.totalOther} ${barMath.otherUnit})</span></span>
+                      <span class="text-[9px] font-bold text-emerald-300">${barMath.perSide} ${exUnit}/side • ${barMath.bothSides} ${exUnit} sides</span>
                     </div>
                   ` : `
                     <div class="flex items-center bg-slate-900 border ${isSuggestedFromPrev && !isDone ? 'border-amber-500/50' : 'border-slate-700'} rounded-lg overflow-hidden">
@@ -3421,51 +3424,25 @@
                 </div>
               </div>
 
-              ${isBarbellEx && barMath ? `
-              <!-- 3-Box Barbell Weight Adjuster: [Box 1: 1 Side] <-> [Box 2: Both Sides Total] + [Box 3: Barbell] -->
-              <div class="grid grid-cols-3 gap-1.5 pt-0.5">
-                <!-- Box 1: 1 Part / Side (Auto-adjusts Total of Both Sides = 2x) -->
-                <div class="bg-slate-900/95 border border-emerald-500/35 rounded-lg p-1.5 space-y-1">
-                  <div class="flex items-center justify-between text-[9px] font-extrabold uppercase tracking-wider text-emerald-300">
-                    <span>1. 1 Side (${exUnit})</span>
-                    <span class="text-[8px] text-slate-400 font-semibold">→ 2× Sides</span>
-                  </div>
-                  <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden">
-                    <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${sideStep}" class="bar3-step-btn px-1.5 py-1 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Decrease 1 side by ${sideStep}">−</button>
-                    <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.perSide}" data-bar3-inp="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" aria-label="${ex.name} Set ${s} Weight on 1 Side" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-emerald-300 focus:outline-none" />
-                    <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${sideStep}" class="bar3-step-btn px-1.5 py-1 text-xs font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Increase 1 side by ${sideStep}">+</button>
+              ${isBarbellEx && barMath && s > 1 && isCustomSetOpen ? `
+              <!-- Optional Per-Set Drop/Custom Plate Override for Set ${s} -->
+              <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+                <div class="bg-slate-900/95 border border-emerald-500/35 rounded-lg px-2 py-1 flex items-center justify-between gap-1.5">
+                  <span class="text-[9px] font-extrabold uppercase text-emerald-300">Set ${s} • 1 Side</span>
+                  <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden w-24">
+                    <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${sideStep}" class="bar3-step-btn px-1.5 py-0.5 text-xs font-extrabold text-slate-400 hover:text-white">−</button>
+                    <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.perSide}" data-bar3-inp="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" class="bar3-input w-full min-w-0 bg-transparent py-0.5 text-center text-xs font-extrabold text-emerald-300 focus:outline-none" />
+                    <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${sideStep}" class="bar3-step-btn px-1.5 py-0.5 text-xs font-extrabold text-emerald-400">+</button>
                   </div>
                 </div>
-
-                <!-- Box 2: Total of Both Sides (Auto-adjusts 1 Side = ÷2) -->
-                <div class="bg-slate-900/95 border border-sky-500/35 rounded-lg p-1.5 space-y-1">
-                  <div class="flex items-center justify-between text-[9px] font-extrabold uppercase tracking-wider text-sky-300">
-                    <span>2. Both Sides (${exUnit})</span>
-                    <span class="text-[8px] text-slate-400 font-semibold">→ ÷2 Side</span>
-                  </div>
-                  <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden">
-                    <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${bothStep}" class="bar3-step-btn px-1.5 py-1 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Decrease total of both sides by ${bothStep}">−</button>
-                    <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" aria-label="${ex.name} Set ${s} Total of Both Sides" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-sky-300 focus:outline-none" />
-                    <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${bothStep}" class="bar3-step-btn px-1.5 py-1 text-xs font-extrabold text-sky-400 hover:bg-slate-800 transition" title="Increase total of both sides by ${bothStep}">+</button>
+                <div class="bg-slate-900/95 border border-sky-500/35 rounded-lg px-2 py-1 flex items-center justify-between gap-1.5">
+                  <span class="text-[9px] font-extrabold uppercase text-sky-300">Set ${s} • Both</span>
+                  <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden w-24">
+                    <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${bothStep}" class="bar3-step-btn px-1.5 py-0.5 text-xs font-extrabold text-slate-400 hover:text-white">−</button>
+                    <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" class="bar3-input w-full min-w-0 bg-transparent py-0.5 text-center text-xs font-extrabold text-sky-300 focus:outline-none" />
+                    <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${bothStep}" class="bar3-step-btn px-1.5 py-0.5 text-xs font-extrabold text-sky-400">+</button>
                   </div>
                 </div>
-
-                <!-- Box 3: Barbell Weight (Default Olympic 45 lbs / 20 kg) -->
-                <div class="bg-slate-900/95 border border-amber-500/35 rounded-lg p-1.5 space-y-1">
-                  <div class="flex items-center justify-between text-[9px] font-extrabold uppercase tracking-wider text-amber-300">
-                    <span>3. Barbell (${exUnit})</span>
-                    <span class="text-[8px] text-slate-400 font-semibold">Olympic</span>
-                  </div>
-                  <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden">
-                    <button type="button" data-bar3-step="barWeight" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${barStep}" class="bar3-step-btn px-1.5 py-1 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Decrease barbell weight by ${barStep}">−</button>
-                    <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.bar}" data-bar3-inp="barWeight" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" aria-label="${ex.name} Set ${s} Barbell Weight" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-amber-300 focus:outline-none" />
-                    <button type="button" data-bar3-step="barWeight" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${barStep}" class="bar3-step-btn px-1.5 py-1 text-xs font-extrabold text-amber-400 hover:bg-slate-800 transition" title="Increase barbell weight by ${barStep}">+</button>
-                  </div>
-                </div>
-              </div>
-
-              <div data-barbell-eq="${logKey}" class="bg-slate-900/90 border border-amber-500/25 rounded-lg px-2.5 py-1.5 text-[10px]">
-                ${renderBarbellSetEquationInnerHtml(barMath, logKey, ex.id)}
               </div>
               ` : ''}
 
@@ -3489,7 +3466,9 @@
         const isCollapsedDone = isExerciseSetsCollapsed(dayIdx, ex.id, isExComplete);
         const s1BarMath = isBarbellEx ? computeBarbellMath(set1EffectiveTotal, ex.id, exUnit) : null;
         const barPresets = exUnit === 'kg' ? BARBELL_PRESETS_KG : BARBELL_PRESETS_LBS;
-        const quickPlateChips = exUnit === 'kg' ? [20, 15, 10, 5, 2.5, 1.25] : [45, 25, 10, 5, 2.5];
+        const topSideStep = exUnit === 'kg' ? 1.25 : 2.5;
+        const topBothStep = exUnit === 'kg' ? 2.5 : 5;
+        const s1LogKey = `w${week}_${dayIdx}_${ex.id}_1`;
 
         return `
           <article id="ex-card-${ex.id}" class="bg-slate-900 border ${isExComplete ? 'border-rose-400/25 bg-slate-900/60' : (isUpNext ? 'border-emerald-400/70 ring-2 ring-emerald-500/20 shadow-lg shadow-emerald-950/50' : (ex.id === 'cable_ab_crunch' ? 'border-emerald-500/50' : 'border-slate-800'))} rounded-2xl p-3.5 sm:p-4 space-y-3 scroll-mt-28 transition-all">
@@ -3575,66 +3554,82 @@
               </div>
 
               ${isBarbellEx && s1BarMath ? `
-              <!-- Barbell Quick-Setup Panel: Presets, 1-Tap Plate Adder, Copy Set 1 to All Sets & Warm-Up Guide -->
-              <div class="bg-slate-950/90 border border-amber-500/35 rounded-xl p-3 space-y-2.5">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">🏋️ 3-Box Barbell Builder</span>
-                    <span class="text-[11px] font-bold text-slate-300">1 Side ⇄ Both Sides + Barbell = <strong class="text-amber-300">Read-Only Total</strong></span>
-                  </div>
-                  <button type="button" data-copy-s1-ex="${ex.id}" class="bar-copy-s1-btn px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-[10px] font-extrabold transition" title="Copy Set 1 plate weights to all sets of this exercise">
-                    📋 Apply Set 1 Plates to All ${ex.sets} Sets
-                  </button>
-                </div>
-
-                <!-- Barbell Presets (Olympic Standard 45lb/20kg + Lightweight / Beginner Bars) -->
-                <div class="space-y-1.5">
-                  <div class="flex flex-wrap items-center justify-between gap-1.5 text-[10px]">
-                    <span class="font-bold text-slate-300">Quick Barbell Presets (or adjust Box 3 on any set):</span>
-                    <span class="font-semibold text-sky-300">Current Bar: <strong>${s1BarMath.bar} ${exUnit}</strong> (≈ ${s1BarMath.barOther} ${s1BarMath.otherUnit})</span>
-                  </div>
+              <!-- STEP 1: BARBELL & PLATE BUILDER (Placed ABOVE Set 1 so you load the bar first, then log Set 1, 2, 3 below!) -->
+              <div class="bg-slate-950/90 border border-amber-500/30 rounded-xl p-2.5 space-y-2">
+                <!-- Barbell Selector Row (Chosen Once for All Sets) -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-800/80">
                   <div class="flex flex-wrap items-center gap-1.5">
-                    ${barPresets.map(p => `
-                      <button type="button" data-bar-preset-ex="${ex.id}" data-bar-val="${p.weight}" class="bar-preset-btn px-2 py-1 rounded-lg text-[10px] font-extrabold border transition ${
-                        Math.abs(barWeight - p.weight) < 0.1
-                          ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-sm'
-                          : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white hover:border-slate-500'
-                      }">${p.label}</button>
-                    `).join('')}
-                  </div>
-                </div>
-
-                <!-- Quick 1-Tap Plate Adder Per Side + Warm-Up Plate Calculator Toggle -->
-                <div class="flex flex-wrap items-center justify-between gap-1.5 pt-1 border-t border-slate-800/90">
-                  <div class="flex flex-wrap items-center gap-1">
-                    <span class="text-[10px] font-bold text-slate-400 mr-0.5">+Plate/side:</span>
-                    ${quickPlateChips.map(pVal => `
-                      <button type="button" data-plate-add-ex="${ex.id}" data-plate-side="${pVal}" class="bar-plate-add-btn px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[10px] font-extrabold text-emerald-300 transition">+${pVal}</button>
-                    `).join('')}
-                    <button type="button" data-plate-reset-ex="${ex.id}" class="bar-plate-reset-btn px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[10px] font-bold text-slate-300 transition" title="Reset all sets to Empty Bar (0/side)">↺ Bar Only</button>
+                    <span class="text-[11px] font-extrabold text-amber-300">🏋️ Barbell:</span>
+                    <div class="inline-flex items-center bg-slate-900 border border-amber-500/40 rounded-lg overflow-hidden">
+                      <button type="button" data-bar3-step="barWeight" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-delta="-${exUnit === 'kg' ? 2.5 : 5}" class="bar3-step-btn px-2 py-0.5 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Decrease barbell weight">−</button>
+                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${s1BarMath.bar}" data-bar3-inp="barWeight" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" aria-label="${ex.name} Barbell Weight" class="bar3-input w-12 bg-transparent py-0.5 text-center text-xs font-extrabold text-amber-300 focus:outline-none" />
+                      <button type="button" data-bar3-step="barWeight" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-delta="${exUnit === 'kg' ? 2.5 : 5}" class="bar3-step-btn px-2 py-0.5 text-xs font-extrabold text-amber-400 hover:bg-slate-800 transition" title="Increase barbell weight">+</button>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1">
+                      ${barPresets.map(p => `
+                        <button type="button" data-bar-preset-ex="${ex.id}" data-bar-val="${p.weight}" class="bar-preset-btn px-1.5 py-0.5 rounded text-[10px] font-extrabold border transition ${
+                          Math.abs(barWeight - p.weight) < 0.1
+                            ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-sm'
+                            : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'
+                        }">${p.weight} ${exUnit}</button>
+                      `).join('')}
+                    </div>
                   </div>
                   <button type="button" data-bar-warmup-ex="${ex.id}" class="bar-warmup-toggle-btn text-[10px] font-extrabold text-amber-300 hover:text-amber-200 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-lg transition">
-                    🔥 ${barCfg.warmupOpen ? '▲ Hide Warm-Up Plates' : '▼ Warm-Up Plate Guide (50/70/90%)'}
+                    🔥 ${barCfg.warmupOpen ? '▲ Hide Warm-Up' : '▼ Warm-Up'}
                   </button>
+                </div>
+
+                <!-- 2 Linked Plate Boxes: [1 SIDE] <-> [BOTH SIDES] (Placed ABOVE Set 1!) -->
+                <div class="grid grid-cols-2 gap-2">
+                  <!-- Box 1: 1 Side (Auto-adjusts Both Sides = 2x) -->
+                  <div class="bg-slate-900/95 border border-emerald-500/35 rounded-lg px-2.5 py-1.5 flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                      <span class="block text-[10px] font-extrabold uppercase tracking-wider text-emerald-300 leading-tight">1 Side (${exUnit})</span>
+                      <span class="block text-[9px] text-slate-400 leading-tight">Auto 2× Sides</span>
+                    </div>
+                    <div class="flex items-center bg-slate-950 border border-slate-700 rounded-lg overflow-hidden shrink-0 w-28">
+                      <button type="button" data-bar3-step="perSide" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="-${topSideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Decrease 1 side by ${topSideStep}">−</button>
+                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${s1BarMath.perSide}" data-bar3-inp="perSide" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" aria-label="${ex.name} Weight on 1 Side" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-emerald-300 focus:outline-none" />
+                      <button type="button" data-bar3-step="perSide" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="${topSideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Increase 1 side by ${topSideStep}">+</button>
+                    </div>
+                  </div>
+
+                  <!-- Box 2: Total of Both Sides (Auto-adjusts 1 Side = ÷2) -->
+                  <div class="bg-slate-900/95 border border-sky-500/35 rounded-lg px-2.5 py-1.5 flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                      <span class="block text-[10px] font-extrabold uppercase tracking-wider text-sky-300 leading-tight">Both Sides (${exUnit})</span>
+                      <span class="block text-[9px] text-slate-400 leading-tight">Auto ÷2 Side</span>
+                    </div>
+                    <div class="flex items-center bg-slate-950 border border-slate-700 rounded-lg overflow-hidden shrink-0 w-28">
+                      <button type="button" data-bar3-step="bothSides" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="-${topBothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Decrease both sides by ${topBothStep}">−</button>
+                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${s1BarMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" aria-label="${ex.name} Total of Both Sides" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-sky-300 focus:outline-none" />
+                      <button type="button" data-bar3-step="bothSides" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="${topBothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-sky-400 hover:bg-slate-800 transition" title="Increase both sides by ${topBothStep}">+</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Formula & Plate Chips Bar (Directly above Set 1!) -->
+                <div data-barbell-eq="${s1LogKey}" class="bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[10px]">
+                  ${renderBarbellSetEquationInnerHtml(s1BarMath, s1LogKey, ex.id)}
                 </div>
 
                 ${barCfg.warmupOpen ? (() => {
                   const pctList = [
-                    { pct: 0.50, label: '50% Warm-Up (× 8 reps)' },
-                    { pct: 0.70, label: '70% Warm-Up (× 3–4 reps)' },
-                    { pct: 0.90, label: '90% Primer (× 1–2 reps)' }
+                    { pct: 0.50, label: '50% × 8' },
+                    { pct: 0.70, label: '70% × 3–4' },
+                    { pct: 0.90, label: '90% × 1–2' }
                   ];
                   const stepInc = exUnit === 'kg' ? 2.5 : 5;
                   return `
                     <div class="bg-slate-900/95 border border-slate-800 rounded-lg p-2 space-y-1 text-[10px]">
-                      <div class="font-bold text-slate-300 pb-0.5">Warm-Up Sets for Working Total <strong>${s1BarMath.total} ${exUnit}</strong> (${s1BarMath.bar} ${exUnit} Bar):</div>
                       ${pctList.map(item => {
                         const rawTarget = Math.max(s1BarMath.bar, s1BarMath.total * item.pct);
                         const roundedTotal = Math.max(s1BarMath.bar, Math.round(rawTarget / stepInc) * stepInc);
                         const wm = computeBarbellMath(roundedTotal, ex.id, exUnit);
                         return `
-                          <div class="flex flex-wrap items-center justify-between gap-1 py-0.5 border-t border-slate-800/70">
-                            <span class="font-semibold text-slate-300">${item.label}:</span>
+                          <div class="flex flex-wrap items-center justify-between gap-1 py-0.5 border-t first:border-t-0 border-slate-800/70">
+                            <span class="font-bold text-slate-300">${item.label}:</span>
                             <span class="font-extrabold text-amber-300">${wm.bar} Bar + ${wm.bothSides} Sides (${wm.perSide}/side) = ${wm.total} ${exUnit}</span>
                             <span class="text-emerald-300 font-semibold">${wm.platesStr ? `💿 ${wm.platesStr}` : '💿 Empty Bar'}</span>
                           </div>
@@ -3646,7 +3641,7 @@
               </div>
               ` : ''}
 
-              <!-- Set Table Header & Set Rows -->
+              <!-- STEP 2: SET 1, SET 2, SET 3 ROWS (Placed BELOW the Barbell & Plate Builder!) -->
               <div class="space-y-1.5">
                 <div class="grid grid-cols-12 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   <div class="col-span-2">Set</div>
@@ -3661,51 +3656,61 @@
         `;
       }).join('');
 
-      // Helper to apply a new canonical total weight to a Barbell Set Row and sync all 3 boxes + read-only total in the DOM
-      function applyBarbellSetMathAndSyncDOM(key, exId, setIdx, newTotalVal) {
+      // Helper to apply a new canonical total weight to a Barbell Set Row (and optionally sync all unlogged sets when adjusted from the top Plate Builder!)
+      function applyBarbellSetMathAndSyncDOM(key, exId, setIdx, newTotalVal, syncAllSets) {
         const exUnit = getExerciseUnit(exId);
         const mathNow = computeBarbellMath(newTotalVal, exId, exUnit);
         if (!state.exerciseUnitPrefs[exId]) {
           state.exerciseUnitPrefs[exId] = exUnit;
         }
-        if (!state.workoutLogs[key]) {
-          state.workoutLogs[key] = { weight: '', reps: '', done: false, unit: exUnit };
-        }
-        state.workoutLogs[key].weight = String(mathNow.total);
-        state.workoutLogs[key].unit = exUnit;
-        if (week === 1) {
-          state.workoutLogs[`${dayIdx}_${exId}_${setIdx}`] = Object.assign({}, state.workoutLogs[key]);
-        }
+        const exObj = exercisesToday.find(e => e.id === exId);
+        const targetSets = (syncAllSets && exObj)
+          ? Array.from({ length: exObj.sets }, (_, i) => i + 1)
+          : [setIdx];
 
-        // Update hidden canonical input
-        const hiddenInp = listEl.querySelector(`input.workout-input-ro-total[data-log-key="${key}"]`);
-        if (hiddenInp) hiddenInp.value = String(mathNow.total);
+        targetSets.forEach(sNum => {
+          const k = `w${week}_${dayIdx}_${exId}_${sNum}`;
+          if (!state.workoutLogs[k]) {
+            state.workoutLogs[k] = { weight: '', reps: '', done: false, unit: exUnit };
+          }
+          // When adjusting the top Plate Builder, update Set 1 and any set that does not have a custom per-set override open
+          const cfg = getBarbellConfig(exId);
+          const hasCustomOpen = !!(cfg && cfg.openCustomSets && cfg.openCustomSets[sNum]);
+          if (sNum === setIdx || !hasCustomOpen) {
+            state.workoutLogs[k].weight = String(mathNow.total);
+            state.workoutLogs[k].unit = exUnit;
+            if (week === 1) {
+              state.workoutLogs[`${dayIdx}_${exId}_${sNum}`] = Object.assign({}, state.workoutLogs[k]);
+            }
 
-        // Update Box 1 (1 Side) & Box 2 (Both Sides) & Box 3 (Barbell) if not currently focused
-        const inpSide = listEl.querySelector(`input[data-bar3-inp="perSide"][data-log-key="${key}"]`);
-        const inpBoth = listEl.querySelector(`input[data-bar3-inp="bothSides"][data-log-key="${key}"]`);
-        const inpBar = listEl.querySelector(`input[data-bar3-inp="barWeight"][data-log-key="${key}"]`);
-        if (inpSide && document.activeElement !== inpSide) inpSide.value = String(mathNow.perSide);
-        if (inpBoth && document.activeElement !== inpBoth) inpBoth.value = String(mathNow.bothSides);
-        if (inpBar && document.activeElement !== inpBar) inpBar.value = String(mathNow.bar);
+            const hiddenInp = listEl.querySelector(`input.workout-input-ro-total[data-log-key="${k}"]`);
+            if (hiddenInp) hiddenInp.value = String(mathNow.total);
 
-        // Update Read-Only Total badge
-        const roTotalEl = listEl.querySelector(`[data-barbell-ro-total="${key}"]`);
-        if (roTotalEl) {
-          roTotalEl.innerHTML = `
-            <span class="text-[8px] font-extrabold uppercase tracking-wider text-slate-400">🔒 Total (Read-Only)</span>
-            <span class="text-xs font-extrabold text-amber-300">${mathNow.total} ${exUnit} <span class="text-[10px] font-semibold text-sky-300">(≈ ${mathNow.totalOther} ${mathNow.otherUnit})</span></span>
-          `;
-        }
+            const inpSide = listEl.querySelector(`input[data-bar3-inp="perSide"][data-log-key="${k}"]`);
+            const inpBoth = listEl.querySelector(`input[data-bar3-inp="bothSides"][data-log-key="${k}"]`);
+            const inpBar = listEl.querySelector(`input[data-bar3-inp="barWeight"][data-log-key="${k}"]`);
+            if (inpSide && document.activeElement !== inpSide) inpSide.value = String(mathNow.perSide);
+            if (inpBoth && document.activeElement !== inpBoth) inpBoth.value = String(mathNow.bothSides);
+            if (inpBar && document.activeElement !== inpBar) inpBar.value = String(mathNow.bar);
 
-        // Update Equation & Plate Chips bar
-        const eqEl = listEl.querySelector(`[data-barbell-eq="${key}"]`);
-        if (eqEl) {
-          eqEl.innerHTML = renderBarbellSetEquationInnerHtml(mathNow, key, exId);
-          attachRoundStandardListeners();
-        }
+            const roTotalEl = listEl.querySelector(`[data-barbell-ro-total="${k}"]`);
+            if (roTotalEl) {
+              roTotalEl.innerHTML = `
+                <span class="text-[8px] font-extrabold uppercase tracking-wider text-slate-400">🔒 TOTAL (READ-ONLY)</span>
+                <span class="text-xs font-extrabold text-amber-300">${mathNow.total} ${exUnit} <span class="text-[10px] font-semibold text-sky-300">(≈ ${mathNow.totalOther} ${mathNow.otherUnit})</span></span>
+                <span class="text-[9px] font-bold text-emerald-300">${mathNow.perSide} ${exUnit}/side • ${mathNow.bothSides} ${exUnit} sides</span>
+              `;
+            }
 
-        if (setIdx === 1) {
+            const eqEl = listEl.querySelector(`[data-barbell-eq="${k}"]`);
+            if (eqEl) {
+              eqEl.innerHTML = renderBarbellSetEquationInnerHtml(mathNow, k, exId);
+              attachRoundStandardListeners();
+            }
+          }
+        });
+
+        if (setIdx === 1 || syncAllSets) {
           const plateEl = listEl.querySelector(`[data-plate-badge="${exId}"]`);
           if (plateEl) {
             plateEl.textContent = `💿 ${mathNow.bar} ${exUnit} Bar + ${mathNow.bothSides} ${exUnit} Sides (${mathNow.perSide}/side) = ${mathNow.total} ${exUnit}`;
@@ -3715,37 +3720,39 @@
         return mathNow;
       }
 
-      // Attach listeners for the 3 Barbell Boxes (Box 1: perSide, Box 2: bothSides, Box 3: barWeight)
+      // Attach listeners for the Barbell & Plate Builder inputs (1 Side, Both Sides, Barbell)
       listEl.querySelectorAll('.bar3-input').forEach(inp => {
         inp.addEventListener('input', () => {
           const boxType = inp.getAttribute('data-bar3-inp');
           const key = inp.getAttribute('data-log-key');
           const exId = inp.getAttribute('data-ex-id');
           const setIdx = parseInt(inp.getAttribute('data-set-idx'), 10);
+          const syncAll = inp.getAttribute('data-sync-all') === '1';
           const exUnit = getExerciseUnit(exId);
           const rawVal = Math.max(0, parseFloat(inp.value) || 0);
 
           if (boxType === 'perSide') {
             const barW = getBarbellBarWeight(exId, exUnit);
             const nextTotal = +(barW + rawVal * 2).toFixed(2);
-            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal);
+            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal, syncAll);
           } else if (boxType === 'bothSides') {
             const barW = getBarbellBarWeight(exId, exUnit);
             const nextTotal = +(barW + rawVal).toFixed(2);
-            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal);
+            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal, syncAll);
           } else if (boxType === 'barWeight') {
             updateExerciseBarbellWeightAndRecalc(exId, rawVal, true);
           }
         });
       });
 
-      // Attach listeners for - / + steppers on the 3 Barbell Boxes
+      // Attach listeners for - / + steppers on the Barbell & Plate Builder boxes
       listEl.querySelectorAll('.bar3-step-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const boxType = btn.getAttribute('data-bar3-step');
           const key = btn.getAttribute('data-log-key');
           const exId = btn.getAttribute('data-ex-id');
           const setIdx = parseInt(btn.getAttribute('data-set-idx'), 10);
+          const syncAll = btn.getAttribute('data-sync-all') === '1';
           const delta = parseFloat(btn.getAttribute('data-delta')) || 0;
           const exUnit = getExerciseUnit(exId);
           const meta = EXERCISE_META[exId] || { defaultWeightLbs: 45 };
@@ -3759,17 +3766,30 @@
           if (boxType === 'perSide') {
             const nextSide = Math.max(0, +(curMath.perSide + delta).toFixed(2));
             const nextTotal = +(curMath.bar + nextSide * 2).toFixed(2);
-            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal);
+            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal, syncAll);
             renderWorkoutView();
           } else if (boxType === 'bothSides') {
             const nextBoth = Math.max(0, +(curMath.bothSides + delta).toFixed(2));
             const nextTotal = +(curMath.bar + nextBoth).toFixed(2);
-            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal);
+            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal, syncAll);
             renderWorkoutView();
           } else if (boxType === 'barWeight') {
             const nextBar = Math.max(0, +(curMath.bar + delta).toFixed(2));
             updateExerciseBarbellWeightAndRecalc(exId, nextBar, false);
           }
+        });
+      });
+
+      // Toggle per-set custom plate override on Sets 2, 3, 4 (for drop sets)
+      listEl.querySelectorAll('.toggle-custom-set-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-toggle-custom-set');
+          const sIdx = parseInt(btn.getAttribute('data-set-idx'), 10);
+          const cfg = getBarbellConfig(exId);
+          if (!cfg.openCustomSets) cfg.openCustomSets = {};
+          cfg.openCustomSets[sIdx] = !cfg.openCustomSets[sIdx];
+          saveState();
+          renderWorkoutView();
         });
       });
 
@@ -3784,41 +3804,13 @@
             const nextTotal = +(barW + stdSide * 2).toFixed(2);
             const parts = key.split('_');
             const sIdx = parseInt(parts[parts.length - 1], 10) || 1;
-            applyBarbellSetMathAndSyncDOM(key, exId, sIdx, nextTotal);
+            applyBarbellSetMathAndSyncDOM(key, exId, sIdx, nextTotal, sIdx === 1);
             renderWorkoutView();
             showToast(`✓ Rounded to standard plates: ${stdSide} ${exUnit}/side (${stdSide * 2} ${exUnit} both sides) = ${nextTotal} ${exUnit}!`);
           };
         });
       }
       attachRoundStandardListeners();
-
-      // Copy Set 1 Plates to All Sets of Barbell Exercise
-      listEl.querySelectorAll('.bar-copy-s1-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const exId = btn.getAttribute('data-copy-s1-ex');
-          const exUnit = getExerciseUnit(exId);
-          const exObj = exercisesToday.find(e => e.id === exId);
-          const meta = EXERCISE_META[exId] || { defaultWeightLbs: 45 };
-          const defTotal = exUnit === 'kg'
-            ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0)
-            : meta.defaultWeightLbs;
-          if (!exObj) return;
-          const s1Entry = getLogEntry(week, dayIdx, exId, 1);
-          const s1Total = (s1Entry && s1Entry.weight !== undefined && s1Entry.weight !== '') ? parseFloat(s1Entry.weight) : defTotal;
-          const s1Math = computeBarbellMath(s1Total, exId, exUnit);
-          for (let s = 2; s <= exObj.sets; s++) {
-            const k = `w${week}_${dayIdx}_${exId}_${s}`;
-            const cur = getLogEntry(week, dayIdx, exId, s) || { weight: '', reps: '', done: false, unit: exUnit };
-            state.workoutLogs[k] = Object.assign({}, cur, { weight: String(s1Math.total), unit: exUnit });
-            if (week === 1) {
-              state.workoutLogs[`${dayIdx}_${exId}_${s}`] = Object.assign({}, state.workoutLogs[k]);
-            }
-          }
-          saveState();
-          renderWorkoutView();
-          showToast(`📋 Copied Set 1 (${s1Math.perSide} ${exUnit}/side • ${s1Math.bothSides} ${exUnit} both sides = ${s1Math.total} ${exUnit}) to all ${exObj.sets} sets!`);
-        });
-      });
 
       // Attach listeners for non-barbell inputs & reps inputs
       listEl.querySelectorAll('.workout-input').forEach(inp => {
@@ -3888,13 +3880,13 @@
             const curTotal = (cur.weight !== undefined && cur.weight !== '') ? parseFloat(cur.weight) : defTotal;
             const perSide = Math.max(0, +((curTotal - oldBarW) / 2).toFixed(2));
             const nextTotal = +(cleanBarW + perSide * 2).toFixed(2);
-            applyBarbellSetMathAndSyncDOM(k, exId, s, nextTotal);
+            applyBarbellSetMathAndSyncDOM(k, exId, s, nextTotal, false);
           }
         }
         saveState();
         if (!skipFullReRender) {
           renderWorkoutView();
-          showToast(`🏋️ Barbell set to ${cleanBarW} ${exUnit.toUpperCase()} — Read-only total updated (Bar + Both Sides)!`);
+          showToast(`🏋️ Barbell set to ${cleanBarW} ${exUnit.toUpperCase()} — Read-only total updated across sets!`);
         }
       }
 
@@ -3905,59 +3897,6 @@
           const val = parseFloat(btn.getAttribute('data-bar-val'));
           if (isNaN(val)) return;
           updateExerciseBarbellWeightAndRecalc(exId, val, false);
-        });
-      });
-
-      // 1-Tap Quick Plate Adder Per Side (+45, +25, +10, +5, +2.5 per side)
-      listEl.querySelectorAll('.bar-plate-add-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const exId = btn.getAttribute('data-plate-add-ex');
-          const plateSide = parseFloat(btn.getAttribute('data-plate-side')) || 0;
-          const exUnit = getExerciseUnit(exId);
-          const barW = getBarbellBarWeight(exId, exUnit);
-          const exObj = exercisesToday.find(e => e.id === exId);
-          const meta = EXERCISE_META[exId] || { defaultWeightLbs: 45 };
-          const defTotal = exUnit === 'kg'
-            ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0)
-            : meta.defaultWeightLbs;
-          if (!exObj) return;
-          for (let s = 1; s <= exObj.sets; s++) {
-            const k = `w${week}_${dayIdx}_${exId}_${s}`;
-            const cur = getLogEntry(week, dayIdx, exId, s) || { weight: '', reps: '', done: false, unit: exUnit };
-            const baseTotal = (cur.weight !== undefined && cur.weight !== '') ? parseFloat(cur.weight) : defTotal;
-            const nextTotal = Math.max(barW, +(baseTotal + plateSide * 2).toFixed(2));
-            state.workoutLogs[k] = Object.assign({}, cur, { weight: String(nextTotal), unit: exUnit });
-            if (week === 1) {
-              state.workoutLogs[`${dayIdx}_${exId}_${s}`] = Object.assign({}, state.workoutLogs[k]);
-            }
-          }
-          saveState();
-          renderWorkoutView();
-          const s1Now = getLogEntry(week, dayIdx, exId, 1);
-          const mathNow = computeBarbellMath(s1Now ? s1Now.weight : defTotal, exId, exUnit);
-          showToast(`💿 +${plateSide} ${exUnit}/side (+${plateSide * 2} both sides) → ${mathNow.bar} + ${mathNow.bothSides} = ${mathNow.total} ${exUnit}!`);
-        });
-      });
-
-      // Reset to Empty Barbell Only
-      listEl.querySelectorAll('.bar-plate-reset-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const exId = btn.getAttribute('data-plate-reset-ex');
-          const exUnit = getExerciseUnit(exId);
-          const barW = getBarbellBarWeight(exId, exUnit);
-          const exObj = exercisesToday.find(e => e.id === exId);
-          if (!exObj) return;
-          for (let s = 1; s <= exObj.sets; s++) {
-            const k = `w${week}_${dayIdx}_${exId}_${s}`;
-            const cur = getLogEntry(week, dayIdx, exId, s) || { weight: '', reps: '', done: false, unit: exUnit };
-            state.workoutLogs[k] = Object.assign({}, cur, { weight: String(barW), unit: exUnit });
-            if (week === 1) {
-              state.workoutLogs[`${dayIdx}_${exId}_${s}`] = Object.assign({}, state.workoutLogs[k]);
-            }
-          }
-          saveState();
-          renderWorkoutView();
-          showToast(`↺ Reset to Empty Barbell (${barW} ${exUnit.toUpperCase()} Bar + 0 Both Sides = ${barW} ${exUnit.toUpperCase()})`);
         });
       });
 
