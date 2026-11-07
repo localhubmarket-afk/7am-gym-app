@@ -1,0 +1,26 @@
+# Protect Secret API Keys & Environment Variables (Never commit .env files!)
+.env
+.env.*
+!.env.example
+
+# Vercel & Local Build Artifacts
+.vercel
+node_modules/
+dist/
+build/
+
+# Capacitor Native Build Folders & Signing Keys
+ios/App/Pods/
+android/.gradle/
+android/app/build/
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+
+# Editor & OS Files
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+*.log

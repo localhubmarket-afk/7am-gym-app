@@ -79,22 +79,22 @@
             GYM
           </div>
           <div class="min-w-0">
-            <h1 class="text-xs sm:text-sm font-bold tracking-tight text-white leading-tight truncate">Budget Fuel &amp; Full-Body Gym</h1>
-            <p class="text-[10px] text-emerald-400 font-medium truncate" id="header-subtitle">Full-Body + Pull-Ups • ~$5.55/Day Healthy Fuel</p>
+            <h1 class="text-xs sm:text-sm font-extrabold tracking-tight text-white leading-tight truncate">Budget Gym &amp; Fuel</h1>
+            <p class="text-[10px] text-emerald-400 font-medium truncate" id="header-subtitle">Full-Body • ~$5.55/Day Fuel</p>
           </div>
         </div>
 
         <div class="flex items-center gap-1 shrink-0">
-          <button id="open-gemini-ai-btn" type="button" class="flex items-center gap-1 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition" title="Open Google Gemini 3.8 Flash AI Coach">
-            <span>✨ Gemini AI</span>
+          <button id="open-gemini-ai-btn" type="button" class="flex items-center gap-1 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition" title="Open Coach AI">
+            <span>✨ Coach AI</span>
           </button>
-          <button id="open-smart-login-btn" type="button" class="flex items-center gap-1 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/40 text-amber-300 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition" title="Smart Login & User Profile">
-            <span id="header-login-label">👤 Login</span>
+          <button id="open-smart-login-btn" type="button" class="flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition" title="Smart Login & User Profile">
+            <span id="header-login-label">👤 Profile</span>
           </button>
-          <button id="open-share-store-btn" type="button" class="flex items-center gap-1 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition" title="Share App, Fresh Start Reset & App Store / Google Play Guide">
-            <span>📲 Share</span>
+          <button id="open-share-store-btn" type="button" class="flex items-center gap-1 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition" title="Share App & Fresh Start Reset">
+            <span>📲</span>
           </button>
-          <button id="open-db-modal-btn" type="button" class="flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition" title="Database & Permanent Save Options">
+          <button id="open-db-modal-btn" type="button" class="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-300 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition" title="Database & Cloud Sync">
             <span id="db-status-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
             <span>💾</span>
           </button>
@@ -111,7 +111,7 @@
             <span id="header-timer-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
             <span id="header-timer-display" class="font-mono text-sm sm:text-base font-extrabold text-emerald-400 tracking-tight">01:30</span>
           </button>
-          <span id="pinned-timer-context" class="text-[11px] font-semibold text-slate-300 truncate">Tap any set or Start to time rest</span>
+          <span id="pinned-timer-context" class="text-[11px] font-semibold text-slate-300 truncate">Ready • Tap any set</span>
         </div>
 
         <div class="flex items-center gap-1 shrink-0">
@@ -1764,7 +1764,7 @@
       if (pinnedCtx) {
         pinnedCtx.textContent = timerRunning
           ? (state.timerContextLabel || 'Rest Timer Running')
-          : (state.timerContextLabel ? `Paused: ${state.timerContextLabel}` : 'Tap any set or Start to time rest');
+          : (state.timerContextLabel ? `Paused: ${state.timerContextLabel}` : 'Ready • Tap any set');
         pinnedCtx.className = timerRunning
           ? 'text-[11px] font-bold text-emerald-300 truncate'
           : 'text-[11px] font-semibold text-slate-400 truncate';
@@ -3222,17 +3222,21 @@
 
         const hdrLoginLbl = document.getElementById('header-login-label');
         if (hdrLoginLbl) {
-          hdrLoginLbl.textContent = hasProfile ? `✓ ${firstName}` : '👤 Login';
+          hdrLoginLbl.textContent = hasProfile ? `👤 ${firstName}` : '👤 Sign In';
+        }
+        const closeLoginBtnEl = document.getElementById('close-smart-login-btn');
+        if (closeLoginBtnEl) {
+          if (hasProfile) {
+            closeLoginBtnEl.classList.remove('hidden');
+          } else {
+            closeLoginBtnEl.classList.add('hidden');
+          }
         }
 
         neuroHud.innerHTML = `
           <div class="flex flex-wrap items-center gap-2">
-            <button type="button" id="hud-open-login-btn" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-extrabold text-[11px] border transition ${
-              hasProfile
-                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
-                : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-400/40 animate-pulse'
-            }">
-              <span>${hasProfile ? `👋 ${firstName} • ${prof.goal || '6-Pack Recomp'}` : '⚡ Guest Mode: Tap to Save Streak & Unlock AI'}</span>
+            <button type="button" id="hud-open-login-btn" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-extrabold text-[11px] border transition bg-emerald-500/15 text-emerald-300 border-emerald-500/35">
+              <span>${hasProfile ? `👋 ${firstName} • ${prof.goal || '6-Pack Recomp'}` : '🔐 Member Sign-In Required'}</span>
             </button>
             <span class="inline-flex items-center gap-1 text-[10px] font-extrabold bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 px-2 py-0.5 rounded-lg" title="Estimated grocery savings vs. $16.25/day takeout & meat">
               💰 Saved: $${savedDollars}/wk
@@ -3493,7 +3497,10 @@
             ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0)
             : meta.defaultWeightLbs;
 
-          const effectiveTotalWeight = displayWeight !== '' ? parseFloat(displayWeight) : defaultTotalPlaceholder;
+          const parsedDispW = parseFloat(displayWeight);
+          const effectiveTotalWeight = (displayWeight !== '' && !isNaN(parsedDispW) && (!isBarbellEx || parsedDispW >= barWeight || barWeight === 0))
+            ? parsedDispW
+            : defaultTotalPlaceholder;
           if (s === 1) {
             set1EffectiveTotal = effectiveTotalWeight;
           }
@@ -5500,29 +5507,29 @@
     function generateSmartLocalGeminiCoachReply(promptText, ctx) {
       const q = (promptText || '').toLowerCase();
       if (q.includes('overload') || q.includes('next week') || q.includes('analyze') || q.includes('weight')) {
-        return `**✨ Gemini 3.8 Coach (${ctx.dayTitle}):**\n` +
+        return `**✨ Coach AI (${ctx.dayTitle}):**\n` +
           `• **Current Session Snapshot:** ${ctx.exercisesToday.slice(0, 3).join(' | ')}\n` +
           `• **Next Week Overload Target:** Add **+2.5 lbs per side (+5 lbs total)** on your main barbell lifts if you hit the top of your rep range across all sets today, or keep the exact same plate load and add **+1 rep per set** before increasing weight.\n` +
           `• **Recovery Fuel:** Eat your post-workout meal at **${ctx.gymTime.split('Post-Gym Meal: ')[1]?.replace(')', '') || '8:15 AM'}** to maximize muscle protein synthesis.`;
       }
       if (q.includes('time') || q.includes('timing') || q.includes('schedule') || q.includes('evening') || q.includes('morning')) {
-        return `**⏱️ Gemini 3.8 Chrono-Nutrition Schedule (${ctx.userName}):**\n` +
+        return `**⏱️ Coach AI Chrono-Nutrition Schedule (${ctx.userName}):**\n` +
           `• **Your Active Gym Window:** ${ctx.gymTime}\n` +
           `• **25 Mins Before Gym:** Drink **30g Pea Protein Isolate + 360g Cold Silk Protein Milk** (36g fast protein, 255 kcal, zero stomach bulk during core/compounds).\n` +
           `• **15 Mins After Finishing Last Set:** Eat your **264g Overnight Oats Jar** (or Savory Tofu Bowl if training in the evening) to replenish glycogen and lock in recovery.`;
       }
       if (q.includes('grocery') || q.includes('budget') || q.includes('money') || q.includes('cheap') || q.includes('38') || q.includes('35')) {
-        return `**💰 Gemini 3.8 Low-Budget High-Protein Strategy (~$5.55/Day • 138g P):**\n` +
+        return `**💰 Coach AI Low-Budget High-Protein Strategy (~$5.55/Day • 138g P):**\n` +
           `• **1. Extra-Firm Tofu (175g/day = ~$1.25/day):** Buy 350g–454g twin/bulk packs at No Frills, Walmart, or Costco (28g complete protein + 350mg calcium).\n` +
           `• **2. Bulk Pea Protein Isolate (75g/day = ~$1.65/day):** 30g pre-gym + 45g evening shake = 60g pure protein with zero fiber bloat.\n` +
           `• **3. Oats (40g) + Jasmine Rice (55g dry) + Chia (6g) + PB (24g) + Broccoli (75g) + Windsor Iodized Salt (1.5g):** Covers 100% of your Omega-3 ALA, thyroid iodine, Vitamin C, and iron absorption for ~$2.65/day.`;
       }
       if (q.includes('pull-up') || q.includes('pullup') || q.includes('usmc') || q.includes('plateau')) {
-        return `**💪 Gemini 3.8 USMC Pull-Up Progression Tip (Training Set: ${ctx.pullupTrainingSetReps} reps):**\n` +
+        return `**💪 Coach AI USMC Pull-Up Progression Tip (Training Set: ${ctx.pullupTrainingSetReps} reps):**\n` +
           `• **Biomechanics Cue:** Depress your shoulder blades ("put your lats in your back pockets") *before* bending your elbows, and drive your elbows down toward your hips.\n` +
           `• **Plateau Buster:** Always perform Pull-Ups as **Exercise #1** when your nervous system is 100% fresh. Once you complete all 9 sets of ${ctx.pullupTrainingSetReps} reps on Day 3, bump your Training Set to **${ctx.pullupTrainingSetReps + 1} reps** on Day 4!`;
       }
-      return `**✨ Gemini 3.8 Coach (Hi ${ctx.userName} • Goal: ${ctx.goal}):**\n` +
+      return `**✨ Coach AI (Hi ${ctx.userName} • Goal: ${ctx.goal}):**\n` +
         `• **Today's Focus (${ctx.dayTitle}):** You have ${ctx.exercisesToday.length} exercises scheduled around your **${ctx.gymTime.split(' (')[0]}** session.\n` +
         `• **Key Action:** Focus on controlled 2–3 second eccentrics, use the **Barbell Plate Builder** above Set 1 to lock in your working weight, and log your final set to auto-sync your post-workout meal time!`;
     }
@@ -5535,7 +5542,7 @@
         state.geminiChatHistory = [
           {
             role: 'assistant',
-            text: `👋 Hi **${ctx.userName}**! I'm your **Gemini 3.8 Flash** Gym & Budget Nutrition Coach. I'm synced with **Week ${ctx.week} (${ctx.dayTitle})**, your **3-Box Barbell Calculator**, and your **~$5.55/day (138g P)** meal plan. Tap a quick chip above or ask me anything!`
+            text: `👋 Hi **${ctx.userName}**! I'm **Coach AI**, your Personal Gym & Budget Nutrition Coach. I'm synced with **Week ${ctx.week} (${ctx.dayTitle})**, your **3-Box Barbell Calculator**, and your **~$5.55/day (138g P)** meal plan. Tap a quick chip above or ask me anything!`
           }
         ];
       }
@@ -5567,7 +5574,7 @@
       if (!cleanPrompt) return;
       if (!Array.isArray(state.geminiChatHistory)) state.geminiChatHistory = [];
       state.geminiChatHistory.push({ role: 'user', text: cleanPrompt });
-      state.geminiChatHistory.push({ role: 'assistant', text: '⏳ *Gemini 3.8 Flash is analyzing your workout & nutrition state...*' });
+      state.geminiChatHistory.push({ role: 'assistant', text: '⏳ *Coach AI is analyzing your workout & nutrition state...*' });
       renderGeminiChatMessages();
 
       const ctx = buildLiveUserContextSummary();
@@ -6139,7 +6146,7 @@
             authProvider: 'smart_email'
           });
           if (smartLoginModal) smartLoginModal.classList.add('hidden');
-          showToast(`🎉 Welcome, ${nameVal}! Profile saved & Gemini 3.8 Coach unlocked.`);
+          showToast(`🎉 Welcome, ${nameVal}! Profile saved & Coach AI unlocked.`);
         });
       }
 
@@ -6483,6 +6490,14 @@
       renderUSMCView();
       renderVeganView();
       renderShoppingView();
+
+      // Mandatory Smart Login Gate (Guests Not Available — Requires 1-Time Smart Sign-In)
+      if (!state.userProfile || !state.userProfile.email) {
+        const loginModal = document.getElementById('smart-login-modal');
+        const closeBtn = document.getElementById('close-smart-login-btn');
+        if (closeBtn) closeBtn.classList.add('hidden');
+        if (loginModal) loginModal.classList.remove('hidden');
+      }
       if (getActiveCloudEndpoint()) {
         pullStateFromCloud();
       }
@@ -6532,22 +6547,19 @@
   </div>
 
 
-  <!-- Floating Bottom-Right Gemini 3.8 AI Coach Quick Button -->
-  <button id="fab-gemini-ai-btn" type="button" class="fixed bottom-20 right-3.5 z-40 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-full shadow-xl shadow-purple-950/80 border border-purple-400/40 flex items-center gap-1.5 transition">
-    <span>✨</span>
-    <span>Ask Gemini 3.8</span>
-  </button>
+  <!-- Hidden legacy FAB ID preserved for DOM compatibility; Coach AI is accessed cleanly from the top header & HUD without blocking cards -->
+  <button id="fab-gemini-ai-btn" type="button" class="hidden">✨ Coach AI</button>
 
   <!-- Neuromarketing Smart Login & Progressive Lead Data Capture Modal -->
   <div id="smart-login-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-md w-full p-4 space-y-3.5 shadow-2xl max-h-[92vh] overflow-y-auto">
       <div class="flex items-start justify-between border-b border-slate-800 pb-2.5">
         <div>
-          <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">⚡ Smart Passwordless Login</span>
-          <h3 class="text-sm sm:text-base font-extrabold text-white mt-1" id="smart-login-modal-title">Save Your Streak, Grocery Savings &amp; AI Coach</h3>
-          <p class="text-[11px] text-slate-300 mt-0.5" id="smart-login-modal-sub">Zero passwords to remember at 7:00 AM. Your current workout logs &amp; barbell settings link automatically.</p>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">🔐 Smart Passwordless Login (Required)</span>
+          <h3 class="text-sm sm:text-base font-extrabold text-white mt-1" id="smart-login-modal-title">Sign In to Access Your Gym &amp; Coach AI Hub</h3>
+          <p class="text-[11px] text-slate-300 mt-0.5" id="smart-login-modal-sub">One-time smart sign-in (no guest mode, no passwords to remember at 7:00 AM). Keeps your sets, barbell math &amp; Coach AI synced to your profile.</p>
         </div>
-        <button type="button" id="close-smart-login-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
+        <button type="button" id="close-smart-login-btn" class="hidden px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
       </div>
 
       <!-- 1-Tap Google Smart Sign-In Button -->
@@ -6598,7 +6610,7 @@
       </div>
 
       <button type="button" id="submit-smart-login-btn" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition">
-        🚀 Save My Profile &amp; Unlock Gemini 3.8 Coach
+        🚀 Sign In &amp; Unlock Coach AI
       </button>
 
       <!-- Admin / App Owner Lead Export Drawer -->
@@ -6628,14 +6640,12 @@
       <div class="flex items-start justify-between border-b border-slate-800 pb-2.5 shrink-0">
         <div>
           <div class="flex items-center gap-1.5">
-            <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-400/30">✨ Google AI Studio Agent</span>
-            <select id="gemini-model-select" aria-label="Select Gemini Model" class="bg-slate-950 border border-purple-500/40 text-purple-200 text-[10px] font-extrabold rounded-lg px-1.5 py-0.5 focus:outline-none">
-              <option value="gemini-3.8-flash">gemini-3.8-flash (Default)</option>
-              <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
-              <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+            <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-400/30">✨ Personal Fitness &amp; Nutrition Intelligence</span>
+            <select id="gemini-model-select" aria-label="Select Coach AI Mode" class="hidden">
+              <option value="gemini-3.8-flash" selected>Coach AI</option>
             </select>
           </div>
-          <h3 class="text-sm font-extrabold text-white mt-1">Gemini 3.8 Personal Gym &amp; Budget Coach</h3>
+          <h3 class="text-sm font-extrabold text-white mt-1">Coach AI — Personal Gym &amp; Budget Nutritionist</h3>
           <p class="text-[10px] text-slate-400" id="gemini-context-status">Synced with your live Week, Barbell Plates, Gym Time &amp; 138g P Meals</p>
         </div>
         <button type="button" id="close-gemini-ai-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
@@ -6659,7 +6669,7 @@
 
       <!-- Input Row -->
       <div class="flex items-center gap-2 shrink-0">
-        <input id="gemini-user-input" type="text" placeholder="Ask Gemini 3.8 about weights, form, or budget meals..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400" />
+        <input id="gemini-user-input" type="text" placeholder="Ask Coach AI about weights, form, or budget meals..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400" />
         <button type="button" id="gemini-send-btn" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white text-xs font-extrabold shrink-0 transition">
           Send
         </button>
