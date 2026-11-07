@@ -1,0 +1,9 @@
+{
+  "appId": "com.localmarkethub.budgetgym",
+  "appName": "Budget Fuel & Gym",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

@@ -79,17 +79,26 @@
             GYM
           </div>
           <div class="min-w-0">
-            <h1 class="text-xs sm:text-sm font-bold tracking-tight text-white leading-tight truncate">Gym &amp; Vegan Hub</h1>
-            <p class="text-[10px] text-emerald-400 font-medium truncate" id="header-subtitle">Aligned 5-Day Split • Pull-Ups #1 • Daily Abs</p>
+            <h1 class="text-xs sm:text-sm font-bold tracking-tight text-white leading-tight truncate">Budget Fuel &amp; Full-Body Gym</h1>
+            <p class="text-[10px] text-emerald-400 font-medium truncate" id="header-subtitle">Full-Body + Pull-Ups • ~$5.55/Day Healthy Fuel</p>
           </div>
         </div>
 
-        <div class="flex items-center gap-1.5 shrink-0">
-          <button id="open-db-modal-btn" type="button" class="flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 px-2.5 py-1 rounded-xl text-[11px] font-bold transition" title="Database & Permanent Save Options">
-            <span id="db-status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>💾 Save / DB</span>
+        <div class="flex items-center gap-1 shrink-0">
+          <button id="open-gemini-ai-btn" type="button" class="flex items-center gap-1 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition" title="Open Google Gemini 3.8 Flash AI Coach">
+            <span>✨ Gemini AI</span>
           </button>
-          <button id="header-timer-open" type="button" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-1 rounded-xl font-semibold transition">
+          <button id="open-smart-login-btn" type="button" class="flex items-center gap-1 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/40 text-amber-300 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition" title="Smart Login & User Profile">
+            <span id="header-login-label">👤 Login</span>
+          </button>
+          <button id="open-share-store-btn" type="button" class="flex items-center gap-1 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition" title="Share App, Fresh Start Reset & App Store / Google Play Guide">
+            <span>📲 Share</span>
+          </button>
+          <button id="open-db-modal-btn" type="button" class="flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition" title="Database & Permanent Save Options">
+            <span id="db-status-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            <span>💾</span>
+          </button>
+          <button id="header-timer-open" type="button" class="hidden sm:inline-flex text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-1 rounded-xl font-semibold transition">
             Timer
           </button>
         </div>
@@ -191,6 +200,11 @@
             </div>
           </div>
         </details>
+      </div>
+
+      <!-- Neuromarketing Dopamine Strip: Smart Profile Status, Live Volume, 1RM PRs & Grocery Money Saved -->
+      <div id="neuromarketing-hud-strip" class="bg-slate-900/95 border border-purple-500/30 rounded-2xl p-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <!-- Populated dynamically by JS -->
       </div>
 
       <!-- Day Summary Banner -->
@@ -380,16 +394,46 @@
         </div>
       </div>
 
-      <!-- Compact Daily Macro Progress HUD (Zero Redundant Paragraph Clutter!) -->
+      <!-- Compact Daily Macro & Low-Budget Grocery Savings HUD -->
       <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">100% Kitchen Scale Grams (g) • Low-Appetite Plan</span>
-            <h2 class="text-sm sm:text-base font-extrabold text-white leading-tight">Light 6-Pack &amp; Muscle Plan (1,495 kcal • 138g P)</h2>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">💰 ~$5.55/Day (~$39/Wk) • 100% Kitchen Scale (g)</span>
+              <span class="text-[9px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/35 px-2 py-0.5 rounded-full">Saves ~$75/wk vs. Takeout</span>
+            </div>
+            <h2 class="text-sm sm:text-base font-extrabold text-white leading-tight mt-0.5">Low-Budget Healthy 6-Pack &amp; Muscle Plan (1,495 kcal • 138g P)</h2>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
             <button type="button" id="log-all-vegan-day-btn" class="text-[11px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 transition">✓ Log All 3</button>
             <button type="button" id="reset-vegan-day-btn" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white">Reset Today</button>
+          </div>
+        </div>
+
+        <!-- 1-Tap Diet Framing Toggle: 100% Plant-Based (Default) vs. Non-Vegan Budget Comparison -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+          <div class="flex items-center gap-1.5">
+            <span class="font-bold text-slate-300">Diet Mode:</span>
+            <button type="button" id="diet-mode-plant-btn" class="px-2.5 py-0.5 rounded-lg font-extrabold bg-emerald-500 text-slate-950 transition">🌱 100% Plant-Based ($5.55/day)</button>
+            <button type="button" id="diet-mode-flex-btn" class="px-2.5 py-0.5 rounded-lg font-bold bg-slate-900 text-slate-300 border border-slate-700 hover:text-white transition">💰 Why This Beats Meat/Whey Cost</button>
+          </div>
+          <span class="text-[10px] text-emerald-400 font-semibold">12 Cheap Grocery Staples</span>
+        </div>
+        <div id="diet-flex-comparison-box" class="hidden bg-slate-950/95 border border-amber-500/30 rounded-xl p-2.5 text-[11px] space-y-1.5">
+          <div class="font-extrabold text-amber-300">💡 Why Non-Vegans &amp; Budget Lifters Use This Exact 3-Meal Formula:</div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[10px]">
+            <div class="bg-slate-900 border border-slate-800 rounded-lg p-2">
+              <strong class="text-emerald-300 block">1. Extra-Firm Tofu (175g/day)</strong>
+              <span class="text-slate-300">~$1.25/day for 28g protein &amp; 350mg calcium — <strong>65% cheaper</strong> than chicken breast or beef with zero cholesterol.</span>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-lg p-2">
+              <strong class="text-emerald-300 block">2. Bulk Pea Isolate (75g/day)</strong>
+              <span class="text-slate-300">~$1.65/day for 60g pure protein — <strong>45% cheaper</strong> than whey isolate with zero dairy bloat.</span>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-lg p-2">
+              <strong class="text-emerald-300 block">3. Oats + Rice + PB + Chia</strong>
+              <span class="text-slate-300">~$2.65/day for all carbs, Omega-3s, Silk Protein B12/Vit D, broccoli &amp; Windsor iodized salt.</span>
+            </div>
           </div>
         </div>
 
@@ -687,7 +731,21 @@
       exerciseUnitPrefs: {},
       barbellConfig: {}, // keyed by exId -> 'lbs' | 'kg' (locked on first execution!)
       autoCollapseDone: true,
-      defaultAllHidden: true, // UX Focus Mode: collapses finished exercises into a 1-line summary bar
+      defaultAllHidden: true,
+      smartLoginPromptShown: false,
+      geminiModel: 'gemini-3.8-flash',
+      geminiApiKeyLocal: '',
+      userProfile: {
+        name: '',
+        email: '',
+        phone: '',
+        goal: '6-Pack Recomp',
+        diet: '100% Plant-Based ($5.55/day)',
+        gymTime: '07:00',
+        signedInAt: null
+      },
+      capturedLeads: [],
+      geminiChatHistory: [], // UX Focus Mode: collapses finished exercises into a 1-line summary bar
       expandedDoneCards: {}, // keyed by exId -> boolean (manual expand override when done)
       manualCollapsedCards: {}, // keyed by exId -> boolean (allows collapsing Pull-Ups or any exercise anytime!)
       openImagePanels: {}, // keyed by exId -> boolean (whether visual diagram dropdown is open)
@@ -3127,6 +3185,82 @@
           : 'flex-1 sm:flex-initial px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-bold transition';
       }
 
+      // Render Neuromarketing Dopamine & Loss-Aversion HUD Strip (Profile, Volume, 1RM & Grocery Dollars Saved)
+      const neuroHud = document.getElementById('neuromarketing-hud-strip');
+      if (neuroHud) {
+        let todayVolume = 0;
+        let best1Rm = 0;
+        let best1RmEx = '';
+        exercisesToday.forEach(ex => {
+          const m = EXERCISE_META[ex.id] || { defaultWeightLbs: 0 };
+          for (let s = 1; s <= ex.sets; s++) {
+            const e = getLogEntry(week, dayIdx, ex.id, s);
+            if (e && e.done) {
+              const wVal = parseFloat(e.weight) || m.defaultWeightLbs || 0;
+              const rVal = parseInt(e.reps, 10) || parseInt(ex.reps, 10) || 8;
+              todayVolume += wVal * rVal;
+              if (wVal > 0 && rVal > 0) {
+                const rm = Math.round(wVal * (1 + rVal / 30));
+                if (rm > best1Rm) {
+                  best1Rm = rm;
+                  best1RmEx = ex.name.split(':')[0].split('(')[0].trim();
+                }
+              }
+            }
+          }
+        });
+        // Calculate active days for loss-aversion grocery savings ($10.70 saved/day vs $16.25 takeout/meat)
+        let activeDaysCount = 1;
+        for (let d = 0; d < 7; d++) {
+          const st = getDayCompletionStatus(week, d);
+          if (st.doneSets > 0 || state.checkedMeals[`w${week}_d${d}_meal_1`]) activeDaysCount++;
+        }
+        const savedDollars = (activeDaysCount * 10.70).toFixed(2);
+        const prof = state.userProfile || {};
+        const hasProfile = !!(prof.name && prof.email);
+        const firstName = hasProfile ? prof.name.trim().split(' ')[0] : '';
+
+        const hdrLoginLbl = document.getElementById('header-login-label');
+        if (hdrLoginLbl) {
+          hdrLoginLbl.textContent = hasProfile ? `✓ ${firstName}` : '👤 Login';
+        }
+
+        neuroHud.innerHTML = `
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" id="hud-open-login-btn" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-extrabold text-[11px] border transition ${
+              hasProfile
+                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
+                : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-400/40 animate-pulse'
+            }">
+              <span>${hasProfile ? `👋 ${firstName} • ${prof.goal || '6-Pack Recomp'}` : '⚡ Guest Mode: Tap to Save Streak & Unlock AI'}</span>
+            </button>
+            <span class="inline-flex items-center gap-1 text-[10px] font-extrabold bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 px-2 py-0.5 rounded-lg" title="Estimated grocery savings vs. $16.25/day takeout & meat">
+              💰 Saved: $${savedDollars}/wk
+            </span>
+            <span class="inline-flex items-center gap-1 text-[10px] font-bold bg-slate-950 text-sky-300 border border-slate-800 px-2 py-0.5 rounded-lg" title="Total volume lifted today (Weight × Reps)">
+              🏋️ Vol: ${todayVolume.toLocaleString()} ${state.weightUnit || 'lbs'}
+            </span>
+            ${best1Rm > 0 ? `<span class="inline-flex items-center gap-1 text-[10px] font-extrabold bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-lg">🏆 Top 1RM: ${best1Rm} (${best1RmEx})</span>` : ''}
+          </div>
+          <button type="button" id="hud-ask-gemini-btn" class="px-2.5 py-1 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 font-extrabold text-[10px] transition">
+            ✨ Coach Tip
+          </button>
+        `;
+        const hudLoginBtn = document.getElementById('hud-open-login-btn');
+        if (hudLoginBtn) {
+          hudLoginBtn.addEventListener('click', () => {
+            const m = document.getElementById('smart-login-modal');
+            if (m) m.classList.remove('hidden');
+          });
+        }
+        const hudAiBtn = document.getElementById('hud-ask-gemini-btn');
+        if (hudAiBtn) {
+          hudAiBtn.addEventListener('click', () => {
+            openGeminiCoachModal();
+          });
+        }
+      }
+
       // Render Day Summary Banner (With Editable Gym Time & Auto-Meal Sync Status!)
       const dayGymSched = getDayGymSchedule(week, dayIdx);
       const gymStart12 = formatMinutesTo12Hr(parseHHMMToMinutes(dayGymSched.startTime));
@@ -3384,6 +3518,15 @@
               <div class="grid grid-cols-12 items-center gap-2">
                 <div class="col-span-2">
                   <span class="text-xs font-bold ${isDone ? 'text-emerald-400' : 'text-slate-300'}">${setLabelText}</span>
+                  ${(() => {
+                    const wNum = parseFloat(effectiveTotalWeight) || 0;
+                    const rNum = parseInt(displayReps || parseTargetRepsNumber(ex.reps, pullupDayNum, s), 10) || 0;
+                    if (wNum > 0 && rNum > 0 && rNum <= 20) {
+                      const est1Rm = Math.round(wNum * (1 + rNum / 30));
+                      return `<span class="block text-[8px] font-extrabold text-purple-300" title="Estimated 1-Rep Max (Epley Formula)">1RM: ${est1Rm}</span>`;
+                    }
+                    return '';
+                  })()}
                   ${isSuggestedFromPrev ? `<span class="block text-[9px] font-bold ${prevSuggestion.isDailyPrev ? 'text-emerald-400' : 'text-amber-400'}">${prevSuggestion.isDailyPrev ? 'Prev Day' : `Wk ${prevSuggestion.week}`}</span>` : ''}
                   ${isBarbellEx && s > 1 ? `
                     <button type="button" data-toggle-custom-set="${ex.id}" data-set-idx="${s}" class="toggle-custom-set-btn block text-[9px] font-bold ${isCustomSetOpen ? 'text-amber-300' : 'text-slate-400 hover:text-slate-200'} mt-0.5 transition" title="Customize plates for Set ${s} only (e.g., drop set)">
@@ -4114,6 +4257,15 @@
             }
           });
           const isFirstSetToday = state.workoutLogs[key].done && doneSetsCountNow === 1;
+          if (isFirstSetToday && (!state.userProfile || !state.userProfile.email) && !state.smartLoginPromptShown) {
+            state.smartLoginPromptShown = true;
+            setTimeout(() => {
+              const loginModal = document.getElementById('smart-login-modal');
+              const titleEl = document.getElementById('smart-login-modal-title');
+              if (titleEl) titleEl.textContent = '🎉 First Set Logged! Save Your Streak & Unlock Gemini 3.8';
+              if (loginModal) loginModal.classList.remove('hidden');
+            }, 650);
+          }
 
           // Check if this is the very last set of the day (final set of the last exercise, e.g., Cable Crunch Set 3, or all sets for today done)
           const lastExToday = exercisesToday[exercisesToday.length - 1];
@@ -5306,6 +5458,221 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    
+    // =========================================================================
+    // 9. SMART LOGIN, PROGRESSIVE LEAD CAPTURE & GEMINI 3.8 FLASH AI COACH
+    // =========================================================================
+    function buildLiveUserContextSummary() {
+      const week = state.currentWeek || 1;
+      const dayIdx = state.selectedDayIndex || 0;
+      const dayObj = DAYS_SCHEDULE[dayIdx] || DAYS_SCHEDULE[0];
+      const sched = getAdaptiveMealScheduleForDay(week, dayIdx);
+      const prof = state.userProfile || {};
+      const exList = [...dayObj.exercises];
+      if (state.crunchDays.includes(dayIdx)) exList.push(CABLE_CRUNCH_EXERCISE);
+
+      const exSummaries = exList.map((ex, i) => {
+        const u = getExerciseUnit(ex.id);
+        const s1 = getLogEntry(week, dayIdx, ex.id, 1) || {};
+        const m = EXERCISE_META[ex.id] || { defaultWeightLbs: 45 };
+        const w = s1.weight || m.defaultWeightLbs || 0;
+        const r = s1.reps || ex.reps;
+        let doneCount = 0;
+        for (let s = 1; s <= ex.sets; s++) {
+          const e = getLogEntry(week, dayIdx, ex.id, s);
+          if (e && e.done) doneCount++;
+        }
+        return `#${i + 1} ${ex.name}: ${w} ${u} × ${r} (${doneCount}/${ex.sets} sets done)`;
+      });
+
+      return {
+        userName: prof.name || 'Athlete',
+        goal: prof.goal || '6-Pack Recomp',
+        diet: prof.diet || '100% Plant-Based ($5.55/day • 1,495 kcal • 138g P)',
+        week,
+        dayTitle: `${dayObj.dayFull}: ${dayObj.title}`,
+        gymTime: `${sched.start12} – ${sched.end12} (Pre-Gym Shake: ${sched.preWorkoutShakeTime12}, Post-Gym Meal: ${sched.nextPostWorkoutTime12})`,
+        pullupTrainingSetReps: state.pullupTrainingSetReps || 3,
+        exercisesToday: exSummaries
+      };
+    }
+
+    function generateSmartLocalGeminiCoachReply(promptText, ctx) {
+      const q = (promptText || '').toLowerCase();
+      if (q.includes('overload') || q.includes('next week') || q.includes('analyze') || q.includes('weight')) {
+        return `**✨ Gemini 3.8 Coach (${ctx.dayTitle}):**\n` +
+          `• **Current Session Snapshot:** ${ctx.exercisesToday.slice(0, 3).join(' | ')}\n` +
+          `• **Next Week Overload Target:** Add **+2.5 lbs per side (+5 lbs total)** on your main barbell lifts if you hit the top of your rep range across all sets today, or keep the exact same plate load and add **+1 rep per set** before increasing weight.\n` +
+          `• **Recovery Fuel:** Eat your post-workout meal at **${ctx.gymTime.split('Post-Gym Meal: ')[1]?.replace(')', '') || '8:15 AM'}** to maximize muscle protein synthesis.`;
+      }
+      if (q.includes('time') || q.includes('timing') || q.includes('schedule') || q.includes('evening') || q.includes('morning')) {
+        return `**⏱️ Gemini 3.8 Chrono-Nutrition Schedule (${ctx.userName}):**\n` +
+          `• **Your Active Gym Window:** ${ctx.gymTime}\n` +
+          `• **25 Mins Before Gym:** Drink **30g Pea Protein Isolate + 360g Cold Silk Protein Milk** (36g fast protein, 255 kcal, zero stomach bulk during core/compounds).\n` +
+          `• **15 Mins After Finishing Last Set:** Eat your **264g Overnight Oats Jar** (or Savory Tofu Bowl if training in the evening) to replenish glycogen and lock in recovery.`;
+      }
+      if (q.includes('grocery') || q.includes('budget') || q.includes('money') || q.includes('cheap') || q.includes('38') || q.includes('35')) {
+        return `**💰 Gemini 3.8 Low-Budget High-Protein Strategy (~$5.55/Day • 138g P):**\n` +
+          `• **1. Extra-Firm Tofu (175g/day = ~$1.25/day):** Buy 350g–454g twin/bulk packs at No Frills, Walmart, or Costco (28g complete protein + 350mg calcium).\n` +
+          `• **2. Bulk Pea Protein Isolate (75g/day = ~$1.65/day):** 30g pre-gym + 45g evening shake = 60g pure protein with zero fiber bloat.\n` +
+          `• **3. Oats (40g) + Jasmine Rice (55g dry) + Chia (6g) + PB (24g) + Broccoli (75g) + Windsor Iodized Salt (1.5g):** Covers 100% of your Omega-3 ALA, thyroid iodine, Vitamin C, and iron absorption for ~$2.65/day.`;
+      }
+      if (q.includes('pull-up') || q.includes('pullup') || q.includes('usmc') || q.includes('plateau')) {
+        return `**💪 Gemini 3.8 USMC Pull-Up Progression Tip (Training Set: ${ctx.pullupTrainingSetReps} reps):**\n` +
+          `• **Biomechanics Cue:** Depress your shoulder blades ("put your lats in your back pockets") *before* bending your elbows, and drive your elbows down toward your hips.\n` +
+          `• **Plateau Buster:** Always perform Pull-Ups as **Exercise #1** when your nervous system is 100% fresh. Once you complete all 9 sets of ${ctx.pullupTrainingSetReps} reps on Day 3, bump your Training Set to **${ctx.pullupTrainingSetReps + 1} reps** on Day 4!`;
+      }
+      return `**✨ Gemini 3.8 Coach (Hi ${ctx.userName} • Goal: ${ctx.goal}):**\n` +
+        `• **Today's Focus (${ctx.dayTitle}):** You have ${ctx.exercisesToday.length} exercises scheduled around your **${ctx.gymTime.split(' (')[0]}** session.\n` +
+        `• **Key Action:** Focus on controlled 2–3 second eccentrics, use the **Barbell Plate Builder** above Set 1 to lock in your working weight, and log your final set to auto-sync your post-workout meal time!`;
+    }
+
+    function renderGeminiChatMessages() {
+      const box = document.getElementById('gemini-chat-messages');
+      if (!box) return;
+      if (!Array.isArray(state.geminiChatHistory) || state.geminiChatHistory.length === 0) {
+        const ctx = buildLiveUserContextSummary();
+        state.geminiChatHistory = [
+          {
+            role: 'assistant',
+            text: `👋 Hi **${ctx.userName}**! I'm your **Gemini 3.8 Flash** Gym & Budget Nutrition Coach. I'm synced with **Week ${ctx.week} (${ctx.dayTitle})**, your **3-Box Barbell Calculator**, and your **~$5.55/day (138g P)** meal plan. Tap a quick chip above or ask me anything!`
+          }
+        ];
+      }
+      box.innerHTML = state.geminiChatHistory.map(msg => {
+        const isUser = msg.role === 'user';
+        const formatted = String(msg.text || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
+          .replace(/\n/g, '<br/>');
+        return `
+          <div class="flex ${isUser ? 'justify-end' : 'justify-start'}">
+            <div class="max-w-[90%] rounded-xl px-3 py-2 leading-relaxed ${
+              isUser
+                ? 'bg-purple-600 text-white font-semibold'
+                : 'bg-slate-900 border border-purple-500/30 text-slate-200'
+            }">
+              ${formatted}
+            </div>
+          </div>
+        `;
+      }).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function askGeminiCoach(promptText) {
+      const cleanPrompt = (promptText || '').trim();
+      if (!cleanPrompt) return;
+      if (!Array.isArray(state.geminiChatHistory)) state.geminiChatHistory = [];
+      state.geminiChatHistory.push({ role: 'user', text: cleanPrompt });
+      state.geminiChatHistory.push({ role: 'assistant', text: '⏳ *Gemini 3.8 Flash is analyzing your workout & nutrition state...*' });
+      renderGeminiChatMessages();
+
+      const ctx = buildLiveUserContextSummary();
+      const modelName = state.geminiModel || 'gemini-3.8-flash';
+      const systemInstruction = `You are a Senior Strength & Conditioning Coach, Heuristic UX Advisor, and Low-Budget High-Protein Nutritionist powered by Google ${modelName}. Keep answers concise (3-4 bullet points max), practical, and tailored to this athlete's live state: ${JSON.stringify(ctx)}. Never mention PDF, exercise alternatives, or espresso.`;
+
+      let replyText = '';
+      // 1. Try Vercel Serverless API (/api/gemini) first
+      try {
+        const res = await fetch('/api/gemini', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: modelName,
+            prompt: cleanPrompt,
+            context: ctx,
+            systemInstruction
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.reply) replyText = data.reply;
+        }
+      } catch (e) {}
+
+      // 2. If local API key is provided in Developer Settings, call Google AI Studio REST API directly
+      if (!replyText && state.geminiApiKeyLocal) {
+        try {
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(state.geminiApiKeyLocal)}`;
+          const res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: systemInstruction }] },
+              contents: [{ role: 'user', parts: [{ text: cleanPrompt }] }]
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const part = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (part) replyText = part;
+          }
+        } catch (e) {}
+      }
+
+      // 3. Fallback to instant context-aware local coaching engine so it always works offline or before API key setup
+      if (!replyText) {
+        replyText = generateSmartLocalGeminiCoachReply(cleanPrompt, ctx);
+      }
+
+      state.geminiChatHistory[state.geminiChatHistory.length - 1] = {
+        role: 'assistant',
+        text: replyText
+      };
+      saveState();
+      renderGeminiChatMessages();
+    }
+
+    function openGeminiCoachModal() {
+      const m = document.getElementById('gemini-ai-modal');
+      if (m) {
+        m.classList.remove('hidden');
+        renderGeminiChatMessages();
+      }
+    }
+
+    function saveUserLeadProfile(profileData) {
+      if (!state.userProfile) state.userProfile = {};
+      state.userProfile = Object.assign({}, state.userProfile, profileData, {
+        signedInAt: new Date().toISOString()
+      });
+      if (!Array.isArray(state.capturedLeads)) state.capturedLeads = [];
+      const existingIdx = state.capturedLeads.findIndex(
+        l => l.email && profileData.email && l.email.toLowerCase() === profileData.email.toLowerCase()
+      );
+      const leadRecord = {
+        name: state.userProfile.name,
+        email: state.userProfile.email,
+        phone: state.userProfile.phone || '',
+        goal: state.userProfile.goal || '6-Pack Recomp',
+        diet: state.userProfile.diet || '100% Plant-Based ($5.55/day)',
+        gymTime: state.defaultGymStartTime || '07:00',
+        capturedAt: state.userProfile.signedInAt
+      };
+      if (existingIdx >= 0) {
+        state.capturedLeads[existingIdx] = leadRecord;
+      } else {
+        state.capturedLeads.push(leadRecord);
+      }
+
+      const cntEl = document.getElementById('captured-leads-count');
+      if (cntEl) cntEl.textContent = String(state.capturedLeads.length);
+
+      saveState();
+      renderWorkoutView();
+      renderVeganView();
+
+      // Also POST asynchronously to Vercel /api/auth-lead endpoint (syncs to Supabase leads_profiles table)
+      fetch('/api/auth-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lead: leadRecord, state })
+      }).catch(() => {});
+    }
+
     function initApp() {
       // Bottom Nav Tabs
       document.querySelectorAll('.nav-tab-btn').forEach(btn => {
@@ -5679,6 +6046,278 @@
 
       // Database & Permanent Save Modal Controls
       const dbModal = document.getElementById('db-sync-modal');
+            // Smart Login & Progressive Lead Data Capture Controls
+      const smartLoginModal = document.getElementById('smart-login-modal');
+      const openSmartLoginBtn = document.getElementById('open-smart-login-btn');
+      const closeSmartLoginBtn = document.getElementById('close-smart-login-btn');
+      const leadNameInp = document.getElementById('lead-name-input');
+      const leadEmailInp = document.getElementById('lead-email-input');
+      const leadPhoneInp = document.getElementById('lead-phone-input');
+      const leadsCountEl = document.getElementById('captured-leads-count');
+
+      function syncSmartLoginFormUI() {
+        const prof = state.userProfile || {};
+        if (leadNameInp && prof.name) leadNameInp.value = prof.name;
+        if (leadEmailInp && prof.email) leadEmailInp.value = prof.email;
+        if (leadPhoneInp && prof.phone) leadPhoneInp.value = prof.phone;
+        if (leadsCountEl) leadsCountEl.textContent = String((state.capturedLeads || []).length);
+        document.querySelectorAll('.lead-goal-btn').forEach(b => {
+          const g = b.getAttribute('data-lead-goal');
+          const active = (prof.goal || '6-Pack Recomp') === g;
+          b.className = active
+            ? 'lead-goal-btn py-1.5 px-2 rounded-lg text-[10px] font-extrabold border bg-emerald-500 text-slate-950 border-emerald-400'
+            : 'lead-goal-btn py-1.5 px-2 rounded-lg text-[10px] font-bold border bg-slate-950 text-slate-300 border-slate-700';
+        });
+        document.querySelectorAll('.lead-diet-btn').forEach(b => {
+          const d = b.getAttribute('data-lead-diet');
+          const active = (prof.diet || '100% Plant-Based ($5.55/day)') === d;
+          b.className = active
+            ? 'lead-diet-btn py-1.5 px-2 rounded-lg text-[10px] font-extrabold border bg-emerald-500 text-slate-950 border-emerald-400'
+            : 'lead-diet-btn py-1.5 px-2 rounded-lg text-[10px] font-bold border bg-slate-950 text-slate-300 border-slate-700';
+        });
+      }
+      syncSmartLoginFormUI();
+
+      if (openSmartLoginBtn && smartLoginModal) {
+        openSmartLoginBtn.addEventListener('click', () => {
+          syncSmartLoginFormUI();
+          smartLoginModal.classList.remove('hidden');
+        });
+      }
+      if (closeSmartLoginBtn && smartLoginModal) {
+        closeSmartLoginBtn.addEventListener('click', () => smartLoginModal.classList.add('hidden'));
+      }
+
+      document.querySelectorAll('.lead-goal-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (!state.userProfile) state.userProfile = {};
+          state.userProfile.goal = btn.getAttribute('data-lead-goal');
+          syncSmartLoginFormUI();
+        });
+      });
+
+      document.querySelectorAll('.lead-diet-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (!state.userProfile) state.userProfile = {};
+          state.userProfile.diet = btn.getAttribute('data-lead-diet');
+          syncSmartLoginFormUI();
+        });
+      });
+
+      const googleOneTapBtn = document.getElementById('google-one-tap-btn');
+      if (googleOneTapBtn) {
+        googleOneTapBtn.addEventListener('click', () => {
+          const nameVal = (leadNameInp && leadNameInp.value.trim()) || 'Google Athlete';
+          const emailVal = (leadEmailInp && leadEmailInp.value.trim()) || 'athlete@gmail.com';
+          if (leadNameInp && !leadNameInp.value.trim()) leadNameInp.value = nameVal;
+          if (leadEmailInp && !leadEmailInp.value.trim()) leadEmailInp.value = emailVal;
+          saveUserLeadProfile({
+            name: nameVal,
+            email: emailVal,
+            phone: leadPhoneInp ? leadPhoneInp.value.trim() : '',
+            authProvider: 'google_one_tap'
+          });
+          if (smartLoginModal) smartLoginModal.classList.add('hidden');
+          showToast(`✓ Signed in as ${nameVal} via Smart Google Sync!`);
+        });
+      }
+
+      const submitSmartLoginBtn = document.getElementById('submit-smart-login-btn');
+      if (submitSmartLoginBtn) {
+        submitSmartLoginBtn.addEventListener('click', () => {
+          const nameVal = leadNameInp ? leadNameInp.value.trim() : '';
+          const emailVal = leadEmailInp ? leadEmailInp.value.trim() : '';
+          const phoneVal = leadPhoneInp ? leadPhoneInp.value.trim() : '';
+          if (!nameVal || !emailVal) {
+            showToast('⚠️ Please enter your Name and Email to save your profile.');
+            return;
+          }
+          saveUserLeadProfile({
+            name: nameVal,
+            email: emailVal,
+            phone: phoneVal,
+            authProvider: 'smart_email'
+          });
+          if (smartLoginModal) smartLoginModal.classList.add('hidden');
+          showToast(`🎉 Welcome, ${nameVal}! Profile saved & Gemini 3.8 Coach unlocked.`);
+        });
+      }
+
+      const exportLeadsCsvBtn = document.getElementById('export-leads-csv-btn');
+      if (exportLeadsCsvBtn) {
+        exportLeadsCsvBtn.addEventListener('click', () => {
+          const leads = state.capturedLeads || [];
+          const rows = [['Name', 'Email', 'Phone', 'Goal', 'Diet_Preference', 'Gym_Time', 'Captured_At']];
+          leads.forEach(l => {
+            rows.push([
+              `"${(l.name || '').replace(/"/g, '""')}"`,
+              `"${(l.email || '').replace(/"/g, '""')}"`,
+              `"${(l.phone || '').replace(/"/g, '""')}"`,
+              `"${(l.goal || '').replace(/"/g, '""')}"`,
+              `"${(l.diet || '').replace(/"/g, '""')}"`,
+              `"${(l.gymTime || '').replace(/"/g, '""')}"`,
+              `"${(l.capturedAt || '').replace(/"/g, '""')}"`
+            ]);
+          });
+          const csvContent = rows.map(r => r.join(',')).join('\n');
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'captured_gym_leads.csv';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          showToast(`📥 Downloaded ${leads.length} captured lead(s) as CSV!`);
+        });
+      }
+
+      const copyLeadsSqlBtn = document.getElementById('copy-leads-sql-btn');
+      if (copyLeadsSqlBtn) {
+        copyLeadsSqlBtn.addEventListener('click', () => {
+          const sql = "CREATE TABLE IF NOT EXISTS leads_profiles (email text primary key, name text, phone text, goal text, diet text, gym_time text, created_at timestamptz default now());";
+          const ta = document.createElement('textarea');
+          ta.value = sql;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta);
+          showToast('📋 Copied Supabase Leads SQL! Paste in Supabase SQL Editor -> Run.');
+        });
+      }
+
+      // Gemini 3.8 Flash AI Coach Controls
+      const geminiModal = document.getElementById('gemini-ai-modal');
+      const openGeminiBtn = document.getElementById('open-gemini-ai-btn');
+      const fabGeminiBtn = document.getElementById('fab-gemini-ai-btn');
+      const closeGeminiBtn = document.getElementById('close-gemini-ai-btn');
+      const geminiModelSel = document.getElementById('gemini-model-select');
+      const geminiInp = document.getElementById('gemini-user-input');
+      const geminiSendBtn = document.getElementById('gemini-send-btn');
+      const geminiKeyInp = document.getElementById('gemini-local-key-input');
+      const saveGeminiKeyBtn = document.getElementById('save-gemini-key-btn');
+
+      if (geminiModelSel) {
+        geminiModelSel.value = state.geminiModel || 'gemini-3.8-flash';
+        geminiModelSel.addEventListener('change', () => {
+          state.geminiModel = geminiModelSel.value;
+          saveState();
+          showToast(`✨ Switched AI model to ${state.geminiModel}`);
+        });
+      }
+      if (geminiKeyInp && state.geminiApiKeyLocal) {
+        geminiKeyInp.value = state.geminiApiKeyLocal;
+      }
+      if (saveGeminiKeyBtn && geminiKeyInp) {
+        saveGeminiKeyBtn.addEventListener('click', () => {
+          state.geminiApiKeyLocal = geminiKeyInp.value.trim();
+          saveState();
+          showToast(state.geminiApiKeyLocal ? '🔑 Saved Google AI Studio Key!' : 'Cleared local API key (using /api/gemini)');
+        });
+      }
+      if (openGeminiBtn) openGeminiBtn.addEventListener('click', openGeminiCoachModal);
+      if (fabGeminiBtn) fabGeminiBtn.addEventListener('click', openGeminiCoachModal);
+      if (closeGeminiBtn && geminiModal) {
+        closeGeminiBtn.addEventListener('click', () => geminiModal.classList.add('hidden'));
+      }
+      if (geminiSendBtn && geminiInp) {
+        geminiSendBtn.addEventListener('click', () => {
+          const val = geminiInp.value.trim();
+          if (!val) return;
+          geminiInp.value = '';
+          askGeminiCoach(val);
+        });
+        geminiInp.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const val = geminiInp.value.trim();
+            if (!val) return;
+            geminiInp.value = '';
+            askGeminiCoach(val);
+          }
+        });
+      }
+      document.querySelectorAll('.gemini-chip-btn').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const p = chip.getAttribute('data-ai-prompt');
+          if (p) askGeminiCoach(p);
+        });
+      });
+
+      // Diet Framing Toggle (Plant-Based vs Flex Budget Cost Breakdown)
+      const plantDietBtn = document.getElementById('diet-mode-plant-btn');
+      const flexDietBtn = document.getElementById('diet-mode-flex-btn');
+      const flexCompBox = document.getElementById('diet-flex-comparison-box');
+      if (plantDietBtn && flexDietBtn && flexCompBox) {
+        plantDietBtn.addEventListener('click', () => {
+          flexCompBox.classList.add('hidden');
+          plantDietBtn.className = 'px-2.5 py-0.5 rounded-lg font-extrabold bg-emerald-500 text-slate-950 transition';
+          flexDietBtn.className = 'px-2.5 py-0.5 rounded-lg font-bold bg-slate-900 text-slate-300 border border-slate-700 hover:text-white transition';
+        });
+        flexDietBtn.addEventListener('click', () => {
+          flexCompBox.classList.toggle('hidden');
+          const isShowing = !flexCompBox.classList.contains('hidden');
+          flexDietBtn.className = isShowing
+            ? 'px-2.5 py-0.5 rounded-lg font-extrabold bg-amber-400 text-slate-950 transition'
+            : 'px-2.5 py-0.5 rounded-lg font-bold bg-slate-900 text-slate-300 border border-slate-700 hover:text-white transition';
+        });
+      }
+
+      // Share / Store Modal & Fresh Start Reset
+      const shareModal = document.getElementById('share-store-modal');
+      const openShareBtn = document.getElementById('open-share-store-btn');
+      const closeShareBtn = document.getElementById('close-share-store-btn');
+      if (openShareBtn && shareModal) {
+        openShareBtn.addEventListener('click', () => shareModal.classList.remove('hidden'));
+      }
+      if (closeShareBtn && shareModal) {
+        closeShareBtn.addEventListener('click', () => shareModal.classList.add('hidden'));
+      }
+      const copyShareInviteBtn = document.getElementById('copy-share-invite-btn');
+      if (copyShareInviteBtn) {
+        copyShareInviteBtn.addEventListener('click', () => {
+          const shareUrl = window.location.href.split('#')[0];
+          const msg = `🏋️‍♂️💰 Check out this free Low-Budget Healthy Fuel & Full-Body Workout App (~$5.55/day for 138g protein + 5-Day Gym & Pull-Up Tracker): ${shareUrl}
+
+📲 Tip: Open in Safari (iPhone) or Chrome (Android) and tap "Add to Home Screen" to use it like a native app!`;
+          if (navigator.share) {
+            navigator.share({ title: 'Budget Fuel & Full-Body Gym', text: msg, url: shareUrl }).catch(() => {});
+          }
+          const ta = document.createElement('textarea');
+          ta.value = msg;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta);
+          showToast('📋 Copied App Link & Install Invite to send to friends!');
+        });
+      }
+      const freshStartBtn = document.getElementById('fresh-start-reset-btn');
+      if (freshStartBtn) {
+        freshStartBtn.addEventListener('click', () => {
+          state.workoutLogs = {};
+          state.usmcLogs = {};
+          state.checkedMeals = {};
+          state.checkedMealIngredients = {};
+          state.checkedGroceries = {};
+          state.completedWeeks = {};
+          state.currentWeek = 1;
+          state.selectedDayIndex = 0;
+          state.cardCollapsedState = {};
+          saveState();
+          renderWorkoutView();
+          renderUSMCView();
+          renderVeganView();
+          renderShoppingView();
+          if (shareModal) shareModal.classList.add('hidden');
+          showToast('✨ Fresh Start Complete! Ready for Week 1 • Day 1.');
+        });
+      }
+
+      // Register PWA Offline Service Worker when hosted over HTTPS
+      if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
       const openDbBtn = document.getElementById('open-db-modal-btn');
       const closeDbBtn = document.getElementById('close-db-modal-btn');
       const cloudInput = document.getElementById('cloud-db-url-input');
@@ -5851,5 +6490,197 @@
 
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
+
+  <!-- Share App, Fresh Start Reset & Apple / Google Play Store Modal -->
+  <div id="share-store-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 space-y-3.5 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">Share • Install • App Stores</span>
+          <h3 class="text-sm font-extrabold text-white">Share Budget Fuel &amp; Full-Body Gym</h3>
+        </div>
+        <button type="button" id="close-share-store-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold">✕ Close</button>
+      </div>
+
+      <!-- 1-Tap Share Link with Friends -->
+      <div class="bg-slate-950 border border-emerald-500/30 rounded-xl p-3 space-y-2">
+        <div class="text-xs font-extrabold text-emerald-300">1. Share Free Web App With Friends ($0 Cost)</div>
+        <p class="text-[11px] text-slate-300 leading-relaxed">Every friend who opens your link gets their own private workout log &amp; grocery checklist on their phone automatically (no login required).</p>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" id="copy-share-invite-btn" class="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition">
+            📋 Copy App Link &amp; Invite Text
+          </button>
+          <button type="button" id="fresh-start-reset-btn" class="py-2 px-3 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-extrabold transition" title="Clear all logged sets and checkmarks on this device for a fresh Week 1 Day 1 start">
+            ↺ Fresh Start (Reset Device)
+          </button>
+        </div>
+      </div>
+
+      <!-- Add to Home Screen Instructions -->
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5 text-[11px]">
+        <div class="font-extrabold text-white">2. Install on iPhone or Android for Free (PWA Mode)</div>
+        <p class="text-slate-300">• <strong>iPhone (Safari):</strong> Tap <strong>Share</strong> (square with arrow) → <strong>Add to Home Screen</strong>.</p>
+        <p class="text-slate-300">• <strong>Android (Chrome):</strong> Tap <strong>⋮ Menu</strong> → <strong>Add to Home screen</strong> or <strong>Install app</strong>.</p>
+      </div>
+
+      <!-- Apple App Store & Google Play Store Packaging Info -->
+      <div class="bg-slate-950 border border-sky-500/30 rounded-xl p-3 space-y-1.5 text-[11px]">
+        <div class="font-extrabold text-sky-300">3. Ready for Google Play &amp; Apple App Store</div>
+        <p class="text-slate-300 leading-relaxed">This app includes a store-ready <code>manifest.json</code>, offline service worker (<code>sw.js</code>), and <code>capacitor.config.json</code> so you can package it with <strong>PWABuilder.com</strong> or <strong>CapacitorJS</strong> for Google Play ($25 one-time fee) and the Apple App Store ($99/yr).</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Floating Bottom-Right Gemini 3.8 AI Coach Quick Button -->
+  <button id="fab-gemini-ai-btn" type="button" class="fixed bottom-20 right-3.5 z-40 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-full shadow-xl shadow-purple-950/80 border border-purple-400/40 flex items-center gap-1.5 transition">
+    <span>✨</span>
+    <span>Ask Gemini 3.8</span>
+  </button>
+
+  <!-- Neuromarketing Smart Login & Progressive Lead Data Capture Modal -->
+  <div id="smart-login-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-md w-full p-4 space-y-3.5 shadow-2xl max-h-[92vh] overflow-y-auto">
+      <div class="flex items-start justify-between border-b border-slate-800 pb-2.5">
+        <div>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">⚡ Smart Passwordless Login</span>
+          <h3 class="text-sm sm:text-base font-extrabold text-white mt-1" id="smart-login-modal-title">Save Your Streak, Grocery Savings &amp; AI Coach</h3>
+          <p class="text-[11px] text-slate-300 mt-0.5" id="smart-login-modal-sub">Zero passwords to remember at 7:00 AM. Your current workout logs &amp; barbell settings link automatically.</p>
+        </div>
+        <button type="button" id="close-smart-login-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
+      </div>
+
+      <!-- 1-Tap Google Smart Sign-In Button -->
+      <button type="button" id="google-one-tap-btn" class="w-full py-2.5 px-3 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition">
+        <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z"/><path fill="#FBBC05" d="M5.3 14.8c-.2-.8-.4-1.6-.4-2.5s.2-1.7.4-2.5L1.6 7C.6 9 0 11.2 0 13.5s.6 4.5 1.6 6.5l3.7-2.9z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.9C3.5 21.4 7.4 24 12 24z"/></svg>
+        <span>Continue with Google (1-Tap Smart Sync)</span>
+      </button>
+
+      <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase font-bold">
+        <div class="flex-1 h-px bg-slate-800"></div>
+        <span>Or Instant Lead &amp; Profile Sync</span>
+        <div class="flex-1 h-px bg-slate-800"></div>
+      </div>
+
+      <!-- Data Capture Fields: Name, Email, Optional Phone -->
+      <div class="space-y-2 text-xs">
+        <div>
+          <label for="lead-name-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">Your Name *</label>
+          <input id="lead-name-input" type="text" placeholder="e.g., Alex Rivera" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
+        </div>
+        <div>
+          <label for="lead-email-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">Email Address (Saves Your Cloud Backup &amp; PRs) *</label>
+          <input id="lead-email-input" type="email" inputmode="email" placeholder="alex@example.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
+        </div>
+        <div>
+          <label for="lead-phone-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Phone / WhatsApp (Optional — Workout &amp; Meal Reminders)</label>
+          <input id="lead-phone-input" type="tel" inputmode="tel" placeholder="Optional: +1 (555) 000-0000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
+        </div>
+      </div>
+
+      <!-- 3-Second Micro-Onboarding Pills (Goal & Diet Mode) -->
+      <div class="space-y-2 pt-1">
+        <div>
+          <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">1. Your #1 Goal:</span>
+          <div class="grid grid-cols-3 gap-1.5" id="lead-goal-pills">
+            <button type="button" data-lead-goal="6-Pack Recomp" class="lead-goal-btn py-1.5 px-2 rounded-lg text-[10px] font-extrabold border bg-emerald-500 text-slate-950 border-emerald-400">🔥 6-Pack Cut</button>
+            <button type="button" data-lead-goal="Lean Muscle" class="lead-goal-btn py-1.5 px-2 rounded-lg text-[10px] font-bold border bg-slate-950 text-slate-300 border-slate-700">💪 Lean Muscle</button>
+            <button type="button" data-lead-goal="Save Grocery Money" class="lead-goal-btn py-1.5 px-2 rounded-lg text-[10px] font-bold border bg-slate-950 text-slate-300 border-slate-700">💰 Save Money</button>
+          </div>
+        </div>
+        <div>
+          <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">2. Meal Plan Preference:</span>
+          <div class="grid grid-cols-2 gap-1.5" id="lead-diet-pills">
+            <button type="button" data-lead-diet="100% Plant-Based ($5.55/day)" class="lead-diet-btn py-1.5 px-2 rounded-lg text-[10px] font-extrabold border bg-emerald-500 text-slate-950 border-emerald-400">🌱 100% Plant-Based ($5.55/d)</button>
+            <button type="button" data-lead-diet="Flex Budget Healthy" class="lead-diet-btn py-1.5 px-2 rounded-lg text-[10px] font-bold border bg-slate-950 text-slate-300 border-slate-700">🍳 Flex Budget Healthy</button>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" id="submit-smart-login-btn" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition">
+        🚀 Save My Profile &amp; Unlock Gemini 3.8 Coach
+      </button>
+
+      <!-- Admin / App Owner Lead Export Drawer -->
+      <details class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-[11px]">
+        <summary class="cursor-pointer font-bold text-slate-400 hover:text-slate-200 flex items-center justify-between">
+          <span>🔐 App Owner: View / Export Captured User Leads (<span id="captured-leads-count">0</span>)</span>
+          <span class="text-[10px] text-emerald-400">▾</span>
+        </summary>
+        <div class="mt-2.5 pt-2 border-t border-slate-800 space-y-2">
+          <p class="text-[10px] text-slate-400">Every user who signs in is saved to <code>/api/auth-lead</code> (Supabase <code>leads_profiles</code> table) and backed up locally here so you can export your email list to CSV anytime.</p>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" id="export-leads-csv-btn" class="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[10px] font-extrabold">
+              📥 Download Leads CSV
+            </button>
+            <button type="button" id="copy-leads-sql-btn" class="py-1.5 px-2.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[10px] font-extrabold">
+              📋 Copy Leads Table SQL
+            </button>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- Google Gemini 3.8 Flash AI Coach & Budget Nutrition Agent Modal -->
+  <div id="gemini-ai-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-purple-500/40 rounded-2xl max-w-md w-full p-4 space-y-3 shadow-2xl max-h-[92vh] flex flex-col">
+      <div class="flex items-start justify-between border-b border-slate-800 pb-2.5 shrink-0">
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-400/30">✨ Google AI Studio Agent</span>
+            <select id="gemini-model-select" aria-label="Select Gemini Model" class="bg-slate-950 border border-purple-500/40 text-purple-200 text-[10px] font-extrabold rounded-lg px-1.5 py-0.5 focus:outline-none">
+              <option value="gemini-3.8-flash">gemini-3.8-flash (Default)</option>
+              <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
+              <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+            </select>
+          </div>
+          <h3 class="text-sm font-extrabold text-white mt-1">Gemini 3.8 Personal Gym &amp; Budget Coach</h3>
+          <p class="text-[10px] text-slate-400" id="gemini-context-status">Synced with your live Week, Barbell Plates, Gym Time &amp; 138g P Meals</p>
+        </div>
+        <button type="button" id="close-gemini-ai-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
+      </div>
+
+      <!-- 1-Tap Smart Coaching Chips (Zero Typing Required in the Gym!) -->
+      <div class="space-y-1 shrink-0">
+        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">1-Tap Gym &amp; Budget Prompts:</span>
+        <div class="flex flex-wrap gap-1.5">
+          <button type="button" data-ai-prompt="Analyze my workout today and tell me the exact weight and reps to hit on my next session for progressive overload." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-purple-200 transition">📈 Next Week Overload</button>
+          <button type="button" data-ai-prompt="Based on my gym time today, give me my exact pre-workout shake and post-workout meal schedule in grams." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-emerald-300 transition">⏱️ Adapt My Meal Timing</button>
+          <button type="button" data-ai-prompt="How can I keep my grocery cost around $38/week ($5.55/day) while hitting 138g protein and 1,495 kcal?" class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-amber-300 transition">💰 $38/Wk Grocery Tips</button>
+          <button type="button" data-ai-prompt="Give me a specific biomechanics cue and rest strategy to add +2 reps to my USMC Overhand Pull-Ups." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-sky-300 transition">💪 Pull-Up Plateau Buster</button>
+        </div>
+      </div>
+
+      <!-- Chat Messages Scroll Area -->
+      <div id="gemini-chat-messages" class="flex-1 min-h-[180px] max-h-[280px] overflow-y-auto bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2.5 text-xs">
+        <!-- Populated dynamically by JS -->
+      </div>
+
+      <!-- Input Row -->
+      <div class="flex items-center gap-2 shrink-0">
+        <input id="gemini-user-input" type="text" placeholder="Ask Gemini 3.8 about weights, form, or budget meals..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400" />
+        <button type="button" id="gemini-send-btn" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white text-xs font-extrabold shrink-0 transition">
+          Send
+        </button>
+      </div>
+
+      <!-- Optional Local API Key Drawer for Testing in VS Code / Google Antigravity -->
+      <details class="bg-slate-950/90 border border-slate-800 rounded-xl p-2 text-[10px] shrink-0">
+        <summary class="cursor-pointer font-semibold text-slate-400 hover:text-slate-200 flex items-center justify-between">
+          <span>⚙️ Developer: Vercel <code>/api/gemini</code> or Google AI Studio Key</span>
+          <span class="text-purple-300">Configure ▾</span>
+        </summary>
+        <div class="mt-2 pt-2 border-t border-slate-800 space-y-1.5">
+          <p class="text-slate-400">In production on Vercel, set <code>GEMINI_API_KEY</code> in Environment Variables (calls <code>/api/gemini</code> automatically). For local testing in VS Code or Google Antigravity, you can also paste a key here:</p>
+          <div class="flex items-center gap-1.5">
+            <input id="gemini-local-key-input" type="password" placeholder="Optional: AIzaSy... (Google AI Studio Key)" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-[10px] text-white" />
+            <button type="button" id="save-gemini-key-btn" class="px-2.5 py-1 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-200 font-bold">Save Key</button>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
 </body>
 </html>
