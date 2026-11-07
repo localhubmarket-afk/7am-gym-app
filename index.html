@@ -79,8 +79,8 @@
             GYM
           </div>
           <div class="min-w-0">
-            <h1 class="text-xs sm:text-sm font-extrabold tracking-tight text-white leading-tight truncate">Budget Gym &amp; Fuel</h1>
-            <p class="text-[10px] text-emerald-400 font-medium truncate" id="header-subtitle">Full-Body • ~$5.55/Day Fuel</p>
+            <h1 class="text-xs sm:text-sm font-extrabold tracking-tight text-white leading-tight">Budget Gym</h1>
+            <p class="text-[9px] sm:text-[10px] text-emerald-400 font-semibold leading-tight" id="header-subtitle">Full-Body • $5.55/d</p>
           </div>
         </div>
 
@@ -111,7 +111,7 @@
             <span id="header-timer-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
             <span id="header-timer-display" class="font-mono text-sm sm:text-base font-extrabold text-emerald-400 tracking-tight">01:30</span>
           </button>
-          <span id="pinned-timer-context" class="text-[11px] font-semibold text-slate-300 truncate">Ready • Tap any set</span>
+          <span id="pinned-timer-context" class="hidden sm:inline text-[11px] font-semibold text-slate-300 truncate">Ready • Tap any set</span>
         </div>
 
         <div class="flex items-center gap-1 shrink-0">
@@ -137,10 +137,10 @@
   </div>
 
   <!-- Main Content Container (Padded for Fixed Top Header + Timer Bar) -->
-  <main class="max-w-xl w-full mx-auto px-4 pt-28 space-y-5 overflow-x-hidden">
+  <main class="max-w-xl w-full mx-auto px-3 sm:px-4 pt-24 space-y-2.5 overflow-x-hidden">
 
     <!-- ==================== VIEW 1: WORKOUT & WEIGHT TRACKER ==================== -->
-    <section id="view-workout" class="space-y-4">
+    <section id="view-workout" class="space-y-2.5">
       <!-- Streamlined 7-Day Cycle & Week Selector Card -->
       <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -214,12 +214,12 @@
 
       <!-- Collapsible Warm-Up Routine Card -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-        <button type="button" id="toggle-warmup-btn" class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-800/50 transition">
-          <div class="flex items-center gap-2.5">
-            <span class="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xs font-bold">🔥</span>
+        <button type="button" id="toggle-warmup-btn" class="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-slate-800/50 transition">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xs font-bold">🔥</span>
             <div>
-              <h2 class="text-xs font-bold text-white uppercase tracking-wider" id="warmup-title">7:00 AM Dynamic Warm-Up (~10 Min)</h2>
-              <p class="text-[11px] text-slate-400" id="warmup-subtitle">Tap to view mobility drills &amp; warm-up sets</p>
+              <h2 class="text-[11px] font-bold text-white uppercase tracking-wider" id="warmup-title">Dynamic Warm-Up (~10 Min)</h2>
+              <p class="hidden sm:block text-[10px] text-slate-400" id="warmup-subtitle">Tap to view mobility drills &amp; warm-up sets</p>
             </div>
           </div>
           <span id="warmup-chevron" class="text-slate-400 text-xs font-bold transition-transform">▼</span>
@@ -745,6 +745,7 @@
         signedInAt: null
       },
       capturedLeads: [],
+      accountsByEmail: {},
       geminiChatHistory: [], // UX Focus Mode: collapses finished exercises into a 1-line summary bar
       expandedDoneCards: {}, // keyed by exId -> boolean (manual expand override when done)
       manualCollapsedCards: {}, // keyed by exId -> boolean (allows collapsing Pull-Ups or any exercise anytime!)
@@ -793,11 +794,12 @@
     let cloudSyncTimeout = null;
 
     function getActiveCloudEndpoint() {
+      const userEmail = (state && state.userProfile && state.userProfile.email) ? state.userProfile.email.trim().toLowerCase() : '';
       if (state.cloudDbUrl && state.cloudDbUrl.trim()) {
         return state.cloudDbUrl.trim();
       }
       if (window.location && window.location.hostname && (window.location.hostname.includes('vercel.app') || window.location.hostname === 'localhost')) {
-        return window.location.origin + '/api/state';
+        return window.location.origin + '/api/state' + (userEmail ? ('?email=' + encodeURIComponent(userEmail)) : '');
       }
       return '';
     }
@@ -811,7 +813,7 @@
         badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300';
       }
       const isFirebase = url.includes('firebaseio.com') || url.endsWith('.json');
-      const isVercelApi = url.endsWith('/api/state');
+      const isVercelApi = url.includes('/api/state');
       fetch(url, {
         method: isFirebase ? 'PUT' : 'POST',
         headers: { 'Content-Type': isVercelApi ? 'application/json' : 'text/plain;charset=utf-8' },
@@ -3217,6 +3219,12 @@
         }
         const savedDollars = (activeDaysCount * 10.70).toFixed(2);
         const prof = state.userProfile || {};
+        if (prof.name && (prof.name.trim().toLowerCase() === 'google athlete' || prof.name.trim().toLowerCase() === 'google')) {
+          const emPart = (prof.email || '').split('@')[0].replace(/[._-]+/g, ' ').trim();
+          prof.name = (emPart && emPart.toLowerCase() !== 'athlete')
+            ? emPart.replace(/\b\w/g, c => c.toUpperCase())
+            : 'Member';
+        }
         const hasProfile = !!(prof.name && prof.email);
         const firstName = hasProfile ? prof.name.trim().split(' ')[0] : '';
 
@@ -3233,22 +3241,16 @@
           }
         }
 
+        neuroHud.className = 'bg-slate-900/95 border border-slate-800 rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-1.5 text-[10px]';
         neuroHud.innerHTML = `
-          <div class="flex flex-wrap items-center gap-2">
-            <button type="button" id="hud-open-login-btn" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-extrabold text-[11px] border transition bg-emerald-500/15 text-emerald-300 border-emerald-500/35">
-              <span>${hasProfile ? `👋 ${firstName} • ${prof.goal || '6-Pack Recomp'}` : '🔐 Member Sign-In Required'}</span>
-            </button>
-            <span class="inline-flex items-center gap-1 text-[10px] font-extrabold bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 px-2 py-0.5 rounded-lg" title="Estimated grocery savings vs. $16.25/day takeout & meat">
-              💰 Saved: $${savedDollars}/wk
-            </span>
-            <span class="inline-flex items-center gap-1 text-[10px] font-bold bg-slate-950 text-sky-300 border border-slate-800 px-2 py-0.5 rounded-lg" title="Total volume lifted today (Weight × Reps)">
-              🏋️ Vol: ${todayVolume.toLocaleString()} ${state.weightUnit || 'lbs'}
-            </span>
-            ${best1Rm > 0 ? `<span class="inline-flex items-center gap-1 text-[10px] font-extrabold bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-lg">🏆 Top 1RM: ${best1Rm} (${best1RmEx})</span>` : ''}
-          </div>
-          <button type="button" id="hud-ask-gemini-btn" class="px-2.5 py-1 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 font-extrabold text-[10px] transition">
-            ✨ Coach Tip
+          <button type="button" id="hud-open-login-btn" class="inline-flex items-center gap-1 font-extrabold text-emerald-300 truncate">
+            <span>${hasProfile ? `👋 ${firstName} (${prof.goal || '6-Pack'})` : '🔐 Sign In'}</span>
           </button>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="font-extrabold text-amber-300 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded-md">💰 -$${savedDollars}/wk</span>
+            <span class="font-bold text-sky-300 bg-slate-950 border border-slate-800 px-1.5 py-0.5 rounded-md">🏋️ ${todayVolume.toLocaleString()} ${state.weightUnit || 'lbs'}</span>
+            ${best1Rm > 0 ? `<span class="font-extrabold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-1.5 py-0.5 rounded-md">🏆 1RM ${best1Rm}</span>` : ''}
+          </div>
         `;
         const hudLoginBtn = document.getElementById('hud-open-login-btn');
         if (hudLoginBtn) {
@@ -3271,70 +3273,58 @@
       const adaptiveMealPreview = getAdaptiveMealScheduleForDay(week, dayIdx);
       const banner = document.getElementById('day-banner');
       if (banner) {
+        banner.className = 'bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3 space-y-2';
         banner.innerHTML = `
           <div class="flex items-start justify-between gap-2">
-            <div>
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">Week ${week} • ${dayObj.dayFull} • ${gymStart12} Gym</span>
-                ${isDayAllDone ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold bg-rose-500/15 text-rose-300 border border-rose-400/30 px-2.5 py-0.5 rounded-full">✓ Day Complete</span>' : ''}
-                ${isDayPartial ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-400/15 text-amber-200 border border-amber-300/30 px-2 py-0.5 rounded-full">● ${todayDoneSets}/${todayTotalSets} Sets</span>` : ''}
-                ${hasCrunchToday ? '<span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">+ Cable Crunch</span>' : ''}
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Wk ${week} • ${dayObj.dayFull} • ${gymStart12}</span>
+                ${isDayAllDone ? '<span class="text-[9px] font-bold bg-rose-500/15 text-rose-300 border border-rose-400/30 px-2 py-0.5 rounded-full">✓ Complete</span>' : ''}
+                ${isDayPartial ? `<span class="text-[9px] font-bold bg-amber-400/15 text-amber-200 border border-amber-300/30 px-2 py-0.5 rounded-full">● ${todayDoneSets}/${todayTotalSets}</span>` : ''}
               </div>
-              <h2 class="text-lg font-extrabold text-white mt-0.5 flex items-center gap-2">
-                <span>${dayObj.title}</span>
-                ${isDayAllDone ? '<span class="text-rose-300/90 text-base leading-none" title="All exercises logged for today">✓</span>' : ''}
-              </h2>
+              <h2 class="text-sm sm:text-base font-extrabold text-white mt-0.5 leading-snug truncate">${dayObj.title}</h2>
             </div>
-            <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-[11px] font-semibold px-2.5 py-1.5 rounded-xl border transition ${
+            <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-[10px] font-bold px-2 py-1 rounded-lg border transition ${
               hasCrunchToday
                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                 : 'bg-slate-800 text-slate-300 border-slate-700'
             }">
-              ${hasCrunchToday ? '✓ Cable Crunch On' : '+ Add Cable Crunch'}
+              ${hasCrunchToday ? '✓ Abs On' : '+ Abs'}
             </button>
           </div>
-          <!-- Live Day Set Progress Bar -->
+
+          <!-- Compact Progress Bar -->
           <div class="space-y-1">
-            <div class="flex items-center justify-between text-[11px]">
-              <span class="font-semibold text-slate-300">Today's Workout Progress: <strong class="text-white">${todayDoneSets} / ${todayTotalSets} sets</strong></span>
+            <div class="flex items-center justify-between text-[10px]">
+              <span class="font-semibold text-slate-300">Progress: <strong class="text-white">${todayDoneSets}/${todayTotalSets} sets</strong></span>
               <span class="font-mono font-bold text-emerald-400">${dayPct}%</span>
             </div>
-            <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+            <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
               <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-300" style="width: ${dayPct}%"></div>
             </div>
           </div>
-          <div class="bg-slate-950/70 border border-slate-800/90 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2">
-            <div class="text-xs text-slate-300 flex-1 min-w-[180px]">
-              <span class="font-bold text-sky-400">Pull-Up Focus:</span> ${dayObj.usmcSummary}
+
+          <!-- Compact 1-Line Gym Time & Meal Sync Bar (Expandable on Tap so Exercises Stay Above the Fold!) -->
+          <div class="flex flex-wrap items-center justify-between gap-1.5 pt-0.5 text-[10px]">
+            <div class="inline-flex items-center bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
+              <span class="px-1.5 py-1 font-extrabold text-emerald-400">⏱️</span>
+              <button type="button" data-banner-step-mins="-15" class="banner-gym-step-btn px-1.5 py-1 font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition">−15m</button>
+              <select id="banner-gym-time-input" aria-label="Select gym time in 15-minute increments" class="bg-slate-950 text-white px-1 py-1 text-[10px] font-extrabold focus:outline-none">
+                ${build15MinGymTimeOptionsHtml(dayGymSched.startTime)}
+              </select>
+              <button type="button" data-banner-step-mins="15" class="banner-gym-step-btn px-1.5 py-1 font-extrabold text-emerald-400 hover:bg-slate-800 transition">+15m</button>
             </div>
-            ${dayObj.usmcDay ? `
-            <div class="flex items-center gap-1.5 shrink-0">
-              <button type="button" id="banner-pullup-timer-btn" data-pullup-sec="${dayObj.usmcDay === 1 ? 90 : 60}" data-pullup-label="USMC Day ${dayObj.usmcDay} Pull-Ups" class="inline-flex items-center gap-1.5 text-[11px] font-extrabold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/35 px-2.5 py-1 rounded-lg transition" title="Start or pause pull-up rest timer">
-                <span class="live-pullup-timer-dot w-2 h-2 rounded-full ${timerRunning ? 'bg-emerald-400 animate-ping' : 'bg-sky-400'} inline-block"></span>
-                <span>⏱️ <span class="live-pullup-timer-readout font-mono">${formatTime(state.timerSeconds)}</span> (${dayObj.usmcDay === 1 ? '90s' : (dayObj.usmcDay === 2 ? '10s×Rep' : '60s')})</span>
+            <div class="flex items-center gap-1">
+              <button type="button" id="banner-open-vegan-fuel-btn" class="font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded-lg transition">
+                🌱 Meal: <strong>${adaptiveMealPreview.nextPostWorkoutTime12}</strong> →
               </button>
-              <button type="button" id="banner-jump-pullups" class="shrink-0 text-[11px] font-bold bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 px-2.5 py-1 rounded-lg transition">Open Day ${dayObj.usmcDay}</button>
-            </div>` : ''}
-          </div>
-          <!-- Gym Time (15-Minute Increments Only!) & Auto-Meal Sync Row -->
-          <div class="bg-slate-950/80 border border-emerald-500/25 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="font-extrabold text-emerald-400">⏱️ Gym Time (15m steps):</span>
-              <button type="button" data-gym-preset="07:00" class="banner-gym-preset-btn px-2 py-0.5 rounded-lg font-bold border transition ${dayGymSched.startTime === '07:00' ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">🌅 7:00 AM</button>
-              <button type="button" data-gym-preset="12:00" class="banner-gym-preset-btn px-2 py-0.5 rounded-lg font-bold border transition ${dayGymSched.startTime === '12:00' ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">☀️ 12:00 PM</button>
-              <button type="button" data-gym-preset="15:15" class="banner-gym-preset-btn px-2 py-0.5 rounded-lg font-bold border transition ${dayGymSched.startTime === '15:15' ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">🕒 3:15 PM</button>
-              <button type="button" data-gym-preset="17:30" class="banner-gym-preset-btn px-2 py-0.5 rounded-lg font-bold border transition ${dayGymSched.startTime === '17:30' ? 'bg-emerald-500 text-slate-950 border-emerald-400' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}">🌆 5:30 PM</button>
-              <div class="inline-flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
-                <button type="button" data-banner-step-mins="-15" class="banner-gym-step-btn px-1.5 py-0.5 text-[10px] font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Earlier by 15 mins">−15m</button>
-                <select id="banner-gym-time-input" aria-label="Select gym time in 15-minute increments" class="bg-slate-900 text-white px-1.5 py-0.5 text-[11px] font-extrabold focus:outline-none">
-                  ${build15MinGymTimeOptionsHtml(dayGymSched.startTime)}
-                </select>
-                <button type="button" data-banner-step-mins="15" class="banner-gym-step-btn px-1.5 py-0.5 text-[10px] font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Later by 15 mins">+15m</button>
-              </div>
+              ${dayObj.usmcDay ? `<button type="button" id="banner-jump-pullups" class="font-bold bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 px-2 py-1 rounded-lg transition">Pull-Ups</button>` : ''}
             </div>
-            <button type="button" id="banner-open-vegan-fuel-btn" class="text-[10px] font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded-lg transition">
-              🌱 Post-Workout Meal: <strong>${adaptiveMealPreview.nextPostWorkoutTime12}</strong> →
-            </button>
+          </div>
+          <!-- Hidden quick preset buttons preserved for DOM/handler compatibility -->
+          <div class="hidden">
+            <button type="button" id="banner-pullup-timer-btn" data-pullup-sec="90"></button>
+            <button type="button" data-gym-preset="07:00" class="banner-gym-preset-btn"></button>
           </div>
         `;
 
@@ -3545,10 +3535,9 @@
                   ${isBarbellEx && barMath ? `
                     <!-- Read-Only Calculated Total Display (Controlled by the Plate Builder above Set 1!) -->
                     <input type="hidden" value="${barMath.total}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" class="workout-input-ro-total" />
-                    <div data-barbell-ro-total="${logKey}" class="flex flex-col items-center justify-center bg-slate-900/95 border border-amber-500/35 rounded-lg py-1 px-2 text-center select-none" title="Read-Only Total = Barbell + Both Sides (Adjust in the Barbell & Plate Builder above Set 1)">
-                      <span class="text-[8px] font-extrabold uppercase tracking-wider text-slate-400">🔒 TOTAL (READ-ONLY)</span>
-                      <span class="text-xs font-extrabold text-amber-300">${barMath.total} ${exUnit} <span class="text-[10px] font-semibold text-sky-300">(≈ ${barMath.totalOther} ${barMath.otherUnit})</span></span>
-                      <span class="text-[9px] font-bold text-emerald-300">${barMath.perSide} ${exUnit}/side • ${barMath.bothSides} ${exUnit} sides</span>
+                    <div data-barbell-ro-total="${logKey}" class="flex flex-col items-center justify-center bg-slate-900/95 border border-amber-500/35 rounded-lg py-1 px-1.5 text-center select-none leading-tight" title="Read-Only Total = Barbell + Both Sides (Adjust in the Barbell & Plate Builder above Set 1)">
+                      <span class="text-xs font-extrabold text-amber-300">🔒 ${barMath.total} ${exUnit}</span>
+                      <span class="text-[9px] font-bold text-emerald-300">${barMath.perSide}/side <span class="text-slate-400">(${barMath.totalOther}${barMath.otherUnit})</span></span>
                     </div>
                   ` : `
                     <div class="flex items-center bg-slate-900 border ${isSuggestedFromPrev && !isDone ? 'border-amber-500/50' : 'border-slate-700'} rounded-lg overflow-hidden">
@@ -3579,20 +3568,20 @@
               ${isBarbellEx && barMath && s > 1 && isCustomSetOpen ? `
               <!-- Optional Per-Set Drop/Custom Plate Override for Set ${s} -->
               <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
-                <div class="bg-slate-900/95 border border-emerald-500/35 rounded-lg px-2 py-1 flex items-center justify-between gap-1.5">
-                  <span class="text-[9px] font-extrabold uppercase text-emerald-300">Set ${s} • 1 Side</span>
-                  <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden w-24">
-                    <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${sideStep}" class="bar3-step-btn px-1.5 py-0.5 text-xs font-extrabold text-slate-400 hover:text-white">−</button>
-                    <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.perSide}" data-bar3-inp="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" class="bar3-input w-full min-w-0 bg-transparent py-0.5 text-center text-xs font-extrabold text-emerald-300 focus:outline-none" />
-                    <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${sideStep}" class="bar3-step-btn px-1.5 py-0.5 text-xs font-extrabold text-emerald-400">+</button>
+                <div class="bg-slate-900/95 border border-emerald-500/35 rounded-lg p-1.5 space-y-1">
+                  <span class="block text-[9px] font-extrabold uppercase text-emerald-300">Set ${s} • 1 Side (${exUnit})</span>
+                  <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden w-full">
+                    <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${sideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-300 hover:text-white">−</button>
+                    <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.perSide}" data-bar3-inp="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-emerald-300 focus:outline-none" />
+                    <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${sideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-emerald-400">+</button>
                   </div>
                 </div>
-                <div class="bg-slate-900/95 border border-sky-500/35 rounded-lg px-2 py-1 flex items-center justify-between gap-1.5">
-                  <span class="text-[9px] font-extrabold uppercase text-sky-300">Set ${s} • Both</span>
-                  <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden w-24">
-                    <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${bothStep}" class="bar3-step-btn px-1.5 py-0.5 text-xs font-extrabold text-slate-400 hover:text-white">−</button>
-                    <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" class="bar3-input w-full min-w-0 bg-transparent py-0.5 text-center text-xs font-extrabold text-sky-300 focus:outline-none" />
-                    <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${bothStep}" class="bar3-step-btn px-1.5 py-0.5 text-xs font-extrabold text-sky-400">+</button>
+                <div class="bg-slate-900/95 border border-sky-500/35 rounded-lg p-1.5 space-y-1">
+                  <span class="block text-[9px] font-extrabold uppercase text-sky-300">Set ${s} • Both Sides (${exUnit})</span>
+                  <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden w-full">
+                    <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${bothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-300 hover:text-white">−</button>
+                    <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-sky-300 focus:outline-none" />
+                    <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${bothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-sky-400">+</button>
                   </div>
                 </div>
               </div>
@@ -3735,31 +3724,31 @@
                   </button>
                 </div>
 
-                <!-- 2 Linked Plate Boxes: [1 SIDE] <-> [BOTH SIDES] (Placed ABOVE Set 1!) -->
+                <!-- 2 Linked Plate Boxes: Stacked Label + Full-Width Stepper for Perfect 360px Phone Ergonomics! -->
                 <div class="grid grid-cols-2 gap-2">
                   <!-- Box 1: 1 Side (Auto-adjusts Both Sides = 2x) -->
-                  <div class="bg-slate-900/95 border border-emerald-500/35 rounded-lg px-2.5 py-1.5 flex items-center justify-between gap-2">
-                    <div class="min-w-0">
-                      <span class="block text-[10px] font-extrabold uppercase tracking-wider text-emerald-300 leading-tight">1 Side (${exUnit})</span>
-                      <span class="block text-[9px] text-slate-400 leading-tight">Auto 2× Sides</span>
+                  <div class="bg-slate-900/95 border border-emerald-500/35 rounded-xl p-2 space-y-1">
+                    <div class="flex items-center justify-between">
+                      <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">1 Side (${exUnit})</span>
+                      <span class="text-[9px] text-slate-400 font-semibold">→ 2× Sides</span>
                     </div>
-                    <div class="flex items-center bg-slate-950 border border-slate-700 rounded-lg overflow-hidden shrink-0 w-28">
-                      <button type="button" data-bar3-step="perSide" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="-${topSideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Decrease 1 side by ${topSideStep}">−</button>
-                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${s1BarMath.perSide}" data-bar3-inp="perSide" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" aria-label="${ex.name} Weight on 1 Side" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-emerald-300 focus:outline-none" />
-                      <button type="button" data-bar3-step="perSide" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="${topSideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Increase 1 side by ${topSideStep}">+</button>
+                    <div class="flex items-center bg-slate-950 border border-slate-700 rounded-lg overflow-hidden w-full">
+                      <button type="button" data-bar3-step="perSide" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="-${topSideStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Decrease 1 side by ${topSideStep}">−</button>
+                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${s1BarMath.perSide}" data-bar3-inp="perSide" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" aria-label="${ex.name} Weight on 1 Side" class="bar3-input w-full min-w-0 bg-transparent py-1.5 text-center text-sm font-extrabold text-emerald-300 focus:outline-none" />
+                      <button type="button" data-bar3-step="perSide" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="${topSideStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Increase 1 side by ${topSideStep}">+</button>
                     </div>
                   </div>
 
                   <!-- Box 2: Total of Both Sides (Auto-adjusts 1 Side = ÷2) -->
-                  <div class="bg-slate-900/95 border border-sky-500/35 rounded-lg px-2.5 py-1.5 flex items-center justify-between gap-2">
-                    <div class="min-w-0">
-                      <span class="block text-[10px] font-extrabold uppercase tracking-wider text-sky-300 leading-tight">Both Sides (${exUnit})</span>
-                      <span class="block text-[9px] text-slate-400 leading-tight">Auto ÷2 Side</span>
+                  <div class="bg-slate-900/95 border border-sky-500/35 rounded-xl p-2 space-y-1">
+                    <div class="flex items-center justify-between">
+                      <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Both Sides (${exUnit})</span>
+                      <span class="text-[9px] text-slate-400 font-semibold">→ ÷2 Side</span>
                     </div>
-                    <div class="flex items-center bg-slate-950 border border-slate-700 rounded-lg overflow-hidden shrink-0 w-28">
-                      <button type="button" data-bar3-step="bothSides" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="-${topBothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Decrease both sides by ${topBothStep}">−</button>
-                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${s1BarMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" aria-label="${ex.name} Total of Both Sides" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-sky-300 focus:outline-none" />
-                      <button type="button" data-bar3-step="bothSides" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="${topBothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-sky-400 hover:bg-slate-800 transition" title="Increase both sides by ${topBothStep}">+</button>
+                    <div class="flex items-center bg-slate-950 border border-slate-700 rounded-lg overflow-hidden w-full">
+                      <button type="button" data-bar3-step="bothSides" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="-${topBothStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Decrease both sides by ${topBothStep}">−</button>
+                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${s1BarMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" aria-label="${ex.name} Total of Both Sides" class="bar3-input w-full min-w-0 bg-transparent py-1.5 text-center text-sm font-extrabold text-sky-300 focus:outline-none" />
+                      <button type="button" data-bar3-step="bothSides" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="${topBothStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-sky-400 hover:bg-slate-800 transition" title="Increase both sides by ${topBothStep}">+</button>
                     </div>
                   </div>
                 </div>
@@ -3851,9 +3840,8 @@
             const roTotalEl = listEl.querySelector(`[data-barbell-ro-total="${k}"]`);
             if (roTotalEl) {
               roTotalEl.innerHTML = `
-                <span class="text-[8px] font-extrabold uppercase tracking-wider text-slate-400">🔒 TOTAL (READ-ONLY)</span>
-                <span class="text-xs font-extrabold text-amber-300">${mathNow.total} ${exUnit} <span class="text-[10px] font-semibold text-sky-300">(≈ ${mathNow.totalOther} ${mathNow.otherUnit})</span></span>
-                <span class="text-[9px] font-bold text-emerald-300">${mathNow.perSide} ${exUnit}/side • ${mathNow.bothSides} ${exUnit} sides</span>
+                <span class="text-xs font-extrabold text-amber-300">🔒 ${mathNow.total} ${exUnit}</span>
+                <span class="text-[9px] font-bold text-emerald-300">${mathNow.perSide}/side <span class="text-slate-400">(${mathNow.totalOther}${mathNow.otherUnit})</span></span>
               `;
             }
 
@@ -5641,18 +5629,87 @@
       }
     }
 
+    function getAccountSnapshotFromCurrentState() {
+      return {
+        workoutLogs: JSON.parse(JSON.stringify(state.workoutLogs || {})),
+        usmcLogs: JSON.parse(JSON.stringify(state.usmcLogs || {})),
+        checkedMeals: JSON.parse(JSON.stringify(state.checkedMeals || {})),
+        checkedMealIngredients: JSON.parse(JSON.stringify(state.checkedMealIngredients || {})),
+        checkedGroceries: JSON.parse(JSON.stringify(state.checkedGroceries || {})),
+        completedWeeks: JSON.parse(JSON.stringify(state.completedWeeks || {})),
+        barbellConfig: JSON.parse(JSON.stringify(state.barbellConfig || {})),
+        exerciseUnitPrefs: JSON.parse(JSON.stringify(state.exerciseUnitPrefs || {})),
+        gymScheduleByDay: JSON.parse(JSON.stringify(state.gymScheduleByDay || {})),
+        currentWeek: state.currentWeek || 1,
+        selectedDayIndex: state.selectedDayIndex || 0,
+        pullupTrainingSetReps: state.pullupTrainingSetReps || 3,
+        geminiChatHistory: JSON.parse(JSON.stringify(state.geminiChatHistory || []))
+      };
+    }
+
+    function applyAccountSnapshotToCurrentState(snap) {
+      const s = snap || {};
+      state.workoutLogs = s.workoutLogs ? JSON.parse(JSON.stringify(s.workoutLogs)) : {};
+      state.usmcLogs = s.usmcLogs ? JSON.parse(JSON.stringify(s.usmcLogs)) : {};
+      state.checkedMeals = s.checkedMeals ? JSON.parse(JSON.stringify(s.checkedMeals)) : {};
+      state.checkedMealIngredients = s.checkedMealIngredients ? JSON.parse(JSON.stringify(s.checkedMealIngredients)) : {};
+      state.checkedGroceries = s.checkedGroceries ? JSON.parse(JSON.stringify(s.checkedGroceries)) : {};
+      state.completedWeeks = s.completedWeeks ? JSON.parse(JSON.stringify(s.completedWeeks)) : {};
+      state.barbellConfig = s.barbellConfig ? JSON.parse(JSON.stringify(s.barbellConfig)) : {};
+      state.exerciseUnitPrefs = s.exerciseUnitPrefs ? JSON.parse(JSON.stringify(s.exerciseUnitPrefs)) : {};
+      state.gymScheduleByDay = s.gymScheduleByDay ? JSON.parse(JSON.stringify(s.gymScheduleByDay)) : {};
+      state.currentWeek = s.currentWeek || 1;
+      state.selectedDayIndex = s.selectedDayIndex || 0;
+      state.pullupTrainingSetReps = s.pullupTrainingSetReps || 3;
+      state.geminiChatHistory = s.geminiChatHistory ? JSON.parse(JSON.stringify(s.geminiChatHistory)) : [];
+      state.cardCollapsedState = {};
+    }
+
     function saveUserLeadProfile(profileData) {
+      if (!state.accountsByEmail) state.accountsByEmail = {};
       if (!state.userProfile) state.userProfile = {};
+
+      const prevEmail = (state.userProfile.email || '').trim().toLowerCase();
+      const nextEmail = (profileData.email || '').trim().toLowerCase();
+
+      // 1. Save previous account's workout/meal snapshot before switching
+      if (prevEmail) {
+        state.accountsByEmail[prevEmail] = {
+          profile: JSON.parse(JSON.stringify(state.userProfile)),
+          snapshot: getAccountSnapshotFromCurrentState()
+        };
+      }
+
+      // 2. If switching to a different email account, either restore that account's saved snapshot or start a fresh account!
+      if (prevEmail && nextEmail && prevEmail !== nextEmail) {
+        if (state.accountsByEmail[nextEmail] && state.accountsByEmail[nextEmail].snapshot) {
+          applyAccountSnapshotToCurrentState(state.accountsByEmail[nextEmail].snapshot);
+        } else {
+          // Brand-new user account on this device -> give them a clean Week 1 Day 1 start!
+          applyAccountSnapshotToCurrentState({});
+        }
+      }
+
       state.userProfile = Object.assign({}, state.userProfile, profileData, {
+        email: nextEmail,
         signedInAt: new Date().toISOString()
       });
+
+      // Save updated snapshot under nextEmail
+      if (nextEmail) {
+        state.accountsByEmail[nextEmail] = {
+          profile: JSON.parse(JSON.stringify(state.userProfile)),
+          snapshot: getAccountSnapshotFromCurrentState()
+        };
+      }
+
       if (!Array.isArray(state.capturedLeads)) state.capturedLeads = [];
       const existingIdx = state.capturedLeads.findIndex(
-        l => l.email && profileData.email && l.email.toLowerCase() === profileData.email.toLowerCase()
+        l => l.email && nextEmail && l.email.toLowerCase() === nextEmail
       );
       const leadRecord = {
         name: state.userProfile.name,
-        email: state.userProfile.email,
+        email: nextEmail,
         phone: state.userProfile.phone || '',
         goal: state.userProfile.goal || '6-Pack Recomp',
         diet: state.userProfile.diet || '100% Plant-Based ($5.55/day)',
@@ -5670,13 +5727,17 @@
 
       saveState();
       renderWorkoutView();
+      renderUSMCView();
       renderVeganView();
+      renderShoppingView();
 
-      // Also POST asynchronously to Vercel /api/auth-lead endpoint (syncs to Supabase leads_profiles table)
+      // Pull or sync per-user state in Supabase (/api/auth-lead & /api/state?email=...)
       fetch('/api/auth-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lead: leadRecord, state })
+      }).then(() => {
+        pullStateFromCloud();
       }).catch(() => {});
     }
 
@@ -6062,12 +6123,86 @@
       const leadPhoneInp = document.getElementById('lead-phone-input');
       const leadsCountEl = document.getElementById('captured-leads-count');
 
+      const activeAcctBox = document.getElementById('active-account-status-box');
+      const activeAcctNameDisp = document.getElementById('active-account-name-disp');
+      const activeAcctEmailDisp = document.getElementById('active-account-email-disp');
+      const savedAcctsListEl = document.getElementById('saved-accounts-switcher-list');
+      const googleChooserDrawer = document.getElementById('google-account-chooser-drawer');
+      const googleChooserSavedList = document.getElementById('google-chooser-saved-list');
+      const signOutNewAcctBtn = document.getElementById('sign-out-new-account-btn');
+
+      // If previous state had a placeholder 'member@gmail.com' or 'athlete@gmail.com', clear it so the user is asked for their real Gmail & Name!
+      if (state.userProfile && (state.userProfile.email === 'member@gmail.com' || state.userProfile.email === 'athlete@gmail.com')) {
+        state.userProfile.email = '';
+        state.userProfile.name = '';
+      }
+
+      function renderSavedAccountButtonsHtml() {
+        const leads = (state.capturedLeads || []).filter(l => l.email && l.email !== 'member@gmail.com' && l.email !== 'athlete@gmail.com');
+        if (leads.length === 0) return '';
+        const curEmail = (state.userProfile && state.userProfile.email || '').toLowerCase();
+        return `<div class="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">Saved Accounts on This Device (Tap to Switch):</div>` +
+          leads.map(l => {
+            const isCur = l.email.toLowerCase() === curEmail;
+            return `
+              <button type="button" data-switch-email="${l.email}" class="switch-account-btn w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-left text-[11px] transition ${
+                isCur
+                  ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-200 font-extrabold'
+                  : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-200 font-semibold'
+              }">
+                <span class="truncate">👤 <strong>${l.name || l.email}</strong> <span class="text-slate-400 text-[10px]">(${l.email})</span></span>
+                <span class="text-[9px] font-extrabold ${isCur ? 'text-emerald-300' : 'text-sky-300'} shrink-0 ml-2">${isCur ? '✓ Active' : 'Switch →'}</span>
+              </button>
+            `;
+          }).join('');
+      }
+
+      function attachSwitchAccountListeners() {
+        document.querySelectorAll('.switch-account-btn').forEach(btn => {
+          btn.onclick = () => {
+            const targetEmail = (btn.getAttribute('data-switch-email') || '').trim().toLowerCase();
+            if (!targetEmail) return;
+            const leadObj = (state.capturedLeads || []).find(l => l.email && l.email.toLowerCase() === targetEmail);
+            if (leadObj) {
+              if (leadNameInp) leadNameInp.value = leadObj.name || '';
+              if (leadEmailInp) leadEmailInp.value = leadObj.email || '';
+              if (leadPhoneInp) leadPhoneInp.value = leadObj.phone || '';
+              saveUserLeadProfile({
+                name: leadObj.name || targetEmail.split('@')[0],
+                email: leadObj.email,
+                phone: leadObj.phone || '',
+                goal: leadObj.goal || '6-Pack Recomp',
+                diet: leadObj.diet || '100% Plant-Based ($5.55/day)'
+              });
+              if (smartLoginModal) smartLoginModal.classList.add('hidden');
+              showToast(`✓ Switched to ${leadObj.name}'s account (${leadObj.email})!`);
+            }
+          };
+        });
+      }
+
       function syncSmartLoginFormUI() {
         const prof = state.userProfile || {};
-        if (leadNameInp && prof.name) leadNameInp.value = prof.name;
-        if (leadEmailInp && prof.email) leadEmailInp.value = prof.email;
-        if (leadPhoneInp && prof.phone) leadPhoneInp.value = prof.phone;
+        const hasRealProfile = !!(prof.name && prof.email);
+        if (leadNameInp) leadNameInp.value = prof.name || '';
+        if (leadEmailInp) leadEmailInp.value = prof.email || '';
+        if (leadPhoneInp) leadPhoneInp.value = prof.phone || '';
         if (leadsCountEl) leadsCountEl.textContent = String((state.capturedLeads || []).length);
+
+        if (activeAcctBox) {
+          if (hasRealProfile) {
+            activeAcctBox.classList.remove('hidden');
+            if (activeAcctNameDisp) activeAcctNameDisp.textContent = `${prof.name} (${prof.goal || '6-Pack Recomp'})`;
+            if (activeAcctEmailDisp) activeAcctEmailDisp.textContent = prof.email;
+          } else {
+            activeAcctBox.classList.add('hidden');
+          }
+        }
+        const savedHtml = renderSavedAccountButtonsHtml();
+        if (savedAcctsListEl) savedAcctsListEl.innerHTML = savedHtml;
+        if (googleChooserSavedList) googleChooserSavedList.innerHTML = savedHtml;
+        attachSwitchAccountListeners();
+
         document.querySelectorAll('.lead-goal-btn').forEach(b => {
           const g = b.getAttribute('data-lead-goal');
           const active = (prof.goal || '6-Pack Recomp') === g;
@@ -6084,6 +6219,49 @@
         });
       }
       syncSmartLoginFormUI();
+
+      // Auto-suggest Name when typing a Gmail/Email address if Name is still empty
+      if (leadEmailInp && leadNameInp) {
+        leadEmailInp.addEventListener('input', () => {
+          const em = leadEmailInp.value.trim();
+          if (em.includes('@') && !leadNameInp.value.trim()) {
+            const handle = em.split('@')[0].replace(/[._0-9-]+/g, ' ').trim();
+            if (handle) {
+              leadNameInp.placeholder = 'e.g., ' + handle.replace(/\b\w/g, c => c.toUpperCase());
+            }
+          }
+        });
+      }
+
+      if (signOutNewAcctBtn) {
+        signOutNewAcctBtn.addEventListener('click', () => {
+          // Save current account snapshot before signing out to create/switch to a new user account
+          if (state.userProfile && state.userProfile.email) {
+            if (!state.accountsByEmail) state.accountsByEmail = {};
+            state.accountsByEmail[state.userProfile.email.toLowerCase()] = {
+              profile: JSON.parse(JSON.stringify(state.userProfile)),
+              snapshot: getAccountSnapshotFromCurrentState()
+            };
+          }
+          state.userProfile = {
+            name: '',
+            email: '',
+            phone: '',
+            goal: '6-Pack Recomp',
+            diet: '100% Plant-Based ($5.55/day)',
+            gymTime: '07:00',
+            signedInAt: null
+          };
+          if (leadNameInp) leadNameInp.value = '';
+          if (leadEmailInp) leadEmailInp.value = '';
+          if (leadPhoneInp) leadPhoneInp.value = '';
+          saveState();
+          syncSmartLoginFormUI();
+          renderWorkoutView();
+          if (leadEmailInp) leadEmailInp.focus();
+          showToast('🔄 Signed out! Enter a new Gmail & Name to create a separate account.');
+        });
+      }
 
       if (openSmartLoginBtn && smartLoginModal) {
         openSmartLoginBtn.addEventListener('click', () => {
@@ -6114,18 +6292,30 @@
       const googleOneTapBtn = document.getElementById('google-one-tap-btn');
       if (googleOneTapBtn) {
         googleOneTapBtn.addEventListener('click', () => {
-          const nameVal = (leadNameInp && leadNameInp.value.trim()) || 'Google Athlete';
-          const emailVal = (leadEmailInp && leadEmailInp.value.trim()) || 'athlete@gmail.com';
-          if (leadNameInp && !leadNameInp.value.trim()) leadNameInp.value = nameVal;
-          if (leadEmailInp && !leadEmailInp.value.trim()) leadEmailInp.value = emailVal;
+          if (googleChooserDrawer) {
+            googleChooserDrawer.classList.remove('hidden');
+          }
+          const rawEmail = leadEmailInp ? leadEmailInp.value.trim() : '';
+          const rawName = leadNameInp ? leadNameInp.value.trim() : '';
+          // If the user has NOT entered their Gmail or Name yet, focus the Email/Name box so they choose which Gmail & Name to use!
+          if (!rawEmail || !rawEmail.includes('@')) {
+            if (leadEmailInp) {
+              leadEmailInp.placeholder = 'your.name@gmail.com';
+              leadEmailInp.focus();
+            }
+            showToast('📧 Enter which Gmail address & Name you want to use below!');
+            return;
+          }
+          const derivedName = rawName || rawEmail.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          if (leadNameInp && !rawName) leadNameInp.value = derivedName;
           saveUserLeadProfile({
-            name: nameVal,
-            email: emailVal,
+            name: derivedName,
+            email: rawEmail,
             phone: leadPhoneInp ? leadPhoneInp.value.trim() : '',
-            authProvider: 'google_one_tap'
+            authProvider: 'google_gmail'
           });
           if (smartLoginModal) smartLoginModal.classList.add('hidden');
-          showToast(`✓ Signed in as ${nameVal} via Smart Google Sync!`);
+          showToast(`✓ Signed in as ${derivedName} (${rawEmail})!`);
         });
       }
 
@@ -6562,15 +6752,40 @@
         <button type="button" id="close-smart-login-btn" class="hidden px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
       </div>
 
-      <!-- 1-Tap Google Smart Sign-In Button -->
+      <!-- Active Signed-In Account Card & Multi-Account Switcher -->
+      <div id="active-account-status-box" class="hidden bg-slate-950 border border-emerald-500/35 rounded-xl p-3 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <span class="block text-[9px] font-extrabold uppercase tracking-wider text-emerald-400">✓ Active Account</span>
+            <div class="text-xs font-extrabold text-white truncate" id="active-account-name-disp">Athlete</div>
+            <div class="text-[10px] text-slate-400 truncate" id="active-account-email-disp">you@gmail.com</div>
+          </div>
+          <button type="button" id="sign-out-new-account-btn" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-[10px] font-extrabold transition">
+            🔄 Sign Out / New Account
+          </button>
+        </div>
+        <div id="saved-accounts-switcher-list" class="space-y-1 pt-1 border-t border-slate-800/80"></div>
+      </div>
+
+      <!-- 1-Tap Google / Gmail Account Chooser Button -->
       <button type="button" id="google-one-tap-btn" class="w-full py-2.5 px-3 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition">
         <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z"/><path fill="#FBBC05" d="M5.3 14.8c-.2-.8-.4-1.6-.4-2.5s.2-1.7.4-2.5L1.6 7C.6 9 0 11.2 0 13.5s.6 4.5 1.6 6.5l3.7-2.9z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.9C3.5 21.4 7.4 24 12 24z"/></svg>
-        <span>Continue with Google (1-Tap Smart Sync)</span>
+        <span>Choose Gmail / Google Account</span>
       </button>
+
+      <!-- Interactive Gmail Account Chooser Drawer -->
+      <div id="google-account-chooser-drawer" class="hidden bg-slate-950 border border-sky-500/40 rounded-xl p-3 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Select or Add Your Gmail Account</span>
+          <span class="text-[9px] text-emerald-400 font-semibold">Separate logs per email</span>
+        </div>
+        <div id="google-chooser-saved-list" class="space-y-1.5"></div>
+        <p class="text-[11px] text-slate-300 leading-snug">Type the <strong>Gmail address</strong> and <strong>Name</strong> you want to use below (your friend can enter their own Gmail for a separate account):</p>
+      </div>
 
       <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase font-bold">
         <div class="flex-1 h-px bg-slate-800"></div>
-        <span>Or Instant Lead &amp; Profile Sync</span>
+        <span>Account Email &amp; Name</span>
         <div class="flex-1 h-px bg-slate-800"></div>
       </div>
 
@@ -6613,24 +6828,7 @@
         🚀 Sign In &amp; Unlock Coach AI
       </button>
 
-      <!-- Admin / App Owner Lead Export Drawer -->
-      <details class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-[11px]">
-        <summary class="cursor-pointer font-bold text-slate-400 hover:text-slate-200 flex items-center justify-between">
-          <span>🔐 App Owner: View / Export Captured User Leads (<span id="captured-leads-count">0</span>)</span>
-          <span class="text-[10px] text-emerald-400">▾</span>
-        </summary>
-        <div class="mt-2.5 pt-2 border-t border-slate-800 space-y-2">
-          <p class="text-[10px] text-slate-400">Every user who signs in is saved to <code>/api/auth-lead</code> (Supabase <code>leads_profiles</code> table) and backed up locally here so you can export your email list to CSV anytime.</p>
-          <div class="flex flex-wrap gap-1.5">
-            <button type="button" id="export-leads-csv-btn" class="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[10px] font-extrabold">
-              📥 Download Leads CSV
-            </button>
-            <button type="button" id="copy-leads-sql-btn" class="py-1.5 px-2.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[10px] font-extrabold">
-              📋 Copy Leads Table SQL
-            </button>
-          </div>
-        </div>
-      </details>
+
     </div>
   </div>
 
@@ -6675,20 +6873,7 @@
         </button>
       </div>
 
-      <!-- Optional Local API Key Drawer for Testing in VS Code / Google Antigravity -->
-      <details class="bg-slate-950/90 border border-slate-800 rounded-xl p-2 text-[10px] shrink-0">
-        <summary class="cursor-pointer font-semibold text-slate-400 hover:text-slate-200 flex items-center justify-between">
-          <span>⚙️ Developer: Vercel <code>/api/gemini</code> or Google AI Studio Key</span>
-          <span class="text-purple-300">Configure ▾</span>
-        </summary>
-        <div class="mt-2 pt-2 border-t border-slate-800 space-y-1.5">
-          <p class="text-slate-400">In production on Vercel, set <code>GEMINI_API_KEY</code> in Environment Variables (calls <code>/api/gemini</code> automatically). For local testing in VS Code or Google Antigravity, you can also paste a key here:</p>
-          <div class="flex items-center gap-1.5">
-            <input id="gemini-local-key-input" type="password" placeholder="Optional: AIzaSy... (Google AI Studio Key)" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-[10px] text-white" />
-            <button type="button" id="save-gemini-key-btn" class="px-2.5 py-1 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-200 font-bold">Save Key</button>
-          </div>
-        </div>
-      </details>
+
     </div>
   </div>
 
