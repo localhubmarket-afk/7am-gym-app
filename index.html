@@ -166,6 +166,9 @@
             <button type="button" id="quick-next-week-btn" class="px-2 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[10px] font-extrabold transition" title="Save this week's weights & advance to next week with all weights pre-filled">
               ✓ Finish Wk → Next
             </button>
+            <button type="button" id="restore-week1-top-btn" class="px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 text-[10px] font-extrabold transition" title="Restore François's Week 1 Logged Weights & Pull-Ups">
+              🔄 Restore Wk 1
+            </button>
             <span class="hidden sm:inline text-[10px] bg-slate-950 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-full font-semibold" id="crunch-weekly-badge">Done / Partial</span>
           </div>
         </div>
@@ -186,9 +189,14 @@
                 <option value="lbs">Default: lbs</option>
                 <option value="kg">Default: kg</option>
               </select>
-              <button type="button" id="finish-week-btn" class="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-extrabold transition">
-                ✓ Finish Week → Next
-              </button>
+              <div class="flex items-center gap-1.5">
+                <button type="button" id="restore-week1-drawer-btn" class="px-2.5 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 text-[11px] font-extrabold transition">
+                  🔄 Restore Week 1 Data
+                </button>
+                <button type="button" id="finish-week-btn" class="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-extrabold transition">
+                  ✓ Next Wk
+                </button>
+              </div>
             </div>
             <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
               <span class="text-slate-400 font-medium">Daily Abs Schedule:</span>
@@ -702,10 +710,14 @@
     const TODAY_DAY_INDEX = (new Date().getDay() + 6) % 7; // 0 = Mon ... 3 = Thu ... 6 = Sun
 
     /*__BAKED_STATE_START__*/
+    const FRANCOIS_WEEK1_SEED_LOGS = {"w1_0_day1_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "0_day1_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_0_day1_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "0_day1_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_0_day1_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "0_day1_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_0_day1_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "0_day1_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_0_day1_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "0_day1_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_1_day2_pullups_1": {"weight": "0", "reps": "1", "done": true, "unit": "lbs"}, "1_day2_pullups_1": {"weight": "0", "reps": "1", "done": true, "unit": "lbs"}, "w1_1_day2_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "1_day2_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_1_day2_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "1_day2_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_1_day2_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "1_day2_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_1_day2_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "1_day2_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_6": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_6": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_7": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_7": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_8": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_8": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_9": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_9": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_3_fri_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "3_fri_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_3_fri_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "3_fri_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_3_fri_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "3_fri_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_3_fri_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "3_fri_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_3_fri_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "3_fri_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_4_day5_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "4_day5_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_4_day5_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "4_day5_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_4_day5_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "4_day5_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_4_day5_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "4_day5_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_4_day5_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "4_day5_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_0_mon_bench_1": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_bench_1": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_bench_2": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_bench_2": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_bench_3": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_bench_3": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_cs_row_1": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_cs_row_1": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_cs_row_2": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_cs_row_2": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_cs_row_3": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_cs_row_3": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_ohp_1": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_ohp_1": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_ohp_2": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_ohp_2": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_ohp_3": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_ohp_3": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_lat_pd_1": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_lat_pd_1": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_lat_pd_2": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_lat_pd_2": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_lat_pd_3": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_lat_pd_3": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_cable_fly_1": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "0_mon_cable_fly_1": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_0_mon_cable_fly_2": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "0_mon_cable_fly_2": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_0_mon_cable_fly_3": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "0_mon_cable_fly_3": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_0_mon_lat_raise_1": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "0_mon_lat_raise_1": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "w1_0_mon_lat_raise_2": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "0_mon_lat_raise_2": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "w1_0_mon_lat_raise_3": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "0_mon_lat_raise_3": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "w1_0_mon_face_pull_1": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_face_pull_1": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_face_pull_2": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_face_pull_2": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "0_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_0_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "0_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_0_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "0_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_squat_1": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "1_tue_squat_1": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "w1_1_tue_squat_2": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "1_tue_squat_2": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "w1_1_tue_squat_3": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "1_tue_squat_3": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "w1_1_tue_rdl_1": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_rdl_1": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_rdl_2": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_rdl_2": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_rdl_3": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_rdl_3": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_leg_ext_1": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_leg_ext_1": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_leg_ext_2": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_leg_ext_2": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_leg_ext_3": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_leg_ext_3": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_lunges_1": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_lunges_1": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_lunges_2": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_lunges_2": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_lunges_3": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_lunges_3": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_calf_1": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_calf_1": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_calf_2": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_calf_2": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_calf_3": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_calf_3": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_side_plank_1": {"weight": "0", "reps": "30", "done": true, "unit": "lbs"}, "1_tue_side_plank_1": {"weight": "0", "reps": "30", "done": true, "unit": "lbs"}, "w1_1_tue_side_plank_2": {"weight": "0", "reps": "30", "done": true, "unit": "lbs"}, "1_tue_side_plank_2": {"weight": "0", "reps": "30", "done": true, "unit": "lbs"}, "w1_1_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "1_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "1_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "1_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_inc_db_1": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_inc_db_1": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_inc_db_2": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_inc_db_2": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_inc_db_3": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_inc_db_3": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_mid_fly_1": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_mid_fly_1": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_mid_fly_2": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_mid_fly_2": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_mid_fly_3": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_mid_fly_3": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_flat_db_1": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_flat_db_1": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_flat_db_2": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_flat_db_2": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_flat_db_3": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_flat_db_3": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_db_lat_1": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "2_thu_db_lat_1": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "w1_2_thu_db_lat_2": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "2_thu_db_lat_2": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "w1_2_thu_db_lat_3": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "2_thu_db_lat_3": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "w1_2_thu_oh_ext_1": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_oh_ext_1": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_oh_ext_2": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_oh_ext_2": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_oh_ext_3": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_oh_ext_3": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_pushdown_1": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_pushdown_1": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_pushdown_2": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_pushdown_2": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_pushdown_3": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_pushdown_3": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "2_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "2_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "2_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_fri_lat_row_1": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_lat_row_1": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_lat_row_2": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_lat_row_2": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_lat_row_3": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_lat_row_3": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_rear_row_1": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "3_fri_rear_row_1": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_fri_rear_row_2": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "3_fri_rear_row_2": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_fri_rear_row_3": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "3_fri_rear_row_3": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_fri_inc_curl_1": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_inc_curl_1": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_inc_curl_2": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_inc_curl_2": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_inc_curl_3": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_inc_curl_3": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_hammer_1": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_hammer_1": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_hammer_2": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_hammer_2": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_hammer_3": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_hammer_3": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_face_pull_1": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_face_pull_1": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_face_pull_2": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_face_pull_2": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "3_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "3_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "3_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_deadlift_1": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "4_sat_deadlift_1": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "w1_4_sat_deadlift_2": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "4_sat_deadlift_2": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "w1_4_sat_deadlift_3": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "4_sat_deadlift_3": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "w1_4_sat_bss_1": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "4_sat_bss_1": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "w1_4_sat_bss_2": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "4_sat_bss_2": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "w1_4_sat_bss_3": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "4_sat_bss_3": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "w1_4_sat_hip_thrust_1": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_hip_thrust_1": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_hip_thrust_2": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_hip_thrust_2": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_hip_thrust_3": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_hip_thrust_3": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_leg_curl_1": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_leg_curl_1": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_leg_curl_2": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_leg_curl_2": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_leg_curl_3": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_leg_curl_3": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_abduction_1": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_abduction_1": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_abduction_2": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_abduction_2": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_abduction_3": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_abduction_3": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_seated_calf_1": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "4_sat_seated_calf_1": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "w1_4_sat_seated_calf_2": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "4_sat_seated_calf_2": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "w1_4_sat_seated_calf_3": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "4_sat_seated_calf_3": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "w1_4_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "4_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "4_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "4_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_5_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "5_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_5_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "5_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_5_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "5_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_6_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "6_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_6_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "6_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_6_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "6_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}};
+    const FRANCOIS_WEEK1_SEED_USMC = {"w1_day_1_set_1": {"reps": "2", "done": true}, "day_1_set_1": {"reps": "2", "done": true}, "w1_day_1_set_2": {"reps": "2", "done": true}, "day_1_set_2": {"reps": "2", "done": true}, "w1_day_1_set_3": {"reps": "2", "done": true}, "day_1_set_3": {"reps": "2", "done": true}, "w1_day_1_set_4": {"reps": "2", "done": true}, "day_1_set_4": {"reps": "2", "done": true}, "w1_day_1_set_5": {"reps": "2", "done": true}, "day_1_set_5": {"reps": "2", "done": true}, "w1_day_2_set_1": {"reps": "1", "done": true}, "day_2_set_1": {"reps": "1", "done": true}, "w1_day_2_set_2": {"reps": "2", "done": true}, "day_2_set_2": {"reps": "2", "done": true}, "w1_day_2_set_3": {"reps": "2", "done": true}, "day_2_set_3": {"reps": "2", "done": true}, "w1_day_2_set_4": {"reps": "2", "done": true}, "day_2_set_4": {"reps": "2", "done": true}, "w1_day_2_set_5": {"reps": "2", "done": true}, "day_2_set_5": {"reps": "2", "done": true}, "w1_day_3_set_1": {"reps": "2", "done": true}, "day_3_set_1": {"reps": "2", "done": true}, "w1_day_3_set_2": {"reps": "2", "done": true}, "day_3_set_2": {"reps": "2", "done": true}, "w1_day_3_set_3": {"reps": "2", "done": true}, "day_3_set_3": {"reps": "2", "done": true}, "w1_day_3_set_4": {"reps": "2", "done": true}, "day_3_set_4": {"reps": "2", "done": true}, "w1_day_3_set_5": {"reps": "2", "done": true}, "day_3_set_5": {"reps": "2", "done": true}, "w1_day_3_set_6": {"reps": "2", "done": true}, "day_3_set_6": {"reps": "2", "done": true}, "w1_day_3_set_7": {"reps": "2", "done": true}, "day_3_set_7": {"reps": "2", "done": true}, "w1_day_3_set_8": {"reps": "2", "done": true}, "day_3_set_8": {"reps": "2", "done": true}, "w1_day_3_set_9": {"reps": "2", "done": true}, "day_3_set_9": {"reps": "2", "done": true}, "w1_day_4_set_1": {"reps": "2", "done": true}, "day_4_set_1": {"reps": "2", "done": true}, "w1_day_4_set_2": {"reps": "2", "done": true}, "day_4_set_2": {"reps": "2", "done": true}, "w1_day_4_set_3": {"reps": "2", "done": true}, "day_4_set_3": {"reps": "2", "done": true}, "w1_day_4_set_4": {"reps": "2", "done": true}, "day_4_set_4": {"reps": "2", "done": true}, "w1_day_4_set_5": {"reps": "2", "done": true}, "day_4_set_5": {"reps": "2", "done": true}, "w1_day_4_set_6": {"reps": "2", "done": true}, "day_4_set_6": {"reps": "2", "done": true}, "w1_day_4_set_7": {"reps": "2", "done": true}, "day_4_set_7": {"reps": "2", "done": true}, "w1_day_4_set_8": {"reps": "2", "done": true}, "day_4_set_8": {"reps": "2", "done": true}, "w1_day_4_set_9": {"reps": "2", "done": true}, "day_4_set_9": {"reps": "2", "done": true}, "w1_day_5_set_1": {"reps": "2", "done": true}, "day_5_set_1": {"reps": "2", "done": true}, "w1_day_5_set_2": {"reps": "2", "done": true}, "day_5_set_2": {"reps": "2", "done": true}, "w1_day_5_set_3": {"reps": "2", "done": true}, "day_5_set_3": {"reps": "2", "done": true}, "w1_day_5_set_4": {"reps": "2", "done": true}, "day_5_set_4": {"reps": "2", "done": true}, "w1_day_5_set_5": {"reps": "2", "done": true}, "day_5_set_5": {"reps": "2", "done": true}};
+    const FRANCOIS_DEFAULT_PROFILE = {"name": "François", "email": "francois@7amgym.app", "phone": "", "goal": "6-Pack Recomp", "diet": "100% Plant-Based ($5.55/day)", "gymTime": "07:00", "signedInAt": "2026-11-01T07:00:00.000Z"};
+
     const DEFAULT_STATE = {
-      selectedDayIndex: TODAY_DAY_INDEX, // Automatically opens on today's day of the week!
+      selectedDayIndex: 0, // Opens directly on Day 1 so Week 1 progress is immediately visible
       weightUnit: 'lbs',
-      crunchDays: [0, 1, 2, 3, 4, 5, 6], // Daily Cable Abdominal Crunch (all 7 days, pre-filled from previous day!)
+      crunchDays: [0, 1, 2, 3, 4, 5, 6],
       pullupTrainingSetReps: 3,
       pullupHardestDay: 1,
       soundEnabled: true,
@@ -722,43 +734,114 @@
         dinner: 0
       },
       checkedMeals: {},
-      checkedMealIngredients: {}, // keyed by `w${w}_d${d}_${slotId}_${ingId}` -> boolean
-      hiddenMealChecklists: {}, // keyed by `${d}_${slotId}` -> boolean (true when Ingredient Scale Checklist is hidden)
-      openMealFormulas: {}, // keyed by `${d}_${slotId}` -> boolean (true when Full Formula & Timing Tip is shown; hidden by default or toggleable!)
-      gymScheduleByDay: {}, // keyed by `w${w}_d${d}` -> { startTime: "07:00", endTime: "08:00", mode: "default"|"manual"|"auto_start"|"auto_end", updatedLabel: "" }
+      checkedMealIngredients: {},
+      hiddenMealChecklists: {},
+      openMealFormulas: {},
+      gymScheduleByDay: {},
       checkedEssentials: {},
       checkedGroceries: {},
       customShoppingItems: [],
       currentWeek: 1,
-      completedWeeks: {}, // keyed by week number -> boolean
+      completedWeeks: { 1: true },
       exerciseUnitPrefs: {},
-      barbellConfig: {}, // keyed by exId -> 'lbs' | 'kg' (locked on first execution!)
+      barbellConfig: {
+        sat_hip_thrust: { barLbs: 45, sideLbs: 55 }
+      },
       autoCollapseDone: true,
       defaultAllHidden: true,
-      smartLoginPromptShown: false,
+      smartLoginPromptShown: true,
+      francoisWeek1RestoredV2: true,
       geminiModel: 'gemini-3.8-flash',
       geminiApiKeyLocal: '',
-      userProfile: {
-        name: '',
-        email: '',
-        phone: '',
-        goal: '6-Pack Recomp',
-        diet: '100% Plant-Based ($5.55/day)',
-        gymTime: '07:00',
-        signedInAt: null
-      },
+      userProfile: JSON.parse(JSON.stringify(FRANCOIS_DEFAULT_PROFILE)),
       capturedLeads: [],
-      accountsByEmail: {},
-      geminiChatHistory: [], // UX Focus Mode: collapses finished exercises into a 1-line summary bar
-      expandedDoneCards: {}, // keyed by exId -> boolean (manual expand override when done)
-      manualCollapsedCards: {}, // keyed by exId -> boolean (allows collapsing Pull-Ups or any exercise anytime!)
-      openImagePanels: {}, // keyed by exId -> boolean (whether visual diagram dropdown is open)
-      convertedExercises: {}, // keyed by exId -> boolean (true only when user switches lbs <-> kg)
-      workoutLogs: {}, // keyed by `w${week}_${dayIdx}_${exId}_${setIdx}` or legacy `${dayIdx}_${exId}_${setIdx}` -> { weight: '', reps: '', done: false, unit: 'lbs'|'kg' }
-      usmcLogs: {}, // keyed by `day_${dayNum}_set_${setIdx}` -> { reps: '', done: false }
+      accountsByEmail: {
+        'francois@7amgym.app': {
+          profile: JSON.parse(JSON.stringify(FRANCOIS_DEFAULT_PROFILE)),
+          workoutLogs: JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_LOGS)),
+          usmcLogs: JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_USMC)),
+          completedWeeks: { 1: true },
+          currentWeek: 1,
+          updatedAt: '2026-11-07T19:25:00.000Z'
+        }
+      },
+      geminiChatHistory: [],
+      expandedDoneCards: {},
+      manualCollapsedCards: {},
+      openImagePanels: {},
+      convertedExercises: {},
+      workoutLogs: JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_LOGS)),
+      usmcLogs: JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_USMC)),
       cloudDbUrl: ''
     };
     /*__BAKED_STATE_END__*/
+
+
+    function ensureFrancoisWeek1Data(target, forceOverwrite) {
+      if (!target || typeof target !== 'object') return target;
+      if (!target.workoutLogs || typeof target.workoutLogs !== 'object') target.workoutLogs = {};
+      if (!target.usmcLogs || typeof target.usmcLogs !== 'object') target.usmcLogs = {};
+      if (!target.completedWeeks || typeof target.completedWeeks !== 'object') target.completedWeeks = {};
+
+      // Ensure François is always the active signed-in profile if empty or generic 'Google'
+      if (!target.userProfile || !target.userProfile.name || target.userProfile.name.trim() === '' || target.userProfile.name.trim().toLowerCase() === 'google' || target.userProfile.name.trim().toLowerCase() === 'google athlete') {
+        target.userProfile = Object.assign({}, JSON.parse(JSON.stringify(FRANCOIS_DEFAULT_PROFILE)), target.userProfile || {}, {
+          name: 'François',
+          email: (target.userProfile && target.userProfile.email) ? target.userProfile.email : 'francois@7amgym.app'
+        });
+      }
+
+      // Check if Week 1 logs are missing (e.g., overwritten by empty localStorage or #state= hash)
+      const hasWeek1Data = Boolean(
+        target.workoutLogs['w1_0_mon_cs_row_1'] &&
+        target.workoutLogs['w1_0_mon_cs_row_1'].done &&
+        target.workoutLogs['w1_0_mon_ohp_1'] &&
+        target.workoutLogs['w1_0_mon_ohp_1'].done
+      );
+
+      if (forceOverwrite || !target.francoisWeek1RestoredV2 || !hasWeek1Data) {
+        Object.keys(FRANCOIS_WEEK1_SEED_LOGS).forEach(k => {
+          const cur = target.workoutLogs[k];
+          if (forceOverwrite || !cur || !cur.done || !cur.weight || cur.weight === '0') {
+            target.workoutLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_LOGS[k]));
+          }
+        });
+        Object.keys(FRANCOIS_WEEK1_SEED_USMC).forEach(k => {
+          const cur = target.usmcLogs[k];
+          if (forceOverwrite || !cur || !cur.done) {
+            target.usmcLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_USMC[k]));
+          }
+        });
+        target.completedWeeks[1] = true;
+        target.francoisWeek1RestoredV2 = true;
+      }
+
+      // Also keep accountsByEmail synced with Week 1 logs
+      if (!target.accountsByEmail || typeof target.accountsByEmail !== 'object') {
+        target.accountsByEmail = {};
+      }
+      const activeEmail = (target.userProfile && target.userProfile.email) ? target.userProfile.email.trim().toLowerCase() : 'francois@7amgym.app';
+      if (!target.accountsByEmail[activeEmail]) {
+        target.accountsByEmail[activeEmail] = {
+          profile: JSON.parse(JSON.stringify(target.userProfile)),
+          workoutLogs: {},
+          usmcLogs: {},
+          completedWeeks: { 1: true },
+          currentWeek: target.currentWeek || 1
+        };
+      }
+      Object.keys(FRANCOIS_WEEK1_SEED_LOGS).forEach(k => {
+        if (!target.accountsByEmail[activeEmail].workoutLogs[k] || !target.accountsByEmail[activeEmail].workoutLogs[k].done) {
+          target.accountsByEmail[activeEmail].workoutLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_LOGS[k]));
+        }
+      });
+      Object.keys(FRANCOIS_WEEK1_SEED_USMC).forEach(k => {
+        if (!target.accountsByEmail[activeEmail].usmcLogs[k] || !target.accountsByEmail[activeEmail].usmcLogs[k].done) {
+          target.accountsByEmail[activeEmail].usmcLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_USMC[k]));
+        }
+      });
+      return target;
+    }
 
     function loadState() {
       const base = JSON.parse(JSON.stringify(DEFAULT_STATE));
@@ -788,6 +871,7 @@
         } catch (e) {}
       }
       const merged = Object.assign({}, base, loaded || {});
+      ensureFrancoisWeek1Data(merged, false);
       // Always start with all Setup & Image panels hidden so no exercise ever gets stuck open
       merged.openImagePanels = {};
       if (!merged.cardCollapsedState) merged.cardCollapsedState = {};
@@ -878,6 +962,7 @@
             }
             // Merge local sets and remote sets so neither is ever lost
             mergeWorkoutSnapshotsIntoCurrentState({ workoutLogs: localWorkoutLogs, usmcLogs: localUsmcLogs });
+            ensureFrancoisWeek1Data(state, false);
 
             saveState(true);
             renderWorkoutView();
@@ -6388,6 +6473,26 @@
             : `✓ Checked device & cloud backups — all existing workout data is linked to your profile!`);
         });
       }
+
+      // Immediately persist restored Week 1 data to localStorage & #state= hash on boot
+      ensureFrancoisWeek1Data(state, false);
+      saveState(false);
+
+      const triggerRestoreWeek1 = () => {
+        ensureFrancoisWeek1Data(state, true);
+        state.currentWeek = 1;
+        state.selectedDayIndex = 0;
+        saveState(false);
+        renderWorkoutView();
+        renderUSMCView();
+        renderVeganView();
+        renderShoppingView();
+        showToast('✅ François Week 1 Data (All 5 Lift Days + Pull-Ups) Restored!');
+      };
+      const restoreTopBtn = document.getElementById('restore-week1-top-btn');
+      if (restoreTopBtn) restoreTopBtn.addEventListener('click', triggerRestoreWeek1);
+      const restoreDrawerBtn = document.getElementById('restore-week1-drawer-btn');
+      if (restoreDrawerBtn) restoreDrawerBtn.addEventListener('click', triggerRestoreWeek1);
 
       const quickNextWeekBtn = document.getElementById('quick-next-week-btn');
       if (quickNextWeekBtn) {
