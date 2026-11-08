@@ -162,8 +162,11 @@
             </select>
             <span id="week-status-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">In Progress</span>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="text-[10px] bg-slate-950 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-full font-semibold" id="crunch-weekly-badge">Done / Partial</span>
+          <div class="flex items-center gap-1.5">
+            <button type="button" id="quick-next-week-btn" class="px-2 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[10px] font-extrabold transition" title="Save this week's weights & advance to next week with all weights pre-filled">
+              ✓ Finish Wk → Next
+            </button>
+            <span class="hidden sm:inline text-[10px] bg-slate-950 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-full font-semibold" id="crunch-weekly-badge">Done / Partial</span>
           </div>
         </div>
 
@@ -5629,6 +5632,89 @@
       }
     }
 
+        function mergeWorkoutSnapshotsIntoCurrentState(sourceSnap) {
+      if (!sourceSnap) return 0;
+      let mergedCount = 0;
+      if (sourceSnap.workoutLogs && typeof sourceSnap.workoutLogs === 'object') {
+        Object.keys(sourceSnap.workoutLogs).forEach(k => {
+          const srcEntry = sourceSnap.workoutLogs[k];
+          const curEntry = state.workoutLogs[k];
+          if (srcEntry && (srcEntry.done || srcEntry.weight || srcEntry.reps)) {
+            if (!curEntry || (!curEntry.done && !curEntry.weight && !curEntry.reps)) {
+              state.workoutLogs[k] = JSON.parse(JSON.stringify(srcEntry));
+              mergedCount++;
+            }
+          }
+        });
+      }
+      if (sourceSnap.usmcLogs && typeof sourceSnap.usmcLogs === 'object') {
+        Object.keys(sourceSnap.usmcLogs).forEach(k => {
+          const srcEntry = sourceSnap.usmcLogs[k];
+          const curEntry = state.usmcLogs[k];
+          if (srcEntry && (srcEntry.done || srcEntry.reps)) {
+            if (!curEntry || (!curEntry.done && !curEntry.reps)) {
+              state.usmcLogs[k] = JSON.parse(JSON.stringify(srcEntry));
+              mergedCount++;
+            }
+          }
+        });
+      }
+      if (sourceSnap.barbellConfig && typeof sourceSnap.barbellConfig === 'object') {
+        state.barbellConfig = Object.assign({}, sourceSnap.barbellConfig, state.workoutLogs ? state.barbellConfig : {});
+      }
+      if (sourceSnap.exerciseUnitPrefs && typeof sourceSnap.exerciseUnitPrefs === 'object') {
+        state.exerciseUnitPrefs = Object.assign({}, sourceSnap.exerciseUnitPrefs, state.exerciseUnitPrefs || {});
+      }
+      return mergedCount;
+    }
+
+    function claimAllPreviousLocalAndCloudDataIntoProfile() {
+      let totalRecovered = 0;
+      if (state.accountsByEmail && typeof state.accountsByEmail === 'object') {
+        Object.keys(state.accountsByEmail).forEach(em => {
+          const acct = state.accountsByEmail[em];
+          if (acct && acct.snapshot) {
+            totalRecovered += mergeWorkoutSnapshotsIntoCurrentState(acct.snapshot);
+          }
+        });
+      }
+      // Also pull from '/api/state?email=default' in case last week's data was saved in the 'default' cloud row before profiles were added!
+      if (window.location && window.location.hostname && (window.location.hostname.includes('vercel.app') || window.location.hostname === 'localhost')) {
+        fetch(window.location.origin + '/api/state?email=default')
+          .then(r => r.json())
+          .then(res => {
+            const remote = (res && res.configured && res.data) ? res.data : null;
+            if (remote && (remote.workoutLogs || remote.usmcLogs)) {
+              const cloudRecovered = mergeWorkoutSnapshotsIntoCurrentState(remote);
+              if (cloudRecovered > 0) {
+                if (state.userProfile && state.userProfile.email) {
+                  state.accountsByEmail[state.userProfile.email.toLowerCase()] = {
+                    profile: JSON.parse(JSON.stringify(state.userProfile)),
+                    snapshot: getAccountSnapshotFromCurrentState()
+                  };
+                }
+                saveState();
+                renderWorkoutView();
+                renderUSMCView();
+                showToast(`☁️ Recovered ${cloudRecovered} logged set(s) from last week's cloud backup into your profile!`);
+              }
+            }
+          })
+          .catch(() => {});
+      }
+      if (state.userProfile && state.userProfile.email) {
+        if (!state.accountsByEmail) state.accountsByEmail = {};
+        state.accountsByEmail[state.userProfile.email.toLowerCase()] = {
+          profile: JSON.parse(JSON.stringify(state.userProfile)),
+          snapshot: getAccountSnapshotFromCurrentState()
+        };
+      }
+      saveState();
+      renderWorkoutView();
+      renderUSMCView();
+      return totalRecovered;
+    }
+
     function getAccountSnapshotFromCurrentState() {
       return {
         workoutLogs: JSON.parse(JSON.stringify(state.workoutLogs || {})),
@@ -5680,15 +5766,21 @@
         };
       }
 
-      // 2. If switching to a different email account, either restore that account's saved snapshot or start a fresh account!
-      if (prevEmail && nextEmail && prevEmail !== nextEmail) {
+      // 2. If switching from a placeholder email ('member@gmail.com' / 'athlete@gmail.com') OR if this is the owner's primary profile, KEEP & MERGE all existing workout logs into their profile!
+      const isPlaceholderPrev = (!prevEmail || prevEmail === 'member@gmail.com' || prevEmail === 'athlete@gmail.com');
+      if (!isPlaceholderPrev && nextEmail && prevEmail !== nextEmail) {
         if (state.accountsByEmail[nextEmail] && state.accountsByEmail[nextEmail].snapshot) {
           applyAccountSnapshotToCurrentState(state.accountsByEmail[nextEmail].snapshot);
-        } else {
-          // Brand-new user account on this device -> give them a clean Week 1 Day 1 start!
+        } else if (profileData.startFreshNewAccount) {
           applyAccountSnapshotToCurrentState({});
         }
       }
+      // Always merge any orphaned logs from placeholder accounts ('athlete@gmail.com' / 'member@gmail.com') into the active profile
+      ['athlete@gmail.com', 'member@gmail.com'].forEach(ph => {
+        if (state.accountsByEmail && state.accountsByEmail[ph] && state.accountsByEmail[ph].snapshot) {
+          mergeWorkoutSnapshotsIntoCurrentState(state.accountsByEmail[ph].snapshot);
+        }
+      });
 
       state.userProfile = Object.assign({}, state.userProfile, profileData, {
         email: nextEmail,
@@ -6233,6 +6325,33 @@
         });
       }
 
+      const claimPrevDataBtn = document.getElementById('claim-previous-data-btn');
+      if (claimPrevDataBtn) {
+        claimPrevDataBtn.addEventListener('click', () => {
+          const count = claimAllPreviousLocalAndCloudDataIntoProfile();
+          if (smartLoginModal) smartLoginModal.classList.add('hidden');
+          showToast(count > 0
+            ? `✓ Merged ${count} previous set(s) & weights into your profile!`
+            : `✓ Checked device & cloud backups — all existing workout data is linked to your profile!`);
+        });
+      }
+
+      const quickNextWeekBtn = document.getElementById('quick-next-week-btn');
+      if (quickNextWeekBtn) {
+        quickNextWeekBtn.addEventListener('click', () => {
+          const cur = state.currentWeek || 1;
+          if (!state.completedWeeks) state.completedWeeks = {};
+          state.completedWeeks[cur] = true;
+          const nextW = Math.min(12, cur + 1);
+          state.currentWeek = nextW;
+          const weekSel = document.getElementById('week-select');
+          if (weekSel) weekSel.value = String(nextW);
+          saveState();
+          renderWorkoutView();
+          showToast(`🎉 Week ${cur} saved! Now on Week ${nextW} (your Week ${cur} weights are pre-filled on every set).`);
+        });
+      }
+
       if (signOutNewAcctBtn) {
         signOutNewAcctBtn.addEventListener('click', () => {
           // Save current account snapshot before signing out to create/switch to a new user account
@@ -6688,6 +6807,7 @@
         if (closeBtn) closeBtn.classList.add('hidden');
         if (loginModal) loginModal.classList.remove('hidden');
       }
+      claimAllPreviousLocalAndCloudDataIntoProfile();
       if (getActiveCloudEndpoint()) {
         pullStateFromCloud();
       }
@@ -6762,6 +6882,11 @@
           </div>
           <button type="button" id="sign-out-new-account-btn" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-[10px] font-extrabold transition">
             🔄 Sign Out / New Account
+          </button>
+        </div>
+        <div class="pt-1.5 border-t border-slate-800/80 flex flex-wrap gap-1.5">
+          <button type="button" id="claim-previous-data-btn" class="w-full py-1.5 px-2.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[10px] font-extrabold transition">
+            📥 Claim / Merge Last Week's Data Into My Profile
           </button>
         </div>
         <div id="saved-accounts-switcher-list" class="space-y-1 pt-1 border-t border-slate-800/80"></div>
