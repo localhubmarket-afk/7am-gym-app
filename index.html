@@ -137,7 +137,7 @@
   </div>
 
   <!-- Main Content Container (Padded for Fixed Top Header + Timer Bar) -->
-  <main class="max-w-xl w-full mx-auto px-3 sm:px-4 pt-24 space-y-2.5 overflow-x-hidden">
+  <main class="max-w-xl w-full mx-auto px-3 sm:px-4 pt-28 space-y-2.5 overflow-x-hidden">
 
     <!-- ==================== VIEW 1: WORKOUT & WEIGHT TRACKER ==================== -->
     <section id="view-workout" class="space-y-2.5">
@@ -849,7 +849,36 @@
           if (remote && typeof remote === 'object' && (remote.workoutLogs || remote.selectedDayIndex !== undefined)) {
             const keepUrl = state.cloudDbUrl;
             const currentOpenPanels = state.openImagePanels || {};
-            state = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), remote, { cloudDbUrl: keepUrl, openImagePanels: currentOpenPanels });
+            const localProfile = (state.userProfile && state.userProfile.name && state.userProfile.email)
+              ? JSON.parse(JSON.stringify(state.userProfile))
+              : null;
+            const localLeads = Array.isArray(state.capturedLeads) && state.capturedLeads.length > 0
+              ? JSON.parse(JSON.stringify(state.capturedLeads))
+              : null;
+            const localAccounts = state.accountsByEmail && Object.keys(state.accountsByEmail).length > 0
+              ? JSON.parse(JSON.stringify(state.accountsByEmail))
+              : null;
+            const localWorkoutLogs = JSON.parse(JSON.stringify(state.workoutLogs || {}));
+            const localUsmcLogs = JSON.parse(JSON.stringify(state.usmcLogs || {}));
+
+            state = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), remote, {
+              cloudDbUrl: keepUrl,
+              openImagePanels: currentOpenPanels
+            });
+
+            // Preserve signed-in local userProfile so cloud sync NEVER wipes out your login name!
+            if (localProfile) {
+              state.userProfile = localProfile;
+            }
+            if (localLeads) {
+              state.capturedLeads = localLeads;
+            }
+            if (localAccounts) {
+              state.accountsByEmail = Object.assign({}, state.accountsByEmail || {}, localAccounts);
+            }
+            // Merge local sets and remote sets so neither is ever lost
+            mergeWorkoutSnapshotsIntoCurrentState({ workoutLogs: localWorkoutLogs, usmcLogs: localUsmcLogs });
+
             saveState(true);
             renderWorkoutView();
             renderUSMCView();
@@ -860,7 +889,6 @@
               badge.textContent = '✓ Supabase Connected';
               badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300';
             }
-            showToast('☁️ Synced saved weights & day from Supabase DB!');
           }
         })
         .catch(() => {});
@@ -5670,6 +5698,32 @@
 
     function claimAllPreviousLocalAndCloudDataIntoProfile() {
       let totalRecovered = 0;
+      // Auto-restore userProfile if it was previously cleared by a cloud pull but exists in capturedLeads or accountsByEmail
+      if (!state.userProfile || !state.userProfile.name || !state.userProfile.email) {
+        if (Array.isArray(state.capturedLeads) && state.capturedLeads.length > 0) {
+          const validLeads = state.capturedLeads.filter(l => l && l.email && l.email !== 'member@gmail.com' && l.email !== 'athlete@gmail.com');
+          if (validLeads.length > 0) {
+            const latest = validLeads[validLeads.length - 1];
+            state.userProfile = {
+              name: latest.name || latest.email.split('@')[0],
+              email: latest.email,
+              phone: latest.phone || '',
+              goal: latest.goal || '6-Pack Recomp',
+              diet: latest.diet || '100% Plant-Based ($5.55/day)',
+              gymTime: latest.gymTime || '07:00',
+              signedInAt: latest.capturedAt || new Date().toISOString()
+            };
+          }
+        } else if (state.accountsByEmail && typeof state.accountsByEmail === 'object') {
+          const keys = Object.keys(state.accountsByEmail).filter(k => k !== 'member@gmail.com' && k !== 'athlete@gmail.com');
+          if (keys.length > 0) {
+            const acct = state.accountsByEmail[keys[keys.length - 1]];
+            if (acct && acct.profile && acct.profile.email) {
+              state.userProfile = JSON.parse(JSON.stringify(acct.profile));
+            }
+          }
+        }
+      }
       if (state.accountsByEmail && typeof state.accountsByEmail === 'object') {
         Object.keys(state.accountsByEmail).forEach(em => {
           const acct = state.accountsByEmail[em];
@@ -5823,14 +5877,13 @@
       renderVeganView();
       renderShoppingView();
 
-      // Pull or sync per-user state in Supabase (/api/auth-lead & /api/state?email=...)
+      // Save newly signed-in profile & merged state directly to Supabase (/api/auth-lead & pushStateToCloud)
       fetch('/api/auth-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lead: leadRecord, state })
-      }).then(() => {
-        pullStateFromCloud();
       }).catch(() => {});
+      pushStateToCloud();
     }
 
     function initApp() {
@@ -6441,21 +6494,26 @@
       const submitSmartLoginBtn = document.getElementById('submit-smart-login-btn');
       if (submitSmartLoginBtn) {
         submitSmartLoginBtn.addEventListener('click', () => {
-          const nameVal = leadNameInp ? leadNameInp.value.trim() : '';
+          const rawName = leadNameInp ? leadNameInp.value.trim() : '';
           const emailVal = leadEmailInp ? leadEmailInp.value.trim() : '';
           const phoneVal = leadPhoneInp ? leadPhoneInp.value.trim() : '';
-          if (!nameVal || !emailVal) {
-            showToast('⚠️ Please enter your Name and Email to save your profile.');
+          if (!emailVal && !rawName) {
+            showToast('⚠️ Please enter your Name or Gmail address to sign in.');
+            if (leadNameInp) leadNameInp.focus();
             return;
           }
+          const finalEmail = emailVal || (rawName.toLowerCase().replace(/[^a-z0-9]/g, '') + '@gmail.com');
+          const finalName = rawName || finalEmail.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          if (leadNameInp) leadNameInp.value = finalName;
+          if (leadEmailInp) leadEmailInp.value = finalEmail;
           saveUserLeadProfile({
-            name: nameVal,
-            email: emailVal,
+            name: finalName,
+            email: finalEmail,
             phone: phoneVal,
             authProvider: 'smart_email'
           });
           if (smartLoginModal) smartLoginModal.classList.add('hidden');
-          showToast(`🎉 Welcome, ${nameVal}! Profile saved & Coach AI unlocked.`);
+          showToast(`🎉 Welcome, ${finalName}! Profile saved & Coach AI unlocked.`);
         });
       }
 
