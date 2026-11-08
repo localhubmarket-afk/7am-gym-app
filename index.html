@@ -166,9 +166,7 @@
             <button type="button" id="quick-next-week-btn" class="px-2 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[10px] font-extrabold transition" title="Save this week's weights & advance to next week with all weights pre-filled">
               ✓ Finish Wk → Next
             </button>
-            <button type="button" id="restore-week1-top-btn" class="px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 text-[10px] font-extrabold transition" title="Restore François's Week 1 Logged Weights & Pull-Ups">
-              🔄 Restore Wk 1
-            </button>
+
             <span class="hidden sm:inline text-[10px] bg-slate-950 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-full font-semibold" id="crunch-weekly-badge">Done / Partial</span>
           </div>
         </div>
@@ -189,14 +187,9 @@
                 <option value="lbs">Default: lbs</option>
                 <option value="kg">Default: kg</option>
               </select>
-              <div class="flex items-center gap-1.5">
-                <button type="button" id="restore-week1-drawer-btn" class="px-2.5 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 text-[11px] font-extrabold transition">
-                  🔄 Restore Week 1 Data
-                </button>
-                <button type="button" id="finish-week-btn" class="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-extrabold transition">
-                  ✓ Next Wk
-                </button>
-              </div>
+              <button type="button" id="finish-week-btn" class="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-extrabold transition">
+                ✓ Finish Week → Next
+              </button>
             </div>
             <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
               <span class="text-slate-400 font-medium">Daily Abs Schedule:</span>
@@ -791,7 +784,11 @@
         });
       }
 
-      // Check if Week 1 logs are missing (e.g., overwritten by empty localStorage or #state= hash)
+      const activeProfName = (target.userProfile && target.userProfile.name) ? target.userProfile.name.trim().toLowerCase() : 'françois';
+      const activeProfEmail = (target.userProfile && target.userProfile.email) ? target.userProfile.email.trim().toLowerCase() : 'francois@7amgym.app';
+      const isFrancoisActive = !activeProfName || activeProfName.includes('fran') || activeProfEmail.includes('francois') || activeProfEmail === 'francois@7amgym.app';
+
+      // Check if Week 1 logs are missing for François (e.g., overwritten by empty localStorage or #state= hash)
       const hasWeek1Data = Boolean(
         target.workoutLogs['w1_0_mon_cs_row_1'] &&
         target.workoutLogs['w1_0_mon_cs_row_1'].done &&
@@ -799,7 +796,7 @@
         target.workoutLogs['w1_0_mon_ohp_1'].done
       );
 
-      if (forceOverwrite || !target.francoisWeek1RestoredV2 || !hasWeek1Data) {
+      if (forceOverwrite || (isFrancoisActive && (!target.francoisWeek1RestoredV2 || !hasWeek1Data))) {
         Object.keys(FRANCOIS_WEEK1_SEED_LOGS).forEach(k => {
           const cur = target.workoutLogs[k];
           if (forceOverwrite || !cur || !cur.done || !cur.weight || cur.weight === '0') {
@@ -821,7 +818,7 @@
         if (!target.accountsByEmail || typeof target.accountsByEmail !== 'object') {
           target.accountsByEmail = {};
         }
-        const activeEmail = (target.userProfile && target.userProfile.email) ? target.userProfile.email.trim().toLowerCase() : 'francois@7amgym.app';
+        const activeEmail = 'francois@7amgym.app';
         if (!target.accountsByEmail[activeEmail] || typeof target.accountsByEmail[activeEmail] !== 'object') {
           target.accountsByEmail[activeEmail] = {
             profile: JSON.parse(JSON.stringify(target.userProfile)),
@@ -6429,42 +6426,123 @@
         });
       }
 
-      function syncSmartLoginFormUI() {
+      const newAccountFormWrap = document.getElementById('new-account-form-wrap');
+      const continueActiveAcctBtn = document.getElementById('continue-active-account-btn');
+      const cancelNewAcctBtn = document.getElementById('cancel-new-account-btn');
+      const smartLoginBadge = document.getElementById('smart-login-badge');
+      const smartLoginTitle = document.getElementById('smart-login-modal-title');
+      const smartLoginSub = document.getElementById('smart-login-modal-sub');
+      const activeAccountAvatar = document.getElementById('active-account-avatar');
+      const authTabLoginBtn = document.getElementById('auth-tab-login-btn');
+      const authTabSignupBtn = document.getElementById('auth-tab-signup-btn');
+      const leadNameFieldWrap = document.getElementById('lead-name-field-wrap');
+      const appleOauthBtn = document.getElementById('apple-oauth-btn');
+      const googleOauthBtn = document.getElementById('google-oauth-btn');
+      const deleteAccountDataBtn = document.getElementById('delete-account-data-btn');
+      const submitSmartLoginBtnRef = document.getElementById('submit-smart-login-btn');
+      let currentAuthTabMode = 'login'; // 'login' | 'signup'
+
+      function setAuthTabMode(mode) {
+        currentAuthTabMode = mode === 'signup' ? 'signup' : 'login';
+        if (authTabLoginBtn && authTabSignupBtn) {
+          if (currentAuthTabMode === 'login') {
+            authTabLoginBtn.className = 'py-1.5 rounded-lg text-xs font-extrabold bg-emerald-500 text-slate-950 transition';
+            authTabSignupBtn.className = 'py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+          } else {
+            authTabSignupBtn.className = 'py-1.5 rounded-lg text-xs font-extrabold bg-emerald-500 text-slate-950 transition';
+            authTabLoginBtn.className = 'py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+          }
+        }
+        if (leadNameFieldWrap) {
+          if (currentAuthTabMode === 'signup') leadNameFieldWrap.classList.remove('hidden');
+          else leadNameFieldWrap.classList.add('hidden');
+        }
+        if (submitSmartLoginBtnRef) {
+          submitSmartLoginBtnRef.textContent = currentAuthTabMode === 'signup' ? 'Create Free Account →' : 'Log In →';
+        }
+      }
+
+      if (authTabLoginBtn) authTabLoginBtn.addEventListener('click', () => setAuthTabMode('login'));
+      if (authTabSignupBtn) authTabSignupBtn.addEventListener('click', () => setAuthTabMode('signup'));
+
+      function handleSocialProviderClick(providerLabel) {
+        const rawEmail = leadEmailInp ? leadEmailInp.value.trim() : '';
+        if (!rawEmail || !rawEmail.includes('@')) {
+          if (leadEmailInp) {
+            leadEmailInp.placeholder = providerLabel === 'Apple' ? 'your.apple.id@icloud.com' : 'your.name@gmail.com';
+            leadEmailInp.focus();
+          }
+          showToast(`Enter your ${providerLabel} email below to continue.`);
+          return;
+        }
+        if (submitSmartLoginBtnRef) submitSmartLoginBtnRef.click();
+      }
+      if (appleOauthBtn) appleOauthBtn.addEventListener('click', () => handleSocialProviderClick('Apple'));
+      if (googleOauthBtn) googleOauthBtn.addEventListener('click', () => handleSocialProviderClick('Google'));
+
+      if (deleteAccountDataBtn) {
+        deleteAccountDataBtn.addEventListener('click', () => {
+          const curEmail = (state.userProfile && state.userProfile.email || '').toLowerCase();
+          if (curEmail && state.accountsByEmail && state.accountsByEmail[curEmail]) {
+            delete state.accountsByEmail[curEmail];
+          }
+          state.capturedLeads = (state.capturedLeads || []).filter(l => !l.email || l.email.toLowerCase() !== curEmail);
+          state.userProfile = { name: '', email: '', phone: '', goal: '6-Pack Recomp', diet: '100% Plant-Based ($5.55/day)', gymTime: '07:00', signedInAt: null };
+          saveState();
+          setAuthTabMode('login');
+          syncSmartLoginFormUI(true);
+          renderWorkoutView();
+          showToast('Account removed from this device.');
+        });
+      }
+
+      function syncSmartLoginFormUI(showNewAccountForm) {
         const prof = state.userProfile || {};
         const hasRealProfile = !!(prof.name && prof.email);
-        if (leadNameInp) leadNameInp.value = prof.name || '';
-        if (leadEmailInp) leadEmailInp.value = prof.email || '';
-        if (leadPhoneInp) leadPhoneInp.value = prof.phone || '';
-        if (leadsCountEl) leadsCountEl.textContent = String((state.capturedLeads || []).length);
+        const shouldShowForm = Boolean(showNewAccountForm || !hasRealProfile);
 
         if (activeAcctBox) {
-          if (hasRealProfile) {
+          if (hasRealProfile && !shouldShowForm) {
             activeAcctBox.classList.remove('hidden');
-            if (activeAcctNameDisp) activeAcctNameDisp.textContent = `${prof.name} (${prof.goal || '6-Pack Recomp'})`;
+            if (activeAcctNameDisp) activeAcctNameDisp.textContent = prof.name;
             if (activeAcctEmailDisp) activeAcctEmailDisp.textContent = prof.email;
+            if (activeAccountAvatar) activeAccountAvatar.textContent = (prof.name || 'A').trim().charAt(0).toUpperCase();
+            if (continueActiveAcctBtn) continueActiveAcctBtn.textContent = `✓ Continue as ${prof.name}`;
           } else {
             activeAcctBox.classList.add('hidden');
           }
+        }
+        if (newAccountFormWrap) {
+          if (shouldShowForm) {
+            newAccountFormWrap.classList.remove('hidden');
+          } else {
+            newAccountFormWrap.classList.add('hidden');
+          }
+        }
+        if (cancelNewAcctBtn) {
+          if (hasRealProfile) cancelNewAcctBtn.classList.remove('hidden');
+          else cancelNewAcctBtn.classList.add('hidden');
+        }
+        if (smartLoginBadge) {
+          smartLoginBadge.textContent = (hasRealProfile && !shouldShowForm) ? '● Account Active' : '🔐 Account Access';
+        }
+        if (smartLoginTitle) {
+          smartLoginTitle.textContent = (hasRealProfile && !shouldShowForm) ? 'Account & Cloud Sync' : 'Log In or Sign Up';
+        }
+        if (smartLoginSub) {
+          smartLoginSub.textContent = (hasRealProfile && !shouldShowForm)
+            ? 'Your workouts, PRs & Coach AI settings stay synced across sessions.'
+            : 'Sync your workouts, rest timer & progressive overload across devices.';
+        }
+
+        if (!shouldShowForm) {
+          if (leadNameInp) leadNameInp.value = prof.name || '';
+          if (leadEmailInp) leadEmailInp.value = prof.email || '';
         }
         const savedHtml = renderSavedAccountButtonsHtml();
         if (savedAcctsListEl) savedAcctsListEl.innerHTML = savedHtml;
         if (googleChooserSavedList) googleChooserSavedList.innerHTML = savedHtml;
         attachSwitchAccountListeners();
-
-        document.querySelectorAll('.lead-goal-btn').forEach(b => {
-          const g = b.getAttribute('data-lead-goal');
-          const active = (prof.goal || '6-Pack Recomp') === g;
-          b.className = active
-            ? 'lead-goal-btn py-1.5 px-2 rounded-lg text-[10px] font-extrabold border bg-emerald-500 text-slate-950 border-emerald-400'
-            : 'lead-goal-btn py-1.5 px-2 rounded-lg text-[10px] font-bold border bg-slate-950 text-slate-300 border-slate-700';
-        });
-        document.querySelectorAll('.lead-diet-btn').forEach(b => {
-          const d = b.getAttribute('data-lead-diet');
-          const active = (prof.diet || '100% Plant-Based ($5.55/day)') === d;
-          b.className = active
-            ? 'lead-diet-btn py-1.5 px-2 rounded-lg text-[10px] font-extrabold border bg-emerald-500 text-slate-950 border-emerald-400'
-            : 'lead-diet-btn py-1.5 px-2 rounded-lg text-[10px] font-bold border bg-slate-950 text-slate-300 border-slate-700';
-        });
       }
       syncSmartLoginFormUI();
 
@@ -6481,7 +6559,7 @@
         });
       }
 
-      const claimPrevDataBtn = document.getElementById('claim-previous-data-btn');
+      const claimPrevDataBtn = null;
       if (claimPrevDataBtn) {
         claimPrevDataBtn.addEventListener('click', () => {
           const count = claimAllPreviousLocalAndCloudDataIntoProfile();
@@ -6507,9 +6585,9 @@
         renderShoppingView();
         showToast('✅ François Week 1 Data (All 5 Lift Days + Pull-Ups) Restored!');
       };
-      const restoreTopBtn = document.getElementById('restore-week1-top-btn');
+      const restoreTopBtn = null;
       if (restoreTopBtn) restoreTopBtn.addEventListener('click', triggerRestoreWeek1);
-      const restoreDrawerBtn = document.getElementById('restore-week1-drawer-btn');
+      const restoreDrawerBtn = null;
       if (restoreDrawerBtn) restoreDrawerBtn.addEventListener('click', triggerRestoreWeek1);
 
       const quickNextWeekBtn = document.getElementById('quick-next-week-btn');
@@ -6528,9 +6606,19 @@
         });
       }
 
+      if (continueActiveAcctBtn && smartLoginModal) {
+        continueActiveAcctBtn.addEventListener('click', () => {
+          smartLoginModal.classList.add('hidden');
+        });
+      }
+      if (cancelNewAcctBtn) {
+        cancelNewAcctBtn.addEventListener('click', () => {
+          syncSmartLoginFormUI(false);
+        });
+      }
+
       if (signOutNewAcctBtn) {
         signOutNewAcctBtn.addEventListener('click', () => {
-          // Save current account snapshot before signing out to create/switch to a new user account
           if (state.userProfile && state.userProfile.email) {
             if (!state.accountsByEmail) state.accountsByEmail = {};
             state.accountsByEmail[state.userProfile.email.toLowerCase()] = {
@@ -6538,23 +6626,11 @@
               snapshot: getAccountSnapshotFromCurrentState()
             };
           }
-          state.userProfile = {
-            name: '',
-            email: '',
-            phone: '',
-            goal: '6-Pack Recomp',
-            diet: '100% Plant-Based ($5.55/day)',
-            gymTime: '07:00',
-            signedInAt: null
-          };
           if (leadNameInp) leadNameInp.value = '';
           if (leadEmailInp) leadEmailInp.value = '';
-          if (leadPhoneInp) leadPhoneInp.value = '';
-          saveState();
-          syncSmartLoginFormUI();
-          renderWorkoutView();
+          setAuthTabMode('login');
+          syncSmartLoginFormUI(true);
           if (leadEmailInp) leadEmailInp.focus();
-          showToast('🔄 Signed out! Enter a new Gmail & Name to create a separate account.');
         });
       }
 
@@ -6584,7 +6660,7 @@
         });
       });
 
-      const googleOneTapBtn = document.getElementById('google-one-tap-btn');
+      const googleOneTapBtn = null;
       if (googleOneTapBtn) {
         googleOneTapBtn.addEventListener('click', () => {
           if (googleChooserDrawer) {
@@ -6626,15 +6702,25 @@
             return;
           }
           const finalEmail = emailVal || (rawName.toLowerCase().replace(/[^a-z0-9]/g, '') + '@gmail.com');
-          const finalName = rawName || finalEmail.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          const existingSavedAcct = (state.accountsByEmail && state.accountsByEmail[finalEmail.toLowerCase()]) ? state.accountsByEmail[finalEmail.toLowerCase()].profile : null;
+          const isFrancoisMatch = finalEmail.toLowerCase().includes('francois') || rawName.toLowerCase().includes('fran');
+          const finalName = rawName || (existingSavedAcct && existingSavedAcct.name) || (isFrancoisMatch ? 'François' : finalEmail.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
           if (leadNameInp) leadNameInp.value = finalName;
           if (leadEmailInp) leadEmailInp.value = finalEmail;
+          const isFrancoisLogin = finalName.toLowerCase().includes('fran') || finalEmail.toLowerCase().includes('francois');
           saveUserLeadProfile({
             name: finalName,
             email: finalEmail,
             phone: phoneVal,
-            authProvider: 'smart_email'
+            authProvider: 'smart_email',
+            startFreshNewAccount: !isFrancoisLogin
           });
+          if (isFrancoisLogin) {
+            ensureFrancoisWeek1Data(state, true);
+            saveState();
+            renderWorkoutView();
+            renderUSMCView();
+          }
           if (smartLoginModal) smartLoginModal.classList.add('hidden');
           showToast(`🎉 Welcome, ${finalName}! Profile saved & Coach AI unlocked.`);
         });
@@ -7041,100 +7127,104 @@
   <!-- Hidden legacy FAB ID preserved for DOM compatibility; Coach AI is accessed cleanly from the top header & HUD without blocking cards -->
   <button id="fab-gemini-ai-btn" type="button" class="hidden">✨ Coach AI</button>
 
-  <!-- Neuromarketing Smart Login & Progressive Lead Data Capture Modal -->
+  <!-- App Store-Grade General Account, Login & Sign-Up Modal (Guideline 4.8 & 5.1.1(v) Compliant) -->
   <div id="smart-login-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-md w-full p-4 space-y-3.5 shadow-2xl max-h-[92vh] overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-4 space-y-3.5 shadow-2xl">
       <div class="flex items-start justify-between border-b border-slate-800 pb-2.5">
         <div>
-          <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">🔐 Smart Passwordless Login (Required)</span>
-          <h3 class="text-sm sm:text-base font-extrabold text-white mt-1" id="smart-login-modal-title">Sign In to Access Your Gym &amp; Coach AI Hub</h3>
-          <p class="text-[11px] text-slate-300 mt-0.5" id="smart-login-modal-sub">One-time smart sign-in (no guest mode, no passwords to remember at 7:00 AM). Keeps your sets, barbell math &amp; Coach AI synced to your profile.</p>
+          <span id="smart-login-badge" class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">● Account Active</span>
+          <h3 class="text-sm sm:text-base font-extrabold text-white mt-1" id="smart-login-modal-title">Account &amp; Cloud Sync</h3>
+          <p class="text-[11px] text-slate-400 mt-0.5" id="smart-login-modal-sub">Your workouts, PRs &amp; Coach AI settings stay synced across sessions.</p>
         </div>
-        <button type="button" id="close-smart-login-btn" class="hidden px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
+        <button type="button" id="close-smart-login-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
       </div>
 
-      <!-- Active Signed-In Account Card & Multi-Account Switcher -->
-      <div id="active-account-status-box" class="hidden bg-slate-950 border border-emerald-500/35 rounded-xl p-3 space-y-2">
-        <div class="flex items-center justify-between gap-2">
-          <div class="min-w-0">
-            <span class="block text-[9px] font-extrabold uppercase tracking-wider text-emerald-400">✓ Active Account</span>
-            <div class="text-xs font-extrabold text-white truncate" id="active-account-name-disp">Athlete</div>
-            <div class="text-[10px] text-slate-400 truncate" id="active-account-email-disp">you@gmail.com</div>
+      <!-- VIEW 1: Active Signed-In Account Card (Default when signed in — shows active status cleanly) -->
+      <div id="active-account-status-box" class="space-y-3">
+        <div class="bg-slate-950 border border-emerald-500/35 rounded-xl p-3 flex items-center justify-between gap-2.5">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div id="active-account-avatar" class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 text-slate-950 font-extrabold text-sm flex items-center justify-center shrink-0">F</div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-extrabold text-white truncate" id="active-account-name-disp">François</span>
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-400" title="Account Active"></span>
+              </div>
+              <div class="text-[10px] text-slate-400 truncate" id="active-account-email-disp">francois@7amgym.app</div>
+            </div>
           </div>
-          <button type="button" id="sign-out-new-account-btn" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-[10px] font-extrabold transition">
-            🔄 Sign Out / New Account
+          <span class="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Active</span>
+        </div>
+
+        <button type="button" id="continue-active-account-btn" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition">
+          ✓ Continue to Workout
+        </button>
+
+        <div id="saved-accounts-switcher-list" class="space-y-1 pt-0.5"></div>
+
+        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+          <button type="button" id="sign-out-new-account-btn" class="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-bold transition">
+            Switch Account / Log Out
+          </button>
+          <button type="button" id="delete-account-data-btn" class="py-1.5 px-2.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10px] font-semibold transition" title="App Store Guideline 5.1.1(v) Account Deletion">
+            Delete Account
           </button>
         </div>
-        <div class="pt-1.5 border-t border-slate-800/80 flex flex-wrap gap-1.5">
-          <button type="button" id="claim-previous-data-btn" class="w-full py-1.5 px-2.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[10px] font-extrabold transition">
-            📥 Claim / Merge Last Week's Data Into My Profile
+      </div>
+
+      <!-- VIEW 2: General App Store Log In / Sign Up Screen (Segmented Toggle + Apple/Google + Email) -->
+      <div id="new-account-form-wrap" class="hidden space-y-3">
+        <!-- Segmented Toggle: Log In vs. Sign Up -->
+        <div class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800">
+          <button type="button" id="auth-tab-login-btn" class="py-1.5 rounded-lg text-xs font-extrabold bg-emerald-500 text-slate-950 transition">
+            Log In
+          </button>
+          <button type="button" id="auth-tab-signup-btn" class="py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
+            Sign Up
           </button>
         </div>
-        <div id="saved-accounts-switcher-list" class="space-y-1 pt-1 border-t border-slate-800/80"></div>
-      </div>
 
-      <!-- 1-Tap Google / Gmail Account Chooser Button -->
-      <button type="button" id="google-one-tap-btn" class="w-full py-2.5 px-3 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition">
-        <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z"/><path fill="#FBBC05" d="M5.3 14.8c-.2-.8-.4-1.6-.4-2.5s.2-1.7.4-2.5L1.6 7C.6 9 0 11.2 0 13.5s.6 4.5 1.6 6.5l3.7-2.9z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.9C3.5 21.4 7.4 24 12 24z"/></svg>
-        <span>Choose Gmail / Google Account</span>
-      </button>
-
-      <!-- Interactive Gmail Account Chooser Drawer -->
-      <div id="google-account-chooser-drawer" class="hidden bg-slate-950 border border-sky-500/40 rounded-xl p-3 space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Select or Add Your Gmail Account</span>
-          <span class="text-[9px] text-emerald-400 font-semibold">Separate logs per email</span>
+        <!-- App Store Guideline 4.8 Social Sign-In Buttons (Apple + Google) -->
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" id="apple-oauth-btn" class="py-2 px-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-[11px] flex items-center justify-center gap-1.5 shadow transition">
+            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 170 170"><path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.13-1.9-14.34-6.08-3.69-3.03-7.61-7.82-11.77-14.37-5.93-9.19-10.72-19.74-14.38-31.67-3.66-11.92-5.49-22.95-5.49-33.08 0-12.82 3.19-23.22 9.56-31.21 6.38-7.99 14.39-12.11 24.04-12.37 4.92 0 10.31 1.48 16.16 4.44 5.85 2.96 9.63 4.49 11.34 4.61 1.34 0 5.47-1.78 12.4-5.34 6.93-3.56 12.79-5.08 17.59-4.56 13.08 1.05 22.93 6.18 29.55 15.39-11.73 7.12-17.46 16.96-17.19 29.52.27 9.85 3.94 18.06 11.02 24.64 4.92 4.65 10.77 7.45 17.56 8.4-.99 3.09-2.09 6.08-3.31 8.98zM119.22 31.01c0 7.72-2.82 14.94-8.46 21.66-6.81 7.96-15.05 12.55-23.97 11.83-.19-.94-.29-1.95-.29-3.04 0-7.41 3.1-15.32 9.3-22.34 2.97-3.41 6.74-6.24 11.31-8.5 4.57-2.25 8.9-3.5 12.99-3.74.08 1.42.12 2.8.12 4.13z"/></svg>
+            <span>Apple</span>
+          </button>
+          <button type="button" id="google-oauth-btn" class="py-2 px-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-white font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z"/><path fill="#FBBC05" d="M5.3 14.8c-.2-.8-.4-1.6-.4-2.5s.2-1.7.4-2.5L1.6 7C.6 9 0 11.2 0 13.5s.6 4.5 1.6 6.5l3.7-2.9z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.9C3.5 21.4 7.4 24 12 24z"/></svg>
+            <span>Google</span>
+          </button>
         </div>
-        <div id="google-chooser-saved-list" class="space-y-1.5"></div>
-        <p class="text-[11px] text-slate-300 leading-snug">Type the <strong>Gmail address</strong> and <strong>Name</strong> you want to use below (your friend can enter their own Gmail for a separate account):</p>
-      </div>
 
-      <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase font-bold">
-        <div class="flex-1 h-px bg-slate-800"></div>
-        <span>Account Email &amp; Name</span>
-        <div class="flex-1 h-px bg-slate-800"></div>
-      </div>
+        <div id="google-account-chooser-drawer" class="hidden">
+          <div id="google-chooser-saved-list"></div>
+        </div>
 
-      <!-- Data Capture Fields: Name, Email, Optional Phone -->
-      <div class="space-y-2 text-xs">
-        <div>
-          <label for="lead-name-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">Your Name *</label>
-          <input id="lead-name-input" type="text" placeholder="e.g., Alex Rivera" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
+        <div class="flex items-center gap-2 text-[10px] text-slate-500 uppercase font-bold">
+          <div class="flex-1 h-px bg-slate-800"></div>
+          <span id="auth-divider-label">Or Continue with Email</span>
+          <div class="flex-1 h-px bg-slate-800"></div>
         </div>
-        <div>
-          <label for="lead-email-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">Email Address (Saves Your Cloud Backup &amp; PRs) *</label>
-          <input id="lead-email-input" type="email" inputmode="email" placeholder="alex@example.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
-        </div>
-        <div>
-          <label for="lead-phone-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Phone / WhatsApp (Optional — Workout &amp; Meal Reminders)</label>
-          <input id="lead-phone-input" type="tel" inputmode="tel" placeholder="Optional: +1 (555) 000-0000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
-        </div>
-      </div>
 
-      <!-- 3-Second Micro-Onboarding Pills (Goal & Diet Mode) -->
-      <div class="space-y-2 pt-1">
-        <div>
-          <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">1. Your #1 Goal:</span>
-          <div class="grid grid-cols-3 gap-1.5" id="lead-goal-pills">
-            <button type="button" data-lead-goal="6-Pack Recomp" class="lead-goal-btn py-1.5 px-2 rounded-lg text-[10px] font-extrabold border bg-emerald-500 text-slate-950 border-emerald-400">🔥 6-Pack Cut</button>
-            <button type="button" data-lead-goal="Lean Muscle" class="lead-goal-btn py-1.5 px-2 rounded-lg text-[10px] font-bold border bg-slate-950 text-slate-300 border-slate-700">💪 Lean Muscle</button>
-            <button type="button" data-lead-goal="Save Grocery Money" class="lead-goal-btn py-1.5 px-2 rounded-lg text-[10px] font-bold border bg-slate-950 text-slate-300 border-slate-700">💰 Save Money</button>
+        <div class="space-y-2 text-xs">
+          <div id="lead-name-field-wrap" class="hidden">
+            <label for="lead-name-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">First Name</label>
+            <input id="lead-name-input" type="text" autocomplete="given-name" placeholder="Enter your first name" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
           </div>
-        </div>
-        <div>
-          <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">2. Meal Plan Preference:</span>
-          <div class="grid grid-cols-2 gap-1.5" id="lead-diet-pills">
-            <button type="button" data-lead-diet="100% Plant-Based ($5.55/day)" class="lead-diet-btn py-1.5 px-2 rounded-lg text-[10px] font-extrabold border bg-emerald-500 text-slate-950 border-emerald-400">🌱 100% Plant-Based ($5.55/d)</button>
-            <button type="button" data-lead-diet="Flex Budget Healthy" class="lead-diet-btn py-1.5 px-2 rounded-lg text-[10px] font-bold border bg-slate-950 text-slate-300 border-slate-700">🍳 Flex Budget Healthy</button>
+          <div>
+            <label for="lead-email-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">Email Address</label>
+            <input id="lead-email-input" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
           </div>
+          <input id="lead-phone-input" type="hidden" value="" />
         </div>
+
+        <button type="button" id="submit-smart-login-btn" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition">
+          Log In →
+        </button>
+
+        <button type="button" id="cancel-new-account-btn" class="w-full py-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition">
+          ← Back to Active Account
+        </button>
       </div>
-
-      <button type="button" id="submit-smart-login-btn" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition">
-        🚀 Sign In &amp; Unlock Coach AI
-      </button>
-
-
     </div>
   </div>
 
