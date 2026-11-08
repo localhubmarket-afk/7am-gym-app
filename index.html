@@ -441,12 +441,12 @@
           </div>
         </div>
 
-        <!-- Live Macro Progress Bars -->
-        <div class="grid grid-cols-2 gap-3 pt-1">
+        <!-- Live Macro Progress Bars (Protein, Calories & Daily Water in ml) -->
+        <div class="grid grid-cols-2 gap-2.5 pt-1">
           <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
             <div class="flex justify-between text-xs font-bold">
               <span class="text-slate-300">Daily Protein</span>
-              <span id="macro-protein-text" class="text-emerald-400">0 / 130g</span>
+              <span id="macro-protein-text" class="text-emerald-400">0 / 138g</span>
             </div>
             <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-1.5">
               <div id="macro-protein-bar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 0%"></div>
@@ -455,12 +455,17 @@
           <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
             <div class="flex justify-between text-xs font-bold">
               <span class="text-slate-300">Daily Calories</span>
-              <span id="macro-kcal-text" class="text-amber-400">0 / 1,720 kcal</span>
+              <span id="macro-kcal-text" class="text-amber-400">0 / 1,495 kcal</span>
             </div>
             <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-1.5">
               <div id="macro-kcal-bar" class="bg-amber-400 h-full transition-all duration-300" style="width: 0%"></div>
             </div>
           </div>
+        </div>
+
+        <!-- Daily Water Intake Tracker in Milliliters (ml) -->
+        <div id="daily-water-tracker-card" class="bg-slate-950/85 border border-sky-500/35 rounded-xl p-3 space-y-2">
+          <!-- Populated dynamically by JS -->
         </div>
       </div>
 
@@ -3265,6 +3270,26 @@
       `;
     }
 
+    
+    function getDailyWaterTargetMl(dayIdx) {
+      // Lift Days (Days 1-5, dayIdx 0-4): 3,000 ml plain water (+ 900 ml Silk Milk in shakes/oats = 3,900 ml total fluid)
+      // Active Recovery Days (Days 6-7, dayIdx 5-6): 2,500 ml plain water (+ 900 ml Silk Milk = 3,400 ml total fluid)
+      return (dayIdx >= 0 && dayIdx <= 4) ? 3000 : 2500;
+    }
+
+    function getDailyWaterLoggedMl(week, dayIdx) {
+      if (!state.waterLogsMl || typeof state.waterLogsMl !== 'object') state.waterLogsMl = {};
+      const key = `w${week}_d${dayIdx}`;
+      const val = parseInt(state.waterLogsMl[key], 10);
+      return isNaN(val) || val < 0 ? 0 : val;
+    }
+
+    function setDailyWaterLoggedMl(week, dayIdx, mlVal) {
+      if (!state.waterLogsMl || typeof state.waterLogsMl !== 'object') state.waterLogsMl = {};
+      const key = `w${week}_d${dayIdx}`;
+      state.waterLogsMl[key] = Math.max(0, Math.min(6000, Math.round(mlVal)));
+    }
+
     function renderWorkoutView() {
       if (!state.currentWeek) state.currentWeek = 1;
       if (!state.completedWeeks) state.completedWeeks = {};
@@ -3458,7 +3483,10 @@
               </select>
               <button type="button" data-banner-step-mins="15" class="banner-gym-step-btn px-1.5 py-1 font-extrabold text-emerald-400 hover:bg-slate-800 transition">+15m</button>
             </div>
-            <div class="flex items-center gap-1">
+            <div class="flex flex-wrap items-center gap-1">
+              <button type="button" id="banner-water-add-btn" class="font-extrabold bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/35 px-2 py-1 rounded-lg transition" title="Tap to log +500 ml of water (1 bottle)">
+                💧 <strong>${getDailyWaterLoggedMl(week, dayIdx).toLocaleString()} / ${getDailyWaterTargetMl(dayIdx).toLocaleString()} ml</strong> <span class="text-sky-400">+500</span>
+              </button>
               <button type="button" id="banner-open-vegan-fuel-btn" class="font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded-lg transition">
                 🌱 Meal: <strong>${adaptiveMealPreview.nextPostWorkoutTime12}</strong> →
               </button>
@@ -3472,6 +3500,19 @@
           </div>
         `;
 
+        const bannerWaterBtn = document.getElementById('banner-water-add-btn');
+        if (bannerWaterBtn) {
+          bannerWaterBtn.addEventListener('click', () => {
+            const curMl = getDailyWaterLoggedMl(week, dayIdx);
+            const targetMl = getDailyWaterTargetMl(dayIdx);
+            const nextMl = curMl >= targetMl ? 0 : curMl + 500;
+            setDailyWaterLoggedMl(week, dayIdx, nextMl);
+            saveState();
+            renderWorkoutView();
+            renderVeganView();
+            showToast(nextMl === 0 ? '↺ Reset today\'s water log to 0 ml' : `💧 +500 ml logged! (${nextMl.toLocaleString()} / ${targetMl.toLocaleString()} ml today)`);
+          });
+        }
         const toggleCrunchBtn = document.getElementById('toggle-crunch-day-btn');
         if (toggleCrunchBtn) {
           toggleCrunchBtn.addEventListener('click', () => {
@@ -5265,6 +5306,102 @@
       if (pBar) pBar.style.width = Math.min(100, Math.round((eatenProtein / target.protein) * 100)) + '%';
       if (kText) kText.textContent = `${eatenKcal.toLocaleString()} / ${target.kcal.toLocaleString()} kcal`;
       if (kBar) kBar.style.width = Math.min(100, Math.round((eatenKcal / target.kcal) * 100)) + '%';
+
+      const waterCardEl = document.getElementById('daily-water-tracker-card');
+      if (waterCardEl) {
+        const waterTargetMl = getDailyWaterTargetMl(dayIdx);
+        const waterLoggedMl = getDailyWaterLoggedMl(week, dayIdx);
+        const waterPct = Math.min(100, Math.round((waterLoggedMl / waterTargetMl) * 100));
+        const isLiftDayHydration = dayIdx <= 4;
+        const bottleSlots = isLiftDayHydration
+          ? [
+              { ml: 500, label: '500 ml • Wake / Pre-Gym' },
+              { ml: 1000, label: '500 ml • During Gym' },
+              { ml: 1500, label: '500 ml • Post-Gym' },
+              { ml: 2000, label: '500 ml • 11:00 AM' },
+              { ml: 2500, label: '500 ml • 1:00 PM Bowl' },
+              { ml: 3000, label: '500 ml • 4:00 PM' }
+            ]
+          : [
+              { ml: 500, label: '500 ml • Morning' },
+              { ml: 1000, label: '500 ml • Late Morning' },
+              { ml: 1500, label: '500 ml • 1:00 PM Bowl' },
+              { ml: 2000, label: '500 ml • Afternoon' },
+              { ml: 2500, label: '500 ml • Evening' }
+            ];
+
+        waterCardEl.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-extrabold text-sky-300">💧 Daily Water Need (${isLiftDayHydration ? 'Lift Day' : 'Rest Day'})</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">${waterLoggedMl.toLocaleString()} / ${waterTargetMl.toLocaleString()} ml</span>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-0.5">+ 900 ml Silk Protein Milk in shakes/oats = <strong>${(waterTargetMl + 900).toLocaleString()} ml (${((waterTargetMl + 900) / 1000).toFixed(1)} L)</strong> total hydration</p>
+            </div>
+            <div class="flex items-center gap-1">
+              <button type="button" data-water-delta="250" class="water-step-btn px-2 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-200 text-[10px] font-extrabold transition">+250 ml</button>
+              <button type="button" data-water-delta="500" class="water-step-btn px-2 py-1 rounded-lg bg-sky-500 text-slate-950 hover:bg-sky-400 text-[10px] font-extrabold transition">+500 ml</button>
+              <button type="button" id="water-reset-btn" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[10px] font-bold transition" title="Reset today's water">↺</button>
+            </div>
+          </div>
+
+          <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+            <div id="macro-water-bar" class="bg-gradient-to-r from-sky-400 to-cyan-300 h-full transition-all duration-300" style="width: ${waterPct}%"></div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-0.5">
+            ${bottleSlots.map(b => {
+              const reached = waterLoggedMl >= b.ml;
+              return `
+                <button type="button" data-water-set="${b.ml}" class="water-bottle-btn py-1.5 px-2 rounded-lg border text-left text-[10px] font-bold flex items-center justify-between transition ${
+                  reached
+                    ? 'bg-sky-500/20 border-sky-400 text-sky-200 font-extrabold'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                }">
+                  <span class="truncate">${reached ? '✓ ' : '💧 '}${b.label}</span>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        `;
+
+        waterCardEl.querySelectorAll('.water-step-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const delta = parseInt(btn.getAttribute('data-water-delta'), 10) || 250;
+            const nextVal = getDailyWaterLoggedMl(week, dayIdx) + delta;
+            setDailyWaterLoggedMl(week, dayIdx, nextVal);
+            saveState();
+            renderVeganView();
+            renderWorkoutView();
+            showToast(`💧 +${delta} ml logged! (${nextVal.toLocaleString()} / ${waterTargetMl.toLocaleString()} ml)`);
+          });
+        });
+
+        waterCardEl.querySelectorAll('.water-bottle-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const targetVal = parseInt(btn.getAttribute('data-water-set'), 10) || 500;
+            const curVal = getDailyWaterLoggedMl(week, dayIdx);
+            const nextVal = (curVal >= targetVal && curVal < targetVal + 500) ? (targetVal - 500) : targetVal;
+            setDailyWaterLoggedMl(week, dayIdx, nextVal);
+            saveState();
+            renderVeganView();
+            renderWorkoutView();
+            showToast(`💧 Water updated: ${nextVal.toLocaleString()} / ${waterTargetMl.toLocaleString()} ml`);
+          });
+        });
+
+        const waterResetBtn = document.getElementById('water-reset-btn');
+        if (waterResetBtn) {
+          waterResetBtn.addEventListener('click', () => {
+            setDailyWaterLoggedMl(week, dayIdx, 0);
+            saveState();
+            renderVeganView();
+            renderWorkoutView();
+            showToast('↺ Reset today\'s water to 0 ml');
+          });
+        }
+      }
 
       // Render Essentials Checklist
       const essEl = document.getElementById('vegan-essentials-list');
