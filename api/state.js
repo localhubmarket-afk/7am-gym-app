@@ -1,5 +1,6 @@
 // Vercel Serverless Function: /api/state
-// Automatically falls back to `id = 'default'` if the primary profile's `user_<email>` row is empty so last week's cloud data is automatically linked to your profile!
+// Automatically merges workoutLogs & usmcLogs from `id = 'default'` and any earlier François sign-in rows
+// so signing in multiple times never splits your Week 1 history across multiple rows!
 export default async function handler(req, res) {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
@@ -16,23 +17,53 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const r = await fetch(supabaseUrl + '/rest/v1/gym_state?id=eq.' + encodeURIComponent(recordId) + '&select=data', {
+      // Fetch all rows from gym_state so we can merge 'default' (last week's pre-login data) with François's active row
+      const rAll = await fetch(supabaseUrl + '/rest/v1/gym_state?select=id,data,updated_at', {
         headers: { 'apikey': supabaseKey, 'Authorization': 'Bearer ' + supabaseKey }
       });
-      const rows = await r.json();
-      let data = rows?.[0]?.data || null;
-
-      // If no logs exist under user_<email> yet, fall back to 'default' (where last week's pre-login data was stored!)
-      if ((!data || !data.workoutLogs || Object.keys(data.workoutLogs).length === 0) && recordId !== 'default') {
-        const rDef = await fetch(supabaseUrl + '/rest/v1/gym_state?id=eq.default&select=data', {
-          headers: { 'apikey': supabaseKey, 'Authorization': 'Bearer ' + supabaseKey }
-        });
-        const defRows = await rDef.json();
-        if (defRows?.[0]?.data) {
-          data = defRows[0].data;
-        }
+      const allRows = await rAll.json();
+      if (!Array.isArray(allRows) || allRows.length === 0) {
+        return res.status(200).json({ configured: true, accountId: recordId, data: null });
       }
-      return res.status(200).json({ configured: true, accountId: recordId, data });
+
+      const exactRow = allRows.find(row => row.id === recordId);
+      const defaultRow = allRows.find(row => row.id === 'default');
+      let baseData = (exactRow && exactRow.data)
+        ? exactRow.data
+        : (defaultRow && defaultRow.data ? defaultRow.data : (allRows[0] && allRows[0].data ? allRows[0].data : null));
+
+      if (baseData && typeof baseData === 'object') {
+        if (!baseData.workoutLogs) baseData.workoutLogs = {};
+        if (!baseData.usmcLogs) baseData.usmcLogs = {};
+
+        // Merge any logged sets from 'default' and any other François row so no sets from last week are ever stranded
+        allRows.forEach(row => {
+          const d = row && row.data;
+          if (!d || typeof d !== 'object') return;
+          if (d.workoutLogs && typeof d.workoutLogs === 'object') {
+            Object.keys(d.workoutLogs).forEach(k => {
+              const incoming = d.workoutLogs[k];
+              const existing = baseData.workoutLogs[k];
+              if (incoming && (incoming.done || (incoming.weight && incoming.weight !== '0'))) {
+                if (!existing || !existing.done || !existing.weight || existing.weight === '0') {
+                  baseData.workoutLogs[k] = incoming;
+                }
+              }
+            });
+          }
+          if (d.usmcLogs && typeof d.usmcLogs === 'object') {
+            Object.keys(d.usmcLogs).forEach(k => {
+              const incoming = d.usmcLogs[k];
+              const existing = baseData.usmcLogs[k];
+              if (incoming && incoming.done && (!existing || !existing.done)) {
+                baseData.usmcLogs[k] = incoming;
+              }
+            });
+          }
+        });
+      }
+
+      return res.status(200).json({ configured: true, accountId: recordId, data: baseData });
     } catch (e) {
       return res.status(200).json({ configured: true, accountId: recordId, data: null });
     }
@@ -40,6 +71,12 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
+      // Upsert into both the user's recordId AND 'default' so François's primary profile and default backup stay 100% in sync
+      const nowIso = new Date().toISOString();
+      const upsertRows = [{ id: recordId, data: bodyObj, updated_at: nowIso }];
+      if (recordId !== 'default') {
+        upsertRows.push({ id: 'default', data: bodyObj, updated_at: nowIso });
+      }
       await fetch(supabaseUrl + '/rest/v1/gym_state', {
         method: 'POST',
         headers: {
@@ -48,11 +85,7 @@ export default async function handler(req, res) {
           'Authorization': 'Bearer ' + supabaseKey,
           'Prefer': 'resolution=merge-duplicates'
         },
-        body: JSON.stringify({
-          id: recordId,
-          data: bodyObj,
-          updated_at: new Date().toISOString()
-        })
+        body: JSON.stringify(upsertRows)
       });
       return res.status(200).json({ configured: true, accountId: recordId, saved: true });
     } catch (e) {
