@@ -816,30 +816,48 @@
         target.francoisWeek1RestoredV2 = true;
       }
 
-      // Also keep accountsByEmail synced with Week 1 logs
-      if (!target.accountsByEmail || typeof target.accountsByEmail !== 'object') {
-        target.accountsByEmail = {};
-      }
-      const activeEmail = (target.userProfile && target.userProfile.email) ? target.userProfile.email.trim().toLowerCase() : 'francois@7amgym.app';
-      if (!target.accountsByEmail[activeEmail]) {
-        target.accountsByEmail[activeEmail] = {
-          profile: JSON.parse(JSON.stringify(target.userProfile)),
-          workoutLogs: {},
-          usmcLogs: {},
-          completedWeeks: { 1: true },
-          currentWeek: target.currentWeek || 1
-        };
-      }
-      Object.keys(FRANCOIS_WEEK1_SEED_LOGS).forEach(k => {
-        if (!target.accountsByEmail[activeEmail].workoutLogs[k] || !target.accountsByEmail[activeEmail].workoutLogs[k].done) {
-          target.accountsByEmail[activeEmail].workoutLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_LOGS[k]));
+      // Also keep accountsByEmail synced with Week 1 logs (supporting both .snapshot and top-level .workoutLogs safely!)
+      try {
+        if (!target.accountsByEmail || typeof target.accountsByEmail !== 'object') {
+          target.accountsByEmail = {};
         }
-      });
-      Object.keys(FRANCOIS_WEEK1_SEED_USMC).forEach(k => {
-        if (!target.accountsByEmail[activeEmail].usmcLogs[k] || !target.accountsByEmail[activeEmail].usmcLogs[k].done) {
-          target.accountsByEmail[activeEmail].usmcLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_USMC[k]));
+        const activeEmail = (target.userProfile && target.userProfile.email) ? target.userProfile.email.trim().toLowerCase() : 'francois@7amgym.app';
+        if (!target.accountsByEmail[activeEmail] || typeof target.accountsByEmail[activeEmail] !== 'object') {
+          target.accountsByEmail[activeEmail] = {
+            profile: JSON.parse(JSON.stringify(target.userProfile)),
+            workoutLogs: {},
+            usmcLogs: {},
+            snapshot: { workoutLogs: {}, usmcLogs: {}, completedWeeks: { 1: true }, currentWeek: target.currentWeek || 1 },
+            completedWeeks: { 1: true },
+            currentWeek: target.currentWeek || 1
+          };
         }
-      });
+        const acctObj = target.accountsByEmail[activeEmail];
+        if (!acctObj.workoutLogs || typeof acctObj.workoutLogs !== 'object') acctObj.workoutLogs = {};
+        if (!acctObj.usmcLogs || typeof acctObj.usmcLogs !== 'object') acctObj.usmcLogs = {};
+        if (!acctObj.snapshot || typeof acctObj.snapshot !== 'object') {
+          acctObj.snapshot = { workoutLogs: {}, usmcLogs: {}, completedWeeks: { 1: true }, currentWeek: target.currentWeek || 1 };
+        }
+        if (!acctObj.snapshot.workoutLogs || typeof acctObj.snapshot.workoutLogs !== 'object') acctObj.snapshot.workoutLogs = {};
+        if (!acctObj.snapshot.usmcLogs || typeof acctObj.snapshot.usmcLogs !== 'object') acctObj.snapshot.usmcLogs = {};
+
+        Object.keys(FRANCOIS_WEEK1_SEED_LOGS).forEach(k => {
+          if (!acctObj.workoutLogs[k] || !acctObj.workoutLogs[k].done) {
+            acctObj.workoutLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_LOGS[k]));
+          }
+          if (!acctObj.snapshot.workoutLogs[k] || !acctObj.snapshot.workoutLogs[k].done) {
+            acctObj.snapshot.workoutLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_LOGS[k]));
+          }
+        });
+        Object.keys(FRANCOIS_WEEK1_SEED_USMC).forEach(k => {
+          if (!acctObj.usmcLogs[k] || !acctObj.usmcLogs[k].done) {
+            acctObj.usmcLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_USMC[k]));
+          }
+          if (!acctObj.snapshot.usmcLogs[k] || !acctObj.snapshot.usmcLogs[k].done) {
+            acctObj.snapshot.usmcLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_USMC[k]));
+          }
+        });
+      } catch (err) {}
       return target;
     }
 
@@ -3375,7 +3393,7 @@
             if (m) m.classList.remove('hidden');
           });
         }
-        const hudAiBtn = document.getElementById('hud-ask-gemini-btn');
+        const hudAiBtn = null;
         if (hudAiBtn) {
           hudAiBtn.addEventListener('click', () => {
             openGeminiCoachModal();
@@ -5953,7 +5971,7 @@
         state.capturedLeads.push(leadRecord);
       }
 
-      const cntEl = document.getElementById('captured-leads-count');
+      const cntEl = null;
       if (cntEl) cntEl.textContent = String(state.capturedLeads.length);
 
       saveState();
@@ -6351,7 +6369,7 @@
       const leadNameInp = document.getElementById('lead-name-input');
       const leadEmailInp = document.getElementById('lead-email-input');
       const leadPhoneInp = document.getElementById('lead-phone-input');
-      const leadsCountEl = document.getElementById('captured-leads-count');
+      const leadsCountEl = null;
 
       const activeAcctBox = document.getElementById('active-account-status-box');
       const activeAcctNameDisp = document.getElementById('active-account-name-disp');
@@ -6622,7 +6640,7 @@
         });
       }
 
-      const exportLeadsCsvBtn = document.getElementById('export-leads-csv-btn');
+      const exportLeadsCsvBtn = null;
       if (exportLeadsCsvBtn) {
         exportLeadsCsvBtn.addEventListener('click', () => {
           const leads = state.capturedLeads || [];
@@ -6650,7 +6668,7 @@
         });
       }
 
-      const copyLeadsSqlBtn = document.getElementById('copy-leads-sql-btn');
+      const copyLeadsSqlBtn = null;
       if (copyLeadsSqlBtn) {
         copyLeadsSqlBtn.addEventListener('click', () => {
           const sql = "CREATE TABLE IF NOT EXISTS leads_profiles (email text primary key, name text, phone text, goal text, diet text, gym_time text, created_at timestamptz default now());";
@@ -6672,8 +6690,8 @@
       const geminiModelSel = document.getElementById('gemini-model-select');
       const geminiInp = document.getElementById('gemini-user-input');
       const geminiSendBtn = document.getElementById('gemini-send-btn');
-      const geminiKeyInp = document.getElementById('gemini-local-key-input');
-      const saveGeminiKeyBtn = document.getElementById('save-gemini-key-btn');
+      const geminiKeyInp = null;
+      const saveGeminiKeyBtn = null;
 
       if (geminiModelSel) {
         geminiModelSel.value = state.geminiModel || 'gemini-3.8-flash';
