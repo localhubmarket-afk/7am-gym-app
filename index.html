@@ -104,8 +104,8 @@
         </div>
       </div>
 
-      <!-- Always-Pinned Interactive Rest Timer Bar (No Scrolling Needed!) -->
-      <div class="bg-slate-900/95 border border-slate-800 rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-2">
+      <!-- Always-Pinned Interactive Rest Timer Bar (Visible on Gym & Pull-Ups Tabs; Hidden on Timer, Vegan Fuel & Shop List Tabs) -->
+      <div id="pinned-rest-timer-row" class="bg-slate-900/95 border border-slate-800 rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 min-w-0">
           <button id="header-timer-toggle" type="button" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500/50 transition shrink-0" title="Tap to Start or Pause Rest Timer">
             <span id="header-timer-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
@@ -124,7 +124,7 @@
       </div>
     </div>
     <!-- Live Pinned Top Countdown Progress Strip -->
-    <div class="w-full bg-slate-900 h-1 overflow-hidden">
+    <div id="pinned-rest-timer-strip" class="w-full bg-slate-900 h-1 overflow-hidden">
       <div id="header-timer-progress" class="bg-emerald-500 h-full transition-all duration-300" style="width: 100%"></div>
     </div>
   </header>
@@ -137,34 +137,28 @@
   </div>
 
   <!-- Main Content Container (Padded for Fixed Top Header + Timer Bar) -->
-  <main class="max-w-xl w-full mx-auto px-3 sm:px-4 pt-28 space-y-2.5 overflow-x-hidden">
+  <main id="main-content-container" class="max-w-xl w-full mx-auto px-3 sm:px-4 pt-28 space-y-2.5 overflow-x-hidden">
 
     <!-- ==================== VIEW 1: WORKOUT & WEIGHT TRACKER ==================== -->
     <section id="view-workout" class="space-y-2.5">
-      <!-- Streamlined 7-Day Cycle & Week Selector Card -->
-      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
+      <!-- Streamlined 7-Day Cycle & Progressive Week Selector Card -->
+      <div id="gym-week-day-selector-card" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2">
-            <label for="week-select" class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">📅 Week:</label>
-            <select id="week-select" aria-label="Select training week" class="bg-slate-950 border border-emerald-500/40 text-white text-xs rounded-xl px-2.5 py-1 font-extrabold focus:outline-none focus:border-emerald-400">
-              <option value="1">Week 1</option>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400">📅 Week:</span>
+            <div id="progressive-week-pills" class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Progressive Training Weeks">
+              <!-- Populated dynamically by JS (3-Week Rolling Visibility) -->
+            </div>
+            <!-- Native select kept hidden for programmatic compatibility while custom pills provide mobile-safe color hierarchy -->
+            <select id="week-select" aria-label="Select training week" class="hidden">
+              <option value="1">✓ Week 1</option>
               <option value="2">Week 2</option>
-              <option value="3">Week 3</option>
-              <option value="4">Week 4</option>
-              <option value="5">Week 5</option>
-              <option value="6">Week 6</option>
-              <option value="7">Week 7</option>
-              <option value="8">Week 8</option>
-              <option value="9">Week 9</option>
-              <option value="10">Week 10</option>
-              <option value="11">Week 11</option>
-              <option value="12">Week 12</option>
             </select>
             <span id="week-status-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">In Progress</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <button type="button" id="quick-next-week-btn" class="px-2 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[10px] font-extrabold transition" title="Save this week's weights & advance to next week with all weights pre-filled">
-              ✓ Finish Wk → Next
+            <button type="button" id="quick-next-week-btn" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-300 text-[10px] font-extrabold transition" title="Finish current week, unlock next week & carry forward weights as placeholders">
+              ✓ Finish Week → Next
             </button>
 
             <span class="hidden sm:inline text-[10px] bg-slate-950 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-full font-semibold" id="crunch-weekly-badge">Done / Partial</span>
@@ -242,19 +236,14 @@
         <button type="button" id="shoe-critical-open-btn" class="shrink-0 px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-extrabold text-[10px]">Inspect 👟</button>
       </div>
 
-      <!-- Quick Exercise & Machine Jump Dropdown Bar -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 overflow-hidden">
-        <div class="flex items-center gap-2 w-full sm:flex-1 min-w-0">
-          <label for="exercise-jump-select" class="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0">🎯 Jump:</label>
-          <select id="exercise-jump-select" aria-label="Jump to exercise or machine" class="flex-1 min-w-0 w-full max-w-full truncate bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-xl px-2.5 py-1.5 font-semibold focus:outline-none focus:border-emerald-500">
-            <!-- Populated by JS -->
-          </select>
-        </div>
-        <div class="flex items-center gap-1.5 w-full sm:w-auto">
-          <button type="button" id="toggle-focus-collapse-btn" class="flex-1 sm:flex-initial px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-[11px] font-bold transition" title="Automatically collapse finished exercises to save screen space">
+      <!-- Streamlined Card Focus & Diagram Controls (Jump to Exercise Dropdown Removed for Less-Is-More Clarity) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 flex flex-wrap items-center justify-between gap-2 overflow-hidden">
+        <select id="exercise-jump-select" aria-label="Jump to exercise or machine" class="hidden"></select>
+        <div class="flex items-center gap-1.5 w-full">
+          <button type="button" id="toggle-focus-collapse-btn" class="flex-1 px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-[11px] font-bold transition" title="Automatically collapse finished exercises to save screen space">
             🎯 Auto-Collapse Done: ON
           </button>
-          <button type="button" id="toggle-all-images-btn" class="flex-1 sm:flex-initial px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold transition">
+          <button type="button" id="toggle-all-images-btn" class="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold transition">
             📸 Show/Hide All Diagrams
           </button>
         </div>
@@ -384,30 +373,14 @@
 
     <!-- ==================== VIEW 4: LOW-APPETITE VEGAN MEAL PLANNER ==================== -->
     <section id="view-vegan" class="hidden space-y-4">
-      <!-- Synced Day 1 – Day 7 Selector Strip with Soft Completion Dots -->
-      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400" id="vegan-week-day-title">🌱 Week 1 • Day 1 Fuel</span>
-            <span id="vegan-day-status-pill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">0/3 Meals</span>
-          </div>
-          <div class="flex items-center gap-2 text-[10px] font-semibold text-slate-300 bg-slate-950 border border-slate-800 px-2.5 py-0.5 rounded-full">
-            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-400/75 inline-block"></span> Done (3/3)</span>
-            <span class="inline-flex items-center gap-1 ml-1"><span class="w-2 h-2 rounded-full bg-amber-300/75 inline-block"></span> Partial</span>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-7 gap-1.5" id="vegan-day-selector-grid">
-          <!-- Populated dynamically by JS -->
-        </div>
-
-        <!-- Smart Gym Time & Auto-Meal Timing Sync Bar (Default 7:00 AM, Adapts to Morning / Midday / Evening) -->
-        <div id="vegan-gym-time-bar" class="bg-slate-950/90 border border-emerald-500/30 rounded-xl p-2.5 space-y-2">
-          <!-- Populated dynamically by JS -->
-        </div>
+      <!-- Top Week/Day Selector Hidden on Nutrition Tab so View Opens Directly on Daily Protein, Calories & Water Tracker -->
+      <div id="vegan-top-day-selector-container" class="hidden">
+        <span id="vegan-week-day-title">🌱 Week 1 • Day 1 Fuel</span>
+        <span id="vegan-day-status-pill">0/3 Meals</span>
+        <div id="vegan-day-selector-grid"></div>
       </div>
 
-      <!-- Compact Daily Macro & Low-Budget Grocery Savings HUD -->
+      <!-- Compact Daily Macro, Calories & Water Intake Tracker (Opens Directly at Top of Vegan Fuel Tab) -->
       <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -474,6 +447,11 @@
 
         <!-- Daily Water Intake Tracker in Milliliters (ml) -->
         <div id="daily-water-tracker-card" class="bg-slate-950/85 border border-sky-500/35 rounded-xl p-3 space-y-2">
+          <!-- Populated dynamically by JS -->
+        </div>
+
+        <!-- Smart Gym Time & Auto-Meal Timing Sync Bar -->
+        <div id="vegan-gym-time-bar" class="bg-slate-950/90 border border-emerald-500/30 rounded-xl p-2.5 space-y-2">
           <!-- Populated dynamically by JS -->
         </div>
       </div>
@@ -749,7 +727,11 @@
       checkedGroceries: {},
       customShoppingItems: [],
       currentWeek: 1,
+      selectedWeek: 1,
+      maxUnlockedWeek: 2,
       completedWeeks: { 1: true },
+      warmupLogs: {},
+      waterIntakeLogs: {},
       exerciseUnitPrefs: {},
       barbellConfig: {
         sat_hip_thrust: { barLbs: 45, sideLbs: 55 }
@@ -769,6 +751,8 @@
           usmcLogs: JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_USMC)),
           completedWeeks: { 1: true },
           currentWeek: 1,
+          selectedWeek: 1,
+          maxUnlockedWeek: 2,
           updatedAt: '2026-11-07T19:25:00.000Z'
         }
       },
@@ -783,6 +767,66 @@
     };
     /*__BAKED_STATE_END__*/
 
+    function getHighestWeekWithLogs(targetState) {
+      const logs = (targetState && targetState.workoutLogs) ? targetState.workoutLogs : {};
+      let highest = 1;
+      Object.keys(logs).forEach(k => {
+        const entry = logs[k];
+        if (entry && (entry.done || (entry.weight !== undefined && entry.weight !== ''))) {
+          const m = /^w(\d+)_/.exec(k);
+          if (m) {
+            const wNum = parseInt(m[1], 10);
+            if (!isNaN(wNum) && wNum > highest) highest = wNum;
+          }
+        }
+      });
+      return highest;
+    }
+
+    function hasWeek1LoggedSets(targetState) {
+      const logs = (targetState && targetState.workoutLogs) ? targetState.workoutLogs : {};
+      return Object.keys(logs).some(k => {
+        if (!k.startsWith('w1_')) return false;
+        const entry = logs[k];
+        return Boolean(entry && entry.done);
+      });
+    }
+
+    function syncProgressiveWeekState(targetState) {
+      if (!targetState || typeof targetState !== 'object') return;
+      if (!targetState.completedWeeks || typeof targetState.completedWeeks !== 'object') {
+        targetState.completedWeeks = {};
+      }
+      const curW = parseInt(targetState.selectedWeek || targetState.currentWeek || 1, 10) || 1;
+      targetState.currentWeek = Math.max(1, Math.min(12, curW));
+      targetState.selectedWeek = targetState.currentWeek;
+
+      const highestLogged = getHighestWeekWithLogs(targetState);
+      const week1HasLogs = hasWeek1LoggedSets(targetState);
+      if (week1HasLogs) {
+        targetState.completedWeeks[1] = true;
+      }
+      let completedMax = 0;
+      Object.keys(targetState.completedWeeks).forEach(wk => {
+        if (targetState.completedWeeks[wk]) {
+          const n = parseInt(wk, 10);
+          if (!isNaN(n) && n > completedMax) completedMax = n;
+        }
+      });
+      const defaultUnlocked = week1HasLogs ? 2 : 1;
+      const computedMax = Math.max(
+        defaultUnlocked,
+        parseInt(targetState.maxUnlockedWeek, 10) || 1,
+        targetState.selectedWeek,
+        highestLogged,
+        completedMax > 0 ? Math.min(12, completedMax + 1) : 1
+      );
+      targetState.maxUnlockedWeek = Math.max(1, Math.min(12, computedMax));
+      if (targetState.selectedWeek > targetState.maxUnlockedWeek) {
+        targetState.selectedWeek = targetState.maxUnlockedWeek;
+        targetState.currentWeek = targetState.maxUnlockedWeek;
+      }
+    }
 
     function ensureFrancoisWeek1Data(target, forceOverwrite) {
       if (!target || typeof target !== 'object') return target;
@@ -869,6 +913,7 @@
           }
         });
       } catch (err) {}
+      syncProgressiveWeekState(target);
       return target;
     }
 
@@ -901,9 +946,12 @@
       }
       const merged = Object.assign({}, base, loaded || {});
       ensureFrancoisWeek1Data(merged, false);
+      syncProgressiveWeekState(merged);
       // Always start with all Setup & Image panels hidden so no exercise ever gets stuck open
       merged.openImagePanels = {};
       if (!merged.cardCollapsedState) merged.cardCollapsedState = {};
+      if (!merged.warmupLogs) merged.warmupLogs = {};
+      if (!merged.waterIntakeLogs) merged.waterIntakeLogs = {};
       return merged;
     }
 
@@ -992,6 +1040,7 @@
             // Merge local sets and remote sets so neither is ever lost
             mergeWorkoutSnapshotsIntoCurrentState({ workoutLogs: localWorkoutLogs, usmcLogs: localUsmcLogs });
             ensureFrancoisWeek1Data(state, false);
+            syncProgressiveWeekState(state);
 
             saveState(true);
             renderWorkoutView();
@@ -1058,17 +1107,17 @@
     const WARMUP_DATA = {
       videoUrl: 'https://youtu.be/WHE90NWlCKI',
       upper: [
-        { name: 'Arm Circles', reps: '5 each direction', notes: 'Swing arms forward 5 reps, then reverse direction for 5 reps.' },
-        { name: 'Band Over-and-Backs', reps: '5 reps', notes: 'Wide overhand grip, bring band over head and behind body with straight arms.' },
-        { name: 'Band Pull-Aparts', reps: '10 reps', notes: 'Overhand grip shoulder-width apart, squeeze shoulder blades together.' },
-        { name: 'Band External Rotations', reps: '10 per side', notes: 'Pin elbow to side at 90°, rotate forearm outwards then control back in.' },
-        { name: 'Weighted External Rotations', reps: '10 per side', notes: 'Light plate/dumbbell, elbow at 90° shoulder height, rotate hand up.' }
+        { id: 'arm_circles', name: 'Arm Circles', reps: '5 each direction', videoUrl: 'https://www.youtube.com/watch?v=HMxqtrsNz60', notes: 'Swing arms forward 5 reps, then reverse direction for 5 reps.' },
+        { id: 'band_over_backs', name: 'Band Over-and-Backs', reps: '5 reps', videoUrl: 'https://www.youtube.com/watch?v=-avWRzrrH-o', notes: 'Wide overhand grip, bring band over head and behind body with straight arms.' },
+        { id: 'band_pull_aparts', name: 'Band Pull-Aparts', reps: '10 reps', videoUrl: 'https://www.youtube.com/watch?v=mHWlgqPvyxI', notes: 'Overhand grip shoulder-width apart, squeeze shoulder blades together.' },
+        { id: 'band_ext_rot', name: 'Band External Rotations', reps: '10 / side', videoUrl: 'https://www.youtube.com/watch?v=dS9ORQCnWsE', notes: 'Pin elbow to side at 90°, rotate forearm outwards then control back in.' },
+        { id: 'weighted_ext_rot', name: 'Weighted External Rotations', reps: '10 / side', videoUrl: 'https://www.youtube.com/watch?v=IlqmuM9FPUU', notes: 'Light plate/dumbbell, elbow at 90° shoulder height, rotate hand up.' }
       ],
       lower: [
-        { name: 'Forward Leg Swings', reps: '5 per side', notes: 'Hold fixture for support, swing leg front and back smoothly.' },
-        { name: 'Side Leg Swings', reps: '5 per side', notes: 'Hold fixture in front, swing leg side to side across body.' },
-        { name: 'Deep Squat Hold', reps: '1 × 30 sec', notes: 'Hold weight plate in front of chest in a deep squat, rock gently over ankles.' },
-        { name: 'Dead Bug', reps: '5 per side', notes: 'Brace core flat to floor, extend opposite arm and leg slowly.' }
+        { id: 'fwd_leg_swings', name: 'Forward Leg Swings', reps: '5 / side', videoUrl: 'https://www.youtube.com/watch?v=3l31E2cMGMk', notes: 'Hold fixture for support, swing leg front and back smoothly.' },
+        { id: 'side_leg_swings', name: 'Side Leg Swings', reps: '5 / side', videoUrl: 'https://www.youtube.com/watch?v=TAHk1yccDmM', notes: 'Hold fixture in front, swing leg side to side across body.' },
+        { id: 'deep_squat_hold', name: 'Deep Squat Hold', reps: '1 x 30 sec', videoUrl: 'https://www.youtube.com/watch?v=poKi7JPfuxE', notes: 'Hold weight plate in front of chest in a deep squat, rock gently over ankles.' },
+        { id: 'dead_bug', name: 'Dead Bug', reps: '5 / side', videoUrl: 'https://www.youtube.com/watch?v=o4GKiEoYClI', notes: 'Brace core flat to floor, extend opposite arm and leg slowly.' }
       ],
       warmupSetsNote: 'Perform 3 progressive warm-up sets (50% × 8 reps, 70% × 3–4 reps, 90% × 1–2 reps) on your first main compound lift of the day.'
     };
@@ -3245,38 +3294,88 @@
       const panelEl = document.getElementById('warmup-panel');
       if (!panelEl) return;
 
+      if (!state.warmupLogs || typeof state.warmupLogs !== 'object') state.warmupLogs = {};
+      const week = state.selectedWeek || state.currentWeek || 1;
+      const dayIdx = state.selectedDayIndex || 0;
       const drills = dayObj.warmupType === 'upper' ? WARMUP_DATA.upper : WARMUP_DATA.lower;
-      const curSched = getDayGymSchedule(state.currentWeek || 1, state.selectedDayIndex || 0);
+      const curSched = getDayGymSchedule(week, dayIdx);
       const curStart12 = formatMinutesTo12Hr(parseHHMMToMinutes(curSched.startTime));
+      let doneDrillsCount = 0;
+      drills.forEach((d, idx) => {
+        const wKey = `w${week}_d${dayIdx}_warmup_${d.id || idx}`;
+        if (state.warmupLogs[wKey]) doneDrillsCount++;
+      });
+
       if (titleEl) {
         titleEl.textContent = `${curStart12} ${dayObj.warmupType === 'upper' ? 'Upper Body' : 'Lower Body'} Warm-Up (~10 Min)`;
       }
       if (subEl) {
-        subEl.textContent = `${drills.length} dynamic drills + 50%/70%/90% warm-up sets`;
+        subEl.textContent = `${doneDrillsCount}/${drills.length} drills checked • Dedicated demo video per drill + 50%/70%/90% sets`;
       }
 
       panelEl.innerHTML = `
         <div class="flex items-center justify-between pt-2">
-          <span class="text-xs font-semibold text-emerald-400">Part 1: Optional 5-Min Light Cardio + Dynamic Drills</span>
-          <a href="${WARMUP_DATA.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 rounded-lg hover:bg-emerald-500/25 transition">
-            ▶ Warm-Up Video
+          <span class="text-xs font-semibold text-emerald-400">Part 1: Dynamic Mobility Drills (${doneDrillsCount}/${drills.length} Done)</span>
+          <a href="${WARMUP_DATA.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-slate-300 bg-slate-900 border border-slate-700 px-2.5 py-1 rounded-lg hover:text-white transition">
+            ▶ Full Overview
           </a>
         </div>
         <div class="space-y-1.5">
-          ${drills.map(d => `
-            <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 flex items-start justify-between gap-2">
-              <div>
-                <div class="text-xs font-bold text-white">${d.name}</div>
-                <div class="text-[11px] text-slate-400">${d.notes}</div>
+          ${drills.map((d, idx) => {
+            const wKey = `w${week}_d${dayIdx}_warmup_${d.id || idx}`;
+            const isDrillDone = Boolean(state.warmupLogs[wKey]);
+            return `
+            <div class="rounded-xl p-2.5 flex items-start justify-between gap-2.5 border transition ${
+              isDrillDone
+                ? 'bg-emerald-950/25 border-emerald-500/40'
+                : 'bg-slate-950/70 border-slate-800/80'
+            }">
+              <label class="flex items-start gap-2.5 cursor-pointer flex-1 min-w-0 select-none">
+                <input
+                  type="checkbox"
+                  data-warmup-key="${wKey}"
+                  data-warmup-name="${d.name}"
+                  aria-label="Mark ${d.name} complete"
+                  ${isDrillDone ? 'checked' : ''}
+                  class="warmup-drill-checkbox mt-0.5 w-4 h-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-400 shrink-0 cursor-pointer"
+                />
+                <div class="min-w-0">
+                  <div class="text-xs font-bold ${isDrillDone ? 'text-emerald-300 line-through' : 'text-white'}">${d.name}</div>
+                  <div class="text-[11px] text-slate-400">${d.notes}</div>
+                </div>
+              </label>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <span class="text-[11px] font-mono font-bold text-amber-300 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-md">${d.reps}</span>
+                <a
+                  href="${d.videoUrl}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Watch ${d.name} demonstration video"
+                  class="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 px-2 py-0.5 rounded-lg transition whitespace-nowrap"
+                >
+                  ▶ Video
+                </a>
               </div>
-              <span class="shrink-0 text-[11px] font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">${d.reps}</span>
             </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>
         <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 text-[11px] text-slate-300">
           <strong class="text-white">Part 2 (Warm-Up Sets):</strong> ${WARMUP_DATA.warmupSetsNote}
         </div>
       `;
+
+      panelEl.querySelectorAll('.warmup-drill-checkbox').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const wKey = cb.getAttribute('data-warmup-key');
+          const wName = cb.getAttribute('data-warmup-name') || 'Warm-up drill';
+          if (!state.warmupLogs || typeof state.warmupLogs !== 'object') state.warmupLogs = {};
+          state.warmupLogs[wKey] = Boolean(cb.checked);
+          saveState();
+          renderWarmupCard(dayObj);
+          showToast(cb.checked ? `✓ Warm-up drill complete: ${wName}` : `↺ Unchecked ${wName}`);
+        });
+      });
     }
 
     
@@ -3288,15 +3387,20 @@
 
     function getDailyWaterLoggedMl(week, dayIdx) {
       if (!state.waterLogsMl || typeof state.waterLogsMl !== 'object') state.waterLogsMl = {};
+      if (!state.waterIntakeLogs || typeof state.waterIntakeLogs !== 'object') state.waterIntakeLogs = {};
       const key = `w${week}_d${dayIdx}`;
-      const val = parseInt(state.waterLogsMl[key], 10);
+      const rawVal = state.waterIntakeLogs[key] !== undefined ? state.waterIntakeLogs[key] : state.waterLogsMl[key];
+      const val = parseInt(rawVal, 10);
       return isNaN(val) || val < 0 ? 0 : val;
     }
 
     function setDailyWaterLoggedMl(week, dayIdx, mlVal) {
       if (!state.waterLogsMl || typeof state.waterLogsMl !== 'object') state.waterLogsMl = {};
+      if (!state.waterIntakeLogs || typeof state.waterIntakeLogs !== 'object') state.waterIntakeLogs = {};
       const key = `w${week}_d${dayIdx}`;
-      state.waterLogsMl[key] = Math.max(0, Math.min(6000, Math.round(mlVal)));
+      const clamped = Math.max(0, Math.min(6000, Math.round(mlVal)));
+      state.waterLogsMl[key] = clamped;
+      state.waterIntakeLogs[key] = clamped;
     }
 
     
@@ -3649,21 +3753,160 @@
       reader.readAsDataURL(file);
     }
 
+    function openWorkoutCompletionModal(week, dayIdx, totalSetsCompleted, exercisesToday) {
+      const modal = document.getElementById('workout-complete-modal');
+      if (!modal) return;
+
+      const m = EXERCISE_META || {};
+      let totalVolume = 0;
+      (exercisesToday || []).forEach(ex => {
+        const exMeta = m[ex.id] || { defaultWeightLbs: 0 };
+        for (let s = 1; s <= ex.sets; s++) {
+          const entry = getLogEntry(week, dayIdx, ex.id, s);
+          if (entry && entry.done) {
+            const wVal = parseFloat(entry.weight) || exMeta.defaultWeightLbs || 0;
+            const rVal = parseInt(entry.reps, 10) || parseInt(ex.reps, 10) || 8;
+            totalVolume += wVal * rVal;
+          }
+        }
+      });
+
+      const statsEl = document.getElementById('modal-workout-complete-stats');
+      if (statsEl) {
+        const unitLbl = (state.weightUnit || 'lbs').toUpperCase();
+        statsEl.textContent = `${totalSetsCompleted} / ${totalSetsCompleted} Sets Logged • ${Math.round(totalVolume).toLocaleString()} ${unitLbl} Total Volume`;
+      }
+
+      const waterStatusEl = document.getElementById('modal-water-intake-status');
+      const curWater = getDailyWaterLoggedMl(week, dayIdx);
+      const targetWater = getDailyWaterTargetMl(dayIdx);
+      if (waterStatusEl) {
+        waterStatusEl.textContent = `Current Hydration: ${curWater.toLocaleString()} / ${targetWater.toLocaleString()} ml`;
+      }
+
+      const mealSched = getAdaptiveMealScheduleForDay(week, dayIdx);
+      const mealBtn = document.getElementById('modal-open-post-meal-btn');
+      if (mealBtn) {
+        mealBtn.textContent = `Open Post-Workout Meal (${mealSched.nextPostWorkoutTime12}) →`;
+      }
+
+      modal.classList.remove('hidden');
+    }
+
     function renderWorkoutView() {
       renderShoeTrackerUI();
-      if (!state.currentWeek) state.currentWeek = 1;
+      syncProgressiveWeekState(state);
       if (!state.completedWeeks) state.completedWeeks = {};
       if (!state.exerciseUnitPrefs) state.exerciseUnitPrefs = {};
       if (!state.openImagePanels) state.openImagePanels = {};
 
       renderDaySelector();
-      const week = state.currentWeek;
+      const week = state.selectedWeek || state.currentWeek || 1;
+      state.currentWeek = week;
+      state.selectedWeek = week;
+      const maxUnlocked = state.maxUnlockedWeek || 2;
       const dayIdx = state.selectedDayIndex;
       const dayObj = DAYS_SCHEDULE[dayIdx];
       renderWarmupCard(dayObj);
 
+      // Render Progressive Week Selector (Only Weeks 1 .. state.maxUnlockedWeek)
       const weekSel = document.getElementById('week-select');
-      if (weekSel) weekSel.value = String(week);
+      if (weekSel) {
+        let weekOptsHtml = '';
+        for (let w = 1; w <= maxUnlocked; w++) {
+          const isPastOrDone = (w < maxUnlocked) || Boolean(state.completedWeeks && state.completedWeeks[w]);
+          const label = isPastOrDone ? `✓ Week ${w}` : `Week ${w} (Active)`;
+          weekOptsHtml += `<option value="${w}" ${w === week ? 'selected' : ''}>${label}</option>`;
+        }
+        weekSel.innerHTML = weekOptsHtml;
+        weekSel.value = String(week);
+      }
+
+      const weekPillsContainer = document.getElementById('progressive-week-pills');
+      if (weekPillsContainer) {
+        // 3-Week Rolling Visibility Rule:
+        // - During the first 3 weeks (maxUnlocked <= 3), display only unlocked weeks 1..maxUnlocked.
+        // - Once maxUnlocked > 3, display the current active week + past 3 completed weeks as quick-access pills,
+        //   plus an expandable "View Older Weeks" option for earlier history. Never display locked future weeks.
+        const rollingStart = maxUnlocked <= 3 ? 1 : Math.max(1, maxUnlocked - 3);
+        const visibleWeeks = [];
+        for (let w = rollingStart; w <= maxUnlocked; w++) {
+          visibleWeeks.push(w);
+        }
+        const olderWeeks = [];
+        for (let w = 1; w < rollingStart; w++) {
+          olderWeeks.push(w);
+        }
+        if (maxUnlocked === 4 && olderWeeks.length === 0) {
+          olderWeeks.push(1);
+        }
+
+        function buildWeekPillButtonHtml(w) {
+          const isCurrentActive = (w === week);
+          const isPastCompleted = (w < week) || (w < maxUnlocked) || Boolean(state.completedWeeks && state.completedWeeks[w]);
+          let pillClasses = '';
+          let labelHtml = `Week ${w}`;
+          if (isCurrentActive) {
+            pillClasses = 'border-sky-400 bg-sky-500/20 text-sky-200 font-bold shadow-sm shadow-sky-500/25';
+            labelHtml = isPastCompleted ? `✓ Week ${w} (Active)` : `Week ${w}`;
+          } else if (isPastCompleted) {
+            pillClasses = 'border-amber-500/50 bg-amber-950/30 text-amber-300 hover:bg-amber-950/50 font-bold';
+            labelHtml = `✓ Done • Week ${w}`;
+          } else {
+            pillClasses = 'bg-slate-900 text-slate-200 border-slate-700 hover:border-sky-400/50 font-semibold';
+          }
+          return `
+            <button
+              type="button"
+              data-prog-week="${w}"
+              aria-pressed="${isCurrentActive ? 'true' : 'false'}"
+              class="progressive-week-pill-btn px-2.5 py-1 rounded-lg text-[11px] border transition whitespace-nowrap ${pillClasses}"
+            >
+              ${labelHtml}
+            </button>
+          `;
+        }
+
+        let pillsHtml = visibleWeeks.map(w => buildWeekPillButtonHtml(w)).join('');
+        if (maxUnlocked > 3) {
+          const isOlderOpen = Boolean(state.showOlderWeeks);
+          pillsHtml += `
+            <button
+              type="button"
+              id="toggle-older-weeks-btn"
+              aria-expanded="${isOlderOpen ? 'true' : 'false'}"
+              class="px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-700 bg-slate-950 text-slate-300 hover:text-white transition whitespace-nowrap"
+            >
+              ${isOlderOpen ? '▴ Hide Older Weeks' : `▾ View Older Weeks (${olderWeeks.length})`}
+            </button>
+          `;
+          if (isOlderOpen && olderWeeks.length > 0) {
+            pillsHtml += `<div id="older-weeks-drawer" class="w-full flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-800/80">${olderWeeks.map(w => buildWeekPillButtonHtml(w)).join('')}</div>`;
+          }
+        }
+
+        weekPillsContainer.innerHTML = pillsHtml;
+        weekPillsContainer.querySelectorAll('.progressive-week-pill-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const targetW = parseInt(btn.getAttribute('data-prog-week'), 10) || 1;
+            state.selectedWeek = targetW;
+            state.currentWeek = targetW;
+            saveState();
+            renderWorkoutView();
+            renderUSMCView();
+            renderVeganView();
+            showToast(`Switched to Week ${targetW}`);
+          });
+        });
+
+        const toggleOlderBtn = document.getElementById('toggle-older-weeks-btn');
+        if (toggleOlderBtn) {
+          toggleOlderBtn.addEventListener('click', () => {
+            state.showOlderWeeks = !state.showOlderWeeks;
+            renderWorkoutView();
+          });
+        }
+      }
 
       const hasCrunchToday = state.crunchDays.includes(dayIdx);
       const exercisesToday = [...dayObj.exercises];
@@ -3684,12 +3927,12 @@
 
       const weekBadge = document.getElementById('week-status-badge');
       if (weekBadge) {
-        if (state.completedWeeks[week]) {
-          weekBadge.textContent = `✓ Week ${week} Completed`;
-          weekBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        if (week < maxUnlocked || state.completedWeeks[week]) {
+          weekBadge.textContent = `✓ Week ${week} Completed • ${maxUnlocked} Unlocked`;
+          weekBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40';
         } else {
-          weekBadge.textContent = `Week ${week} • ${todayDoneSets}/${todayTotalSets} Sets Today`;
-          weekBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300';
+          weekBadge.textContent = `Week ${week} Active • ${todayDoneSets}/${todayTotalSets} Sets Today`;
+          weekBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/40';
         }
       }
 
@@ -3853,7 +4096,6 @@
               <button type="button" id="banner-open-shoe-gear-btn" class="font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2 py-1 rounded-lg transition" title="Open My Gear & Gym Shoe Lifespan Tracker (Inside Profile)">
                 👟 <span id="banner-shoe-health-readout">${calculateShoeWearFromWorkoutRecord().healthPct}%</span>
               </button>
-              ${dayObj.usmcDay ? `<button type="button" id="banner-jump-pullups" class="font-bold bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 px-2 py-1 rounded-lg transition">Pull-Ups</button>` : ''}
             </div>
           </div>
           <!-- Hidden quick preset buttons preserved for DOM/handler compatibility -->
@@ -4001,69 +4243,95 @@
         const barWeight = isBarbellEx ? getBarbellBarWeight(ex.id, exUnit) : 0;
         if (isBarbellEx && !barCfg.openCustomSets) barCfg.openCustomSets = {};
 
+        // CRITICAL GUARDRAIL: Declare topSideStep and topBothStep strictly BEFORE the for (let s = 1; s <= ex.sets; s++) loop
+        const topSideStep = exUnit === 'kg' ? 1.25 : 2.5;
+        const topBothStep = exUnit === 'kg' ? 2.5 : 5;
+
+        // Determine first unlogged set for this exercise so the Barbell Plate Calculator defaults to it
+        let firstUnloggedSetNum = 1;
+        let foundUnloggedForCalc = false;
+        for (let sCheck = 1; sCheck <= ex.sets; sCheck++) {
+          const eCheck = getLogEntry(week, dayIdx, ex.id, sCheck);
+          if (!eCheck || !eCheck.done) {
+            firstUnloggedSetNum = sCheck;
+            foundUnloggedForCalc = true;
+            break;
+          }
+        }
+        if (!foundUnloggedForCalc) firstUnloggedSetNum = 1;
+
+        let calcTargetSet = firstUnloggedSetNum;
+        if (isBarbellEx && barCfg) {
+          const savedTarget = parseInt(barCfg.selectedCalcSet, 10);
+          if (!isNaN(savedTarget) && savedTarget >= 1 && savedTarget <= ex.sets) {
+            calcTargetSet = savedTarget;
+          } else {
+            barCfg.selectedCalcSet = firstUnloggedSetNum;
+          }
+        }
+
         let exDoneSets = 0;
         let firstUnloggedSetFound = false;
         let setsHtml = '';
         let set1EffectiveTotal = exUnit === 'kg'
           ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0)
           : meta.defaultWeightLbs;
+        const setEffectiveTotals = {};
+        const setBarMaths = {};
 
         for (let s = 1; s <= ex.sets; s++) {
           const logKey = `w${week}_${dayIdx}_${ex.id}_${s}`;
           const existing = getLogEntry(week, dayIdx, ex.id, s);
           const prevSuggestion = getPreviousWeekSuggestion(week, dayIdx, ex.id, s);
 
-          // Determine canonical total weight (if empty in Week N>1, pre-fill/suggest from previous week!)
-          let displayWeight = existing && existing.weight !== undefined && existing.weight !== '' ? existing.weight : '';
-          let displayReps = existing && existing.reps !== undefined && existing.reps !== '' ? existing.reps : '';
-          let isSuggestedFromPrev = false;
-
-          if (displayWeight === '' && prevSuggestion && prevSuggestion.weight !== '') {
-            if (prevSuggestion.unit && prevSuggestion.unit !== exUnit) {
-              const conv = convertAndRoundWeight(prevSuggestion.weight, prevSuggestion.unit);
-              displayWeight = conv ? String(conv.rounded) : prevSuggestion.weight;
-            } else {
-              displayWeight = prevSuggestion.weight;
-            }
-            isSuggestedFromPrev = true;
-          }
-          if (displayReps === '' && prevSuggestion && prevSuggestion.reps !== '') {
-            displayReps = prevSuggestion.reps;
-          }
-
-          const pullupDayNum = PULLUP_EX_ID_TO_DAY[ex.id] || 0;
-          const repPlaceholder = pullupDayNum ? getPullupDefaultReps(pullupDayNum, s) : ex.reps;
-          const setLabelText = (pullupDayNum === 3)
-            ? `Set ${s} <span class="block text-[8px] font-semibold text-sky-400">${s <= 3 ? 'Overhand' : (s <= 6 ? 'Close Pinky' : 'Wide Grip')}</span>`
-            : `Set ${s}`;
-          const setRestSeconds = pullupDayNum
-            ? getPullupSetRestSec(pullupDayNum, s, displayReps, ex.restSec)
-            : ex.restSec;
-
           const defaultTotalPlaceholder = exUnit === 'kg'
             ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0)
             : meta.defaultWeightLbs;
 
-          const parsedDispW = parseFloat(displayWeight);
-          const effectiveTotalWeight = (displayWeight !== '' && !isNaN(parsedDispW) && (!isBarbellEx || parsedDispW >= barWeight || barWeight === 0))
+          // Read this set's own logged weight independently from state.workoutLogs[logKey].weight
+          const rawLoggedWeight = (existing && existing.weight !== undefined && existing.weight !== '') ? String(existing.weight) : '';
+          let prevWeekCarryWeight = '';
+          if (prevSuggestion && prevSuggestion.weight !== undefined && prevSuggestion.weight !== '') {
+            if (prevSuggestion.unit && prevSuggestion.unit !== exUnit) {
+              const conv = convertAndRoundWeight(prevSuggestion.weight, prevSuggestion.unit);
+              prevWeekCarryWeight = conv ? String(conv.rounded) : String(prevSuggestion.weight);
+            } else {
+              prevWeekCarryWeight = String(prevSuggestion.weight);
+            }
+          }
+
+          const weightPlaceholder = prevWeekCarryWeight !== '' ? prevWeekCarryWeight : String(defaultTotalPlaceholder);
+          const displayWeight = rawLoggedWeight;
+
+          let displayReps = existing && existing.reps !== undefined && existing.reps !== '' ? existing.reps : '';
+          const pullupDayNum = PULLUP_EX_ID_TO_DAY[ex.id] || 0;
+          const baseRepPlaceholder = pullupDayNum ? getPullupDefaultReps(pullupDayNum, s) : ex.reps;
+          const repPlaceholder = (displayReps === '' && prevSuggestion && prevSuggestion.reps !== '')
+            ? prevSuggestion.reps
+            : baseRepPlaceholder;
+
+          const setLabelText = (pullupDayNum === 3)
+            ? `Set ${s} <span class="block text-[8px] font-semibold text-sky-400">${s <= 3 ? 'Overhand' : (s <= 6 ? 'Close Pinky' : 'Wide Grip')}</span>`
+            : `Set ${s}`;
+          const setRestSeconds = pullupDayNum
+            ? getPullupSetRestSec(pullupDayNum, s, displayReps || repPlaceholder, ex.restSec)
+            : ex.restSec;
+
+          const candidateWeightStr = displayWeight !== '' ? displayWeight : weightPlaceholder;
+          const parsedDispW = parseFloat(candidateWeightStr);
+          const effectiveTotalWeight = (!isNaN(parsedDispW) && (!isBarbellEx || parsedDispW >= barWeight || barWeight === 0))
             ? parsedDispW
             : defaultTotalPlaceholder;
+          setEffectiveTotals[s] = effectiveTotalWeight;
           if (s === 1) {
             set1EffectiveTotal = effectiveTotalWeight;
           }
 
           const barMath = isBarbellEx ? computeBarbellMath(effectiveTotalWeight, ex.id, exUnit) : null;
-          const sideStep = exUnit === 'kg' ? 1.25 : 2.5;
-          const bothStep = exUnit === 'kg' ? 2.5 : 5;
+          setBarMaths[s] = barMath;
           const isCustomSetOpen = !!(isBarbellEx && barCfg && barCfg.openCustomSets && barCfg.openCustomSets[s]);
+          const isSelectedInCalc = isBarbellEx && calcTargetSet === s;
 
-          const sourceUnit = exUnit === 'kg' ? 'lbs' : 'kg';
-          const weightToShowConv = existing && existing.prevRawWeight ? existing.prevRawWeight : (displayWeight !== '' ? displayWeight : defaultTotalPlaceholder);
-          const convObj = showConversionHelper
-            ? (existing && existing.exactConverted
-                ? { rounded: displayWeight, exact: existing.exactConverted, targetUnit: exUnit }
-                : convertAndRoundWeight(weightToShowConv, sourceUnit))
-            : null;
           const isDone = !!(existing && existing.done);
           if (isDone) exDoneSets++;
           const isCurrentTargetSet = !isDone && !firstUnloggedSetFound;
@@ -4073,37 +4341,31 @@
             <div class="py-2 px-2.5 rounded-xl transition-all ${
               isDone
                 ? 'bg-emerald-950/20 border border-emerald-500/35'
-                : 'bg-slate-950/75 border border-slate-800/80'
+                : (isSelectedInCalc
+                    ? 'bg-slate-950/90 border border-sky-400/50'
+                    : 'bg-slate-950/75 border border-slate-800/80')
             }">
               <div class="grid grid-cols-12 items-center gap-2">
                 <div class="col-span-2">
                   <span class="text-xs font-extrabold ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
-                  ${isBarbellEx && s > 1 ? `
-                    <button type="button" data-toggle-custom-set="${ex.id}" data-set-idx="${s}" class="toggle-custom-set-btn block text-[9px] font-bold ${isCustomSetOpen ? 'text-sky-300' : 'text-slate-500 hover:text-slate-300'} mt-0.5 transition" title="Customize plates for Set ${s} only">
-                      ${isCustomSetOpen ? '▲ Same' : '✎ Custom'}
+                  ${isBarbellEx ? `
+                    <button type="button" data-select-calc-ex="${ex.id}" data-set-idx="${s}" class="select-calc-set-btn block text-[9px] font-bold ${isSelectedInCalc ? 'text-amber-300' : 'text-slate-400 hover:text-sky-300'} mt-0.5 transition" title="Select Set ${s} in Plate Calculator">
+                      ${isSelectedInCalc ? '💿 Active' : '💿 Plates'}
                     </button>
                   ` : ''}
                 </div>
                 <div class="col-span-4">
-                  ${isBarbellEx && barMath ? `
-                    <input type="hidden" value="${barMath.total}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" class="workout-input-ro-total" />
-                    <div data-barbell-ro-total="${logKey}" class="flex flex-col items-center justify-center bg-slate-900 border border-slate-700 rounded-lg py-1 px-1.5 text-center select-none leading-tight">
-                      <span class="text-xs font-extrabold text-white">${barMath.total} ${exUnit}</span>
-                      <span class="text-[9px] font-semibold text-slate-400">${barMath.perSide}/side</span>
-                    </div>
-                  ` : `
-                    <div class="flex items-center bg-slate-900 border border-slate-700/90 rounded-lg overflow-hidden">
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-2.5" class="step-adj-btn px-2 py-1.5 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition">−</button>
-                      <input type="number" step="0.5" inputmode="decimal" placeholder="${defaultTotalPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full min-w-0 bg-transparent py-1.5 text-center text-sm font-extrabold text-white focus:outline-none" />
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="2.5" class="step-adj-btn px-2 py-1.5 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition">+</button>
-                    </div>
-                  `}
+                  <div class="flex items-center bg-slate-900 border ${isBarbellEx ? 'border-amber-500/40' : 'border-slate-700/90'} rounded-lg overflow-hidden">
+                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-${topBothStep}" class="step-adj-btn px-2 py-1.5 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Weight">−</button>
+                    <input type="number" step="0.5" inputmode="decimal" placeholder="${weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full min-w-0 bg-transparent py-1.5 text-center text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none" />
+                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="${topBothStep}" class="step-adj-btn px-2 py-1.5 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Weight">+</button>
+                  </div>
                 </div>
                 <div class="col-span-3">
                   <div class="flex items-center bg-slate-900 border border-slate-700/90 rounded-lg overflow-hidden">
-                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn px-2 py-1.5 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition">−</button>
-                    <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full min-w-0 bg-transparent py-1.5 text-sm font-extrabold text-white focus:outline-none text-center" />
-                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn px-2 py-1.5 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition">+</button>
+                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn px-2 py-1.5 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
+                    <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full min-w-0 bg-transparent py-1.5 text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none text-center" />
+                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn px-2 py-1.5 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
                   </div>
                 </div>
                 <div class="col-span-3 flex items-center justify-end">
@@ -4119,22 +4381,34 @@
                 </div>
               </div>
 
-              ${isBarbellEx && barMath && s > 1 && isCustomSetOpen ? `
+              ${isBarbellEx && barMath ? `
+              <!-- Inline Per-Set Barbell Plate Breakdown: (totalWeight - barWeight) / 2 -->
+              <div data-barbell-ro-total="${logKey}" class="mt-1.5 pt-1.5 border-t border-slate-800/75 flex flex-wrap items-center justify-between gap-1.5 text-[10px]">
+                <span class="font-bold text-slate-300">
+                  💿 <strong class="text-amber-300">${barMath.bar} ${exUnit}</strong> Bar + <strong class="text-emerald-300">${barMath.perSide} ${exUnit}/side</strong> = <strong class="text-white">${barMath.total} ${exUnit}</strong>
+                </span>
+                <div class="flex flex-wrap items-center gap-1">
+                  ${barMath.plateChipsHtml}
+                </div>
+              </div>
+              ` : ''}
+
+              ${isBarbellEx && barMath && isCustomSetOpen ? `
               <div class="grid grid-cols-2 gap-2 pt-1.5 mt-1.5 border-t border-slate-800/80">
                 <div class="bg-slate-900 border border-slate-700 rounded-lg p-1.5 space-y-1">
                   <span class="block text-[9px] font-bold uppercase text-slate-300">Set ${s} • 1 Side (${exUnit})</span>
                   <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden w-full">
-                    <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${sideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-300 hover:text-white">−</button>
+                    <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${topSideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-300 hover:text-white">−</button>
                     <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.perSide}" data-bar3-inp="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-white focus:outline-none" />
-                    <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${sideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-sky-400">+</button>
+                    <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${topSideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-sky-400">+</button>
                   </div>
                 </div>
                 <div class="bg-slate-900 border border-slate-700 rounded-lg p-1.5 space-y-1">
                   <span class="block text-[9px] font-bold uppercase text-slate-300">Set ${s} • Both Sides (${exUnit})</span>
                   <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden w-full">
-                    <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${bothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-300 hover:text-white">−</button>
+                    <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${topBothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-300 hover:text-white">−</button>
                     <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-white focus:outline-none" />
-                    <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${bothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-sky-400">+</button>
+                    <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${topBothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-sky-400">+</button>
                   </div>
                 </div>
               </div>
@@ -4147,11 +4421,11 @@
         const isUpNext = ex.id === upNextExId;
         const isCollapsedDone = isExerciseSetsCollapsed(dayIdx, ex.id, isExComplete);
         const isActiveCard = (!isCollapsedDone) || (state.activeFocusedExId ? ex.id === state.activeFocusedExId : (isUpNext && !isExComplete));
-        const s1BarMath = isBarbellEx ? computeBarbellMath(set1EffectiveTotal, ex.id, exUnit) : null;
+        const activeCalcEffectiveTotal = setEffectiveTotals[calcTargetSet] !== undefined ? setEffectiveTotals[calcTargetSet] : set1EffectiveTotal;
+        const activeCalcBarMath = isBarbellEx ? (setBarMaths[calcTargetSet] || computeBarbellMath(activeCalcEffectiveTotal, ex.id, exUnit)) : null;
+        const s1BarMath = isBarbellEx ? (setBarMaths[1] || computeBarbellMath(set1EffectiveTotal, ex.id, exUnit)) : null;
         const barPresets = exUnit === 'kg' ? BARBELL_PRESETS_KG : BARBELL_PRESETS_LBS;
-        const topSideStep = exUnit === 'kg' ? 1.25 : 2.5;
-        const topBothStep = exUnit === 'kg' ? 2.5 : 5;
-        const s1LogKey = `w${week}_${dayIdx}_${ex.id}_1`;
+        const calcTargetLogKey = `w${week}_${dayIdx}_${ex.id}_${calcTargetSet}`;
 
         return `
           <article id="ex-card-${ex.id}" class="${
@@ -4187,9 +4461,9 @@
                       <span>🛠️</span>
                       <span class="text-white font-bold">${meta.equipLabel}</span>
                     </div>
-                    ${isBarbellEx && s1BarMath ? `
+                    ${isBarbellEx && activeCalcBarMath ? `
                     <span data-plate-badge="${ex.id}" class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-300 bg-slate-950 border border-slate-800 px-2 py-0.5 rounded-lg">
-                      💿 ${s1BarMath.bar} ${exUnit} Bar + ${s1BarMath.perSide}/side = <strong class="text-white">${s1BarMath.total} ${exUnit}</strong>
+                      💿 Set ${calcTargetSet}: ${activeCalcBarMath.bar} ${exUnit} Bar + ${activeCalcBarMath.perSide}/side = <strong class="text-white">${activeCalcBarMath.total} ${exUnit}</strong>
                     </span>
                     ` : ''}
                   </div>
@@ -4216,7 +4490,7 @@
             <button type="button" data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${isExComplete ? '1' : '0'}" class="expand-done-btn w-full flex items-center justify-between bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-slate-300 rounded-xl px-3 py-2 text-xs transition">
               <span class="font-medium text-left">
                 ${isExComplete ? `<span class="text-emerald-400 font-bold">✓ All ${ex.sets} sets logged</span>` : `${exDoneSets} / ${ex.sets} sets logged`}
-                ${meta.defaultWeightLbs > 0 ? `<span class="text-slate-400 ml-1">• <strong class="text-white">${set1EffectiveTotal} ${exUnit}</strong></span>` : ''}
+                ${meta.defaultWeightLbs > 0 ? `<span class="text-slate-400 ml-1">• <strong class="text-white">${activeCalcEffectiveTotal} ${exUnit}</strong></span>` : ''}
               </span>
               <span class="${isActiveCard ? 'text-sky-300' : 'text-slate-400'} font-bold text-[11px] shrink-0">
                 ${isCollapsedDone ? 'Tap to Open ▾' : 'Close ▴'}
@@ -4243,17 +4517,17 @@
                 ${getStepVisualDiagramHtml(ex, meta, dayIdx)}
               </div>
 
-              ${isBarbellEx && s1BarMath ? `
-              <!-- STEP 1: BARBELL & PLATE BUILDER (Placed ABOVE Set 1 so you load the bar first, then log Set 1, 2, 3 below!) -->
+              ${isBarbellEx && activeCalcBarMath ? `
+              <!-- STEP 1: PER-SET BARBELL & PLATE CALCULATOR (Hevy/Strong Standard: Independent Per-Set Plate Math!) -->
               <div class="bg-slate-950/90 border border-amber-500/30 rounded-xl p-2.5 space-y-2">
-                <!-- Barbell Selector Row (Chosen Once for All Sets) -->
+                <!-- Barbell Selector Row -->
                 <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-800/80">
                   <div class="flex flex-wrap items-center gap-1.5">
                     <span class="text-[11px] font-extrabold text-amber-300">🏋️ Barbell:</span>
                     <div class="inline-flex items-center bg-slate-900 border border-amber-500/40 rounded-lg overflow-hidden">
-                      <button type="button" data-bar3-step="barWeight" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-delta="-${exUnit === 'kg' ? 2.5 : 5}" class="bar3-step-btn px-2 py-0.5 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Decrease barbell weight">−</button>
-                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${s1BarMath.bar}" data-bar3-inp="barWeight" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" aria-label="${ex.name} Barbell Weight" class="bar3-input w-12 bg-transparent py-0.5 text-center text-xs font-extrabold text-amber-300 focus:outline-none" />
-                      <button type="button" data-bar3-step="barWeight" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-delta="${exUnit === 'kg' ? 2.5 : 5}" class="bar3-step-btn px-2 py-0.5 text-xs font-extrabold text-amber-400 hover:bg-slate-800 transition" title="Increase barbell weight">+</button>
+                      <button type="button" data-bar3-step="barWeight" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-delta="-${exUnit === 'kg' ? 2.5 : 5}" class="bar3-step-btn px-2 py-0.5 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Decrease barbell weight">−</button>
+                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${activeCalcBarMath.bar}" data-bar3-inp="barWeight" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" aria-label="${ex.name} Barbell Weight" class="bar3-input w-12 bg-transparent py-0.5 text-center text-xs font-extrabold text-amber-300 focus:outline-none" />
+                      <button type="button" data-bar3-step="barWeight" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-delta="${exUnit === 'kg' ? 2.5 : 5}" class="bar3-step-btn px-2 py-0.5 text-xs font-extrabold text-amber-400 hover:bg-slate-800 transition" title="Increase barbell weight">+</button>
                     </div>
                     <div class="flex flex-wrap items-center gap-1">
                       ${barPresets.map(p => `
@@ -4270,38 +4544,76 @@
                   </button>
                 </div>
 
-                <!-- 2 Linked Plate Boxes: Stacked Label + Full-Width Stepper for Perfect 360px Phone Ergonomics! -->
+                <!-- Target Set Selector & Optional Apply to Remaining Unlogged Sets Action -->
+                <div class="flex flex-wrap items-center justify-between gap-1.5 pb-1 border-b border-slate-800/70">
+                  <div class="flex flex-wrap items-center gap-1">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-0.5">Plate Calc Target:</span>
+                    ${Array.from({ length: ex.sets }, (_, i) => i + 1).map(sNum => {
+                      const sEntry = getLogEntry(week, dayIdx, ex.id, sNum);
+                      const sDone = Boolean(sEntry && sEntry.done);
+                      const isSel = sNum === calcTargetSet;
+                      return `
+                        <button
+                          type="button"
+                          data-select-calc-ex="${ex.id}"
+                          data-set-idx="${sNum}"
+                          aria-pressed="${isSel ? 'true' : 'false'}"
+                          class="select-calc-set-btn px-2 py-0.5 rounded-lg text-[10px] font-extrabold border transition ${
+                            isSel
+                              ? 'bg-sky-400 text-slate-950 border-sky-300 shadow-sm'
+                              : (sDone
+                                  ? 'bg-emerald-950/30 text-emerald-300 border-emerald-500/35 hover:bg-emerald-950/50'
+                                  : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white')
+                          }"
+                        >
+                          ${sDone ? '✓ ' : ''}Set ${sNum}
+                        </button>
+                      `;
+                    }).join('')}
+                  </div>
+                  <button
+                    type="button"
+                    data-apply-unlogged-ex="${ex.id}"
+                    data-apply-from-set="${calcTargetSet}"
+                    class="apply-unlogged-sets-btn text-[10px] font-bold text-sky-300 hover:text-sky-200 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 px-2 py-0.5 rounded-lg transition"
+                    title="Copy Set ${calcTargetSet} weight to all remaining unlogged sets for this exercise"
+                  >
+                    ⇉ Apply to remaining unlogged sets
+                  </button>
+                </div>
+
+                <!-- 2 Linked Plate Boxes for Selected Set Only (Never Force-Overwrites Other Sets!) -->
                 <div class="grid grid-cols-2 gap-2">
-                  <!-- Box 1: 1 Side (Auto-adjusts Both Sides = 2x) -->
+                  <!-- Box 1: 1 Side (Auto-adjusts Both Sides = 2x for Set calcTargetSet) -->
                   <div class="bg-slate-900/95 border border-emerald-500/35 rounded-xl p-2 space-y-1">
                     <div class="flex items-center justify-between">
-                      <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">1 Side (${exUnit})</span>
+                      <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Set ${calcTargetSet} • 1 Side (${exUnit})</span>
                       <span class="text-[9px] text-slate-400 font-semibold">→ 2× Sides</span>
                     </div>
                     <div class="flex items-center bg-slate-950 border border-slate-700 rounded-lg overflow-hidden w-full">
-                      <button type="button" data-bar3-step="perSide" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="-${topSideStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Decrease 1 side by ${topSideStep}">−</button>
-                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${s1BarMath.perSide}" data-bar3-inp="perSide" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" aria-label="${ex.name} Weight on 1 Side" class="bar3-input w-full min-w-0 bg-transparent py-1.5 text-center text-sm font-extrabold text-emerald-300 focus:outline-none" />
-                      <button type="button" data-bar3-step="perSide" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="${topSideStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Increase 1 side by ${topSideStep}">+</button>
+                      <button type="button" data-bar3-step="perSide" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="-${topSideStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Decrease Set ${calcTargetSet} 1 side by ${topSideStep}">−</button>
+                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${activeCalcBarMath.perSide}" data-bar3-inp="perSide" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" aria-label="${ex.name} Set ${calcTargetSet} Weight on 1 Side" class="bar3-input w-full min-w-0 bg-transparent py-1.5 text-center text-sm font-extrabold text-emerald-300 focus:outline-none" />
+                      <button type="button" data-bar3-step="perSide" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="${topSideStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Increase Set ${calcTargetSet} 1 side by ${topSideStep}">+</button>
                     </div>
                   </div>
 
-                  <!-- Box 2: Total of Both Sides (Auto-adjusts 1 Side = ÷2) -->
+                  <!-- Box 2: Total of Both Sides (Auto-adjusts 1 Side = ÷2 for Set calcTargetSet) -->
                   <div class="bg-slate-900/95 border border-sky-500/35 rounded-xl p-2 space-y-1">
                     <div class="flex items-center justify-between">
-                      <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Both Sides (${exUnit})</span>
+                      <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Set ${calcTargetSet} • Both Sides (${exUnit})</span>
                       <span class="text-[9px] text-slate-400 font-semibold">→ ÷2 Side</span>
                     </div>
                     <div class="flex items-center bg-slate-950 border border-slate-700 rounded-lg overflow-hidden w-full">
-                      <button type="button" data-bar3-step="bothSides" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="-${topBothStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Decrease both sides by ${topBothStep}">−</button>
-                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${s1BarMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" aria-label="${ex.name} Total of Both Sides" class="bar3-input w-full min-w-0 bg-transparent py-1.5 text-center text-sm font-extrabold text-sky-300 focus:outline-none" />
-                      <button type="button" data-bar3-step="bothSides" data-log-key="${s1LogKey}" data-ex-id="${ex.id}" data-set-idx="1" data-sync-all="1" data-delta="${topBothStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-sky-400 hover:bg-slate-800 transition" title="Increase both sides by ${topBothStep}">+</button>
+                      <button type="button" data-bar3-step="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="-${topBothStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Decrease Set ${calcTargetSet} both sides by ${topBothStep}">−</button>
+                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${activeCalcBarMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" aria-label="${ex.name} Set ${calcTargetSet} Total of Both Sides" class="bar3-input w-full min-w-0 bg-transparent py-1.5 text-center text-sm font-extrabold text-sky-300 focus:outline-none" />
+                      <button type="button" data-bar3-step="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="${topBothStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-sky-400 hover:bg-slate-800 transition" title="Increase Set ${calcTargetSet} both sides by ${topBothStep}">+</button>
                     </div>
                   </div>
                 </div>
 
-                <!-- Formula & Plate Chips Bar (Directly above Set 1!) -->
-                <div data-barbell-eq="${s1LogKey}" class="bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[10px]">
-                  ${renderBarbellSetEquationInnerHtml(s1BarMath, s1LogKey, ex.id)}
+                <!-- Formula & Plate Chips Bar for Selected Set -->
+                <div data-barbell-eq="${calcTargetLogKey}" class="bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[10px]">
+                  ${renderBarbellSetEquationInnerHtml(activeCalcBarMath, calcTargetLogKey, ex.id)}
                 </div>
 
                 ${barCfg.warmupOpen ? (() => {
@@ -4331,11 +4643,11 @@
               </div>
               ` : ''}
 
-              <!-- STEP 2: SET 1, SET 2, SET 3 ROWS (Placed BELOW the Barbell & Plate Builder!) -->
+              <!-- STEP 2: SET 1, SET 2, SET 3 ROWS (Independent Per-Set Weights & Inline Plate Breakdowns!) -->
               <div class="space-y-1.5">
                 <div class="grid grid-cols-12 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   <div class="col-span-2">Set</div>
-                  <div class="col-span-4 text-center ${isBarbellEx ? 'text-amber-300' : ''}">${isBarbellEx ? `🔒 Total (${exUnit.toUpperCase()})` : `Weight (${exUnit.toUpperCase()})`}</div>
+                  <div class="col-span-4 text-center ${isBarbellEx ? 'text-amber-300' : ''}">Weight (${exUnit.toUpperCase()})</div>
                   <div class="col-span-3 text-center">Reps</div>
                   <div class="col-span-3 text-right">1-Tap Log</div>
                 </div>
@@ -4346,16 +4658,20 @@
         `;
       }).join('');
 
-      // Helper to apply a new canonical total weight to a Barbell Set Row (and optionally sync all unlogged sets when adjusted from the top Plate Builder!)
-      function applyBarbellSetMathAndSyncDOM(key, exId, setIdx, newTotalVal, syncAllSets) {
+      // Helper to apply a new canonical total weight to a SINGLE Barbell Set Row (or explicitly to remaining unlogged sets when requested)
+      function applyBarbellSetMathAndSyncDOM(key, exId, setIdx, newTotalVal, syncAllUnloggedSets) {
         const exUnit = getExerciseUnit(exId);
         const mathNow = computeBarbellMath(newTotalVal, exId, exUnit);
         if (!state.exerciseUnitPrefs[exId]) {
           state.exerciseUnitPrefs[exId] = exUnit;
         }
         const exObj = exercisesToday.find(e => e.id === exId);
-        const targetSets = (syncAllSets && exObj)
-          ? Array.from({ length: exObj.sets }, (_, i) => i + 1)
+        const targetSets = (syncAllUnloggedSets && exObj)
+          ? Array.from({ length: exObj.sets }, (_, i) => i + 1).filter(sNum => {
+              if (sNum === setIdx) return true;
+              const existing = getLogEntry(week, dayIdx, exId, sNum);
+              return !existing || !existing.done;
+            })
           : [setIdx];
 
         targetSets.forEach(sNum => {
@@ -4363,51 +4679,84 @@
           if (!state.workoutLogs[k]) {
             state.workoutLogs[k] = { weight: '', reps: '', done: false, unit: exUnit };
           }
-          // When adjusting the top Plate Builder, update Set 1 and any set that does not have a custom per-set override open
-          const cfg = getBarbellConfig(exId);
-          const hasCustomOpen = !!(cfg && cfg.openCustomSets && cfg.openCustomSets[sNum]);
-          if (sNum === setIdx || !hasCustomOpen) {
-            state.workoutLogs[k].weight = String(mathNow.total);
-            state.workoutLogs[k].unit = exUnit;
-            if (week === 1) {
-              state.workoutLogs[`${dayIdx}_${exId}_${sNum}`] = Object.assign({}, state.workoutLogs[k]);
-            }
+          state.workoutLogs[k].weight = String(mathNow.total);
+          state.workoutLogs[k].unit = exUnit;
+          if (week === 1) {
+            state.workoutLogs[`${dayIdx}_${exId}_${sNum}`] = Object.assign({}, state.workoutLogs[k]);
+          }
 
-            const hiddenInp = listEl.querySelector(`input.workout-input-ro-total[data-log-key="${k}"]`);
-            if (hiddenInp) hiddenInp.value = String(mathNow.total);
+          const weightInp = listEl.querySelector(`input.workout-input[data-log-key="${k}"][data-field="weight"]`);
+          if (weightInp && document.activeElement !== weightInp) {
+            weightInp.value = String(mathNow.total);
+          }
 
-            const inpSide = listEl.querySelector(`input[data-bar3-inp="perSide"][data-log-key="${k}"]`);
-            const inpBoth = listEl.querySelector(`input[data-bar3-inp="bothSides"][data-log-key="${k}"]`);
-            const inpBar = listEl.querySelector(`input[data-bar3-inp="barWeight"][data-log-key="${k}"]`);
-            if (inpSide && document.activeElement !== inpSide) inpSide.value = String(mathNow.perSide);
-            if (inpBoth && document.activeElement !== inpBoth) inpBoth.value = String(mathNow.bothSides);
-            if (inpBar && document.activeElement !== inpBar) inpBar.value = String(mathNow.bar);
+          const inpSide = listEl.querySelector(`input[data-bar3-inp="perSide"][data-log-key="${k}"]`);
+          const inpBoth = listEl.querySelector(`input[data-bar3-inp="bothSides"][data-log-key="${k}"]`);
+          const inpBar = listEl.querySelector(`input[data-bar3-inp="barWeight"][data-log-key="${k}"]`);
+          if (inpSide && document.activeElement !== inpSide) inpSide.value = String(mathNow.perSide);
+          if (inpBoth && document.activeElement !== inpBoth) inpBoth.value = String(mathNow.bothSides);
+          if (inpBar && document.activeElement !== inpBar) inpBar.value = String(mathNow.bar);
 
-            const roTotalEl = listEl.querySelector(`[data-barbell-ro-total="${k}"]`);
-            if (roTotalEl) {
-              roTotalEl.innerHTML = `
-                <span class="text-xs font-extrabold text-amber-300">🔒 ${mathNow.total} ${exUnit}</span>
-                <span class="text-[9px] font-bold text-emerald-300">${mathNow.perSide}/side <span class="text-slate-400">(${mathNow.totalOther}${mathNow.otherUnit})</span></span>
-              `;
-            }
+          const roTotalEl = listEl.querySelector(`[data-barbell-ro-total="${k}"]`);
+          if (roTotalEl) {
+            roTotalEl.innerHTML = `
+              <span class="font-bold text-slate-300">
+                💿 <strong class="text-amber-300">${mathNow.bar} ${exUnit}</strong> Bar + <strong class="text-emerald-300">${mathNow.perSide} ${exUnit}/side</strong> = <strong class="text-white">${mathNow.total} ${exUnit}</strong>
+              </span>
+              <div class="flex flex-wrap items-center gap-1">
+                ${mathNow.plateChipsHtml}
+              </div>
+            `;
+          }
 
-            const eqEl = listEl.querySelector(`[data-barbell-eq="${k}"]`);
-            if (eqEl) {
-              eqEl.innerHTML = renderBarbellSetEquationInnerHtml(mathNow, k, exId);
-              attachRoundStandardListeners();
-            }
+          const eqEl = listEl.querySelector(`[data-barbell-eq="${k}"]`);
+          if (eqEl) {
+            eqEl.innerHTML = renderBarbellSetEquationInnerHtml(mathNow, k, exId);
+            attachRoundStandardListeners();
           }
         });
 
-        if (setIdx === 1 || syncAllSets) {
-          const plateEl = listEl.querySelector(`[data-plate-badge="${exId}"]`);
-          if (plateEl) {
-            plateEl.textContent = `💿 ${mathNow.bar} ${exUnit} Bar + ${mathNow.bothSides} ${exUnit} Sides (${mathNow.perSide}/side) = ${mathNow.total} ${exUnit}`;
-          }
+        const plateEl = listEl.querySelector(`[data-plate-badge="${exId}"]`);
+        if (plateEl) {
+          plateEl.innerHTML = `💿 Set ${setIdx}: ${mathNow.bar} ${exUnit} Bar + ${mathNow.perSide}/side = <strong class="text-white">${mathNow.total} ${exUnit}</strong>`;
         }
         saveState();
         return mathNow;
       }
+
+      // Select which set the Barbell Plate Calculator is targeting (Set 1, Set 2, Set 3)
+      listEl.querySelectorAll('.select-calc-set-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-select-calc-ex');
+          const sIdx = parseInt(btn.getAttribute('data-set-idx'), 10) || 1;
+          const cfg = getBarbellConfig(exId);
+          cfg.selectedCalcSet = sIdx;
+          saveState();
+          renderWorkoutView();
+        });
+      });
+
+      // Optional "Apply to remaining unlogged sets" button on the Barbell Plate Calculator
+      listEl.querySelectorAll('.apply-unlogged-sets-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-apply-unlogged-ex');
+          const fromSet = parseInt(btn.getAttribute('data-apply-from-set'), 10) || 1;
+          const exUnit = getExerciseUnit(exId);
+          const meta = EXERCISE_META[exId] || { defaultWeightLbs: 45 };
+          const defTotal = exUnit === 'kg'
+            ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0)
+            : meta.defaultWeightLbs;
+          const fromKey = `w${week}_${dayIdx}_${exId}_${fromSet}`;
+          const fromInp = listEl.querySelector(`input.workout-input[data-log-key="${fromKey}"][data-field="weight"]`);
+          const fromEntry = getLogEntry(week, dayIdx, exId, fromSet);
+          const sourceW = (fromInp && fromInp.value !== '')
+            ? parseFloat(fromInp.value)
+            : ((fromEntry && fromEntry.weight !== '') ? parseFloat(fromEntry.weight) : (fromInp && fromInp.placeholder ? parseFloat(fromInp.placeholder) : defTotal));
+          applyBarbellSetMathAndSyncDOM(fromKey, exId, fromSet, sourceW, true);
+          renderWorkoutView();
+          showToast(`✓ Applied Set ${fromSet} weight (${sourceW} ${exUnit}) to remaining unlogged sets!`);
+        });
+      });
 
       // Attach listeners for the Barbell & Plate Builder inputs (1 Side, Both Sides, Barbell)
       listEl.querySelectorAll('.bar3-input').forEach(inp => {
@@ -4416,18 +4765,17 @@
           const key = inp.getAttribute('data-log-key');
           const exId = inp.getAttribute('data-ex-id');
           const setIdx = parseInt(inp.getAttribute('data-set-idx'), 10);
-          const syncAll = inp.getAttribute('data-sync-all') === '1';
           const exUnit = getExerciseUnit(exId);
           const rawVal = Math.max(0, parseFloat(inp.value) || 0);
 
           if (boxType === 'perSide') {
             const barW = getBarbellBarWeight(exId, exUnit);
             const nextTotal = +(barW + rawVal * 2).toFixed(2);
-            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal, syncAll);
+            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal, false);
           } else if (boxType === 'bothSides') {
             const barW = getBarbellBarWeight(exId, exUnit);
             const nextTotal = +(barW + rawVal).toFixed(2);
-            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal, syncAll);
+            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal, false);
           } else if (boxType === 'barWeight') {
             updateExerciseBarbellWeightAndRecalc(exId, rawVal, true);
           }
@@ -4441,7 +4789,6 @@
           const key = btn.getAttribute('data-log-key');
           const exId = btn.getAttribute('data-ex-id');
           const setIdx = parseInt(btn.getAttribute('data-set-idx'), 10);
-          const syncAll = btn.getAttribute('data-sync-all') === '1';
           const delta = parseFloat(btn.getAttribute('data-delta')) || 0;
           const exUnit = getExerciseUnit(exId);
           const meta = EXERCISE_META[exId] || { defaultWeightLbs: 45 };
@@ -4449,18 +4796,20 @@
             ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0)
             : meta.defaultWeightLbs;
           const curEntry = getLogEntry(week, dayIdx, exId, setIdx);
-          const curTotal = (curEntry && curEntry.weight !== undefined && curEntry.weight !== '') ? parseFloat(curEntry.weight) : defTotal;
+          const prevSug = getPreviousWeekSuggestion(week, dayIdx, exId, setIdx);
+          const fallbackW = (prevSug && prevSug.weight !== '') ? parseFloat(prevSug.weight) : defTotal;
+          const curTotal = (curEntry && curEntry.weight !== undefined && curEntry.weight !== '') ? parseFloat(curEntry.weight) : fallbackW;
           const curMath = computeBarbellMath(curTotal, exId, exUnit);
 
           if (boxType === 'perSide') {
             const nextSide = Math.max(0, +(curMath.perSide + delta).toFixed(2));
             const nextTotal = +(curMath.bar + nextSide * 2).toFixed(2);
-            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal, syncAll);
+            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal, false);
             renderWorkoutView();
           } else if (boxType === 'bothSides') {
             const nextBoth = Math.max(0, +(curMath.bothSides + delta).toFixed(2));
             const nextTotal = +(curMath.bar + nextBoth).toFixed(2);
-            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal, syncAll);
+            applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal, false);
             renderWorkoutView();
           } else if (boxType === 'barWeight') {
             const nextBar = Math.max(0, +(curMath.bar + delta).toFixed(2));
@@ -4493,15 +4842,15 @@
             const nextTotal = +(barW + stdSide * 2).toFixed(2);
             const parts = key.split('_');
             const sIdx = parseInt(parts[parts.length - 1], 10) || 1;
-            applyBarbellSetMathAndSyncDOM(key, exId, sIdx, nextTotal, sIdx === 1);
+            applyBarbellSetMathAndSyncDOM(key, exId, sIdx, nextTotal, false);
             renderWorkoutView();
-            showToast(`✓ Rounded to standard plates: ${stdSide} ${exUnit}/side (${stdSide * 2} ${exUnit} both sides) = ${nextTotal} ${exUnit}!`);
+            showToast(`✓ Rounded Set ${sIdx} to standard plates: ${stdSide} ${exUnit}/side = ${nextTotal} ${exUnit}!`);
           };
         });
       }
       attachRoundStandardListeners();
 
-      // Attach listeners for non-barbell inputs & reps inputs
+      // Attach listeners for per-set weight inputs (both barbell and non-barbell) & reps inputs
       listEl.querySelectorAll('.workout-input').forEach(inp => {
         inp.addEventListener('input', () => {
           const key = inp.getAttribute('data-log-key');
@@ -4529,6 +4878,33 @@
           if (week === 1) {
             const legacyKey = `${dayIdx}_${exId}_${setIdx}`;
             state.workoutLogs[legacyKey] = Object.assign({}, state.workoutLogs[key]);
+          }
+          // If this is a Barbell exercise and weight was edited on Set setIdx, update only Set setIdx's inline plate breakdown
+          if (field === 'weight' && BARBELL_EX_IDS.includes(exId)) {
+            const numericW = inp.value !== '' ? parseFloat(inp.value) : (inp.placeholder ? parseFloat(inp.placeholder) : defaultTotalPlaceholder);
+            if (!isNaN(numericW)) {
+              const mathNow = computeBarbellMath(numericW, exId, exUnit);
+              const roTotalEl = listEl.querySelector(`[data-barbell-ro-total="${key}"]`);
+              if (roTotalEl) {
+                roTotalEl.innerHTML = `
+                  <span class="font-bold text-slate-300">
+                    💿 <strong class="text-amber-300">${mathNow.bar} ${exUnit}</strong> Bar + <strong class="text-emerald-300">${mathNow.perSide} ${exUnit}/side</strong> = <strong class="text-white">${mathNow.total} ${exUnit}</strong>
+                  </span>
+                  <div class="flex flex-wrap items-center gap-1">
+                    ${mathNow.plateChipsHtml}
+                  </div>
+                `;
+              }
+              const inpSide = listEl.querySelector(`input[data-bar3-inp="perSide"][data-log-key="${key}"]`);
+              const inpBoth = listEl.querySelector(`input[data-bar3-inp="bothSides"][data-log-key="${key}"]`);
+              if (inpSide && document.activeElement !== inpSide) inpSide.value = String(mathNow.perSide);
+              if (inpBoth && document.activeElement !== inpBoth) inpBoth.value = String(mathNow.bothSides);
+              const eqEl = listEl.querySelector(`[data-barbell-eq="${key}"]`);
+              if (eqEl) {
+                eqEl.innerHTML = renderBarbellSetEquationInnerHtml(mathNow, key, exId);
+                attachRoundStandardListeners();
+              }
+            }
           }
           // If this is a Daily Pull-Up exercise, sync two-way with the Pull-Ups window!
           if (PULLUP_EX_ID_TO_DAY[exId]) {
@@ -4575,7 +4951,7 @@
         saveState();
         if (!skipFullReRender) {
           renderWorkoutView();
-          showToast(`🏋️ Barbell set to ${cleanBarW} ${exUnit.toUpperCase()} — Read-only total updated across sets!`);
+          showToast(`🏋️ Barbell set to ${cleanBarW} ${exUnit.toUpperCase()} — Per-set totals updated!`);
         }
       }
 
@@ -4687,7 +5063,7 @@
         });
       });
 
-      // Log Set & Start Rest Timer (Also saves suggested weight if input wasn't manually edited!)
+      // Log Set & Start Rest Timer (Independent per-set weights + End-of-Workout Completion Modal!)
       listEl.querySelectorAll('.set-done-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const key = btn.getAttribute('data-log-key');
@@ -4710,7 +5086,7 @@
           }
           if (weightInput && weightInput.value !== '') {
             state.workoutLogs[key].weight = weightInput.value;
-          } else if (weightInput && weightInput.placeholder) {
+          } else if (state.workoutLogs[key].weight === '' && weightInput && weightInput.placeholder) {
             state.workoutLogs[key].weight = weightInput.placeholder;
           }
           const exObjForSet = exercisesToday.find(e => e.id === exId);
@@ -4723,20 +5099,21 @@
           state.workoutLogs[key].unit = exUnit;
           state.workoutLogs[key].done = !state.workoutLogs[key].done;
 
-          // Auto-copy Set 1 weight to Sets 2 & 3 if they are still blank in this week
-          if (setIdx === 1 && state.workoutLogs[key].done && state.workoutLogs[key].weight) {
-            const exObj = exercisesToday.find(e => e.id === exId);
-            if (exObj) {
-              for (let nextS = 2; nextS <= exObj.sets; nextS++) {
-                const nextKey = `w${week}_${dayIdx}_${exId}_${nextS}`;
-                if (!state.workoutLogs[nextKey] || state.workoutLogs[nextKey].weight === '') {
-                  state.workoutLogs[nextKey] = Object.assign(
-                    {},
-                    state.workoutLogs[nextKey] || { reps: state.workoutLogs[key].reps || '', done: false },
-                    { weight: state.workoutLogs[key].weight, unit: exUnit }
-                  );
+          // If this is a barbell exercise, advance the plate calculator selector to the next unlogged set
+          if (BARBELL_EX_IDS.includes(exId) && exObjForSet) {
+            const cfg = getBarbellConfig(exId);
+            if (state.workoutLogs[key].done) {
+              let nextUnlogged = setIdx;
+              for (let sNext = 1; sNext <= exObjForSet.sets; sNext++) {
+                const eNext = getLogEntry(week, dayIdx, exId, sNext);
+                if (!eNext || !eNext.done) {
+                  nextUnlogged = sNext;
+                  break;
                 }
               }
+              cfg.selectedCalcSet = nextUnlogged;
+            } else {
+              cfg.selectedCalcSet = setIdx;
             }
           }
 
@@ -4746,7 +5123,6 @@
 
           const pullupDayNum = PULLUP_EX_ID_TO_DAY[exId] || 0;
           if (pullupDayNum) {
-            // If reps input was empty on a pull-up set and placeholder is numeric, store placeholder reps
             if (!state.workoutLogs[key].reps && repsInput && repsInput.placeholder && !isNaN(parseInt(repsInput.placeholder, 10))) {
               state.workoutLogs[key].reps = String(parseInt(repsInput.placeholder, 10));
             }
@@ -4809,11 +5185,9 @@
             }, 650);
           }
 
-          // Check if this is the very last set of the day (final set of the last exercise, e.g., Cable Crunch Set 3, or all sets for today done)
-          const lastExToday = exercisesToday[exercisesToday.length - 1];
-          const isLastSetOfLastEx = !!(lastExToday && exId === lastExToday.id && setIdx === lastExToday.sets);
+          // Check if all scheduled sets for the current day are now complete
           const allSetsDoneToday = doneSetsCountNow === todayTotalSets && todayTotalSets > 0;
-          const isFinalSetToday = state.workoutLogs[key].done && (isLastSetOfLastEx || allSetsDoneToday);
+          const isFinalSetToday = state.workoutLogs[key].done && allSetsDoneToday;
 
           let syncedMealSched = null;
           if (isFirstSetToday || isFinalSetToday) {
@@ -4831,10 +5205,11 @@
             }, 280);
           }
           if (state.workoutLogs[key].done) {
-            if (isFinalSetToday) {
+            if (allSetsDoneToday) {
               resetTimer();
+              openWorkoutCompletionModal(week, dayIdx, todayTotalSets, exercisesToday);
               const nextMealTime = syncedMealSched ? syncedMealSched.nextPostWorkoutTime12 : '8:15 AM';
-              showToast(`🎉 Final set logged! Post-workout meal auto-set to ${nextMealTime} in Vegan Fuel.`);
+              showToast(`🎉 Workout Complete! Hydrate +500 ml & review your ${nextMealTime} Post-Workout Meal.`);
             } else {
               const exObj = exercisesToday.find(e => e.id === exId);
               if (exObj && exObj.supersetPair) {
@@ -4853,7 +5228,7 @@
                 startTimer(effectiveRest, `Rest: ${exName}`);
                 showToast(pullupDayNum
                   ? `✓ Synced Pull-Up Set ${setIdx} (${state.workoutLogs[key].reps || 'Max'} reps)! ${effectiveRest}s rest started.`
-                  : `✓ Logged ${state.workoutLogs[key].weight} ${exUnit} × ${state.workoutLogs[key].reps}! ${effectiveRest}s rest started.`);
+                  : `✓ Logged Set ${setIdx}: ${state.workoutLogs[key].weight} ${exUnit} × ${state.workoutLogs[key].reps}! ${effectiveRest}s rest started.`);
               }
             }
           } else {
@@ -4878,7 +5253,7 @@
         });
       });
 
-      // UX Feature: Thumb-Friendly - / + Stepper Buttons for Weight & Reps (Zero Keyboard Needed!)
+      // UX Feature: Thumb-Friendly - / + Stepper Buttons for Weight & Reps (Independent Per-Set!)
       listEl.querySelectorAll('.step-adj-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const key = btn.getAttribute('data-step-key');
@@ -4897,26 +5272,13 @@
           if (field === 'weight') {
             const defW = exUnit === 'kg' ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0) : meta.defaultWeightLbs;
             const isBarbellStep = BARBELL_EX_IDS.includes(exId);
-            const barCfgStep = isBarbellStep ? getBarbellConfig(exId) : null;
-            const isSideStep = !!(isBarbellStep && barCfgStep && barCfgStep.inputMode === 'side');
             const barWStep = isBarbellStep ? getBarbellBarWeight(exId, exUnit) : 0;
-
-            if (isSideStep) {
-              const defSide = Math.max(0, +((defW - barWStep) / 2).toFixed(2));
-              const curSide = (inp && inp.value !== '')
-                ? parseFloat(inp.value)
-                : (curEntry.weight !== '' ? Math.max(0, +((parseFloat(curEntry.weight) - barWStep) / 2).toFixed(2)) : defSide);
-              const nextSide = Math.max(0, +(curSide + delta).toFixed(2));
-              const nextTotal = +(barWStep + nextSide * 2).toFixed(2);
-              curEntry.weight = String(nextTotal);
-              if (inp) inp.value = String(nextSide);
-            } else {
-              const baseW = (inp && inp.value !== '') ? parseFloat(inp.value) : (parseFloat(curEntry.weight) || defW);
-              const minAllowed = isBarbellStep ? barWStep : 0;
-              const nextW = Math.max(minAllowed, +(baseW + delta).toFixed(2));
-              curEntry.weight = String(nextW);
-              if (inp) inp.value = String(nextW);
-            }
+            const placeholderW = (inp && inp.placeholder && !isNaN(parseFloat(inp.placeholder))) ? parseFloat(inp.placeholder) : defW;
+            const baseW = (inp && inp.value !== '') ? parseFloat(inp.value) : (curEntry.weight !== '' ? parseFloat(curEntry.weight) : placeholderW);
+            const minAllowed = isBarbellStep ? barWStep : 0;
+            const nextW = Math.max(minAllowed, +(baseW + delta).toFixed(2));
+            curEntry.weight = String(nextW);
+            if (inp) inp.value = String(nextW);
           } else {
             const defR = parseInt(parseTargetRepsNumber(exObj ? exObj.reps : '10', pullupDayNum, setIdx), 10) || 10;
             const baseR = (inp && inp.value !== '') ? parseInt(inp.value, 10) : (parseInt(curEntry.reps, 10) || defR);
@@ -5043,12 +5405,12 @@
 
         const isUsmcActive = !isCardCollapsed;
         return `
-          <div class="${isUsmcActive ? 'border-2 border-sky-400 bg-slate-900 shadow-lg shadow-sky-950/50' : (isCardDone ? 'bg-slate-900/70 border border-rose-400/30 opacity-85' : 'bg-slate-900/80 border border-slate-800 opacity-90')} rounded-2xl p-3.5 space-y-2.5 transition-all">
+          <div class="${isUsmcActive ? 'border-2 border-sky-400 bg-slate-900 shadow-lg shadow-sky-950/50' : (isCardDone ? 'bg-slate-900/70 border border-emerald-500/40 opacity-90' : 'bg-slate-900/80 border border-slate-800 opacity-90')} rounded-2xl p-3.5 space-y-2.5 transition-all">
             <div class="flex items-start justify-between gap-2">
               <div data-usmc-collapse-day="${dayIdxForPullup}" data-usmc-ex-id="${exIdForDay}" data-usmc-complete="${isCardDone ? '1' : '0'}" class="usmc-collapse-btn cursor-pointer flex-1 min-w-0">
                 <div class="flex flex-wrap items-center gap-1.5">
                   <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${isUsmcActive ? 'bg-sky-400 text-slate-950' : 'bg-slate-800 text-emerald-400'}">Wk ${week} • Day ${d.dayNum}</span>
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isCardDone ? 'bg-rose-500/15 text-rose-300 border border-rose-400/30' : 'bg-slate-800 text-slate-300'}">${doneSetsCount}/${d.setsCount} Sets</span>
+                  <span class="usmc-sets-status-badge text-[10px] font-bold px-2 py-0.5 rounded-full border ${isCardDone ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300' : 'bg-slate-800 border-slate-700 text-slate-300'}">${doneSetsCount}/${d.setsCount} Sets</span>
                 </div>
                 <h3 class="${isUsmcActive ? 'text-base font-extrabold text-white mt-1' : 'text-sm font-bold text-slate-100 mt-0.5'} transition-colors">${d.title}</h3>
                 ${isUsmcActive ? `<p class="text-[11px] text-slate-300 mt-0.5 leading-snug">${d.desc}</p>` : ''}
@@ -5825,9 +6187,12 @@
             `;
           }).join('');
 
+          const isPrepOpen = Boolean(state.openMealFormulas && state.openMealFormulas[`${dayIdx}_${slot.slotId}`]);
+
           return `
             <div class="bg-slate-900 border ${isDone ? 'border-emerald-500/50 bg-slate-900/80' : (slotSched.isPostWorkoutTarget ? 'border-emerald-400/70 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/40' : 'border-slate-800')} rounded-2xl p-4 space-y-3 transition-all">
-              <div class="flex items-start justify-between gap-2">
+              <!-- 1-Tap Main Meal Header (Tap anywhere on header or button to log/unlog the entire meal in 1 tap) -->
+              <div data-meal-header-slot="${slot.slotId}" class="meal-card-header-tap flex items-start justify-between gap-2 cursor-pointer select-none">
                 <div>
                   <div class="flex flex-wrap items-center gap-1.5">
                     <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">${slotSched.headerText}</span>
@@ -5851,41 +6216,49 @@
                 </button>
               </div>
 
-              <!-- Collapsible Green-Checkmark Ingredient Scale Checklist & Collapsible Full Formula / Timing Tip -->
-              <div class="bg-slate-950/75 border border-slate-800/90 rounded-xl p-2.5 space-y-2">
-                <div class="flex flex-wrap items-center justify-between gap-2 px-1">
-                  <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">✓ Ingredient Scale Checklist (Tap to check off)</span>
-                  <div class="flex items-center gap-2">
-                    <button type="button" data-toggle-meal-checklist="${slot.slotId}" class="toggle-meal-checklist-btn text-[10px] font-extrabold text-emerald-400 hover:text-emerald-300 transition">
-                      ${state.hiddenMealChecklists[`${dayIdx}_${slot.slotId}`] ? '▼ Show Ingredient Checklist' : '▲ Hide Ingredient Checklist'}
-                    </button>
-                    <button type="button" data-toggle-meal-formula="${slot.slotId}" class="toggle-meal-formula-btn text-[10px] font-extrabold text-amber-300 hover:text-amber-200 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-lg transition">
-                      ${state.openMealFormulas[`${dayIdx}_${slot.slotId}`] ? '▲ Hide Formula & Tip' : '▼ Show Formula & Tip'}
-                    </button>
+              <!-- Collapsible Prep & Recipe Toggle (Individual Ingredient Checkboxes & Formula Collapsed by Default for 1-Tap Logging) -->
+              <details class="meal-prep-recipe-details bg-slate-950/75 border border-slate-800/90 rounded-xl px-3 py-2 text-xs" ${isPrepOpen ? 'open' : ''}>
+                <summary data-toggle-meal-formula="${slot.slotId}" class="cursor-pointer font-extrabold text-emerald-400 hover:text-emerald-300 flex items-center justify-between py-0.5 select-none">
+                  <span>Prep &amp; Recipe (${doneIngCount}/${itemsList.length} scale items)</span>
+                  <span class="text-[10px] text-amber-300 font-bold">Tap to view ▾</span>
+                </summary>
+                <div class="pt-2.5 mt-2 border-t border-slate-800/80 space-y-2">
+                  <div class="space-y-1.5">
+                    ${ingredientsChecklistHtml}
+                  </div>
+                  <div class="pt-1.5 border-t border-slate-800/80 px-1 space-y-1">
+                    <p class="text-[11px] text-slate-300 leading-relaxed"><strong class="text-emerald-300">Full Formula:</strong> ${opt.ingredients}</p>
+                    <p class="text-[11px] text-amber-300/95 leading-snug">💡 <strong>Timing &amp; Prep Tip:</strong> ${slotSched.contextTip} ${slotSched.batchTip || slot.tip}</p>
                   </div>
                 </div>
-                <div class="${state.hiddenMealChecklists[`${dayIdx}_${slot.slotId}`] ? 'hidden' : 'space-y-1.5'}" style="display: ${state.hiddenMealChecklists[`${dayIdx}_${slot.slotId}`] ? 'none' : 'block'};">
-                  ${ingredientsChecklistHtml}
-                </div>
-                <div class="${state.openMealFormulas[`${dayIdx}_${slot.slotId}`] ? 'pt-1.5 border-t border-slate-800/80 px-1 space-y-1' : 'hidden'}" style="display: ${state.openMealFormulas[`${dayIdx}_${slot.slotId}`] ? 'block' : 'none'};">
-                  <p class="text-[11px] text-slate-300 leading-relaxed"><strong class="text-emerald-300">Full Formula:</strong> ${opt.ingredients}</p>
-                  <p class="text-[11px] text-amber-300/95 leading-snug">💡 <strong>Timing &amp; Prep Tip:</strong> ${slotSched.contextTip} ${slotSched.batchTip || slot.tip}</p>
-                </div>
-              </div>
+              </details>
             </div>
           `;
         }).join('');
 
+        function handleOneTapMealToggle(slotId) {
+          const curVal = isMealCheckedForDay(week, dayIdx, slotId);
+          setMealCheckedForDay(week, dayIdx, slotId, !curVal);
+          saveState();
+          renderVeganView();
+          if (!curVal) {
+            showToast(`🌱 Logged ${slotId.toUpperCase()} meal (${dayObj.dayFull})!`);
+          }
+        }
+
         mealsEl.querySelectorAll('.meal-check-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
             const slotId = btn.getAttribute('data-meal-slot');
-            const curVal = isMealCheckedForDay(week, dayIdx, slotId);
-            setMealCheckedForDay(week, dayIdx, slotId, !curVal);
-            saveState();
-            renderVeganView();
-            if (!curVal) {
-              showToast(`🌱 Logged all ingredients for ${slotId.toUpperCase()} meal (${dayObj.dayFull})!`);
-            }
+            handleOneTapMealToggle(slotId);
+          });
+        });
+
+        mealsEl.querySelectorAll('.meal-card-header-tap').forEach(hdr => {
+          hdr.addEventListener('click', (e) => {
+            if (e.target.closest('button')) return;
+            const slotId = hdr.getAttribute('data-meal-header-slot');
+            if (slotId) handleOneTapMealToggle(slotId);
           });
         });
 
@@ -6075,6 +6448,29 @@
         }
       });
 
+      // Contextual Visibility Across Tabs: Hide Sticky Rest Timer Bar Outside Workout Tabs (Rest Timer, Vegan Fuel, Shop List)
+      const showStickyTimer = (tabName === 'workout' || tabName === 'pullups');
+      const pinnedTimerRow = document.getElementById('pinned-rest-timer-row');
+      const pinnedTimerStrip = document.getElementById('pinned-rest-timer-strip');
+      const mainContainer = document.getElementById('main-content-container');
+      if (pinnedTimerRow) {
+        if (showStickyTimer) pinnedTimerRow.classList.remove('hidden');
+        else pinnedTimerRow.classList.add('hidden');
+      }
+      if (pinnedTimerStrip) {
+        if (showStickyTimer) pinnedTimerStrip.classList.remove('hidden');
+        else pinnedTimerStrip.classList.add('hidden');
+      }
+      if (mainContainer) {
+        if (showStickyTimer) {
+          mainContainer.classList.remove('pt-16');
+          mainContainer.classList.add('pt-28');
+        } else {
+          mainContainer.classList.remove('pt-28');
+          mainContainer.classList.add('pt-16');
+        }
+      }
+
       document.querySelectorAll('.nav-tab-btn').forEach(btn => {
         const target = btn.getAttribute('data-nav');
         if (target === tabName) {
@@ -6164,7 +6560,7 @@
         state.geminiChatHistory = [
           {
             role: 'assistant',
-            text: `👋 Hi **${ctx.userName}**! I'm **Coach AI**, your Personal Gym & Budget Nutrition Coach. I'm synced with **Week ${ctx.week} (${ctx.dayTitle})**, your **3-Box Barbell Calculator**, and your **~$5.55/day (138g P)** meal plan. Tap a quick chip above or ask me anything!`
+            text: `👋 Hi **${ctx.userName}**, I'm **Coach AI**—ask me anything about your **Week ${ctx.week} (${ctx.dayTitle})** workouts, progressive overload targets, or daily **138g protein** nutrition plan.`
           }
         ];
       }
@@ -6504,26 +6900,35 @@
       // Multi-Week Selector & Finish Week Button
       const weekSelect = document.getElementById('week-select');
       if (weekSelect) {
-        weekSelect.value = String(state.currentWeek || 1);
+        syncProgressiveWeekState(state);
+        weekSelect.value = String(state.selectedWeek || state.currentWeek || 1);
         weekSelect.addEventListener('change', () => {
-          state.currentWeek = parseInt(weekSelect.value, 10) || 1;
+          const nextSelected = parseInt(weekSelect.value, 10) || 1;
+          state.selectedWeek = nextSelected;
+          state.currentWeek = nextSelected;
+          if (!state.maxUnlockedWeek || nextSelected > state.maxUnlockedWeek) {
+            state.maxUnlockedWeek = nextSelected;
+          }
           saveState();
           renderWorkoutView();
-          showToast(`Switched to Week ${state.currentWeek} (weights suggested from previous week)`);
+          showToast(`Switched to Week ${state.selectedWeek} (weights suggested from previous week)`);
         });
       }
 
       const finishWeekBtn = document.getElementById('finish-week-btn');
       if (finishWeekBtn) {
         finishWeekBtn.addEventListener('click', () => {
-          const cur = state.currentWeek || 1;
+          syncProgressiveWeekState(state);
+          const cur = state.selectedWeek || state.currentWeek || 1;
           if (!state.completedWeeks) state.completedWeeks = {};
           state.completedWeeks[cur] = true;
           const nextW = Math.min(12, cur + 1);
+          state.maxUnlockedWeek = Math.min(12, Math.max((state.maxUnlockedWeek || 1) + 1, nextW));
+          state.selectedWeek = nextW;
           state.currentWeek = nextW;
           saveState();
           renderWorkoutView();
-          showToast(`🎉 Week ${cur} Complete! Opened Week ${nextW} with your previous weights pre-filled.`);
+          showToast(`🎉 Week ${cur} Complete! Unlocked Week ${nextW} with your previous weights pre-filled.`);
         });
       }
 
@@ -7205,16 +7610,19 @@
       const quickNextWeekBtn = document.getElementById('quick-next-week-btn');
       if (quickNextWeekBtn) {
         quickNextWeekBtn.addEventListener('click', () => {
-          const cur = state.currentWeek || 1;
+          syncProgressiveWeekState(state);
+          const cur = state.selectedWeek || state.currentWeek || 1;
           if (!state.completedWeeks) state.completedWeeks = {};
           state.completedWeeks[cur] = true;
           const nextW = Math.min(12, cur + 1);
+          state.maxUnlockedWeek = Math.min(12, Math.max((state.maxUnlockedWeek || 1) + 1, nextW));
+          state.selectedWeek = nextW;
           state.currentWeek = nextW;
           const weekSel = document.getElementById('week-select');
           if (weekSel) weekSel.value = String(nextW);
           saveState();
           renderWorkoutView();
-          showToast(`🎉 Week ${cur} saved! Now on Week ${nextW} (your Week ${cur} weights are pre-filled on every set).`);
+          showToast(`🎉 Week ${cur} Complete! Unlocked Week ${nextW} (your Week ${cur} weights are pre-filled on every set).`);
         });
       }
 
@@ -7529,7 +7937,20 @@
           showToast('📋 Copied App Link & Install Invite to send to friends!');
         });
       }
+      const openFreshStartConfirmBtn = document.getElementById('open-fresh-start-confirm-btn');
+      const freshStartConfirmBox = document.getElementById('fresh-start-confirm-box');
+      const cancelFreshStartBtn = document.getElementById('cancel-fresh-start-btn');
       const freshStartBtn = document.getElementById('fresh-start-reset-btn');
+      if (openFreshStartConfirmBtn && freshStartConfirmBox) {
+        openFreshStartConfirmBtn.addEventListener('click', () => {
+          freshStartConfirmBox.classList.remove('hidden');
+        });
+      }
+      if (cancelFreshStartBtn && freshStartConfirmBox) {
+        cancelFreshStartBtn.addEventListener('click', () => {
+          freshStartConfirmBox.classList.add('hidden');
+        });
+      }
       if (freshStartBtn) {
         freshStartBtn.addEventListener('click', () => {
           state.workoutLogs = {};
@@ -7538,14 +7959,22 @@
           state.checkedMealIngredients = {};
           state.checkedGroceries = {};
           state.completedWeeks = {};
+          state.warmupLogs = {};
+          state.waterIntakeLogs = {};
+          state.waterLogsMl = {};
+          state.selectedWeek = 1;
           state.currentWeek = 1;
+          state.maxUnlockedWeek = 1;
           state.selectedDayIndex = 0;
           state.cardCollapsedState = {};
+          state.geminiChatHistory = [];
           saveState();
           renderWorkoutView();
           renderUSMCView();
           renderVeganView();
           renderShoppingView();
+          if (freshStartConfirmBox) freshStartConfirmBox.classList.add('hidden');
+          if (smartLoginModal) smartLoginModal.classList.add('hidden');
           if (shareModal) shareModal.classList.add('hidden');
           showToast('✨ Fresh Start Complete! Ready for Week 1 • Day 1.');
         });
@@ -7715,6 +8144,52 @@
         }
       }
 
+      // End-of-Workout Celebration & 500 ml Hydration Modal Controls
+      const workoutCompleteModal = document.getElementById('workout-complete-modal');
+      const modalLogWater500Btn = document.getElementById('modal-log-water-500-btn');
+      const modalOpenPostMealBtn = document.getElementById('modal-open-post-meal-btn');
+      const modalStayWorkoutBtn = document.getElementById('modal-stay-workout-summary-btn');
+      const closeWorkoutCompleteBtn = document.getElementById('close-workout-complete-modal-btn');
+
+      if (modalLogWater500Btn) {
+        modalLogWater500Btn.addEventListener('click', () => {
+          const w = state.selectedWeek || state.currentWeek || 1;
+          const d = state.selectedDayIndex || 0;
+          const nextMl = getDailyWaterLoggedMl(w, d) + 500;
+          setDailyWaterLoggedMl(w, d, nextMl);
+          saveState();
+          const waterStatusEl = document.getElementById('modal-water-intake-status');
+          if (waterStatusEl) {
+            waterStatusEl.textContent = `Logged today: ${nextMl} ml (${(nextMl / 1000).toFixed(2)} L)`;
+          }
+          modalLogWater500Btn.textContent = '✓ +500 ml Logged! (Tap for +500 ml more)';
+          modalLogWater500Btn.className = 'w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition';
+          renderWorkoutView();
+          renderVeganView();
+          showToast(`💧 +500 ml Water Logged! Daily Total: ${(nextMl / 1000).toFixed(2)} L`);
+        });
+      }
+
+      if (modalOpenPostMealBtn) {
+        modalOpenPostMealBtn.addEventListener('click', () => {
+          if (workoutCompleteModal) workoutCompleteModal.classList.add('hidden');
+          switchTab('vegan');
+          showToast('🌱 Opened Post-Workout Meal & Anabolic Window!');
+        });
+      }
+
+      if (modalStayWorkoutBtn) {
+        modalStayWorkoutBtn.addEventListener('click', () => {
+          if (workoutCompleteModal) workoutCompleteModal.classList.add('hidden');
+        });
+      }
+
+      if (closeWorkoutCompleteBtn) {
+        closeWorkoutCompleteBtn.addEventListener('click', () => {
+          if (workoutCompleteModal) workoutCompleteModal.classList.add('hidden');
+        });
+      }
+
       // Initial Render
       updateTimerUI();
       renderWorkoutView();
@@ -7749,16 +8224,13 @@
         <button type="button" id="close-share-store-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold">✕ Close</button>
       </div>
 
-      <!-- 1-Tap Share Link with Friends -->
+      <!-- 1-Tap Share Link with Friends (Destructive Reset Removed for Error Prevention) -->
       <div class="bg-slate-950 border border-emerald-500/30 rounded-xl p-3 space-y-2">
-        <div class="text-xs font-extrabold text-emerald-300">1. Share Free Web App With Friends ($0 Cost)</div>
-        <p class="text-[11px] text-slate-300 leading-relaxed">Every friend who opens your link gets their own private workout log &amp; grocery checklist on their phone automatically (no login required).</p>
+        <div class="text-xs font-extrabold text-emerald-300">1. Share Web App With Training Partners</div>
+        <p class="text-[11px] text-slate-300 leading-relaxed">Share this link with friends so they can create their own profile and track their workouts, barbell plates, and nutrition plan on their device.</p>
         <div class="flex flex-wrap gap-2">
-          <button type="button" id="copy-share-invite-btn" class="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition">
+          <button type="button" id="copy-share-invite-btn" class="w-full py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition">
             📋 Copy App Link &amp; Invite Text
-          </button>
-          <button type="button" id="fresh-start-reset-btn" class="py-2 px-3 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-extrabold transition" title="Clear all logged sets and checkmarks on this device for a fresh Week 1 Day 1 start">
-            ↺ Fresh Start (Reset Device)
           </button>
         </div>
       </div>
@@ -7829,9 +8301,26 @@
             <button type="button" id="sign-out-new-account-btn" class="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-bold transition">
               Switch Account / Log Out
             </button>
+            <button type="button" id="open-fresh-start-confirm-btn" class="py-1.5 px-2.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 text-[10px] font-bold transition">
+              ↺ Fresh Start Reset
+            </button>
             <button type="button" id="delete-account-data-btn" class="py-1.5 px-2.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10px] font-semibold transition" title="App Store Guideline 5.1.1(v) Account Deletion">
               Delete Account
             </button>
+          </div>
+
+          <!-- Confirmation Prompt for Destructive Fresh Start Reset (Error Prevention Heuristic) -->
+          <div id="fresh-start-confirm-box" class="hidden bg-rose-950/35 border border-rose-500/40 rounded-xl p-2.5 space-y-2 text-[11px]">
+            <div class="font-extrabold text-rose-200">⚠️ Confirm Fresh Start (Reset Device Logs)</div>
+            <p class="text-slate-300 leading-snug">Are you sure you want to clear all logged workout sets, meals, and completed weeks on this device and return to Week 1 • Day 1?</p>
+            <div class="flex items-center gap-2">
+              <button type="button" id="fresh-start-reset-btn" class="flex-1 py-1.5 px-3 rounded-lg bg-rose-500 hover:bg-rose-400 text-slate-950 font-extrabold text-xs transition">
+                Yes, Reset to Week 1
+              </button>
+              <button type="button" id="cancel-fresh-start-btn" class="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs transition">
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
 
@@ -8013,6 +8502,44 @@
       </div>
 
 
+    </div>
+  </div>
+
+  <!-- End-of-Day Workout Completion, 500 ml Hydration & Post-Workout Meal Modal (Nielsen User Control & Freedom Heuristic) -->
+  <div id="workout-complete-modal" role="dialog" aria-modal="true" aria-labelledby="workout-complete-modal-title" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-emerald-500/40 rounded-2xl max-w-md w-full p-4 space-y-3.5 shadow-2xl">
+      <div class="flex items-start justify-between border-b border-slate-800 pb-2.5">
+        <div>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">🏆 Session Complete • Anabolic Window Open</span>
+          <h3 id="workout-complete-modal-title" class="text-base sm:text-lg font-extrabold text-white mt-1.5">Congratulations! Great Job Today!</h3>
+          <p id="modal-workout-complete-stats" class="text-xs font-bold text-emerald-300 mt-0.5">All scheduled sets completed for today.</p>
+        </div>
+        <button type="button" id="close-workout-complete-modal-btn" aria-label="Close Workout Complete Modal" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
+      </div>
+
+      <!-- 1-Tap Post-Workout Hydration Card -->
+      <div class="bg-slate-950/95 border border-sky-500/35 rounded-xl p-3 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <div class="text-xs font-extrabold text-sky-300">💧 Drink 500 ml of water now</div>
+            <p class="text-[11px] text-slate-300 leading-snug mt-0.5">Replenish intracellular water &amp; accelerate muscle glycogen recovery immediately after your final set.</p>
+          </div>
+          <span id="modal-water-intake-status" class="text-[10px] font-extrabold px-2 py-1 rounded-lg bg-sky-500/15 text-sky-200 border border-sky-500/30 shrink-0">Logged today: 0 ml</span>
+        </div>
+        <button type="button" id="modal-log-water-500-btn" class="w-full py-2.5 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-sky-400/20 transition">
+          💧 +500 ml Water Now (1-Tap Log)
+        </button>
+      </div>
+
+      <!-- User Control & Freedom Navigation Actions -->
+      <div class="space-y-2 pt-1">
+        <button type="button" id="modal-open-post-meal-btn" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg shadow-emerald-500/25 transition">
+          🌱 Open Post-Workout Meal →
+        </button>
+        <button type="button" id="modal-stay-workout-summary-btn" class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs transition">
+          Stay on Workout Summary
+        </button>
+      </div>
     </div>
   </div>
 
