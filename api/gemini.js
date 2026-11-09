@@ -1,5 +1,5 @@
 // Vercel Serverless Function: /api/gemini
-// Set GEMINI_API_KEY in Vercel -> Project Settings -> Environment Variables
+// Supports both text coaching AND multimodal shoe photo brand/model recognition!
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -10,10 +10,29 @@ export default async function handler(req, res) {
   }
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
-    const model = body.model || 'gemini-3.8-flash';
+    const model = body.model || 'gemini-2.5-flash';
     const prompt = body.prompt || '';
     const systemInstruction = body.systemInstruction || '';
-    const modelsToTry = [model, 'gemini-3.8-flash', 'gemini-2.5-flash'];
+    const imageBase64 = body.imageBase64 || '';
+    const mimeType = body.mimeType || 'image/jpeg';
+
+    const userParts = [];
+    if (imageBase64) {
+      const cleanB64 = String(imageBase64).replace(/^data:image\/[a-zA-Z0-9+-]+;base64,/, '');
+      userParts.push({
+        inlineData: {
+          mimeType,
+          data: cleanB64
+        }
+      });
+    }
+    if (prompt) {
+      userParts.push({ text: prompt });
+    }
+
+    const modelsToTry = imageBase64
+      ? ['gemini-2.5-flash', 'gemini-3.8-flash', model]
+      : [model, 'gemini-3.8-flash', 'gemini-2.5-flash'];
     let lastErr = null;
 
     for (const m of modelsToTry) {
@@ -23,7 +42,7 @@ export default async function handler(req, res) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
-          contents: [{ role: 'user', parts: [{ text: prompt }] }]
+          contents: [{ role: 'user', parts: userParts }]
         })
       });
       if (response.ok) {
