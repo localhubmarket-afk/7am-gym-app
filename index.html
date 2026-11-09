@@ -233,6 +233,15 @@
         </div>
       </div>
 
+      <!-- Proactive Low-Sole-Health Alert Banner (Hidden when shoes are healthy — only appears at <=25% sole life like TreadLeft/Garmin!) -->
+      <div id="shoe-critical-wear-banner" class="hidden bg-amber-500/15 border border-amber-500/40 rounded-2xl px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs">
+        <div class="min-w-0">
+          <span class="font-extrabold text-amber-300" id="shoe-critical-wear-title">⚠️ Gym Shoe Midsole Alert</span>
+          <p class="text-[10px] text-slate-300 truncate" id="shoe-critical-wear-sub">Sole health is low — tap to inspect or snap a new pair.</p>
+        </div>
+        <button type="button" id="shoe-critical-open-btn" class="shrink-0 px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-extrabold text-[10px]">Inspect 👟</button>
+      </div>
+
       <!-- Quick Exercise & Machine Jump Dropdown Bar -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 overflow-hidden">
         <div class="flex items-center gap-2 w-full sm:flex-1 min-w-0">
@@ -3290,7 +3299,358 @@
       state.waterLogsMl[key] = Math.max(0, Math.min(6000, Math.round(mlVal)));
     }
 
+    
+    const SHOE_CATEGORY_SPECS = {
+      cross_trainer: {
+        label: 'Cross-Trainer / Hybrid Gym Shoe',
+        maxSessions: 150,
+        maxHeavyLowerSets: 520,
+        baseMonths: 9.5,
+        biomechanicsNote: 'Dual-density heel provides solid stability for Squats, Deadlifts & Lunges while flexing on Warm-Ups.'
+      },
+      flat_lifter: {
+        label: 'Flat / Zero-Drop Canvas Lifter',
+        maxSessions: 180,
+        maxHeavyLowerSets: 620,
+        baseMonths: 11.5,
+        biomechanicsNote: 'Zero-drop non-compressible rubber sole maximizes ground force transfer on Squats, RDLs & Deadlifts.'
+      },
+      running_cushioned: {
+        label: 'Cushioned Running / Cardio Shoe',
+        maxSessions: 110,
+        maxHeavyLowerSets: 340,
+        baseMonths: 6.5,
+        biomechanicsNote: '⚠️ Soft EVA running foam compresses unevenly under heavy Barbell Squats & Deadlifts — inspect heel tilt closely on Day 2 & Day 5.'
+      },
+      weightlifting_heel: {
+        label: 'Raised-Heel Weightlifting Shoe',
+        maxSessions: 300,
+        maxHeavyLowerSets: 1000,
+        baseMonths: 22,
+        biomechanicsNote: 'Rigid TPU/wood heel wedge increases ankle dorsiflexion for deep Barbell Back Squats (Day 2).'
+      }
+    };
+
+    const LOWER_BODY_SHOE_STRESS_EX_IDS = [
+      'tue_squat', 'tue_rdl', 'tue_lunges', 'tue_calf',
+      'sat_deadlift', 'sat_bss', 'sat_hip_thrust', 'sat_seated_calf', 'sun_cardio'
+    ];
+
+    function getTodayIsoDateStr() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function ensureGymShoeState() {
+      if (!state.gymShoe || typeof state.gymShoe !== 'object') {
+        state.gymShoe = {
+          brand: 'Nike',
+          model: 'Metcon 9',
+          category: 'cross_trainer',
+          purchaseDate: getTodayIsoDateStr(),
+          photoDataUrl: '',
+          aiNote: ''
+        };
+      }
+      if (!state.gymShoe.purchaseDate) {
+        state.gymShoe.purchaseDate = getTodayIsoDateStr();
+      }
+      if (!state.gymShoe.category || !SHOE_CATEGORY_SPECS[state.gymShoe.category]) {
+        state.gymShoe.category = 'cross_trainer';
+      }
+      return state.gymShoe;
+    }
+
+    function calculateShoeWearFromWorkoutRecord() {
+      const shoe = ensureGymShoeState();
+      const spec = SHOE_CATEGORY_SPECS[shoe.category] || SHOE_CATEGORY_SPECS.cross_trainer;
+      const logs = state.workoutLogs || {};
+
+      const activeDayKeys = new Set();
+      let totalLoggedSets = 0;
+      let heavyLowerBodySets = 0;
+      let totalTonnageLbs = 0;
+
+      Object.keys(logs).forEach(k => {
+        if (!k.startsWith('w')) return;
+        const entry = logs[k];
+        if (!entry || !entry.done) return;
+        const parts = k.split('_');
+        if (parts.length < 4) return;
+        const wPart = parts[0];
+        const dPart = parts[1];
+        const exId = parts.slice(2, parts.length - 1).join('_');
+        activeDayKeys.add(`${wPart}_${dPart}`);
+        totalLoggedSets++;
+        const wNum = parseFloat(entry.weight) || 0;
+        const rNum = parseInt(entry.reps, 10) || 8;
+        totalTonnageLbs += wNum * rNum;
+        if (LOWER_BODY_SHOE_STRESS_EX_IDS.includes(exId)) {
+          heavyLowerBodySets++;
+        }
+      });
+
+      const loggedSessions = activeDayKeys.size;
+      const sessionWearRatio = loggedSessions / spec.maxSessions;
+      const lowerBodyWearRatio = heavyLowerBodySets / spec.maxHeavyLowerSets;
+      const combinedWearPct = Math.min(100, Math.round((sessionWearRatio * 0.6 + lowerBodyWearRatio * 0.4) * 100));
+
+      const purchaseMs = Date.parse(shoe.purchaseDate + 'T00:00:00');
+      const nowMs = Date.now();
+      const elapsedDays = !isNaN(purchaseMs) ? Math.max(0, Math.floor((nowMs - purchaseMs) / 86400000)) : 0;
+
+      const activeWeeksCount = Math.max(1, Object.keys(state.completedWeeks || {}).length);
+      const userWeeklyFreq = Math.max(4.5, Math.min(7, loggedSessions / activeWeeksCount));
+      const totalLifespanDays = Math.round((spec.maxSessions / userWeeklyFreq) * 7);
+
+      const goodUntilMs = (!isNaN(purchaseMs) ? purchaseMs : nowMs) + totalLifespanDays * 86400000;
+      const goodUntilDate = new Date(goodUntilMs);
+      const goodUntilStr = goodUntilDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const purchaseNiceStr = (!isNaN(purchaseMs) ? new Date(purchaseMs) : new Date()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+      const calendarWearPct = totalLifespanDays > 0 ? Math.min(100, Math.round((elapsedDays / totalLifespanDays) * 100)) : 0;
+      const effectiveWearPct = Math.max(combinedWearPct, calendarWearPct);
+      const healthPct = Math.max(0, 100 - effectiveWearPct);
+      const daysRemaining = Math.max(0, Math.ceil((goodUntilMs - nowMs) / 86400000));
+      const sessionsRemaining = Math.max(0, spec.maxSessions - Math.max(loggedSessions, Math.round((elapsedDays / 7) * userWeeklyFreq)));
+
+      return {
+        shoe,
+        spec,
+        loggedSessions,
+        heavyLowerBodySets,
+        totalLoggedSets,
+        totalTonnageLbs: Math.round(totalTonnageLbs),
+        healthPct,
+        effectiveWearPct,
+        purchaseNiceStr,
+        goodUntilStr,
+        daysRemaining,
+        sessionsRemaining,
+        userWeeklyFreq: +userWeeklyFreq.toFixed(1)
+      };
+    }
+
+    function renderShoeTrackerUI() {
+      const stats = calculateShoeWearFromWorkoutRecord();
+      const { shoe, spec } = stats;
+
+      const hdrTitle = document.getElementById('shoe-header-title');
+      const hdrSub = document.getElementById('shoe-header-subtitle');
+      const hdrPill = document.getElementById('shoe-header-pill');
+      const previewImg = document.getElementById('shoe-photo-preview-img');
+      const placeholderIcon = document.getElementById('shoe-photo-placeholder-icon');
+      const detSummary = document.getElementById('shoe-detected-summary');
+      const detSub = document.getElementById('shoe-detected-sub');
+      const dateInp = document.getElementById('shoe-purchase-date-input');
+      const catSel = document.getElementById('shoe-category-select');
+      const brandInp = document.getElementById('shoe-brand-input');
+      const modelInp = document.getElementById('shoe-model-input');
+      const dashEl = document.getElementById('shoe-lifespan-dashboard');
+
+      const fullShoeName = `${shoe.brand || 'Gym'} ${shoe.model || 'Shoe'}`.trim();
+      if (hdrTitle) {
+        hdrTitle.textContent = `👟 Shoes: ${fullShoeName} • Good Until ${stats.goodUntilStr}`;
+      }
+      if (hdrSub) {
+        hdrSub.textContent = `Bought ${stats.purchaseNiceStr} • ${stats.healthPct}% Sole Life (${stats.sessionsRemaining} workouts left)`;
+      }
+      const bannerShoeReadout = document.getElementById('banner-shoe-health-readout');
+      if (bannerShoeReadout) {
+        bannerShoeReadout.textContent = `${ shoe.brand || 'Shoe' } ${stats.healthPct}%`;
+      }
+      const critBanner = document.getElementById('shoe-critical-wear-banner');
+      const critTitle = document.getElementById('shoe-critical-wear-title');
+      const critSub = document.getElementById('shoe-critical-wear-sub');
+      if (critBanner) {
+        if (stats.healthPct <= 25) {
+          critBanner.classList.remove('hidden');
+          if (critTitle) critTitle.textContent = `⚠️ ${fullShoeName} at ${stats.healthPct}% Sole Health`;
+          if (critSub) critSub.textContent = `Good until ${stats.goodUntilStr} (${stats.sessionsRemaining} workouts left) — tap to update.`;
+        } else {
+          critBanner.classList.add('hidden');
+        }
+      }
+      if (hdrPill) {
+        hdrPill.textContent = `${stats.healthPct}%`;
+        hdrPill.className = stats.healthPct >= 45
+          ? 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-sky-300 border border-slate-700'
+          : (stats.healthPct >= 20
+              ? 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40'
+              : 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40');
+      }
+
+      if (previewImg && placeholderIcon) {
+        if (shoe.photoDataUrl) {
+          previewImg.src = shoe.photoDataUrl;
+          previewImg.classList.remove('hidden');
+          placeholderIcon.classList.add('hidden');
+        } else {
+          previewImg.classList.add('hidden');
+          placeholderIcon.classList.remove('hidden');
+        }
+      }
+
+      if (detSummary) {
+        detSummary.textContent = shoe.photoDataUrl ? `${fullShoeName} (${spec.label})` : `Active Shoe: ${fullShoeName}`;
+      }
+      if (detSub) {
+        detSub.textContent = shoe.aiNote || 'Take a photo of your shoes to auto-detect Brand & Model and set Purchase Date to Today.';
+      }
+
+      if (dateInp && document.activeElement !== dateInp) dateInp.value = shoe.purchaseDate;
+      if (catSel && document.activeElement !== catSel) catSel.value = shoe.category;
+      if (brandInp && document.activeElement !== brandInp) brandInp.value = shoe.brand || '';
+      if (modelInp && document.activeElement !== modelInp) modelInp.value = shoe.model || '';
+
+      if (dashEl) {
+        const barColor = stats.healthPct >= 45
+          ? 'from-sky-400 to-emerald-400'
+          : (stats.healthPct >= 20 ? 'from-amber-400 to-orange-400' : 'from-rose-500 to-red-500');
+        const statusText = stats.healthPct >= 45
+          ? '✓ Midsole & Heel Stability Optimal'
+          : (stats.healthPct >= 20 ? '⚠️ Midsole Compressing — Plan Replacement Soon' : '🚨 Replace Shoes Now (Sole Depleted)');
+
+        dashEl.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">Good Until (Based on Your Workout Record)</span>
+              <div class="text-sm font-extrabold text-white mt-0.5">${stats.goodUntilStr} <span class="text-xs font-semibold text-sky-300">(${stats.daysRemaining} days / ~${stats.sessionsRemaining} sessions left)</span></div>
+            </div>
+            <span class="text-[10px] font-extrabold px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-emerald-300">${stats.healthPct}% Sole Health</span>
+          </div>
+
+          <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+            <div class="bg-gradient-to-r ${barColor} h-full transition-all duration-300" style="width: ${stats.healthPct}%"></div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-1.5 pt-0.5 text-center">
+            <div class="bg-slate-900 border border-slate-800 rounded-lg p-1.5">
+              <span class="block text-[9px] text-slate-400 uppercase font-bold">Bought On</span>
+              <strong class="text-[11px] text-white">${stats.purchaseNiceStr}</strong>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-lg p-1.5">
+              <span class="block text-[9px] text-slate-400 uppercase font-bold">Workouts Logged</span>
+              <strong class="text-[11px] text-sky-300">${stats.loggedSessions} / ${spec.maxSessions}</strong>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-lg p-1.5">
+              <span class="block text-[9px] text-slate-400 uppercase font-bold">Lower-Body Sets</span>
+              <strong class="text-[11px] text-white">${stats.heavyLowerBodySets} sets</strong>
+            </div>
+          </div>
+
+          <div class="text-[10px] text-slate-300 bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 py-1.5 leading-snug">
+            <strong class="text-sky-300">${statusText}:</strong> ${spec.biomechanicsNote}
+          </div>
+        `;
+      }
+    }
+
+    function detectShoeFromFilenameOrHeuristics(fileName) {
+      const lower = String(fileName || '').toLowerCase();
+      if (lower.includes('metcon')) return { brand: 'Nike', model: 'Metcon 9', category: 'cross_trainer' };
+      if (lower.includes('nano') || lower.includes('reebok')) return { brand: 'Reebok', model: 'Nano X4', category: 'cross_trainer' };
+      if (lower.includes('dropset') || lower.includes('adidas')) return { brand: 'Adidas', model: 'Dropset 3', category: 'cross_trainer' };
+      if (lower.includes('converse') || lower.includes('chuck') || lower.includes('vans')) return { brand: 'Converse', model: 'Chuck Taylor Flat', category: 'flat_lifter' };
+      if (lower.includes('romaleo') || lower.includes('adipower')) return { brand: 'Nike', model: 'Romaleos 4', category: 'weightlifting_heel' };
+      if (lower.includes('pegasus') || lower.includes('hoka') || lower.includes('asics') || lower.includes('run')) return { brand: 'Nike', model: 'Pegasus Runner', category: 'running_cushioned' };
+      return null;
+    }
+
+    function handleShoePhotoFileSelected(file) {
+      if (!file) return;
+      const shoe = ensureGymShoeState();
+      shoe.purchaseDate = getTodayIsoDateStr();
+
+      const fnGuess = detectShoeFromFilenameOrHeuristics(file.name);
+      if (fnGuess) {
+        shoe.brand = fnGuess.brand;
+        shoe.model = fnGuess.model;
+        shoe.category = fnGuess.category;
+      }
+
+      const badgeEl = document.getElementById('shoe-ai-status-badge');
+      if (badgeEl) badgeEl.textContent = '🔍 Coach AI Vision: Analyzing Shoe Brand & Model...';
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxDim = 360;
+          let w = img.width || 360;
+          let h = img.height || 360;
+          if (w > h && w > maxDim) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else if (h >= w && h > maxDim) {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+
+          shoe.photoDataUrl = dataUrl;
+          shoe.aiNote = `📸 Photo captured on ${getTodayIsoDateStr()} — scanning Brand & Model...`;
+          saveState();
+          renderShoeTrackerUI();
+
+          fetch('/api/gemini', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'gemini-2.5-flash',
+              imageBase64: dataUrl,
+              mimeType: 'image/jpeg',
+              prompt: 'Identify the athletic/gym shoe in this image. Reply ONLY with a valid JSON object (no markdown fences) with keys: {"brand": "Brand Name (e.g. Nike, Reebok, Adidas, Converse, ASICS, New Balance, NOBULL)", "model": "Model Name (e.g. Metcon 9, Nano X4, Dropset 3, Chuck Taylor, Pegasus)", "category": "cross_trainer" | "flat_lifter" | "running_cushioned" | "weightlifting_heel", "note": "1-sentence gym stability & lifespan summary"}'
+            })
+          })
+            .then(r => r.json())
+            .then(res => {
+              if (res && res.reply) {
+                const jsonMatch = res.reply.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                  const parsed = JSON.parse(jsonMatch[0]);
+                  if (parsed.brand) shoe.brand = parsed.brand;
+                  if (parsed.model) shoe.model = parsed.model;
+                  if (parsed.category && SHOE_CATEGORY_SPECS[parsed.category]) {
+                    shoe.category = parsed.category;
+                  }
+                  shoe.aiNote = parsed.note || `✓ AI Detected: ${shoe.brand} ${shoe.model}`;
+                  if (badgeEl) badgeEl.textContent = `✓ AI Detected: ${shoe.brand} ${shoe.model}`;
+                  saveState();
+                  renderShoeTrackerUI();
+                  showToast(`👟 AI Detected: ${shoe.brand} ${shoe.model}! Date set to Today.`);
+                  return;
+                }
+              }
+              if (badgeEl) badgeEl.textContent = '✓ Photo Saved • Date Set to Today (Adjust Brand/Date Below)';
+              shoe.aiNote = `✓ Shoe photo saved (${shoe.brand} ${shoe.model}). You can adjust the Purchase Date or Brand/Model below.`;
+              saveState();
+              renderShoeTrackerUI();
+              showToast('📸 Shoe photo saved & Purchase Date set to Today!');
+            })
+            .catch(() => {
+              if (badgeEl) badgeEl.textContent = '✓ Photo Saved • Date Set to Today (Adjust Brand/Date Below)';
+              shoe.aiNote = `✓ Shoe photo saved (${shoe.brand} ${shoe.model}). You can adjust the Purchase Date or Brand/Model below.`;
+              saveState();
+              renderShoeTrackerUI();
+              showToast('📸 Shoe photo saved & Purchase Date set to Today!');
+            });
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
     function renderWorkoutView() {
+      renderShoeTrackerUI();
       if (!state.currentWeek) state.currentWeek = 1;
       if (!state.completedWeeks) state.completedWeeks = {};
       if (!state.exerciseUnitPrefs) state.exerciseUnitPrefs = {};
@@ -3490,6 +3850,9 @@
               <button type="button" id="banner-open-vegan-fuel-btn" class="font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded-lg transition">
                 🌱 Meal: <strong>${adaptiveMealPreview.nextPostWorkoutTime12}</strong> →
               </button>
+              <button type="button" id="banner-open-shoe-gear-btn" class="font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2 py-1 rounded-lg transition" title="Open My Gear & Gym Shoe Lifespan Tracker (Inside Profile)">
+                👟 <span id="banner-shoe-health-readout">${calculateShoeWearFromWorkoutRecord().healthPct}%</span>
+              </button>
               ${dayObj.usmcDay ? `<button type="button" id="banner-jump-pullups" class="font-bold bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 px-2 py-1 rounded-lg transition">Pull-Ups</button>` : ''}
             </div>
           </div>
@@ -3500,6 +3863,14 @@
           </div>
         `;
 
+        const bannerShoeBtn = document.getElementById('banner-open-shoe-gear-btn');
+        if (bannerShoeBtn) {
+          bannerShoeBtn.addEventListener('click', () => {
+            if (typeof window.openProfileModalTab === 'function') {
+              window.openProfileModalTab('gear');
+            }
+          });
+        }
         const bannerWaterBtn = document.getElementById('banner-water-add-btn');
         if (bannerWaterBtn) {
           bannerWaterBtn.addEventListener('click', () => {
@@ -6275,6 +6646,109 @@
         }
       });
 
+      // Smart Gym Shoe Tracker Accordion & Controls
+      const toggleShoeBtn = document.getElementById('toggle-shoe-tracker-btn');
+      if (toggleShoeBtn) {
+        toggleShoeBtn.addEventListener('click', () => {
+          const panel = document.getElementById('shoe-tracker-panel');
+          const chev = document.getElementById('shoe-tracker-chevron');
+          if (!panel) return;
+          const isHidden = panel.classList.contains('hidden');
+          if (isHidden) {
+            panel.classList.remove('hidden');
+            if (chev) chev.textContent = '▲';
+            renderShoeTrackerUI();
+          } else {
+            panel.classList.add('hidden');
+            if (chev) chev.textContent = '▼';
+          }
+        });
+      }
+
+      const shoeCamInp = document.getElementById('shoe-camera-input');
+      if (shoeCamInp) {
+        shoeCamInp.addEventListener('change', (e) => {
+          if (e.target.files && e.target.files[0]) {
+            handleShoePhotoFileSelected(e.target.files[0]);
+          }
+        });
+      }
+      const shoeGalInp = document.getElementById('shoe-gallery-input');
+      if (shoeGalInp) {
+        shoeGalInp.addEventListener('change', (e) => {
+          if (e.target.files && e.target.files[0]) {
+            handleShoePhotoFileSelected(e.target.files[0]);
+          }
+        });
+      }
+
+      const shoeDateInp = document.getElementById('shoe-purchase-date-input');
+      if (shoeDateInp) {
+        shoeDateInp.addEventListener('change', () => {
+          const shoe = ensureGymShoeState();
+          if (shoeDateInp.value) {
+            shoe.purchaseDate = shoeDateInp.value;
+            saveState();
+            renderShoeTrackerUI();
+            showToast(`📅 Shoe purchase date updated to ${shoeDateInp.value}!`);
+          }
+        });
+      }
+
+      const shoeDateTodayBtn = document.getElementById('shoe-date-today-btn');
+      if (shoeDateTodayBtn) {
+        shoeDateTodayBtn.addEventListener('click', () => {
+          const shoe = ensureGymShoeState();
+          shoe.purchaseDate = getTodayIsoDateStr();
+          saveState();
+          renderShoeTrackerUI();
+          showToast(`📅 Shoe purchase date set to Today (${shoe.purchaseDate})!`);
+        });
+      }
+
+      const shoeCatSel = document.getElementById('shoe-category-select');
+      if (shoeCatSel) {
+        shoeCatSel.addEventListener('change', () => {
+          const shoe = ensureGymShoeState();
+          shoe.category = shoeCatSel.value;
+          saveState();
+          renderShoeTrackerUI();
+          showToast('👟 Updated shoe sole category & recalculated Good Until date!');
+        });
+      }
+
+      const shoeBrandInp = document.getElementById('shoe-brand-input');
+      if (shoeBrandInp) {
+        shoeBrandInp.addEventListener('input', () => {
+          const shoe = ensureGymShoeState();
+          shoe.brand = shoeBrandInp.value;
+          saveState();
+          renderShoeTrackerUI();
+        });
+      }
+
+      const shoeModelInp = document.getElementById('shoe-model-input');
+      if (shoeModelInp) {
+        shoeModelInp.addEventListener('input', () => {
+          const shoe = ensureGymShoeState();
+          shoe.model = shoeModelInp.value;
+          saveState();
+          renderShoeTrackerUI();
+        });
+      }
+
+      document.querySelectorAll('.shoe-preset-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const shoe = ensureGymShoeState();
+          shoe.brand = chip.getAttribute('data-shoe-preset-brand') || 'Nike';
+          shoe.model = chip.getAttribute('data-shoe-preset-model') || 'Metcon 9';
+          shoe.category = chip.getAttribute('data-shoe-preset-cat') || 'cross_trainer';
+          saveState();
+          renderShoeTrackerUI();
+          showToast(`👟 Selected ${shoe.brand} ${shoe.model}!`);
+        });
+      });
+
       // USMC Training Set Reps Controls (Synced with Daily Pull-Up Exercise #1)
       document.getElementById('pullup-ts-minus').addEventListener('click', () => {
         state.pullupTrainingSetReps = Math.max(1, state.pullupTrainingSetReps - 1);
@@ -6772,10 +7246,53 @@
         });
       }
 
+      const profSecAccountBtn = document.getElementById('profile-section-account-btn');
+      const profSecGearBtn = document.getElementById('profile-section-gear-btn');
+      const profAccountWrap = document.getElementById('profile-account-section-wrap');
+      const profGearWrap = document.getElementById('profile-gear-section-wrap');
+
+      function switchProfileModalSection(sec) {
+        const isGear = sec === 'gear';
+        if (profAccountWrap) {
+          if (isGear) profAccountWrap.classList.add('hidden');
+          else profAccountWrap.classList.remove('hidden');
+        }
+        if (profGearWrap) {
+          if (isGear) {
+            profGearWrap.classList.remove('hidden');
+            renderShoeTrackerUI();
+          } else {
+            profGearWrap.classList.add('hidden');
+          }
+        }
+        if (profSecAccountBtn && profSecGearBtn) {
+          if (isGear) {
+            profSecGearBtn.className = 'py-1.5 rounded-lg text-xs font-extrabold bg-sky-400 text-slate-950 flex items-center justify-center gap-1 transition';
+            profSecAccountBtn.className = 'py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition';
+          } else {
+            profSecAccountBtn.className = 'py-1.5 rounded-lg text-xs font-extrabold bg-sky-400 text-slate-950 transition';
+            profSecGearBtn.className = 'py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white flex items-center justify-center gap-1 transition';
+          }
+        }
+      }
+
+      window.openProfileModalTab = function(sec) {
+        syncSmartLoginFormUI();
+        switchProfileModalSection(sec || 'account');
+        if (smartLoginModal) smartLoginModal.classList.remove('hidden');
+      };
+
+      if (profSecAccountBtn) profSecAccountBtn.addEventListener('click', () => switchProfileModalSection('account'));
+      if (profSecGearBtn) profSecGearBtn.addEventListener('click', () => switchProfileModalSection('gear'));
+
+      const critOpenBtn = document.getElementById('shoe-critical-open-btn');
+      if (critOpenBtn) {
+        critOpenBtn.addEventListener('click', () => window.openProfileModalTab('gear'));
+      }
+
       if (openSmartLoginBtn && smartLoginModal) {
         openSmartLoginBtn.addEventListener('click', () => {
-          syncSmartLoginFormUI();
-          smartLoginModal.classList.remove('hidden');
+          window.openProfileModalTab('account');
         });
       }
       if (closeSmartLoginBtn && smartLoginModal) {
@@ -7261,103 +7778,195 @@
   <!-- Hidden legacy FAB ID preserved for DOM compatibility; Coach AI is accessed cleanly from the top header & HUD without blocking cards -->
   <button id="fab-gemini-ai-btn" type="button" class="hidden">✨ Coach AI</button>
 
-  <!-- App Store-Grade General Account, Login & Sign-Up Modal (Guideline 4.8 & 5.1.1(v) Compliant) -->
+  <!-- App Store-Grade Profile, Authentication & My Gear/Shoes Modal (Strava & Garmin Connect IA Standard) -->
   <div id="smart-login-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-4 space-y-3.5 shadow-2xl">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-4 space-y-3 shadow-2xl max-h-[92vh] overflow-y-auto">
       <div class="flex items-start justify-between border-b border-slate-800 pb-2.5">
         <div>
-          <span id="smart-login-badge" class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">● Account Active</span>
-          <h3 class="text-sm sm:text-base font-extrabold text-white mt-1" id="smart-login-modal-title">Account &amp; Cloud Sync</h3>
-          <p class="text-[11px] text-slate-400 mt-0.5" id="smart-login-modal-sub">Your workouts, PRs &amp; Coach AI settings stay synced across sessions.</p>
+          <span id="smart-login-badge" class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">● Profile &amp; Gear</span>
+          <h3 class="text-sm sm:text-base font-extrabold text-white mt-1" id="smart-login-modal-title">Profile &amp; My Gear</h3>
+          <p class="text-[11px] text-slate-400 mt-0.5" id="smart-login-modal-sub">Manage your account sync and track your gym shoe lifespan.</p>
         </div>
         <button type="button" id="close-smart-login-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
       </div>
 
-      <!-- VIEW 1: Active Signed-In Account Card (Default when signed in — shows active status cleanly) -->
-      <div id="active-account-status-box" class="space-y-3">
-        <div class="bg-slate-950 border border-emerald-500/35 rounded-xl p-3 flex items-center justify-between gap-2.5">
-          <div class="flex items-center gap-2.5 min-w-0">
-            <div id="active-account-avatar" class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 text-slate-950 font-extrabold text-sm flex items-center justify-center shrink-0">F</div>
-            <div class="min-w-0">
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs font-extrabold text-white truncate" id="active-account-name-disp">François</span>
-                <span class="inline-block w-2 h-2 rounded-full bg-emerald-400" title="Account Active"></span>
+      <!-- Top-Level Profile Modal Segmented Navigation: [👤 Account] | [👟 My Gear & Shoes] (Like Strava Profile > Gear) -->
+      <div class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800">
+        <button type="button" id="profile-section-account-btn" class="py-1.5 rounded-lg text-xs font-extrabold bg-sky-400 text-slate-950 transition">
+          👤 Account &amp; Sync
+        </button>
+        <button type="button" id="profile-section-gear-btn" class="py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white flex items-center justify-center gap-1 transition">
+          <span>👟 My Gear &amp; Shoes</span>
+          <span id="shoe-header-pill" class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-slate-800 text-sky-300">98%</span>
+        </button>
+      </div>
+
+      <!-- SECTION A: ACCOUNT, LOGIN & SIGN-UP -->
+      <div id="profile-account-section-wrap" class="space-y-3">
+        <!-- VIEW 1: Active Signed-In Account Card -->
+        <div id="active-account-status-box" class="space-y-3">
+          <div class="bg-slate-950 border border-emerald-500/35 rounded-xl p-3 flex items-center justify-between gap-2.5">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div id="active-account-avatar" class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 text-slate-950 font-extrabold text-sm flex items-center justify-center shrink-0">F</div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-extrabold text-white truncate" id="active-account-name-disp">François</span>
+                  <span class="inline-block w-2 h-2 rounded-full bg-emerald-400" title="Account Active"></span>
+                </div>
+                <div class="text-[10px] text-slate-400 truncate" id="active-account-email-disp">francois@7amgym.app</div>
               </div>
-              <div class="text-[10px] text-slate-400 truncate" id="active-account-email-disp">francois@7amgym.app</div>
             </div>
+            <span class="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Active</span>
           </div>
-          <span class="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Active</span>
+
+          <button type="button" id="continue-active-account-btn" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition">
+            ✓ Continue to Workout
+          </button>
+
+          <div id="saved-accounts-switcher-list" class="space-y-1 pt-0.5"></div>
+
+          <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+            <button type="button" id="sign-out-new-account-btn" class="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-bold transition">
+              Switch Account / Log Out
+            </button>
+            <button type="button" id="delete-account-data-btn" class="py-1.5 px-2.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10px] font-semibold transition" title="App Store Guideline 5.1.1(v) Account Deletion">
+              Delete Account
+            </button>
+          </div>
         </div>
 
-        <button type="button" id="continue-active-account-btn" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition">
-          ✓ Continue to Workout
-        </button>
+        <!-- VIEW 2: General App Store Log In / Sign Up Screen -->
+        <div id="new-account-form-wrap" class="hidden space-y-3">
+          <div class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800">
+            <button type="button" id="auth-tab-login-btn" class="py-1.5 rounded-lg text-xs font-extrabold bg-emerald-500 text-slate-950 transition">
+              Log In
+            </button>
+            <button type="button" id="auth-tab-signup-btn" class="py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
+              Sign Up
+            </button>
+          </div>
 
-        <div id="saved-accounts-switcher-list" class="space-y-1 pt-0.5"></div>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="apple-oauth-btn" class="py-2 px-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-[11px] flex items-center justify-center gap-1.5 shadow transition">
+              <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 170 170"><path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.13-1.9-14.34-6.08-3.69-3.03-7.61-7.82-11.77-14.37-5.93-9.19-10.72-19.74-14.38-31.67-3.66-11.92-5.49-22.95-5.49-33.08 0-12.82 3.19-23.22 9.56-31.21 6.38-7.99 14.39-12.11 24.04-12.37 4.92 0 10.31 1.48 16.16 4.44 5.85 2.96 9.63 4.49 11.34 4.61 1.34 0 5.47-1.78 12.4-5.34 6.93-3.56 12.79-5.08 17.59-4.56 13.08 1.05 22.93 6.18 29.55 15.39-11.73 7.12-17.46 16.96-17.19 29.52.27 9.85 3.94 18.06 11.02 24.64 4.92 4.65 10.77 7.45 17.56 8.4-.99 3.09-2.09 6.08-3.31 8.98zM119.22 31.01c0 7.72-2.82 14.94-8.46 21.66-6.81 7.96-15.05 12.55-23.97 11.83-.19-.94-.29-1.95-.29-3.04 0-7.41 3.1-15.32 9.3-22.34 2.97-3.41 6.74-6.24 11.31-8.5 4.57-2.25 8.9-3.5 12.99-3.74.08 1.42.12 2.8.12 4.13z"/></svg>
+              <span>Apple</span>
+            </button>
+            <button type="button" id="google-oauth-btn" class="py-2 px-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-white font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z"/><path fill="#FBBC05" d="M5.3 14.8c-.2-.8-.4-1.6-.4-2.5s.2-1.7.4-2.5L1.6 7C.6 9 0 11.2 0 13.5s.6 4.5 1.6 6.5l3.7-2.9z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.9C3.5 21.4 7.4 24 12 24z"/></svg>
+              <span>Google</span>
+            </button>
+          </div>
 
-        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
-          <button type="button" id="sign-out-new-account-btn" class="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-bold transition">
-            Switch Account / Log Out
+          <div id="google-account-chooser-drawer" class="hidden">
+            <div id="google-chooser-saved-list"></div>
+          </div>
+
+          <div class="flex items-center gap-2 text-[10px] text-slate-500 uppercase font-bold">
+            <div class="flex-1 h-px bg-slate-800"></div>
+            <span id="auth-divider-label">Or Continue with Email</span>
+            <div class="flex-1 h-px bg-slate-800"></div>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            <div id="lead-name-field-wrap" class="hidden">
+              <label for="lead-name-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">First Name</label>
+              <input id="lead-name-input" type="text" autocomplete="given-name" placeholder="Enter your first name" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
+            </div>
+            <div>
+              <label for="lead-email-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">Email Address</label>
+              <input id="lead-email-input" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
+            </div>
+            <input id="lead-phone-input" type="hidden" value="" />
+          </div>
+
+          <button type="button" id="submit-smart-login-btn" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition">
+            Log In →
           </button>
-          <button type="button" id="delete-account-data-btn" class="py-1.5 px-2.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10px] font-semibold transition" title="App Store Guideline 5.1.1(v) Account Deletion">
-            Delete Account
+
+          <button type="button" id="cancel-new-account-btn" class="w-full py-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition">
+            ← Back to Active Account
           </button>
         </div>
       </div>
 
-      <!-- VIEW 2: General App Store Log In / Sign Up Screen (Segmented Toggle + Apple/Google + Email) -->
-      <div id="new-account-form-wrap" class="hidden space-y-3">
-        <!-- Segmented Toggle: Log In vs. Sign Up -->
-        <div class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800">
-          <button type="button" id="auth-tab-login-btn" class="py-1.5 rounded-lg text-xs font-extrabold bg-emerald-500 text-slate-950 transition">
-            Log In
-          </button>
-          <button type="button" id="auth-tab-signup-btn" class="py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
-            Sign Up
-          </button>
+      <!-- SECTION B: MY GEAR & GYM SHOES (Placed Inside Profile > My Gear Like Strava, Garmin & Runkeeper!) -->
+      <div id="profile-gear-section-wrap" class="hidden space-y-3 text-xs">
+        <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3 space-y-2.5">
+          <div class="flex items-center gap-2.5">
+            <div id="shoe-photo-preview-wrap" class="w-14 h-14 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
+              <img id="shoe-photo-preview-img" src="" alt="Gym Shoe Preview" class="hidden w-full h-full object-cover" />
+              <span id="shoe-photo-placeholder-icon" class="text-xl">👟</span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400" id="shoe-ai-status-badge">✨ AI Vision Shoe Scanner</span>
+              <div class="text-xs font-extrabold text-white truncate mt-0.5" id="shoe-detected-summary">Active Shoe</div>
+              <p class="text-[10px] text-slate-400 leading-snug" id="shoe-detected-sub">Snap a photo to auto-detect Brand/Model &amp; set Date Bought to Today.</p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <label for="shoe-camera-input" class="flex-1 py-2 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 font-extrabold text-xs text-center cursor-pointer transition whitespace-nowrap">
+              📸 Take Shoe Photo
+            </label>
+            <input id="shoe-camera-input" type="file" accept="image/*" capture="environment" class="hidden" />
+            <label for="shoe-gallery-input" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs text-center cursor-pointer transition whitespace-nowrap">
+              🖼️ Upload Photo
+            </label>
+            <input id="shoe-gallery-input" type="file" accept="image/*" class="hidden" />
+          </div>
+
+          <div class="space-y-1 pt-1 border-t border-slate-800/80">
+            <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">1-Tap Gym Shoe Presets:</span>
+            <div class="flex flex-wrap gap-1">
+              <button type="button" data-shoe-preset-brand="Nike" data-shoe-preset-model="Metcon 9" data-shoe-preset-cat="cross_trainer" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[10px] font-bold text-slate-200 transition">Nike Metcon 9</button>
+              <button type="button" data-shoe-preset-brand="Reebok" data-shoe-preset-model="Nano X4" data-shoe-preset-cat="cross_trainer" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[10px] font-bold text-slate-200 transition">Reebok Nano X4</button>
+              <button type="button" data-shoe-preset-brand="Adidas" data-shoe-preset-model="Dropset 3" data-shoe-preset-cat="cross_trainer" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[10px] font-bold text-slate-200 transition">Adidas Dropset 3</button>
+              <button type="button" data-shoe-preset-brand="Converse" data-shoe-preset-model="Chuck Taylor Flat" data-shoe-preset-cat="flat_lifter" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[10px] font-bold text-slate-200 transition">Converse Flat</button>
+              <button type="button" data-shoe-preset-brand="Nike" data-shoe-preset-model="Pegasus / Runner" data-shoe-preset-cat="running_cushioned" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[10px] font-bold text-slate-200 transition">Running Shoe</button>
+            </div>
+          </div>
         </div>
 
-        <!-- App Store Guideline 4.8 Social Sign-In Buttons (Apple + Google) -->
         <div class="grid grid-cols-2 gap-2">
-          <button type="button" id="apple-oauth-btn" class="py-2 px-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-[11px] flex items-center justify-center gap-1.5 shadow transition">
-            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 170 170"><path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.13-1.9-14.34-6.08-3.69-3.03-7.61-7.82-11.77-14.37-5.93-9.19-10.72-19.74-14.38-31.67-3.66-11.92-5.49-22.95-5.49-33.08 0-12.82 3.19-23.22 9.56-31.21 6.38-7.99 14.39-12.11 24.04-12.37 4.92 0 10.31 1.48 16.16 4.44 5.85 2.96 9.63 4.49 11.34 4.61 1.34 0 5.47-1.78 12.4-5.34 6.93-3.56 12.79-5.08 17.59-4.56 13.08 1.05 22.93 6.18 29.55 15.39-11.73 7.12-17.46 16.96-17.19 29.52.27 9.85 3.94 18.06 11.02 24.64 4.92 4.65 10.77 7.45 17.56 8.4-.99 3.09-2.09 6.08-3.31 8.98zM119.22 31.01c0 7.72-2.82 14.94-8.46 21.66-6.81 7.96-15.05 12.55-23.97 11.83-.19-.94-.29-1.95-.29-3.04 0-7.41 3.1-15.32 9.3-22.34 2.97-3.41 6.74-6.24 11.31-8.5 4.57-2.25 8.9-3.5 12.99-3.74.08 1.42.12 2.8.12 4.13z"/></svg>
-            <span>Apple</span>
-          </button>
-          <button type="button" id="google-oauth-btn" class="py-2 px-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-white font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z"/><path fill="#FBBC05" d="M5.3 14.8c-.2-.8-.4-1.6-.4-2.5s.2-1.7.4-2.5L1.6 7C.6 9 0 11.2 0 13.5s.6 4.5 1.6 6.5l3.7-2.9z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.9C3.5 21.4 7.4 24 12 24z"/></svg>
-            <span>Google</span>
-          </button>
-        </div>
-
-        <div id="google-account-chooser-drawer" class="hidden">
-          <div id="google-chooser-saved-list"></div>
-        </div>
-
-        <div class="flex items-center gap-2 text-[10px] text-slate-500 uppercase font-bold">
-          <div class="flex-1 h-px bg-slate-800"></div>
-          <span id="auth-divider-label">Or Continue with Email</span>
-          <div class="flex-1 h-px bg-slate-800"></div>
-        </div>
-
-        <div class="space-y-2 text-xs">
-          <div id="lead-name-field-wrap" class="hidden">
-            <label for="lead-name-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">First Name</label>
-            <input id="lead-name-input" type="text" autocomplete="given-name" placeholder="Enter your first name" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
+            <div class="flex items-center justify-between mb-1">
+              <label for="shoe-purchase-date-input" class="text-[10px] font-bold uppercase tracking-wider text-slate-300">📅 Date Bought</label>
+              <button type="button" id="shoe-date-today-btn" class="text-[9px] font-bold text-sky-400 hover:text-sky-300">Today</button>
+            </div>
+            <input id="shoe-purchase-date-input" type="date" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-extrabold text-white focus:outline-none focus:border-sky-400" />
           </div>
-          <div>
-            <label for="lead-email-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">Email Address</label>
-            <input id="lead-email-input" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
+
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
+            <label for="shoe-category-select" class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">🛠️ Sole Type</label>
+            <select id="shoe-category-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-sky-400">
+              <option value="cross_trainer">Cross-Trainer (150 sess)</option>
+              <option value="flat_lifter">Flat Lifter (180 sess)</option>
+              <option value="running_cushioned">Running Shoe (110 sess)</option>
+              <option value="weightlifting_heel">Lifting Heel (300 sess)</option>
+            </select>
           </div>
-          <input id="lead-phone-input" type="hidden" value="" />
+
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
+            <label for="shoe-brand-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">🏷️ Brand</label>
+            <input id="shoe-brand-input" type="text" placeholder="e.g., Nike" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400" />
+          </div>
+
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
+            <label for="shoe-model-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">👟 Model</label>
+            <input id="shoe-model-input" type="text" placeholder="e.g., Metcon 9" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400" />
+          </div>
         </div>
 
-        <button type="button" id="submit-smart-login-btn" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition">
-          Log In →
-        </button>
+        <div id="shoe-lifespan-dashboard" class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+          <!-- Populated dynamically by JS -->
+        </div>
 
-        <button type="button" id="cancel-new-account-btn" class="w-full py-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition">
-          ← Back to Active Account
-        </button>
+        <!-- Hidden legacy header IDs preserved for clean JS compatibility -->
+        <span id="shoe-header-title" class="hidden"></span>
+        <span id="shoe-header-subtitle" class="hidden"></span>
+        <span id="toggle-shoe-tracker-btn" class="hidden"></span>
+        <span id="shoe-tracker-panel" class="hidden"></span>
+        <span id="shoe-tracker-chevron" class="hidden"></span>
       </div>
     </div>
   </div>
