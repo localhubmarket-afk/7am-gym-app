@@ -262,10 +262,15 @@ export function formatExerciseProgressBadge(exIdxZeroBased: number, totalExercis
   return `#${exIdxZeroBased + 1}/${Math.max(1, totalExercisesToday)}`;
 }
 
+export function stripExercisePrefix(text: string): string {
+  return String(text || '').replace(/^[A-Z]\d+[\.\:\-\)]\s*/i, '').trim();
+}
+
 export interface RecipePrepStep {
   id: string;
   title: string;
   detail: string;
+  weightBadge?: string;
 }
 
 export interface BatchPrepRecipe {
@@ -287,23 +292,38 @@ export const BATCH_PREP_RECIPES: BatchPrepRecipe[] = [
     steps: [
       {
         id: 'oats_step_1',
-        title: 'Weigh Dry Base',
-        detail: '180g Gluten-Free Protein Oats (45g x 4 jars) + 24g Whole Chia Seeds (6g x 4 jars)'
+        title: '#1 Gluten-Free Protein Oats',
+        detail: '180g total (45g × 4 jars)',
+        weightBadge: '180g'
       },
       {
         id: 'oats_step_2',
-        title: 'Add Mashed Banana & PB',
-        detail: '120g Peeled Ripe Banana (30g/jar) + 32g Natural Peanut Butter (8g/jar)'
+        title: '#2 Organic Whole Chia Seeds',
+        detail: '24g total (6g × 4 jars)',
+        weightBadge: '24g'
       },
       {
         id: 'oats_step_3',
-        title: 'Pour Silk Protein Milk',
-        detail: '720g (720 ml) Unsweetened Silk Protein Milk (180g/jar)'
+        title: '#3 Peeled Ripe Banana (Mashed)',
+        detail: '120g total (30g × 4 jars)',
+        weightBadge: '120g'
       },
       {
         id: 'oats_step_4',
-        title: 'Stir, Seal & Refrigerate',
-        detail: 'Mix thoroughly and refrigerate overnight (ready for 8:15 AM post-workout jars)'
+        title: '#4 Smooth Natural Peanut Butter',
+        detail: '32g total (8g × 4 jars)',
+        weightBadge: '32g'
+      },
+      {
+        id: 'oats_step_5',
+        title: '#5 Unsweetened Silk Protein Milk',
+        detail: '720g / 720 ml total (180g × 4 jars)',
+        weightBadge: '720g'
+      },
+      {
+        id: 'oats_step_6',
+        title: '#6 Stir, Seal & Refrigerate Overnight',
+        detail: 'Divide evenly into 4 jars and chill for 8:15 AM post-gym fuel'
       }
     ]
   },
@@ -311,28 +331,31 @@ export const BATCH_PREP_RECIPES: BatchPrepRecipe[] = [
     id: 'recipe_rice_batch',
     badge: '#Prep 2/2',
     yieldPill: '4-Day Batch • 4 Servings',
-    title: '4-Day Jasmine Rice & Savoury Tofu Bowl Prep',
+    title: '4-Day Jasmine Rice Batch Prep',
     subtitle: 'Prep time: 20 mins • Yields 4x 150g cooked rice portions (55g dry/day)',
     steps: [
       {
         id: 'rice_step_1',
-        title: 'Rinse & Weigh Dry Rice',
-        detail: '220g Dry White Jasmine Rice (rinse in cold water until clear)'
+        title: '#1 Dry White Jasmine Rice (Rinsed)',
+        detail: 'Weigh and rinse in cold water until clear (55g dry × 4 days)',
+        weightBadge: '220g'
       },
       {
         id: 'rice_step_2',
-        title: 'Measure Water (1 : 1.5 Ratio)',
-        detail: 'Add 330g (330 ml) water to pot or rice cooker'
+        title: '#2 Filtered Cooking Water (1 : 1.5 Ratio)',
+        detail: 'Add water to pot or rice cooker with rinsed rice',
+        weightBadge: '330 ml'
       },
       {
         id: 'rice_step_3',
-        title: 'Simmer & Steam',
-        detail: 'Bring to boil, cover on low heat for 12 mins, then rest covered off heat for 10 mins (yields ~600g cooked rice = 150g/day)'
+        title: '#3 Simmer 12 Mins & Steam 10 Mins',
+        detail: 'Boil, cover on low heat 12m, rest off heat 10m (~600g cooked yield)'
       },
       {
         id: 'rice_step_4',
-        title: 'Portion Daily Savoury Bowl',
-        detail: 'Combine 150g Cooked Rice + 175g Extra-Firm Tofu + 75g Steamed Broccoli + 12g Nutritional Yeast + 5g Sesame Oil + 1.5g Iodized Salt'
+        title: '#4 Divide Into 4 Storage Containers',
+        detail: 'Portion 150g cooked rice per container for Daily Fuel 2 bowls',
+        weightBadge: '150g × 4'
       }
     ]
   }
@@ -361,5 +384,6 @@ export function resetRecipePrepSteps(
   }
   return next;
 }
+
 
 

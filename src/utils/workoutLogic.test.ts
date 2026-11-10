@@ -114,32 +114,46 @@ test('Task 5: 3-Week Rolling Visibility & Contextual Sticky Timer Visibility', (
 
 import {
   formatExerciseProgressBadge,
+  stripExercisePrefix,
   BATCH_PREP_RECIPES,
   toggleRecipePrepStep,
   resetRecipePrepSteps
 } from './workoutLogic';
 
-test('Task 6: Exercise Progress Denominator Badge & Interactive Batch Prep Recipe Cards', () => {
+test('Task 6: Exercise Progress Denominator Badge, Prefix Stripping & Atomic Batch Prep Recipe Cards', () => {
   assert.equal(formatExerciseProgressBadge(0, 9), '#1/9');
   assert.equal(formatExerciseProgressBadge(1, 9), '#2/9');
   assert.equal(formatExerciseProgressBadge(8, 9), '#9/9');
   assert.equal(formatExerciseProgressBadge(0, 8), '#1/8');
 
+  assert.equal(stripExercisePrefix('A1. Dumbbell Romanian Deadlift'), 'Dumbbell Romanian Deadlift');
+  assert.equal(stripExercisePrefix('A2. Seated Leg Extensions'), 'Seated Leg Extensions');
+  assert.equal(stripExercisePrefix('A1. Banded Hip Abductions'), 'Banded Hip Abductions');
+  assert.equal(stripExercisePrefix('A2. Seated Weighted Calf Raise'), 'Seated Weighted Calf Raise');
+  assert.equal(stripExercisePrefix('Barbell Bench Press'), 'Barbell Bench Press');
+
   assert.equal(BATCH_PREP_RECIPES.length, 2);
   assert.equal(BATCH_PREP_RECIPES[0].badge, '#Prep 1/2');
-  assert.equal(BATCH_PREP_RECIPES[0].steps.length, 4);
+  assert.equal(BATCH_PREP_RECIPES[0].steps.length, 6);
+  assert.equal(BATCH_PREP_RECIPES[0].steps[0].weightBadge, '180g');
+  assert.equal(BATCH_PREP_RECIPES[0].steps[1].weightBadge, '24g');
+  assert.equal(BATCH_PREP_RECIPES[0].steps[2].weightBadge, '120g');
+  assert.equal(BATCH_PREP_RECIPES[0].steps[3].weightBadge, '32g');
+  assert.equal(BATCH_PREP_RECIPES[0].steps[4].weightBadge, '720g');
   assert.equal(BATCH_PREP_RECIPES[1].badge, '#Prep 2/2');
+  assert.equal(BATCH_PREP_RECIPES[1].title, '4-Day Jasmine Rice Batch Prep');
   assert.equal(BATCH_PREP_RECIPES[1].steps.length, 4);
 
   let logs: Record<string, boolean> = {};
   logs = toggleRecipePrepStep(logs, 'oats_step_1');
-  logs = toggleRecipePrepStep(logs, 'oats_step_2');
+  logs = toggleRecipePrepStep(logs, 'oats_step_6');
   assert.equal(logs.oats_step_1, true);
-  assert.equal(logs.oats_step_2, true);
+  assert.equal(logs.oats_step_6, true);
 
   logs = resetRecipePrepSteps(logs, 'recipe_oats_batch');
   assert.equal(Boolean(logs.oats_step_1), false);
-  assert.equal(Boolean(logs.oats_step_2), false);
+  assert.equal(Boolean(logs.oats_step_6), false);
 });
+
 
 
