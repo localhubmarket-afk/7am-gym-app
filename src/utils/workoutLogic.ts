@@ -909,4 +909,42 @@ export function getPrepNoteHeaderBadge(
   };
 }
 
+// ============================================================================
+// PULL-UP & WORKOUT NAMING CLEANUP + BODYWEIGHT REPS-ONLY OPTIMIZATION (UPDATES 1–4)
+// ============================================================================
+export const WORKOUT_DAY_BANNER_TITLES: Record<number, string> = {
+  0: 'Upper Body 1 • Push & Pull',
+  1: 'Lower Body 1 • Quad Focus',
+  2: 'Upper Body 2 • Push Focus',
+  3: 'Upper Body 3 • Pull Focus',
+  4: 'Lower Body 2 • Glutes & Hamstrings'
+};
 
+export const PULLUP_EXERCISE_TITLES: Record<string, string> = {
+  day1_pullups: 'Overhand Pull-Ups (Max Effort)',
+  day2_pullups: 'Overhand Pull-Ups (Pyramid Sets)',
+  day3_pullups: 'Pull-Ups (3 Grips × 3 Training Sets)',
+  fri_pullups: 'Overhand Pull-Ups (Max Training Sets)',
+  day5_pullups: 'Overhand Pull-Ups (Repeat Hardest Day)'
+};
+
+export const PULLUP_BODYWEIGHT_EX_IDS = [
+  'day1_pullups',
+  'day2_pullups',
+  'day3_pullups',
+  'fri_pullups',
+  'day5_pullups'
+] as const;
+
+export const PULLUPS_TAB_MAIN_HEADER = 'Overhand Pull-Up Progression Program';
+export const PYRAMID_REST_HELPER_HEADER = 'PULL-UP PYRAMID REST HELPER (10S × REPS)';
+export const WORKOUT_SETTINGS_DRAWER_LABEL = 'Workout & Display Settings';
+
+export function isBodyweightRepsOnlyExercise(ex: {
+  id?: string;
+  isBodyweightRepsOnly?: boolean;
+}): boolean {
+  if (!ex) return false;
+  if (ex.isBodyweightRepsOnly === true) return true;
+  return (PULLUP_BODYWEIGHT_EX_IDS as readonly string[]).includes(String(ex.id || ''));
+}

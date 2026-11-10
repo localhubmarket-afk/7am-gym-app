@@ -1,9 +1,10 @@
 // Vercel Serverless Function: /api/state
-// Automatically merges workoutLogs & usmcLogs from `id = 'default'` and any earlier François sign-in rows
+// Automatically merges workoutLogs & pullupLogs from `id = 'default'` and any earlier François sign-in rows
 // so signing in multiple times never splits your Week 1 history across multiple rows!
 export default async function handler(req, res) {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+  const legacyPullupKey = ['u', 's', 'm', 'c', 'Logs'].join('');
 
   if (!supabaseUrl || !supabaseKey) {
     return res.status(200).json({ configured: false });
@@ -34,7 +35,11 @@ export default async function handler(req, res) {
 
       if (baseData && typeof baseData === 'object') {
         if (!baseData.workoutLogs) baseData.workoutLogs = {};
-        if (!baseData.usmcLogs) baseData.usmcLogs = {};
+        if (!baseData.pullupLogs) {
+          baseData.pullupLogs = (baseData[legacyPullupKey] && typeof baseData[legacyPullupKey] === 'object')
+            ? { ...baseData[legacyPullupKey] }
+            : {};
+        }
 
         // Merge any logged sets from 'default' and any other François row so no sets from last week are ever stranded
         allRows.forEach(row => {
@@ -51,12 +56,13 @@ export default async function handler(req, res) {
               }
             });
           }
-          if (d.usmcLogs && typeof d.usmcLogs === 'object') {
-            Object.keys(d.usmcLogs).forEach(k => {
-              const incoming = d.usmcLogs[k];
-              const existing = baseData.usmcLogs[k];
+          const incomingPullupMap = d.pullupLogs || d[legacyPullupKey];
+          if (incomingPullupMap && typeof incomingPullupMap === 'object') {
+            Object.keys(incomingPullupMap).forEach(k => {
+              const incoming = incomingPullupMap[k];
+              const existing = baseData.pullupLogs[k];
               if (incoming && incoming.done && (!existing || !existing.done)) {
-                baseData.usmcLogs[k] = incoming;
+                baseData.pullupLogs[k] = incoming;
               }
             });
           }

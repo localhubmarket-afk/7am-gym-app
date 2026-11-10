@@ -403,4 +403,37 @@ test('Muscle Fuel & Rest Timer Upgrades 1-4: Scale Badges, G|LB Toggle, 3-Stage 
   assert.equal(populatedBadge.toggleButtonLabel, 'Edit Kitchen Note');
 });
 
+test('Pull-Up & Naming Cleanup Updates 1-4: Zero USMC, Clean Titles, Bodyweight Reps-Only & Settings Label', async () => {
+  const fs = await import('node:fs');
+  const mod = await import('./workoutLogic.ts');
 
+  // 1. Verify Day 1-5 Banner Titles
+  assert.equal(mod.WORKOUT_DAY_BANNER_TITLES[0], 'Upper Body 1 • Push & Pull');
+  assert.equal(mod.WORKOUT_DAY_BANNER_TITLES[1], 'Lower Body 1 • Quad Focus');
+  assert.equal(mod.WORKOUT_DAY_BANNER_TITLES[2], 'Upper Body 2 • Push Focus');
+  assert.equal(mod.WORKOUT_DAY_BANNER_TITLES[3], 'Upper Body 3 • Pull Focus');
+  assert.equal(mod.WORKOUT_DAY_BANNER_TITLES[4], 'Lower Body 2 • Glutes & Hamstrings');
+
+  // 2. Verify Exercise #1/9 Pull-Up Titles on Days 1-5
+  assert.equal(mod.PULLUP_EXERCISE_TITLES.day1_pullups, 'Overhand Pull-Ups (Max Effort)');
+  assert.equal(mod.PULLUP_EXERCISE_TITLES.day2_pullups, 'Overhand Pull-Ups (Pyramid Sets)');
+  assert.equal(mod.PULLUP_EXERCISE_TITLES.day3_pullups, 'Pull-Ups (3 Grips × 3 Training Sets)');
+  assert.equal(mod.PULLUP_EXERCISE_TITLES.fri_pullups, 'Overhand Pull-Ups (Max Training Sets)');
+  assert.equal(mod.PULLUP_EXERCISE_TITLES.day5_pullups, 'Overhand Pull-Ups (Repeat Hardest Day)');
+
+  // 3. Verify Bodyweight Reps-Only detection for Exercise #1/9 on Days 1-5
+  for (const id of ['day1_pullups', 'day2_pullups', 'day3_pullups', 'fri_pullups', 'day5_pullups']) {
+    assert.equal(mod.isBodyweightRepsOnlyExercise({ id }), true);
+  }
+  assert.equal(mod.isBodyweightRepsOnlyExercise({ id: 'mon_bench' }), false);
+
+  // 4. Verify Header & Drawer Labels and Zero "USMC" occurrences in index.html & api/state.js
+  assert.equal(mod.PULLUPS_TAB_MAIN_HEADER, 'Overhand Pull-Up Progression Program');
+  assert.equal(mod.PYRAMID_REST_HELPER_HEADER, 'PULL-UP PYRAMID REST HELPER (10S × REPS)');
+  assert.equal(mod.WORKOUT_SETTINGS_DRAWER_LABEL, 'Workout & Display Settings');
+
+  const html = fs.readFileSync('index.html', 'utf8');
+  const apiState = fs.readFileSync('api/state.js', 'utf8');
+  assert.equal(/usmc/i.test(html), false, 'index.html must contain zero case-insensitive matches for USMC');
+  assert.equal(/usmc/i.test(apiState), false, 'api/state.js must contain zero case-insensitive matches for USMC');
+});

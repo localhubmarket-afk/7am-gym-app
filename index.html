@@ -186,7 +186,7 @@
         <!-- Collapsible Secondary Settings Drawer (Progressive Disclosure — Keeps Screen Clean!) -->
         <details id="gym-secondary-settings-drawer" class="pt-1 border-t border-slate-800/70 text-xs">
           <summary class="cursor-pointer text-[11px] font-semibold text-slate-400 hover:text-slate-200 flex items-center justify-between py-0.5">
-            <span>⚙️ Week, Unit &amp; Daily Abs Settings</span>
+            <span>⚙️ Workout &amp; Display Settings</span>
             <span class="text-[10px] text-emerald-400">Tap to open ▾</span>
           </summary>
           <div class="pt-2.5 space-y-2.5">
@@ -265,7 +265,7 @@
       </div>
     </section>
 
-    <!-- ==================== VIEW 2: USMC PULL-UP TRACKER ==================== -->
+    <!-- ==================== VIEW 2: PULL-UP TRACKER ==================== -->
     <section id="view-pullups" class="hidden space-y-4">
       <!-- Synced Progressive Week Selector Bar (Matches Gym & Muscle Fuel Tabs) -->
       <div id="pullups-top-week-selector-card" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3">
@@ -284,7 +284,7 @@
         <div class="flex items-start justify-between gap-2">
           <div>
             <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Days 1–5 Pull-Up Progression</span>
-            <h2 class="text-base font-extrabold text-white mt-0.5">USMC Overhand Pull-Up Program</h2>
+            <h2 class="text-base font-extrabold text-white mt-0.5">Overhand Pull-Up Progression Program</h2>
             <p class="text-xs text-slate-300 mt-1">Consecutive Days 1–5 schedule with Days 6 &amp; 7 off from pull-ups. Focus on strict, quality execution of every repetition.</p>
           </div>
           <a href="https://youtu.be/w_yuTRQd6HA" target="_blank" rel="noopener noreferrer" class="shrink-0 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1 transition">
@@ -306,8 +306,8 @@
         </div>
       </div>
 
-      <!-- 5-Day USMC Routine Cards -->
-      <div id="usmc-days-container" class="space-y-3">
+      <!-- 5-Day Pull-Up Routine Cards -->
+      <div id="pullup-days-container" class="space-y-3">
         <!-- Populated by JS -->
       </div>
     </section>
@@ -371,16 +371,16 @@
             <button type="button" data-timer-sec="150" class="timer-preset-btn py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700">
               2.5m <span class="block text-[10px] font-normal text-slate-400">Compounds</span>
             </button>
-            <button type="button" data-timer-sec="180" class="timer-preset-btn py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700">
+            <button type="button" data-timer-sec="180" class="timer-preset-btn py-2 px-2 rounded-xl bg-slate-800 hover:bg-emerald-500/20 text-xs font-bold text-white border border-slate-700">
               3m <span class="block text-[10px] font-normal text-slate-400">Heavy Lift</span>
             </button>
           </div>
         </div>
 
-        <!-- Compact Expandable USMC Day 2 Pyramid Rest Helper (Collapsed unless Day 2) -->
+        <!-- Compact Expandable Pull-Up Pyramid Rest Helper (Collapsed unless Day 2) -->
         <details id="pyramid-rest-helper-details" class="pt-3 border-t border-slate-800 text-left">
           <summary class="cursor-pointer flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-emerald-400 hover:text-emerald-300 select-none">
-            <span>Pyramid Rest Helper (10s x Reps)</span>
+            <span>PULL-UP PYRAMID REST HELPER (10S × REPS)</span>
             <span class="text-[10px] text-slate-400">▾</span>
           </summary>
           <div class="flex flex-wrap gap-1.5 pt-2.5">
@@ -723,8 +723,9 @@
 
     /*__BAKED_STATE_START__*/
     const FRANCOIS_WEEK1_SEED_LOGS = {"w1_0_day1_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "0_day1_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_0_day1_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "0_day1_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_0_day1_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "0_day1_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_0_day1_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "0_day1_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_0_day1_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "0_day1_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_1_day2_pullups_1": {"weight": "0", "reps": "1", "done": true, "unit": "lbs"}, "1_day2_pullups_1": {"weight": "0", "reps": "1", "done": true, "unit": "lbs"}, "w1_1_day2_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "1_day2_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_1_day2_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "1_day2_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_1_day2_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "1_day2_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_1_day2_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "1_day2_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_6": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_6": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_7": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_7": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_8": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_8": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_9": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_9": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_3_fri_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "3_fri_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_3_fri_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "3_fri_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_3_fri_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "3_fri_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_3_fri_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "3_fri_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_3_fri_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "3_fri_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_4_day5_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "4_day5_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_4_day5_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "4_day5_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_4_day5_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "4_day5_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_4_day5_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "4_day5_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_4_day5_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "4_day5_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_0_mon_bench_1": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_bench_1": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_bench_2": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_bench_2": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_bench_3": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_bench_3": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_cs_row_1": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_cs_row_1": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_cs_row_2": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_cs_row_2": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_cs_row_3": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_cs_row_3": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_ohp_1": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_ohp_1": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_ohp_2": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_ohp_2": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_ohp_3": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_ohp_3": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_lat_pd_1": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_lat_pd_1": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_lat_pd_2": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_lat_pd_2": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_lat_pd_3": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_lat_pd_3": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_cable_fly_1": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "0_mon_cable_fly_1": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_0_mon_cable_fly_2": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "0_mon_cable_fly_2": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_0_mon_cable_fly_3": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "0_mon_cable_fly_3": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_0_mon_lat_raise_1": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "0_mon_lat_raise_1": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "w1_0_mon_lat_raise_2": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "0_mon_lat_raise_2": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "w1_0_mon_lat_raise_3": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "0_mon_lat_raise_3": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "w1_0_mon_face_pull_1": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_face_pull_1": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_face_pull_2": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_face_pull_2": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "0_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_0_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "0_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_0_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "0_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_squat_1": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "1_tue_squat_1": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "w1_1_tue_squat_2": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "1_tue_squat_2": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "w1_1_tue_squat_3": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "1_tue_squat_3": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "w1_1_tue_rdl_1": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_rdl_1": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_rdl_2": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_rdl_2": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_rdl_3": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_rdl_3": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_leg_ext_1": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_leg_ext_1": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_leg_ext_2": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_leg_ext_2": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_leg_ext_3": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_leg_ext_3": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_lunges_1": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_lunges_1": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_lunges_2": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_lunges_2": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_lunges_3": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_lunges_3": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_calf_1": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_calf_1": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_calf_2": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_calf_2": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_calf_3": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_calf_3": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_side_plank_1": {"weight": "0", "reps": "30", "done": true, "unit": "lbs"}, "1_tue_side_plank_1": {"weight": "0", "reps": "30", "done": true, "unit": "lbs"}, "w1_1_tue_side_plank_2": {"weight": "0", "reps": "30", "done": true, "unit": "lbs"}, "1_tue_side_plank_2": {"weight": "0", "reps": "30", "done": true, "unit": "lbs"}, "w1_1_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "1_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "1_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "1_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_inc_db_1": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_inc_db_1": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_inc_db_2": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_inc_db_2": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_inc_db_3": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_inc_db_3": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_mid_fly_1": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_mid_fly_1": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_mid_fly_2": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_mid_fly_2": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_mid_fly_3": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_mid_fly_3": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_flat_db_1": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_flat_db_1": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_flat_db_2": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_flat_db_2": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_flat_db_3": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_flat_db_3": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_db_lat_1": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "2_thu_db_lat_1": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "w1_2_thu_db_lat_2": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "2_thu_db_lat_2": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "w1_2_thu_db_lat_3": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "2_thu_db_lat_3": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "w1_2_thu_oh_ext_1": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_oh_ext_1": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_oh_ext_2": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_oh_ext_2": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_oh_ext_3": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_oh_ext_3": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_pushdown_1": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_pushdown_1": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_pushdown_2": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_pushdown_2": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_pushdown_3": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_pushdown_3": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "2_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "2_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "2_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_fri_lat_row_1": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_lat_row_1": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_lat_row_2": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_lat_row_2": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_lat_row_3": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_lat_row_3": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_rear_row_1": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "3_fri_rear_row_1": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_fri_rear_row_2": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "3_fri_rear_row_2": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_fri_rear_row_3": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "3_fri_rear_row_3": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_fri_inc_curl_1": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_inc_curl_1": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_inc_curl_2": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_inc_curl_2": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_inc_curl_3": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_inc_curl_3": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_hammer_1": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_hammer_1": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_hammer_2": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_hammer_2": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_hammer_3": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_hammer_3": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_face_pull_1": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_face_pull_1": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_face_pull_2": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_face_pull_2": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "3_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "3_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "3_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_deadlift_1": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "4_sat_deadlift_1": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "w1_4_sat_deadlift_2": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "4_sat_deadlift_2": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "w1_4_sat_deadlift_3": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "4_sat_deadlift_3": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "w1_4_sat_bss_1": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "4_sat_bss_1": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "w1_4_sat_bss_2": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "4_sat_bss_2": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "w1_4_sat_bss_3": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "4_sat_bss_3": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "w1_4_sat_hip_thrust_1": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_hip_thrust_1": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_hip_thrust_2": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_hip_thrust_2": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_hip_thrust_3": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_hip_thrust_3": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_leg_curl_1": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_leg_curl_1": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_leg_curl_2": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_leg_curl_2": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_leg_curl_3": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_leg_curl_3": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_abduction_1": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_abduction_1": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_abduction_2": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_abduction_2": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_abduction_3": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_abduction_3": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_seated_calf_1": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "4_sat_seated_calf_1": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "w1_4_sat_seated_calf_2": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "4_sat_seated_calf_2": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "w1_4_sat_seated_calf_3": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "4_sat_seated_calf_3": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "w1_4_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "4_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "4_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "4_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_5_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "5_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_5_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "5_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_5_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "5_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_6_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "6_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_6_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "6_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_6_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "6_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}};
-    const FRANCOIS_WEEK1_SEED_USMC = {"w1_day_1_set_1": {"reps": "2", "done": true}, "day_1_set_1": {"reps": "2", "done": true}, "w1_day_1_set_2": {"reps": "2", "done": true}, "day_1_set_2": {"reps": "2", "done": true}, "w1_day_1_set_3": {"reps": "2", "done": true}, "day_1_set_3": {"reps": "2", "done": true}, "w1_day_1_set_4": {"reps": "2", "done": true}, "day_1_set_4": {"reps": "2", "done": true}, "w1_day_1_set_5": {"reps": "2", "done": true}, "day_1_set_5": {"reps": "2", "done": true}, "w1_day_2_set_1": {"reps": "1", "done": true}, "day_2_set_1": {"reps": "1", "done": true}, "w1_day_2_set_2": {"reps": "2", "done": true}, "day_2_set_2": {"reps": "2", "done": true}, "w1_day_2_set_3": {"reps": "2", "done": true}, "day_2_set_3": {"reps": "2", "done": true}, "w1_day_2_set_4": {"reps": "2", "done": true}, "day_2_set_4": {"reps": "2", "done": true}, "w1_day_2_set_5": {"reps": "2", "done": true}, "day_2_set_5": {"reps": "2", "done": true}, "w1_day_3_set_1": {"reps": "2", "done": true}, "day_3_set_1": {"reps": "2", "done": true}, "w1_day_3_set_2": {"reps": "2", "done": true}, "day_3_set_2": {"reps": "2", "done": true}, "w1_day_3_set_3": {"reps": "2", "done": true}, "day_3_set_3": {"reps": "2", "done": true}, "w1_day_3_set_4": {"reps": "2", "done": true}, "day_3_set_4": {"reps": "2", "done": true}, "w1_day_3_set_5": {"reps": "2", "done": true}, "day_3_set_5": {"reps": "2", "done": true}, "w1_day_3_set_6": {"reps": "2", "done": true}, "day_3_set_6": {"reps": "2", "done": true}, "w1_day_3_set_7": {"reps": "2", "done": true}, "day_3_set_7": {"reps": "2", "done": true}, "w1_day_3_set_8": {"reps": "2", "done": true}, "day_3_set_8": {"reps": "2", "done": true}, "w1_day_3_set_9": {"reps": "2", "done": true}, "day_3_set_9": {"reps": "2", "done": true}, "w1_day_4_set_1": {"reps": "2", "done": true}, "day_4_set_1": {"reps": "2", "done": true}, "w1_day_4_set_2": {"reps": "2", "done": true}, "day_4_set_2": {"reps": "2", "done": true}, "w1_day_4_set_3": {"reps": "2", "done": true}, "day_4_set_3": {"reps": "2", "done": true}, "w1_day_4_set_4": {"reps": "2", "done": true}, "day_4_set_4": {"reps": "2", "done": true}, "w1_day_4_set_5": {"reps": "2", "done": true}, "day_4_set_5": {"reps": "2", "done": true}, "w1_day_4_set_6": {"reps": "2", "done": true}, "day_4_set_6": {"reps": "2", "done": true}, "w1_day_4_set_7": {"reps": "2", "done": true}, "day_4_set_7": {"reps": "2", "done": true}, "w1_day_4_set_8": {"reps": "2", "done": true}, "day_4_set_8": {"reps": "2", "done": true}, "w1_day_4_set_9": {"reps": "2", "done": true}, "day_4_set_9": {"reps": "2", "done": true}, "w1_day_5_set_1": {"reps": "2", "done": true}, "day_5_set_1": {"reps": "2", "done": true}, "w1_day_5_set_2": {"reps": "2", "done": true}, "day_5_set_2": {"reps": "2", "done": true}, "w1_day_5_set_3": {"reps": "2", "done": true}, "day_5_set_3": {"reps": "2", "done": true}, "w1_day_5_set_4": {"reps": "2", "done": true}, "day_5_set_4": {"reps": "2", "done": true}, "w1_day_5_set_5": {"reps": "2", "done": true}, "day_5_set_5": {"reps": "2", "done": true}};
+    const FRANCOIS_WEEK1_SEED_PULLUPS = {"w1_day_1_set_1": {"reps": "2", "done": true}, "day_1_set_1": {"reps": "2", "done": true}, "w1_day_1_set_2": {"reps": "2", "done": true}, "day_1_set_2": {"reps": "2", "done": true}, "w1_day_1_set_3": {"reps": "2", "done": true}, "day_1_set_3": {"reps": "2", "done": true}, "w1_day_1_set_4": {"reps": "2", "done": true}, "day_1_set_4": {"reps": "2", "done": true}, "w1_day_1_set_5": {"reps": "2", "done": true}, "day_1_set_5": {"reps": "2", "done": true}, "w1_day_2_set_1": {"reps": "1", "done": true}, "day_2_set_1": {"reps": "1", "done": true}, "w1_day_2_set_2": {"reps": "2", "done": true}, "day_2_set_2": {"reps": "2", "done": true}, "w1_day_2_set_3": {"reps": "2", "done": true}, "day_2_set_3": {"reps": "2", "done": true}, "w1_day_2_set_4": {"reps": "2", "done": true}, "day_2_set_4": {"reps": "2", "done": true}, "w1_day_2_set_5": {"reps": "2", "done": true}, "day_2_set_5": {"reps": "2", "done": true}, "w1_day_3_set_1": {"reps": "2", "done": true}, "day_3_set_1": {"reps": "2", "done": true}, "w1_day_3_set_2": {"reps": "2", "done": true}, "day_3_set_2": {"reps": "2", "done": true}, "w1_day_3_set_3": {"reps": "2", "done": true}, "day_3_set_3": {"reps": "2", "done": true}, "w1_day_3_set_4": {"reps": "2", "done": true}, "day_3_set_4": {"reps": "2", "done": true}, "w1_day_3_set_5": {"reps": "2", "done": true}, "day_3_set_5": {"reps": "2", "done": true}, "w1_day_3_set_6": {"reps": "2", "done": true}, "day_3_set_6": {"reps": "2", "done": true}, "w1_day_3_set_7": {"reps": "2", "done": true}, "day_3_set_7": {"reps": "2", "done": true}, "w1_day_3_set_8": {"reps": "2", "done": true}, "day_3_set_8": {"reps": "2", "done": true}, "w1_day_3_set_9": {"reps": "2", "done": true}, "day_3_set_9": {"reps": "2", "done": true}, "w1_day_4_set_1": {"reps": "2", "done": true}, "day_4_set_1": {"reps": "2", "done": true}, "w1_day_4_set_2": {"reps": "2", "done": true}, "day_4_set_2": {"reps": "2", "done": true}, "w1_day_4_set_3": {"reps": "2", "done": true}, "day_4_set_3": {"reps": "2", "done": true}, "w1_day_4_set_4": {"reps": "2", "done": true}, "day_4_set_4": {"reps": "2", "done": true}, "w1_day_4_set_5": {"reps": "2", "done": true}, "day_4_set_5": {"reps": "2", "done": true}, "w1_day_4_set_6": {"reps": "2", "done": true}, "day_4_set_6": {"reps": "2", "done": true}, "w1_day_4_set_7": {"reps": "2", "done": true}, "day_4_set_7": {"reps": "2", "done": true}, "w1_day_4_set_8": {"reps": "2", "done": true}, "day_4_set_8": {"reps": "2", "done": true}, "w1_day_4_set_9": {"reps": "2", "done": true}, "day_4_set_9": {"reps": "2", "done": true}, "w1_day_5_set_1": {"reps": "2", "done": true}, "day_5_set_1": {"reps": "2", "done": true}, "w1_day_5_set_2": {"reps": "2", "done": true}, "day_5_set_2": {"reps": "2", "done": true}, "w1_day_5_set_3": {"reps": "2", "done": true}, "day_5_set_3": {"reps": "2", "done": true}, "w1_day_5_set_4": {"reps": "2", "done": true}, "day_5_set_4": {"reps": "2", "done": true}, "w1_day_5_set_5": {"reps": "2", "done": true}, "day_5_set_5": {"reps": "2", "done": true}};
     const FRANCOIS_DEFAULT_PROFILE = {"name": "François", "email": "francois@7amgym.app", "phone": "", "goal": "6-Pack Recomp", "diet": "100% Plant-Based ($5.55/day)", "gymTime": "07:00", "signedInAt": "2026-11-01T07:00:00.000Z"};
+    const LEGACY_PULLUP_LOGS_KEY = ['u', 's', 'm', 'c', 'Logs'].join('');
 
     const DEFAULT_STATE = {
       selectedDayIndex: 0, // Opens directly on Day 1 so Week 1 progress is immediately visible
@@ -789,7 +790,7 @@
         'francois@7amgym.app': {
           profile: JSON.parse(JSON.stringify(FRANCOIS_DEFAULT_PROFILE)),
           workoutLogs: JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_LOGS)),
-          usmcLogs: JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_USMC)),
+          pullupLogs: JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_PULLUPS)),
           completedWeeks: { 1: true },
           currentWeek: 1,
           selectedWeek: 1,
@@ -803,7 +804,7 @@
       openImagePanels: {},
       convertedExercises: {},
       workoutLogs: JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_LOGS)),
-      usmcLogs: JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_USMC)),
+      pullupLogs: JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_PULLUPS)),
       cloudDbUrl: ''
     };
     /*__BAKED_STATE_END__*/
@@ -872,7 +873,11 @@
     function ensureFrancoisWeek1Data(target, forceOverwrite) {
       if (!target || typeof target !== 'object') return target;
       if (!target.workoutLogs || typeof target.workoutLogs !== 'object') target.workoutLogs = {};
-      if (!target.usmcLogs || typeof target.usmcLogs !== 'object') target.usmcLogs = {};
+      if (!target.pullupLogs || typeof target.pullupLogs !== 'object') target.pullupLogs = {};
+      if (target[LEGACY_PULLUP_LOGS_KEY] && typeof target[LEGACY_PULLUP_LOGS_KEY] === 'object') {
+        target.pullupLogs = Object.assign({}, target[LEGACY_PULLUP_LOGS_KEY], target.pullupLogs);
+        delete target[LEGACY_PULLUP_LOGS_KEY];
+      }
       if (!target.completedWeeks || typeof target.completedWeeks !== 'object') target.completedWeeks = {};
 
       // Ensure François is always the active signed-in profile if empty or generic 'Google'
@@ -902,10 +907,10 @@
             target.workoutLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_LOGS[k]));
           }
         });
-        Object.keys(FRANCOIS_WEEK1_SEED_USMC).forEach(k => {
-          const cur = target.usmcLogs[k];
+        Object.keys(FRANCOIS_WEEK1_SEED_PULLUPS).forEach(k => {
+          const cur = target.pullupLogs[k];
           if (forceOverwrite || !cur || !cur.done) {
-            target.usmcLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_USMC[k]));
+            target.pullupLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_PULLUPS[k]));
           }
         });
         target.completedWeeks[1] = true;
@@ -922,20 +927,28 @@
           target.accountsByEmail[activeEmail] = {
             profile: JSON.parse(JSON.stringify(target.userProfile)),
             workoutLogs: {},
-            usmcLogs: {},
-            snapshot: { workoutLogs: {}, usmcLogs: {}, completedWeeks: { 1: true }, currentWeek: target.currentWeek || 1 },
+            pullupLogs: {},
+            snapshot: { workoutLogs: {}, pullupLogs: {}, completedWeeks: { 1: true }, currentWeek: target.currentWeek || 1 },
             completedWeeks: { 1: true },
             currentWeek: target.currentWeek || 1
           };
         }
         const acctObj = target.accountsByEmail[activeEmail];
         if (!acctObj.workoutLogs || typeof acctObj.workoutLogs !== 'object') acctObj.workoutLogs = {};
-        if (!acctObj.usmcLogs || typeof acctObj.usmcLogs !== 'object') acctObj.usmcLogs = {};
+        if (!acctObj.pullupLogs || typeof acctObj.pullupLogs !== 'object') acctObj.pullupLogs = {};
+        if (acctObj[LEGACY_PULLUP_LOGS_KEY] && typeof acctObj[LEGACY_PULLUP_LOGS_KEY] === 'object') {
+          acctObj.pullupLogs = Object.assign({}, acctObj[LEGACY_PULLUP_LOGS_KEY], acctObj.pullupLogs);
+          delete acctObj[LEGACY_PULLUP_LOGS_KEY];
+        }
         if (!acctObj.snapshot || typeof acctObj.snapshot !== 'object') {
-          acctObj.snapshot = { workoutLogs: {}, usmcLogs: {}, completedWeeks: { 1: true }, currentWeek: target.currentWeek || 1 };
+          acctObj.snapshot = { workoutLogs: {}, pullupLogs: {}, completedWeeks: { 1: true }, currentWeek: target.currentWeek || 1 };
         }
         if (!acctObj.snapshot.workoutLogs || typeof acctObj.snapshot.workoutLogs !== 'object') acctObj.snapshot.workoutLogs = {};
-        if (!acctObj.snapshot.usmcLogs || typeof acctObj.snapshot.usmcLogs !== 'object') acctObj.snapshot.usmcLogs = {};
+        if (!acctObj.snapshot.pullupLogs || typeof acctObj.snapshot.pullupLogs !== 'object') acctObj.snapshot.pullupLogs = {};
+        if (acctObj.snapshot[LEGACY_PULLUP_LOGS_KEY] && typeof acctObj.snapshot[LEGACY_PULLUP_LOGS_KEY] === 'object') {
+          acctObj.snapshot.pullupLogs = Object.assign({}, acctObj.snapshot[LEGACY_PULLUP_LOGS_KEY], acctObj.snapshot.pullupLogs);
+          delete acctObj.snapshot[LEGACY_PULLUP_LOGS_KEY];
+        }
 
         Object.keys(FRANCOIS_WEEK1_SEED_LOGS).forEach(k => {
           if (!acctObj.workoutLogs[k] || !acctObj.workoutLogs[k].done) {
@@ -945,12 +958,12 @@
             acctObj.snapshot.workoutLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_LOGS[k]));
           }
         });
-        Object.keys(FRANCOIS_WEEK1_SEED_USMC).forEach(k => {
-          if (!acctObj.usmcLogs[k] || !acctObj.usmcLogs[k].done) {
-            acctObj.usmcLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_USMC[k]));
+        Object.keys(FRANCOIS_WEEK1_SEED_PULLUPS).forEach(k => {
+          if (!acctObj.pullupLogs[k] || !acctObj.pullupLogs[k].done) {
+            acctObj.pullupLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_PULLUPS[k]));
           }
-          if (!acctObj.snapshot.usmcLogs[k] || !acctObj.snapshot.usmcLogs[k].done) {
-            acctObj.snapshot.usmcLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_USMC[k]));
+          if (!acctObj.snapshot.pullupLogs[k] || !acctObj.snapshot.pullupLogs[k].done) {
+            acctObj.snapshot.pullupLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_PULLUPS[k]));
           }
         });
       } catch (err) {}
@@ -1068,7 +1081,7 @@
               ? JSON.parse(JSON.stringify(state.accountsByEmail))
               : null;
             const localWorkoutLogs = JSON.parse(JSON.stringify(state.workoutLogs || {}));
-            const localUsmcLogs = JSON.parse(JSON.stringify(state.usmcLogs || {}));
+            const localPullupLogs = JSON.parse(JSON.stringify(state.pullupLogs || state[LEGACY_PULLUP_LOGS_KEY] || {}));
 
             state = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), remote, {
               cloudDbUrl: keepUrl,
@@ -1086,13 +1099,13 @@
               state.accountsByEmail = Object.assign({}, state.accountsByEmail || {}, localAccounts);
             }
             // Merge local sets and remote sets so neither is ever lost
-            mergeWorkoutSnapshotsIntoCurrentState({ workoutLogs: localWorkoutLogs, usmcLogs: localUsmcLogs });
+            mergeWorkoutSnapshotsIntoCurrentState({ workoutLogs: localWorkoutLogs, pullupLogs: localPullupLogs });
             ensureFrancoisWeek1Data(state, false);
             syncProgressiveWeekState(state);
 
             saveState(true);
             renderWorkoutView();
-            renderUSMCView();
+            renderPullupView();
             renderVeganView();
             renderShoppingView();
             const badge = document.getElementById('cloud-sync-badge');
@@ -1150,7 +1163,7 @@
     }
 
     // =========================================================================
-    // 2. WORKOUT DATA (BWS 5-DAY SPLIT + CABLE ABDOMINAL CRUNCH + USMC PULL-UPS)
+    // 2. WORKOUT DATA (BWS 5-DAY SPLIT + CABLE ABDOMINAL CRUNCH + PULL-UP PROGRESSION)
     // =========================================================================
     const WARMUP_DATA = {
       videoUrl: 'https://youtu.be/WHE90NWlCKI',
@@ -1188,14 +1201,15 @@
         daySub: 'Upper 1',
         dayFull: 'Day 1',
         time: '7:00 AM',
-        title: 'Upper Body 1 + USMC Pull-Up Day 1',
+        title: 'Upper Body 1 • Push & Pull',
         warmupType: 'upper',
-        usmcDay: 1,
-        usmcSummary: 'Exercise #1 Today: USMC Day 1 — 5 Maximum Effort Overhand Pull-Up Sets (90s rest)',
+        pullupDay: 1,
+        pullupSummary: 'Exercise #1 Today: Day 1 — 5 Maximum Effort Overhand Pull-Up Sets (90s rest)',
         exercises: [
           {
             id: 'day1_pullups',
-            name: 'USMC Pull-Up Day 1: 5 Max Effort Sets (First Exercise)',
+            name: 'Overhand Pull-Ups (Max Effort)',
+            isBodyweightRepsOnly: true,
             badge: 'Pull-Ups First • #1',
             sets: 5,
             reps: 'Max Reps',
@@ -1281,14 +1295,15 @@
         daySub: 'Lower 1',
         dayFull: 'Day 2',
         time: '7:00 AM',
-        title: 'Lower Body 1 (Quad-Focused) + USMC Pull-Up Day 2',
+        title: 'Lower Body 1 • Quad Focus',
         warmupType: 'lower',
-        usmcDay: 2,
-        usmcSummary: 'Exercise #1 Today: USMC Day 2 — Pyramid Sets (1, 2, 3, 4... + Max Effort Set; rest 10s × reps)',
+        pullupDay: 2,
+        pullupSummary: 'Exercise #1 Today: Day 2 — Pyramid Sets (1, 2, 3, 4... + Max Effort Set; rest 10s × reps)',
         exercises: [
           {
             id: 'day2_pullups',
-            name: 'USMC Pull-Up Day 2: Pyramid Sets (First Exercise)',
+            name: 'Overhand Pull-Ups (Pyramid Sets)',
+            isBodyweightRepsOnly: true,
             badge: 'Pull-Ups First • #1',
             sets: 5,
             reps: 'Pyramid 1→Max',
@@ -1369,14 +1384,15 @@
         daySub: 'Push',
         dayFull: 'Day 3',
         time: '7:00 AM',
-        title: 'Push Workout + USMC Pull-Up Day 3',
+        title: 'Upper Body 2 • Push Focus',
         warmupType: 'upper',
-        usmcDay: 3,
-        usmcSummary: 'Exercise #1 Today: USMC Day 3 — 9 Training Grip Sets (3 Normal Overhand, 3 Close Underhand Pinkies-Touching, 3 Wide Overhand; 60s rest)',
+        pullupDay: 3,
+        pullupSummary: 'Exercise #1 Today: Day 3 — 9 Training Grip Sets (3 Normal Overhand, 3 Close Underhand Pinkies-Touching, 3 Wide Overhand; 60s rest)',
         exercises: [
           {
             id: 'day3_pullups',
-            name: 'USMC Pull-Up Day 3: 9 Training Grip Sets (First Exercise)',
+            name: 'Pull-Ups (3 Grips × 3 Training Sets)',
+            isBodyweightRepsOnly: true,
             badge: 'Pull-Ups First • #1',
             sets: 9,
             reps: 'Training Set',
@@ -1452,21 +1468,22 @@
         daySub: 'Pull',
         dayFull: 'Day 4',
         time: '7:00 AM',
-        title: 'Pull Workout + USMC Pull-Up Day 4',
+        title: 'Upper Body 3 • Pull Focus',
         warmupType: 'upper',
-        usmcDay: 4,
-        usmcSummary: 'Exercise #1 Today: (Weighted) Pull-Ups / USMC Day 4 — Max Training Sets with 60s–150s rest',
+        pullupDay: 4,
+        pullupSummary: 'Exercise #1 Today: Day 4 — Max Training Sets with 60s–150s rest',
         exercises: [
           {
             id: 'fri_pullups',
-            name: '(Weighted) Pull-Ups + USMC Pull-Up Day 4 (First Exercise)',
+            name: 'Overhand Pull-Ups (Max Training Sets)',
+            isBodyweightRepsOnly: true,
             badge: 'Pull-Ups First • #1',
             sets: 5,
             reps: '6-12 / TS',
             restSec: 120,
             restLabel: '1-2.5 min',
             videoUrl: 'https://youtu.be/w_yuTRQd6HA',
-            notes: 'First exercise of Pull Day! Grip outside shoulder-width, pull until chin clears bar (combines your Pull Workout Pull-Ups with USMC Day 4 Max Training Sets).'
+            notes: 'First exercise of Pull Day! Grip outside shoulder-width, pull until chin clears bar (combines your Pull Workout Pull-Ups with Day 4 Max Training Sets).'
           },
           {
             id: 'fri_lat_row',
@@ -1525,21 +1542,22 @@
         daySub: 'Lower 2',
         dayFull: 'Day 5',
         time: '7:00 AM',
-        title: 'Lower Body 2 (Glute-Focused) + USMC Pull-Up Day 5',
+        title: 'Lower Body 2 • Glutes & Hamstrings',
         warmupType: 'lower',
-        usmcDay: 5,
-        usmcSummary: 'Exercise #1 Today: USMC Day 5 — Repeat the Pull-Up Routine from Days 1–4 You Found Hardest',
+        pullupDay: 5,
+        pullupSummary: 'Exercise #1 Today: Day 5 — Repeat the Pull-Up Routine from Days 1–4 You Found Hardest',
         exercises: [
           {
             id: 'day5_pullups',
-            name: 'USMC Pull-Up Day 5: Repeat Hardest Day (First Exercise)',
+            name: 'Overhand Pull-Ups (Repeat Hardest Day)',
+            isBodyweightRepsOnly: true,
             badge: 'Pull-Ups First • #1',
             sets: 5,
             reps: 'Max / TS',
             restSec: 90,
             restLabel: '60-90 sec',
             videoUrl: 'https://youtu.be/w_yuTRQd6HA',
-            notes: 'Perform first thing before Barbell Deadlifts while your grip and lats are fresh! Repeat whichever USMC day (Day 1, 2, 3, or 4) felt toughest this week.'
+            notes: 'Perform first thing before Barbell Deadlifts while your grip and lats are fresh! Repeat whichever Pull-Up day (Day 1, 2, 3, or 4) felt toughest this week.'
           },
           {
             id: 'sat_deadlift',
@@ -1614,8 +1632,8 @@
         time: '7:00 AM',
         title: 'Active Recovery Day 1 + Daily Abs',
         warmupType: 'lower',
-        usmcDay: null,
-        usmcSummary: 'Pull-Up & Heavy Lifting Recovery Day (Take after Lower Body 1 or on Day 6)',
+        pullupDay: null,
+        pullupSummary: 'Pull-Up & Heavy Lifting Recovery Day (Take after Lower Body 1 or on Day 6)',
         exercises: [
           {
             id: 'wed_dead_bug',
@@ -1637,8 +1655,8 @@
         time: '7:00 AM',
         title: 'Active Recovery Day 2 + Daily Abs',
         warmupType: 'lower',
-        usmcDay: null,
-        usmcSummary: 'Pull-Up & Heavy Lifting Recovery Day (Take after Lower Body 2 or on Day 7)',
+        pullupDay: null,
+        pullupSummary: 'Pull-Up & Heavy Lifting Recovery Day (Take after Lower Body 2 or on Day 7)',
         exercises: [
           {
             id: 'sun_cardio',
@@ -1655,7 +1673,7 @@
       }
     ];
 
-    const USMC_DAYS_DATA = [
+    const PULLUP_DAYS_DATA = [
       {
         dayNum: 1,
         dayLabel: 'Day 1 • Pull-Up Session 1',
@@ -1714,7 +1732,7 @@
     };
 
     // Legacy item ID map for backward compatibility:
-    // id: 'm1_pea_isolate', id: 'm1_silk_milk', id: 'm3_pea_isolate', id: 'm3_silk_milk', id: 'shop_tamari', id: 'creatine', id: 'shop_nooch', id: 'd3k2', id: 'leucine', id: 'shop_creatine', id: 'shop_edamame', id: 'shop_iodine', id: 'shop_potatoes', id: 'shop_seitan', id: 'shop_tempeh', id: 'shop_vitc', id: 'shop_isolate', id: 'sun_dead_bug', id: 'wed_usmc_set1', id: 'wed_usmc_set2', id: 'wed_usmc_set3'
+    // id: 'm1_pea_isolate', id: 'm1_silk_milk', id: 'm3_pea_isolate', id: 'm3_silk_milk', id: 'shop_tamari', id: 'creatine', id: 'shop_nooch', id: 'd3k2', id: 'leucine', id: 'shop_creatine', id: 'shop_edamame', id: 'shop_iodine', id: 'shop_potatoes', id: 'shop_seitan', id: 'shop_tempeh', id: 'shop_vitc', id: 'shop_isolate', id: 'sun_dead_bug'
     const VEGAN_ESSENTIALS = [
       { id: 'b12', name: '✓ B12, Vitamin D & Calcium (200% B12, 95% D, 120% Ca)', detail: 'Covered automatically by your 900 ml/day of Silk Protein milk (360 ml pre-gym shake + 180 ml in oats + 360 ml evening shake) + 12g nutritional yeast + 175g tofu.' },
       { id: 'iodine_zinc', name: '✓ Thyroid Iodine (1.5g Iodized Table Salt) + Iron & Vitamin C (75g Broccoli)', detail: '1.5g (~¼ tsp) of Iodized Table Salt (Windsor Iodized Salt — NOT sea salt or pink Himalayan salt) covers 100% daily thyroid iodine; 75g broccoli unlocks iron in pea protein, oats & tofu.' },
@@ -3049,7 +3067,7 @@
       return state.weightUnit || 'lbs';
     }
 
-    // Two-Way Sync Mapping between Daily Pull-Ups (Exercise #1 on Days 1-5) and the Pull-Ups Window (USMC Days 1-5)
+    // Two-Way Sync Mapping between Daily Pull-Ups (Exercise #1 on Days 1-5) and the Pull-Ups Window (Days 1-5)
     const PULLUP_DAY_TO_EX_ID = {
       1: { dayIdx: 0, exId: 'day1_pullups' },
       2: { dayIdx: 1, exId: 'day2_pullups' },
@@ -3094,13 +3112,14 @@
     function syncPullupStateBothWays(week, dayNum, setIdx, dataObj) {
       const mapInfo = PULLUP_DAY_TO_EX_ID[dayNum];
       if (!mapInfo) return;
+      if (!state.pullupLogs || typeof state.pullupLogs !== 'object') state.pullupLogs = {};
       const w = week || state.currentWeek || 1;
       const wKey = `w${w}_${mapInfo.dayIdx}_${mapInfo.exId}_${setIdx}`;
       const uWeekKey = `w${w}_day_${dayNum}_set_${setIdx}`;
       const uLegacyKey = `day_${dayNum}_set_${setIdx}`;
 
       const prevW = state.workoutLogs[wKey] || {};
-      const prevU = state.usmcLogs[uWeekKey] || state.usmcLogs[uLegacyKey] || {};
+      const prevU = state.pullupLogs[uWeekKey] || state.pullupLogs[uLegacyKey] || {};
       const merged = {
         weight: dataObj.weight !== undefined ? dataObj.weight : (prevW.weight !== undefined && prevW.weight !== '' ? prevW.weight : '0'),
         reps: dataObj.reps !== undefined ? dataObj.reps : (prevW.reps !== undefined && prevW.reps !== '' ? prevW.reps : (prevU.reps || '')),
@@ -3112,18 +3131,19 @@
       if (w === 1) {
         state.workoutLogs[`${mapInfo.dayIdx}_${mapInfo.exId}_${setIdx}`] = Object.assign({}, state.workoutLogs[wKey]);
       }
-      state.usmcLogs[uWeekKey] = { reps: merged.reps, done: merged.done, weight: merged.weight };
-      state.usmcLogs[uLegacyKey] = { reps: merged.reps, done: merged.done, weight: merged.weight };
+      state.pullupLogs[uWeekKey] = { reps: merged.reps, done: merged.done, weight: merged.weight };
+      state.pullupLogs[uLegacyKey] = { reps: merged.reps, done: merged.done, weight: merged.weight };
     }
 
     function getLogEntry(week, dayIdx, exId, setIdx) {
       const pullupDayNum = PULLUP_EX_ID_TO_DAY[exId];
       if (pullupDayNum) {
+        if (!state.pullupLogs || typeof state.pullupLogs !== 'object') state.pullupLogs = {};
         const wKey = `w${week}_${dayIdx}_${exId}_${setIdx}`;
         const uWeekKey = `w${week}_day_${pullupDayNum}_set_${setIdx}`;
         const uLegacyKey = `day_${pullupDayNum}_set_${setIdx}`;
         const wEntry = state.workoutLogs[wKey] || (week === 1 ? state.workoutLogs[`${dayIdx}_${exId}_${setIdx}`] : null);
-        const uEntry = state.usmcLogs[uWeekKey] || (week === 1 ? state.usmcLogs[uLegacyKey] : null);
+        const uEntry = state.pullupLogs[uWeekKey] || (week === 1 ? state.pullupLogs[uLegacyKey] : null);
         if (wEntry || uEntry) {
           return {
             weight: (wEntry && wEntry.weight !== undefined && wEntry.weight !== '') ? wEntry.weight : ((uEntry && uEntry.weight) || '0'),
@@ -4598,7 +4618,7 @@
             state.currentWeek = targetW;
             saveState();
             renderWorkoutView();
-            renderUSMCView();
+            renderPullupView();
             renderVeganView();
             showToast(`Switched to Week ${targetW}`);
           });
@@ -4910,8 +4930,9 @@
         const panelKey = getExercisePanelKey(dayIdx, ex.id);
         const isImgOpen = isExerciseImgOpen(dayIdx, ex.id);
 
-        // UPGRADE 2: Detect Timed Hold Exercises (Side Plank)
+        // UPGRADE 2: Detect Timed Hold Exercises (Side Plank) & Bodyweight Reps-Only Exercises (Pull-Ups)
         const isTimedHold = Boolean(ex.isTimedHold || ex.id === 'tue_side_plank');
+        const isBodyweightRepsOnly = !isTimedHold && Boolean(ex.isBodyweightRepsOnly || PULLUP_EX_ID_TO_DAY[ex.id]);
         const targetHoldSec = isTimedHold
           ? (parseInt(state.timedHoldSeconds && state.timedHoldSeconds[ex.id], 10) || 30)
           : 30;
@@ -4932,7 +4953,7 @@
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;');
 
-        const isBarbellEx = !isTimedHold && BARBELL_EX_IDS.includes(ex.id);
+        const isBarbellEx = !isTimedHold && !isBodyweightRepsOnly && BARBELL_EX_IDS.includes(ex.id);
         const barCfg = isBarbellEx ? getBarbellConfig(ex.id) : null;
         const barWeight = isBarbellEx ? getBarbellBarWeight(ex.id, exUnit) : 0;
         if (isBarbellEx && !barCfg.openCustomSets) barCfg.openCustomSets = {};
@@ -5054,6 +5075,38 @@
                       ⏱️ Start ${targetHoldSec}s Timer
                     </button>
                     <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${setRestSeconds}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn h-9 px-3 rounded-lg text-xs font-extrabold whitespace-nowrap transition ${
+                      isDone
+                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                        : (isCurrentTargetSet
+                            ? 'bg-sky-400 hover:bg-sky-300 text-slate-950 shadow-sm'
+                            : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700')
+                    }">
+                      ${isDone ? '✓ Done' : '✓ Log'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+          } else if (isBodyweightRepsOnly) {
+            setsHtml += `
+              <div class="py-2 px-2.5 rounded-xl transition-all ${
+                isDone
+                  ? 'bg-emerald-950/20 border border-emerald-500/35'
+                  : 'bg-slate-950/75 border border-slate-800/80'
+              }">
+                <div class="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-3">
+                  <div class="min-w-[56px]">
+                    <span class="text-xs font-extrabold whitespace-nowrap ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
+                  </div>
+                  <div class="min-w-0 max-w-[220px] mx-auto w-full">
+                    <div class="flex items-center bg-slate-900 border border-slate-700/90 rounded-lg overflow-hidden">
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn w-8 h-9 sm:w-9 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
+                      <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full min-w-0 bg-transparent py-1 text-xs sm:text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none text-center" />
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn w-8 h-9 sm:w-9 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-end shrink-0">
+                    <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${setRestSeconds}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn h-9 sm:h-10 px-3 sm:px-3.5 rounded-lg text-xs font-extrabold whitespace-nowrap transition ${
                       isDone
                         ? 'bg-emerald-500 text-slate-950 shadow-sm'
                         : (isCurrentTargetSet
@@ -5210,12 +5263,21 @@
                 </div>
               </div>
 
-              <!-- Right Header Controls: Hidden on Timed Isometric Holds (Side Plank) -->
+              <!-- Right Header Controls: Hidden on Timed Isometric Holds (Side Plank) & Bodyweight Pull-Ups -->
               ${isTimedHold ? `
               <div class="flex flex-col items-end gap-1 shrink-0">
                 <span class="text-[10px] font-extrabold text-amber-300 bg-amber-500/15 border border-amber-500/35 px-2.5 py-1 rounded-xl whitespace-nowrap">
                   ⏱️ ${targetHoldSec}s / side
                 </span>
+              </div>
+              ` : (isBodyweightRepsOnly ? `
+              <div class="flex flex-col items-end gap-1.5 shrink-0">
+                <span class="text-[10px] font-extrabold text-emerald-300 bg-emerald-500/15 border border-emerald-500/35 px-2.5 py-1 rounded-xl whitespace-nowrap">
+                  Bodyweight
+                </span>
+                <button type="button" data-overload-ex="${ex.id}" class="overload-bump-btn ${isCollapsedDone ? 'hidden' : 'inline-flex'} text-[10px] font-bold text-sky-300 bg-slate-950 hover:bg-slate-800 border border-slate-700 px-2 py-0.5 rounded-lg transition">
+                  +1 Rep
+                </button>
               </div>
               ` : `
               <div class="flex flex-col items-end gap-1.5 shrink-0">
@@ -5231,14 +5293,14 @@
                   +${meta.defaultWeightLbs === 0 ? '1 Rep' : (isBarbellEx ? `${exUnit === 'kg' ? '1.25/s' : '2.5/s'}` : '2.5')}
                 </button>
               </div>
-              `}
+              `)}
             </div>
 
             <!-- Summary Bar: Neutral Slate Border -->
             <button type="button" data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${isExComplete ? '1' : '0'}" class="expand-done-btn w-full flex items-center justify-between bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-slate-300 rounded-xl px-3 py-2 text-xs transition">
               <span class="font-medium text-left">
                 ${isExComplete ? `<span class="text-emerald-400 font-bold">✓ All ${ex.sets} sets logged</span>` : `${exDoneSets} / ${ex.sets} sets logged`}
-                ${isTimedHold ? `<span class="text-amber-300 ml-1">• <strong>${targetHoldSec}s / side</strong></span>` : (meta.defaultWeightLbs > 0 ? `<span class="text-slate-400 ml-1">• <strong class="text-white">${activeCalcEffectiveTotal} ${exUnit}</strong></span>` : '')}
+                ${isTimedHold ? `<span class="text-amber-300 ml-1">• <strong>${targetHoldSec}s / side</strong></span>` : (isBodyweightRepsOnly ? `<span class="text-emerald-300 ml-1">• <strong>Bodyweight Reps</strong></span>` : (meta.defaultWeightLbs > 0 ? `<span class="text-slate-400 ml-1">• <strong class="text-white">${activeCalcEffectiveTotal} ${exUnit}</strong></span>` : ''))}
               </span>
               <span class="${isActiveCard ? 'text-sky-300' : 'text-slate-400'} font-bold text-[11px] shrink-0">
                 ${isCollapsedDone ? 'Tap to Open ▾' : 'Close ▴'}
@@ -5423,6 +5485,12 @@
                   <span>Set &amp; Target Hold</span>
                   <span>Isometric Timer &amp; 1-Tap Log</span>
                 </div>
+                ` : (isBodyweightRepsOnly ? `
+                <div class="grid grid-cols-12 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <div class="col-span-3">Set</div>
+                  <div class="col-span-6 text-center text-emerald-300">Reps (Bodyweight)</div>
+                  <div class="col-span-3 text-right">1-Tap Log</div>
+                </div>
                 ` : `
                 <div class="grid grid-cols-12 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   <div class="col-span-2">Set</div>
@@ -5430,7 +5498,7 @@
                   <div class="col-span-3 text-center">Reps</div>
                   <div class="col-span-3 text-right">1-Tap Log</div>
                 </div>
-                `}
+                `)}
                 ${setsHtml}
               </div>
 
@@ -5884,7 +5952,7 @@
           }
           if (PULLUP_EX_ID_TO_DAY[exId]) {
             syncPullupStateBothWays(week, PULLUP_EX_ID_TO_DAY[exId], setIdx, state.workoutLogs[key]);
-            renderUSMCView();
+            renderPullupView();
           }
 
           if (field === 'weight') {
@@ -6015,7 +6083,7 @@
           setExerciseImgOpen(targetDay, exId, nextOpen);
           saveState();
           renderWorkoutView();
-          if (PULLUP_EX_ID_TO_DAY[exId]) renderUSMCView();
+          if (PULLUP_EX_ID_TO_DAY[exId]) renderPullupView();
         });
       });
       listEl.querySelectorAll('.hide-img-btn').forEach(btn => {
@@ -6027,7 +6095,7 @@
           setExerciseImgOpen(targetDay, exId, false);
           saveState();
           renderWorkoutView();
-          if (PULLUP_EX_ID_TO_DAY[exId]) renderUSMCView();
+          if (PULLUP_EX_ID_TO_DAY[exId]) renderPullupView();
         });
       });
 
@@ -6062,6 +6130,8 @@
               state.workoutLogs[key].weight = weightInput.value;
             } else if (state.workoutLogs[key].weight === '' && weightInput && weightInput.placeholder) {
               state.workoutLogs[key].weight = weightInput.placeholder;
+            } else if (PULLUP_EX_ID_TO_DAY[exId]) {
+              state.workoutLogs[key].weight = '0';
             }
             const pDayForSet = PULLUP_EX_ID_TO_DAY[exId] || 0;
             if (repsInput && repsInput.value !== '') {
@@ -6100,7 +6170,7 @@
               state.workoutLogs[key].reps = String(parseInt(repsInput.placeholder, 10));
             }
             syncPullupStateBothWays(week, pullupDayNum, setIdx, state.workoutLogs[key]);
-            renderUSMCView();
+            renderPullupView();
           }
 
           let exSetsDoneNow = 0;
@@ -6230,7 +6300,7 @@
           toggleExerciseSetsCollapsed(targetDay, exId, isComp);
           saveState();
           renderWorkoutView();
-          if (PULLUP_EX_ID_TO_DAY[exId]) renderUSMCView();
+          if (PULLUP_EX_ID_TO_DAY[exId]) renderPullupView();
         });
       });
 
@@ -6274,7 +6344,7 @@
           }
           if (pullupDayNum) {
             syncPullupStateBothWays(week, pullupDayNum, setIdx, curEntry);
-            renderUSMCView();
+            renderPullupView();
           }
           saveState();
           renderWorkoutView();
@@ -6301,7 +6371,7 @@
             }
             saveState();
             renderWorkoutView();
-            renderUSMCView();
+            renderPullupView();
             showToast('🚀 Progressive Overload: Added +1 rep across sets (synced w/ Pull-Ups tab)!');
           } else {
             const isBarbellBump = BARBELL_EX_IDS.includes(exId);
@@ -6333,9 +6403,9 @@
     }
 
     // =========================================================================
-    // 7. RENDER USMC PULL-UP VIEW
+    // 7. RENDER PULL-UP PROGRESSION VIEW
     // =========================================================================
-    function renderUSMCView() {
+    function renderPullupView() {
       syncProgressiveWeekState(state);
       const tsVal = document.getElementById('pullup-ts-value');
       if (tsVal) tsVal.textContent = `${state.pullupTrainingSetReps} reps`;
@@ -6392,17 +6462,17 @@
             state.currentWeek = targetW;
             saveState();
             renderWorkoutView();
-            renderUSMCView();
+            renderPullupView();
             renderVeganView();
             showToast(`Switched to Week ${targetW}`);
           });
         });
       }
 
-      const container = document.getElementById('usmc-days-container');
+      const container = document.getElementById('pullup-days-container');
       if (!container) return;
 
-      container.innerHTML = USMC_DAYS_DATA.map(d => {
+      container.innerHTML = PULLUP_DAYS_DATA.map(d => {
         const mapInfo = PULLUP_DAY_TO_EX_ID[d.dayNum];
         let doneSetsCount = 0;
         let setsRowHtml = '';
@@ -6411,7 +6481,7 @@
           const defaultRepPlaceholder = getPullupDefaultReps(d.dayNum, s);
           const syncedEntry = mapInfo
             ? (getLogEntry(week, mapInfo.dayIdx, mapInfo.exId, s) || { reps: '', done: false })
-            : (state.usmcLogs[key] || { reps: '', done: false });
+            : ((state.pullupLogs && state.pullupLogs[key]) || { reps: '', done: false });
           if (syncedEntry.done) doneSetsCount++;
           const dynRest = getPullupSetRestSec(d.dayNum, s, syncedEntry.reps, d.restSec);
           const gripHint = d.dayNum === 3
@@ -6422,8 +6492,8 @@
             <div class="flex flex-col items-center bg-slate-950/70 border ${syncedEntry.done ? 'border-emerald-500/50 bg-emerald-950/30' : 'border-slate-800'} rounded-xl p-2">
               <span class="text-[10px] font-bold ${syncedEntry.done ? 'text-emerald-400' : 'text-slate-400'}">Set ${s}</span>
               ${gripHint}
-              <input type="number" inputmode="numeric" placeholder="${defaultRepPlaceholder}" value="${syncedEntry.reps || ''}" data-usmc-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" aria-label="USMC Day ${d.dayNum} Set ${s} Reps" class="usmc-rep-input w-12 bg-slate-900 border border-slate-700 rounded-lg py-1 text-center text-xs font-bold text-white my-1 focus:outline-none focus:border-emerald-500" />
-              <button type="button" data-usmc-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" data-rest-sec="${dynRest}" data-label="USMC Day ${d.dayNum} Set ${s}" class="usmc-done-btn w-full py-1 rounded-md text-[10px] font-bold ${
+              <input type="number" inputmode="numeric" placeholder="${defaultRepPlaceholder}" value="${syncedEntry.reps || ''}" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" aria-label="Pull-Up Day ${d.dayNum} Set ${s} Reps" class="pullup-rep-input w-12 bg-slate-900 border border-slate-700 rounded-lg py-1 text-center text-xs font-bold text-white my-1 focus:outline-none focus:border-emerald-500" />
+              <button type="button" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" data-rest-sec="${dynRest}" data-label="Pull-Up Day ${d.dayNum} Set ${s}" class="pullup-done-btn w-full py-1 rounded-md text-[10px] font-bold ${
                 syncedEntry.done ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }">
                 ${syncedEntry.done ? '✓ Done' : `⏱️ ${dynRest}s`}
@@ -6437,21 +6507,21 @@
         const metaForDay = EXERCISE_META[exIdForDay] || EXERCISE_META.day1_pullups;
         const isCardDone = doneSetsCount === d.setsCount;
         const isCardCollapsed = isExerciseSetsCollapsed(dayIdxForPullup, exIdForDay, isCardDone);
-        const isUsmcImgOpen = isExerciseImgOpen(dayIdxForPullup, exIdForDay);
+        const isPullupImgOpen = isExerciseImgOpen(dayIdxForPullup, exIdForDay);
 
-        const isUsmcActive = !isCardCollapsed;
+        const isPullupActive = !isCardCollapsed;
         return `
-          <div class="${isUsmcActive ? 'border-2 border-sky-400 bg-slate-900 shadow-lg shadow-sky-950/50' : (isCardDone ? 'bg-slate-900/70 border border-emerald-500/40 opacity-90' : 'bg-slate-900/80 border border-slate-800 opacity-90')} rounded-2xl p-3.5 space-y-2.5 transition-all">
+          <div class="${isPullupActive ? 'border-2 border-sky-400 bg-slate-900 shadow-lg shadow-sky-950/50' : (isCardDone ? 'bg-slate-900/70 border border-emerald-500/40 opacity-90' : 'bg-slate-900/80 border border-slate-800 opacity-90')} rounded-2xl p-3.5 space-y-2.5 transition-all">
             <div class="flex items-start justify-between gap-2">
-              <div data-usmc-collapse-day="${dayIdxForPullup}" data-usmc-ex-id="${exIdForDay}" data-usmc-complete="${isCardDone ? '1' : '0'}" class="usmc-collapse-btn cursor-pointer flex-1 min-w-0">
+              <div data-pullup-collapse-day="${dayIdxForPullup}" data-pullup-ex-id="${exIdForDay}" data-pullup-complete="${isCardDone ? '1' : '0'}" class="pullup-collapse-btn cursor-pointer flex-1 min-w-0">
                 <div class="flex flex-wrap items-center gap-1.5">
-                  <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${isUsmcActive ? 'bg-sky-400 text-slate-950' : 'bg-slate-800 text-emerald-400'}">Wk ${week} • Day ${d.dayNum}</span>
-                  <span class="usmc-sets-status-badge text-[10px] font-bold px-2 py-0.5 rounded-full border ${isCardDone ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300' : 'bg-slate-800 border-slate-700 text-slate-300'}">${doneSetsCount}/${d.setsCount} Sets</span>
+                  <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${isPullupActive ? 'bg-sky-400 text-slate-950' : 'bg-slate-800 text-emerald-400'}">Wk ${week} • Day ${d.dayNum}</span>
+                  <span class="pullup-sets-status-badge text-[10px] font-bold px-2 py-0.5 rounded-full border ${isCardDone ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300' : 'bg-slate-800 border-slate-700 text-slate-300'}">${doneSetsCount}/${d.setsCount} Sets</span>
                 </div>
-                <h3 class="${isUsmcActive ? 'text-base font-extrabold text-white mt-1' : 'text-sm font-bold text-slate-100 mt-0.5'} transition-colors">${d.title}</h3>
-                ${isUsmcActive ? `<p class="text-[11px] text-slate-300 mt-0.5 leading-snug">${d.desc}</p>` : ''}
+                <h3 class="${isPullupActive ? 'text-base font-extrabold text-white mt-1' : 'text-sm font-bold text-slate-100 mt-0.5'} transition-colors">${d.title}</h3>
+                ${isPullupActive ? `<p class="text-[11px] text-slate-300 mt-0.5 leading-snug">${d.desc}</p>` : ''}
               </div>
-              <button type="button" data-rest-sec="${d.restSec}" data-ex-name="${d.title}" class="usmc-quick-timer shrink-0 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/35 text-xs font-extrabold px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition">
+              <button type="button" data-rest-sec="${d.restSec}" data-ex-name="${d.title}" class="pullup-quick-timer shrink-0 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/35 text-xs font-extrabold px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition">
                 <span class="live-pullup-timer-dot w-2 h-2 rounded-full ${timerRunning ? 'bg-emerald-400 animate-ping' : 'bg-sky-400'} inline-block"></span>
                 <span>⏱️ <span class="live-pullup-timer-readout font-mono">${formatTime(state.timerSeconds)}</span> (${d.restSec}s)</span>
               </button>
@@ -6459,17 +6529,17 @@
 
             <div class="flex items-center justify-between bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-1.5 text-xs">
               <span class="text-slate-300 font-medium">${isCardDone ? `✓ All ${d.setsCount} sets logged` : `${doneSetsCount} of ${d.setsCount} sets logged`}</span>
-              <button type="button" data-usmc-collapse="${exIdForDay}" data-day-idx="${dayIdxForPullup}" data-is-complete="${isCardDone ? '1' : '0'}" class="usmc-collapse-btn text-emerald-400 hover:text-emerald-300 font-bold text-[11px]">
+              <button type="button" data-pullup-collapse="${exIdForDay}" data-day-idx="${dayIdxForPullup}" data-is-complete="${isCardDone ? '1' : '0'}" class="pullup-collapse-btn text-emerald-400 hover:text-emerald-300 font-bold text-[11px]">
                 ${isCardCollapsed ? '▼ Show / Edit Sets' : '▲ Hide Sets'}
               </button>
             </div>
 
             <div class="${isCardCollapsed ? 'hidden' : 'space-y-3'}" style="display: ${isCardCollapsed ? 'none' : 'block'};">
-              <button type="button" data-usmc-toggle-img="${exIdForDay}" data-day-idx="${dayIdxForPullup}" class="usmc-toggle-img-btn w-full bg-slate-950 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-between transition">
-                <span>📸 ${isUsmcImgOpen ? 'Hide Setup & Image' : 'Show Setup & Image'}</span>
-                <span class="text-[10px] text-emerald-400 font-extrabold">${isUsmcImgOpen ? '▲ Hide' : '▼ View'}</span>
+              <button type="button" data-pullup-toggle-img="${exIdForDay}" data-day-idx="${dayIdxForPullup}" class="pullup-toggle-img-btn w-full bg-slate-950 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-between transition">
+                <span>📸 ${isPullupImgOpen ? 'Hide Setup & Image' : 'Show Setup & Image'}</span>
+                <span class="text-[10px] text-emerald-400 font-extrabold">${isPullupImgOpen ? '▲ Hide' : '▼ View'}</span>
               </button>
-              <div class="${isUsmcImgOpen ? 'block' : 'hidden'}" style="display: ${isUsmcImgOpen ? 'block' : 'none'};">
+              <div class="${isPullupImgOpen ? 'block' : 'hidden'}" style="display: ${isPullupImgOpen ? 'block' : 'none'};">
                 ${getStepVisualDiagramHtml({ id: exIdForDay, notes: d.desc }, metaForDay, dayIdxForPullup)}
               </div>
               <div class="grid grid-cols-5 gap-2">
@@ -6480,7 +6550,7 @@
         `;
       }).join('');
 
-      container.querySelectorAll('.usmc-rep-input').forEach(inp => {
+      container.querySelectorAll('.pullup-rep-input').forEach(inp => {
         inp.addEventListener('input', () => {
           const dayNum = parseInt(inp.getAttribute('data-day-num'), 10);
           const setIdx = parseInt(inp.getAttribute('data-set-idx'), 10);
@@ -6490,7 +6560,7 @@
         });
       });
 
-      container.querySelectorAll('.usmc-done-btn').forEach(btn => {
+      container.querySelectorAll('.pullup-done-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const dayNum = parseInt(btn.getAttribute('data-day-num'), 10);
           const setIdx = parseInt(btn.getAttribute('data-set-idx'), 10);
@@ -6505,7 +6575,7 @@
 
           syncPullupStateBothWays(week, dayNum, setIdx, { reps: finalReps, done: nextDone });
           saveState();
-          renderUSMCView();
+          renderPullupView();
           renderWorkoutView();
 
           if (nextDone) {
@@ -6516,28 +6586,28 @@
         });
       });
 
-      container.querySelectorAll('.usmc-collapse-btn').forEach(btn => {
+      container.querySelectorAll('.pullup-collapse-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.preventDefault();
-          const exId = btn.getAttribute('data-usmc-collapse');
-          const dIdx = parseInt(btn.getAttribute('data-day-idx'), 10) || 0;
-          const isComp = btn.getAttribute('data-is-complete') === '1';
+          const exId = btn.getAttribute('data-pullup-collapse') || btn.getAttribute('data-pullup-ex-id');
+          const dIdx = parseInt(btn.getAttribute('data-day-idx') || btn.getAttribute('data-pullup-collapse-day'), 10) || 0;
+          const isComp = (btn.getAttribute('data-is-complete') || btn.getAttribute('data-pullup-complete')) === '1';
           toggleExerciseSetsCollapsed(dIdx, exId, isComp);
           saveState();
-          renderUSMCView();
+          renderPullupView();
           renderWorkoutView();
         });
       });
 
-      container.querySelectorAll('.usmc-toggle-img-btn').forEach(btn => {
+      container.querySelectorAll('.pullup-toggle-img-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.preventDefault();
-          const exId = btn.getAttribute('data-usmc-toggle-img');
+          const exId = btn.getAttribute('data-pullup-toggle-img');
           const dIdx = parseInt(btn.getAttribute('data-day-idx'), 10) || 0;
           const nextOpen = !isExerciseImgOpen(dIdx, exId);
           setExerciseImgOpen(dIdx, exId, nextOpen);
           saveState();
-          renderUSMCView();
+          renderPullupView();
           renderWorkoutView();
         });
       });
@@ -6549,12 +6619,12 @@
           const dIdx = parseInt(btn.getAttribute('data-day-idx'), 10) || 0;
           setExerciseImgOpen(dIdx, exId, false);
           saveState();
-          renderUSMCView();
+          renderPullupView();
           renderWorkoutView();
         });
       });
 
-      container.querySelectorAll('.usmc-quick-timer').forEach(btn => {
+      container.querySelectorAll('.pullup-quick-timer').forEach(btn => {
         btn.addEventListener('click', () => {
           const sec = parseInt(btn.getAttribute('data-rest-sec'), 10) || 60;
           const name = btn.getAttribute('data-ex-name');
@@ -6863,7 +6933,7 @@
             state.currentWeek = targetW;
             saveState();
             renderWorkoutView();
-            renderUSMCView();
+            renderPullupView();
             renderVeganView();
             showToast(`Switched to Week ${targetW}`);
           });
@@ -7978,8 +8048,8 @@
           `• **2. Bulk Pea Protein Isolate (75g/day = ~$1.65/day):** 30g pre-gym + 45g evening shake = 60g pure protein with zero fiber bloat.\n` +
           `• **3. Oats (40g) + Jasmine Rice (55g dry) + Chia (6g) + PB (24g) + Broccoli (75g) + Windsor Iodized Salt (1.5g):** Covers 100% of your Omega-3 ALA, thyroid iodine, Vitamin C, and iron absorption for ~$2.65/day.`;
       }
-      if (q.includes('pull-up') || q.includes('pullup') || q.includes('usmc') || q.includes('plateau')) {
-        return `**💪 Coach AI USMC Pull-Up Progression Tip (Training Set: ${ctx.pullupTrainingSetReps} reps):**\n` +
+      if (q.includes('pull-up') || q.includes('pullup') || q.includes('plateau')) {
+        return `**💪 Coach AI Pull-Up Progression Tip (Training Set: ${ctx.pullupTrainingSetReps} reps):**\n` +
           `• **Biomechanics Cue:** Depress your shoulder blades ("put your lats in your back pockets") *before* bending your elbows, and drive your elbows down toward your hips.\n` +
           `• **Plateau Buster:** Always perform Pull-Ups as **Exercise #1** when your nervous system is 100% fresh. Once you complete all 9 sets of ${ctx.pullupTrainingSetReps} reps on Day 3, bump your Training Set to **${ctx.pullupTrainingSetReps + 1} reps** on Day 4!`;
       }
@@ -8110,13 +8180,15 @@
           }
         });
       }
-      if (sourceSnap.usmcLogs && typeof sourceSnap.usmcLogs === 'object') {
-        Object.keys(sourceSnap.usmcLogs).forEach(k => {
-          const srcEntry = sourceSnap.usmcLogs[k];
-          const curEntry = state.usmcLogs[k];
+      const srcPullupLogs = sourceSnap.pullupLogs || sourceSnap[LEGACY_PULLUP_LOGS_KEY];
+      if (srcPullupLogs && typeof srcPullupLogs === 'object') {
+        if (!state.pullupLogs || typeof state.pullupLogs !== 'object') state.pullupLogs = {};
+        Object.keys(srcPullupLogs).forEach(k => {
+          const srcEntry = srcPullupLogs[k];
+          const curEntry = state.pullupLogs[k];
           if (srcEntry && (srcEntry.done || srcEntry.reps)) {
             if (!curEntry || (!curEntry.done && !curEntry.reps)) {
-              state.usmcLogs[k] = JSON.parse(JSON.stringify(srcEntry));
+              state.pullupLogs[k] = JSON.parse(JSON.stringify(srcEntry));
               mergedCount++;
             }
           }
@@ -8173,7 +8245,7 @@
           .then(r => r.json())
           .then(res => {
             const remote = (res && res.configured && res.data) ? res.data : null;
-            if (remote && (remote.workoutLogs || remote.usmcLogs)) {
+            if (remote && (remote.workoutLogs || remote.pullupLogs || remote[LEGACY_PULLUP_LOGS_KEY])) {
               const cloudRecovered = mergeWorkoutSnapshotsIntoCurrentState(remote);
               if (cloudRecovered > 0) {
                 if (state.userProfile && state.userProfile.email) {
@@ -8184,7 +8256,7 @@
                 }
                 saveState();
                 renderWorkoutView();
-                renderUSMCView();
+                renderPullupView();
                 showToast(`☁️ Recovered ${cloudRecovered} logged set(s) from last week's cloud backup into your profile!`);
               }
             }
@@ -8200,14 +8272,14 @@
       }
       saveState();
       renderWorkoutView();
-      renderUSMCView();
+      renderPullupView();
       return totalRecovered;
     }
 
     function getAccountSnapshotFromCurrentState() {
       return {
         workoutLogs: JSON.parse(JSON.stringify(state.workoutLogs || {})),
-        usmcLogs: JSON.parse(JSON.stringify(state.usmcLogs || {})),
+        pullupLogs: JSON.parse(JSON.stringify(state.pullupLogs || {})),
         checkedMeals: JSON.parse(JSON.stringify(state.checkedMeals || {})),
         checkedMealIngredients: JSON.parse(JSON.stringify(state.checkedMealIngredients || {})),
         checkedGroceries: JSON.parse(JSON.stringify(state.checkedGroceries || {})),
@@ -8230,7 +8302,8 @@
     function applyAccountSnapshotToCurrentState(snap) {
       const s = snap || {};
       state.workoutLogs = s.workoutLogs ? JSON.parse(JSON.stringify(s.workoutLogs)) : {};
-      state.usmcLogs = s.usmcLogs ? JSON.parse(JSON.stringify(s.usmcLogs)) : {};
+      const srcPullup = s.pullupLogs || s[LEGACY_PULLUP_LOGS_KEY];
+      state.pullupLogs = srcPullup ? JSON.parse(JSON.stringify(srcPullup)) : {};
       state.checkedMeals = s.checkedMeals ? JSON.parse(JSON.stringify(s.checkedMeals)) : {};
       state.checkedMealIngredients = s.checkedMealIngredients ? JSON.parse(JSON.stringify(s.checkedMealIngredients)) : {};
       state.checkedGroceries = s.checkedGroceries ? JSON.parse(JSON.stringify(s.checkedGroceries)) : {};
@@ -8318,7 +8391,7 @@
 
       saveState();
       renderWorkoutView();
-      renderUSMCView();
+      renderPullupView();
       renderVeganView();
       renderShoppingView();
 
@@ -8357,7 +8430,7 @@
           }
           saveState();
           renderWorkoutView();
-          renderUSMCView();
+          renderPullupView();
           renderVeganView();
           showToast(`Switched to Week ${state.selectedWeek} (weights suggested from previous week)`);
         });
@@ -8376,7 +8449,7 @@
           state.currentWeek = nextW;
           saveState();
           renderWorkoutView();
-          renderUSMCView();
+          renderPullupView();
           renderVeganView();
           showToast(`🎉 Week ${cur} Complete! Unlocked Week ${nextW} with your previous weights pre-filled.`);
         });
@@ -8413,7 +8486,7 @@
           state.cardCollapsedState = {};
           saveState();
           renderWorkoutView();
-          renderUSMCView();
+          renderPullupView();
           showToast(state.defaultAllHidden
             ? '🙈 Default All Hidden: ON (Tap any exercise to open • Auto-opens next when finished!)'
             : '📂 Show All Exercises: ON (Completed exercises still auto-hide when finished!)');
@@ -8457,7 +8530,7 @@
           });
           saveState();
           renderWorkoutView();
-          renderUSMCView();
+          renderPullupView();
           showToast(!anyOpen ? '📸 Showed Setup & Image for today' : '🙈 Hid all Setup & Image panels');
         });
       }
@@ -8604,17 +8677,17 @@
         });
       });
 
-      // USMC Training Set Reps Controls (Synced with Daily Pull-Up Exercise #1)
+      // Pull-Up Training Set Reps Controls (Synced with Daily Pull-Up Exercise #1)
       document.getElementById('pullup-ts-minus').addEventListener('click', () => {
         state.pullupTrainingSetReps = Math.max(1, state.pullupTrainingSetReps - 1);
         saveState();
-        renderUSMCView();
+        renderPullupView();
         renderWorkoutView();
       });
       document.getElementById('pullup-ts-plus').addEventListener('click', () => {
         state.pullupTrainingSetReps = Math.min(30, state.pullupTrainingSetReps + 1);
         saveState();
-        renderUSMCView();
+        renderPullupView();
         renderWorkoutView();
       });
 
@@ -9076,7 +9149,7 @@
         state.selectedDayIndex = 0;
         saveState(false);
         renderWorkoutView();
-        renderUSMCView();
+        renderPullupView();
         renderVeganView();
         renderShoppingView();
         showToast('✅ François Week 1 Data (All 5 Lift Days + Pull-Ups) Restored!');
@@ -9101,7 +9174,7 @@
           if (weekSel) weekSel.value = String(nextW);
           saveState();
           renderWorkoutView();
-          renderUSMCView();
+          renderPullupView();
           renderVeganView();
           showToast(`🎉 Week ${cur} Complete! Unlocked Week ${nextW} (your Week ${cur} weights are pre-filled on every set).`);
         });
@@ -9263,7 +9336,7 @@
             ensureFrancoisWeek1Data(state, true);
             saveState();
             renderWorkoutView();
-            renderUSMCView();
+            renderPullupView();
           }
           if (smartLoginModal) smartLoginModal.classList.add('hidden');
           showToast(`🎉 Welcome, ${finalName}! Profile saved & Coach AI unlocked.`);
@@ -9435,7 +9508,7 @@
       if (freshStartBtn) {
         freshStartBtn.addEventListener('click', () => {
           state.workoutLogs = {};
-          state.usmcLogs = {};
+          state.pullupLogs = {};
           state.checkedMeals = {};
           state.checkedMealIngredients = {};
           state.checkedGroceries = {};
@@ -9451,7 +9524,7 @@
           state.geminiChatHistory = [];
           saveState();
           renderWorkoutView();
-          renderUSMCView();
+          renderPullupView();
           renderVeganView();
           renderShoppingView();
           if (freshStartConfirmBox) freshStartConfirmBox.classList.add('hidden');
@@ -9591,7 +9664,7 @@
             state = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), parsed);
             saveState();
             renderWorkoutView();
-            renderUSMCView();
+            renderPullupView();
             renderVeganView();
             renderShoppingView();
             backupInput.value = '';
@@ -9675,7 +9748,7 @@
       updateAudioModeUI();
       updateTimerUI();
       renderWorkoutView();
-      renderUSMCView();
+      renderPullupView();
       renderVeganView();
       renderShoppingView();
 
@@ -9966,7 +10039,7 @@
           <button type="button" data-ai-prompt="Analyze my workout today and tell me the exact weight and reps to hit on my next session for progressive overload." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-purple-200 transition">📈 Next Week Overload</button>
           <button type="button" data-ai-prompt="Based on my gym time today, give me my exact pre-workout shake and post-workout meal schedule in grams." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-emerald-300 transition">⏱️ Adapt My Meal Timing</button>
           <button type="button" data-ai-prompt="How can I keep my grocery cost around $38/week ($5.55/day) while hitting 138g protein and 1,495 kcal?" class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-amber-300 transition">💰 $38/Wk Grocery Tips</button>
-          <button type="button" data-ai-prompt="Give me a specific biomechanics cue and rest strategy to add +2 reps to my USMC Overhand Pull-Ups." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-sky-300 transition">💪 Pull-Up Plateau Buster</button>
+          <button type="button" data-ai-prompt="Give me a specific biomechanics cue and rest strategy to add +2 reps to my Overhand Pull-Ups." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-sky-300 transition">💪 Pull-Up Plateau Buster</button>
         </div>
       </div>
 
