@@ -613,6 +613,93 @@ export function shouldShowPreWorkoutFuelPrompt(
   return isTrainingDay && !isFuel1Logged && !isDismissedForDay;
 }
 
+// ============================================================================
+// ARCHITECTURAL UPGRADES 1–4: Week/Day Sync, Fuel Card Collapse, Batch Prep Redesign & Pre-Rendered PCM WAV Chime
+// ============================================================================
+export function isFuelCardIngredientsExpanded(
+  openFuelCards: Record<string, boolean> | undefined,
+  slotId: string
+): boolean {
+  if (!openFuelCards || openFuelCards[slotId] === undefined) {
+    return false; // Collapsed by default on all 4 Daily Fuel cards
+  }
+  return Boolean(openFuelCards[slotId]);
+}
 
+export function formatFuelCardToggleLabel(itemCount: number, isExpanded: boolean): string {
+  return isExpanded
+    ? `Hide Ingredients & Prep (${itemCount} items)`
+    : `Show Ingredients & Prep (${itemCount} items)`;
+}
 
+export function isBatchPrepCardCollapsedByDefault(
+  collapsedRecipeCards: Record<string, boolean> | undefined,
+  recipeId: string
+): boolean {
+  if (!collapsedRecipeCards || collapsedRecipeCards[recipeId] === undefined) {
+    return true; // Collapsed by default unless explicitly opened by user
+  }
+  return Boolean(collapsedRecipeCards[recipeId]);
+}
 
+export function stripBatchStepPrefix(title: string): string {
+  return String(title || '').replace(/^#\d+\s+/, '').trim();
+}
+
+export function generatePreRenderedChimeWavBytes(
+  sampleRate = 44100,
+  durationSec = 0.28
+): Uint8Array {
+  const numSamples = Math.max(1, Math.floor(sampleRate * durationSec));
+  const dataBytes = numSamples * 2; // 16-bit mono PCM = 2 bytes per sample
+  const buffer = new ArrayBuffer(44 + dataBytes);
+  const view = new DataView(buffer);
+
+  const writeStr = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  };
+
+  // Standard 44-byte RIFF WAVE header
+  writeStr(0, 'RIFF');
+  view.setUint32(4, 36 + dataBytes, true);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  view.setUint32(16, 16, true); // PCM chunk size
+  view.setUint16(20, 1, true);  // AudioFormat = 1 (PCM)
+  view.setUint16(22, 1, true);  // NumChannels = 1 (Mono)
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true); // ByteRate
+  view.setUint16(32, 2, true);  // BlockAlign
+  view.setUint16(34, 16, true); // BitsPerSample
+  writeStr(36, 'data');
+  view.setUint32(40, dataBytes, true);
+
+  // Synthesize smooth two-tone chime (D5 587.33 Hz -> A5 880 Hz) with zero DC offset at start and end
+  let phase = 0;
+  const attackSamples = Math.max(1, Math.floor(sampleRate * 0.01));
+  for (let i = 0; i < numSamples; i++) {
+    const t = i / sampleRate;
+    const freq = t < 0.12 ? 587.33 : 880.0;
+    phase += (2 * Math.PI * freq) / sampleRate;
+
+    let env = 0;
+    if (i === 0 || i === numSamples - 1) {
+      env = 0;
+    } else if (i < attackSamples) {
+      // Smooth half-cosine ramp up
+      env = 0.5 * (1 - Math.cos((Math.PI * i) / attackSamples));
+    } else {
+      // Smooth exponential decay + cosine taper to exact 0 at final sample
+      const progress = (i - attackSamples) / Math.max(1, numSamples - 1 - attackSamples);
+      env = Math.exp(-4.5 * progress) * (1 - progress);
+    }
+
+    const sampleFloat = Math.sin(phase) * env * 0.25;
+    const pcm16 = Math.max(-32767, Math.min(32767, Math.round(sampleFloat * 32767)));
+    view.setInt16(44 + i * 2, pcm16, true);
+  }
+
+  return new Uint8Array(buffer);
+}

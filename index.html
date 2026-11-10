@@ -399,14 +399,26 @@
 
     <!-- ==================== VIEW 4: LOW-APPETITE VEGAN MEAL PLANNER ==================== -->
     <section id="view-vegan" class="hidden space-y-4">
-      <!-- Top Week/Day Selector Hidden on Nutrition Tab so View Opens Directly on Daily Protein, Calories & Water Tracker -->
-      <div id="vegan-top-day-selector-container" class="hidden">
-        <span id="vegan-week-day-title">⚡ Week 1 • Day 1 Fuel</span>
-        <span id="vegan-day-status-pill">0/4 Fuel</span>
-        <div id="vegan-day-selector-grid"></div>
+      <!-- Synced 7-Day Cycle & Progressive Week Selector Card (Matches Gym Tab) -->
+      <div id="vegan-top-day-selector-container" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400">📅 Week:</span>
+            <div id="vegan-progressive-week-pills" class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Progressive Training Weeks">
+              <!-- Populated dynamically by JS -->
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span id="vegan-week-day-title" class="hidden sm:inline text-[11px] font-bold text-slate-300">⚡ Week 1 • Day 1</span>
+            <span id="vegan-day-status-pill" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300">0/4 Fuel Today</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-7 gap-1.5" id="vegan-day-selector-grid">
+          <!-- Populated dynamically by JS -->
+        </div>
       </div>
 
-      <!-- Compact Daily Macro, Calories & Water Intake Tracker (Opens Directly at Top of Muscle Fuel Tab) -->
+      <!-- Compact Daily Macro, Calories & Water Intake Tracker -->
       <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="min-w-0 flex-1">
@@ -476,20 +488,28 @@
           <!-- Populated dynamically by JS -->
         </div>
 
-        <!-- Redundant Plan Day Sync 6-pill summary box hidden so user goes straight from Daily Macros & Water into #Prep 1/2 and FUEL 1–4 -->
+        <!-- Redundant Plan Day Sync 6-pill summary box hidden so user goes straight from Daily Macros & Water into FUEL 1–4 -->
         <div id="vegan-gym-time-bar" class="hidden"></div>
       </div>
 
-      <!-- Interactive Exercise-Style Batch Prep Recipe Cards (Oats Batch #Prep 1/2 & Jasmine Rice #Prep 2/2) -->
-      <div id="batch-recipe-cards-container" class="space-y-3">
-        <!-- Populated dynamically by JS -->
-      </div>
-      <div id="batch-prep-checklist" class="hidden"></div>
-
-      <!-- The 4 Daily Repeat Fuel Cards -->
+      <!-- Daily Fuel (1–4) Placed ABOVE 4-Day Batch Prep for Rapid Daily Logging -->
       <div class="space-y-3" id="vegan-meals-container">
         <!-- Populated by JS -->
       </div>
+
+      <!-- 4-Day Batch Prep Section Header + Collapsed-by-Default Kitchen Scale Cards -->
+      <div class="space-y-2.5">
+        <div class="flex items-center justify-between px-1">
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-extrabold uppercase tracking-wider text-sky-400">🥣 4-Day Kitchen Scale Batch Prep (2)</span>
+            <span class="text-[10px] font-semibold text-slate-400">Cook once every 4 days</span>
+          </div>
+        </div>
+        <div id="batch-recipe-cards-container" class="space-y-3">
+          <!-- Populated dynamically by JS -->
+        </div>
+      </div>
+      <div id="batch-prep-checklist" class="hidden"></div>
 
       <!-- Simple 100% Nutrient Coverage Summary -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5">
@@ -2072,7 +2092,76 @@
       showToast(toastMap[next]);
     }
 
+    function configureAmbientAudioSession() {
+      if (typeof navigator !== 'undefined' && 'audioSession' in navigator) {
+        try { navigator.audioSession.type = 'ambient'; } catch (e) {}
+      }
+    }
+    configureAmbientAudioSession();
+
+    let cachedChimeAudioEl = null;
+    function getPreRenderedChimeAudioEl() {
+      if (cachedChimeAudioEl) return cachedChimeAudioEl;
+      try {
+        const sampleRate = 44100;
+        const durationSec = 0.28;
+        const numSamples = Math.floor(sampleRate * durationSec);
+        const dataBytes = numSamples * 2;
+        const buffer = new ArrayBuffer(44 + dataBytes);
+        const view = new DataView(buffer);
+        const writeStr = (offset, str) => {
+          for (let i = 0; i < str.length; i++) {
+            view.setUint8(offset + i, str.charCodeAt(i));
+          }
+        };
+        writeStr(0, 'RIFF');
+        view.setUint32(4, 36 + dataBytes, true);
+        writeStr(8, 'WAVE');
+        writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeStr(36, 'data');
+        view.setUint32(40, dataBytes, true);
+
+        let phase = 0;
+        const attackSamples = Math.max(1, Math.floor(sampleRate * 0.01));
+        for (let i = 0; i < numSamples; i++) {
+          const t = i / sampleRate;
+          const freq = t < 0.12 ? 587.33 : 880.0;
+          phase += (2 * Math.PI * freq) / sampleRate;
+          let env = 0;
+          if (i === 0 || i === numSamples - 1) {
+            env = 0;
+          } else if (i < attackSamples) {
+            env = 0.5 * (1 - Math.cos((Math.PI * i) / attackSamples));
+          } else {
+            const progress = (i - attackSamples) / Math.max(1, numSamples - 1 - attackSamples);
+            env = Math.exp(-4.5 * progress) * (1 - progress);
+          }
+          const sampleFloat = Math.sin(phase) * env * 0.25;
+          const pcm16 = Math.max(-32767, Math.min(32767, Math.round(sampleFloat * 32767)));
+          view.setInt16(44 + i * 2, pcm16, true);
+        }
+
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const wavUrl = URL.createObjectURL(blob);
+        const audio = new Audio(wavUrl);
+        audio.preload = 'auto';
+        audio.volume = 0.35;
+        cachedChimeAudioEl = audio;
+        return cachedChimeAudioEl;
+      } catch (e) {
+        return null;
+      }
+    }
+
     function playTimerChime() {
+      configureAmbientAudioSession();
       const mode = getEffectiveAudioMode();
       if (mode === 'silent') return;
 
@@ -2083,47 +2172,20 @@
         return;
       }
 
-      // Sound + Vibe mode: trigger vibration + create a fresh transient AudioContext that closes within 350ms
+      // Sound + Vibe mode: trigger vibration + play pre-rendered PCM .wav buffer (zero AudioContext creation/close!)
       if (navigator.vibrate) {
         try { navigator.vibrate([200, 100, 200]); } catch (e) {}
       }
       try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        const audioCtx = new AudioCtx();
-        const now = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, now); // D5
-        osc.frequency.setValueAtTime(880, now + 0.12); // A5
-
-        gain.gain.setValueAtTime(0.18, now);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.onended = () => {
-          try { osc.disconnect(); } catch (e) {}
-          try { gain.disconnect(); } catch (e) {}
-        };
-
-        osc.start(now);
-        osc.stop(now + 0.29);
-
-        // Immediately release OS Bluetooth audio session within 350ms
-        setTimeout(() => {
-          try {
-            if (audioCtx && audioCtx.state !== 'closed') {
-              audioCtx.close();
-            }
-          } catch (e) {}
-        }, 320);
-      } catch (e) {
-        // Ignore audio errors if blocked before gesture
-      }
+        const chimeAudio = getPreRenderedChimeAudioEl();
+        if (chimeAudio) {
+          chimeAudio.currentTime = 0;
+          const playPromise = chimeAudio.play();
+          if (playPromise && typeof playPromise.catch === 'function') {
+            playPromise.catch(() => {});
+          }
+        }
+      } catch (e) {}
     }
 
     // =========================================================================
@@ -6467,7 +6529,65 @@
         }
       }
 
-      // Render Synced Day 1 – Day 7 Strip in Vegan Fuel with Soft Rose (Done) & Amber (Partial) Dots
+      // UPGRADE 1: Render Synced Week Pill Bar & Day 1–7 Selector Grid in Muscle Fuel Tab
+      syncProgressiveWeekState(state);
+      const maxUnlocked = state.maxUnlockedWeek || 2;
+      const veganWeekPillsContainer = document.getElementById('vegan-progressive-week-pills');
+      if (veganWeekPillsContainer) {
+        const rollingStart = maxUnlocked <= 3 ? 1 : Math.max(1, maxUnlocked - 3);
+        const visibleWeeks = [];
+        for (let w = rollingStart; w <= maxUnlocked; w++) {
+          visibleWeeks.push(w);
+        }
+        const olderWeeks = [];
+        for (let w = 1; w < rollingStart; w++) {
+          olderWeeks.push(w);
+        }
+        if (maxUnlocked === 4 && olderWeeks.length === 0) {
+          olderWeeks.push(1);
+        }
+
+        function buildVeganWeekPillHtml(w) {
+          const isCurrentActive = (w === week);
+          const isPastCompleted = (w < week) || (w < maxUnlocked) || Boolean(state.completedWeeks && state.completedWeeks[w]);
+          let pillClasses = '';
+          let labelHtml = `Week ${w}`;
+          if (isCurrentActive) {
+            pillClasses = 'border-sky-400 bg-sky-500/20 text-sky-200 font-bold shadow-sm shadow-sky-500/25';
+            labelHtml = isPastCompleted ? `✓ Week ${w} (Active)` : `Week ${w}`;
+          } else if (isPastCompleted) {
+            pillClasses = 'border-amber-500/50 bg-amber-950/30 text-amber-300 hover:bg-amber-950/50 font-bold';
+            labelHtml = `✓ Done • Week ${w}`;
+          } else {
+            pillClasses = 'bg-slate-900 text-slate-200 border-slate-700 hover:border-sky-400/50 font-semibold';
+          }
+          return `
+            <button
+              type="button"
+              data-vegan-prog-week="${w}"
+              aria-pressed="${isCurrentActive ? 'true' : 'false'}"
+              class="vegan-progressive-week-pill-btn px-2.5 py-1 rounded-lg text-[11px] border transition whitespace-nowrap ${pillClasses}"
+            >
+              ${labelHtml}
+            </button>
+          `;
+        }
+
+        veganWeekPillsContainer.innerHTML = visibleWeeks.map(w => buildVeganWeekPillHtml(w)).join('');
+        veganWeekPillsContainer.querySelectorAll('.vegan-progressive-week-pill-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const targetW = parseInt(btn.getAttribute('data-vegan-prog-week'), 10) || 1;
+            state.selectedWeek = targetW;
+            state.currentWeek = targetW;
+            saveState();
+            renderWorkoutView();
+            renderUSMCView();
+            renderVeganView();
+            showToast(`Switched to Week ${targetW}`);
+          });
+        });
+      }
+
       const veganDayGrid = document.getElementById('vegan-day-selector-grid');
       if (veganDayGrid) {
         veganDayGrid.innerHTML = DAYS_SCHEDULE.map((d, idx) => {
@@ -6497,7 +6617,7 @@
                         : 'bg-slate-950/80 text-slate-300 border-slate-800 hover:border-slate-700 font-semibold'))
             }">
               <span class="text-[10px] sm:text-[11px] uppercase tracking-tight whitespace-nowrap">${d.dayShort}</span>
-              <span class="text-[8px] font-semibold opacity-75 tracking-tight whitespace-nowrap">${idx === 0 || idx === 4 ? '🥣 Prep' : d.daySub || ''}</span>
+              <span class="text-[8px] font-semibold opacity-75 tracking-tight whitespace-nowrap">${d.daySub || ''}</span>
               <div class="flex items-center justify-center mt-1 h-2.5">
                 ${dotHtml}
               </div>
@@ -6515,7 +6635,7 @@
         });
       }
 
-      // Render Interactive Exercise-Style Batch Prep Recipe Cards (#Prep 1/2 Oats & #Prep 2/2 Jasmine Rice)
+      // UPGRADE 3: Redesigned 4-Day Batch Prep Cards (Collapsed by Default, 1-Tap Kitchen Scale Rows, Reset Batch Button & Fridge Portion Indicator)
       const recipeCardsContainer = document.getElementById('batch-recipe-cards-container');
       if (recipeCardsContainer) {
         if (!state.recipePrepLogs || typeof state.recipePrepLogs !== 'object') state.recipePrepLogs = {};
@@ -6524,76 +6644,78 @@
         const BATCH_PREP_RECIPES_DATA = [
           {
             id: 'recipe_oats_batch',
-            badge: '#Prep 1/2',
-            yieldPill: '4-Day Batch • 4 Servings',
+            badge: 'Batch 1/2',
+            yieldPill: '4 Jars in Fridge (4 Days)',
             title: '4-Day Overnight Protein Oats Batch',
-            subtitle: 'Prep time: 5 mins • Fridge life: 4 days • 45g oats + 180g Silk per jar',
+            subtitle: 'Prep time: 5 mins • Fridge life: 4 days • 26g P & 395 kcal per jar',
             steps: [
               {
                 id: 'oats_step_1',
-                title: '#1 Gluten-Free Protein Oats',
-                detail: '180g total (45g × 4 jars)',
+                title: 'Gluten-Free Protein Oats',
+                detail: '45g per jar × 4 jars',
                 weightBadge: '180g'
               },
               {
                 id: 'oats_step_2',
-                title: '#2 Organic Whole Chia Seeds',
-                detail: '24g total (6g × 4 jars)',
+                title: 'Organic Whole Chia Seeds',
+                detail: '6g per jar × 4 jars',
                 weightBadge: '24g'
               },
               {
                 id: 'oats_step_3',
-                title: '#3 Peeled Ripe Banana (Mashed)',
-                detail: '120g total (30g × 4 jars)',
+                title: 'Peeled Ripe Banana (Mashed)',
+                detail: '30g per jar × 4 jars',
                 weightBadge: '120g'
               },
               {
                 id: 'oats_step_4',
-                title: '#4 Smooth Natural Peanut Butter',
-                detail: '32g total (8g × 4 jars)',
+                title: 'Smooth Natural Peanut Butter',
+                detail: '8g per jar × 4 jars',
                 weightBadge: '32g'
               },
               {
                 id: 'oats_step_5',
-                title: '#5 Unsweetened Silk Protein Milk',
-                detail: '720g / 720 ml total (180g × 4 jars)',
-                weightBadge: '720g'
+                title: 'Unsweetened Silk Protein Milk',
+                detail: '180 ml per jar × 4 jars',
+                weightBadge: '720 ml'
               },
               {
                 id: 'oats_step_6',
-                title: '#6 Stir, Seal & Refrigerate Overnight',
-                detail: 'Divide evenly into 4 jars and chill for 8:15 AM post-gym fuel'
+                title: 'Stir, Seal & Refrigerate Overnight',
+                detail: 'Divide evenly into 4 jars for 8:15 AM post-gym fuel',
+                weightBadge: '4 Jars'
               }
             ]
           },
           {
             id: 'recipe_rice_batch',
-            badge: '#Prep 2/2',
-            yieldPill: '4-Day Batch • 4 Servings',
+            badge: 'Batch 2/2',
+            yieldPill: '4 Portions in Fridge (4 Days)',
             title: '4-Day Jasmine Rice Batch Prep',
-            subtitle: 'Prep time: 20 mins • Yields 4x 150g cooked rice portions (55g dry/day)',
+            subtitle: 'Prep time: 20 mins • Yields 4 × 150g cooked rice portions (55g dry/day)',
             steps: [
               {
                 id: 'rice_step_1',
-                title: '#1 Dry White Jasmine Rice (Rinsed)',
-                detail: 'Weigh and rinse in cold water until clear (55g dry × 4 days)',
+                title: 'Dry White Jasmine Rice (Rinsed)',
+                detail: '55g dry per day × 4 days (rinse until clear)',
                 weightBadge: '220g'
               },
               {
                 id: 'rice_step_2',
-                title: '#2 Filtered Cooking Water (1 : 1.5 Ratio)',
+                title: 'Filtered Cooking Water (1 : 1.5 Ratio)',
                 detail: 'Add water to pot or rice cooker with rinsed rice',
                 weightBadge: '330 ml'
               },
               {
                 id: 'rice_step_3',
-                title: '#3 Simmer 12 Mins & Steam 10 Mins',
-                detail: 'Boil, cover on low heat 12m, rest off heat 10m (~600g cooked yield)'
+                title: 'Simmer 12 Mins & Steam 10 Mins',
+                detail: 'Boil, cover on low heat 12m, rest off heat 10m',
+                weightBadge: '600g Yield'
               },
               {
                 id: 'rice_step_4',
-                title: '#4 Divide Into 4 Storage Containers',
-                detail: 'Portion 150g cooked rice per container for Daily Fuel 2 bowls',
+                title: 'Divide Into 4 Fridge Containers',
+                detail: '150g cooked rice per container × 4 days',
                 weightBadge: '150g × 4'
               }
             ]
@@ -6604,9 +6726,10 @@
           const totalSteps = recipe.steps.length;
           const doneSteps = recipe.steps.filter(st => Boolean(state.recipePrepLogs[st.id])).length;
           const isRecipeDone = doneSteps === totalSteps;
+          // Collapsed by default unless explicitly opened by the user
           const isCollapsed = state.collapsedRecipeCards[recipe.id] !== undefined
             ? Boolean(state.collapsedRecipeCards[recipe.id])
-            : isRecipeDone;
+            : true;
 
           const stepsRowsHtml = recipe.steps.map(st => {
             const stDone = Boolean(state.recipePrepLogs[st.id]);
@@ -6614,33 +6737,30 @@
               <button
                 type="button"
                 data-recipe-step-id="${st.id}"
-                class="recipe-step-check-btn w-full text-left p-2.5 rounded-xl border transition flex items-center justify-between gap-2 min-w-0 ${
+                class="recipe-step-check-btn w-full text-left px-3 py-2.5 rounded-xl border transition flex items-center justify-between gap-3 min-w-0 ${
                   stDone
-                    ? 'bg-emerald-950/35 border-emerald-500/45 text-emerald-100'
-                    : 'bg-slate-950/80 border-slate-800/90 hover:border-sky-400/40 text-slate-100'
+                    ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-100'
+                    : 'bg-slate-950/85 border-slate-800/90 hover:border-sky-400/40 text-slate-100'
                 }"
               >
-                <div class="flex items-start gap-2.5 min-w-0 flex-1">
-                  <span class="mt-0.5 w-5 h-5 shrink-0 rounded-md flex items-center justify-center text-xs font-extrabold transition ${
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                  <span class="w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-xs font-extrabold transition ${
                     stDone
                       ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/40'
-                      : 'bg-slate-900 border border-slate-700 text-slate-400'
-                  }">${stDone ? '✓' : ''}</span>
+                      : 'bg-slate-900 border border-slate-600 text-transparent'
+                  }">✓</span>
                   <div class="min-w-0 flex-1">
-                    <div class="text-xs font-extrabold leading-snug break-words ${stDone ? 'line-through text-emerald-300' : 'text-white'}">${st.title}</div>
-                    <div class="text-[11px] text-slate-300 mt-0.5 leading-snug break-words">${st.detail}</div>
+                    <div class="text-xs sm:text-sm font-extrabold leading-snug break-words ${stDone ? 'line-through text-emerald-300' : 'text-white'}">${st.title}</div>
+                    <div class="text-[11px] text-slate-400 mt-0.5 leading-snug break-words">${st.detail}</div>
                   </div>
                 </div>
-                <div class="flex items-center gap-1.5 shrink-0">
-                  ${st.weightBadge ? `<span class="text-[10px] font-mono font-extrabold px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-emerald-300 whitespace-nowrap">${st.weightBadge}</span>` : ''}
-                  <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-lg whitespace-nowrap ${
+                ${st.weightBadge ? `
+                  <span class="shrink-0 text-xs sm:text-sm font-mono font-extrabold px-2.5 py-1 rounded-xl border whitespace-nowrap ${
                     stDone
-                      ? 'bg-emerald-500 text-slate-950'
-                      : 'bg-slate-900 border border-slate-700 text-sky-300'
-                  }">
-                    ${stDone ? '✓ Done' : 'Check'}
-                  </span>
-                </div>
+                      ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-200'
+                      : 'bg-slate-900 border-emerald-500/40 text-emerald-300'
+                  }">${st.weightBadge}</span>
+                ` : ''}
               </button>
             `;
           }).join('');
@@ -6656,32 +6776,30 @@
               <div class="flex items-start justify-between gap-2">
                 <div data-toggle-recipe-card="${recipe.id}" class="recipe-card-toggle-btn min-w-0 flex-1 cursor-pointer select-none group">
                   <div class="flex flex-wrap items-center gap-1.5">
-                    <span class="recipe-prep-badge whitespace-nowrap px-2 py-0.5 text-xs font-bold font-mono rounded-md ${
+                    <span class="recipe-prep-badge whitespace-nowrap px-2 py-0.5 text-[11px] font-bold font-mono rounded-md ${
                       !isCollapsed ? 'bg-sky-400 text-slate-950' : (isRecipeDone ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300')
                     }">${recipe.badge}</span>
-                    <span class="text-[11px] font-semibold text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded-md whitespace-nowrap">${recipe.yieldPill}</span>
-                    <span class="recipe-status-badge text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${
+                    <span class="text-[11px] font-semibold text-sky-200 bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 rounded-md whitespace-nowrap">❄️ ${recipe.yieldPill}</span>
+                    <span class="recipe-status-badge text-[10px] font-extrabold px-2 py-0.5 rounded-full border whitespace-nowrap ${
                       isRecipeDone
                         ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
                         : 'bg-slate-800 border-slate-700 text-slate-300'
-                    }">${isRecipeDone ? '✓ Done' : `${doneSteps} of ${totalSteps} steps`}</span>
+                    }">${doneSteps}/${totalSteps} Checked</span>
                   </div>
-                  <h3 class="text-sm sm:text-base font-extrabold text-white mt-1 leading-snug break-words">${recipe.title}</h3>
+                  <h3 class="text-sm sm:text-base font-extrabold text-white mt-1.5 leading-snug break-words">${recipe.title}</h3>
                   <p class="text-[11px] text-slate-400 mt-0.5 leading-snug">${recipe.subtitle}</p>
                 </div>
-                ${doneSteps > 0 ? `
-                  <button type="button" data-reset-recipe="${recipe.id}" class="reset-recipe-steps-btn shrink-0 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[10px] font-bold whitespace-nowrap transition">
-                    ↺ Reset Batch Steps
-                  </button>
-                ` : ''}
+                <button type="button" data-reset-recipe="${recipe.id}" class="reset-recipe-steps-btn shrink-0 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-extrabold whitespace-nowrap transition">
+                  ↺ Reset Batch
+                </button>
               </div>
 
               <button type="button" data-toggle-recipe-card="${recipe.id}" class="recipe-card-toggle-btn w-full flex items-center justify-between bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-slate-300 rounded-xl px-3 py-2 text-xs transition">
-                <span class="font-medium text-left">
-                  ${isRecipeDone ? `<span class="text-emerald-400 font-bold">✓ All ${totalSteps} prep steps complete</span>` : `${doneSteps} of ${totalSteps} steps checked`}
+                <span class="font-bold text-left">
+                  ${isRecipeDone ? `<span class="text-emerald-400 font-extrabold">✓ All ${totalSteps} scale steps complete</span>` : `${isCollapsed ? `Show Kitchen Scale Checklist (${totalSteps} steps)` : `Hide Kitchen Scale Checklist (${doneSteps}/${totalSteps} checked)`}`}
                 </span>
-                <span class="${!isCollapsed ? 'text-sky-300' : 'text-slate-400'} font-bold text-[11px] shrink-0">
-                  ${isCollapsed ? 'Tap to Open ▾' : 'Hide Steps ▴'}
+                <span class="${!isCollapsed ? 'text-sky-300' : 'text-slate-400'} font-extrabold text-[11px] shrink-0">
+                  ${isCollapsed ? 'Open ▾' : 'Collapse ▴'}
                 </span>
               </button>
 
@@ -6696,11 +6814,9 @@
           btn.addEventListener('click', () => {
             const rId = btn.getAttribute('data-toggle-recipe-card');
             if (!rId) return;
-            const recipeObj = BATCH_PREP_RECIPES_DATA.find(r => r.id === rId);
-            const allDone = recipeObj ? recipeObj.steps.every(st => Boolean(state.recipePrepLogs[st.id])) : false;
             const curCollapsed = state.collapsedRecipeCards[rId] !== undefined
               ? Boolean(state.collapsedRecipeCards[rId])
-              : allDone;
+              : true;
             state.collapsedRecipeCards[rId] = !curCollapsed;
             saveState();
             renderVeganView();
@@ -6726,10 +6842,9 @@
               recipeObj.steps.forEach(st => {
                 delete state.recipePrepLogs[st.id];
               });
-              state.collapsedRecipeCards[rId] = false;
               saveState();
               renderVeganView();
-              showToast(`↺ Reset batch steps for ${recipeObj.title}`);
+              showToast(`↺ Reset batch checklist for ${recipeObj.title}`);
             }
           });
         });
@@ -6917,9 +7032,17 @@
         });
       }
 
-      // Render 4 Separate Daily Fuel Cards with Scannable Vertical Ingredient Row Lists (Upgrades 5 & 6)
+      // UPGRADE 2: Render 4 Daily Fuel Cards with Ingredient Lists & Prep Collapsed by Default
+      if (!state.openFuelCards || typeof state.openFuelCards !== 'object') state.openFuelCards = {};
       const mealsEl = document.getElementById('vegan-meals-container');
       if (mealsEl) {
+        const defaultTimesBySlot = {
+          pre_shake: adaptiveSched?.preShakeStr || '6:35 AM',
+          post_oats: adaptiveSched?.oatsStr || '8:15 AM',
+          lunch: adaptiveSched?.slots?.lunch?.time12 || '1:00 PM',
+          dinner: adaptiveSched?.slots?.dinner?.time12 || '5:30 PM'
+        };
+
         mealsEl.innerHTML = VEGAN_MEALS.map((slot, mealIdx) => {
           const varIdx = state.selectedMealVariant[slot.slotId] || 0;
           const opt = slot.options[varIdx] || slot.options[0];
@@ -6934,8 +7057,10 @@
 
           const itemsList = opt.items || [];
           const doneIngCount = itemsList.filter(it => isIngredientChecked(week, dayIdx, slot.slotId, it.id)).length;
-          const isChecklistHidden = Boolean(state.hiddenMealChecklists && state.hiddenMealChecklists[`${dayIdx}_${slot.slotId}`]);
-          const isPrepOpen = Boolean(state.openMealFormulas && state.openMealFormulas[`${dayIdx}_${slot.slotId}`]);
+          // Collapsed by default unless explicitly expanded by the user
+          const isCardExpanded = Boolean(state.openFuelCards && state.openFuelCards[slot.slotId]);
+          const shortTimeStr = defaultTimesBySlot[slot.slotId] || '8:15 AM';
+          const topFuelBadgeText = `FUEL ${mealIdx + 1} • ${shortTimeStr}`;
 
           const scannableRowsHtml = itemsList.map(it => {
             const ingDone = isIngredientChecked(week, dayIdx, slot.slotId, it.id);
@@ -6961,19 +7086,12 @@
           }).join('');
 
           return `
-            <article data-fuel-card-slot="${slot.slotId}" class="bg-slate-900 border ${isDone ? 'border-emerald-500/50 bg-slate-900/80' : (slotSched.isPostWorkoutTarget ? 'border-emerald-400/70 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/40' : 'border-slate-800')} rounded-2xl p-4 space-y-3 transition-all">
-              <!-- 1-Tap Main Fuel Header -->
-              <div data-meal-header-slot="${slot.slotId}" class="meal-card-header-tap flex items-start justify-between gap-2 cursor-pointer select-none">
-                <div class="min-w-0 flex-1">
-                  <div class="flex flex-wrap items-center gap-1.5">
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">${slot.time}</span>
-                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${slotSched.isPostWorkoutTarget ? 'bg-emerald-500 text-slate-950' : 'bg-sky-500/15 text-sky-300 border border-sky-500/30'}">${slotSched.roleBadge}</span>
-                  </div>
-                  <h4 class="text-sm sm:text-base font-extrabold text-white mt-1 leading-snug break-words">${slot.title}</h4>
-                  <div class="flex flex-wrap items-center gap-2 mt-1">
-                    <span class="text-xs font-extrabold text-emerald-400">${opt.kcal} kcal • ${opt.protein}g Protein</span>
-                    <span class="text-[10px] font-semibold text-slate-400">(${doneIngCount}/${itemsList.length} items)</span>
-                  </div>
+            <article data-fuel-card-slot="${slot.slotId}" class="bg-slate-900 border ${isDone ? 'border-emerald-500/50 bg-slate-900/80' : (slotSched.isPostWorkoutTarget ? 'border-emerald-400/70 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/40' : 'border-slate-800')} rounded-2xl p-3.5 sm:p-4 space-y-2.5 transition-all">
+              <!-- Top Row: Fuel Badge + Scheduled Time, Macro Badge, and 1-Tap + Log Fuel / Done Button -->
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+                  <span class="text-[11px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">${topFuelBadgeText}</span>
+                  <span class="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-slate-800 text-amber-300 border border-slate-700 whitespace-nowrap">${opt.kcal} kcal • ${opt.protein}g P</span>
                 </div>
                 <button type="button" data-meal-slot="${slot.slotId}" class="meal-check-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition ${
                   isDone
@@ -6982,25 +7100,34 @@
                         ? 'bg-amber-400/20 text-amber-200 border border-amber-400/40'
                         : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700')
                 }">
-                  ${isDone ? '✓ Fuel Logged' : (isPartial ? `✓ Finish (${doneIngCount}/${itemsList.length})` : '+ Log Fuel')}
+                  ${isDone ? '✓ Done' : (isPartial ? `✓ Finish (${doneIngCount}/${itemsList.length})` : '+ Log Fuel')}
                 </button>
               </div>
 
-              <!-- Scannable Vertical Ingredient Row List Directly Inside Card Body (Upgrade 6) -->
-              <div class="${isChecklistHidden ? 'hidden' : 'space-y-1.5 pt-1'}" style="display: ${isChecklistHidden ? 'none' : 'block'};">
-                ${scannableRowsHtml}
+              <!-- Middle Row: Clean Card Title -->
+              <div data-toggle-fuel-card="${slot.slotId}" class="fuel-card-toggle-btn cursor-pointer select-none">
+                <h4 class="text-sm sm:text-base font-extrabold text-white leading-snug break-words">${slot.title}</h4>
               </div>
 
-              <!-- Compact Collapsible Timing & Prep Tip -->
-              <details class="meal-prep-recipe-details bg-slate-950/75 border border-slate-800/90 rounded-xl px-3 py-2 text-xs" ${isPrepOpen ? 'open' : ''}>
-                <summary data-toggle-meal-formula="${slot.slotId}" class="cursor-pointer font-extrabold text-emerald-400 hover:text-emerald-300 flex items-center justify-between py-0.5 select-none">
-                  <span>Timing &amp; Prep Tip</span>
-                  <span class="text-[10px] text-amber-300 font-bold">Tap to view ▾</span>
-                </summary>
-                <div class="pt-2 mt-1.5 border-t border-slate-800/80 space-y-1">
-                  <p class="text-[11px] text-amber-300/95 leading-snug">💡 <strong>Timing &amp; Prep Tip:</strong> ${slotSched.contextTip || slot.tip} ${slotSched.batchTip || ''}</p>
+              <!-- Bottom Toggle Bar: Show/Hide Ingredients & Prep (N items) -->
+              <button type="button" data-toggle-fuel-card="${slot.slotId}" aria-expanded="${isCardExpanded ? 'true' : 'false'}" class="fuel-card-toggle-btn w-full flex items-center justify-between bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-slate-300 rounded-xl px-3 py-2 text-xs transition">
+                <span class="font-bold text-left ${isDone ? 'text-emerald-300' : 'text-slate-300'}">
+                  ${isCardExpanded ? `Hide Ingredients & Prep (${itemsList.length} items)` : `Show Ingredients & Prep (${itemsList.length} items)`}
+                </span>
+                <span class="${isCardExpanded ? 'text-emerald-400' : 'text-slate-400'} font-extrabold text-[11px] shrink-0">
+                  ${isCardExpanded ? 'Collapse ▴' : 'Open ▾'}
+                </span>
+              </button>
+
+              <!-- Collapsible Ingredient Rows & Prep Tip (Hidden by Default) -->
+              <div class="fuel-card-collapsible-body ${isCardExpanded ? 'space-y-2 pt-1' : 'hidden'}" style="display: ${isCardExpanded ? 'block' : 'none'};">
+                <div class="space-y-1.5">
+                  ${scannableRowsHtml}
                 </div>
-              </details>
+                <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl px-3 py-2 text-[11px] text-amber-300/95 leading-snug">
+                  💡 <strong>Timing &amp; Prep Tip:</strong> ${slotSched.contextTip || slot.tip} ${slotSched.batchTip || ''}
+                </div>
+              </div>
             </article>
           `;
         }).join('');
@@ -7025,11 +7152,13 @@
           });
         });
 
-        mealsEl.querySelectorAll('.meal-card-header-tap').forEach(hdr => {
-          hdr.addEventListener('click', (e) => {
-            if (e.target.closest('button')) return;
-            const slotId = hdr.getAttribute('data-meal-header-slot');
-            if (slotId) handleOneTapMealToggle(slotId);
+        mealsEl.querySelectorAll('.fuel-card-toggle-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const slotId = btn.getAttribute('data-toggle-fuel-card');
+            if (!slotId) return;
+            state.openFuelCards[slotId] = !state.openFuelCards[slotId];
+            saveState();
+            renderVeganView();
           });
         });
 
@@ -7051,36 +7180,6 @@
             saveState();
             renderVeganView();
             renderWorkoutView();
-          });
-        });
-
-        mealsEl.querySelectorAll('.meal-opt-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const slotId = btn.getAttribute('data-slot');
-            const idx = parseInt(btn.getAttribute('data-opt-idx'), 10) || 0;
-            state.selectedMealVariant[slotId] = idx;
-            saveState();
-            renderVeganView();
-          });
-        });
-
-        mealsEl.querySelectorAll('.toggle-meal-checklist-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const slotId = btn.getAttribute('data-toggle-meal-checklist');
-            const k = `${dayIdx}_${slotId}`;
-            state.hiddenMealChecklists[k] = !state.hiddenMealChecklists[k];
-            saveState();
-            renderVeganView();
-          });
-        });
-
-        mealsEl.querySelectorAll('.toggle-meal-formula-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const slotId = btn.getAttribute('data-toggle-meal-formula');
-            const k = `${dayIdx}_${slotId}`;
-            state.openMealFormulas[k] = !state.openMealFormulas[k];
-            saveState();
-            renderVeganView();
           });
         });
       }

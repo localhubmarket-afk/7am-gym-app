@@ -293,6 +293,29 @@ test('Upgrade 5, 6 & 7: 4 Daily Fuel Cards, Scannable Ingredient Rows & Pre-Work
   assert.equal(shouldShowPreWorkoutFuelPrompt(5, false, false), false); // Rest Day 6
 });
 
+test('Architectural Upgrades: Fuel Card Default Collapse, Batch Prep Redesign & Pre-Rendered PCM WAV Chime', async () => {
+  const mod = await import('./workoutLogic.ts');
 
+  // 1. All 4 Fuel cards collapsed by default
+  assert.equal(mod.isFuelCardIngredientsExpanded({}, 'pre_shake'), false);
+  assert.equal(mod.isFuelCardIngredientsExpanded({}, 'post_oats'), false);
+  assert.equal(mod.isFuelCardIngredientsExpanded({ post_oats: true }, 'post_oats'), true);
+  assert.equal(mod.formatFuelCardToggleLabel(5, false), 'Show Ingredients & Prep (5 items)');
+  assert.equal(mod.formatFuelCardToggleLabel(5, true), 'Hide Ingredients & Prep (5 items)');
 
+  // 2. Batch Prep cards collapsed by default and strip #1/#2 prefixes
+  assert.equal(mod.isBatchPrepCardCollapsedByDefault({}, 'recipe_oats_batch'), true);
+  assert.equal(mod.isBatchPrepCardCollapsedByDefault({}, 'recipe_rice_batch'), true);
+  assert.equal(mod.isBatchPrepCardCollapsedByDefault({ recipe_oats_batch: false }, 'recipe_oats_batch'), false);
+  assert.equal(mod.stripBatchStepPrefix('#1 Gluten-Free Protein Oats'), 'Gluten-Free Protein Oats');
+  assert.equal(mod.stripBatchStepPrefix('#5 Unsweetened Silk Protein Milk'), 'Unsweetened Silk Protein Milk');
 
+  // 3. Pre-rendered PCM WAV buffer has valid RIFF/WAVE header and zero DC offset at boundaries
+  const wav = mod.generatePreRenderedChimeWavBytes(44100, 0.28);
+  assert.equal(String.fromCharCode(wav[0], wav[1], wav[2], wav[3]), 'RIFF');
+  assert.equal(String.fromCharCode(wav[8], wav[9], wav[10], wav[11]), 'WAVE');
+  const dv = new DataView(wav.buffer, wav.byteOffset, wav.byteLength);
+  // First and last 16-bit PCM samples must be 0 to prevent speaker clicks/Bluetooth buffer pop
+  assert.equal(dv.getInt16(44, true), 0);
+  assert.equal(dv.getInt16(wav.byteLength - 2, true), 0);
+});
