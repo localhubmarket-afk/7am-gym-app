@@ -112,3 +112,34 @@ test('Task 5: 3-Week Rolling Visibility & Contextual Sticky Timer Visibility', (
   assert.equal(shouldShowStickyRestTimer('shopping'), false);
 });
 
+import {
+  formatExerciseProgressBadge,
+  BATCH_PREP_RECIPES,
+  toggleRecipePrepStep,
+  resetRecipePrepSteps
+} from './workoutLogic';
+
+test('Task 6: Exercise Progress Denominator Badge & Interactive Batch Prep Recipe Cards', () => {
+  assert.equal(formatExerciseProgressBadge(0, 9), '#1/9');
+  assert.equal(formatExerciseProgressBadge(1, 9), '#2/9');
+  assert.equal(formatExerciseProgressBadge(8, 9), '#9/9');
+  assert.equal(formatExerciseProgressBadge(0, 8), '#1/8');
+
+  assert.equal(BATCH_PREP_RECIPES.length, 2);
+  assert.equal(BATCH_PREP_RECIPES[0].badge, '#Prep 1/2');
+  assert.equal(BATCH_PREP_RECIPES[0].steps.length, 4);
+  assert.equal(BATCH_PREP_RECIPES[1].badge, '#Prep 2/2');
+  assert.equal(BATCH_PREP_RECIPES[1].steps.length, 4);
+
+  let logs: Record<string, boolean> = {};
+  logs = toggleRecipePrepStep(logs, 'oats_step_1');
+  logs = toggleRecipePrepStep(logs, 'oats_step_2');
+  assert.equal(logs.oats_step_1, true);
+  assert.equal(logs.oats_step_2, true);
+
+  logs = resetRecipePrepSteps(logs, 'recipe_oats_batch');
+  assert.equal(Boolean(logs.oats_step_1), false);
+  assert.equal(Boolean(logs.oats_step_2), false);
+});
+
+

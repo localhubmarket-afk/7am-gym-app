@@ -258,3 +258,108 @@ export function shouldShowStickyRestTimer(tabName: string): boolean {
   return tabName === 'workout' || tabName === 'pullups';
 }
 
+export function formatExerciseProgressBadge(exIdxZeroBased: number, totalExercisesToday: number): string {
+  return `#${exIdxZeroBased + 1}/${Math.max(1, totalExercisesToday)}`;
+}
+
+export interface RecipePrepStep {
+  id: string;
+  title: string;
+  detail: string;
+}
+
+export interface BatchPrepRecipe {
+  id: string;
+  badge: string;
+  yieldPill: string;
+  title: string;
+  subtitle: string;
+  steps: RecipePrepStep[];
+}
+
+export const BATCH_PREP_RECIPES: BatchPrepRecipe[] = [
+  {
+    id: 'recipe_oats_batch',
+    badge: '#Prep 1/2',
+    yieldPill: '4-Day Batch • 4 Servings',
+    title: '4-Day Overnight Protein Oats Batch',
+    subtitle: 'Prep time: 5 mins • Fridge life: 4 days • 45g oats + 180g Silk per jar',
+    steps: [
+      {
+        id: 'oats_step_1',
+        title: 'Weigh Dry Base',
+        detail: '180g Gluten-Free Protein Oats (45g x 4 jars) + 24g Whole Chia Seeds (6g x 4 jars)'
+      },
+      {
+        id: 'oats_step_2',
+        title: 'Add Mashed Banana & PB',
+        detail: '120g Peeled Ripe Banana (30g/jar) + 32g Natural Peanut Butter (8g/jar)'
+      },
+      {
+        id: 'oats_step_3',
+        title: 'Pour Silk Protein Milk',
+        detail: '720g (720 ml) Unsweetened Silk Protein Milk (180g/jar)'
+      },
+      {
+        id: 'oats_step_4',
+        title: 'Stir, Seal & Refrigerate',
+        detail: 'Mix thoroughly and refrigerate overnight (ready for 8:15 AM post-workout jars)'
+      }
+    ]
+  },
+  {
+    id: 'recipe_rice_batch',
+    badge: '#Prep 2/2',
+    yieldPill: '4-Day Batch • 4 Servings',
+    title: '4-Day Jasmine Rice & Savoury Tofu Bowl Prep',
+    subtitle: 'Prep time: 20 mins • Yields 4x 150g cooked rice portions (55g dry/day)',
+    steps: [
+      {
+        id: 'rice_step_1',
+        title: 'Rinse & Weigh Dry Rice',
+        detail: '220g Dry White Jasmine Rice (rinse in cold water until clear)'
+      },
+      {
+        id: 'rice_step_2',
+        title: 'Measure Water (1 : 1.5 Ratio)',
+        detail: 'Add 330g (330 ml) water to pot or rice cooker'
+      },
+      {
+        id: 'rice_step_3',
+        title: 'Simmer & Steam',
+        detail: 'Bring to boil, cover on low heat for 12 mins, then rest covered off heat for 10 mins (yields ~600g cooked rice = 150g/day)'
+      },
+      {
+        id: 'rice_step_4',
+        title: 'Portion Daily Savoury Bowl',
+        detail: 'Combine 150g Cooked Rice + 175g Extra-Firm Tofu + 75g Steamed Broccoli + 12g Nutritional Yeast + 5g Sesame Oil + 1.5g Iodized Salt'
+      }
+    ]
+  }
+];
+
+export function toggleRecipePrepStep(
+  recipePrepLogs: Record<string, boolean>,
+  stepId: string
+): Record<string, boolean> {
+  return {
+    ...(recipePrepLogs || {}),
+    [stepId]: !recipePrepLogs?.[stepId]
+  };
+}
+
+export function resetRecipePrepSteps(
+  recipePrepLogs: Record<string, boolean>,
+  recipeId: string
+): Record<string, boolean> {
+  const next = { ...(recipePrepLogs || {}) };
+  const recipe = BATCH_PREP_RECIPES.find(r => r.id === recipeId);
+  if (recipe) {
+    recipe.steps.forEach(s => {
+      delete next[s.id];
+    });
+  }
+  return next;
+}
+
+
