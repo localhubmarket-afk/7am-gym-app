@@ -380,15 +380,15 @@
         <div id="vegan-day-selector-grid"></div>
       </div>
 
-      <!-- Compact Daily Macro, Calories & Water Intake Tracker (Opens Directly at Top of Vegan Fuel Tab) -->
+      <!-- Compact Daily Macro, Calories & Water Intake Tracker (Opens Directly at Top of Muscle Fuel Tab) -->
       <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <div>
+          <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">💰 ~$5.55/Day (~$39/Wk) • 100% Kitchen Scale (g)</span>
               <span class="text-[9px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/35 px-2 py-0.5 rounded-full">Saves ~$75/wk vs. Takeout</span>
             </div>
-            <h2 class="text-sm sm:text-base font-extrabold text-white leading-tight mt-0.5">Low-Budget Healthy 6-Pack &amp; Muscle Plan (1,495 kcal • 138g P)</h2>
+            <h2 class="text-sm sm:text-base font-extrabold text-white leading-tight mt-0.5">High-Protein Muscle &amp; Recomp Fuel (1,400 kcal • 138g P)</h2>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
             <button type="button" id="log-all-vegan-day-btn" class="text-[11px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 transition">✓ Log All 3</button>
@@ -396,17 +396,17 @@
           </div>
         </div>
 
-        <!-- 1-Tap Diet Framing Toggle: 100% Plant-Based (Default) vs. Non-Vegan Budget Comparison -->
+        <!-- 1-Tap Diet Framing Toggle: 100% Plant-Based (Default) vs. Budget Comparison -->
         <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2 flex flex-wrap items-center justify-between gap-2 text-[11px]">
           <div class="flex items-center gap-1.5">
-            <span class="font-bold text-slate-300">Diet Mode:</span>
-            <button type="button" id="diet-mode-plant-btn" class="px-2.5 py-0.5 rounded-lg font-extrabold bg-emerald-500 text-slate-950 transition">🌱 100% Plant-Based ($5.55/day)</button>
+            <span class="font-bold text-slate-300">Fuel Mode:</span>
+            <button type="button" id="diet-mode-plant-btn" class="px-2.5 py-0.5 rounded-lg font-extrabold bg-emerald-500 text-slate-950 transition">⚡ High-Efficiency Muscle Fuel ($5.55/day)</button>
             <button type="button" id="diet-mode-flex-btn" class="px-2.5 py-0.5 rounded-lg font-bold bg-slate-900 text-slate-300 border border-slate-700 hover:text-white transition">💰 Why This Beats Meat/Whey Cost</button>
           </div>
           <span class="text-[10px] text-emerald-400 font-semibold">12 Cheap Grocery Staples</span>
         </div>
         <div id="diet-flex-comparison-box" class="hidden bg-slate-950/95 border border-amber-500/30 rounded-xl p-2.5 text-[11px] space-y-1.5">
-          <div class="font-extrabold text-amber-300">💡 Why Non-Vegans &amp; Budget Lifters Use This Exact 3-Meal Formula:</div>
+          <div class="font-extrabold text-amber-300">💡 Why Lifters Use This Exact 3-Meal Muscle Fuel Formula:</div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[10px]">
             <div class="bg-slate-900 border border-slate-800 rounded-lg p-2">
               <strong class="text-emerald-300 block">1. Extra-Firm Tofu (175g/day)</strong>
@@ -456,19 +456,11 @@
         </div>
       </div>
 
-      <!-- Interactive 4-Day Scale Batch Prep Checklist (Oats + Rice) -->
-      <details id="batch-prep-drawer" class="bg-slate-900 border border-emerald-500/30 rounded-2xl p-3.5 text-xs">
-        <summary class="cursor-pointer font-extrabold text-emerald-300 flex items-center justify-between">
-          <span>🥣 4-Day Kitchen Scale Batch Prep Mode (Oats + Rice)</span>
-          <span class="text-[10px] bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full text-emerald-300">Tap on Prep Days (Day 1 &amp; Day 5) ▾</span>
-        </summary>
-        <div class="mt-3 space-y-2.5 pt-2.5 border-t border-slate-800">
-          <p class="text-[11px] text-slate-300">Place your mixing container or rice pot on your scale, press <strong>Tare (0g)</strong> after each step, and tap to check off:</p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="batch-prep-checklist">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-      </details>
+      <!-- Interactive Exercise-Style Batch Prep Recipe Cards (Oats Batch #Prep 1/2 & Jasmine Rice #Prep 2/2) -->
+      <div id="batch-recipe-cards-container" class="space-y-3">
+        <!-- Populated dynamically by JS -->
+      </div>
+      <div id="batch-prep-checklist" class="hidden"></div>
 
       <!-- The 3 Daily Repeat Meals -->
       <div class="space-y-3" id="vegan-meals-container">
@@ -541,13 +533,13 @@
       </details>
     </section>
 
-    <!-- ==================== VIEW 5: WEEKLY VEGAN SHOPPING LIST ==================== -->
+    <!-- ==================== VIEW 5: WEEKLY MUSCLE FUEL SHOPPING LIST ==================== -->
     <section id="view-shopping" class="hidden space-y-4">
       <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-4 space-y-3">
         <div class="flex items-start justify-between gap-2">
-          <div>
+          <div class="min-w-0 flex-1">
             <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">7-Day 6-Pack Recomp &amp; Oats Prep</span>
-            <h2 class="text-base font-extrabold text-white mt-0.5">Weekly Vegan Shopping List</h2>
+            <h2 class="text-base font-extrabold text-white mt-0.5">Weekly Muscle Fuel Shopping List</h2>
             <p class="text-xs text-slate-300 mt-1">Exact weekly quantities for your Overnight Oats + Silk Protein batches and low-volume high-protein meals (caffeine-free).</p>
           </div>
           <div class="text-right shrink-0 bg-slate-950/80 border border-slate-800 px-3 py-2 rounded-xl">
@@ -575,8 +567,8 @@
 
       <!-- Add Custom Weekly Item -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex items-center gap-2">
-        <input id="custom-shop-input" type="text" placeholder="Add custom item (e.g., Cinnamon, Berries)..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
-        <button type="button" id="add-custom-shop-btn" class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold transition">
+        <input id="custom-shop-input" type="text" placeholder="Add custom item (e.g., Cinnamon, Berries)..." class="flex-1 min-w-0 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+        <button type="button" id="add-custom-shop-btn" class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold shrink-0 transition">
           + Add
         </button>
       </div>
@@ -592,25 +584,25 @@
   <!-- Fixed Bottom Mobile Navigation Bar (5 Tabs with Weekly Shop on Bottom Right) -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 px-1.5 py-1.5">
     <div class="max-w-xl mx-auto grid grid-cols-5 gap-1">
-      <button type="button" data-nav="workout" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-emerald-400 bg-emerald-500/10 font-bold text-[10px] sm:text-[11px] transition">
+      <button type="button" data-nav="workout" class="nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-emerald-400 bg-emerald-500/10 font-bold text-[11px] sm:text-xs transition">
         <span class="text-base leading-none mb-1">🏋️</span>
-        <span>Gym</span>
+        <span class="w-full text-center truncate">Gym</span>
       </button>
-      <button type="button" data-nav="pullups" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[10px] sm:text-[11px] transition">
+      <button type="button" data-nav="pullups" class="nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[11px] sm:text-xs transition">
         <span class="text-base leading-none mb-1">💪</span>
-        <span>Pull-Ups</span>
+        <span class="w-full text-center truncate">Pull-Ups</span>
       </button>
-      <button type="button" data-nav="timer" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[10px] sm:text-[11px] transition">
+      <button type="button" data-nav="timer" class="nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[11px] sm:text-xs transition">
         <span class="text-base leading-none mb-1">⏱️</span>
-        <span>Rest Timer</span>
+        <span class="w-full text-center truncate">Rest Timer</span>
       </button>
-      <button type="button" data-nav="vegan" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[10px] sm:text-[11px] transition">
-        <span class="text-base leading-none mb-1">🌱</span>
-        <span>Vegan Fuel</span>
+      <button type="button" data-nav="vegan" class="nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[11px] sm:text-xs transition">
+        <span class="text-base leading-none mb-1">⚡</span>
+        <span class="w-full text-center truncate">Muscle Fuel</span>
       </button>
-      <button type="button" data-nav="shopping" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[10px] sm:text-[11px] transition">
+      <button type="button" data-nav="shopping" class="nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[11px] sm:text-xs transition">
         <span class="text-base leading-none mb-1">🛒</span>
-        <span>Shop List</span>
+        <span class="w-full text-center truncate">Shop List</span>
       </button>
     </div>
   </nav>
@@ -732,6 +724,8 @@
       completedWeeks: { 1: true },
       warmupLogs: {},
       waterIntakeLogs: {},
+      recipePrepLogs: {},
+      collapsedRecipeCards: {},
       exerciseUnitPrefs: {},
       barbellConfig: {
         sat_hip_thrust: { barLbs: 45, sideLbs: 55 }
@@ -4223,6 +4217,8 @@
         if (!allDone) { upNextExId = candidateEx.id; break; }
       }
 
+      const totalExercisesToday = exercisesToday.length;
+
       listEl.innerHTML = exercisesToday.map((ex, exOrder) => {
         const meta = EXERCISE_META[ex.id] || {
           equipType: 'dumbbells',
@@ -4345,31 +4341,31 @@
                     ? 'bg-slate-950/90 border border-sky-400/50'
                     : 'bg-slate-950/75 border border-slate-800/80')
             }">
-              <div class="grid grid-cols-12 items-center gap-2">
-                <div class="col-span-2">
-                  <span class="text-xs font-extrabold ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
+              <div class="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-1.5 sm:gap-2">
+                <div class="min-w-[44px]">
+                  <span class="text-xs font-extrabold whitespace-nowrap ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
                   ${isBarbellEx ? `
-                    <button type="button" data-select-calc-ex="${ex.id}" data-set-idx="${s}" class="select-calc-set-btn block text-[9px] font-bold ${isSelectedInCalc ? 'text-amber-300' : 'text-slate-400 hover:text-sky-300'} mt-0.5 transition" title="Select Set ${s} in Plate Calculator">
+                    <button type="button" data-select-calc-ex="${ex.id}" data-set-idx="${s}" class="select-calc-set-btn block text-[9px] font-bold whitespace-nowrap ${isSelectedInCalc ? 'text-amber-300' : 'text-slate-400 hover:text-sky-300'} mt-0.5 transition" title="Select Set ${s} in Plate Calculator">
                       ${isSelectedInCalc ? '💿 Active' : '💿 Plates'}
                     </button>
                   ` : ''}
                 </div>
-                <div class="col-span-4">
+                <div class="min-w-0">
                   <div class="flex items-center bg-slate-900 border ${isBarbellEx ? 'border-amber-500/40' : 'border-slate-700/90'} rounded-lg overflow-hidden">
-                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-${topBothStep}" class="step-adj-btn px-2 py-1.5 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Weight">−</button>
-                    <input type="number" step="0.5" inputmode="decimal" placeholder="${weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full min-w-0 bg-transparent py-1.5 text-center text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none" />
-                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="${topBothStep}" class="step-adj-btn px-2 py-1.5 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Weight">+</button>
+                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-${topBothStep}" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Weight">−</button>
+                    <input type="number" step="0.5" inputmode="decimal" placeholder="${weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full min-w-0 bg-transparent py-1 text-center text-xs sm:text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none" />
+                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="${topBothStep}" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Weight">+</button>
                   </div>
                 </div>
-                <div class="col-span-3">
+                <div class="min-w-0">
                   <div class="flex items-center bg-slate-900 border border-slate-700/90 rounded-lg overflow-hidden">
-                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn px-2 py-1.5 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
-                    <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full min-w-0 bg-transparent py-1.5 text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none text-center" />
-                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn px-2 py-1.5 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
+                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
+                    <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full min-w-0 bg-transparent py-1 text-xs sm:text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none text-center" />
+                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
                   </div>
                 </div>
-                <div class="col-span-3 flex items-center justify-end">
-                  <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${setRestSeconds}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn w-full py-1.5 px-2 rounded-lg text-xs font-extrabold whitespace-nowrap transition ${
+                <div class="flex items-center justify-end shrink-0">
+                  <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${setRestSeconds}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn h-9 sm:h-10 px-2.5 sm:px-3 rounded-lg text-xs font-extrabold whitespace-nowrap transition ${
                     isDone
                       ? 'bg-emerald-500 text-slate-950 shadow-sm'
                       : (isCurrentTargetSet
@@ -4442,18 +4438,18 @@
                   ${getEquipmentSvg(meta.equipType)}
                 </div>
                 <div class="flex-1 min-w-0">
-                  <div data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${isExComplete ? '1' : '0'}" class="expand-done-btn cursor-pointer select-none group">
+                  <div data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${isExComplete ? '1' : '0'}" class="expand-done-btn cursor-pointer select-none group min-w-0">
                     <div class="flex flex-wrap items-center gap-1.5">
-                      <span class="text-[11px] font-mono font-extrabold px-1.5 py-0.5 rounded-md transition-colors ${
+                      <span class="exercise-progress-badge whitespace-nowrap px-2 py-0.5 text-xs font-bold font-mono rounded-md transition-colors ${
                         isActiveCard ? 'bg-sky-400 text-slate-950' : (isExComplete ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300 group-hover:text-sky-300')
-                      }">#${exOrder + 1}</span>
-                      <span class="text-[11px] font-semibold text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded-md">${ex.sets} Sets × ${ex.reps}</span>
-                      ${isExComplete ? `<span class="text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">✓ Done</span>` : ''}
+                      }">#${exOrder + 1}/${totalExercisesToday}</span>
+                      <span class="text-[11px] font-semibold text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded-md whitespace-nowrap">${ex.sets} Sets × ${ex.reps}</span>
+                      ${isExComplete ? `<span class="text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">✓ Done</span>` : ''}
                     </div>
                     <h3 class="${
                       isActiveCard
-                        ? 'text-base sm:text-lg font-extrabold text-white mt-1 leading-snug tracking-tight'
-                        : 'text-sm font-bold text-slate-200 group-hover:text-white mt-0.5 leading-snug'
+                        ? 'text-base sm:text-lg font-extrabold text-white mt-1 leading-snug tracking-tight break-words'
+                        : 'text-sm font-bold text-slate-200 group-hover:text-white mt-0.5 leading-snug break-words'
                     } transition-colors">${ex.name}</h3>
                   </div>
                   <div class="flex flex-wrap items-center gap-1.5 mt-1">
@@ -5908,41 +5904,201 @@
         });
       }
 
-      // Render Interactive 4-Day Scale Batch Prep Checklist
-      const prepListEl = document.getElementById('batch-prep-checklist');
-      if (prepListEl) {
-        if (!state.checkedBatchPrep) state.checkedBatchPrep = {};
-        const prepSteps = [
-          { id: 'prep_oats', label: '1. Oats Jar Batch: +160g Bob’s Protein Oats', sub: 'Tare scale to 0g, pour dry oats' },
-          { id: 'prep_silk', label: '2. Oats Jar Batch: +720g Silk Protein Milk', sub: 'Tare scale to 0g, pour cold milk' },
-          { id: 'prep_pb_chia', label: '3. Oats Jar Batch: +32g PB & +24g Chia Seeds', sub: 'Tare between each, stir well' },
-          { id: 'prep_banana', label: '4. Oats Jar Batch: +120g Peeled Banana', sub: 'Divide 1,056g batch into 4 jars (264g each)' },
-          { id: 'prep_rice_dry', label: '5. 4-Day Rice Batch: +220g Dry Jasmine Rice', sub: 'Rinse in pot, drain, place on scale' },
-          { id: 'prep_rice_water', label: '6. 4-Day Rice Batch: +330g Water → Cook', sub: 'Yields ~600g cooked (4 × 150g lunch bowls)' }
+      // Render Interactive Exercise-Style Batch Prep Recipe Cards (#Prep 1/2 Oats & #Prep 2/2 Jasmine Rice)
+      const recipeCardsContainer = document.getElementById('batch-recipe-cards-container');
+      if (recipeCardsContainer) {
+        if (!state.recipePrepLogs || typeof state.recipePrepLogs !== 'object') state.recipePrepLogs = {};
+        if (!state.collapsedRecipeCards || typeof state.collapsedRecipeCards !== 'object') state.collapsedRecipeCards = {};
+
+        const BATCH_PREP_RECIPES_DATA = [
+          {
+            id: 'recipe_oats_batch',
+            badge: '#Prep 1/2',
+            yieldPill: '4-Day Batch • 4 Servings',
+            title: '4-Day Overnight Protein Oats Batch',
+            subtitle: 'Prep time: 5 mins • Fridge life: 4 days • 45g oats + 180g Silk per jar',
+            steps: [
+              {
+                id: 'oats_step_1',
+                title: 'Step 1: Weigh Dry Base',
+                detail: '180g Gluten-Free Protein Oats (45g x 4 jars) + 24g Whole Chia Seeds (6g x 4 jars)'
+              },
+              {
+                id: 'oats_step_2',
+                title: 'Step 2: Add Mashed Banana & PB',
+                detail: '120g Peeled Ripe Banana (30g/jar) + 32g Natural Peanut Butter (8g/jar)'
+              },
+              {
+                id: 'oats_step_3',
+                title: 'Step 3: Pour Silk Protein Milk',
+                detail: '720g (720 ml) Unsweetened Silk Protein Milk (180g/jar)'
+              },
+              {
+                id: 'oats_step_4',
+                title: 'Step 4: Stir, Seal & Refrigerate',
+                detail: 'Mix thoroughly and refrigerate overnight (ready for 8:15 AM post-workout jars)'
+              }
+            ]
+          },
+          {
+            id: 'recipe_rice_batch',
+            badge: '#Prep 2/2',
+            yieldPill: '4-Day Batch • 4 Servings',
+            title: '4-Day Jasmine Rice & Savoury Tofu Bowl Prep',
+            subtitle: 'Prep time: 20 mins • Yields 4x 150g cooked rice portions (55g dry/day)',
+            steps: [
+              {
+                id: 'rice_step_1',
+                title: 'Step 1: Rinse & Weigh Dry Rice',
+                detail: '220g Dry White Jasmine Rice (rinse in cold water until clear)'
+              },
+              {
+                id: 'rice_step_2',
+                title: 'Step 2: Measure Water (1 : 1.5 Ratio)',
+                detail: 'Add 330g (330 ml) water to pot or rice cooker'
+              },
+              {
+                id: 'rice_step_3',
+                title: 'Step 3: Simmer & Steam',
+                detail: 'Bring to boil, cover on low heat for 12 mins, then rest covered off heat for 10 mins (yields ~600g cooked rice = 150g/day)'
+              },
+              {
+                id: 'rice_step_4',
+                title: 'Step 4: Portion Daily Savoury Bowl',
+                detail: 'Combine 150g Cooked Rice + 175g Extra-Firm Tofu + 75g Steamed Broccoli + 12g Nutritional Yeast + 5g Sesame Oil + 1.5g Iodized Salt'
+              }
+            ]
+          }
         ];
-        prepListEl.innerHTML = prepSteps.map(st => {
-          const done = !!state.checkedBatchPrep[st.id];
+
+        recipeCardsContainer.innerHTML = BATCH_PREP_RECIPES_DATA.map(recipe => {
+          const totalSteps = recipe.steps.length;
+          const doneSteps = recipe.steps.filter(st => Boolean(state.recipePrepLogs[st.id])).length;
+          const isRecipeDone = doneSteps === totalSteps;
+          const isCollapsed = state.collapsedRecipeCards[recipe.id] !== undefined
+            ? Boolean(state.collapsedRecipeCards[recipe.id])
+            : isRecipeDone;
+
+          const stepsRowsHtml = recipe.steps.map(st => {
+            const stDone = Boolean(state.recipePrepLogs[st.id]);
+            return `
+              <button
+                type="button"
+                data-recipe-step-id="${st.id}"
+                class="recipe-step-check-btn w-full text-left p-2.5 rounded-xl border transition flex items-start justify-between gap-2.5 ${
+                  stDone
+                    ? 'bg-emerald-950/35 border-emerald-500/45 text-emerald-100'
+                    : 'bg-slate-950/80 border-slate-800/90 hover:border-sky-400/40 text-slate-100'
+                }"
+              >
+                <div class="flex items-start gap-2.5 min-w-0 flex-1">
+                  <span class="mt-0.5 w-5 h-5 shrink-0 rounded-md flex items-center justify-center text-xs font-extrabold transition ${
+                    stDone
+                      ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/40'
+                      : 'bg-slate-900 border border-slate-700 text-slate-400'
+                  }">${stDone ? '✓' : ''}</span>
+                  <div class="min-w-0 flex-1">
+                    <div class="text-xs font-extrabold ${stDone ? 'line-through text-emerald-300' : 'text-white'}">${st.title}</div>
+                    <div class="text-[11px] text-slate-300 mt-0.5 leading-snug">${st.detail}</div>
+                  </div>
+                </div>
+                <span class="shrink-0 text-[10px] font-extrabold px-2 py-1 rounded-lg whitespace-nowrap ${
+                  stDone
+                    ? 'bg-emerald-500 text-slate-950'
+                    : 'bg-slate-900 border border-slate-700 text-sky-300'
+                }">
+                  ${stDone ? '✓ Done' : '1-Tap Check'}
+                </span>
+              </button>
+            `;
+          }).join('');
+
           return `
-            <button type="button" data-prep-id="${st.id}" class="prep-step-btn text-left p-2 rounded-xl border transition flex items-start gap-2 ${
-              done ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' : 'bg-slate-950/70 border-slate-800 text-slate-200 hover:border-slate-700'
-            }">
-              <span class="mt-0.5 w-4 h-4 shrink-0 rounded flex items-center justify-center text-[10px] font-bold ${
-                done ? 'bg-emerald-500 text-slate-950' : 'border border-slate-600'
-              }">${done ? '✓' : ''}</span>
-              <div>
-                <div class="text-[11px] font-bold ${done ? 'line-through text-slate-400' : 'text-white'}">${st.label}</div>
-                <div class="text-[10px] text-slate-400">${st.sub}</div>
+            <article id="recipe-card-${recipe.id}" class="${
+              !isCollapsed
+                ? 'border-2 border-sky-400 bg-slate-900 shadow-lg shadow-sky-950/40'
+                : (isRecipeDone
+                    ? 'border border-emerald-500/40 bg-slate-900/75'
+                    : 'border border-slate-800 bg-slate-900/85')
+            } rounded-2xl p-3.5 sm:p-4 space-y-2.5 transition-all">
+              <div class="flex items-start justify-between gap-2">
+                <div data-toggle-recipe-card="${recipe.id}" class="recipe-card-toggle-btn min-w-0 flex-1 cursor-pointer select-none group">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="recipe-prep-badge whitespace-nowrap px-2 py-0.5 text-xs font-bold font-mono rounded-md ${
+                      !isCollapsed ? 'bg-sky-400 text-slate-950' : (isRecipeDone ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300')
+                    }">${recipe.badge}</span>
+                    <span class="text-[11px] font-semibold text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded-md whitespace-nowrap">${recipe.yieldPill}</span>
+                    <span class="recipe-status-badge text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${
+                      isRecipeDone
+                        ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+                        : 'bg-slate-800 border-slate-700 text-slate-300'
+                    }">${isRecipeDone ? '✓ Done' : `${doneSteps} of ${totalSteps} steps`}</span>
+                  </div>
+                  <h3 class="text-sm sm:text-base font-extrabold text-white mt-1 leading-snug break-words">${recipe.title}</h3>
+                  <p class="text-[11px] text-slate-400 mt-0.5 leading-snug">${recipe.subtitle}</p>
+                </div>
+                ${doneSteps > 0 ? `
+                  <button type="button" data-reset-recipe="${recipe.id}" class="reset-recipe-steps-btn shrink-0 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[10px] font-bold whitespace-nowrap transition">
+                    ↺ Reset Batch Steps
+                  </button>
+                ` : ''}
               </div>
-            </button>
+
+              <button type="button" data-toggle-recipe-card="${recipe.id}" class="recipe-card-toggle-btn w-full flex items-center justify-between bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-slate-300 rounded-xl px-3 py-2 text-xs transition">
+                <span class="font-medium text-left">
+                  ${isRecipeDone ? `<span class="text-emerald-400 font-bold">✓ All ${totalSteps} prep steps complete</span>` : `${doneSteps} of ${totalSteps} steps checked`}
+                </span>
+                <span class="${!isCollapsed ? 'text-sky-300' : 'text-slate-400'} font-bold text-[11px] shrink-0">
+                  ${isCollapsed ? 'Tap to Open ▾' : 'Hide Steps ▴'}
+                </span>
+              </button>
+
+              <div class="${isCollapsed ? 'hidden' : 'space-y-2 pt-1'}" style="display: ${isCollapsed ? 'none' : 'block'};">
+                ${stepsRowsHtml}
+              </div>
+            </article>
           `;
         }).join('');
 
-        prepListEl.querySelectorAll('.prep-step-btn').forEach(btn => {
+        recipeCardsContainer.querySelectorAll('.recipe-card-toggle-btn').forEach(btn => {
           btn.addEventListener('click', () => {
-            const pid = btn.getAttribute('data-prep-id');
-            state.checkedBatchPrep[pid] = !state.checkedBatchPrep[pid];
+            const rId = btn.getAttribute('data-toggle-recipe-card');
+            if (!rId) return;
+            const recipeObj = BATCH_PREP_RECIPES_DATA.find(r => r.id === rId);
+            const allDone = recipeObj ? recipeObj.steps.every(st => Boolean(state.recipePrepLogs[st.id])) : false;
+            const curCollapsed = state.collapsedRecipeCards[rId] !== undefined
+              ? Boolean(state.collapsedRecipeCards[rId])
+              : allDone;
+            state.collapsedRecipeCards[rId] = !curCollapsed;
             saveState();
             renderVeganView();
+          });
+        });
+
+        recipeCardsContainer.querySelectorAll('.recipe-step-check-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const stepId = btn.getAttribute('data-recipe-step-id');
+            if (!stepId) return;
+            state.recipePrepLogs[stepId] = !state.recipePrepLogs[stepId];
+            saveState();
+            renderVeganView();
+          });
+        });
+
+        recipeCardsContainer.querySelectorAll('.reset-recipe-steps-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const rId = btn.getAttribute('data-reset-recipe');
+            const recipeObj = BATCH_PREP_RECIPES_DATA.find(r => r.id === rId);
+            if (recipeObj) {
+              recipeObj.steps.forEach(st => {
+                delete state.recipePrepLogs[st.id];
+              });
+              state.collapsedRecipeCards[rId] = false;
+              saveState();
+              renderVeganView();
+              showToast(`↺ Reset batch steps for ${recipeObj.title}`);
+            }
           });
         });
       }
@@ -6474,9 +6630,9 @@
       document.querySelectorAll('.nav-tab-btn').forEach(btn => {
         const target = btn.getAttribute('data-nav');
         if (target === tabName) {
-          btn.className = 'nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-emerald-400 bg-emerald-500/10 font-bold text-[11px] transition';
+          btn.className = 'nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-emerald-400 bg-emerald-500/10 font-bold text-[11px] sm:text-xs transition';
         } else {
-          btn.className = 'nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[11px] transition';
+          btn.className = 'nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[11px] sm:text-xs transition';
         }
       });
 
@@ -7346,7 +7502,7 @@
       const copyShopBtn = document.getElementById('copy-shopping-list-btn');
       if (copyShopBtn) {
         copyShopBtn.addEventListener('click', () => {
-          const lines = ['🛒 Weekly Vegan 6-Pack Recomp Shopping List:'];
+          const lines = ['🛒 Weekly Muscle Fuel Shopping List:'];
           WEEKLY_SHOPPING_CATEGORIES.forEach(cat => {
             cat.items.forEach(it => {
               if (!state.checkedGroceries[it.id]) {
