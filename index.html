@@ -143,8 +143,8 @@
     <section id="view-workout" class="space-y-2.5">
       <!-- Streamlined 7-Day Cycle & Progressive Week Selector Card -->
       <div id="gym-week-day-selector-card" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-1.5 min-w-0">
             <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400">📅 Week:</span>
             <div id="progressive-week-pills" class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Progressive Training Weeks">
               <!-- Populated dynamically by JS (3-Week Rolling Visibility) -->
@@ -154,10 +154,9 @@
               <option value="1">✓ Week 1</option>
               <option value="2">Week 2</option>
             </select>
-            <span id="week-status-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">In Progress</span>
           </div>
-          <div class="flex items-center gap-1.5">
-            <button type="button" id="quick-next-week-btn" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-300 text-[10px] font-extrabold transition" title="Finish current week, unlock next week & carry forward weights as placeholders">
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" id="quick-next-week-btn" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-300 text-[10px] font-extrabold whitespace-nowrap transition" title="Finish current week, unlock next week & carry forward weights as placeholders">
               ✓ Finish Week → Next
             </button>
 
@@ -375,8 +374,8 @@
     <section id="view-vegan" class="hidden space-y-4">
       <!-- Top Week/Day Selector Hidden on Nutrition Tab so View Opens Directly on Daily Protein, Calories & Water Tracker -->
       <div id="vegan-top-day-selector-container" class="hidden">
-        <span id="vegan-week-day-title">🌱 Week 1 • Day 1 Fuel</span>
-        <span id="vegan-day-status-pill">0/3 Meals</span>
+        <span id="vegan-week-day-title">⚡ Week 1 • Day 1 Fuel</span>
+        <span id="vegan-day-status-pill">0/3 Fuel</span>
         <div id="vegan-day-selector-grid"></div>
       </div>
 
@@ -450,10 +449,8 @@
           <!-- Populated dynamically by JS -->
         </div>
 
-        <!-- Smart Gym Time & Auto-Meal Timing Sync Bar -->
-        <div id="vegan-gym-time-bar" class="bg-slate-950/90 border border-emerald-500/30 rounded-xl p-2.5 space-y-2">
-          <!-- Populated dynamically by JS -->
-        </div>
+        <!-- Redundant Plan Day Sync 6-pill summary box hidden so user goes straight from Daily Macros & Water into #Prep 1/2 and FUEL 1–3 -->
+        <div id="vegan-gym-time-bar" class="hidden"></div>
       </div>
 
       <!-- Interactive Exercise-Style Batch Prep Recipe Cards (Oats Batch #Prep 1/2 & Jasmine Rice #Prep 2/2) -->
@@ -1255,27 +1252,27 @@
           },
           {
             id: 'tue_rdl',
-            name: 'A1. Dumbbell Romanian Deadlift',
-            badge: 'Superset A1',
+            name: 'Dumbbell Romanian Deadlift',
+            badge: 'Superset',
             supersetPair: 'tue_leg_ext',
             sets: 3,
             reps: '8-10',
             restSec: 60,
-            restLabel: '1 min → A2',
+            restLabel: '1 min → Leg Ext',
             videoUrl: 'https://youtu.be/Xu4DxwKWzl4',
-            notes: 'Perform dumbbell romanian deadlift, rest 1 minute, perform seated leg extensions (A2), rest 1 minute, then repeat for a total of 3 times.'
+            notes: 'Perform dumbbell romanian deadlift, rest 1 minute, perform seated leg extensions, rest 1 minute, then repeat for a total of 3 times.'
           },
           {
             id: 'tue_leg_ext',
-            name: 'A2. Seated Leg Extensions',
-            badge: 'Superset A2',
+            name: 'Seated Leg Extensions',
+            badge: 'Superset',
             supersetPair: 'tue_rdl',
             sets: 3,
             reps: '10-15',
             restSec: 60,
-            restLabel: '1 min → A1',
+            restLabel: '1 min → RDL',
             videoUrl: 'https://youtu.be/nIalczfM8es',
-            notes: 'Align knees with machine pivot, pull handles down, extend legs straight forward and pause briefly at top. Rest 1 min then return to A1.'
+            notes: 'Align knees with machine pivot, pull handles down, extend legs straight forward and pause briefly at top. Rest 1 min then return to Dumbbell Romanian Deadlift.'
           },
           {
             id: 'tue_lunges',
@@ -1528,27 +1525,27 @@
           },
           {
             id: 'sat_abduction',
-            name: 'A1. Banded Hip Abductions',
-            badge: 'Superset A1',
+            name: 'Banded Hip Abductions',
+            badge: 'Superset',
             supersetPair: 'sat_seated_calf',
             sets: 3,
             reps: '12',
             restSec: 60,
-            restLabel: '1 min → A2',
+            restLabel: '1 min → Seated Calf',
             videoUrl: 'https://youtu.be/CA0ALPgTkxw',
-            notes: 'Perform banded hip abductions, rest 1 minute, perform seated weighted calf raises (A2), rest 1 minute, then repeat for a total of 3 times.'
+            notes: 'Perform banded hip abductions, rest 1 minute, perform seated weighted calf raises, rest 1 minute, then repeat for a total of 3 times.'
           },
           {
             id: 'sat_seated_calf',
-            name: 'A2. Seated Weighted Calf Raise',
-            badge: 'Superset A2',
+            name: 'Seated Weighted Calf Raise',
+            badge: 'Superset',
             supersetPair: 'sat_abduction',
             sets: 3,
             reps: '8-10',
             restSec: 60,
-            restLabel: '1 min → A1',
+            restLabel: '1 min → Hip Abductions',
             videoUrl: 'https://youtu.be/2TkLMol2bCo',
-            notes: 'Elevate toes on 3-6 inch weight plates, dumbbells on thighs, press straight up onto big toes. Rest 1 min then return to A1.'
+            notes: 'Elevate toes on 3-6 inch weight plates, dumbbells on thighs, press straight up onto big toes. Rest 1 min then return to Banded Hip Abductions.'
           }
         ]
       },
@@ -1669,7 +1666,7 @@
     const VEGAN_MEALS = [
       {
         slotId: 'post',
-        time: 'Meal 1 • 6:35 AM Pre-Gym Shake + 8:15 AM Post-Gym Oats',
+        time: 'FUEL 1 • 6:35 AM Pre-Gym Shake + 8:15 AM Post-Gym Oats',
         title: '30g Pea Protein in 360g Cold Silk Milk (Pre-Gym) + 264g Overnight Oats Jar (Post-Gym)',
         tip: 'Take your 390g Shake (30g Pea Protein Isolate + 360g cold Silk Milk) 25 mins before the gym for fast amino acids with zero stomach bulk, then eat your 264g Overnight Oats Jar (1/4 batch) 15 mins after finishing your workout.',
         options: [
@@ -1711,7 +1708,7 @@
       },
       {
         slotId: 'lunch',
-        time: 'Meal 2 • 1:00 PM (Small 418g Bowl — Cut in Half!)',
+        time: 'FUEL 2 • 1:00 PM (Small 418g Bowl — Cut in Half!)',
         title: '175g Extra-Firm Tofu + 150g Cooked Rice + 75g Broccoli + 12g Yeast + 5g Sesame Oil + 1.5g Iodized Salt',
         tip: 'Weighing 175g tofu (½ of a 350g block) and 150g cooked rice keeps your bowl light! Season with 1.5g (~¼ tsp) Iodized Table Salt (Windsor Iodized — not sea/pink salt) for 100% daily thyroid iodine plus 5g toasted sesame oil.',
         options: [
@@ -1776,7 +1773,7 @@
       },
       {
         slotId: 'dinner',
-        time: 'Meal 3 • 6:30 PM (Zero-Chew Evening Recovery)',
+        time: 'FUEL 3 • 6:30 PM (Zero-Chew Evening Recovery)',
         title: '45g Pea Protein Isolate + 360g Silk Protein Milk + 16g Peanut Butter',
         tip: 'Zero cooking and zero chewing at night when your appetite is lowest — weigh 45g powder + 360g Silk milk on your scale, shake for 10 seconds, and eat 16g peanut butter.',
         options: [
@@ -3093,7 +3090,7 @@
           slots: {
             post: {
               time12: `${preShakeStr} & ${oatsStr}`,
-              headerText: `Meal 1 • ${preShakeStr} Pre-Gym Shake + ${oatsStr} Post-Gym Oats (Around ${start12}–${end12} Gym)`,
+              headerText: `FUEL 1 • ${preShakeStr} Pre-Gym Shake + ${oatsStr} Post-Gym Oats (Around ${start12}–${end12} Gym)`,
               roleBadge: "⚡ Pre + Post Gym",
               isPostWorkoutTarget: true,
               contextTip: `Drink your 30g Pea Isolate + 360g Cold Silk Milk shake at ${preShakeStr} (25 mins before your ${start12} workout), then eat your 264g Overnight Oats jar at ${oatsStr} (15 mins after finishing at ${end12}).`,
@@ -3101,7 +3098,7 @@
             },
             lunch: {
               time12: m2Str,
-              headerText: `Meal 2 • ${m2Str} (Small 418g Savoury Bowl)`,
+              headerText: `FUEL 2 • ${m2Str} (Small 418g Savoury Bowl)`,
               roleBadge: "🥗 Midday Micronutrients",
               isPostWorkoutTarget: false,
               contextTip: `Midday whole-food bowl at ${m2Str}: 175g tofu + 150g rice + 75g broccoli (Vitamin C) + 12g yeast + 5g toasted sesame oil + 1.5g Iodized Table Salt (100% thyroid iodine).`,
@@ -3109,7 +3106,7 @@
             },
             dinner: {
               time12: m3Str,
-              headerText: `Meal 3 • ${m3Str} (Zero-Chew Evening Recovery)`,
+              headerText: `FUEL 3 • ${m3Str} (Zero-Chew Evening Recovery)`,
               roleBadge: "🌙 Overnight Repair",
               isPostWorkoutTarget: false,
               contextTip: `Zero chewing at ${m3Str} when appetite is lowest — 45g isolate + 360g Silk milk shaken together + 16g peanut butter.`,
@@ -3135,13 +3132,13 @@
           oatsStr,
           shakeFirst: false,
           periodTitle: `☀️ Midday Gym (${start12} – ${end12})`,
-          periodAdvice: `Eat your 264g Overnight Oats Jar at ${oatsStr} for morning glycogen, then drink your 390g Pre-Gym Shake at ${preShakeStr} (25m before ${start12} Gym). Right after finishing at ${end12}, your next meal is Meal 2 at ${m2Str}.`,
+          periodAdvice: `Eat your 264g Overnight Oats Jar at ${oatsStr} for morning glycogen, then drink your 390g Pre-Gym Shake at ${preShakeStr} (25m before ${start12} Gym). Right after finishing at ${end12}, your next fuel is FUEL 2 at ${m2Str}.`,
           nextPostWorkoutSlot: "lunch",
           nextPostWorkoutTime12: m2Str,
           slots: {
             post: {
               time12: `${oatsStr} & ${preShakeStr}`,
-              headerText: `Meal 1 • ${oatsStr} Morning Oats + ${preShakeStr} Pre-Gym Shake (25m before ${start12} Gym)`,
+              headerText: `FUEL 1 • ${oatsStr} Morning Oats + ${preShakeStr} Pre-Gym Shake (25m before ${start12} Gym)`,
               roleBadge: "🔋 Morning + Pre-Gym",
               isPostWorkoutTarget: false,
               contextTip: `Eat your 264g Overnight Oats Jar at ${oatsStr} for morning energy, then drink your 30g Pea Isolate + 360g Cold Silk Milk shake at ${preShakeStr} (25 mins before your ${start12}–${end12} workout).`,
@@ -3149,15 +3146,15 @@
             },
             lunch: {
               time12: m2Str,
-              headerText: `Meal 2 • ${m2Str} (Post-Workout Bowl • 15m after ${start12}–${end12} Gym)`,
-              roleBadge: "⚡ Next Meal (Post-Workout)",
+              headerText: `FUEL 2 • ${m2Str} (Post-Workout Bowl • 15m after ${start12}–${end12} Gym)`,
+              roleBadge: "⚡ Next Fuel (Post-Workout)",
               isPostWorkoutTarget: true,
               contextTip: `Eat at ${m2Str} (15 mins after finishing your ${start12}–${end12} workout): warm tofu, jasmine rice, broccoli, 5g toasted sesame oil & 1.5g Iodized Table Salt.`,
               batchTip: `Weighing 175g tofu (½ of a 350g block) and 150g cooked rice makes your ${m2Str} post-workout bowl fast and light!`
             },
             dinner: {
               time12: m3Str,
-              headerText: `Meal 3 • ${m3Str} (Zero-Chew Evening Recovery)`,
+              headerText: `FUEL 3 • ${m3Str} (Zero-Chew Evening Recovery)`,
               roleBadge: "🌙 Overnight Repair",
               isPostWorkoutTarget: false,
               contextTip: `Easy liquid recovery at ${m3Str}: 45g pea isolate + 360g Silk milk shaken together + 16g peanut butter.`,
@@ -3185,13 +3182,13 @@
         oatsStr,
         shakeFirst: false,
         periodTitle: `${periodLabel} (${start12} – ${end12})`,
-        periodAdvice: `Eat your 264g Overnight Oats at ${oatsStr} and Meal 2 Bowl at ${m2Str} (~3.25 hrs before gym), then drink your 390g Pre-Gym Shake at ${preShakeStr} (25m before ${start12} Gym). Right after your last exercise at ${end12}, your next meal is Meal 3 at ${m3Str}!`,
+        periodAdvice: `Eat your 264g Overnight Oats at ${oatsStr} and FUEL 2 Bowl at ${m2Str} (~3.25 hrs before gym), then drink your 390g Pre-Gym Shake at ${preShakeStr} (25m before ${start12} Gym). Right after your last exercise at ${end12}, your next fuel is FUEL 3 at ${m3Str}!`,
         nextPostWorkoutSlot: "dinner",
         nextPostWorkoutTime12: m3Str,
         slots: {
           post: {
             time12: `${oatsStr} & ${preShakeStr}`,
-            headerText: `Meal 1 • ${oatsStr} Morning Oats + ${preShakeStr} Pre-Gym Shake (25m before ${start12} Gym)`,
+            headerText: `FUEL 1 • ${oatsStr} Morning Oats + ${preShakeStr} Pre-Gym Shake (25m before ${start12} Gym)`,
             roleBadge: "🌅 Morning + Pre-Gym",
             isPostWorkoutTarget: false,
             contextTip: `Eat your 264g Overnight Oats Jar at ${oatsStr}, then drink your 30g Pea Isolate + 360g Cold Silk Milk shake at ${preShakeStr} (25 mins before your ${start12}–${end12} workout) for fast amino acids with zero stomach bulk.`,
@@ -3199,7 +3196,7 @@
           },
           lunch: {
             time12: m2Str,
-            headerText: `Meal 2 • ${m2Str} (Pre-Workout Bowl • before ${start12} Gym)`,
+            headerText: `FUEL 2 • ${m2Str} (Pre-Workout Bowl • before ${start12} Gym)`,
             roleBadge: "🥗 Midday Fuel",
             isPostWorkoutTarget: false,
             contextTip: `Eat at ${m2Str} (~3.25 hrs before your ${start12}–${end12} workout) so solid food is digested before Daily Cable Abdominal Crunches: 175g tofu + 150g rice + 75g broccoli + 12g yeast + 5g toasted sesame oil + 1.5g Iodized Table Salt.`,
@@ -3207,8 +3204,8 @@
           },
           dinner: {
             time12: m3Str,
-            headerText: `Meal 3 • ${m3Str} (Post-Workout Recovery • 15m after ${start12}–${end12} Gym)`,
-            roleBadge: "⚡ Next Meal (Post-Workout)",
+            headerText: `FUEL 3 • ${m3Str} (Post-Workout Recovery • 15m after ${start12}–${end12} Gym)`,
+            roleBadge: "⚡ Next Fuel (Post-Workout)",
             isPostWorkoutTarget: true,
             contextTip: `Eat at ${m3Str} (15 mins after finishing your ${start12}–${end12} workout): zero chewing required — 45g Pea Protein Isolate + 360g Silk Milk (48g P) + 16g PB (4g P) immediately drives muscle recovery!`,
             batchTip: `Post-workout shake at ${m3Str}: weigh 45g powder + 360g cold Silk milk in your shaker, shake for 10 seconds, and eat 16g peanut butter.`
@@ -3903,7 +3900,10 @@
       }
 
       const hasCrunchToday = state.crunchDays.includes(dayIdx);
-      const exercisesToday = [...dayObj.exercises];
+      const exercisesToday = [...dayObj.exercises].map(ex => ({
+        ...ex,
+        name: String(ex.name || '').replace(/^[A-Z]\d+[\.\:\-\)]\s*/i, '').trim()
+      }));
       if (hasCrunchToday) {
         exercisesToday.push(CABLE_CRUNCH_EXERCISE);
       }
@@ -3918,17 +3918,6 @@
           if (entry && entry.done) todayDoneSets++;
         }
       });
-
-      const weekBadge = document.getElementById('week-status-badge');
-      if (weekBadge) {
-        if (week < maxUnlocked || state.completedWeeks[week]) {
-          weekBadge.textContent = `✓ Week ${week} Completed • ${maxUnlocked} Unlocked`;
-          weekBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40';
-        } else {
-          weekBadge.textContent = `Week ${week} Active • ${todayDoneSets}/${todayTotalSets} Sets Today`;
-          weekBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/40';
-        }
-      }
 
       // Populate Quick Exercise & Machine Jump Dropdown
       const jumpSelect = document.getElementById('exercise-jump-select');
@@ -4085,7 +4074,7 @@
                 💧 <strong>${getDailyWaterLoggedMl(week, dayIdx).toLocaleString()} / ${getDailyWaterTargetMl(dayIdx).toLocaleString()} ml</strong> <span class="text-sky-400">+500</span>
               </button>
               <button type="button" id="banner-open-vegan-fuel-btn" class="font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded-lg transition">
-                🌱 Meal: <strong>${adaptiveMealPreview.nextPostWorkoutTime12}</strong> →
+                ⚡ Fuel: <strong>${adaptiveMealPreview.nextPostWorkoutTime12}</strong> →
               </button>
               <button type="button" id="banner-open-shoe-gear-btn" class="font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2 py-1 rounded-lg transition" title="Open My Gear & Gym Shoe Lifespan Tracker (Inside Profile)">
                 👟 <span id="banner-shoe-health-readout">${calculateShoeWearFromWorkoutRecord().healthPct}%</span>
@@ -5920,23 +5909,38 @@
             steps: [
               {
                 id: 'oats_step_1',
-                title: 'Step 1: Weigh Dry Base',
-                detail: '180g Gluten-Free Protein Oats (45g x 4 jars) + 24g Whole Chia Seeds (6g x 4 jars)'
+                title: '#1 Gluten-Free Protein Oats',
+                detail: '180g total (45g × 4 jars)',
+                weightBadge: '180g'
               },
               {
                 id: 'oats_step_2',
-                title: 'Step 2: Add Mashed Banana & PB',
-                detail: '120g Peeled Ripe Banana (30g/jar) + 32g Natural Peanut Butter (8g/jar)'
+                title: '#2 Organic Whole Chia Seeds',
+                detail: '24g total (6g × 4 jars)',
+                weightBadge: '24g'
               },
               {
                 id: 'oats_step_3',
-                title: 'Step 3: Pour Silk Protein Milk',
-                detail: '720g (720 ml) Unsweetened Silk Protein Milk (180g/jar)'
+                title: '#3 Peeled Ripe Banana (Mashed)',
+                detail: '120g total (30g × 4 jars)',
+                weightBadge: '120g'
               },
               {
                 id: 'oats_step_4',
-                title: 'Step 4: Stir, Seal & Refrigerate',
-                detail: 'Mix thoroughly and refrigerate overnight (ready for 8:15 AM post-workout jars)'
+                title: '#4 Smooth Natural Peanut Butter',
+                detail: '32g total (8g × 4 jars)',
+                weightBadge: '32g'
+              },
+              {
+                id: 'oats_step_5',
+                title: '#5 Unsweetened Silk Protein Milk',
+                detail: '720g / 720 ml total (180g × 4 jars)',
+                weightBadge: '720g'
+              },
+              {
+                id: 'oats_step_6',
+                title: '#6 Stir, Seal & Refrigerate Overnight',
+                detail: 'Divide evenly into 4 jars and chill for 8:15 AM post-gym fuel'
               }
             ]
           },
@@ -5944,28 +5948,31 @@
             id: 'recipe_rice_batch',
             badge: '#Prep 2/2',
             yieldPill: '4-Day Batch • 4 Servings',
-            title: '4-Day Jasmine Rice & Savoury Tofu Bowl Prep',
+            title: '4-Day Jasmine Rice Batch Prep',
             subtitle: 'Prep time: 20 mins • Yields 4x 150g cooked rice portions (55g dry/day)',
             steps: [
               {
                 id: 'rice_step_1',
-                title: 'Step 1: Rinse & Weigh Dry Rice',
-                detail: '220g Dry White Jasmine Rice (rinse in cold water until clear)'
+                title: '#1 Dry White Jasmine Rice (Rinsed)',
+                detail: 'Weigh and rinse in cold water until clear (55g dry × 4 days)',
+                weightBadge: '220g'
               },
               {
                 id: 'rice_step_2',
-                title: 'Step 2: Measure Water (1 : 1.5 Ratio)',
-                detail: 'Add 330g (330 ml) water to pot or rice cooker'
+                title: '#2 Filtered Cooking Water (1 : 1.5 Ratio)',
+                detail: 'Add water to pot or rice cooker with rinsed rice',
+                weightBadge: '330 ml'
               },
               {
                 id: 'rice_step_3',
-                title: 'Step 3: Simmer & Steam',
-                detail: 'Bring to boil, cover on low heat for 12 mins, then rest covered off heat for 10 mins (yields ~600g cooked rice = 150g/day)'
+                title: '#3 Simmer 12 Mins & Steam 10 Mins',
+                detail: 'Boil, cover on low heat 12m, rest off heat 10m (~600g cooked yield)'
               },
               {
                 id: 'rice_step_4',
-                title: 'Step 4: Portion Daily Savoury Bowl',
-                detail: 'Combine 150g Cooked Rice + 175g Extra-Firm Tofu + 75g Steamed Broccoli + 12g Nutritional Yeast + 5g Sesame Oil + 1.5g Iodized Salt'
+                title: '#4 Divide Into 4 Storage Containers',
+                detail: 'Portion 150g cooked rice per container for Daily Fuel 2 bowls',
+                weightBadge: '150g × 4'
               }
             ]
           }
@@ -5985,7 +5992,7 @@
               <button
                 type="button"
                 data-recipe-step-id="${st.id}"
-                class="recipe-step-check-btn w-full text-left p-2.5 rounded-xl border transition flex items-start justify-between gap-2.5 ${
+                class="recipe-step-check-btn w-full text-left p-2.5 rounded-xl border transition flex items-center justify-between gap-2 min-w-0 ${
                   stDone
                     ? 'bg-emerald-950/35 border-emerald-500/45 text-emerald-100'
                     : 'bg-slate-950/80 border-slate-800/90 hover:border-sky-400/40 text-slate-100'
@@ -5998,17 +6005,20 @@
                       : 'bg-slate-900 border border-slate-700 text-slate-400'
                   }">${stDone ? '✓' : ''}</span>
                   <div class="min-w-0 flex-1">
-                    <div class="text-xs font-extrabold ${stDone ? 'line-through text-emerald-300' : 'text-white'}">${st.title}</div>
-                    <div class="text-[11px] text-slate-300 mt-0.5 leading-snug">${st.detail}</div>
+                    <div class="text-xs font-extrabold leading-snug break-words ${stDone ? 'line-through text-emerald-300' : 'text-white'}">${st.title}</div>
+                    <div class="text-[11px] text-slate-300 mt-0.5 leading-snug break-words">${st.detail}</div>
                   </div>
                 </div>
-                <span class="shrink-0 text-[10px] font-extrabold px-2 py-1 rounded-lg whitespace-nowrap ${
-                  stDone
-                    ? 'bg-emerald-500 text-slate-950'
-                    : 'bg-slate-900 border border-slate-700 text-sky-300'
-                }">
-                  ${stDone ? '✓ Done' : '1-Tap Check'}
-                </span>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  ${st.weightBadge ? `<span class="text-[10px] font-mono font-extrabold px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-emerald-300 whitespace-nowrap">${st.weightBadge}</span>` : ''}
+                  <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-lg whitespace-nowrap ${
+                    stDone
+                      ? 'bg-emerald-500 text-slate-950'
+                      : 'bg-slate-900 border border-slate-700 text-sky-300'
+                  }">
+                    ${stDone ? '✓ Done' : 'Check'}
+                  </span>
+                </div>
               </button>
             `;
           }).join('');
@@ -6131,18 +6141,18 @@
 
       const veganTitleEl = document.getElementById('vegan-week-day-title');
       if (veganTitleEl) {
-        veganTitleEl.textContent = `🌱 Week ${week} • ${dayObj.dayFull} (${dayObj.daySub || 'Fuel'})`;
+        veganTitleEl.textContent = `⚡ Week ${week} • ${dayObj.dayFull} (${dayObj.daySub || 'Fuel'})`;
       }
       const veganPillEl = document.getElementById('vegan-day-status-pill');
       if (veganPillEl) {
         if (todayMealsDone === VEGAN_MEALS.length) {
-          veganPillEl.textContent = `✓ ${todayMealsDone}/${VEGAN_MEALS.length} Meals Complete`;
+          veganPillEl.textContent = `✓ ${todayMealsDone}/${VEGAN_MEALS.length} Fuel Complete`;
           veganPillEl.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-400/30';
         } else if (todayMealsDone > 0) {
-          veganPillEl.textContent = `● ${todayMealsDone}/${VEGAN_MEALS.length} Meals Logged`;
+          veganPillEl.textContent = `● ${todayMealsDone}/${VEGAN_MEALS.length} Fuel Logged`;
           veganPillEl.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-400/15 text-amber-200 border border-amber-300/30';
         } else {
-          veganPillEl.textContent = `0/${VEGAN_MEALS.length} Meals Today`;
+          veganPillEl.textContent = `0/${VEGAN_MEALS.length} Fuel Today`;
           veganPillEl.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300';
         }
       }
@@ -6295,7 +6305,7 @@
           const isPartial = isMealPartiallyCheckedForDay(week, dayIdx, slot.slotId);
           const slotSched = (adaptiveSched && adaptiveSched.slots && adaptiveSched.slots[slot.slotId]) || {
             headerText: slot.time,
-            roleBadge: `Meal ${mealIdx + 1}`,
+            roleBadge: `FUEL ${mealIdx + 1}`,
             isPostWorkoutTarget: mealIdx === 0,
             contextTip: slot.tip
           };
@@ -6347,28 +6357,28 @@
 
           return `
             <div class="bg-slate-900 border ${isDone ? 'border-emerald-500/50 bg-slate-900/80' : (slotSched.isPostWorkoutTarget ? 'border-emerald-400/70 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/40' : 'border-slate-800')} rounded-2xl p-4 space-y-3 transition-all">
-              <!-- 1-Tap Main Meal Header (Tap anywhere on header or button to log/unlog the entire meal in 1 tap) -->
+              <!-- 1-Tap Main Fuel Header (Tap anywhere on header or button to log/unlog the entire fuel card in 1 tap) -->
               <div data-meal-header-slot="${slot.slotId}" class="meal-card-header-tap flex items-start justify-between gap-2 cursor-pointer select-none">
-                <div>
+                <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-1.5">
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">${slotSched.headerText}</span>
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">${String(slotSched.headerText || '').replace(/^Meal\s+(\d+)/i, 'FUEL $1')}</span>
                     <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${slotSched.isPostWorkoutTarget ? 'bg-emerald-500 text-slate-950' : 'bg-sky-500/15 text-sky-300 border border-sky-500/30'}">${slotSched.roleBadge}</span>
                     <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-semibold">${opt.volume}</span>
                   </div>
-                  <h4 class="text-sm font-extrabold text-white mt-1 leading-snug">${slot.title}</h4>
+                  <h4 class="text-sm font-extrabold text-white mt-1 leading-snug break-words">${slot.title}</h4>
                   <div class="flex flex-wrap items-center gap-2 mt-1">
                     <span class="text-xs font-extrabold text-emerald-400">${opt.protein}g Protein • ${opt.kcal} kcal</span>
                     <span class="text-[10px] font-semibold text-slate-400">(${doneIngCount}/${itemsList.length} ingredients checked)</span>
                   </div>
                 </div>
-                <button type="button" data-meal-slot="${slot.slotId}" class="meal-check-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${
+                <button type="button" data-meal-slot="${slot.slotId}" class="meal-check-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition ${
                   isDone
                     ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/30'
                     : (isPartial
                         ? 'bg-amber-400/20 text-amber-200 border border-amber-400/40'
                         : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700')
                 }">
-                  ${isDone ? '✓ Eaten' : (isPartial ? `✓ Finish (${doneIngCount}/${itemsList.length})` : '+ Log Meal')}
+                  ${isDone ? '✓ Fuel Logged' : (isPartial ? `✓ Finish (${doneIngCount}/${itemsList.length})` : '+ Log Fuel')}
                 </button>
               </div>
 
@@ -6398,7 +6408,7 @@
           saveState();
           renderVeganView();
           if (!curVal) {
-            showToast(`🌱 Logged ${slotId.toUpperCase()} meal (${dayObj.dayFull})!`);
+            showToast(`⚡ Logged ${slotId.toUpperCase()} fuel (${dayObj.dayFull})!`);
           }
         }
 
@@ -8330,7 +8340,7 @@
         modalOpenPostMealBtn.addEventListener('click', () => {
           if (workoutCompleteModal) workoutCompleteModal.classList.add('hidden');
           switchTab('vegan');
-          showToast('🌱 Opened Post-Workout Meal & Anabolic Window!');
+          showToast('⚡ Opened Post-Workout Fuel & Anabolic Window!');
         });
       }
 
@@ -8690,7 +8700,7 @@
       <!-- User Control & Freedom Navigation Actions -->
       <div class="space-y-2 pt-1">
         <button type="button" id="modal-open-post-meal-btn" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg shadow-emerald-500/25 transition">
-          🌱 Open Post-Workout Meal →
+          ⚡ Open Post-Workout Fuel →
         </button>
         <button type="button" id="modal-stay-workout-summary-btn" class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs transition">
           Stay on Workout Summary
