@@ -730,3 +730,183 @@ export function createSilentPaddedChimeWavUrl(): string {
   return 'data:audio/wav;base64,';
 }
 
+// ============================================================================
+// MUSCLE FUEL & REST TIMER UPGRADES 1–4:
+// 1. Daily Portion Weight Badge ("Scale: Xg / LB") & "G | LB" Unit Toggle
+// 2. Interactive 3-Stage Jasmine Rice Cooking Timer with "Mix / Stir" Alarms
+// 3. Meal Prep Demonstration Videos
+// 4. Collapsible Prep Notes & Photo Capture on Batch Prep & Fuel Cards
+// ============================================================================
+export type FuelWeightUnit = 'g' | 'lb';
+
+export const FUEL_CARD_SCALE_BADGES: Record<
+  'pre_shake' | 'post_oats' | 'lunch' | 'dinner',
+  { g: string; lb: string; grams: number }
+> = {
+  pre_shake: {
+    grams: 390,
+    g: 'Scale: 390g',
+    lb: 'Scale: 0.86 lb / 13.8 oz'
+  },
+  post_oats: {
+    grams: 269,
+    g: 'Scale: 269g',
+    lb: 'Scale: 0.59 lb / 9.5 oz'
+  },
+  lunch: {
+    grams: 419,
+    g: 'Scale: 419g',
+    lb: 'Scale: 0.92 lb / 14.8 oz'
+  },
+  dinner: {
+    grams: 421,
+    g: 'Scale: 421g',
+    lb: 'Scale: 0.93 lb / 14.9 oz'
+  }
+};
+
+export const BATCH_CARD_SCALE_BADGES: Record<
+  'recipe_oats_batch' | 'recipe_rice_batch',
+  { g: string; lb: string }
+> = {
+  recipe_oats_batch: {
+    g: 'Batch: 1,076g • 1 Jar Today: 269g',
+    lb: 'Batch: 2.37 lb • 1 Jar: 0.59 lb / 9.5 oz'
+  },
+  recipe_rice_batch: {
+    g: 'Cooked Batch: 600g • 1 Bowl Today: 150g',
+    lb: 'Batch: 1.32 lb • 1 Bowl: 0.33 lb / 5.3 oz'
+  }
+};
+
+export const BATCH_PREP_VIDEO_URLS: Record<'recipe_oats_batch' | 'recipe_rice_batch', string> = {
+  recipe_oats_batch: 'https://www.youtube.com/watch?v=_wgQBioExZA',
+  recipe_rice_batch: 'https://www.youtube.com/watch?v=zWTc8eLEeyY'
+};
+
+export function getFuelCardScaleBadge(
+  slotId: 'pre_shake' | 'post_oats' | 'lunch' | 'dinner',
+  unit: FuelWeightUnit = 'g'
+): string {
+  const entry = FUEL_CARD_SCALE_BADGES[slotId];
+  if (!entry) return '';
+  return unit === 'lb' ? entry.lb : entry.g;
+}
+
+export function getBatchCardScaleBadge(
+  recipeId: 'recipe_oats_batch' | 'recipe_rice_batch',
+  unit: FuelWeightUnit = 'g'
+): string {
+  const entry = BATCH_CARD_SCALE_BADGES[recipeId];
+  if (!entry) return '';
+  return unit === 'lb' ? entry.lb : entry.g;
+}
+
+export function formatIngredientWeightBadge(rawBadge: string, unit: FuelWeightUnit = 'g'): string {
+  const clean = String(rawBadge || '').trim();
+  if (!clean || unit !== 'lb') return clean;
+
+  if (clean === '150g × 4') return '0.33 lb (5.3 oz) × 4';
+  if (clean === '600g Yield') return '1.32 lb (21.2 oz) Yield';
+
+  const match = clean.match(/^([\d.]+)\s*(g|ml)$/i);
+  if (match) {
+    const grams = parseFloat(match[1]);
+    if (Number.isFinite(grams) && grams > 0) {
+      const lbs = (grams / 453.59237).toFixed(2);
+      const oz = (grams / 28.3495231).toFixed(1);
+      return `${lbs} lb (${oz} oz)`;
+    }
+  }
+  return clean;
+}
+
+export interface RiceTimerStageSpec {
+  stage: 1 | 2 | 3;
+  seconds: number;
+  buttonLabel: string;
+  contextLabel: string;
+  completionBanner: string;
+  stickyAlertLabel: string;
+}
+
+export const JASMINE_RICE_TIMER_STAGES: readonly RiceTimerStageSpec[] = [
+  {
+    stage: 1,
+    seconds: 180,
+    buttonLabel: '1. Boil & Stir (3m)',
+    contextLabel: 'Rice Stage 1: Boil & Stir (3m)',
+    completionBanner: 'ALARM: Stir / Mix Rice Once, Cover Tightly & Turn Heat to Low! Tap Stage 2 (12m Simmer)',
+    stickyAlertLabel: 'MIX / STIR RICE • Tap Stage 2 (12m)'
+  },
+  {
+    stage: 2,
+    seconds: 720,
+    buttonLabel: '2. Low Simmer (12m)',
+    contextLabel: 'Rice Stage 2: Covered Low Simmer (12m)',
+    completionBanner: 'ALARM: Turn Off Heat! Keep Lid Closed (Do Not Lift) & Tap Stage 3 (10m Steam)',
+    stickyAlertLabel: 'TURN OFF HEAT (KEEP LID CLOSED) • Tap Stage 3 (10m)'
+  },
+  {
+    stage: 3,
+    seconds: 600,
+    buttonLabel: '3. Off-Heat Steam (10m)',
+    contextLabel: 'Rice Stage 3: Off-Heat Steam (10m)',
+    completionBanner: 'DONE: Open Lid & Mix / Fluff Rice With Fork! Portion 4 x 150g Containers',
+    stickyAlertLabel: 'MIX / STIR RICE • Fluff & Portion 4 × 150g'
+  }
+] as const;
+
+export function getRiceTimerStageSpec(stage: number): RiceTimerStageSpec | undefined {
+  return JASMINE_RICE_TIMER_STAGES.find(s => s.stage === stage);
+}
+
+export interface PrepNoteEntry {
+  text: string;
+  photoDataUrl: string;
+  updatedAt: string;
+}
+
+export function upsertPrepNote(
+  prepNotesMap: Record<string, PrepNoteEntry>,
+  cardId: string,
+  patch: Partial<PrepNoteEntry>,
+  nowIso = new Date().toISOString()
+): Record<string, PrepNoteEntry> {
+  const existing = prepNotesMap?.[cardId] || {
+    text: '',
+    photoDataUrl: '',
+    updatedAt: nowIso
+  };
+  return {
+    ...(prepNotesMap || {}),
+    [cardId]: {
+      text: patch.text !== undefined ? patch.text : existing.text,
+      photoDataUrl: patch.photoDataUrl !== undefined ? patch.photoDataUrl : existing.photoDataUrl,
+      updatedAt: nowIso
+    }
+  };
+}
+
+export function getPrepNoteHeaderBadge(
+  note: PrepNoteEntry | undefined
+): { visible: boolean; badgeText: string; toggleButtonLabel: string; hasPhoto: boolean } {
+  const cleanText = String(note?.text || '').trim();
+  const hasPhoto = Boolean(note?.photoDataUrl && note.photoDataUrl.startsWith('data:image/'));
+  if (!cleanText && !hasPhoto) {
+    return {
+      visible: false,
+      badgeText: '',
+      toggleButtonLabel: '+ Add Kitchen Note / Photo',
+      hasPhoto: false
+    };
+  }
+  return {
+    visible: true,
+    badgeText: cleanText ? `Note: ${cleanText}` : 'Note: Kitchen Photo Saved',
+    toggleButtonLabel: 'Edit Kitchen Note',
+    hasPhoto
+  };
+}
+
+

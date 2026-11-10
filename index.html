@@ -104,25 +104,32 @@
         </div>
       </div>
 
-      <!-- Always-Pinned Interactive Rest Timer Bar (Visible on Gym & Pull-Ups Tabs; Hidden on Timer, Vegan Fuel & Shop List Tabs) -->
-      <div id="pinned-rest-timer-row" class="bg-slate-900/95 border border-slate-800 rounded-xl px-2 py-1.5 flex items-center justify-between gap-1">
-        <div class="flex items-center gap-1 min-w-0">
-          <button id="header-timer-toggle" type="button" class="flex items-center gap-1 px-1.5 py-1 rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500/50 transition shrink-0" title="Tap to Start or Pause Rest Timer">
-            <span id="header-timer-dot" class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
-            <span id="header-timer-display" class="font-mono text-xs sm:text-sm font-extrabold text-emerald-400 tracking-tight">01:30</span>
-          </button>
-          <button id="pinned-audio-mode-btn" type="button" class="px-1.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[10px] font-extrabold text-emerald-300 transition shrink-0 whitespace-nowrap" title="Cycle Audio Mode: Sound &amp; Vibe | Vibrate Only | Silent">
-            🔔 Sound &amp; Vibe
-          </button>
-          <span id="pinned-timer-context" class="hidden md:inline text-[11px] font-semibold text-slate-300 truncate">Ready • Tap any set</span>
-        </div>
+      <!-- Always-Pinned Interactive Rest Timer Bar (Visible on Gym & Pull-Ups Tabs, or Any Tab When Rice Timer/Alert Is Active) -->
+      <div id="pinned-rest-timer-row" class="bg-slate-900/95 border border-slate-800 rounded-xl px-2 py-1.5 space-y-1">
+        <div class="flex items-center justify-between gap-1">
+          <div class="flex items-center gap-1 min-w-0">
+            <button id="header-timer-toggle" type="button" class="flex items-center gap-1 px-1.5 py-1 rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500/50 transition shrink-0" title="Tap to Start or Pause Rest Timer">
+              <span id="header-timer-dot" class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+              <span id="header-timer-display" class="font-mono text-xs sm:text-sm font-extrabold text-emerald-400 tracking-tight">01:30</span>
+            </button>
+            <button id="pinned-audio-mode-btn" type="button" class="px-1.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[10px] font-extrabold text-emerald-300 transition shrink-0 whitespace-nowrap" title="Cycle Audio Mode: Sound &amp; Vibe | Vibrate Only | Silent">
+              🔔 Sound &amp; Vibe
+            </button>
+            <span id="pinned-rice-alert-badge" class="hidden sm:inline-block px-2 py-0.5 rounded-md bg-amber-500/25 border border-amber-400/60 text-amber-200 text-[10px] font-extrabold tracking-wide whitespace-nowrap">🍚 MIX / STIR RICE</span>
+            <span id="pinned-timer-context" class="hidden md:inline text-[11px] font-semibold text-slate-300 truncate">Ready • Tap any set</span>
+          </div>
 
-        <div class="flex items-center gap-1 shrink-0">
-          <button id="pinned-jump-next-btn" type="button" aria-label="Jump to next incomplete set" class="px-1.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[10px] font-extrabold transition" title="Jump to next incomplete set">▶<span class="hidden sm:inline"> Next</span></button>
-          <button id="pinned-timer-minus" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 transition" title="Subtract 15 seconds">-15s</button>
-          <button id="pinned-timer-play" type="button" class="px-2 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-extrabold transition">Start</button>
-          <button id="pinned-timer-plus" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 transition" title="Add 15 seconds">+15s</button>
-          <button id="pinned-timer-reset" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-400 hover:text-white transition" title="Reset timer">↺</button>
+          <div class="flex items-center gap-1 shrink-0">
+            <button id="pinned-jump-next-btn" type="button" aria-label="Jump to next incomplete set" class="px-1.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[10px] font-extrabold transition" title="Jump to next incomplete set">▶<span class="hidden sm:inline"> Next</span></button>
+            <button id="pinned-timer-minus" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 transition" title="Subtract 15 seconds">-15s</button>
+            <button id="pinned-timer-play" type="button" class="px-2 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-extrabold transition">Start</button>
+            <button id="pinned-timer-plus" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 transition" title="Add 15 seconds">+15s</button>
+            <button id="pinned-timer-reset" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-400 hover:text-white transition" title="Reset timer">↺</button>
+          </div>
+        </div>
+        <div id="pinned-rice-alert-banner" class="hidden rounded-lg px-2.5 py-1.5 bg-gradient-to-r from-amber-950/90 via-amber-900/60 to-emerald-950/90 border border-amber-400/60 text-amber-200 text-[11px] font-extrabold flex items-center justify-between gap-2">
+          <span id="pinned-rice-alert-text" class="leading-snug">🍚 MIX / STIR RICE</span>
+          <button id="pinned-rice-alert-dismiss" type="button" class="px-2 py-0.5 rounded bg-slate-900/90 hover:bg-slate-800 text-slate-200 text-[10px] font-bold shrink-0">Dismiss</button>
         </div>
       </div>
     </div>
@@ -387,6 +394,17 @@
             <button type="button" data-timer-sec="80" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">8 Reps (80s)</button>
           </div>
         </details>
+
+        <!-- Collapsible Rice Cooking Timer (3-Stage Jasmine Rice Stovetop Timer with Mix/Stir Alarms) -->
+        <details id="timer-rice-cooking-details" class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-left">
+          <summary class="cursor-pointer flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-sky-400 hover:text-sky-300 select-none">
+            <span>🍚 Rice Cooking Timer (3-Stage Jasmine Rice • Mix/Stir Alarms)</span>
+            <span class="text-[10px] text-slate-400">▾</span>
+          </summary>
+          <div id="timer-rice-stage-container" class="pt-2.5 space-y-2">
+            <!-- Populated dynamically by renderRiceCookingTimerWidgets() -->
+          </div>
+        </details>
       </div>
     </section>
 
@@ -413,15 +431,19 @@
 
       <!-- Compact Daily Macro, Calories & Water Intake Tracker -->
       <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
-        <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">💰 ~$5.55/Day (~$39/Wk) • 100% Kitchen Scale (g)</span>
               <span class="text-[9px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/35 px-2 py-0.5 rounded-full">Saves ~$75/wk vs. Takeout</span>
             </div>
-            <h2 class="text-sm sm:text-base font-extrabold text-white leading-tight mt-0.5">High-Protein Muscle &amp; Recomp Fuel (1,400 kcal • 138g P)</h2>
+            <h2 class="text-sm sm:text-base font-extrabold text-white leading-snug mt-1">High-Protein Muscle &amp; Recomp Fuel (1,400 kcal • 138g P)</h2>
           </div>
-          <div class="flex items-center gap-1.5 shrink-0">
+          <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+            <div class="inline-flex items-center rounded-lg bg-slate-950 border border-sky-500/40 p-0.5" role="group" aria-label="Kitchen Scale Weight Unit Toggle">
+              <button type="button" id="fuel-unit-g-btn" data-fuel-unit="g" class="px-2.5 py-1 rounded-md text-[10px] font-extrabold bg-sky-500 text-slate-950 transition">G</button>
+              <button type="button" id="fuel-unit-lb-btn" data-fuel-unit="lb" class="px-2.5 py-1 rounded-md text-[10px] font-extrabold text-sky-300 hover:text-white transition">LB</button>
+            </div>
             <button type="button" id="log-all-vegan-day-btn" class="text-[11px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 transition">✓ Log All 4</button>
             <button type="button" id="reset-vegan-day-btn" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white">Reset Today</button>
           </div>
@@ -746,6 +768,11 @@
       waterIntakeLogs: {},
       recipePrepLogs: {},
       collapsedRecipeCards: {},
+      fuelWeightUnit: 'g',
+      prepNotes: {},
+      openPrepNoteCards: {},
+      activeRiceTimerStage: null,
+      riceTimerAlertBanner: '',
       exerciseUnitPrefs: {},
       barbellConfig: {
         sat_hip_thrust: { barLbs: 45, sideLbs: 55 }
@@ -2257,6 +2284,31 @@
           ? 'bg-emerald-400 h-full transition-all duration-300'
           : 'bg-slate-700 h-full transition-all duration-300';
       }
+      const RiceAlertBadge = document.getElementById('pinned-rice-alert-badge');
+      const RiceAlertBanner = document.getElementById('pinned-rice-alert-banner');
+      const RiceAlertText = document.getElementById('pinned-rice-alert-text');
+      const hasRiceActivity = Boolean(state.activeRiceTimerStage || state.riceTimerAlertBanner);
+      if (RiceAlertBadge) {
+        if (hasRiceActivity) {
+          RiceAlertBadge.className = 'hidden sm:inline-block px-2 py-0.5 rounded-md bg-amber-500/25 border border-amber-400/60 text-amber-200 text-[10px] font-extrabold tracking-wide whitespace-nowrap';
+          RiceAlertBadge.textContent = state.riceTimerAlertBanner
+            ? '🍚 MIX / STIR RICE!'
+            : `🍚 Rice Stage ${state.activeRiceTimerStage}/3 • MIX / STIR RICE`;
+        } else {
+          RiceAlertBadge.className = 'hidden';
+        }
+      }
+      if (RiceAlertBanner && RiceAlertText) {
+        if (hasRiceActivity) {
+          RiceAlertBanner.classList.remove('hidden');
+          RiceAlertText.textContent = state.riceTimerAlertBanner
+            ? state.riceTimerAlertBanner
+            : `🍚 Rice Stage ${state.activeRiceTimerStage}/3 Running (${formatted}) • MIX / STIR RICE`;
+        } else {
+          RiceAlertBanner.classList.add('hidden');
+        }
+      }
+
       // Also update all inline Daily Pull-Up Timer displays across Workout Banner, Exercise #1 Card, and Pull-Ups Window
       document.querySelectorAll('.live-pullup-timer-readout').forEach(el => {
         el.textContent = formatted;
@@ -2266,6 +2318,189 @@
           ? 'live-pullup-timer-dot w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block'
           : 'live-pullup-timer-dot w-2 h-2 rounded-full bg-sky-400 inline-block';
       });
+      document.querySelectorAll('.live-rice-timer-readout').forEach(el => {
+        el.textContent = formatted;
+      });
+    }
+
+    const JASMINE_RICE_TIMER_STAGES = [
+      {
+        stage: 1,
+        buttonLabel: '1. Boil & Stir (3m)',
+        seconds: 180,
+        actionText: 'Bring 220g rinsed rice + 330 ml water to a rolling boil.',
+        completionBanner: 'ALARM: Stir / Mix Rice Once, Cover Tightly & Turn Heat to Low! Tap Stage 2 (12m Simmer)'
+      },
+      {
+        stage: 2,
+        buttonLabel: '2. Low Simmer (12m)',
+        seconds: 720,
+        actionText: 'Simmer covered on lowest heat setting (#1 or Low).',
+        completionBanner: 'ALARM: Turn Off Heat! Keep Lid Closed (Do Not Lift) & Tap Stage 3 (10m Steam)'
+      },
+      {
+        stage: 3,
+        buttonLabel: '3. Off-Heat Steam (10m)',
+        seconds: 600,
+        actionText: 'Rest off the burner with lid sealed.',
+        completionBanner: 'DONE: Open Lid & Mix / Fluff Rice With Fork! Portion 4 x 150g Containers'
+      }
+    ];
+
+    function syncStickyHeaderVisibility() {
+      const activeNavBtn = document.querySelector('.nav-tab-btn.text-emerald-400');
+      const currentTab = activeNavBtn ? activeNavBtn.getAttribute('data-nav') : 'workout';
+      const hasRiceActivity = Boolean(state.activeRiceTimerStage || state.riceTimerAlertBanner);
+      const showStickyTimer = (currentTab === 'workout' || currentTab === 'pullups' || hasRiceActivity);
+      const pinnedTimerRow = document.getElementById('pinned-rest-timer-row');
+      const pinnedTimerStrip = document.getElementById('pinned-rest-timer-strip');
+      const mainContainer = document.getElementById('main-content-container');
+      if (pinnedTimerRow) {
+        if (showStickyTimer) pinnedTimerRow.classList.remove('hidden');
+        else pinnedTimerRow.classList.add('hidden');
+      }
+      if (pinnedTimerStrip) {
+        if (showStickyTimer) pinnedTimerStrip.classList.remove('hidden');
+        else pinnedTimerStrip.classList.add('hidden');
+      }
+      if (mainContainer) {
+        mainContainer.classList.remove('pt-16', 'pt-28', 'pt-40');
+        if (showStickyTimer) {
+          mainContainer.classList.add(hasRiceActivity ? 'pt-40' : 'pt-28');
+        } else {
+          mainContainer.classList.add('pt-16');
+        }
+      }
+    }
+
+    function startRiceTimerStage(stageNum) {
+      const stageSpec = JASMINE_RICE_TIMER_STAGES.find(s => s.stage === Number(stageNum));
+      if (!stageSpec) return;
+      state.activeRiceTimerStage = stageSpec.stage;
+      state.riceTimerAlertBanner = '';
+      startTimer(stageSpec.seconds, `🍚 Rice Stage ${stageSpec.stage}/3: ${stageSpec.buttonLabel} • MIX / STIR RICE`);
+      syncStickyHeaderVisibility();
+      renderRiceCookingTimerWidgets();
+      showToast(`🍚 Started ${stageSpec.buttonLabel} (${formatTime(stageSpec.seconds)})`);
+    }
+
+    function triggerRiceTimerStageComplete(stageNum) {
+      const stageSpec = JASMINE_RICE_TIMER_STAGES.find(s => s.stage === Number(stageNum));
+      if (!stageSpec) return;
+      state.riceTimerAlertBanner = stageSpec.completionBanner;
+      state.timerContextLabel = `🍚 MIX / STIR RICE • ${stageSpec.completionBanner}`;
+      const lbl = document.getElementById('timer-context-label');
+      if (lbl) lbl.textContent = state.timerContextLabel;
+      updateTimerUI();
+      syncStickyHeaderVisibility();
+      renderRiceCookingTimerWidgets();
+      saveState();
+      showToast(`🍚 ${stageSpec.completionBanner}`);
+    }
+
+    function dismissRiceTimerAlert() {
+      state.riceTimerAlertBanner = '';
+      state.activeRiceTimerStage = null;
+      updateTimerUI();
+      syncStickyHeaderVisibility();
+      renderRiceCookingTimerWidgets();
+      saveState();
+    }
+
+    function buildRiceCookingTimerCardHtml(contextPrefix) {
+      const activeStage = state.activeRiceTimerStage ? Number(state.activeRiceTimerStage) : null;
+      const alertBanner = state.riceTimerAlertBanner || '';
+      const activeSpec = JASMINE_RICE_TIMER_STAGES.find(s => s.stage === activeStage) || null;
+      const formattedTime = formatTime(state.timerSeconds || 0);
+
+      const buttonsHtml = JASMINE_RICE_TIMER_STAGES.map(st => {
+        const isCurrentRunning = (activeStage === st.stage && timerRunning);
+        const isCurrentSelected = (activeStage === st.stage);
+        return `
+          <button
+            type="button"
+            data-rice-stage="${st.stage}"
+            class="rice-stage-btn px-2.5 py-2 rounded-xl text-xs font-extrabold border transition flex flex-col items-start gap-0.5 text-left ${
+              isCurrentRunning
+                ? 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-md shadow-emerald-500/20'
+                : (isCurrentSelected
+                    ? 'bg-sky-500/25 text-sky-200 border-sky-400/60'
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-700')
+            }"
+          >
+            <span>${st.buttonLabel}</span>
+            <span class="text-[10px] font-normal ${isCurrentRunning ? 'text-slate-900 font-semibold' : 'text-slate-400'}">${st.actionText}</span>
+          </button>
+        `;
+      }).join('');
+
+      return `
+        <div class="bg-slate-950/90 border border-sky-500/40 rounded-xl p-3 space-y-2.5" data-rice-widget="${contextPrefix}">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40">🍚 3-Stage Jasmine Rice Stovetop Timer</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Mix / Stir Alarms</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">220g rinsed dry rice + 330 ml water • Syncs live with top sticky timer bar</p>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="live-rice-timer-readout font-mono text-sm font-extrabold px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400">${formattedTime}</span>
+              ${(activeStage || alertBanner) ? `
+                <button type="button" class="rice-timer-clear-btn px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-300 border border-slate-700">Reset</button>
+              ` : ''}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+            ${buttonsHtml}
+          </div>
+
+          ${activeSpec && !alertBanner ? `
+            <div class="rounded-lg px-3 py-2 bg-sky-950/60 border border-sky-400/40 text-sky-200 text-[11px] font-bold flex items-center justify-between gap-2">
+              <span>⏱️ Active Stage ${activeSpec.stage}/3 (${activeSpec.buttonLabel}): ${activeSpec.actionText}</span>
+              <span class="font-mono text-xs text-emerald-300 shrink-0 live-rice-timer-readout">${formattedTime}</span>
+            </div>
+          ` : ''}
+
+          ${alertBanner ? `
+            <div role="alert" class="rice-stage-alert-banner rounded-xl px-3 py-2.5 bg-gradient-to-r from-amber-950/95 via-amber-900/70 to-emerald-950/90 border-2 border-amber-400 text-amber-200 text-xs font-extrabold flex items-center justify-between gap-2 shadow-lg">
+              <span>🔔 ${alertBanner}</span>
+              <button type="button" class="rice-timer-clear-btn px-2.5 py-1 rounded-lg bg-slate-950/90 hover:bg-slate-900 text-amber-200 border border-amber-400/50 text-[10px] font-extrabold shrink-0">Dismiss</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function bindRiceCookingTimerEvents(rootEl) {
+      if (!rootEl) return;
+      rootEl.querySelectorAll('.rice-stage-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const stNum = parseInt(btn.getAttribute('data-rice-stage') || '1', 10);
+          startRiceTimerStage(stNum);
+        });
+      });
+      rootEl.querySelectorAll('.rice-timer-clear-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dismissRiceTimerAlert();
+        });
+      });
+    }
+
+    function renderRiceCookingTimerWidgets() {
+      const restTimerRiceContainer = document.getElementById('timer-rice-stage-container');
+      if (restTimerRiceContainer) {
+        restTimerRiceContainer.innerHTML = buildRiceCookingTimerCardHtml('rest-timer');
+        bindRiceCookingTimerEvents(restTimerRiceContainer);
+      }
+      const batchRiceMount = document.getElementById('batch-2-rice-timer-mount');
+      if (batchRiceMount) {
+        batchRiceMount.innerHTML = buildRiceCookingTimerCardHtml('batch-2');
+        bindRiceCookingTimerEvents(batchRiceMount);
+      }
     }
 
     function syncWallClockTimer() {
@@ -2283,6 +2518,7 @@
         if (timerWorker) {
           try { timerWorker.postMessage('stop'); } catch (e) {}
         }
+        const completedRiceStage = state.activeRiceTimerStage ? Number(state.activeRiceTimerStage) : null;
         timerRunning = false;
         state.timerRunning = false;
         state.timerEndTime = null;
@@ -2291,7 +2527,11 @@
         updateTimerUI();
         saveState();
         playTimerChime();
-        showToast('⏱️ Rest Complete! Time for your next set.');
+        if (completedRiceStage) {
+          triggerRiceTimerStageComplete(completedRiceStage);
+        } else {
+          showToast('⏱️ Rest Complete! Time for your next set.');
+        }
       }
     }
 
@@ -2304,6 +2544,9 @@
         state.timerContextLabel = contextLabel;
         const lbl = document.getElementById('timer-context-label');
         if (lbl) lbl.textContent = contextLabel;
+        if (!String(contextLabel).includes('Rice Stage')) {
+          state.activeRiceTimerStage = null;
+        }
       }
       if (timerInterval) clearInterval(timerInterval);
       timerRunning = true;
@@ -6674,6 +6917,268 @@
         });
       }
 
+      // UPGRADE 1, 2, 3 & 4 HELPERS: G|LB Scale Weight Badges, Prep Videos, 3-Stage Rice Timer & Kitchen Prep Notes/Photos
+      if (!state.fuelWeightUnit || (state.fuelWeightUnit !== 'g' && state.fuelWeightUnit !== 'lb')) {
+        state.fuelWeightUnit = 'g';
+      }
+      if (!state.prepNotes || typeof state.prepNotes !== 'object') {
+        state.prepNotes = {};
+      }
+      if (!state.openPrepNoteCards || typeof state.openPrepNoteCards !== 'object') {
+        state.openPrepNoteCards = {};
+      }
+
+      const fuelUnitGBtn = document.getElementById('fuel-unit-g-btn');
+      const fuelUnitLbBtn = document.getElementById('fuel-unit-lb-btn');
+      if (fuelUnitGBtn && fuelUnitLbBtn) {
+        if (state.fuelWeightUnit === 'lb') {
+          fuelUnitLbBtn.className = 'px-2.5 py-1 rounded-md text-[10px] font-extrabold bg-sky-400 text-slate-950 shadow-sm transition';
+          fuelUnitGBtn.className = 'px-2.5 py-1 rounded-md text-[10px] font-extrabold text-sky-300 hover:text-white transition';
+        } else {
+          fuelUnitGBtn.className = 'px-2.5 py-1 rounded-md text-[10px] font-extrabold bg-sky-400 text-slate-950 shadow-sm transition';
+          fuelUnitLbBtn.className = 'px-2.5 py-1 rounded-md text-[10px] font-extrabold text-sky-300 hover:text-white transition';
+        }
+        fuelUnitGBtn.onclick = () => {
+          if (state.fuelWeightUnit !== 'g') {
+            state.fuelWeightUnit = 'g';
+            saveState();
+            renderVeganView();
+            showToast('⚖️ Kitchen Scale Unit: Grams (G)');
+          }
+        };
+        fuelUnitLbBtn.onclick = () => {
+          if (state.fuelWeightUnit !== 'lb') {
+            state.fuelWeightUnit = 'lb';
+            saveState();
+            renderVeganView();
+            showToast('⚖️ Kitchen Scale Unit: Pounds & Ounces (LB)');
+          }
+        };
+      }
+
+      function getFuelCardScaleBadgeText(slotId, unit) {
+        const map = {
+          pre_shake: { g: 'Scale: 390g', lb: 'Scale: 0.86 lb / 13.8 oz' },
+          post_oats: { g: 'Scale: 269g', lb: 'Scale: 0.59 lb / 9.5 oz' },
+          lunch: { g: 'Scale: 419g', lb: 'Scale: 0.92 lb / 14.8 oz' },
+          dinner: { g: 'Scale: 421g', lb: 'Scale: 0.93 lb / 14.9 oz' }
+        };
+        const entry = map[slotId];
+        if (!entry) return '';
+        return unit === 'lb' ? entry.lb : entry.g;
+      }
+
+      function getBatchCardScaleBadgeText(recipeId, unit) {
+        const map = {
+          recipe_oats_batch: {
+            g: 'Batch: 1,076g • 1 Jar Today: 269g',
+            lb: 'Batch: 2.37 lb • 1 Jar: 0.59 lb / 9.5 oz'
+          },
+          recipe_rice_batch: {
+            g: 'Cooked Batch: 600g • 1 Bowl Today: 150g',
+            lb: 'Batch: 1.32 lb • 1 Bowl: 0.33 lb / 5.3 oz'
+          }
+        };
+        const entry = map[recipeId];
+        if (!entry) return '';
+        return unit === 'lb' ? entry.lb : entry.g;
+      }
+
+      function convertSingleMeasureToLbOz(val) {
+        const lbs = (val / 453.59237).toFixed(2);
+        const oz = (val / 28.349523125).toFixed(1);
+        return `${lbs} lb (${oz} oz)`;
+      }
+
+      function formatIngredientWeightForUnit(rawWeight, unit) {
+        const trimmed = String(rawWeight || '').trim();
+        if (!trimmed || unit !== 'lb') return trimmed;
+        const multMatch = /^(\d+(?:\.\d+)?)\s*(g|ml)\s*[×x]\s*(\d+)$/i.exec(trimmed);
+        if (multMatch) {
+          const val = parseFloat(multMatch[1]);
+          const count = multMatch[3];
+          return `${convertSingleMeasureToLbOz(val)} × ${count}`;
+        }
+        const yieldMatch = /^(\d+(?:\.\d+)?)\s*(g|ml)\s+yield$/i.exec(trimmed);
+        if (yieldMatch) {
+          const val = parseFloat(yieldMatch[1]);
+          return `${convertSingleMeasureToLbOz(val)} Yield`;
+        }
+        const simpleMatch = /^(\d+(?:\.\d+)?)\s*(g|ml)$/i.exec(trimmed);
+        if (simpleMatch) {
+          const val = parseFloat(simpleMatch[1]);
+          return convertSingleMeasureToLbOz(val);
+        }
+        return trimmed;
+      }
+
+      function getPrepNoteReminderPillHtml(cardId) {
+        const noteObj = state.prepNotes && state.prepNotes[cardId];
+        if (!noteObj) return '';
+        const cleanText = String(noteObj.text || '').trim();
+        const hasPhoto = Boolean(String(noteObj.photoDataUrl || '').trim());
+        if (!cleanText && !hasPhoto) return '';
+        const displayStr = cleanText ? `Note: ${cleanText}` : 'Note: Kitchen Photo Attached';
+        return `<span data-prep-note-header-pill="${cardId}" class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-950/75 border border-amber-400/50 text-amber-200 break-words">${displayStr.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
+      }
+
+      function buildPrepNoteCollapsibleSectionHtml(cardId, cardLabel) {
+        const noteObj = (state.prepNotes && state.prepNotes[cardId]) || { text: '', photoDataUrl: '', updatedAt: '' };
+        const cleanText = String(noteObj.text || '').trim();
+        const hasPhoto = Boolean(String(noteObj.photoDataUrl || '').trim());
+        const isPopulated = Boolean(cleanText || hasPhoto);
+        const isOpen = Boolean(state.openPrepNoteCards && state.openPrepNoteCards[cardId]);
+        const toggleBtnLabel = isPopulated ? '📝 Edit Kitchen Note' : '+ Add Kitchen Note / Photo';
+        const escapedText = String(noteObj.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+        return `
+          <div class="pt-1 border-t border-slate-800/80 space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                data-toggle-prep-note="${cardId}"
+                class="prep-note-toggle-btn text-[11px] font-extrabold px-2.5 py-1.5 rounded-xl border transition flex items-center gap-1.5 ${
+                  isPopulated
+                    ? 'bg-amber-950/60 hover:bg-amber-900/60 border-amber-500/45 text-amber-200'
+                    : 'bg-slate-950/80 hover:bg-slate-900 border-slate-800 text-slate-300'
+                }"
+              >
+                <span>${toggleBtnLabel}</span>
+                <span class="text-[10px] text-slate-400">${isOpen ? '▴' : '▾'}</span>
+              </button>
+              ${hasPhoto ? `<span class="text-[10px] font-bold text-sky-300">📷 Photo Saved</span>` : ''}
+            </div>
+
+            <div id="prep-note-panel-${cardId}" class="${isOpen ? 'space-y-2 bg-slate-950/90 border border-slate-800 rounded-xl p-3' : 'hidden'}">
+              <label for="prep-note-input-${cardId}" class="block text-[10px] font-extrabold uppercase tracking-wider text-amber-300">
+                Kitchen Scale Tare / Stove Setting Note (${cardLabel})
+              </label>
+              <textarea
+                id="prep-note-input-${cardId}"
+                data-prep-note-input="${cardId}"
+                rows="2"
+                placeholder="e.g., Empty glass jar tare = 215g, stove dial #2..."
+                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+              >${escapedText}</textarea>
+
+              ${hasPhoto ? `
+                <div class="flex items-center gap-2.5 bg-slate-900/90 border border-slate-800 rounded-lg p-2">
+                  <img src="${noteObj.photoDataUrl}" alt="Kitchen Prep Photo" class="w-14 h-14 rounded-lg object-cover border border-slate-700 shrink-0" />
+                  <div class="min-w-0 flex-1">
+                    <div class="text-[11px] font-bold text-emerald-300">Compressed Kitchen Photo (max 400px JPEG)</div>
+                    <button type="button" data-remove-prep-photo="${cardId}" class="prep-note-remove-photo-btn mt-1 text-[10px] font-bold text-rose-300 hover:text-rose-200 underline">Remove Photo</button>
+                  </div>
+                </div>
+              ` : ''}
+
+              <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <div class="flex items-center gap-1.5">
+                  <label class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-300 text-[11px] font-extrabold cursor-pointer transition">
+                    📷 Snap / Upload Photo
+                    <input type="file" accept="image/*" data-prep-photo-input="${cardId}" class="prep-note-photo-input hidden" />
+                  </label>
+                  ${isPopulated ? `
+                    <button type="button" data-clear-prep-note="${cardId}" class="prep-note-clear-btn px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 border border-slate-800 text-slate-400 hover:text-rose-300 text-[11px] font-bold transition">
+                      Clear
+                    </button>
+                  ` : ''}
+                </div>
+                <button type="button" data-save-prep-note="${cardId}" class="prep-note-save-btn px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-extrabold transition">
+                  Save Note
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function bindPrepNoteEvents(containerEl) {
+        if (!containerEl) return;
+        containerEl.querySelectorAll('.prep-note-toggle-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const cardId = btn.getAttribute('data-toggle-prep-note');
+            if (!cardId) return;
+            state.openPrepNoteCards[cardId] = !state.openPrepNoteCards[cardId];
+            saveState();
+            renderVeganView();
+          });
+        });
+
+        containerEl.querySelectorAll('.prep-note-save-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const cardId = btn.getAttribute('data-save-prep-note');
+            if (!cardId) return;
+            const inputEl = document.getElementById(`prep-note-input-${cardId}`);
+            const textVal = inputEl ? String(inputEl.value || '').trim() : '';
+            const existing = (state.prepNotes && state.prepNotes[cardId]) || {};
+            const photoUrl = existing.photoDataUrl || '';
+            if (!textVal && !photoUrl) {
+              delete state.prepNotes[cardId];
+            } else {
+              state.prepNotes[cardId] = {
+                text: textVal,
+                photoDataUrl: photoUrl,
+                updatedAt: new Date().toISOString()
+              };
+            }
+            saveState();
+            renderVeganView();
+            showToast('📝 Saved kitchen prep note!');
+          });
+        });
+
+        containerEl.querySelectorAll('.prep-note-clear-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const cardId = btn.getAttribute('data-clear-prep-note');
+            if (!cardId) return;
+            delete state.prepNotes[cardId];
+            saveState();
+            renderVeganView();
+            showToast('🗑️ Cleared kitchen prep note.');
+          });
+        });
+
+        containerEl.querySelectorAll('.prep-note-remove-photo-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const cardId = btn.getAttribute('data-remove-prep-photo');
+            if (!cardId || !state.prepNotes[cardId]) return;
+            state.prepNotes[cardId].photoDataUrl = '';
+            if (!state.prepNotes[cardId].text) {
+              delete state.prepNotes[cardId];
+            }
+            saveState();
+            renderVeganView();
+            showToast('🗑️ Removed kitchen photo.');
+          });
+        });
+
+        containerEl.querySelectorAll('.prep-note-photo-input').forEach(input => {
+          input.addEventListener('change', (e) => {
+            const cardId = input.getAttribute('data-prep-photo-input');
+            const file = e.target && e.target.files && e.target.files[0];
+            if (!cardId || !file) return;
+            const textInputEl = document.getElementById(`prep-note-input-${cardId}`);
+            const currentTypedText = textInputEl ? String(textInputEl.value || '').trim() : ((state.prepNotes[cardId] && state.prepNotes[cardId].text) || '');
+            compressExercisePhotoFileToDataUrl(file, (compressedUrl) => {
+              if (!compressedUrl) return;
+              state.prepNotes[cardId] = {
+                text: currentTypedText,
+                photoDataUrl: compressedUrl,
+                updatedAt: new Date().toISOString()
+              };
+              state.openPrepNoteCards[cardId] = true;
+              saveState();
+              renderVeganView();
+              showToast('📷 Saved compressed kitchen photo (max 400px JPEG)!');
+            });
+          });
+        });
+      }
+
       // UPGRADE 3: Redesigned 4-Day Batch Prep Cards (Collapsed by Default, 1-Tap Kitchen Scale Rows, Reset Batch Button & Fridge Portion Indicator)
       const recipeCardsContainer = document.getElementById('batch-recipe-cards-container');
       if (recipeCardsContainer) {
@@ -6687,6 +7192,8 @@
             yieldPill: '4 Jars in Fridge (4 Days)',
             title: '4-Day Overnight Protein Oats Batch',
             subtitle: 'Prep time: 5 mins • Fridge life: 4 days • 26g P & 395 kcal per jar',
+            videoUrl: 'https://www.youtube.com/watch?v=_wgQBioExZA',
+            videoTitle: 'High-Protein Overnight Oats Without Whey',
             steps: [
               {
                 id: 'oats_step_1',
@@ -6732,6 +7239,8 @@
             yieldPill: '4 Portions in Fridge (4 Days)',
             title: '4-Day Jasmine Rice Batch Prep',
             subtitle: 'Prep time: 20 mins • Yields 4 × 150g cooked rice portions (55g dry/day)',
+            videoUrl: 'https://www.youtube.com/watch?v=zWTc8eLEeyY',
+            videoTitle: 'How to Cook Jasmine Rice — Absorption Method',
             steps: [
               {
                 id: 'rice_step_1',
@@ -6769,9 +7278,12 @@
           const isCollapsed = state.collapsedRecipeCards[recipe.id] !== undefined
             ? Boolean(state.collapsedRecipeCards[recipe.id])
             : true;
+          const batchScaleBadgeText = getBatchCardScaleBadgeText(recipe.id, state.fuelWeightUnit);
+          const headerPrepNotePillHtml = getPrepNoteReminderPillHtml(recipe.id);
 
           const stepsRowsHtml = recipe.steps.map(st => {
             const stDone = Boolean(state.recipePrepLogs[st.id]);
+            const formattedStepWeight = formatIngredientWeightForUnit(st.weightBadge, state.fuelWeightUnit);
             return `
               <button
                 type="button"
@@ -6793,12 +7305,12 @@
                     <div class="text-[11px] text-slate-400 mt-0.5 leading-snug break-words">${st.detail}</div>
                   </div>
                 </div>
-                ${st.weightBadge ? `
+                ${formattedStepWeight ? `
                   <span class="shrink-0 text-xs sm:text-sm font-mono font-extrabold px-2.5 py-1 rounded-xl border whitespace-nowrap ${
                     stDone
                       ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-200'
                       : 'bg-slate-900 border-emerald-500/40 text-emerald-300'
-                  }">${st.weightBadge}</span>
+                  }">${formattedStepWeight}</span>
                 ` : ''}
               </button>
             `;
@@ -6819,18 +7331,31 @@
                       !isCollapsed ? 'bg-sky-400 text-slate-950' : (isRecipeDone ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300')
                     }">${recipe.badge}</span>
                     <span class="text-[11px] font-semibold text-sky-200 bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 rounded-md whitespace-nowrap">❄️ ${recipe.yieldPill}</span>
+                    <span data-batch-scale-badge="${recipe.id}" class="text-[11px] px-2 py-0.5 rounded-md bg-sky-950/70 border border-sky-400/50 text-sky-200 font-bold whitespace-nowrap">${batchScaleBadgeText}</span>
                     <span class="recipe-status-badge text-[10px] font-extrabold px-2 py-0.5 rounded-full border whitespace-nowrap ${
                       isRecipeDone
                         ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
                         : 'bg-slate-800 border-slate-700 text-slate-300'
                     }">${doneSteps}/${totalSteps} Checked</span>
+                    ${headerPrepNotePillHtml}
                   </div>
                   <h3 class="text-sm sm:text-base font-extrabold text-white mt-1.5 leading-snug break-words">${recipe.title}</h3>
                   <p class="text-[11px] text-slate-400 mt-0.5 leading-snug">${recipe.subtitle}</p>
                 </div>
-                <button type="button" data-reset-recipe="${recipe.id}" class="reset-recipe-steps-btn shrink-0 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-extrabold whitespace-nowrap transition">
-                  ↺ Reset Batch
-                </button>
+                <div class="flex flex-col sm:flex-row items-end sm:items-center gap-1.5 shrink-0">
+                  <a
+                    href="${recipe.videoUrl}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="${recipe.videoTitle}"
+                    class="batch-prep-video-link px-2.5 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/50 text-rose-200 text-[10px] font-extrabold whitespace-nowrap transition flex items-center gap-1"
+                  >
+                    ▶ Prep Video
+                  </a>
+                  <button type="button" data-reset-recipe="${recipe.id}" class="reset-recipe-steps-btn shrink-0 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-extrabold whitespace-nowrap transition">
+                    ↺ Reset Batch
+                  </button>
+                </div>
               </div>
 
               <button type="button" data-toggle-recipe-card="${recipe.id}" class="recipe-card-toggle-btn w-full flex items-center justify-between bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-slate-300 rounded-xl px-3 py-2 text-xs transition">
@@ -6842,12 +7367,19 @@
                 </span>
               </button>
 
-              <div class="${isCollapsed ? 'hidden' : 'space-y-2 pt-1'}" style="display: ${isCollapsed ? 'none' : 'block'};">
-                ${stepsRowsHtml}
+              <div class="${isCollapsed ? 'hidden' : 'space-y-2.5 pt-1'}" style="display: ${isCollapsed ? 'none' : 'block'};">
+                ${recipe.id === 'recipe_rice_batch' ? `<div id="batch-2-rice-timer-mount"></div>` : ''}
+                <div class="space-y-2">
+                  ${stepsRowsHtml}
+                </div>
+                ${buildPrepNoteCollapsibleSectionHtml(recipe.id, recipe.badge)}
               </div>
             </article>
           `;
         }).join('');
+
+        renderRiceCookingTimerWidgets();
+        bindPrepNoteEvents(recipeCardsContainer);
 
         recipeCardsContainer.querySelectorAll('.recipe-card-toggle-btn').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -7087,6 +7619,7 @@
 
           const scannableRowsHtml = itemsList.map(it => {
             const ingDone = isIngredientChecked(week, dayIdx, slot.slotId, it.id);
+            const convertedIngWeight = formatIngredientWeightForUnit(it.weight, state.fuelWeightUnit);
             return `
               <button type="button" data-meal-slot="${slot.slotId}" data-ing-id="${it.id}" class="meal-ing-check-btn w-full text-left px-3 py-2 rounded-xl border transition flex items-center justify-between gap-2.5 ${
                 ingDone
@@ -7101,20 +7634,25 @@
                   }">${ingDone ? '✓' : ''}</span>
                   <span class="text-xs font-bold leading-snug break-words ${ingDone ? 'line-through text-emerald-200/80' : 'text-white'}">${it.label}</span>
                 </div>
-                <span class="shrink-0 text-[11px] font-mono font-extrabold px-2.5 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 whitespace-nowrap">
-                  ${it.weight}
+                <span class="meal-ing-weight-badge shrink-0 text-[11px] font-mono font-extrabold px-2.5 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 whitespace-nowrap">
+                  ${convertedIngWeight}
                 </span>
               </button>
             `;
           }).join('');
 
+          const scaleWeightBadgeText = getFuelCardScaleBadgeText(slot.slotId, state.fuelWeightUnit);
+          const fuelPrepNotePillHtml = getPrepNoteReminderPillHtml(slot.slotId);
+
           return `
             <article data-fuel-card-slot="${slot.slotId}" class="bg-slate-900 border ${isDone ? 'border-emerald-500/50 bg-slate-900/80' : (slotSched.isPostWorkoutTarget ? 'border-emerald-400/70 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/40' : 'border-slate-800')} rounded-2xl p-3.5 sm:p-4 space-y-2.5 transition-all">
-              <!-- Top Row: Fuel Badge + Scheduled Time, Macro Badge, and 1-Tap + Log Fuel / Done Button -->
+              <!-- Top Row: Fuel Badge + Scheduled Time, Warm Amber Energy/Protein Badge, Sky-Blue Scale Weight Badge, and 1-Tap + Log Fuel / Done Button -->
               <div class="flex items-center justify-between gap-2">
                 <div class="flex flex-wrap items-center gap-1.5 min-w-0">
                   <span class="text-[11px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">${topFuelBadgeText}</span>
-                  <span class="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-slate-800 text-amber-300 border border-slate-700 whitespace-nowrap">${opt.kcal} kcal • ${opt.protein}g P</span>
+                  <span data-fuel-kcal-badge="${slot.slotId}" class="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-amber-950/60 border border-amber-500/40 text-amber-300 whitespace-nowrap">${opt.kcal} kcal • ${opt.protein}g P</span>
+                  <span data-fuel-scale-badge="${slot.slotId}" class="text-[11px] px-2 py-0.5 rounded-md bg-sky-950/70 border border-sky-400/50 text-sky-200 font-bold whitespace-nowrap">${scaleWeightBadgeText}</span>
+                  ${fuelPrepNotePillHtml}
                 </div>
                 <button type="button" data-meal-slot="${slot.slotId}" class="meal-check-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition ${
                   isDone
@@ -7142,7 +7680,7 @@
                 </span>
               </button>
 
-              <!-- Collapsible Ingredient Rows & Prep Tip (Hidden by Default) -->
+              <!-- Collapsible Ingredient Rows, Prep Tip & Kitchen Prep Note/Photo (Hidden by Default) -->
               <div class="fuel-card-collapsible-body ${isCardExpanded ? 'space-y-2 pt-1' : 'hidden'}" style="display: ${isCardExpanded ? 'block' : 'none'};">
                 <div class="space-y-1.5">
                   ${scannableRowsHtml}
@@ -7150,10 +7688,13 @@
                 <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl px-3 py-2 text-[11px] text-amber-300/95 leading-snug">
                   💡 <strong>Timing &amp; Prep Tip:</strong> ${slotSched.contextTip || slot.tip} ${slotSched.batchTip || ''}
                 </div>
+                ${buildPrepNoteCollapsibleSectionHtml(slot.slotId, `FUEL ${mealIdx + 1}`)}
               </div>
             </article>
           `;
         }).join('');
+
+        bindPrepNoteEvents(mealsEl);
 
         function handleOneTapMealToggle(slotId) {
           const curVal = isMealCheckedForDay(week, dayIdx, slotId);
@@ -7342,8 +7883,9 @@
         }
       });
 
-      // Contextual Visibility Across Tabs: Hide Sticky Rest Timer Bar Outside Workout Tabs (Rest Timer, Vegan Fuel, Shop List)
-      const showStickyTimer = (tabName === 'workout' || tabName === 'pullups');
+      // Contextual Visibility Across Tabs: Show Sticky Timer Bar on Workout/Pull-Ups OR Any Tab When Rice Cooking Timer / Alert Is Active
+      const hasRiceActivity = Boolean(state.activeRiceTimerStage || state.riceTimerAlertBanner);
+      const showStickyTimer = (tabName === 'workout' || tabName === 'pullups' || hasRiceActivity);
       const pinnedTimerRow = document.getElementById('pinned-rest-timer-row');
       const pinnedTimerStrip = document.getElementById('pinned-rest-timer-strip');
       const mainContainer = document.getElementById('main-content-container');
@@ -7356,14 +7898,14 @@
         else pinnedTimerStrip.classList.add('hidden');
       }
       if (mainContainer) {
+        mainContainer.classList.remove('pt-16', 'pt-28', 'pt-40');
         if (showStickyTimer) {
-          mainContainer.classList.remove('pt-16');
-          mainContainer.classList.add('pt-28');
+          mainContainer.classList.add(hasRiceActivity ? 'pt-40' : 'pt-28');
         } else {
-          mainContainer.classList.remove('pt-28');
           mainContainer.classList.add('pt-16');
         }
       }
+      renderRiceCookingTimerWidgets();
 
       document.querySelectorAll('.nav-tab-btn').forEach(btn => {
         const target = btn.getAttribute('data-nav');
@@ -7673,6 +8215,8 @@
         barbellConfig: JSON.parse(JSON.stringify(state.barbellConfig || {})),
         exerciseUnitPrefs: JSON.parse(JSON.stringify(state.exerciseUnitPrefs || {})),
         exerciseNotes: JSON.parse(JSON.stringify(state.exerciseNotes || {})),
+        prepNotes: JSON.parse(JSON.stringify(state.prepNotes || {})),
+        fuelWeightUnit: state.fuelWeightUnit || 'g',
         timedHoldSeconds: JSON.parse(JSON.stringify(state.timedHoldSeconds || {})),
         audioMode: state.audioMode || 'sound_vibe',
         gymScheduleByDay: JSON.parse(JSON.stringify(state.gymScheduleByDay || {})),
@@ -7694,6 +8238,8 @@
       state.barbellConfig = s.barbellConfig ? JSON.parse(JSON.stringify(s.barbellConfig)) : {};
       state.exerciseUnitPrefs = s.exerciseUnitPrefs ? JSON.parse(JSON.stringify(s.exerciseUnitPrefs)) : {};
       state.exerciseNotes = s.exerciseNotes ? JSON.parse(JSON.stringify(s.exerciseNotes)) : {};
+      state.prepNotes = s.prepNotes ? JSON.parse(JSON.stringify(s.prepNotes)) : {};
+      if (s.fuelWeightUnit === 'g' || s.fuelWeightUnit === 'lb') state.fuelWeightUnit = s.fuelWeightUnit;
       state.timedHoldSeconds = s.timedHoldSeconds ? JSON.parse(JSON.stringify(s.timedHoldSeconds)) : {};
       if (s.audioMode) state.audioMode = s.audioMode;
       state.gymScheduleByDay = s.gymScheduleByDay ? JSON.parse(JSON.stringify(s.gymScheduleByDay)) : {};
@@ -8081,6 +8627,11 @@
       const pinnedPlusBtn = document.getElementById('pinned-timer-plus');
       if (pinnedPlayBtn) pinnedPlayBtn.addEventListener('click', toggleTimer);
       if (pinnedResetBtn) pinnedResetBtn.addEventListener('click', resetTimer);
+      const pinnedRiceAlertDismissBtn = document.getElementById('pinned-rice-alert-dismiss');
+      if (pinnedRiceAlertDismissBtn) {
+        pinnedRiceAlertDismissBtn.addEventListener('click', dismissRiceTimerAlert);
+      }
+      renderRiceCookingTimerWidgets();
       if (pinnedMinusBtn) {
         pinnedMinusBtn.addEventListener('click', () => {
           syncWallClockTimer();

@@ -339,3 +339,68 @@ test('Architectural Upgrades & UI Cleanups: Fuel Collapse, Batch Prep, Silent-Pa
   assert.equal(mod.shouldShowBarbellHeaderPlateBadge(false, false, false), false);
 });
 
+test('Muscle Fuel & Rest Timer Upgrades 1-4: Scale Badges, G|LB Toggle, 3-Stage Rice Timer, Videos & Prep Notes', async () => {
+  const mod = await import('./workoutLogic.ts');
+
+  // 1. Scale weight badges in G and LB modes
+  assert.equal(mod.getFuelCardScaleBadge('pre_shake', 'g'), 'Scale: 390g');
+  assert.equal(mod.getFuelCardScaleBadge('pre_shake', 'lb'), 'Scale: 0.86 lb / 13.8 oz');
+  assert.equal(mod.getFuelCardScaleBadge('post_oats', 'g'), 'Scale: 269g');
+  assert.equal(mod.getFuelCardScaleBadge('post_oats', 'lb'), 'Scale: 0.59 lb / 9.5 oz');
+  assert.equal(mod.getFuelCardScaleBadge('lunch', 'g'), 'Scale: 419g');
+  assert.equal(mod.getFuelCardScaleBadge('lunch', 'lb'), 'Scale: 0.92 lb / 14.8 oz');
+  assert.equal(mod.getFuelCardScaleBadge('dinner', 'g'), 'Scale: 421g');
+  assert.equal(mod.getFuelCardScaleBadge('dinner', 'lb'), 'Scale: 0.93 lb / 14.9 oz');
+
+  assert.equal(mod.getBatchCardScaleBadge('recipe_oats_batch', 'g'), 'Batch: 1,076g • 1 Jar Today: 269g');
+  assert.equal(mod.getBatchCardScaleBadge('recipe_oats_batch', 'lb'), 'Batch: 2.37 lb • 1 Jar: 0.59 lb / 9.5 oz');
+  assert.equal(mod.getBatchCardScaleBadge('recipe_rice_batch', 'g'), 'Cooked Batch: 600g • 1 Bowl Today: 150g');
+  assert.equal(mod.getBatchCardScaleBadge('recipe_rice_batch', 'lb'), 'Batch: 1.32 lb • 1 Bowl: 0.33 lb / 5.3 oz');
+
+  // Individual ingredient row conversion in LB mode
+  assert.equal(mod.formatIngredientWeightBadge('45g', 'g'), '45g');
+  assert.equal(mod.formatIngredientWeightBadge('45g', 'lb'), '0.10 lb (1.6 oz)');
+  assert.equal(mod.formatIngredientWeightBadge('180g', 'lb'), '0.40 lb (6.3 oz)');
+  assert.equal(mod.formatIngredientWeightBadge('720 ml', 'lb'), '1.59 lb (25.4 oz)');
+
+  // 2. 3-Stage Jasmine Rice Cooking Timer specs & alarms
+  assert.equal(mod.JASMINE_RICE_TIMER_STAGES.length, 3);
+  assert.equal(mod.getRiceTimerStageSpec(1)?.seconds, 180);
+  assert.equal(mod.getRiceTimerStageSpec(1)?.buttonLabel, '1. Boil & Stir (3m)');
+  assert.equal(
+    mod.getRiceTimerStageSpec(1)?.completionBanner,
+    'ALARM: Stir / Mix Rice Once, Cover Tightly & Turn Heat to Low! Tap Stage 2 (12m Simmer)'
+  );
+  assert.equal(mod.getRiceTimerStageSpec(2)?.seconds, 720);
+  assert.equal(mod.getRiceTimerStageSpec(2)?.buttonLabel, '2. Low Simmer (12m)');
+  assert.equal(
+    mod.getRiceTimerStageSpec(2)?.completionBanner,
+    'ALARM: Turn Off Heat! Keep Lid Closed (Do Not Lift) & Tap Stage 3 (10m Steam)'
+  );
+  assert.equal(mod.getRiceTimerStageSpec(3)?.seconds, 600);
+  assert.equal(mod.getRiceTimerStageSpec(3)?.buttonLabel, '3. Off-Heat Steam (10m)');
+  assert.equal(
+    mod.getRiceTimerStageSpec(3)?.completionBanner,
+    'DONE: Open Lid & Mix / Fluff Rice With Fork! Portion 4 x 150g Containers'
+  );
+
+  // 3. Batch Prep Demonstration Video URLs
+  assert.equal(mod.BATCH_PREP_VIDEO_URLS.recipe_oats_batch, 'https://www.youtube.com/watch?v=_wgQBioExZA');
+  assert.equal(mod.BATCH_PREP_VIDEO_URLS.recipe_rice_batch, 'https://www.youtube.com/watch?v=zWTc8eLEeyY');
+
+  // 4. Collapsible Kitchen Prep Notes & Photo Capture
+  let prepNotes = {};
+  const emptyBadge = mod.getPrepNoteHeaderBadge(undefined);
+  assert.equal(emptyBadge.visible, false);
+  assert.equal(emptyBadge.toggleButtonLabel, '+ Add Kitchen Note / Photo');
+
+  prepNotes = mod.upsertPrepNote(prepNotes, 'recipe_oats_batch', {
+    text: 'Empty glass jar tare = 215g, stove dial #2'
+  }, '2026-11-10T11:36:00Z');
+  const populatedBadge = mod.getPrepNoteHeaderBadge(prepNotes['recipe_oats_batch']);
+  assert.equal(populatedBadge.visible, true);
+  assert.equal(populatedBadge.badgeText, 'Note: Empty glass jar tare = 215g, stove dial #2');
+  assert.equal(populatedBadge.toggleButtonLabel, 'Edit Kitchen Note');
+});
+
+
