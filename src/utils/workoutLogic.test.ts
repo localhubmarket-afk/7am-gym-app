@@ -112,4 +112,3 @@ test('Task 5: 3-Week Rolling Visibility & Contextual Sticky Timer Visibility', (
   assert.equal(shouldShowStickyRestTimer('shopping'), false);
 });
 
-
