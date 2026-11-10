@@ -385,5 +385,234 @@ export function resetRecipePrepSteps(
   return next;
 }
 
+// ============================================================================
+// UPGRADE 1: 3-State Bluetooth-Safe Audio Mode Logic
+// ============================================================================
+export type TimerAudioMode = 'sound_vibe' | 'vibe_only' | 'silent';
+
+export function cycleTimerAudioMode(current: TimerAudioMode): TimerAudioMode {
+  if (current === 'sound_vibe') return 'vibe_only';
+  if (current === 'vibe_only') return 'silent';
+  return 'sound_vibe';
+}
+
+export function getTimerAudioModeBehavior(mode: TimerAudioMode): {
+  shouldCreateAudioContext: boolean;
+  shouldVibrate: boolean;
+  closeDelayMs: number;
+  label: string;
+} {
+  if (mode === 'vibe_only') {
+    return {
+      shouldCreateAudioContext: false,
+      shouldVibrate: true,
+      closeDelayMs: 0,
+      label: '📳 Vibe Only (Bluetooth Safe)'
+    };
+  }
+  if (mode === 'silent') {
+    return {
+      shouldCreateAudioContext: false,
+      shouldVibrate: false,
+      closeDelayMs: 0,
+      label: '🔕 Silent'
+    };
+  }
+  return {
+    shouldCreateAudioContext: true,
+    shouldVibrate: true,
+    closeDelayMs: 320,
+    label: '🔔 Sound + Vibe'
+  };
+}
+
+// ============================================================================
+// UPGRADE 2 & 3: Side Plank Isometric Timer & Dumbbell-Only Calf Raise
+// ============================================================================
+export const TIMED_HOLD_PRESETS_SEC = [30, 45, 60, 75, 90] as const;
+
+export const UPDATED_BARBELL_EX_IDS = [
+  'mon_bench',
+  'mon_ohp',
+  'tue_squat',
+  'sat_deadlift',
+  'sat_hip_thrust'
+] as const;
+
+export function isTimedHoldExercise(ex: { id?: string; name?: string; isTimedHold?: boolean }): boolean {
+  if (!ex) return false;
+  if (ex.isTimedHold === true) return true;
+  if (ex.id === 'tue_side_plank' || ex.id === 'sat_side_plank') return true;
+  return /side\s+plank/i.test(String(ex.name || ''));
+}
+
+export function formatTimedHoldTarget(seconds: number): string {
+  const clean = Math.max(10, Math.round(Number(seconds) || 30));
+  return `${clean}s / side`;
+}
+
+// ============================================================================
+// UPGRADE 4: Collapsible Exercise Notes & Photo + Next-Week Warning Badge
+// ============================================================================
+export interface ExerciseNoteEntry {
+  text: string;
+  photoDataUrl: string;
+  updatedWeek: number;
+  updatedAt: string;
+}
+
+export function upsertExerciseNote(
+  notesMap: Record<string, ExerciseNoteEntry>,
+  exId: string,
+  patch: Partial<ExerciseNoteEntry>,
+  currentWeek: number,
+  nowIso = new Date().toISOString()
+): Record<string, ExerciseNoteEntry> {
+  const existing = notesMap?.[exId] || {
+    text: '',
+    photoDataUrl: '',
+    updatedWeek: currentWeek,
+    updatedAt: nowIso
+  };
+  const updated: ExerciseNoteEntry = {
+    text: patch.text !== undefined ? patch.text : existing.text,
+    photoDataUrl: patch.photoDataUrl !== undefined ? patch.photoDataUrl : existing.photoDataUrl,
+    updatedWeek: patch.updatedWeek !== undefined ? patch.updatedWeek : currentWeek,
+    updatedAt: nowIso
+  };
+  return {
+    ...(notesMap || {}),
+    [exId]: updated
+  };
+}
+
+export function getExerciseNoteHeaderBadge(
+  note: ExerciseNoteEntry | undefined
+): { visible: boolean; badgeText: string; hasPhoto: boolean } {
+  if (!note) return { visible: false, badgeText: '', hasPhoto: false };
+  const cleanText = String(note.text || '').trim();
+  const hasPhoto = Boolean(note.photoDataUrl && note.photoDataUrl.startsWith('data:image/'));
+  if (!cleanText && !hasPhoto) {
+    return { visible: false, badgeText: '', hasPhoto: false };
+  }
+  const badgeText = cleanText ? `Note: ${cleanText}` : 'Note: Machine Photo Saved';
+  return {
+    visible: true,
+    badgeText,
+    hasPhoto
+  };
+}
+
+// ============================================================================
+// UPGRADE 5, 6 & 7: 4 Daily Fuel Cards, Scannable Ingredient Rows & Pre-Gym Check
+// ============================================================================
+export interface FuelIngredientRow {
+  id: string;
+  name: string;
+  amountPill: string;
+  protein: number;
+  kcal: number;
+}
+
+export interface DailyFuelCardSpec {
+  slotId: 'pre_shake' | 'post_oats' | 'lunch' | 'dinner';
+  fuelNum: number;
+  headerBadge: string;
+  defaultTime: string;
+  title: string;
+  kcal: number;
+  protein: number;
+  rows: FuelIngredientRow[];
+}
+
+export const DAILY_FUEL_CARDS: DailyFuelCardSpec[] = [
+  {
+    slotId: 'pre_shake',
+    fuelNum: 1,
+    headerBadge: 'FUEL 1 • PRE-GYM SHAKE (6:35 AM)',
+    defaultTime: '6:35 AM',
+    title: 'Pre-Gym Fast Protein Shake',
+    kcal: 170,
+    protein: 36,
+    rows: [
+      { id: 'f1_pea_isolate', name: 'Pea Protein Isolate', amountPill: '30g', protein: 24, kcal: 110 },
+      { id: 'f1_silk_milk', name: 'Unsweetened Silk Protein Milk', amountPill: '360 ml', protein: 12, kcal: 60 }
+    ]
+  },
+  {
+    slotId: 'post_oats',
+    fuelNum: 2,
+    headerBadge: 'FUEL 2 • POST-GYM OVERNIGHT OATS (8:15 AM)',
+    defaultTime: '8:15 AM',
+    title: 'Post-Gym Overnight Protein Oats',
+    kcal: 395,
+    protein: 26,
+    rows: [
+      { id: 'f2_oats', name: 'Gluten-Free Protein Oats', amountPill: '45g', protein: 15, kcal: 170 },
+      { id: 'f2_silk_milk', name: 'Unsweetened Silk Protein Milk', amountPill: '180 ml', protein: 6, kcal: 100 },
+      { id: 'f2_banana', name: 'Peeled Ripe Banana', amountPill: '30g', protein: 0.5, kcal: 30 },
+      { id: 'f2_pb', name: 'Smooth Natural Peanut Butter', amountPill: '8g', protein: 2.5, kcal: 55 },
+      { id: 'f2_chia', name: 'Organic Whole Chia Seeds', amountPill: '6g', protein: 2, kcal: 40 }
+    ]
+  },
+  {
+    slotId: 'lunch',
+    fuelNum: 3,
+    headerBadge: 'FUEL 3 • SAVOURY TOFU & JASMINE RICE BOWL (1:00 PM)',
+    defaultTime: '1:00 PM',
+    title: 'Savoury Tofu, Rice & Broccoli Bowl',
+    kcal: 520,
+    protein: 33,
+    rows: [
+      { id: 'f3_tofu', name: 'Extra-Firm Tofu', amountPill: '175g', protein: 21, kcal: 210 },
+      { id: 'f3_rice', name: 'Cooked White Jasmine Rice', amountPill: '150g', protein: 4, kcal: 195 },
+      { id: 'f3_broccoli', name: 'Steamed Broccoli Florets', amountPill: '75g', protein: 2, kcal: 25 },
+      { id: 'f3_yeast', name: 'Fortified Nutritional Yeast', amountPill: '12g', protein: 6, kcal: 45 },
+      { id: 'f3_sesame', name: 'Toasted Sesame Oil', amountPill: '5g', protein: 0, kcal: 45 },
+      { id: 'f3_salt', name: 'Iodized Table Salt', amountPill: '1.5g', protein: 0, kcal: 0 }
+    ]
+  },
+  {
+    slotId: 'dinner',
+    fuelNum: 4,
+    headerBadge: 'FUEL 4 • EVENING RECOVERY SHAKE (5:30 PM)',
+    defaultTime: '5:30 PM',
+    title: 'Evening Protein & PB Shake',
+    kcal: 315,
+    protein: 43,
+    rows: [
+      { id: 'f4_pea_isolate', name: 'Pea Protein Isolate', amountPill: '45g', protein: 27, kcal: 160 },
+      { id: 'f4_silk_milk', name: 'Unsweetened Silk Protein Milk', amountPill: '360 ml', protein: 12, kcal: 60 },
+      { id: 'f4_pb', name: 'Smooth Natural Peanut Butter', amountPill: '16g', protein: 4, kcal: 95 }
+    ]
+  }
+];
+
+export function calculateDailyFuelMacros(
+  checkedSlots: Partial<Record<DailyFuelCardSpec['slotId'], boolean>>
+): { protein: number; kcal: number; loggedCount: number } {
+  let protein = 0;
+  let kcal = 0;
+  let loggedCount = 0;
+  for (const card of DAILY_FUEL_CARDS) {
+    if (checkedSlots && checkedSlots[card.slotId]) {
+      protein += card.protein;
+      kcal += card.kcal;
+      loggedCount += 1;
+    }
+  }
+  return { protein, kcal, loggedCount };
+}
+
+export function shouldShowPreWorkoutFuelPrompt(
+  dayIdx: number,
+  isFuel1Logged: boolean,
+  isDismissedForDay: boolean
+): boolean {
+  const isTrainingDay = dayIdx >= 0 && dayIdx <= 4;
+  return isTrainingDay && !isFuel1Logged && !isDismissedForDay;
+}
+
+
 
 

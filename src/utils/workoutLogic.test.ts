@@ -155,5 +155,144 @@ test('Task 6: Exercise Progress Denominator Badge, Prefix Stripping & Atomic Bat
   assert.equal(Boolean(logs.oats_step_6), false);
 });
 
+import {
+  cycleTimerAudioMode,
+  getTimerAudioModeBehavior,
+  TIMED_HOLD_PRESETS_SEC,
+  UPDATED_BARBELL_EX_IDS,
+  isTimedHoldExercise,
+  formatTimedHoldTarget,
+  upsertExerciseNote,
+  getExerciseNoteHeaderBadge,
+  DAILY_FUEL_CARDS,
+  calculateDailyFuelMacros,
+  shouldShowPreWorkoutFuelPrompt,
+  type ExerciseNoteEntry
+} from './workoutLogic';
+
+test('Upgrade 1: 3-State Bluetooth-Safe Audio Mode & Web Audio API Cleanup', () => {
+  assert.equal(cycleTimerAudioMode('sound_vibe'), 'vibe_only');
+  assert.equal(cycleTimerAudioMode('vibe_only'), 'silent');
+  assert.equal(cycleTimerAudioMode('silent'), 'sound_vibe');
+
+  const soundVibe = getTimerAudioModeBehavior('sound_vibe');
+  assert.equal(soundVibe.shouldCreateAudioContext, true);
+  assert.equal(soundVibe.shouldVibrate, true);
+  assert.equal(soundVibe.closeDelayMs <= 350 && soundVibe.closeDelayMs > 0, true);
+
+  const vibeOnly = getTimerAudioModeBehavior('vibe_only');
+  assert.equal(vibeOnly.shouldCreateAudioContext, false);
+  assert.equal(vibeOnly.shouldVibrate, true);
+
+  const silent = getTimerAudioModeBehavior('silent');
+  assert.equal(silent.shouldCreateAudioContext, false);
+  assert.equal(silent.shouldVibrate, false);
+});
+
+test('Upgrade 2 & 3: Side Plank Isometric Timer & Dumbbell-Only Standing Calf Raise', () => {
+  assert.deepEqual(TIMED_HOLD_PRESETS_SEC, [30, 45, 60, 75, 90]);
+  assert.equal(isTimedHoldExercise({ id: 'tue_side_plank', name: 'Side Plank', isTimedHold: true }), true);
+  assert.equal(isTimedHoldExercise({ id: 'mon_bench', name: 'Barbell Bench Press' }), false);
+  assert.equal(formatTimedHoldTarget(30), '30s / side');
+  assert.equal(formatTimedHoldTarget(60), '60s / side');
+
+  // Verify tue_calf is removed from BARBELL_EX_IDS
+  assert.equal((UPDATED_BARBELL_EX_IDS as readonly string[]).includes('tue_calf'), false);
+  assert.equal((UPDATED_BARBELL_EX_IDS as readonly string[]).includes('mon_bench'), true);
+});
+
+test('Upgrade 4: Collapsible Exercise Notes & Photo + Next-Week Warning Badge', () => {
+  let notes: Record<string, ExerciseNoteEntry> = {};
+  notes = upsertExerciseNote(notes, 'mon_lat_pd', { text: 'Machine pin #6, seat height 4' }, 1, '2026-11-10T08:00:00Z');
+  assert.equal(notes.mon_lat_pd.text, 'Machine pin #6, seat height 4');
+  assert.equal(notes.mon_lat_pd.updatedWeek, 1);
+
+  const badge = getExerciseNoteHeaderBadge(notes.mon_lat_pd);
+  assert.equal(badge.visible, true);
+  assert.equal(badge.badgeText, 'Note: Machine pin #6, seat height 4');
+  assert.equal(badge.hasPhoto, false);
+
+  notes = upsertExerciseNote(notes, 'mon_lat_pd', { photoDataUrl: 'data:image/jpeg;base64,abc123' }, 2);
+  const badgeWithPhoto = getExerciseNoteHeaderBadge(notes.mon_lat_pd);
+  assert.equal(badgeWithPhoto.visible, true);
+  assert.equal(badgeWithPhoto.hasPhoto, true);
+});
+
+test('Upgrade 5, 6 & 7: 4 Daily Fuel Cards, Scannable Ingredient Rows & Pre-Workout Fuel Check-In', () => {
+  assert.equal(DAILY_FUEL_CARDS.length, 4);
+
+  // Verify exact macros and titles per card
+  assert.equal(DAILY_FUEL_CARDS[0].title, 'Pre-Gym Fast Protein Shake');
+  assert.equal(DAILY_FUEL_CARDS[0].kcal, 170);
+  assert.equal(DAILY_FUEL_CARDS[0].protein, 36);
+  assert.deepEqual(
+    DAILY_FUEL_CARDS[0].rows.map(r => [r.name, r.amountPill]),
+    [
+      ['Pea Protein Isolate', '30g'],
+      ['Unsweetened Silk Protein Milk', '360 ml']
+    ]
+  );
+
+  assert.equal(DAILY_FUEL_CARDS[1].title, 'Post-Gym Overnight Protein Oats');
+  assert.equal(DAILY_FUEL_CARDS[1].kcal, 395);
+  assert.equal(DAILY_FUEL_CARDS[1].protein, 26);
+  assert.deepEqual(
+    DAILY_FUEL_CARDS[1].rows.map(r => [r.name, r.amountPill]),
+    [
+      ['Gluten-Free Protein Oats', '45g'],
+      ['Unsweetened Silk Protein Milk', '180 ml'],
+      ['Peeled Ripe Banana', '30g'],
+      ['Smooth Natural Peanut Butter', '8g'],
+      ['Organic Whole Chia Seeds', '6g']
+    ]
+  );
+
+  assert.equal(DAILY_FUEL_CARDS[2].title, 'Savoury Tofu, Rice & Broccoli Bowl');
+  assert.equal(DAILY_FUEL_CARDS[2].kcal, 520);
+  assert.equal(DAILY_FUEL_CARDS[2].protein, 33);
+  assert.deepEqual(
+    DAILY_FUEL_CARDS[2].rows.map(r => [r.name, r.amountPill]),
+    [
+      ['Extra-Firm Tofu', '175g'],
+      ['Cooked White Jasmine Rice', '150g'],
+      ['Steamed Broccoli Florets', '75g'],
+      ['Fortified Nutritional Yeast', '12g'],
+      ['Toasted Sesame Oil', '5g'],
+      ['Iodized Table Salt', '1.5g']
+    ]
+  );
+
+  assert.equal(DAILY_FUEL_CARDS[3].title, 'Evening Protein & PB Shake');
+  assert.equal(DAILY_FUEL_CARDS[3].kcal, 315);
+  assert.equal(DAILY_FUEL_CARDS[3].protein, 43);
+  assert.deepEqual(
+    DAILY_FUEL_CARDS[3].rows.map(r => [r.name, r.amountPill]),
+    [
+      ['Pea Protein Isolate', '45g'],
+      ['Unsweetened Silk Protein Milk', '360 ml'],
+      ['Smooth Natural Peanut Butter', '16g']
+    ]
+  );
+
+  // Verify checking off all 4 cards totals 138g Protein and 1,400 kcal
+  const allLogged = calculateDailyFuelMacros({
+    pre_shake: true,
+    post_oats: true,
+    lunch: true,
+    dinner: true
+  });
+  assert.equal(allLogged.protein, 138);
+  assert.equal(allLogged.kcal, 1400);
+  assert.equal(allLogged.loggedCount, 4);
+
+  // Pre-workout fuel check-in prompt on workout days (Days 1-5 -> dayIdx 0-4)
+  assert.equal(shouldShowPreWorkoutFuelPrompt(0, false, false), true);
+  assert.equal(shouldShowPreWorkoutFuelPrompt(4, false, false), true);
+  assert.equal(shouldShowPreWorkoutFuelPrompt(0, true, false), false);
+  assert.equal(shouldShowPreWorkoutFuelPrompt(0, false, true), false);
+  assert.equal(shouldShowPreWorkoutFuelPrompt(5, false, false), false); // Rest Day 6
+});
+
+
 
 

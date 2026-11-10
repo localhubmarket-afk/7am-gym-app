@@ -105,19 +105,22 @@
       </div>
 
       <!-- Always-Pinned Interactive Rest Timer Bar (Visible on Gym & Pull-Ups Tabs; Hidden on Timer, Vegan Fuel & Shop List Tabs) -->
-      <div id="pinned-rest-timer-row" class="bg-slate-900/95 border border-slate-800 rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2 min-w-0">
-          <button id="header-timer-toggle" type="button" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500/50 transition shrink-0" title="Tap to Start or Pause Rest Timer">
-            <span id="header-timer-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
-            <span id="header-timer-display" class="font-mono text-sm sm:text-base font-extrabold text-emerald-400 tracking-tight">01:30</span>
+      <div id="pinned-rest-timer-row" class="bg-slate-900/95 border border-slate-800 rounded-xl px-2 py-1.5 flex items-center justify-between gap-1">
+        <div class="flex items-center gap-1 min-w-0">
+          <button id="header-timer-toggle" type="button" class="flex items-center gap-1 px-1.5 py-1 rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500/50 transition shrink-0" title="Tap to Start or Pause Rest Timer">
+            <span id="header-timer-dot" class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+            <span id="header-timer-display" class="font-mono text-xs sm:text-sm font-extrabold text-emerald-400 tracking-tight">01:30</span>
           </button>
-          <span id="pinned-timer-context" class="hidden sm:inline text-[11px] font-semibold text-slate-300 truncate">Ready • Tap any set</span>
+          <button id="pinned-audio-mode-btn" type="button" class="px-1.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[10px] font-extrabold text-emerald-300 transition shrink-0 whitespace-nowrap" title="Cycle Audio Mode: Sound + Vibe | Vibe Only (Bluetooth Safe) | Silent">
+            🔔 Sound+Vibe
+          </button>
+          <span id="pinned-timer-context" class="hidden md:inline text-[11px] font-semibold text-slate-300 truncate">Ready • Tap any set</span>
         </div>
 
         <div class="flex items-center gap-1 shrink-0">
-          <button id="pinned-jump-next-btn" type="button" class="px-2 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[10px] font-extrabold transition" title="Jump to next incomplete set">▶ Next</button>
+          <button id="pinned-jump-next-btn" type="button" aria-label="Jump to next incomplete set" class="px-1.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[10px] font-extrabold transition" title="Jump to next incomplete set">▶<span class="hidden sm:inline"> Next</span></button>
           <button id="pinned-timer-minus" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 transition" title="Subtract 15 seconds">-15s</button>
-          <button id="pinned-timer-play" type="button" class="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-extrabold transition">Start</button>
+          <button id="pinned-timer-play" type="button" class="px-2 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-extrabold transition">Start</button>
           <button id="pinned-timer-plus" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 transition" title="Add 15 seconds">+15s</button>
           <button id="pinned-timer-reset" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-400 hover:text-white transition" title="Reset timer">↺</button>
         </div>
@@ -141,6 +144,11 @@
 
     <!-- ==================== VIEW 1: WORKOUT & WEIGHT TRACKER ==================== -->
     <section id="view-workout" class="space-y-2.5">
+      <!-- Pre-Workout Fuel Check-In Prompt Banner (Days 1–5 when Fuel 1 is unlogged) -->
+      <div id="pre-workout-fuel-checkin-banner" class="hidden bg-amber-500/15 border border-amber-400/50 rounded-2xl p-3 space-y-2 shadow-lg shadow-amber-950/30">
+        <!-- Populated dynamically by JS -->
+      </div>
+
       <!-- Streamlined 7-Day Cycle & Progressive Week Selector Card -->
       <div id="gym-week-day-selector-card" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
         <div class="flex items-center justify-between gap-2">
@@ -291,11 +299,30 @@
     <!-- ==================== VIEW 3: REST TIMER & STOPWATCH ==================== -->
     <section id="view-timer" class="hidden space-y-4">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-center space-y-5">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Gym Rest Timer</span>
-          <button type="button" id="timer-sound-toggle" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-400 border border-slate-700">
-            🔔 Sound On
+          <button type="button" id="timer-sound-toggle" class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-400 border border-slate-700 transition">
+            🔔 Sound + Vibe
           </button>
+        </div>
+
+        <!-- 3-State Bluetooth-Safe Audio Mode Selector (Sound + Vibe | Vibe Only (Bluetooth Safe) | Silent) -->
+        <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-2 space-y-1.5 text-left">
+          <div class="flex items-center justify-between text-[10px]">
+            <span class="font-extrabold uppercase tracking-wider text-slate-400">🎧 Bluetooth Audio Mode (Zero Spotify/YouTube Fizz)</span>
+            <span class="text-emerald-400 font-semibold">Auto-releases in &lt;350ms</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5" role="group" aria-label="Timer Audio Mode">
+            <button type="button" data-audio-mode="sound_vibe" class="audio-mode-pill-btn py-1.5 px-2 rounded-lg text-[11px] font-extrabold border transition bg-emerald-500 text-slate-950 border-emerald-400">
+              🔔 Sound + Vibe
+            </button>
+            <button type="button" data-audio-mode="vibe_only" class="audio-mode-pill-btn py-1.5 px-2 rounded-lg text-[11px] font-bold border transition bg-slate-900 text-slate-300 border-slate-700 hover:text-white">
+              📳 Vibe Only (BT Safe)
+            </button>
+            <button type="button" data-audio-mode="silent" class="audio-mode-pill-btn py-1.5 px-2 rounded-lg text-[11px] font-bold border transition bg-slate-900 text-slate-300 border-slate-700 hover:text-white">
+              🔕 Silent
+            </button>
+          </div>
         </div>
 
         <div id="timer-context-label" class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full py-1 px-3 inline-block">
@@ -375,7 +402,7 @@
       <!-- Top Week/Day Selector Hidden on Nutrition Tab so View Opens Directly on Daily Protein, Calories & Water Tracker -->
       <div id="vegan-top-day-selector-container" class="hidden">
         <span id="vegan-week-day-title">⚡ Week 1 • Day 1 Fuel</span>
-        <span id="vegan-day-status-pill">0/3 Fuel</span>
+        <span id="vegan-day-status-pill">0/4 Fuel</span>
         <div id="vegan-day-selector-grid"></div>
       </div>
 
@@ -390,7 +417,7 @@
             <h2 class="text-sm sm:text-base font-extrabold text-white leading-tight mt-0.5">High-Protein Muscle &amp; Recomp Fuel (1,400 kcal • 138g P)</h2>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
-            <button type="button" id="log-all-vegan-day-btn" class="text-[11px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 transition">✓ Log All 3</button>
+            <button type="button" id="log-all-vegan-day-btn" class="text-[11px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 transition">✓ Log All 4</button>
             <button type="button" id="reset-vegan-day-btn" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white">Reset Today</button>
           </div>
         </div>
@@ -405,7 +432,7 @@
           <span class="text-[10px] text-emerald-400 font-semibold">12 Cheap Grocery Staples</span>
         </div>
         <div id="diet-flex-comparison-box" class="hidden bg-slate-950/95 border border-amber-500/30 rounded-xl p-2.5 text-[11px] space-y-1.5">
-          <div class="font-extrabold text-amber-300">💡 Why Lifters Use This Exact 3-Meal Muscle Fuel Formula:</div>
+          <div class="font-extrabold text-amber-300">💡 Why Lifters Use This Exact 4-Card Muscle Fuel Formula:</div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[10px]">
             <div class="bg-slate-900 border border-slate-800 rounded-lg p-2">
               <strong class="text-emerald-300 block">1. Extra-Firm Tofu (175g/day)</strong>
@@ -436,7 +463,7 @@
           <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
             <div class="flex justify-between text-xs font-bold">
               <span class="text-slate-300">Daily Calories</span>
-              <span id="macro-kcal-text" class="text-amber-400">0 / 1,495 kcal</span>
+              <span id="macro-kcal-text" class="text-amber-400">0 / 1,400 kcal</span>
             </div>
             <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-1.5">
               <div id="macro-kcal-bar" class="bg-amber-400 h-full transition-all duration-300" style="width: 0%"></div>
@@ -449,7 +476,7 @@
           <!-- Populated dynamically by JS -->
         </div>
 
-        <!-- Redundant Plan Day Sync 6-pill summary box hidden so user goes straight from Daily Macros & Water into #Prep 1/2 and FUEL 1–3 -->
+        <!-- Redundant Plan Day Sync 6-pill summary box hidden so user goes straight from Daily Macros & Water into #Prep 1/2 and FUEL 1–4 -->
         <div id="vegan-gym-time-bar" class="hidden"></div>
       </div>
 
@@ -459,7 +486,7 @@
       </div>
       <div id="batch-prep-checklist" class="hidden"></div>
 
-      <!-- The 3 Daily Repeat Meals -->
+      <!-- The 4 Daily Repeat Fuel Cards -->
       <div class="space-y-3" id="vegan-meals-container">
         <!-- Populated by JS -->
       </div>
@@ -468,7 +495,7 @@
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5">
         <div class="flex items-center justify-between gap-2">
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400">How These 3 Meals Cover 100% of Your Nutrients</h3>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400">How These 4 Fuel Cards Cover 100% of Your Nutrients</h3>
             <p class="text-[11px] text-slate-400">Tap to check off or open your 12-item Weekly Shop List</p>
           </div>
           <button type="button" id="open-shopping-tab-btn" class="shrink-0 px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-extrabold">
@@ -487,7 +514,7 @@
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
             <button type="button" data-meal-mode="recomp_6pack" class="meal-mode-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-emerald-500/20 text-emerald-300 border-emerald-500/40">
               6-Pack Recomp (Cut)
-              <span class="block text-[10px] font-normal opacity-80">1,780 kcal • 128g P</span>
+              <span class="block text-[10px] font-normal opacity-80">1,400 kcal • 138g P</span>
             </button>
             <button type="button" data-meal-mode="low_appetite" class="meal-mode-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-slate-800 text-slate-300 border-slate-700">
               Low Appetite Bulk
@@ -695,12 +722,19 @@
       pullupTrainingSetReps: 3,
       pullupHardestDay: 1,
       soundEnabled: true,
+      audioMode: 'sound_vibe', // 'sound_vibe' | 'vibe_only' | 'silent'
+      timedHoldSeconds: {},
+      exerciseNotes: {},
+      openNotePanels: {},
+      dismissedPreFuelPrompt: {},
       timerSeconds: 90,
       timerTotalSeconds: 90,
       mealMode: 'recomp_6pack',
       oatsBatchDays: 4,
       oatsProteinBoost: true,
       selectedMealVariant: {
+        pre_shake: 0,
+        post_oats: 0,
         pre: 0,
         post: 0,
         lunch: 0,
@@ -943,6 +977,13 @@
       if (!merged.cardCollapsedState) merged.cardCollapsedState = {};
       if (!merged.warmupLogs) merged.warmupLogs = {};
       if (!merged.waterIntakeLogs) merged.waterIntakeLogs = {};
+      if (!merged.exerciseNotes || typeof merged.exerciseNotes !== 'object') merged.exerciseNotes = {};
+      if (!merged.openNotePanels || typeof merged.openNotePanels !== 'object') merged.openNotePanels = {};
+      if (!merged.timedHoldSeconds || typeof merged.timedHoldSeconds !== 'object') merged.timedHoldSeconds = {};
+      if (!merged.dismissedPreFuelPrompt || typeof merged.dismissedPreFuelPrompt !== 'object') merged.dismissedPreFuelPrompt = {};
+      if (!merged.audioMode || !['sound_vibe', 'vibe_only', 'silent'].includes(merged.audioMode)) {
+        merged.audioMode = merged.soundEnabled === false ? 'silent' : 'sound_vibe';
+      }
       return merged;
     }
 
@@ -953,7 +994,7 @@
       if (state.cloudDbUrl && state.cloudDbUrl.trim()) {
         return state.cloudDbUrl.trim();
       }
-      if (window.location && window.location.hostname && (window.location.hostname.includes('vercel.app') || window.location.hostname === 'localhost')) {
+      if (window.location && window.location.hostname && window.location.hostname.includes('vercel.app')) {
         return window.location.origin + '/api/state' + (userEmail ? ('?email=' + encodeURIComponent(userEmail)) : '');
       }
       return '';
@@ -1286,23 +1327,24 @@
           },
           {
             id: 'tue_calf',
-            name: 'Standing Weighted Calf Raises (Barbell or Dumbbell)',
+            name: 'Standing Dumbbell Calf Raise',
             sets: 3,
             reps: '10-15',
             restSec: 90,
             restLabel: '1.5 min',
             videoUrl: 'https://youtu.be/q2Eigaa9dKU',
-            notes: 'Feet hip width apart, elevate toes on weight plate, press up on big toes and control heel slowly down.'
+            notes: 'Hold dumbbells at sides with feet hip-width apart, elevate balls of feet on a weight plate, press high onto big toes and lower heels slowly.'
           },
           {
             id: 'tue_side_plank',
             name: 'Side Plank',
+            isTimedHold: true,
             sets: 2,
             reps: '30s / side',
             restSec: 60,
             restLabel: '1 min',
             videoUrl: 'https://youtu.be/o4LGPtKjbhU',
-            notes: 'Push elbow into ground, keep body straight, add rotations to make it harder.'
+            notes: 'Push elbow into ground, keep body straight, hold 30s per side (or scale up with the isometric hold preset pills).'
           }
         ]
       },
@@ -1649,7 +1691,7 @@
     // 3. LOW-APPETITE VEGAN NUTRITION DATA
     // =========================================================================
     const VEGAN_MODES = {
-      recomp_6pack: { kcal: 1495, protein: 138, label: 'Light Shake + ½-Block Tofu Plan' },
+      recomp_6pack: { kcal: 1400, protein: 138, label: '4-Card Muscle & Recomp Fuel Plan' },
       low_appetite: { kcal: 2450, protein: 145, label: 'Low Appetite Bulk' },
       high_growth: { kcal: 2750, protein: 165, label: 'Max Muscle Gain' },
       light_day: { kcal: 2200, protein: 135, label: 'Rest / Light Day' }
@@ -1658,49 +1700,115 @@
     // Legacy item ID map for backward compatibility:
     // id: 'm1_pea_isolate', id: 'm1_silk_milk', id: 'm3_pea_isolate', id: 'm3_silk_milk', id: 'shop_tamari', id: 'creatine', id: 'shop_nooch', id: 'd3k2', id: 'leucine', id: 'shop_creatine', id: 'shop_edamame', id: 'shop_iodine', id: 'shop_potatoes', id: 'shop_seitan', id: 'shop_tempeh', id: 'shop_vitc', id: 'shop_isolate', id: 'sun_dead_bug', id: 'wed_usmc_set1', id: 'wed_usmc_set2', id: 'wed_usmc_set3'
     const VEGAN_ESSENTIALS = [
-      { id: 'b12', name: '✓ B12, Vitamin D & Calcium (200% B12, 95% D, 120% Ca)', detail: 'Covered automatically by your 900g/day of Silk Protein milk (180g in oats + 360g pre-gym shake + 360g evening shake) + 12g nutritional yeast + 175g tofu.' },
+      { id: 'b12', name: '✓ B12, Vitamin D & Calcium (200% B12, 95% D, 120% Ca)', detail: 'Covered automatically by your 900 ml/day of Silk Protein milk (360 ml pre-gym shake + 180 ml in oats + 360 ml evening shake) + 12g nutritional yeast + 175g tofu.' },
       { id: 'iodine_zinc', name: '✓ Thyroid Iodine (1.5g Iodized Table Salt) + Iron & Vitamin C (75g Broccoli)', detail: '1.5g (~¼ tsp) of Iodized Table Salt (Windsor Iodized Salt — NOT sea salt or pink Himalayan salt) covers 100% daily thyroid iodine; 75g broccoli unlocks iron in pea protein, oats & tofu.' },
-      { id: 'omega3', name: '✓ Omega-3 ALA & 138g Complete Protein (All in Grams)', detail: '75g/day Pea Protein Isolate (60g P) + 40g/day Bob’s Red Mill Protein Oats + 175g/day tofu + 6g/day chia seeds, 24g/day peanut butter & 5g/day toasted sesame oil.' }
+      { id: 'omega3', name: '✓ Omega-3 ALA & 138g Complete Protein (All in Grams)', detail: '75g/day Pea Protein Isolate + 45g/day Gluten-Free Protein Oats + 175g/day tofu + 6g/day chia seeds, 24g/day peanut butter & 5g/day toasted sesame oil.' }
     ];
 
     const VEGAN_MEALS = [
       {
-        slotId: 'post',
-        time: 'FUEL 1 • 6:35 AM Pre-Gym Shake + 8:15 AM Post-Gym Oats',
-        title: '30g Pea Protein in 360g Cold Silk Milk (Pre-Gym) + 264g Overnight Oats Jar (Post-Gym)',
-        tip: 'Take your 390g Shake (30g Pea Protein Isolate + 360g cold Silk Milk) 25 mins before the gym for fast amino acids with zero stomach bulk, then eat your 264g Overnight Oats Jar (1/4 batch) 15 mins after finishing your workout.',
+        slotId: 'pre_shake',
+        time: 'FUEL 1 • PRE-GYM SHAKE (6:35 AM)',
+        title: 'Pre-Gym Fast Protein Shake',
+        tip: 'Drink 25 minutes before your workout for fast amino acids with zero stomach bulk during heavy compounds and abs.',
         options: [
           {
-            name: '390g Pre-Gym Shake + 264g Post-Gym Overnight Oats Jar (1/4 Batch)',
-            protein: 53,
-            kcal: 585,
-            volume: '390g Shake + 264g Jar',
-            ingredients: '264g Overnight Oats (daily share: 40g Bob’s Red Mill Gluten Free Protein Oats, 180g Silk Protein Almond & Cashew milk, 8g peanut butter, 6g chia seeds, 30g banana = 330 kcal & 17g P) + 30g Pea Protein Isolate (24g P, 120 kcal) shaken in 360g cold Silk Protein milk (12g P, 135 kcal).',
+            name: 'Pre-Gym Fast Protein Shake',
+            protein: 36,
+            kcal: 170,
+            volume: '170 kcal • 36g Protein',
+            ingredients: '30g Pea Protein Isolate shaken in 360 ml Unsweetened Silk Protein Milk.',
+            ingredientRows: [
+              { name: 'Pea Protein Isolate', amount: '30g' },
+              { name: 'Unsweetened Silk Protein Milk', amount: '360 ml' }
+            ],
             items: [
               {
-                id: 'm1_protein_shake',
-                weight: '390g Shake',
-                label: '⏰ 6:35 AM (25m before Gym): 30g Pea Protein Isolate Shaken in 360g Cold Silk Protein Milk (36g P, 255 kcal)',
-                subPills: [
-                  '30g Pea Protein Isolate (24g P, 120 kcal)',
-                  '360g Cold Silk Protein Almond & Cashew Milk (12g P, 135 kcal • 100% B12)'
-                ],
-                protein: 36,
-                kcal: 255
+                id: 'm1_pea_isolate',
+                name: 'Pea Protein Isolate',
+                weight: '30g',
+                label: 'Pea Protein Isolate',
+                subPills: ['Fast-digesting pre-workout amino acids'],
+                protein: 24,
+                kcal: 90
               },
               {
-                id: 'm1_oats_jar',
-                weight: '264g Jar',
-                label: '⏰ 8:15 AM (15m after Gym): 264g Overnight Oats (daily share: 1/4 batch = 330 kcal & 17g P)',
-                subPills: [
-                  '40g Bob’s Red Mill Gluten Free Protein Oats',
-                  '180g Silk Protein Almond & Cashew milk',
-                  '8g peanut butter',
-                  '6g chia seeds',
-                  '30g banana'
-                ],
-                protein: 17,
-                kcal: 330
+                id: 'm1_silk_milk',
+                name: 'Unsweetened Silk Protein Milk',
+                weight: '360 ml',
+                label: 'Unsweetened Silk Protein Milk',
+                subPills: ['Cold almond & cashew protein milk (100% Daily B12)'],
+                protein: 12,
+                kcal: 80
+              }
+            ]
+          }
+        ]
+      },
+      {
+        slotId: 'post_oats',
+        time: 'FUEL 2 • POST-GYM OVERNIGHT OATS (8:15 AM)',
+        title: 'Post-Gym Overnight Protein Oats',
+        tip: 'Eat 15 minutes after finishing your workout (1 jar from your 4-day fridge batch) to replenish muscle glycogen.',
+        options: [
+          {
+            name: 'Post-Gym Overnight Protein Oats',
+            protein: 26,
+            kcal: 395,
+            volume: '395 kcal • 26g Protein',
+            ingredients: '45g Gluten-Free Protein Oats + 180 ml Unsweetened Silk Protein Milk + 30g Peeled Ripe Banana + 8g Smooth Natural Peanut Butter + 6g Organic Whole Chia Seeds.',
+            ingredientRows: [
+              { name: 'Gluten-Free Protein Oats', amount: '45g' },
+              { name: 'Unsweetened Silk Protein Milk', amount: '180 ml' },
+              { name: 'Peeled Ripe Banana', amount: '30g' },
+              { name: 'Smooth Natural Peanut Butter', amount: '8g' },
+              { name: 'Organic Whole Chia Seeds', amount: '6g' }
+            ],
+            items: [
+              {
+                id: 'm2_oats',
+                name: 'Gluten-Free Protein Oats',
+                weight: '45g',
+                label: 'Gluten-Free Protein Oats',
+                subPills: ['1/4 of your 4-day overnight oats batch'],
+                protein: 10,
+                kcal: 170
+              },
+              {
+                id: 'm2_silk_milk',
+                name: 'Unsweetened Silk Protein Milk',
+                weight: '180 ml',
+                label: 'Unsweetened Silk Protein Milk',
+                subPills: ['Soaked overnight with oats & chia'],
+                protein: 12,
+                kcal: 115
+              },
+              {
+                id: 'm2_banana',
+                name: 'Peeled Ripe Banana',
+                weight: '30g',
+                label: 'Peeled Ripe Banana',
+                subPills: ['Mashed into jar for natural sweetness & potassium'],
+                protein: 0.5,
+                kcal: 27
+              },
+              {
+                id: 'm2_pb',
+                name: 'Smooth Natural Peanut Butter',
+                weight: '8g',
+                label: 'Smooth Natural Peanut Butter',
+                subPills: ['Healthy fats & creaminess'],
+                protein: 2,
+                kcal: 48
+              },
+              {
+                id: 'm2_chia',
+                name: 'Organic Whole Chia Seeds',
+                weight: '6g',
+                label: 'Organic Whole Chia Seeds',
+                subPills: ['100% Daily Omega-3 ALA'],
+                protein: 1.5,
+                kcal: 35
               }
             ]
           }
@@ -1708,62 +1816,76 @@
       },
       {
         slotId: 'lunch',
-        time: 'FUEL 2 • 1:00 PM (Small 418g Bowl — Cut in Half!)',
-        title: '175g Extra-Firm Tofu + 150g Cooked Rice + 75g Broccoli + 12g Yeast + 5g Sesame Oil + 1.5g Iodized Salt',
-        tip: 'Weighing 175g tofu (½ of a 350g block) and 150g cooked rice keeps your bowl light! Season with 1.5g (~¼ tsp) Iodized Table Salt (Windsor Iodized — not sea/pink salt) for 100% daily thyroid iodine plus 5g toasted sesame oil.',
+        time: 'FUEL 3 • SAVOURY TOFU & JASMINE RICE BOWL (1:00 PM)',
+        title: 'Savoury Tofu, Rice & Broccoli Bowl',
+        tip: 'Weighing 175g tofu (½ of a 350g block) and 150g cooked rice keeps your midday bowl light while covering 100% Vitamin C and thyroid iodine.',
         options: [
           {
-            name: '175g Tofu + 150g Cooked White Rice + 75g Broccoli + 12g Yeast + 5g Sesame Oil + 1.5g Iodized Salt',
+            name: 'Savoury Tofu, Rice & Broccoli Bowl',
             protein: 33,
-            kcal: 500,
-            volume: '418g Small Bowl',
-            ingredients: '175g extra-firm tofu (21g P, 190 kcal) + 150g cooked white jasmine rice (55g dry weight = 4g P, 195 kcal) + 75g steamed broccoli (1.5g P, 25 kcal, 100% Vit C) + 12g fortified nutritional yeast (6g P, 45 kcal) + 5g toasted sesame oil (45 kcal) + 1.5g iodized table salt (Windsor Iodized Salt — NOT sea or Himalayan salt = 100% daily thyroid iodine).',
+            kcal: 520,
+            volume: '520 kcal • 33g Protein',
+            ingredients: '175g Extra-Firm Tofu + 150g Cooked White Jasmine Rice + 75g Steamed Broccoli Florets + 12g Fortified Nutritional Yeast + 5g Toasted Sesame Oil + 1.5g Iodized Table Salt.',
+            ingredientRows: [
+              { name: 'Extra-Firm Tofu', amount: '175g' },
+              { name: 'Cooked White Jasmine Rice', amount: '150g' },
+              { name: 'Steamed Broccoli Florets', amount: '75g' },
+              { name: 'Fortified Nutritional Yeast', amount: '12g' },
+              { name: 'Toasted Sesame Oil', amount: '5g' },
+              { name: 'Iodized Table Salt', amount: '1.5g' }
+            ],
             items: [
               {
                 id: 'm2_tofu',
-                weight: '175g Tofu',
-                label: '175g Extra-Firm Tofu (½ of a 350g block)',
-                subPills: ['Cubed & pan-seared or air-fried'],
+                name: 'Extra-Firm Tofu',
+                weight: '175g',
+                label: 'Extra-Firm Tofu',
+                subPills: ['Cubed & pan-seared or air-fried (½ of a 350g block)'],
                 protein: 21,
-                kcal: 190
+                kcal: 210
               },
               {
                 id: 'm2_rice',
-                weight: '150g Rice',
-                label: '150g Cooked White Jasmine Rice (55g dry weight)',
+                name: 'Cooked White Jasmine Rice',
+                weight: '150g',
+                label: 'Cooked White Jasmine Rice',
                 subPills: ['1/4 of your 4-day cooked rice batch'],
-                protein: 4,
+                protein: 4.5,
                 kcal: 195
               },
               {
                 id: 'm2_broccoli',
-                weight: '75g Veg',
-                label: '75g Steamed Broccoli Florets',
+                name: 'Steamed Broccoli Florets',
+                weight: '75g',
+                label: 'Steamed Broccoli Florets',
                 subPills: ['100% Daily Vitamin C — unlocks iron absorption'],
                 protein: 1.5,
                 kcal: 25
               },
               {
                 id: 'm2_nooch',
-                weight: '12g Yeast',
-                label: '12g Fortified Nutritional Yeast Flakes',
-                subPills: ['Sprinkled on top for savory cheesy umami & B-vitamins'],
+                name: 'Fortified Nutritional Yeast',
+                weight: '12g',
+                label: 'Fortified Nutritional Yeast',
+                subPills: ['Sprinkled on top for savoury umami & B-vitamins'],
                 protein: 6,
                 kcal: 45
               },
               {
                 id: 'm2_sauce',
-                weight: '5g Oil',
-                label: '5g Toasted Sesame Oil',
-                subPills: ['5g (1 tsp) toasted sesame oil drizzled over bowl for rich aroma & healthy fats'],
+                name: 'Toasted Sesame Oil',
+                weight: '5g',
+                label: 'Toasted Sesame Oil',
+                subPills: ['Drizzled over bowl for rich aroma & healthy fats'],
                 protein: 0,
                 kcal: 45
               },
               {
                 id: 'm2_nori',
-                weight: '1.5g Salt',
-                label: '1.5g Iodized Table Salt (Windsor Iodized Salt — NOT sea or Himalayan salt)',
-                subPills: ['~1/4 tsp iodized table salt covers 100% Daily Thyroid Iodine (sea/pink salt has no iodine)'],
+                name: 'Iodized Table Salt',
+                weight: '1.5g',
+                label: 'Iodized Table Salt',
+                subPills: ['~1/4 tsp Windsor iodized salt covers 100% Daily Thyroid Iodine'],
                 protein: 0,
                 kcal: 0
               }
@@ -1773,33 +1895,46 @@
       },
       {
         slotId: 'dinner',
-        time: 'FUEL 3 • 6:30 PM (Zero-Chew Evening Recovery)',
-        title: '45g Pea Protein Isolate + 360g Silk Protein Milk + 16g Peanut Butter',
-        tip: 'Zero cooking and zero chewing at night when your appetite is lowest — weigh 45g powder + 360g Silk milk on your scale, shake for 10 seconds, and eat 16g peanut butter.',
+        time: 'FUEL 4 • EVENING RECOVERY SHAKE (5:30 PM)',
+        title: 'Evening Protein & PB Shake',
+        tip: 'Zero cooking and zero chewing in the evening when appetite is lowest — shake 45g isolate in 360 ml Silk milk and eat 16g smooth peanut butter.',
         options: [
           {
-            name: '45g Pea Protein Isolate + 360g Silk Protein Milk + 16g Smooth Peanut Butter',
-            protein: 52,
-            kcal: 410,
-            volume: '405g Shake + 16g PB',
-            ingredients: '45g Pea Protein Isolate (36g P, 180 kcal) shaken in 360g Silk Protein Unsweetened Almond & Cashew milk (12g P, 135 kcal) + 16g smooth peanut butter (4g P, 95 kcal).',
+            name: 'Evening Protein & PB Shake',
+            protein: 43,
+            kcal: 315,
+            volume: '315 kcal • 43g Protein',
+            ingredients: '45g Pea Protein Isolate + 360 ml Unsweetened Silk Protein Milk + 16g Smooth Natural Peanut Butter.',
+            ingredientRows: [
+              { name: 'Pea Protein Isolate', amount: '45g' },
+              { name: 'Unsweetened Silk Protein Milk', amount: '360 ml' },
+              { name: 'Smooth Natural Peanut Butter', amount: '16g' }
+            ],
             items: [
               {
-                id: 'm3_protein_shake',
-                weight: '405g Shake',
-                label: '45g Pea Protein Isolate Shaken in 360g Cold Silk Protein Milk',
-                subPills: [
-                  '45g Pea Protein Isolate (36g P, 180 kcal)',
-                  '360g Cold Silk Protein Unsweetened Almond & Cashew Milk (12g P, 135 kcal)'
-                ],
-                protein: 48,
-                kcal: 315
+                id: 'm3_pea_isolate',
+                name: 'Pea Protein Isolate',
+                weight: '45g',
+                label: 'Pea Protein Isolate',
+                subPills: ['Sustained overnight muscle protein synthesis'],
+                protein: 27,
+                kcal: 140
+              },
+              {
+                id: 'm3_silk_milk',
+                name: 'Unsweetened Silk Protein Milk',
+                weight: '360 ml',
+                label: 'Unsweetened Silk Protein Milk',
+                subPills: ['Cold almond & cashew protein milk'],
+                protein: 12,
+                kcal: 80
               },
               {
                 id: 'm3_pb',
-                weight: '16g PB',
-                label: '+ 16g Smooth Natural Peanut Butter (4g P, 95 kcal)',
-                subPills: ['Healthy fats eaten alongside shake to slow overnight amino acid release'],
+                name: 'Smooth Natural Peanut Butter',
+                weight: '16g',
+                label: 'Smooth Natural Peanut Butter',
+                subPills: ['Healthy fats to slow overnight amino acid release'],
                 protein: 4,
                 kcal: 95
               }
@@ -1814,7 +1949,7 @@
       'Extra-Firm Tofu (1,225g/wk — 175g/day)',
       'Broccoli Florets (525g/wk — 75g/day)',
       'Ripe Bananas (210g peeled/wk — 30g/day)',
-      'Bob’s Red Mill Protein Oats (280g/wk — 40g/day)',
+      'Bob’s Red Mill Protein Oats (315g/wk — 45g/day)',
       'White Jasmine Rice (385g dry / 1,050g cooked/wk)',
       'Smooth Peanut Butter (168g/wk — 24g/day)',
       'Organic Chia Seeds (42g/wk — 6g/day)',
@@ -1831,9 +1966,9 @@
         category: 'Aisle 1: Produce & Refrigerated Cooler (Weekly Fresh Run)',
         badge: '4 Fresh Staples • No Frills / Walmart',
         items: [
-          { id: 'shop_silk', name: '1. Silk Protein Unsweetened Almond & Cashew (1,750g carton)', qty: '6,300g / week (900g/day)', note: '180g/day in oats + 360g pre-workout shake + 360g evening shake (4 cartons/wk; 200% B12, 95% Vit D)' },
-          { id: 'shop_tofu', name: '2. Sunrise or Rooster Extra-Firm Tofu (350g–454g block)', qty: '1,225g / week (175g/day)', note: 'Weigh 175g/day (½ of a 350g block) for Meal 2 — only 2.7 to 3.5 blocks/week!' },
-          { id: 'shop_broccoli', name: '3. Broccoli Florets (Fresh Crown or Frozen Bag)', qty: '525g / week (75g/day)', note: '75g steamed broccoli/day for Meal 2 (100% daily Vitamin C to unlock iron in tofu, oats & pea protein)' },
+          { id: 'shop_silk', name: '1. Silk Protein Unsweetened Almond & Cashew (1,750g carton)', qty: '6,300g / week (900 ml/day)', note: '360 ml pre-workout shake + 180 ml in oats + 360 ml evening shake (4 cartons/wk; 200% B12, 95% Vit D)' },
+          { id: 'shop_tofu', name: '2. Sunrise or Rooster Extra-Firm Tofu (350g–454g block)', qty: '1,225g / week (175g/day)', note: 'Weigh 175g/day (½ of a 350g block) for Fuel 3 — only 2.7 to 3.5 blocks/week!' },
+          { id: 'shop_broccoli', name: '3. Broccoli Florets (Fresh Crown or Frozen Bag)', qty: '525g / week (75g/day)', note: '75g steamed broccoli/day for Fuel 3 (100% daily Vitamin C to unlock iron in tofu, oats & pea protein)' },
           { id: 'shop_banana', name: '4. Ripe Bananas (Peeled Weight)', qty: '210g / week (30g/day)', note: '120g peeled banana (1 medium) per 4-day overnight oats batch (~2 medium bananas/wk)' }
         ]
       },
@@ -1841,52 +1976,151 @@
         category: 'Aisle 2: Dry Pantry, Grains, Seeds & Nutritional Yeast',
         badge: '5 Pantry Staples • Bulk / Costco / No Frills',
         items: [
-          { id: 'shop_oats', name: '5. Bob’s Red Mill Gluten Free Protein Oats (907g bag)', qty: '280g / week (40g/day)', note: '160g per 4-day batch (40g/day = 8g P/day) — 1 bag lasts 3.2 weeks' },
-          { id: 'shop_rice', name: '6. White Jasmine Rice', qty: '385g dry / week (1,050g cooked)', note: '55g dry rice/day (= 150g cooked rice/day) for Meal 2 — 4-day batch = 220g dry + 330g water' },
-          { id: 'shop_pb', name: '7. Smooth Natural Peanut Butter (500g–1,000g jar)', qty: '168g / week (24g/day)', note: '32g per 4-day oats batch (8g/day) + 16g/day in the evening with your Meal 3 shake' },
+          { id: 'shop_oats', name: '5. Gluten-Free Protein Oats (907g bag)', qty: '315g / week (45g/day)', note: '180g per 4-day batch (45g/day) — 1 bag lasts ~3 weeks' },
+          { id: 'shop_rice', name: '6. White Jasmine Rice', qty: '385g dry / week (1,050g cooked)', note: '55g dry rice/day (= 150g cooked rice/day) for Fuel 3 — 4-day batch = 220g dry + 330 ml water' },
+          { id: 'shop_pb', name: '7. Smooth Natural Peanut Butter (500g–1,000g jar)', qty: '168g / week (24g/day)', note: '32g per 4-day oats batch (8g/day) + 16g/day in the evening with your Fuel 4 shake' },
           { id: 'shop_chia', name: '8. Organic Whole Chia Seeds', qty: '42g / week (6g/day)', note: '24g per 4-day oats batch (6g/day) — covers 100% of your daily Omega-3 ALA' },
-          { id: 'shop_nooch', name: '9. Fortified Nutritional Yeast Flakes (142g shaker or bulk)', qty: '84g / week (12g/day)', note: '12g/day sprinkled on Meal 2 tofu & rice bowl (+6g protein & B-complex vitamins)' }
+          { id: 'shop_nooch', name: '9. Fortified Nutritional Yeast Flakes (142g shaker or bulk)', qty: '84g / week (12g/day)', note: '12g/day sprinkled on Fuel 3 tofu & rice bowl (+6g protein & B-complex vitamins)' }
         ]
       },
       {
         category: 'Aisle 3: Baking & Oil Aisle (Iodized Salt & Toasted Sesame Oil)',
         badge: '2 Flavor & Iodine Staples',
         items: [
-          { id: 'shop_iodine', name: '10. Iodized Table Salt (Windsor Iodized Salt — NOT sea or pink Himalayan salt)', qty: '10.5g / week (1.5g/day)', note: '1.5g/day (~¼ tsp) on Meal 2 covers 100% daily thyroid iodine (sea/kosher/Himalayan salt has no added iodine; 1kg box lasts >1 year!)' },
-          { id: 'shop_sesame', name: '11. Toasted Sesame Oil (Bottle)', qty: '35g / week (5g/day)', note: '5g/day (1 tsp) drizzled on Meal 2 tofu, rice & broccoli bowl for rich aroma & healthy fats' }
+          { id: 'shop_iodine', name: '10. Iodized Table Salt (Windsor Iodized Salt — NOT sea or pink Himalayan salt)', qty: '10.5g / week (1.5g/day)', note: '1.5g/day (~¼ tsp) on Fuel 3 covers 100% daily thyroid iodine (sea/kosher/Himalayan salt has no added iodine; 1kg box lasts >1 year!)' },
+          { id: 'shop_sesame', name: '11. Toasted Sesame Oil (Bottle)', qty: '35g / week (5g/day)', note: '5g/day (1 tsp) drizzled on Fuel 3 tofu, rice & broccoli bowl for rich aroma & healthy fats' }
         ]
       },
       {
         category: 'Aisle 4: Online / Bulk Protein Supplement',
         badge: '1 Bulk Staple • Yupik / Micro Ingredients / Canadian Protein',
         items: [
-          { id: 'shop_isolate', name: '12. Pea Protein Isolate Powder (1,000g–2,268g bag)', qty: '525g / week (75g/day)', note: '30g in Pre-Gym Shake (25m before gym) + 45g in Meal 3 Shake = 60g pure protein/day with zero fiber bloat' }
+          { id: 'shop_isolate', name: '12. Pea Protein Isolate Powder (1,000g–2,268g bag)', qty: '525g / week (75g/day)', note: '30g in Fuel 1 Pre-Gym Shake + 45g in Fuel 4 Evening Shake = 60g pure protein/day with zero fiber bloat' }
         ]
       }
     ];
 
     // =========================================================================
-    // 4. WEB AUDIO API SYNTHESIZED TIMER CHIME
+    // 4. BLUETOOTH-SAFE WEB AUDIO API TIMER CHIME (ZERO PERSISTENT AUDIOCONTEXT)
     // =========================================================================
+    function getEffectiveAudioMode() {
+      if (state.audioMode && ['sound_vibe', 'vibe_only', 'silent'].includes(state.audioMode)) {
+        return state.audioMode;
+      }
+      return state.soundEnabled === false ? 'silent' : 'sound_vibe';
+    }
+
+    function updateAudioModeUI() {
+      const mode = getEffectiveAudioMode();
+      state.audioMode = mode;
+      state.soundEnabled = mode === 'sound_vibe';
+
+      const labels = {
+        sound_vibe: '🔔 Sound + Vibe',
+        vibe_only: '📳 Vibe Only (Bluetooth Safe)',
+        silent: '🔕 Silent'
+      };
+      const shortLabels = {
+        sound_vibe: '🔔 Sound+Vibe',
+        vibe_only: '📳 Vibe (BT)',
+        silent: '🔕 Silent'
+      };
+
+      const pinnedBtn = document.getElementById('pinned-audio-mode-btn');
+      if (pinnedBtn) {
+        pinnedBtn.textContent = shortLabels[mode];
+        pinnedBtn.className = mode === 'sound_vibe'
+          ? 'px-1.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-emerald-500/40 text-[10px] font-extrabold text-emerald-300 transition shrink-0 whitespace-nowrap'
+          : (mode === 'vibe_only'
+              ? 'px-1.5 py-1 rounded-lg bg-sky-950/60 hover:bg-sky-900/60 border border-sky-400/50 text-[10px] font-extrabold text-sky-300 transition shrink-0 whitespace-nowrap'
+              : 'px-1.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 text-[10px] font-bold text-slate-400 transition shrink-0 whitespace-nowrap');
+      }
+
+      const mainToggle = document.getElementById('timer-sound-toggle');
+      if (mainToggle) {
+        mainToggle.textContent = labels[mode];
+        mainToggle.className = mode === 'sound_vibe'
+          ? 'text-xs font-extrabold px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-400 border border-emerald-500/40 transition'
+          : (mode === 'vibe_only'
+              ? 'text-xs font-extrabold px-2.5 py-1 rounded-lg bg-sky-950/60 text-sky-300 border border-sky-400/50 transition'
+              : 'text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 border border-slate-700 transition');
+      }
+
+      document.querySelectorAll('.audio-mode-pill-btn').forEach(btn => {
+        const m = btn.getAttribute('data-audio-mode');
+        const active = m === mode;
+        btn.className = active
+          ? (m === 'vibe_only'
+              ? 'audio-mode-pill-btn py-1.5 px-2 rounded-lg text-[11px] font-extrabold border transition bg-sky-400 text-slate-950 border-sky-300 shadow-sm'
+              : 'audio-mode-pill-btn py-1.5 px-2 rounded-lg text-[11px] font-extrabold border transition bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm')
+          : 'audio-mode-pill-btn py-1.5 px-2 rounded-lg text-[11px] font-bold border transition bg-slate-900 text-slate-300 border-slate-700 hover:text-white';
+      });
+    }
+
+    function cycleAudioMode() {
+      const cur = getEffectiveAudioMode();
+      const next = cur === 'sound_vibe' ? 'vibe_only' : (cur === 'vibe_only' ? 'silent' : 'sound_vibe');
+      state.audioMode = next;
+      state.soundEnabled = next === 'sound_vibe';
+      updateAudioModeUI();
+      saveState();
+      const toastMap = {
+        sound_vibe: '🔔 Audio Mode: Sound + Vibe (Chime auto-closes in <350ms)',
+        vibe_only: '📳 Audio Mode: Vibe Only (100% Bluetooth Safe — Zero AudioContext)',
+        silent: '🔕 Audio Mode: Silent'
+      };
+      showToast(toastMap[next]);
+    }
+
     function playTimerChime() {
-      if (!state.soundEnabled) return;
+      const mode = getEffectiveAudioMode();
+      if (mode === 'silent') return;
+
+      if (mode === 'vibe_only') {
+        if (navigator.vibrate) {
+          try { navigator.vibrate([200, 100, 200]); } catch (e) {}
+        }
+        return;
+      }
+
+      // Sound + Vibe mode: trigger vibration + create a fresh transient AudioContext that closes within 350ms
+      if (navigator.vibrate) {
+        try { navigator.vibrate([200, 100, 200]); } catch (e) {}
+      }
       try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtx) return;
-        const ctx = new AudioCtx();
-        const notes = [523.25, 659.25, 783.99, 1046.5];
-        notes.forEach((freq, i) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.14);
-          gain.gain.setValueAtTime(0.18, ctx.currentTime + i * 0.14);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.14 + 0.25);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(ctx.currentTime + i * 0.14);
-          osc.stop(ctx.currentTime + i * 0.14 + 0.26);
-        });
+        const audioCtx = new AudioCtx();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, now); // D5
+        osc.frequency.setValueAtTime(880, now + 0.12); // A5
+
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.onended = () => {
+          try { osc.disconnect(); } catch (e) {}
+          try { gain.disconnect(); } catch (e) {}
+        };
+
+        osc.start(now);
+        osc.stop(now + 0.29);
+
+        // Immediately release OS Bluetooth audio session within 350ms
+        setTimeout(() => {
+          try {
+            if (audioCtx && audioCtx.state !== 'closed') {
+              audioCtx.close();
+            }
+          } catch (e) {}
+        }, 320);
       } catch (e) {
         // Ignore audio errors if blocked before gesture
       }
@@ -1953,8 +2187,8 @@
           ? (state.timerContextLabel || 'Rest Timer Running')
           : (state.timerContextLabel ? `Paused: ${state.timerContextLabel}` : 'Ready • Tap any set');
         pinnedCtx.className = timerRunning
-          ? 'text-[11px] font-bold text-emerald-300 truncate'
-          : 'text-[11px] font-semibold text-slate-400 truncate';
+          ? 'hidden md:inline text-[11px] font-bold text-emerald-300 truncate'
+          : 'hidden md:inline text-[11px] font-semibold text-slate-400 truncate';
       }
 
       if (dot) {
@@ -2018,9 +2252,6 @@
         updateTimerUI();
         saveState();
         playTimerChime();
-        if (navigator.vibrate) {
-          try { navigator.vibrate([250, 120, 250]); } catch (e) {}
-        }
         showToast('⏱️ Rest Complete! Time for your next set.');
       }
     }
@@ -2179,17 +2410,17 @@
       },
       tue_calf: {
         equipType: 'calf_plate_db',
-        equipLabel: 'Dumbbells or Barbell + Weight Plate on Floor',
+        equipLabel: 'Pair of Dumbbells + Weight Plate on Floor',
         defaultWeightLbs: 50,
-        step1Cue: 'Elevate balls of feet on a 5–25 lb weight plate or step platform',
-        step2Cue: 'Push high onto big toes, pause 1s, lower heel slowly to full stretch'
+        step1Cue: 'Hold dumbbells at sides • Elevate balls of feet on a 5–25 lb weight plate or step platform',
+        step2Cue: 'Push high onto big toes with dumbbells controlled at sides, pause 1s, lower heel slowly to full stretch'
       },
       tue_side_plank: {
         equipType: 'floor_mat',
-        equipLabel: 'Floor Mat (Bodyweight Core)',
+        equipLabel: 'Floor Mat (Bodyweight Isometric Core)',
         defaultWeightLbs: 0,
         step1Cue: 'Lie on side supported on forearm/elbow • Stack or stagger feet',
-        step2Cue: 'Lift hips into a straight line • Hold 30s per side'
+        step2Cue: 'Lift hips into a straight line • Hold target duration per side'
       },
       wed_pullup_focus: {
         equipType: 'pullup_bar',
@@ -2711,7 +2942,7 @@
     }
 
     // Pro Feature: Full Barbell Math, Each-Side vs. Full-Bar Mode, Adjustable Bar Weight & Live LBS <-> KG Calculator
-    const BARBELL_EX_IDS = ['mon_bench', 'mon_ohp', 'tue_squat', 'tue_calf', 'sat_deadlift', 'sat_hip_thrust'];
+    const BARBELL_EX_IDS = ['mon_bench', 'mon_ohp', 'tue_squat', 'sat_deadlift', 'sat_hip_thrust'];
     const BARBELL_PRESETS_LBS = [
       { weight: 45, label: '45 lb Olympic (Std)' },
       { weight: 35, label: '35 lb Light Bar' },
@@ -3064,15 +3295,14 @@
       const endMins = parseHHMMToMinutes(sched.endTime || minutesToHHMM(startMins + 60));
       const start12 = formatMinutesTo12Hr(startMins);
       const end12 = formatMinutesTo12Hr(endMins);
-      // Pre-workout shake is always 25 mins before gym start (e.g., 6:35 AM for 7:00 AM gym, 11:35 AM for 12:00 PM gym, 2:50 PM for 3:15 PM gym, 5:05 PM for 5:30 PM gym)
       const preShakeMins = Math.max(0, startMins - 25);
       const preShakeStr = formatMinutesTo12Hr(preShakeMins);
 
       // 1. Morning Gym: before 11:00 AM (Default 7:00 AM – 8:00 AM -> 6:35 AM Pre-Gym Shake + 8:15 AM Post-Gym Oats)
       if (startMins < 660) {
-        const oatsMins = roundTo15Minutes(endMins + 15); // default 8:15 AM (15m after 7:00 AM–8:00 AM gym)
+        const oatsMins = roundTo15Minutes(endMins + 15); // default 8:15 AM
         const m2Mins = roundTo15Minutes(Math.max(oatsMins + 270, 780)); // default 1:00 PM
-        const m3Mins = roundTo15Minutes(Math.max(m2Mins + 330, 1110)); // default 6:30 PM
+        const m3Mins = roundTo15Minutes(Math.max(m2Mins + 270, 1050)); // default 5:30 PM
         const oatsStr = formatMinutesTo12Hr(oatsMins);
         const m2Str = formatMinutesTo12Hr(m2Mins);
         const m3Str = formatMinutesTo12Hr(m3Mins);
@@ -3084,43 +3314,54 @@
           oatsStr,
           shakeFirst: true,
           periodTitle: `🌅 Morning Gym (${start12} – ${end12})`,
-          periodAdvice: `Drink your 390g Pre-Gym Shake (30g Pea Protein Isolate + 360g Cold Silk Milk) at ${preShakeStr} (25m before ${start12} Gym) for fast amino acids with zero stomach bulk for abs, then eat your 264g Overnight Oats Jar at ${oatsStr} (15m after finishing at ${end12}).`,
-          nextPostWorkoutSlot: "post",
+          periodAdvice: `Drink Fuel 1 (${preShakeStr}) 25m before gym, then eat Fuel 2 Overnight Oats at ${oatsStr}.`,
+          nextPostWorkoutSlot: "post_oats",
           nextPostWorkoutTime12: oatsStr,
           slots: {
+            pre_shake: {
+              time12: preShakeStr,
+              headerText: `FUEL 1 • PRE-GYM SHAKE (${preShakeStr})`,
+              roleBadge: "⚡ Pre-Gym Amino Boost",
+              isPostWorkoutTarget: false,
+              contextTip: `Drink 25 mins before your ${start12} workout for fast amino acids with zero stomach bulk.`
+            },
+            post_oats: {
+              time12: oatsStr,
+              headerText: `FUEL 2 • POST-GYM OVERNIGHT OATS (${oatsStr})`,
+              roleBadge: "🥣 Post-Gym Glycogen",
+              isPostWorkoutTarget: true,
+              contextTip: `Eat 15 mins after finishing your ${end12} workout to replenish muscle glycogen.`
+            },
             post: {
               time12: `${preShakeStr} & ${oatsStr}`,
-              headerText: `FUEL 1 • ${preShakeStr} Pre-Gym Shake + ${oatsStr} Post-Gym Oats (Around ${start12}–${end12} Gym)`,
+              headerText: `FUEL 1 • PRE-GYM SHAKE (${preShakeStr})`,
               roleBadge: "⚡ Pre + Post Gym",
               isPostWorkoutTarget: true,
-              contextTip: `Drink your 30g Pea Isolate + 360g Cold Silk Milk shake at ${preShakeStr} (25 mins before your ${start12} workout), then eat your 264g Overnight Oats jar at ${oatsStr} (15 mins after finishing at ${end12}).`,
-              batchTip: `4-Day Batch Recipe (1,056g total): Mix 160g Bob’s Red Mill Protein Oats + 720g Silk Protein Milk + 32g peanut butter + 24g chia seeds + 120g peeled banana. Drink your 390g shake at ${preShakeStr} and eat 264g (1/4 batch) oats at ${oatsStr}.`
+              contextTip: `Drink your Pre-Gym Shake at ${preShakeStr}, then eat your Overnight Oats jar at ${oatsStr}.`
             },
             lunch: {
               time12: m2Str,
-              headerText: `FUEL 2 • ${m2Str} (Small 418g Savoury Bowl)`,
+              headerText: `FUEL 3 • SAVOURY TOFU & JASMINE RICE BOWL (${m2Str})`,
               roleBadge: "🥗 Midday Micronutrients",
               isPostWorkoutTarget: false,
-              contextTip: `Midday whole-food bowl at ${m2Str}: 175g tofu + 150g rice + 75g broccoli (Vitamin C) + 12g yeast + 5g toasted sesame oil + 1.5g Iodized Table Salt (100% thyroid iodine).`,
-              batchTip: `Weighing 175g tofu (½ of a 350g block) and 150g cooked rice keeps your ${m2Str} bowl light! Season with 1.5g Windsor Iodized Table Salt + 5g toasted sesame oil.`
+              contextTip: `Midday whole-food bowl at ${m2Str}: 175g tofu + 150g rice + 75g broccoli + 12g yeast + 5g sesame oil + 1.5g iodized salt.`
             },
             dinner: {
               time12: m3Str,
-              headerText: `FUEL 3 • ${m3Str} (Zero-Chew Evening Recovery)`,
+              headerText: `FUEL 4 • EVENING RECOVERY SHAKE (${m3Str})`,
               roleBadge: "🌙 Overnight Repair",
               isPostWorkoutTarget: false,
-              contextTip: `Zero chewing at ${m3Str} when appetite is lowest — 45g isolate + 360g Silk milk shaken together + 16g peanut butter.`,
-              batchTip: `Zero cooking at ${m3Str} — weigh 45g powder + 360g Silk milk on your scale, shake for 10 seconds, and eat 16g peanut butter.`
+              contextTip: `Zero chewing at ${m3Str}: 45g pea isolate + 360 ml Silk milk shaken together + 16g peanut butter.`
             }
           }
         };
       }
 
-      // 2. Midday Gym: 11:00 AM – 2:15 PM (e.g., 12:00 PM – 1:00 PM -> 8:15 AM Morning Oats + 11:35 AM Pre-Gym Shake, then 1:15 PM Post-Gym Bowl)
+      // 2. Midday Gym: 11:00 AM – 2:15 PM
       if (startMins < 870) {
-        const oatsMins = 495; // 8:15 AM morning breakfast oats
-        const m2Mins = roundTo15Minutes(endMins + 15); // 15m after midday gym (e.g., 1:15 PM)
-        const m3Mins = roundTo15Minutes(Math.max(m2Mins + 315, 1110)); // e.g., 6:30 PM
+        const oatsMins = 495; // 8:15 AM
+        const m2Mins = roundTo15Minutes(endMins + 15);
+        const m3Mins = roundTo15Minutes(Math.max(m2Mins + 255, 1050));
         const oatsStr = formatMinutesTo12Hr(oatsMins);
         const m2Str = formatMinutesTo12Hr(m2Mins);
         const m3Str = formatMinutesTo12Hr(m3Mins);
@@ -3132,43 +3373,54 @@
           oatsStr,
           shakeFirst: false,
           periodTitle: `☀️ Midday Gym (${start12} – ${end12})`,
-          periodAdvice: `Eat your 264g Overnight Oats Jar at ${oatsStr} for morning glycogen, then drink your 390g Pre-Gym Shake at ${preShakeStr} (25m before ${start12} Gym). Right after finishing at ${end12}, your next fuel is FUEL 2 at ${m2Str}.`,
+          periodAdvice: `Eat Overnight Oats at ${oatsStr}, drink Fuel 1 Shake at ${preShakeStr}, then eat Fuel 3 Bowl at ${m2Str}.`,
           nextPostWorkoutSlot: "lunch",
           nextPostWorkoutTime12: m2Str,
           slots: {
+            pre_shake: {
+              time12: preShakeStr,
+              headerText: `FUEL 1 • PRE-GYM SHAKE (${preShakeStr})`,
+              roleBadge: "⚡ Pre-Gym Amino Boost",
+              isPostWorkoutTarget: false,
+              contextTip: `Drink 25 mins before your ${start12} workout.`
+            },
+            post_oats: {
+              time12: oatsStr,
+              headerText: `FUEL 2 • POST-GYM OVERNIGHT OATS (${oatsStr})`,
+              roleBadge: "🥣 Morning Glycogen",
+              isPostWorkoutTarget: false,
+              contextTip: `Eat at ${oatsStr} for morning training energy.`
+            },
             post: {
               time12: `${oatsStr} & ${preShakeStr}`,
-              headerText: `FUEL 1 • ${oatsStr} Morning Oats + ${preShakeStr} Pre-Gym Shake (25m before ${start12} Gym)`,
+              headerText: `FUEL 1 • PRE-GYM SHAKE (${preShakeStr})`,
               roleBadge: "🔋 Morning + Pre-Gym",
               isPostWorkoutTarget: false,
-              contextTip: `Eat your 264g Overnight Oats Jar at ${oatsStr} for morning energy, then drink your 30g Pea Isolate + 360g Cold Silk Milk shake at ${preShakeStr} (25 mins before your ${start12}–${end12} workout).`,
-              batchTip: `4-Day Batch Recipe (1,056g total): Eat 264g (1/4 batch) oats at ${oatsStr}, and drink your 390g Pea Isolate + Silk Milk shake at ${preShakeStr} (25m before gym).`
+              contextTip: `Eat Oats at ${oatsStr}, then drink Pre-Gym Shake at ${preShakeStr}.`
             },
             lunch: {
               time12: m2Str,
-              headerText: `FUEL 2 • ${m2Str} (Post-Workout Bowl • 15m after ${start12}–${end12} Gym)`,
-              roleBadge: "⚡ Next Fuel (Post-Workout)",
+              headerText: `FUEL 3 • SAVOURY TOFU & JASMINE RICE BOWL (${m2Str})`,
+              roleBadge: "⚡ Post-Workout Bowl",
               isPostWorkoutTarget: true,
-              contextTip: `Eat at ${m2Str} (15 mins after finishing your ${start12}–${end12} workout): warm tofu, jasmine rice, broccoli, 5g toasted sesame oil & 1.5g Iodized Table Salt.`,
-              batchTip: `Weighing 175g tofu (½ of a 350g block) and 150g cooked rice makes your ${m2Str} post-workout bowl fast and light!`
+              contextTip: `Eat at ${m2Str} (15 mins after your workout).`
             },
             dinner: {
               time12: m3Str,
-              headerText: `FUEL 3 • ${m3Str} (Zero-Chew Evening Recovery)`,
+              headerText: `FUEL 4 • EVENING RECOVERY SHAKE (${m3Str})`,
               roleBadge: "🌙 Overnight Repair",
               isPostWorkoutTarget: false,
-              contextTip: `Easy liquid recovery at ${m3Str}: 45g pea isolate + 360g Silk milk shaken together + 16g peanut butter.`,
-              batchTip: `Zero cooking at ${m3Str} — shake 45g powder + 360g Silk milk for 10 seconds and eat 16g peanut butter.`
+              contextTip: `Easy liquid recovery at ${m3Str}.`
             }
           }
         };
       }
 
-      // 3. Afternoon & Evening Gym: 2:30 PM onwards (e.g., 3:15 PM – 4:15 PM or 5:30 PM – 6:30 PM)
-      const isAfternoon = startMins < 1020; // 2:30 PM – 4:45 PM (like 3:15 PM!)
-      const oatsMins = 495; // 8:15 AM morning breakfast oats
-      const m2Mins = roundTo15Minutes(Math.max(720, startMins - 195)); // ~3h 15m before gym (e.g., 12:00 PM for 3:15 PM gym, or 2:15 PM for 5:30 PM gym)
-      const m3Mins = roundTo15Minutes(Math.min(1425, endMins + 15)); // 15m after finishing workout (e.g., 4:30 PM for 3:15 PM gym, or 6:45 PM for 5:30 PM gym!)
+      // 3. Afternoon & Evening Gym: 2:30 PM onwards
+      const isAfternoon = startMins < 1020;
+      const oatsMins = 495;
+      const m2Mins = roundTo15Minutes(Math.max(720, startMins - 195));
+      const m3Mins = roundTo15Minutes(Math.min(1425, endMins + 15));
       const oatsStr = formatMinutesTo12Hr(oatsMins);
       const m2Str = formatMinutesTo12Hr(m2Mins);
       const m3Str = formatMinutesTo12Hr(m3Mins);
@@ -3182,33 +3434,44 @@
         oatsStr,
         shakeFirst: false,
         periodTitle: `${periodLabel} (${start12} – ${end12})`,
-        periodAdvice: `Eat your 264g Overnight Oats at ${oatsStr} and FUEL 2 Bowl at ${m2Str} (~3.25 hrs before gym), then drink your 390g Pre-Gym Shake at ${preShakeStr} (25m before ${start12} Gym). Right after your last exercise at ${end12}, your next fuel is FUEL 3 at ${m3Str}!`,
+        periodAdvice: `Eat Oats at ${oatsStr} and Tofu Bowl at ${m2Str}, drink Pre-Gym Shake at ${preShakeStr}, and finish with Evening Recovery Shake at ${m3Str}.`,
         nextPostWorkoutSlot: "dinner",
         nextPostWorkoutTime12: m3Str,
         slots: {
+          pre_shake: {
+            time12: preShakeStr,
+            headerText: `FUEL 1 • PRE-GYM SHAKE (${preShakeStr})`,
+            roleBadge: "⚡ Pre-Gym Amino Boost",
+            isPostWorkoutTarget: false,
+            contextTip: `Drink 25 mins before your ${start12} workout.`
+          },
+          post_oats: {
+            time12: oatsStr,
+            headerText: `FUEL 2 • POST-GYM OVERNIGHT OATS (${oatsStr})`,
+            roleBadge: "🥣 Morning Glycogen",
+            isPostWorkoutTarget: false,
+            contextTip: `Eat at ${oatsStr} for sustained daytime energy.`
+          },
           post: {
             time12: `${oatsStr} & ${preShakeStr}`,
-            headerText: `FUEL 1 • ${oatsStr} Morning Oats + ${preShakeStr} Pre-Gym Shake (25m before ${start12} Gym)`,
+            headerText: `FUEL 1 • PRE-GYM SHAKE (${preShakeStr})`,
             roleBadge: "🌅 Morning + Pre-Gym",
             isPostWorkoutTarget: false,
-            contextTip: `Eat your 264g Overnight Oats Jar at ${oatsStr}, then drink your 30g Pea Isolate + 360g Cold Silk Milk shake at ${preShakeStr} (25 mins before your ${start12}–${end12} workout) for fast amino acids with zero stomach bulk.`,
-            batchTip: `4-Day Batch Recipe (1,056g total): Eat 264g (1/4 batch) oats at ${oatsStr}, and save your 390g Pea Isolate + Silk Milk shake for ${preShakeStr} (25m before gym).`
+            contextTip: `Eat Oats at ${oatsStr}, then drink Pre-Gym Shake at ${preShakeStr}.`
           },
           lunch: {
             time12: m2Str,
-            headerText: `FUEL 2 • ${m2Str} (Pre-Workout Bowl • before ${start12} Gym)`,
+            headerText: `FUEL 3 • SAVOURY TOFU & JASMINE RICE BOWL (${m2Str})`,
             roleBadge: "🥗 Midday Fuel",
             isPostWorkoutTarget: false,
-            contextTip: `Eat at ${m2Str} (~3.25 hrs before your ${start12}–${end12} workout) so solid food is digested before Daily Cable Abdominal Crunches: 175g tofu + 150g rice + 75g broccoli + 12g yeast + 5g toasted sesame oil + 1.5g Iodized Table Salt.`,
-            batchTip: `Weighing 175g tofu (½ of a 350g block) and 150g cooked rice at ${m2Str} digests cleanly before your ${start12} gym session.`
+            contextTip: `Eat at ${m2Str} (~3.25 hrs before your workout).`
           },
           dinner: {
             time12: m3Str,
-            headerText: `FUEL 3 • ${m3Str} (Post-Workout Recovery • 15m after ${start12}–${end12} Gym)`,
-            roleBadge: "⚡ Next Fuel (Post-Workout)",
+            headerText: `FUEL 4 • EVENING RECOVERY SHAKE (${m3Str})`,
+            roleBadge: "⚡ Post-Workout Recovery",
             isPostWorkoutTarget: true,
-            contextTip: `Eat at ${m3Str} (15 mins after finishing your ${start12}–${end12} workout): zero chewing required — 45g Pea Protein Isolate + 360g Silk Milk (48g P) + 16g PB (4g P) immediately drives muscle recovery!`,
-            batchTip: `Post-workout shake at ${m3Str}: weigh 45g powder + 360g cold Silk milk in your shaker, shake for 10 seconds, and eat 16g peanut butter.`
+            contextTip: `Drink at ${m3Str} (15 mins after your workout).`
           }
         }
       };
@@ -3784,12 +4047,108 @@
       modal.classList.remove('hidden');
     }
 
+    function isIngredientChecked(w, d, slotId, ingId) {
+      if (!state.checkedMealIngredients) state.checkedMealIngredients = {};
+      if (!state.checkedMeals) state.checkedMeals = {};
+      const ingKey = `w${w}_d${d}_${slotId}_${ingId}`;
+      if (state.checkedMealIngredients[ingKey] !== undefined) {
+        return !!state.checkedMealIngredients[ingKey];
+      }
+      const mealKey = `w${w}_d${d}_${slotId}`;
+      if (state.checkedMeals[mealKey] !== undefined) return !!state.checkedMeals[mealKey];
+      if (w === 1 && d === 0 && state.checkedMeals[slotId] !== undefined) return !!state.checkedMeals[slotId];
+      return false;
+    }
+
+    function isMealCheckedForDay(w, d, slotId) {
+      if (!state.checkedMeals) state.checkedMeals = {};
+      if (!state.checkedMealIngredients) state.checkedMealIngredients = {};
+      const k = `w${w}_d${d}_${slotId}`;
+      if (state.checkedMeals[k] !== undefined) return !!state.checkedMeals[k];
+      const slot = VEGAN_MEALS.find(s => s.slotId === slotId);
+      const opt = slot ? slot.options[0] : null;
+      if (opt && opt.items && opt.items.length > 0) {
+        const anyExplicit = opt.items.some(it => state.checkedMealIngredients[`w${w}_d${d}_${slotId}_${it.id}`] !== undefined);
+        if (anyExplicit) {
+          return opt.items.every(it => isIngredientChecked(w, d, slotId, it.id));
+        }
+      }
+      if (w === 1 && d === 0 && state.checkedMeals[slotId] !== undefined) return !!state.checkedMeals[slotId];
+      // Legacy 'post' key compatibility
+      if (slotId === 'pre_shake' && state.checkedMealIngredients[`w${w}_d${d}_post_m1_protein_shake`] !== undefined) {
+        return !!state.checkedMealIngredients[`w${w}_d${d}_post_m1_protein_shake`];
+      }
+      if (slotId === 'post_oats' && state.checkedMealIngredients[`w${w}_d${d}_post_m1_oats_jar`] !== undefined) {
+        return !!state.checkedMealIngredients[`w${w}_d${d}_post_m1_oats_jar`];
+      }
+      return false;
+    }
+
+    function isMealPartiallyCheckedForDay(w, d, slotId) {
+      const slot = VEGAN_MEALS.find(s => s.slotId === slotId);
+      const opt = slot ? slot.options[0] : null;
+      if (!opt || !opt.items || opt.items.length === 0) return false;
+      const checkedCount = opt.items.filter(it => isIngredientChecked(w, d, slotId, it.id)).length;
+      return checkedCount > 0 && checkedCount < opt.items.length;
+    }
+
+    function setMealCheckedForDay(w, d, slotId, val) {
+      if (!state.checkedMeals) state.checkedMeals = {};
+      if (!state.checkedMealIngredients) state.checkedMealIngredients = {};
+      const k = `w${w}_d${d}_${slotId}`;
+      state.checkedMeals[k] = !!val;
+      if (w === 1 && d === 0) state.checkedMeals[slotId] = !!val;
+      const slot = VEGAN_MEALS.find(s => s.slotId === slotId);
+      const opt = slot ? slot.options[0] : null;
+      if (opt && opt.items) {
+        opt.items.forEach(it => {
+          state.checkedMealIngredients[`w${w}_d${d}_${slotId}_${it.id}`] = !!val;
+        });
+      }
+    }
+
+    let activeInlineHoldTimer = null;
+    let activeInlineHoldKey = null;
+
+    function compressExercisePhotoFileToDataUrl(file, callback) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        const img = new Image();
+        img.onload = function() {
+          const maxDim = 400;
+          let width = img.width || 400;
+          let height = img.height || 400;
+          if (width > height && width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else if (height >= width && height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+          callback(dataUrl);
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
     function renderWorkoutView() {
       renderShoeTrackerUI();
       syncProgressiveWeekState(state);
       if (!state.completedWeeks) state.completedWeeks = {};
       if (!state.exerciseUnitPrefs) state.exerciseUnitPrefs = {};
       if (!state.openImagePanels) state.openImagePanels = {};
+      if (!state.timedHoldSeconds || typeof state.timedHoldSeconds !== 'object') state.timedHoldSeconds = {};
+      if (!state.exerciseNotes || typeof state.exerciseNotes !== 'object') state.exerciseNotes = {};
+      if (!state.openNotePanels || typeof state.openNotePanels !== 'object') state.openNotePanels = {};
+      if (!state.dismissedPreFuelPrompt || typeof state.dismissedPreFuelPrompt !== 'object') state.dismissedPreFuelPrompt = {};
 
       renderDaySelector();
       const week = state.selectedWeek || state.currentWeek || 1;
@@ -3799,6 +4158,59 @@
       const dayIdx = state.selectedDayIndex;
       const dayObj = DAYS_SCHEDULE[dayIdx];
       renderWarmupCard(dayObj);
+
+      // UPGRADE 7: Pre-Workout Fuel Check-In Prompt on Workout Days (Days 1-5)
+      const preFuelBanner = document.getElementById('pre-workout-fuel-checkin-banner');
+      if (preFuelBanner) {
+        const isTrainingDay = dayIdx >= 0 && dayIdx <= 4;
+        const isFuel1Logged = isMealCheckedForDay(week, dayIdx, 'pre_shake');
+        const dismissKey = `w${week}_d${dayIdx}`;
+        const isDismissed = Boolean(state.dismissedPreFuelPrompt && state.dismissedPreFuelPrompt[dismissKey]);
+
+        if (isTrainingDay && !isFuel1Logged && !isDismissed) {
+          preFuelBanner.classList.remove('hidden');
+          preFuelBanner.innerHTML = `
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-start sm:items-center gap-2 min-w-0">
+                <span class="text-sm shrink-0">⚡</span>
+                <p class="text-xs font-extrabold text-amber-200 leading-snug">
+                  Pre-Gym Fuel Check: Did you drink your Pre-Workout Shake (36g P)?
+                </p>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button type="button" id="pre-fuel-checkin-yes-btn" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold whitespace-nowrap shadow-sm transition">
+                  Yes, Log Fuel 1
+                </button>
+                <button type="button" id="pre-fuel-checkin-dismiss-btn" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold whitespace-nowrap transition">
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          `;
+          const yesFuelBtn = document.getElementById('pre-fuel-checkin-yes-btn');
+          if (yesFuelBtn) {
+            yesFuelBtn.addEventListener('click', () => {
+              setMealCheckedForDay(week, dayIdx, 'pre_shake', true);
+              state.dismissedPreFuelPrompt[dismissKey] = false;
+              saveState();
+              renderWorkoutView();
+              renderVeganView();
+              showToast('⚡ Logged Fuel 1: Pre-Gym Fast Protein Shake (170 kcal • 36g P)!');
+            });
+          }
+          const dismissFuelBtn = document.getElementById('pre-fuel-checkin-dismiss-btn');
+          if (dismissFuelBtn) {
+            dismissFuelBtn.addEventListener('click', () => {
+              state.dismissedPreFuelPrompt[dismissKey] = true;
+              preFuelBanner.classList.add('hidden');
+              saveState();
+            });
+          }
+        } else {
+          preFuelBanner.classList.add('hidden');
+          preFuelBanner.innerHTML = '';
+        }
+      }
 
       // Render Progressive Week Selector (Only Weeks 1 .. state.maxUnlockedWeek)
       const weekSel = document.getElementById('week-select');
@@ -3815,10 +4227,6 @@
 
       const weekPillsContainer = document.getElementById('progressive-week-pills');
       if (weekPillsContainer) {
-        // 3-Week Rolling Visibility Rule:
-        // - During the first 3 weeks (maxUnlocked <= 3), display only unlocked weeks 1..maxUnlocked.
-        // - Once maxUnlocked > 3, display the current active week + past 3 completed weeks as quick-access pills,
-        //   plus an expandable "View Older Weeks" option for earlier history. Never display locked future weeks.
         const rollingStart = maxUnlocked <= 3 ? 1 : Math.max(1, maxUnlocked - 3);
         const visibleWeeks = [];
         for (let w = rollingStart; w <= maxUnlocked; w++) {
@@ -3966,11 +4374,10 @@
             }
           }
         });
-        // Calculate active days for loss-aversion grocery savings ($10.70 saved/day vs $16.25 takeout/meat)
         let activeDaysCount = 1;
         for (let d = 0; d < 7; d++) {
           const st = getDayCompletionStatus(week, d);
-          if (st.doneSets > 0 || state.checkedMeals[`w${week}_d${d}_meal_1`]) activeDaysCount++;
+          if (st.doneSets > 0 || state.checkedMeals[`w${week}_d${d}_pre_shake`]) activeDaysCount++;
         }
         const savedDollars = (activeDaysCount * 10.70).toFixed(2);
         const prof = state.userProfile || {};
@@ -4014,12 +4421,6 @@
             if (m) m.classList.remove('hidden');
           });
         }
-        const hudAiBtn = null;
-        if (hudAiBtn) {
-          hudAiBtn.addEventListener('click', () => {
-            openGeminiCoachModal();
-          });
-        }
       }
 
       // Render Day Summary Banner (With Editable Gym Time & Auto-Meal Sync Status!)
@@ -4059,7 +4460,7 @@
             </div>
           </div>
 
-          <!-- Compact 1-Line Gym Time & Meal Sync Bar (Expandable on Tap so Exercises Stay Above the Fold!) -->
+          <!-- Compact 1-Line Gym Time & Meal Sync Bar -->
           <div class="flex flex-wrap items-center justify-between gap-1.5 pt-0.5 text-[10px]">
             <div class="inline-flex items-center bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
               <span class="px-1.5 py-1 font-extrabold text-emerald-400">⏱️</span>
@@ -4223,7 +4624,29 @@
         const panelKey = getExercisePanelKey(dayIdx, ex.id);
         const isImgOpen = isExerciseImgOpen(dayIdx, ex.id);
 
-        const isBarbellEx = BARBELL_EX_IDS.includes(ex.id);
+        // UPGRADE 2: Detect Timed Hold Exercises (Side Plank)
+        const isTimedHold = Boolean(ex.isTimedHold || ex.id === 'tue_side_plank');
+        const targetHoldSec = isTimedHold
+          ? (parseInt(state.timedHoldSeconds && state.timedHoldSeconds[ex.id], 10) || 30)
+          : 30;
+
+        // UPGRADE 4: Exercise Note & Photo State
+        const exNote = (state.exerciseNotes && state.exerciseNotes[ex.id]) || { text: '', photoDataUrl: '', updatedWeek: week, updatedAt: '' };
+        const noteTextClean = String(exNote.text || '').trim();
+        const hasNoteText = noteTextClean.length > 0;
+        const hasNotePhoto = Boolean(exNote.photoDataUrl && String(exNote.photoDataUrl).trim().length > 0);
+        const hasAnyNote = hasNoteText || hasNotePhoto;
+        const isNotePanelOpen = Boolean(state.openNotePanels && state.openNotePanels[ex.id]);
+        const notePreviewStr = hasNoteText
+          ? (noteTextClean.length > 34 ? noteTextClean.slice(0, 34) + '…' : noteTextClean)
+          : (hasNotePhoto ? 'Photo attached' : '');
+        const safeNoteValueAttr = noteTextClean
+          .replace(/&/g, '&amp;')
+          .replace(/"/g, '&quot;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+
+        const isBarbellEx = !isTimedHold && BARBELL_EX_IDS.includes(ex.id);
         const barCfg = isBarbellEx ? getBarbellConfig(ex.id) : null;
         const barWeight = isBarbellEx ? getBarbellBarWeight(ex.id, exUnit) : 0;
         if (isBarbellEx && !barCfg.openCustomSets) barCfg.openCustomSets = {};
@@ -4273,7 +4696,6 @@
             ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0)
             : meta.defaultWeightLbs;
 
-          // Read this set's own logged weight independently from state.workoutLogs[logKey].weight
           const rawLoggedWeight = (existing && existing.weight !== undefined && existing.weight !== '') ? String(existing.weight) : '';
           let prevWeekCarryWeight = '';
           if (prevSuggestion && prevSuggestion.weight !== undefined && prevSuggestion.weight !== '') {
@@ -4322,84 +4744,122 @@
           const isCurrentTargetSet = !isDone && !firstUnloggedSetFound;
           if (isCurrentTargetSet) firstUnloggedSetFound = true;
 
-          setsHtml += `
-            <div class="py-2 px-2.5 rounded-xl transition-all ${
-              isDone
-                ? 'bg-emerald-950/20 border border-emerald-500/35'
-                : (isSelectedInCalc
-                    ? 'bg-slate-950/90 border border-sky-400/50'
-                    : 'bg-slate-950/75 border border-slate-800/80')
-            }">
-              <div class="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-1.5 sm:gap-2">
-                <div class="min-w-[44px]">
-                  <span class="text-xs font-extrabold whitespace-nowrap ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
-                  ${isBarbellEx ? `
-                    <button type="button" data-select-calc-ex="${ex.id}" data-set-idx="${s}" class="select-calc-set-btn block text-[9px] font-bold whitespace-nowrap ${isSelectedInCalc ? 'text-amber-300' : 'text-slate-400 hover:text-sky-300'} mt-0.5 transition" title="Select Set ${s} in Plate Calculator">
-                      ${isSelectedInCalc ? '💿 Active' : '💿 Plates'}
+          if (isTimedHold) {
+            setsHtml += `
+              <div class="py-2 px-2.5 rounded-xl transition-all ${
+                isDone
+                  ? 'bg-emerald-950/20 border border-emerald-500/35'
+                  : 'bg-slate-950/75 border border-slate-800/80'
+              }">
+                <div class="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-xs font-extrabold whitespace-nowrap ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
+                    <span class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-slate-900 border border-amber-500/35 text-amber-300 whitespace-nowrap">${targetHoldSec}s / side</span>
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0 ml-auto">
+                    <button
+                      type="button"
+                      data-hold-ex="${ex.id}"
+                      data-set-idx="${s}"
+                      data-hold-sec="${targetHoldSec}"
+                      data-hold-key="${logKey}"
+                      class="timed-hold-start-btn h-9 px-3 rounded-lg text-xs font-extrabold bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 whitespace-nowrap transition"
+                    >
+                      ⏱️ Start ${targetHoldSec}s Timer
                     </button>
-                  ` : ''}
-                </div>
-                <div class="min-w-0">
-                  <div class="flex items-center bg-slate-900 border ${isBarbellEx ? 'border-amber-500/40' : 'border-slate-700/90'} rounded-lg overflow-hidden">
-                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-${topBothStep}" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Weight">−</button>
-                    <input type="number" step="0.5" inputmode="decimal" placeholder="${weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full min-w-0 bg-transparent py-1 text-center text-xs sm:text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none" />
-                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="${topBothStep}" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Weight">+</button>
+                    <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${setRestSeconds}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn h-9 px-3 rounded-lg text-xs font-extrabold whitespace-nowrap transition ${
+                      isDone
+                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                        : (isCurrentTargetSet
+                            ? 'bg-sky-400 hover:bg-sky-300 text-slate-950 shadow-sm'
+                            : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700')
+                    }">
+                      ${isDone ? '✓ Done' : '✓ Log'}
+                    </button>
                   </div>
-                </div>
-                <div class="min-w-0">
-                  <div class="flex items-center bg-slate-900 border border-slate-700/90 rounded-lg overflow-hidden">
-                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
-                    <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full min-w-0 bg-transparent py-1 text-xs sm:text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none text-center" />
-                    <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
-                  </div>
-                </div>
-                <div class="flex items-center justify-end shrink-0">
-                  <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${setRestSeconds}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn h-9 sm:h-10 px-2.5 sm:px-3 rounded-lg text-xs font-extrabold whitespace-nowrap transition ${
-                    isDone
-                      ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                      : (isCurrentTargetSet
-                          ? 'bg-sky-400 hover:bg-sky-300 text-slate-950 shadow-sm'
-                          : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700')
-                  }">
-                    ${isDone ? '✓ Done' : '✓ Log'}
-                  </button>
                 </div>
               </div>
+            `;
+          } else {
+            setsHtml += `
+              <div class="py-2 px-2.5 rounded-xl transition-all ${
+                isDone
+                  ? 'bg-emerald-950/20 border border-emerald-500/35'
+                  : (isSelectedInCalc
+                      ? 'bg-slate-950/90 border border-sky-400/50'
+                      : 'bg-slate-950/75 border border-slate-800/80')
+              }">
+                <div class="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-1.5 sm:gap-2">
+                  <div class="min-w-[44px]">
+                    <span class="text-xs font-extrabold whitespace-nowrap ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
+                    ${isBarbellEx ? `
+                      <button type="button" data-select-calc-ex="${ex.id}" data-set-idx="${s}" class="select-calc-set-btn block text-[9px] font-bold whitespace-nowrap ${isSelectedInCalc ? 'text-amber-300' : 'text-slate-400 hover:text-sky-300'} mt-0.5 transition" title="Select Set ${s} in Plate Calculator">
+                        ${isSelectedInCalc ? '💿 Active' : '💿 Plates'}
+                      </button>
+                    ` : ''}
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex items-center bg-slate-900 border ${isBarbellEx ? 'border-amber-500/40' : 'border-slate-700/90'} rounded-lg overflow-hidden">
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-${topBothStep}" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Weight">−</button>
+                      <input type="number" step="0.5" inputmode="decimal" placeholder="${weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full min-w-0 bg-transparent py-1 text-center text-xs sm:text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none" />
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="${topBothStep}" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Weight">+</button>
+                    </div>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex items-center bg-slate-900 border border-slate-700/90 rounded-lg overflow-hidden">
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
+                      <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full min-w-0 bg-transparent py-1 text-xs sm:text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none text-center" />
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-end shrink-0">
+                    <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${setRestSeconds}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn h-9 sm:h-10 px-2.5 sm:px-3 rounded-lg text-xs font-extrabold whitespace-nowrap transition ${
+                      isDone
+                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                        : (isCurrentTargetSet
+                            ? 'bg-sky-400 hover:bg-sky-300 text-slate-950 shadow-sm'
+                            : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700')
+                    }">
+                      ${isDone ? '✓ Done' : '✓ Log'}
+                    </button>
+                  </div>
+                </div>
 
-              ${isBarbellEx && barMath ? `
-              <!-- Inline Per-Set Barbell Plate Breakdown: (totalWeight - barWeight) / 2 -->
-              <div data-barbell-ro-total="${logKey}" class="mt-1.5 pt-1.5 border-t border-slate-800/75 flex flex-wrap items-center justify-between gap-1.5 text-[10px]">
-                <span class="font-bold text-slate-300">
-                  💿 <strong class="text-amber-300">${barMath.bar} ${exUnit}</strong> Bar + <strong class="text-emerald-300">${barMath.perSide} ${exUnit}/side</strong> = <strong class="text-white">${barMath.total} ${exUnit}</strong>
-                </span>
-                <div class="flex flex-wrap items-center gap-1">
-                  ${barMath.plateChipsHtml}
+                ${isBarbellEx && barMath ? `
+                <!-- Inline Per-Set Barbell Plate Breakdown: (totalWeight - barWeight) / 2 -->
+                <div data-barbell-ro-total="${logKey}" class="mt-1.5 pt-1.5 border-t border-slate-800/75 flex flex-wrap items-center justify-between gap-1.5 text-[10px]">
+                  <span class="font-bold text-slate-300">
+                    💿 <strong class="text-amber-300">${barMath.bar} ${exUnit}</strong> Bar + <strong class="text-emerald-300">${barMath.perSide} ${exUnit}/side</strong> = <strong class="text-white">${barMath.total} ${exUnit}</strong>
+                  </span>
+                  <div class="flex flex-wrap items-center gap-1">
+                    ${barMath.plateChipsHtml}
+                  </div>
                 </div>
-              </div>
-              ` : ''}
+                ` : ''}
 
-              ${isBarbellEx && barMath && isCustomSetOpen ? `
-              <div class="grid grid-cols-2 gap-2 pt-1.5 mt-1.5 border-t border-slate-800/80">
-                <div class="bg-slate-900 border border-slate-700 rounded-lg p-1.5 space-y-1">
-                  <span class="block text-[9px] font-bold uppercase text-slate-300">Set ${s} • 1 Side (${exUnit})</span>
-                  <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden w-full">
-                    <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${topSideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-300 hover:text-white">−</button>
-                    <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.perSide}" data-bar3-inp="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-white focus:outline-none" />
-                    <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${topSideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-sky-400">+</button>
+                ${isBarbellEx && barMath && isCustomSetOpen ? `
+                <div class="grid grid-cols-2 gap-2 pt-1.5 mt-1.5 border-t border-slate-800/80">
+                  <div class="bg-slate-900 border border-slate-700 rounded-lg p-1.5 space-y-1">
+                    <span class="block text-[9px] font-bold uppercase text-slate-300">Set ${s} • 1 Side (${exUnit})</span>
+                    <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden w-full">
+                      <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${topSideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-300 hover:text-white">−</button>
+                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.perSide}" data-bar3-inp="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-white focus:outline-none" />
+                      <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${topSideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-sky-400">+</button>
+                    </div>
+                  </div>
+                  <div class="bg-slate-900 border border-slate-700 rounded-lg p-1.5 space-y-1">
+                    <span class="block text-[9px] font-bold uppercase text-slate-300">Set ${s} • Both Sides (${exUnit})</span>
+                    <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden w-full">
+                      <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${topBothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-300 hover:text-white">−</button>
+                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-white focus:outline-none" />
+                      <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${topBothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-sky-400">+</button>
+                    </div>
                   </div>
                 </div>
-                <div class="bg-slate-900 border border-slate-700 rounded-lg p-1.5 space-y-1">
-                  <span class="block text-[9px] font-bold uppercase text-slate-300">Set ${s} • Both Sides (${exUnit})</span>
-                  <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden w-full">
-                    <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${topBothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-300 hover:text-white">−</button>
-                    <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-white focus:outline-none" />
-                    <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${topBothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-sky-400">+</button>
-                  </div>
-                </div>
+                ` : ''}
               </div>
-              ` : ''}
-            </div>
-          `;
+            `;
+          }
         }
 
         const isExComplete = exDoneSets === ex.sets;
@@ -4432,7 +4892,7 @@
                       <span class="exercise-progress-badge whitespace-nowrap px-2 py-0.5 text-xs font-bold font-mono rounded-md transition-colors ${
                         isActiveCard ? 'bg-sky-400 text-slate-950' : (isExComplete ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300 group-hover:text-sky-300')
                       }">#${exOrder + 1}/${totalExercisesToday}</span>
-                      <span class="text-[11px] font-semibold text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded-md whitespace-nowrap">${ex.sets} Sets × ${ex.reps}</span>
+                      <span class="text-[11px] font-semibold text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded-md whitespace-nowrap">${isTimedHold ? `${ex.sets} Sets × ${targetHoldSec}s / side` : `${ex.sets} Sets × ${ex.reps}`}</span>
                       ${isExComplete ? `<span class="text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">✓ Done</span>` : ''}
                     </div>
                     <h3 class="${
@@ -4441,6 +4901,15 @@
                         : 'text-sm font-bold text-slate-200 group-hover:text-white mt-0.5 leading-snug break-words'
                     } transition-colors">${ex.name}</h3>
                   </div>
+
+                  <!-- UPGRADE 4: Prominent Amber Reminder Badge on Header (Visible Even When Collapsed!) -->
+                  <div data-ex-header-note-wrap="${ex.id}" class="${hasAnyNote ? 'mt-1.5' : 'hidden'}">
+                    <span data-ex-header-note-badge="${ex.id}" class="inline-flex flex-wrap items-center gap-1.5 text-[11px] font-extrabold text-amber-200 bg-amber-500/20 border border-amber-400/50 px-2.5 py-1 rounded-lg shadow-sm">
+                      <span>⚠️ Note: ${hasNoteText ? safeNoteValueAttr : 'Machine photo saved'}</span>
+                      ${hasNotePhoto ? '<span class="text-[10px] bg-amber-400/25 text-amber-100 px-1.5 py-0.5 rounded">📷 Photo</span>' : ''}
+                    </span>
+                  </div>
+
                   <div class="flex flex-wrap items-center gap-1.5 mt-1">
                     <div id="hdr-setup-${panelKey}" class="${isImgOpen ? 'inline-flex' : 'hidden'} items-center gap-1 text-[11px] font-semibold text-sky-300 bg-sky-500/10 border border-sky-500/25 px-2 py-0.5 rounded-lg" style="display: ${isImgOpen ? 'inline-flex' : 'none'};">
                       <span>🛠️</span>
@@ -4455,7 +4924,14 @@
                 </div>
               </div>
 
-              <!-- Neutral Slate/White Unit Selector (No Green Overload!) -->
+              <!-- Right Header Controls: Hidden on Timed Isometric Holds (Side Plank) -->
+              ${isTimedHold ? `
+              <div class="flex flex-col items-end gap-1 shrink-0">
+                <span class="text-[10px] font-extrabold text-amber-300 bg-amber-500/15 border border-amber-500/35 px-2.5 py-1 rounded-xl whitespace-nowrap">
+                  ⏱️ ${targetHoldSec}s / side
+                </span>
+              </div>
+              ` : `
               <div class="flex flex-col items-end gap-1.5 shrink-0">
                 <div class="inline-flex rounded-xl bg-slate-950 border border-slate-800 p-0.5">
                   <button type="button" data-ex-unit-btn="${ex.id}" data-unit-val="lbs" class="ex-unit-toggle px-2 py-1 rounded-lg text-[10px] font-extrabold transition ${
@@ -4469,13 +4945,14 @@
                   +${meta.defaultWeightLbs === 0 ? '1 Rep' : (isBarbellEx ? `${exUnit === 'kg' ? '1.25/s' : '2.5/s'}` : '2.5')}
                 </button>
               </div>
+              `}
             </div>
 
-            <!-- Summary Bar: Neutral Slate Border (Never a Second Green Border Inside the Card!) -->
+            <!-- Summary Bar: Neutral Slate Border -->
             <button type="button" data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${isExComplete ? '1' : '0'}" class="expand-done-btn w-full flex items-center justify-between bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-slate-300 rounded-xl px-3 py-2 text-xs transition">
               <span class="font-medium text-left">
                 ${isExComplete ? `<span class="text-emerald-400 font-bold">✓ All ${ex.sets} sets logged</span>` : `${exDoneSets} / ${ex.sets} sets logged`}
-                ${meta.defaultWeightLbs > 0 ? `<span class="text-slate-400 ml-1">• <strong class="text-white">${activeCalcEffectiveTotal} ${exUnit}</strong></span>` : ''}
+                ${isTimedHold ? `<span class="text-amber-300 ml-1">• <strong>${targetHoldSec}s / side</strong></span>` : (meta.defaultWeightLbs > 0 ? `<span class="text-slate-400 ml-1">• <strong class="text-white">${activeCalcEffectiveTotal} ${exUnit}</strong></span>` : '')}
               </span>
               <span class="${isActiveCard ? 'text-sky-300' : 'text-slate-400'} font-bold text-[11px] shrink-0">
                 ${isCollapsedDone ? 'Tap to Open ▾' : 'Close ▴'}
@@ -4483,7 +4960,7 @@
             </button>
 
             <div id="sets-wrap-${panelKey}" class="${isCollapsedDone ? 'hidden' : 'space-y-3'}" style="display: ${isCollapsedDone ? 'none' : 'block'};">
-              <!-- Single-Line Action Bar: Form & Setup Toggle, Rest Timer & Video Link (Zero Multi-Line Wrapping!) -->
+              <!-- Single-Line Action Bar: Form & Setup Toggle, Rest Timer & Video Link -->
               <div class="flex items-center justify-between gap-1.5 pt-1">
                 <button type="button" data-toggle-img="${ex.id}" data-day-idx="${dayIdx}" data-panel-key="${panelKey}" class="toggle-img-btn flex-1 min-w-0 bg-slate-950 hover:bg-slate-800 text-slate-200 border border-slate-800 text-[11px] font-bold px-2.5 py-1.5 rounded-xl flex items-center justify-between gap-1 whitespace-nowrap transition">
                   <span class="truncate">📐 ${isImgOpen ? 'Hide Form & Setup' : 'Form & Setup'}</span>
@@ -4497,13 +4974,40 @@
                 </a>
               </div>
 
-              <!-- Collapsible Visual Diagram Dropdown Panel (With Hide Button!) -->
+              <!-- Collapsible Visual Diagram Dropdown Panel -->
               <div id="img-panel-${ex.id}" data-panel-id="${panelKey}" class="${isImgOpen ? 'block' : 'hidden'}" style="display: ${isImgOpen ? 'block' : 'none'};">
                 ${getStepVisualDiagramHtml(ex, meta, dayIdx)}
               </div>
 
+              ${isTimedHold ? `
+              <!-- UPGRADE 2: Side Plank Quick Duration Preset Pills (30s, 45s, 60s, 75s, 90s) -->
+              <div class="bg-slate-950/90 border border-amber-500/30 rounded-xl p-2.5 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">⏱️ Isometric Hold Duration Presets</span>
+                  <span class="text-[10px] font-bold text-slate-300">${targetHoldSec}s Left + ${targetHoldSec}s Right</span>
+                </div>
+                <div class="grid grid-cols-5 gap-1.5">
+                  ${[30, 45, 60, 75, 90].map(sec => `
+                    <button
+                      type="button"
+                      data-timed-preset-ex="${ex.id}"
+                      data-timed-sec="${sec}"
+                      aria-pressed="${targetHoldSec === sec ? 'true' : 'false'}"
+                      class="timed-hold-preset-btn py-1.5 px-2 rounded-lg text-xs font-extrabold border transition ${
+                        targetHoldSec === sec
+                          ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-sm'
+                          : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'
+                      }"
+                    >
+                      ${sec}s
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+              ` : ''}
+
               ${isBarbellEx && activeCalcBarMath ? `
-              <!-- STEP 1: PER-SET BARBELL & PLATE CALCULATOR (Hevy/Strong Standard: Independent Per-Set Plate Math!) -->
+              <!-- STEP 1: PER-SET BARBELL & PLATE CALCULATOR -->
               <div class="bg-slate-950/90 border border-amber-500/30 rounded-xl p-2.5 space-y-2">
                 <!-- Barbell Selector Row -->
                 <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-800/80">
@@ -4567,9 +5071,8 @@
                   </button>
                 </div>
 
-                <!-- 2 Linked Plate Boxes for Selected Set Only (Never Force-Overwrites Other Sets!) -->
+                <!-- 2 Linked Plate Boxes for Selected Set Only -->
                 <div class="grid grid-cols-2 gap-2">
-                  <!-- Box 1: 1 Side (Auto-adjusts Both Sides = 2x for Set calcTargetSet) -->
                   <div class="bg-slate-900/95 border border-emerald-500/35 rounded-xl p-2 space-y-1">
                     <div class="flex items-center justify-between">
                       <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Set ${calcTargetSet} • 1 Side (${exUnit})</span>
@@ -4582,7 +5085,6 @@
                     </div>
                   </div>
 
-                  <!-- Box 2: Total of Both Sides (Auto-adjusts 1 Side = ÷2 for Set calcTargetSet) -->
                   <div class="bg-slate-900/95 border border-sky-500/35 rounded-xl p-2 space-y-1">
                     <div class="flex items-center justify-between">
                       <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Set ${calcTargetSet} • Both Sides (${exUnit})</span>
@@ -4628,20 +5130,226 @@
               </div>
               ` : ''}
 
-              <!-- STEP 2: SET 1, SET 2, SET 3 ROWS (Independent Per-Set Weights & Inline Plate Breakdowns!) -->
+              <!-- STEP 2: SET 1, SET 2, SET 3 ROWS -->
               <div class="space-y-1.5">
+                ${isTimedHold ? `
+                <div class="flex items-center justify-between px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <span>Set &amp; Target Hold</span>
+                  <span>Isometric Timer &amp; 1-Tap Log</span>
+                </div>
+                ` : `
                 <div class="grid grid-cols-12 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   <div class="col-span-2">Set</div>
                   <div class="col-span-4 text-center ${isBarbellEx ? 'text-amber-300' : ''}">Weight (${exUnit.toUpperCase()})</div>
                   <div class="col-span-3 text-center">Reps</div>
                   <div class="col-span-3 text-right">1-Tap Log</div>
                 </div>
+                `}
                 ${setsHtml}
+              </div>
+
+              <!-- UPGRADE 4: Collapsible Exercise Notes & Photo (Hidden by Default at Bottom of Open Card) -->
+              <div class="pt-1 border-t border-slate-800/80 space-y-2">
+                <button
+                  type="button"
+                  data-note-toggle-ex="${ex.id}"
+                  aria-expanded="${isNotePanelOpen ? 'true' : 'false'}"
+                  class="toggle-ex-note-btn w-full py-2 px-3 rounded-xl border text-xs font-extrabold flex items-center justify-between gap-2 transition ${
+                    hasAnyNote
+                      ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-400/40 text-amber-200'
+                      : 'bg-slate-950/85 hover:bg-slate-900 border-slate-800 text-slate-300 hover:text-white'
+                  }"
+                >
+                  <span data-note-toggle-label="${ex.id}" class="truncate text-left">
+                    ${hasAnyNote ? `📝 View/Edit Note: "${notePreviewStr}"${hasNotePhoto ? ' 📷' : ''}` : '+ Add Machine Note / Photo'}
+                  </span>
+                  <span class="text-[10px] font-bold shrink-0 ${hasAnyNote ? 'text-amber-300' : 'text-slate-400'}">${isNotePanelOpen ? '▴ Hide' : '▾ Open'}</span>
+                </button>
+
+                <div id="ex-note-panel-${ex.id}" class="${isNotePanelOpen ? 'bg-slate-950/90 border border-slate-800 rounded-xl p-3 space-y-2.5' : 'hidden'}">
+                  <div>
+                    <label for="ex-note-input-${ex.id}" class="block text-[10px] font-extrabold uppercase tracking-wider text-amber-300 mb-1">
+                      Machine Pin / Seat Setting Note (Auto-Saves &amp; Shows Next Week)
+                    </label>
+                    <input
+                      id="ex-note-input-${ex.id}"
+                      type="text"
+                      data-note-input-ex="${ex.id}"
+                      placeholder="e.g., Machine pin #6, seat height 4"
+                      value="${safeNoteValueAttr}"
+                      class="ex-note-text-input w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-extrabold text-sky-300 cursor-pointer transition">
+                      <span>📷 Take / Upload Photo</span>
+                      <input type="file" accept="image/*" data-note-photo-ex="${ex.id}" class="ex-note-photo-input hidden" />
+                    </label>
+                    ${hasNotePhoto ? `
+                      <button type="button" data-note-remove-photo="${ex.id}" class="ex-note-remove-photo-btn px-2.5 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/35 text-rose-300 text-xs font-bold transition">
+                        🗑️ Remove Photo
+                      </button>
+                    ` : ''}
+                  </div>
+
+                  ${hasNotePhoto ? `
+                    <div class="pt-1">
+                      <img src="${exNote.photoDataUrl}" alt="${ex.name} machine setting photo" class="max-h-40 rounded-xl border border-slate-700 object-cover" />
+                    </div>
+                  ` : ''}
+                </div>
               </div>
             </div>
           </article>
         `;
       }).join('');
+
+      // UPGRADE 2 Listeners: Side Plank Duration Preset Pills & Inline Isometric Countdown Timer
+      listEl.querySelectorAll('.timed-hold-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-timed-preset-ex');
+          const sec = parseInt(btn.getAttribute('data-timed-sec'), 10) || 30;
+          if (!state.timedHoldSeconds) state.timedHoldSeconds = {};
+          state.timedHoldSeconds[exId] = sec;
+          saveState();
+          renderWorkoutView();
+          showToast(`⏱️ Side Plank hold duration set to ${sec}s / side`);
+        });
+      });
+
+      listEl.querySelectorAll('.timed-hold-start-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-hold-ex');
+          const setIdx = parseInt(btn.getAttribute('data-set-idx'), 10) || 1;
+          const holdSec = parseInt(btn.getAttribute('data-hold-sec'), 10) || 30;
+          const holdKey = btn.getAttribute('data-hold-key');
+
+          if (activeInlineHoldTimer && activeInlineHoldKey === holdKey) {
+            clearInterval(activeInlineHoldTimer);
+            activeInlineHoldTimer = null;
+            activeInlineHoldKey = null;
+            resetTimer();
+            btn.textContent = `⏱️ Start ${holdSec}s Timer`;
+            showToast('⏹️ Isometric hold timer stopped');
+            return;
+          }
+
+          if (activeInlineHoldTimer) {
+            clearInterval(activeInlineHoldTimer);
+            activeInlineHoldTimer = null;
+          }
+
+          activeInlineHoldKey = holdKey;
+          let side = 'Left Side';
+          let remaining = holdSec;
+          startTimer(holdSec, `Side Plank Set ${setIdx} (${side})`);
+          btn.textContent = `⏳ ${side}: ${remaining}s`;
+
+          activeInlineHoldTimer = setInterval(() => {
+            remaining--;
+            if (remaining > 0) {
+              btn.textContent = `⏳ ${side}: ${remaining}s`;
+            } else if (side === 'Left Side') {
+              playTimerChime();
+              side = 'Right Side';
+              remaining = holdSec;
+              startTimer(holdSec, `Side Plank Set ${setIdx} (${side})`);
+              btn.textContent = `⏳ ${side}: ${remaining}s`;
+              showToast(`🔄 Switch to Right Side (${holdSec}s hold)!`);
+            } else {
+              clearInterval(activeInlineHoldTimer);
+              activeInlineHoldTimer = null;
+              activeInlineHoldKey = null;
+              btn.textContent = `✓ ${holdSec}s/side Complete!`;
+              showToast(`🎉 Side Plank Set ${setIdx} (${holdSec}s/side) complete! Tap ✓ Log.`);
+            }
+          }, 1000);
+        });
+      });
+
+      // UPGRADE 4 Listeners: Collapsible Exercise Notes & Photo Upload/Removal
+      listEl.querySelectorAll('.toggle-ex-note-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-note-toggle-ex');
+          if (!state.openNotePanels) state.openNotePanels = {};
+          state.openNotePanels[exId] = !state.openNotePanels[exId];
+          saveState();
+          renderWorkoutView();
+        });
+      });
+
+      listEl.querySelectorAll('.ex-note-text-input').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const exId = inp.getAttribute('data-note-input-ex');
+          if (!state.exerciseNotes) state.exerciseNotes = {};
+          const prev = state.exerciseNotes[exId] || { text: '', photoDataUrl: '' };
+          const textVal = inp.value;
+          state.exerciseNotes[exId] = {
+            text: textVal,
+            photoDataUrl: prev.photoDataUrl || '',
+            updatedWeek: week,
+            updatedAt: new Date().toISOString()
+          };
+          saveState();
+
+          const clean = String(textVal || '').trim();
+          const hasPhoto = Boolean(prev.photoDataUrl);
+          const hasAny = clean.length > 0 || hasPhoto;
+          const wrapEl = listEl.querySelector(`[data-ex-header-note-wrap="${exId}"]`);
+          const badgeEl = listEl.querySelector(`[data-ex-header-note-badge="${exId}"]`);
+          if (wrapEl && badgeEl) {
+            if (hasAny) {
+              wrapEl.classList.remove('hidden');
+              wrapEl.classList.add('mt-1.5');
+              const safeTxt = clean.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+              badgeEl.innerHTML = `<span>⚠️ Note: ${clean ? safeTxt : 'Machine photo saved'}</span>${hasPhoto ? '<span class="text-[10px] bg-amber-400/25 text-amber-100 px-1.5 py-0.5 rounded">📷 Photo</span>' : ''}`;
+            } else {
+              wrapEl.classList.add('hidden');
+            }
+          }
+          const toggleLbl = listEl.querySelector(`[data-note-toggle-label="${exId}"]`);
+          if (toggleLbl) {
+            const preview = clean.length > 34 ? clean.slice(0, 34) + '…' : (clean || 'Photo attached');
+            toggleLbl.textContent = hasAny
+              ? `📝 View/Edit Note: "${preview}"${hasPhoto ? ' 📷' : ''}`
+              : '+ Add Machine Note / Photo';
+          }
+        });
+      });
+
+      listEl.querySelectorAll('.ex-note-photo-input').forEach(fileInp => {
+        fileInp.addEventListener('change', (e) => {
+          const exId = fileInp.getAttribute('data-note-photo-ex');
+          const file = e.target.files && e.target.files[0];
+          if (!file || !exId) return;
+          compressExercisePhotoFileToDataUrl(file, (dataUrl) => {
+            if (!state.exerciseNotes) state.exerciseNotes = {};
+            const prev = state.exerciseNotes[exId] || { text: '', photoDataUrl: '' };
+            state.exerciseNotes[exId] = {
+              text: prev.text || '',
+              photoDataUrl: dataUrl,
+              updatedWeek: week,
+              updatedAt: new Date().toISOString()
+            };
+            state.openNotePanels[exId] = true;
+            saveState();
+            renderWorkoutView();
+            showToast('📷 Machine setting photo compressed & saved to exercise!');
+          });
+        });
+      });
+
+      listEl.querySelectorAll('.ex-note-remove-photo-btn').forEach(rmBtn => {
+        rmBtn.addEventListener('click', () => {
+          const exId = rmBtn.getAttribute('data-note-remove-photo');
+          if (!state.exerciseNotes || !state.exerciseNotes[exId]) return;
+          state.exerciseNotes[exId].photoDataUrl = '';
+          saveState();
+          renderWorkoutView();
+          showToast('🗑️ Removed exercise photo');
+        });
+      });
 
       // Helper to apply a new canonical total weight to a SINGLE Barbell Set Row (or explicitly to remaining unlogged sets when requested)
       function applyBarbellSetMathAndSyncDOM(key, exId, setIdx, newTotalVal, syncAllUnloggedSets) {
@@ -4835,7 +5543,7 @@
       }
       attachRoundStandardListeners();
 
-      // Attach listeners for per-set weight inputs (both barbell and non-barbell) & reps inputs
+      // Attach listeners for per-set weight inputs & reps inputs
       listEl.querySelectorAll('.workout-input').forEach(inp => {
         inp.addEventListener('input', () => {
           const key = inp.getAttribute('data-log-key');
@@ -4848,7 +5556,6 @@
             ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0)
             : meta.defaultWeightLbs;
 
-          // Lock in default unit for this exercise on first execution
           if (!state.exerciseUnitPrefs[exId]) {
             state.exerciseUnitPrefs[exId] = exUnit;
           }
@@ -4859,12 +5566,10 @@
           state.workoutLogs[key][field] = inp.value;
           state.workoutLogs[key].unit = exUnit;
 
-          // Also keep Week 1 legacy key in sync if on Week 1
           if (week === 1) {
             const legacyKey = `${dayIdx}_${exId}_${setIdx}`;
             state.workoutLogs[legacyKey] = Object.assign({}, state.workoutLogs[key]);
           }
-          // If this is a Barbell exercise and weight was edited on Set setIdx, update only Set setIdx's inline plate breakdown
           if (field === 'weight' && BARBELL_EX_IDS.includes(exId)) {
             const numericW = inp.value !== '' ? parseFloat(inp.value) : (inp.placeholder ? parseFloat(inp.placeholder) : defaultTotalPlaceholder);
             if (!isNaN(numericW)) {
@@ -4891,13 +5596,11 @@
               }
             }
           }
-          // If this is a Daily Pull-Up exercise, sync two-way with the Pull-Ups window!
           if (PULLUP_EX_ID_TO_DAY[exId]) {
             syncPullupStateBothWays(week, PULLUP_EX_ID_TO_DAY[exId], setIdx, state.workoutLogs[key]);
             renderUSMCView();
           }
 
-          // Live update rounded conversion badge
           if (field === 'weight') {
             const canonicalW = state.workoutLogs[key].weight !== '' ? state.workoutLogs[key].weight : String(defaultTotalPlaceholder);
             const badgeEl = listEl.querySelector(`[data-conv-badge="${key}"]`);
@@ -4913,7 +5616,6 @@
         });
       });
 
-      // Helper to update barbell weight while keeping each side's loaded plate weight consistent
       function updateExerciseBarbellWeightAndRecalc(exId, newBarVal, skipFullReRender) {
         const exUnit = getExerciseUnit(exId);
         const oldBarW = getBarbellBarWeight(exId, exUnit);
@@ -4940,7 +5642,6 @@
         }
       }
 
-      // Barbell Preset Weight Buttons (45/35/25/15/0 lbs or 20/15/10/7/0 kg)
       listEl.querySelectorAll('.bar-preset-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const exId = btn.getAttribute('data-bar-preset-ex');
@@ -4950,7 +5651,6 @@
         });
       });
 
-      // Toggle Warm-Up Plate Guide (50% / 70% / 90%)
       listEl.querySelectorAll('.bar-warmup-toggle-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const exId = btn.getAttribute('data-bar-warmup-ex');
@@ -4961,7 +5661,6 @@
         });
       });
 
-      // Per-Exercise Unit Toggle (LBS / KG) — Only shows rounded suggestion when unit is switched!
       listEl.querySelectorAll('.ex-unit-toggle').forEach(btn => {
         btn.addEventListener('click', () => {
           const exId = btn.getAttribute('data-ex-unit-btn');
@@ -5001,7 +5700,6 @@
         });
       });
 
-      // 1-Tap Use Converted Weight Button on Set Row
       listEl.querySelectorAll('.convert-set-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const exId = btn.getAttribute('data-ex-id');
@@ -5021,7 +5719,6 @@
         });
       });
 
-      // Show / Hide Setup & Image Dropdown Panel (Works for All Exercises, Pull-Ups & Daily Abs on Every Day!)
       listEl.querySelectorAll('.toggle-img-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.preventDefault();
@@ -5048,7 +5745,7 @@
         });
       });
 
-      // Log Set & Start Rest Timer (Independent per-set weights + End-of-Workout Completion Modal!)
+      // Log Set & Start Rest Timer
       listEl.querySelectorAll('.set-done-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const key = btn.getAttribute('data-log-key');
@@ -5058,7 +5755,6 @@
           const exName = btn.getAttribute('data-ex-name');
           const exUnit = getExerciseUnit(exId);
 
-          // Lock in default unit on first execution of this exercise
           if (!state.exerciseUnitPrefs[exId]) {
             state.exerciseUnitPrefs[exId] = exUnit;
           }
@@ -5069,22 +5765,28 @@
           if (!state.workoutLogs[key]) {
             state.workoutLogs[key] = { weight: '', reps: '', done: false, unit: exUnit };
           }
-          if (weightInput && weightInput.value !== '') {
-            state.workoutLogs[key].weight = weightInput.value;
-          } else if (state.workoutLogs[key].weight === '' && weightInput && weightInput.placeholder) {
-            state.workoutLogs[key].weight = weightInput.placeholder;
-          }
           const exObjForSet = exercisesToday.find(e => e.id === exId);
-          const pDayForSet = PULLUP_EX_ID_TO_DAY[exId] || 0;
-          if (repsInput && repsInput.value !== '') {
-            state.workoutLogs[key].reps = repsInput.value;
-          } else if (!state.workoutLogs[key].reps) {
-            state.workoutLogs[key].reps = parseTargetRepsNumber(exObjForSet ? exObjForSet.reps : '10', pDayForSet, setIdx);
+          const isTimedHoldSet = Boolean((exObjForSet && exObjForSet.isTimedHold) || exId === 'tue_side_plank');
+          if (isTimedHoldSet) {
+            const holdSec = parseInt(state.timedHoldSeconds && state.timedHoldSeconds[exId], 10) || 30;
+            state.workoutLogs[key].weight = '0';
+            state.workoutLogs[key].reps = `${holdSec}s/side`;
+          } else {
+            if (weightInput && weightInput.value !== '') {
+              state.workoutLogs[key].weight = weightInput.value;
+            } else if (state.workoutLogs[key].weight === '' && weightInput && weightInput.placeholder) {
+              state.workoutLogs[key].weight = weightInput.placeholder;
+            }
+            const pDayForSet = PULLUP_EX_ID_TO_DAY[exId] || 0;
+            if (repsInput && repsInput.value !== '') {
+              state.workoutLogs[key].reps = repsInput.value;
+            } else if (!state.workoutLogs[key].reps) {
+              state.workoutLogs[key].reps = parseTargetRepsNumber(exObjForSet ? exObjForSet.reps : '10', pDayForSet, setIdx);
+            }
           }
           state.workoutLogs[key].unit = exUnit;
           state.workoutLogs[key].done = !state.workoutLogs[key].done;
 
-          // If this is a barbell exercise, advance the plate calculator selector to the next unlogged set
           if (BARBELL_EX_IDS.includes(exId) && exObjForSet) {
             const cfg = getBarbellConfig(exId);
             if (state.workoutLogs[key].done) {
@@ -5115,7 +5817,6 @@
             renderUSMCView();
           }
 
-          // Check if ALL sets of THIS exercise are now done -> Auto-hide this exercise & Auto-open the next exercise!
           let exSetsDoneNow = 0;
           const totalExSets = exObjForSet ? exObjForSet.sets : 3;
           for (let idxS = 1; idxS <= totalExSets; idxS++) {
@@ -5130,7 +5831,6 @@
             state.cardCollapsedState[getExercisePanelKey(dayIdx, exId)] = "collapsed";
             setExerciseImgOpen(dayIdx, exId, false);
 
-            // Find the next incomplete exercise in today's list and automatically expand it!
             const curExPos = exercisesToday.findIndex(e => e.id === exId);
             const orderedCandidates = [
               ...exercisesToday.slice(curExPos + 1),
@@ -5151,7 +5851,6 @@
             }
           }
 
-          // Count how many sets are done today after this tap
           let doneSetsCountNow = 0;
           exercisesToday.forEach(e => {
             for (let idxS = 1; idxS <= e.sets; idxS++) {
@@ -5170,7 +5869,14 @@
             }, 650);
           }
 
-          // Check if all scheduled sets for the current day are now complete
+          // UPGRADE 7: If user logs their first set while Fuel 1 is unlogged on a training day, ensure the Pre-Workout Fuel Check-In prompt is shown
+          const isLiftDayForFuelPrompt = dayIdx >= 0 && dayIdx <= 4;
+          const isFuel1DoneNow = isMealCheckedForDay(week, dayIdx, 'pre_shake');
+          if (isFirstSetToday && isLiftDayForFuelPrompt && !isFuel1DoneNow) {
+            if (!state.dismissedPreFuelPrompt) state.dismissedPreFuelPrompt = {};
+            state.dismissedPreFuelPrompt[`w${week}_d${dayIdx}`] = false;
+          }
+
           const allSetsDoneToday = doneSetsCountNow === todayTotalSets && todayTotalSets > 0;
           const isFinalSetToday = state.workoutLogs[key].done && allSetsDoneToday;
 
@@ -5211,9 +5917,14 @@
                   ? getPullupSetRestSec(pullupDayNum, setIdx, state.workoutLogs[key].reps, restSec)
                   : restSec;
                 startTimer(effectiveRest, `Rest: ${exName}`);
-                showToast(pullupDayNum
+                const fuelReminderSuffix = (isFirstSetToday && isLiftDayForFuelPrompt && !isFuel1DoneNow)
+                  ? ' • ⚡ Did you drink Fuel 1 (36g P)? Tap Yes at top!'
+                  : '';
+                showToast((pullupDayNum
                   ? `✓ Synced Pull-Up Set ${setIdx} (${state.workoutLogs[key].reps || 'Max'} reps)! ${effectiveRest}s rest started.`
-                  : `✓ Logged Set ${setIdx}: ${state.workoutLogs[key].weight} ${exUnit} × ${state.workoutLogs[key].reps}! ${effectiveRest}s rest started.`);
+                  : (isTimedHoldSet
+                      ? `✓ Logged Side Plank Set ${setIdx} (${state.workoutLogs[key].reps})! ${effectiveRest}s rest started.`
+                      : `✓ Logged Set ${setIdx}: ${state.workoutLogs[key].weight} ${exUnit} × ${state.workoutLogs[key].reps}! ${effectiveRest}s rest started.`)) + fuelReminderSuffix);
               }
             }
           } else {
@@ -5223,7 +5934,6 @@
         });
       });
 
-      // UX Feature: Expand / Collapse Exercise Sets (Works on Pull-Ups, Daily Abs & All Exercises Anytime!)
       listEl.querySelectorAll('.expand-done-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.preventDefault();
@@ -5238,7 +5948,6 @@
         });
       });
 
-      // UX Feature: Thumb-Friendly - / + Stepper Buttons for Weight & Reps (Independent Per-Set!)
       listEl.querySelectorAll('.step-adj-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const key = btn.getAttribute('data-step-key');
@@ -5286,7 +5995,6 @@
         });
       });
 
-      // Pro Feature: 1-Tap Progressive Overload Bump (+2.5 weight or +1 rep on bodyweight pull-ups)
       listEl.querySelectorAll('.overload-bump-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const exId = btn.getAttribute('data-overload-ex');
@@ -5296,7 +6004,6 @@
           if (!exObj) return;
 
           if (meta.defaultWeightLbs === 0) {
-            // Bodyweight / Pull-up exercise -> bump reps by +1
             for (let s = 1; s <= exObj.sets; s++) {
               const k = `w${week}_${dayIdx}_${exId}_${s}`;
               const cur = getLogEntry(week, dayIdx, exId, s) || getPreviousWeekSuggestion(week, dayIdx, exId, s) || { weight: '0', reps: String(state.pullupTrainingSetReps || 5), done: false };
@@ -5552,48 +6259,8 @@
       const bananaShareG = Math.round(120 / days);
 
       if (boostSummary) {
-        boostSummary.innerHTML = `${jarGrams}g Jar (1/${days} Batch) ${boost ? '+ 30g Pea Protein in 360g Silk Milk' : '(Base Oats Jar Only)'}: <strong class="text-emerald-400">${finalProt}g Protein • ${finalKcal} kcal</strong> • <strong>${b12Pct}% Daily B12</strong>`;
+        boostSummary.innerHTML = `${jarGrams}g Jar (1/${days} Batch): <strong class="text-emerald-400">26g Protein • 395 kcal</strong> per jar + Pre-Gym Shake (<strong class="text-emerald-400">36g Protein • 170 kcal</strong>)`;
       }
-      // Sync Meal 1 (Pre-Gym Shake + Overnight Oats) with selected Oats Batch & today's Gym Time
-      const curWeekForM1 = state.currentWeek || 1;
-      const curDayForM1 = state.selectedDayIndex || 0;
-      const curAdaptForM1 = getAdaptiveMealScheduleForDay(curWeekForM1, curDayForM1);
-      const preShakeTimeLabel = curAdaptForM1.preShakeStr || "6:35 AM";
-      const oatsTimeLabel = curAdaptForM1.oatsStr || "8:15 AM";
-      const isMorningGym = !!curAdaptForM1.shakeFirst;
-
-      VEGAN_MEALS[0].title = isMorningGym
-        ? `${preShakeTimeLabel} Pre-Gym Shake (30g Pea + 360g Silk Milk) + ${oatsTimeLabel} Post-Gym Oats (${jarGrams}g Jar)`
-        : `${oatsTimeLabel} Morning Oats (${jarGrams}g Jar) + ${preShakeTimeLabel} Pre-Gym Shake (30g Pea + 360g Silk Milk)`;
-      VEGAN_MEALS[0].options[0].protein = finalProt;
-      VEGAN_MEALS[0].options[0].kcal = finalKcal;
-      VEGAN_MEALS[0].options[0].volume = isMorningGym
-        ? `${boost ? '390g Shake + ' : ''}${jarGrams}g Jar`
-        : `${jarGrams}g Jar${boost ? ' + 390g Shake' : ''}`;
-      VEGAN_MEALS[0].options[0].name = `${jarGrams}g Protein Oats Jar (1/${days} Batch)${boost ? ' + 30g Pea Protein + 360g Silk Milk' : ''}`;
-      VEGAN_MEALS[0].options[0].ingredients = `${jarGrams}g Overnight Oats (daily share: ${oatsShareG}g Bob’s Red Mill Gluten Free Protein Oats, ${milkShareG}g Silk Protein Almond & Cashew milk, ${pbShareG}g peanut butter, ${chiaShareG}g chia seeds, ${bananaShareG}g banana = ${baseKcal} kcal & ${baseProt}g P)${boost ? ' + 30g Pea Protein Isolate (24g P, 120 kcal) shaken in 360g cold Silk Protein milk (12g P, 135 kcal).' : '.'}`;
-
-      const oatsItemCard = {
-        id: 'm1_oats_jar',
-        weight: `${jarGrams}g Jar`,
-        label: `${oatsTimeLabel} • Overnight Protein Oats Jar (${oatsShareG}g Oats + ${milkShareG}g Silk + ${pbShareG}g PB + ${chiaShareG}g Chia + ${bananaShareG}g Banana)`,
-        subPills: [],
-        protein: baseProt,
-        kcal: baseKcal
-      };
-
-      const shakeItemCard = {
-        id: 'm1_protein_shake',
-        weight: '390g Shake',
-        label: `${preShakeTimeLabel} • 30g Pea Protein Isolate + 360g Cold Silk Protein Milk`,
-        subPills: [],
-        protein: 36,
-        kcal: 255
-      };
-
-      VEGAN_MEALS[0].options[0].items = boost
-        ? (isMorningGym ? [shakeItemCard, oatsItemCard] : [oatsItemCard, shakeItemCard])
-        : [oatsItemCard];
 
       // Update Mode Buttons
       document.querySelectorAll('.meal-mode-btn').forEach(btn => {
@@ -5609,51 +6276,6 @@
       const dayObj = DAYS_SCHEDULE[dayIdx] || DAYS_SCHEDULE[0];
       if (!state.checkedMealIngredients) state.checkedMealIngredients = {};
 
-      function isIngredientChecked(w, d, slotId, ingId) {
-        const ingKey = `w${w}_d${d}_${slotId}_${ingId}`;
-        if (state.checkedMealIngredients[ingKey] !== undefined) {
-          return !!state.checkedMealIngredients[ingKey];
-        }
-        // Fallback to parent meal checked state
-        const mealKey = `w${w}_d${d}_${slotId}`;
-        if (state.checkedMeals[mealKey] !== undefined) return !!state.checkedMeals[mealKey];
-        if (w === 1 && d === 0 && state.checkedMeals[slotId] !== undefined) return !!state.checkedMeals[slotId];
-        return false;
-      }
-
-      function isMealCheckedForDay(w, d, slotId) {
-        const slot = VEGAN_MEALS.find(s => s.slotId === slotId);
-        const opt = slot ? slot.options[0] : null;
-        if (opt && opt.items && opt.items.length > 0) {
-          return opt.items.every(it => isIngredientChecked(w, d, slotId, it.id));
-        }
-        const k = `w${w}_d${d}_${slotId}`;
-        if (state.checkedMeals[k] !== undefined) return !!state.checkedMeals[k];
-        if (w === 1 && d === 0 && state.checkedMeals[slotId] !== undefined) return !!state.checkedMeals[slotId];
-        return false;
-      }
-
-      function isMealPartiallyCheckedForDay(w, d, slotId) {
-        const slot = VEGAN_MEALS.find(s => s.slotId === slotId);
-        const opt = slot ? slot.options[0] : null;
-        if (!opt || !opt.items || opt.items.length === 0) return false;
-        const checkedCount = opt.items.filter(it => isIngredientChecked(w, d, slotId, it.id)).length;
-        return checkedCount > 0 && checkedCount < opt.items.length;
-      }
-
-      function setMealCheckedForDay(w, d, slotId, val) {
-        const k = `w${w}_d${d}_${slotId}`;
-        state.checkedMeals[k] = !!val;
-        if (w === 1 && d === 0) state.checkedMeals[slotId] = !!val;
-        const slot = VEGAN_MEALS.find(s => s.slotId === slotId);
-        const opt = slot ? slot.options[0] : null;
-        if (opt && opt.items) {
-          opt.items.forEach(it => {
-            state.checkedMealIngredients[`w${w}_d${d}_${slotId}_${it.id}`] = !!val;
-          });
-        }
-      }
-
       // Render Smart 15-Minute Gym Time & Auto-Meal Sync Bar in Vegan Fuel
       if (!state.hiddenMealChecklists) state.hiddenMealChecklists = {};
       if (!state.openMealFormulas) state.openMealFormulas = {};
@@ -5665,8 +6287,8 @@
 
       if (gymTimeBar) {
         const isGymEditorOpen = !!state.openVeganGymTimeEditor;
-        const shakeDone = isIngredientChecked(week, dayIdx, 'post', 'm1_protein_shake');
-        const oatsDone = isIngredientChecked(week, dayIdx, 'post', 'm1_oats_jar');
+        const shakeDone = isMealCheckedForDay(week, dayIdx, 'pre_shake');
+        const oatsDone = isMealCheckedForDay(week, dayIdx, 'post_oats');
         const lunchDone = isMealCheckedForDay(week, dayIdx, 'lunch');
         const dinnerDone = isMealCheckedForDay(week, dayIdx, 'dinner');
         const gymProg = getDayCompletionStatus(week, dayIdx);
@@ -5676,11 +6298,11 @@
         let timelineSteps = [];
         if (adaptiveSched.period === 'morning') {
           timelineSteps = [
-            { icon: '🥤', time: adaptiveSched.preShakeStr, label: 'Pre-Shake', done: shakeDone },
+            { icon: '🥤', time: adaptiveSched.preShakeStr, label: 'Fuel 1 Shake', done: shakeDone },
             { icon: '🏋️', time: adaptiveSched.start12, label: 'Gym', done: gymDone, isGym: true },
-            { icon: '🥣', time: adaptiveSched.oatsStr, label: 'Oats Jar', done: oatsDone },
-            { icon: '🥗', time: adaptiveSched.slots.lunch.time12, label: 'Tofu Bowl', done: lunchDone },
-            { icon: '🌙', time: adaptiveSched.slots.dinner.time12, label: 'PM Shake', done: dinnerDone }
+            { icon: '🥣', time: adaptiveSched.oatsStr, label: 'Fuel 2 Oats', done: oatsDone },
+            { icon: '🥗', time: adaptiveSched.slots.lunch.time12, label: 'Fuel 3 Bowl', done: lunchDone },
+            { icon: '🌙', time: adaptiveSched.slots.dinner.time12, label: 'Fuel 4 Shake', done: dinnerDone }
           ];
         } else if (adaptiveSched.period === 'midday') {
           timelineSteps = [
@@ -6295,7 +6917,7 @@
         });
       }
 
-      // Render Timed Meal Cards for Selected Day (With Adaptive Timing + Per-Ingredient Green Checkmarks!)
+      // Render 4 Separate Daily Fuel Cards with Scannable Vertical Ingredient Row Lists (Upgrades 5 & 6)
       const mealsEl = document.getElementById('vegan-meals-container');
       if (mealsEl) {
         mealsEl.innerHTML = VEGAN_MEALS.map((slot, mealIdx) => {
@@ -6306,69 +6928,51 @@
           const slotSched = (adaptiveSched && adaptiveSched.slots && adaptiveSched.slots[slot.slotId]) || {
             headerText: slot.time,
             roleBadge: `FUEL ${mealIdx + 1}`,
-            isPostWorkoutTarget: mealIdx === 0,
+            isPostWorkoutTarget: mealIdx === 1,
             contextTip: slot.tip
           };
 
           const itemsList = opt.items || [];
           const doneIngCount = itemsList.filter(it => isIngredientChecked(week, dayIdx, slot.slotId, it.id)).length;
+          const isChecklistHidden = Boolean(state.hiddenMealChecklists && state.hiddenMealChecklists[`${dayIdx}_${slot.slotId}`]);
+          const isPrepOpen = Boolean(state.openMealFormulas && state.openMealFormulas[`${dayIdx}_${slot.slotId}`]);
 
-          const ingredientsChecklistHtml = itemsList.map(it => {
+          const scannableRowsHtml = itemsList.map(it => {
             const ingDone = isIngredientChecked(week, dayIdx, slot.slotId, it.id);
-            const subPillsHtml = (it.subPills || []).map(sp => `
-              <span class="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-lg border ${
-                ingDone
-                  ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-200'
-                  : 'bg-slate-900 border-slate-800 text-slate-200'
-              }">
-                <span class="text-emerald-400 font-extrabold">✓</span>
-                <span>${sp}</span>
-              </span>
-            `).join('');
-
             return `
-              <button type="button" data-meal-slot="${slot.slotId}" data-ing-id="${it.id}" class="meal-ing-check-btn w-full text-left p-2.5 rounded-xl border transition flex items-start justify-between gap-2.5 ${
+              <button type="button" data-meal-slot="${slot.slotId}" data-ing-id="${it.id}" class="meal-ing-check-btn w-full text-left px-3 py-2 rounded-xl border transition flex items-center justify-between gap-2.5 ${
                 ingDone
                   ? 'bg-emerald-950/45 border-emerald-500/45 text-emerald-100'
-                  : 'bg-slate-900/90 border-slate-800/90 hover:border-emerald-500/35 text-slate-100'
+                  : 'bg-slate-950/85 border-slate-800/90 hover:border-emerald-500/35 text-slate-100'
               }">
-                <div class="flex items-start gap-2.5 min-w-0 flex-1">
-                  <span class="mt-0.5 w-5 h-5 shrink-0 rounded-md flex items-center justify-center text-xs font-extrabold transition ${
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                  <span class="w-4 h-4 shrink-0 rounded flex items-center justify-center text-[10px] font-extrabold transition ${
                     ingDone
                       ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/40'
-                      : 'bg-emerald-500/15 border border-emerald-500/45 text-emerald-400'
-                  }">✓</span>
-                  <div class="min-w-0 flex-1 space-y-1.5">
-                    <div class="flex flex-wrap items-center gap-1.5">
-                      <span class="text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">${it.weight}</span>
-                      <span class="text-xs font-bold ${ingDone ? 'line-through text-emerald-200/80' : 'text-white'}">${it.label}</span>
-                    </div>
-                    ${(subPillsHtml && state.openMealFormulas && state.openMealFormulas[`${dayIdx}_${slot.slotId}`]) ? `<div class="flex flex-wrap gap-1">${subPillsHtml}</div>` : ''}
-                  </div>
+                      : 'bg-slate-900 border border-slate-700 text-slate-400'
+                  }">${ingDone ? '✓' : ''}</span>
+                  <span class="text-xs font-bold leading-snug break-words ${ingDone ? 'line-through text-emerald-200/80' : 'text-white'}">${it.label}</span>
                 </div>
-                <span class="shrink-0 text-[10px] font-extrabold px-2 py-1 rounded-lg bg-slate-950 border border-slate-800 text-emerald-400 whitespace-nowrap">
-                  ${it.protein}g P • ${it.kcal} kcal
+                <span class="shrink-0 text-[11px] font-mono font-extrabold px-2.5 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 whitespace-nowrap">
+                  ${it.weight}
                 </span>
               </button>
             `;
           }).join('');
 
-          const isPrepOpen = Boolean(state.openMealFormulas && state.openMealFormulas[`${dayIdx}_${slot.slotId}`]);
-
           return `
-            <div class="bg-slate-900 border ${isDone ? 'border-emerald-500/50 bg-slate-900/80' : (slotSched.isPostWorkoutTarget ? 'border-emerald-400/70 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/40' : 'border-slate-800')} rounded-2xl p-4 space-y-3 transition-all">
-              <!-- 1-Tap Main Fuel Header (Tap anywhere on header or button to log/unlog the entire fuel card in 1 tap) -->
+            <article data-fuel-card-slot="${slot.slotId}" class="bg-slate-900 border ${isDone ? 'border-emerald-500/50 bg-slate-900/80' : (slotSched.isPostWorkoutTarget ? 'border-emerald-400/70 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/40' : 'border-slate-800')} rounded-2xl p-4 space-y-3 transition-all">
+              <!-- 1-Tap Main Fuel Header -->
               <div data-meal-header-slot="${slot.slotId}" class="meal-card-header-tap flex items-start justify-between gap-2 cursor-pointer select-none">
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-1.5">
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">${String(slotSched.headerText || '').replace(/^Meal\s+(\d+)/i, 'FUEL $1')}</span>
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">${slot.time}</span>
                     <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${slotSched.isPostWorkoutTarget ? 'bg-emerald-500 text-slate-950' : 'bg-sky-500/15 text-sky-300 border border-sky-500/30'}">${slotSched.roleBadge}</span>
-                    <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-semibold">${opt.volume}</span>
                   </div>
-                  <h4 class="text-sm font-extrabold text-white mt-1 leading-snug break-words">${slot.title}</h4>
+                  <h4 class="text-sm sm:text-base font-extrabold text-white mt-1 leading-snug break-words">${slot.title}</h4>
                   <div class="flex flex-wrap items-center gap-2 mt-1">
-                    <span class="text-xs font-extrabold text-emerald-400">${opt.protein}g Protein • ${opt.kcal} kcal</span>
-                    <span class="text-[10px] font-semibold text-slate-400">(${doneIngCount}/${itemsList.length} ingredients checked)</span>
+                    <span class="text-xs font-extrabold text-emerald-400">${opt.kcal} kcal • ${opt.protein}g Protein</span>
+                    <span class="text-[10px] font-semibold text-slate-400">(${doneIngCount}/${itemsList.length} items)</span>
                   </div>
                 </div>
                 <button type="button" data-meal-slot="${slot.slotId}" class="meal-check-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition ${
@@ -6382,23 +6986,22 @@
                 </button>
               </div>
 
-              <!-- Collapsible Prep & Recipe Toggle (Individual Ingredient Checkboxes & Formula Collapsed by Default for 1-Tap Logging) -->
+              <!-- Scannable Vertical Ingredient Row List Directly Inside Card Body (Upgrade 6) -->
+              <div class="${isChecklistHidden ? 'hidden' : 'space-y-1.5 pt-1'}" style="display: ${isChecklistHidden ? 'none' : 'block'};">
+                ${scannableRowsHtml}
+              </div>
+
+              <!-- Compact Collapsible Timing & Prep Tip -->
               <details class="meal-prep-recipe-details bg-slate-950/75 border border-slate-800/90 rounded-xl px-3 py-2 text-xs" ${isPrepOpen ? 'open' : ''}>
                 <summary data-toggle-meal-formula="${slot.slotId}" class="cursor-pointer font-extrabold text-emerald-400 hover:text-emerald-300 flex items-center justify-between py-0.5 select-none">
-                  <span>Prep &amp; Recipe (${doneIngCount}/${itemsList.length} scale items)</span>
+                  <span>Timing &amp; Prep Tip</span>
                   <span class="text-[10px] text-amber-300 font-bold">Tap to view ▾</span>
                 </summary>
-                <div class="pt-2.5 mt-2 border-t border-slate-800/80 space-y-2">
-                  <div class="space-y-1.5">
-                    ${ingredientsChecklistHtml}
-                  </div>
-                  <div class="pt-1.5 border-t border-slate-800/80 px-1 space-y-1">
-                    <p class="text-[11px] text-slate-300 leading-relaxed"><strong class="text-emerald-300">Full Formula:</strong> ${opt.ingredients}</p>
-                    <p class="text-[11px] text-amber-300/95 leading-snug">💡 <strong>Timing &amp; Prep Tip:</strong> ${slotSched.contextTip} ${slotSched.batchTip || slot.tip}</p>
-                  </div>
+                <div class="pt-2 mt-1.5 border-t border-slate-800/80 space-y-1">
+                  <p class="text-[11px] text-amber-300/95 leading-snug">💡 <strong>Timing &amp; Prep Tip:</strong> ${slotSched.contextTip || slot.tip} ${slotSched.batchTip || ''}</p>
                 </div>
               </details>
-            </div>
+            </article>
           `;
         }).join('');
 
@@ -6407,8 +7010,10 @@
           setMealCheckedForDay(week, dayIdx, slotId, !curVal);
           saveState();
           renderVeganView();
+          renderWorkoutView();
           if (!curVal) {
-            showToast(`⚡ Logged ${slotId.toUpperCase()} fuel (${dayObj.dayFull})!`);
+            const slotObj = VEGAN_MEALS.find(s => s.slotId === slotId);
+            showToast(`⚡ Logged ${slotObj ? slotObj.title : slotId.toUpperCase()} (${dayObj.dayFull})!`);
           }
         }
 
@@ -6445,6 +7050,7 @@
             }
             saveState();
             renderVeganView();
+            renderWorkoutView();
           });
         });
 
@@ -6898,7 +7504,7 @@
         });
       }
       // Also pull from '/api/state?email=default' in case last week's data was saved in the 'default' cloud row before profiles were added!
-      if (window.location && window.location.hostname && (window.location.hostname.includes('vercel.app') || window.location.hostname === 'localhost')) {
+      if (window.location && window.location.hostname && window.location.hostname.includes('vercel.app')) {
         fetch(window.location.origin + '/api/state?email=default')
           .then(r => r.json())
           .then(res => {
@@ -6944,6 +7550,9 @@
         completedWeeks: JSON.parse(JSON.stringify(state.completedWeeks || {})),
         barbellConfig: JSON.parse(JSON.stringify(state.barbellConfig || {})),
         exerciseUnitPrefs: JSON.parse(JSON.stringify(state.exerciseUnitPrefs || {})),
+        exerciseNotes: JSON.parse(JSON.stringify(state.exerciseNotes || {})),
+        timedHoldSeconds: JSON.parse(JSON.stringify(state.timedHoldSeconds || {})),
+        audioMode: state.audioMode || 'sound_vibe',
         gymScheduleByDay: JSON.parse(JSON.stringify(state.gymScheduleByDay || {})),
         currentWeek: state.currentWeek || 1,
         selectedDayIndex: state.selectedDayIndex || 0,
@@ -6962,6 +7571,9 @@
       state.completedWeeks = s.completedWeeks ? JSON.parse(JSON.stringify(s.completedWeeks)) : {};
       state.barbellConfig = s.barbellConfig ? JSON.parse(JSON.stringify(s.barbellConfig)) : {};
       state.exerciseUnitPrefs = s.exerciseUnitPrefs ? JSON.parse(JSON.stringify(s.exerciseUnitPrefs)) : {};
+      state.exerciseNotes = s.exerciseNotes ? JSON.parse(JSON.stringify(s.exerciseNotes)) : {};
+      state.timedHoldSeconds = s.timedHoldSeconds ? JSON.parse(JSON.stringify(s.timedHoldSeconds)) : {};
+      if (s.audioMode) state.audioMode = s.audioMode;
       state.gymScheduleByDay = s.gymScheduleByDay ? JSON.parse(JSON.stringify(s.gymScheduleByDay)) : {};
       state.currentWeek = s.currentWeek || 1;
       state.selectedDayIndex = s.selectedDayIndex || 0;
@@ -7381,10 +7993,32 @@
         updateTimerUI();
         saveState();
       });
-      document.getElementById('timer-sound-toggle').addEventListener('click', (e) => {
-        state.soundEnabled = !state.soundEnabled;
-        e.currentTarget.textContent = state.soundEnabled ? '🔔 Sound On' : '🔕 Muted';
-        saveState();
+      const timerSoundToggleBtn = document.getElementById('timer-sound-toggle');
+      if (timerSoundToggleBtn) {
+        timerSoundToggleBtn.addEventListener('click', () => {
+          cycleAudioMode();
+        });
+      }
+      const pinnedAudioModeBtn = document.getElementById('pinned-audio-mode-btn');
+      if (pinnedAudioModeBtn) {
+        pinnedAudioModeBtn.addEventListener('click', () => {
+          cycleAudioMode();
+        });
+      }
+      document.querySelectorAll('.audio-mode-pill-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const mode = btn.getAttribute('data-audio-mode') || 'sound_vibe';
+          state.audioMode = mode;
+          state.soundEnabled = mode !== 'silent';
+          updateAudioModeUI();
+          saveState();
+          const labelMap = {
+            sound_vibe: '🔔 Audio Mode: Sound + Vibe (320ms Bluetooth-Safe Chime)',
+            vibe_only: '📳 Audio Mode: Vibe Only (100% Bluetooth Safe — Zero AudioContext)',
+            silent: '🔕 Audio Mode: Silent'
+          };
+          showToast(labelMap[mode] || 'Audio mode updated');
+        });
       });
 
       document.querySelectorAll('.timer-preset-btn').forEach(btn => {
@@ -7441,7 +8075,8 @@
           });
           saveState();
           renderVeganView();
-          showToast(`✓ All 3 meals & ingredients logged for Day ${d + 1} (1,495 kcal • 138g P)!`);
+          renderWorkoutView();
+          showToast(`✓ All 4 fuel cards logged for Day ${d + 1} (1,400 kcal • 138g P)!`);
         });
       }
 
@@ -7462,7 +8097,8 @@
         state.checkedEssentials = {};
         saveState();
         renderVeganView();
-        showToast(`Reset meals & ingredients for Day ${d + 1}`);
+        renderWorkoutView();
+        showToast(`Reset all 4 fuel cards for Day ${d + 1}`);
       });
 
       const checkPantryBtn = document.getElementById('check-pantry-staples-btn');
@@ -8357,6 +8993,7 @@
       }
 
       // Initial Render
+      updateAudioModeUI();
       updateTimerUI();
       renderWorkoutView();
       renderUSMCView();
