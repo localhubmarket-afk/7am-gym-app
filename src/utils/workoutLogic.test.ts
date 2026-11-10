@@ -286,14 +286,16 @@ test('Upgrade 5, 6 & 7: 4 Daily Fuel Cards, Scannable Ingredient Rows & Pre-Work
   assert.equal(allLogged.loggedCount, 4);
 
   // Pre-workout fuel check-in prompt on workout days (Days 1-5 -> dayIdx 0-4)
-  assert.equal(shouldShowPreWorkoutFuelPrompt(0, false, false), true);
-  assert.equal(shouldShowPreWorkoutFuelPrompt(4, false, false), true);
-  assert.equal(shouldShowPreWorkoutFuelPrompt(0, true, false), false);
-  assert.equal(shouldShowPreWorkoutFuelPrompt(0, false, true), false);
-  assert.equal(shouldShowPreWorkoutFuelPrompt(5, false, false), false); // Rest Day 6
+  assert.equal(shouldShowPreWorkoutFuelPrompt(0, false, false, 0, 26), true);
+  assert.equal(shouldShowPreWorkoutFuelPrompt(4, false, false, 10, 26), true);
+  assert.equal(shouldShowPreWorkoutFuelPrompt(0, true, false, 0, 26), false);
+  assert.equal(shouldShowPreWorkoutFuelPrompt(0, false, true, 0, 26), false);
+  assert.equal(shouldShowPreWorkoutFuelPrompt(5, false, false, 0, 26), false); // Rest Day 6
+  // When all sets for the selected day are complete (doneSetsToday === totalSetsToday), automatically hide banner
+  assert.equal(shouldShowPreWorkoutFuelPrompt(0, false, false, 26, 26), false);
 });
 
-test('Architectural Upgrades: Fuel Card Default Collapse, Batch Prep Redesign & Pre-Rendered PCM WAV Chime', async () => {
+test('Architectural Upgrades & UI Cleanups: Fuel Collapse, Batch Prep, Silent-Padded WAV & UI Streamlining', async () => {
   const mod = await import('./workoutLogic.ts');
 
   // 1. All 4 Fuel cards collapsed by default
@@ -310,12 +312,30 @@ test('Architectural Upgrades: Fuel Card Default Collapse, Batch Prep Redesign & 
   assert.equal(mod.stripBatchStepPrefix('#1 Gluten-Free Protein Oats'), 'Gluten-Free Protein Oats');
   assert.equal(mod.stripBatchStepPrefix('#5 Unsweetened Silk Protein Milk'), 'Unsweetened Silk Protein Milk');
 
-  // 3. Pre-rendered PCM WAV buffer has valid RIFF/WAVE header and zero DC offset at boundaries
+  // 3. Pre-rendered PCM WAV buffer has valid RIFF/WAVE header, silent padding, and blob/data URL generator
   const wav = mod.generatePreRenderedChimeWavBytes(44100, 0.28);
   assert.equal(String.fromCharCode(wav[0], wav[1], wav[2], wav[3]), 'RIFF');
   assert.equal(String.fromCharCode(wav[8], wav[9], wav[10], wav[11]), 'WAVE');
   const dv = new DataView(wav.buffer, wav.byteOffset, wav.byteLength);
-  // First and last 16-bit PCM samples must be 0 to prevent speaker clicks/Bluetooth buffer pop
   assert.equal(dv.getInt16(44, true), 0);
   assert.equal(dv.getInt16(wav.byteLength - 2, true), 0);
+  const chimeUrl = mod.createSilentPaddedChimeWavUrl();
+  assert.equal(typeof chimeUrl === 'string' && chimeUrl.length > 0, true);
+
+  // 4. Clean 3-mode labels (Sound & Vibe | Vibrate Only | Silent, no "(BT Safe)" text)
+  assert.equal(mod.getTimerAudioModeBehavior('sound_vibe').label, '🔔 Sound & Vibe');
+  assert.equal(mod.getTimerAudioModeBehavior('vibe_only').label, '📳 Vibrate Only');
+  assert.equal(mod.getTimerAudioModeBehavior('silent').label, '🔕 Silent');
+
+  // 5. Pyramid Rest Helper collapsed unless selectedDayIndex === 1 (Day 2)
+  assert.equal(mod.shouldExpandPyramidHelperByDefault(0), false);
+  assert.equal(mod.shouldExpandPyramidHelperByDefault(1), true);
+  assert.equal(mod.shouldExpandPyramidHelperByDefault(2), false);
+
+  // 6. Hide Set 1 plate badge subtitle on collapsed completed barbell exercise cards
+  assert.equal(mod.shouldShowBarbellHeaderPlateBadge(true, false, false), true);
+  assert.equal(mod.shouldShowBarbellHeaderPlateBadge(true, true, false), true); // Expanded completed card
+  assert.equal(mod.shouldShowBarbellHeaderPlateBadge(true, true, true), false); // Collapsed completed card
+  assert.equal(mod.shouldShowBarbellHeaderPlateBadge(false, false, false), false);
 });
+

@@ -111,8 +111,8 @@
             <span id="header-timer-dot" class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
             <span id="header-timer-display" class="font-mono text-xs sm:text-sm font-extrabold text-emerald-400 tracking-tight">01:30</span>
           </button>
-          <button id="pinned-audio-mode-btn" type="button" class="px-1.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[10px] font-extrabold text-emerald-300 transition shrink-0 whitespace-nowrap" title="Cycle Audio Mode: Sound + Vibe | Vibe Only (Bluetooth Safe) | Silent">
-            🔔 Sound+Vibe
+          <button id="pinned-audio-mode-btn" type="button" class="px-1.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[10px] font-extrabold text-emerald-300 transition shrink-0 whitespace-nowrap" title="Cycle Audio Mode: Sound &amp; Vibe | Vibrate Only | Silent">
+            🔔 Sound &amp; Vibe
           </button>
           <span id="pinned-timer-context" class="hidden md:inline text-[11px] font-semibold text-slate-300 truncate">Ready • Tap any set</span>
         </div>
@@ -177,7 +177,7 @@
         </div>
 
         <!-- Collapsible Secondary Settings Drawer (Progressive Disclosure — Keeps Screen Clean!) -->
-        <details class="pt-1 border-t border-slate-800/70 text-xs">
+        <details id="gym-secondary-settings-drawer" class="pt-1 border-t border-slate-800/70 text-xs">
           <summary class="cursor-pointer text-[11px] font-semibold text-slate-400 hover:text-slate-200 flex items-center justify-between py-0.5">
             <span>⚙️ Week, Unit &amp; Daily Abs Settings</span>
             <span class="text-[10px] text-emerald-400">Tap to open ▾</span>
@@ -203,6 +203,15 @@
                 </button>
               </div>
             </div>
+            <select id="exercise-jump-select" aria-label="Jump to exercise or machine" class="hidden"></select>
+            <div class="flex items-center gap-1.5 w-full pt-1 border-t border-slate-800/70">
+              <button type="button" id="toggle-focus-collapse-btn" class="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold transition" title="Automatically collapse finished exercises to save screen space">
+                🙈 Default Hidden (Auto-Next): ON
+              </button>
+              <button type="button" id="toggle-all-images-btn" class="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold transition">
+                📸 Show/Hide All Diagrams
+              </button>
+            </div>
           </div>
         </details>
       </div>
@@ -217,7 +226,7 @@
         <!-- Populated by JS -->
       </div>
 
-      <!-- Collapsible Warm-Up Routine Card -->
+      <!-- Collapsible Warm-Up Routine Card (Sits Directly Above Exercise #1/9) -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
         <button type="button" id="toggle-warmup-btn" class="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-slate-800/50 transition">
           <div class="flex items-center gap-2">
@@ -243,19 +252,6 @@
         <button type="button" id="shoe-critical-open-btn" class="shrink-0 px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-extrabold text-[10px]">Inspect 👟</button>
       </div>
 
-      <!-- Streamlined Card Focus & Diagram Controls (Jump to Exercise Dropdown Removed for Less-Is-More Clarity) -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 flex flex-wrap items-center justify-between gap-2 overflow-hidden">
-        <select id="exercise-jump-select" aria-label="Jump to exercise or machine" class="hidden"></select>
-        <div class="flex items-center gap-1.5 w-full">
-          <button type="button" id="toggle-focus-collapse-btn" class="flex-1 px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-[11px] font-bold transition" title="Automatically collapse finished exercises to save screen space">
-            🎯 Auto-Collapse Done: ON
-          </button>
-          <button type="button" id="toggle-all-images-btn" class="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold transition">
-            📸 Show/Hide All Diagrams
-          </button>
-        </div>
-      </div>
-
       <!-- Exercise Cards List -->
       <div id="exercise-list" class="space-y-3.5">
         <!-- Populated by JS -->
@@ -264,6 +260,19 @@
 
     <!-- ==================== VIEW 2: USMC PULL-UP TRACKER ==================== -->
     <section id="view-pullups" class="hidden space-y-4">
+      <!-- Synced Progressive Week Selector Bar (Matches Gym & Muscle Fuel Tabs) -->
+      <div id="pullups-top-week-selector-card" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400">📅 Week:</span>
+            <div id="pullups-progressive-week-pills" class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Progressive Training Weeks">
+              <!-- Populated dynamically by JS -->
+            </div>
+          </div>
+          <span id="pullups-active-week-badge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-emerald-300 shrink-0">Week 1 • Days 1–5</span>
+        </div>
+      </div>
+
       <div class="bg-gradient-to-br from-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-4 space-y-3">
         <div class="flex items-start justify-between gap-2">
           <div>
@@ -302,27 +311,8 @@
         <div class="flex flex-wrap items-center justify-between gap-2">
           <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Gym Rest Timer</span>
           <button type="button" id="timer-sound-toggle" class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-400 border border-slate-700 transition">
-            🔔 Sound + Vibe
+            🔔 Sound &amp; Vibe
           </button>
-        </div>
-
-        <!-- 3-State Bluetooth-Safe Audio Mode Selector (Sound + Vibe | Vibe Only (Bluetooth Safe) | Silent) -->
-        <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-2 space-y-1.5 text-left">
-          <div class="flex items-center justify-between text-[10px]">
-            <span class="font-extrabold uppercase tracking-wider text-slate-400">🎧 Bluetooth Audio Mode (Zero Spotify/YouTube Fizz)</span>
-            <span class="text-emerald-400 font-semibold">Auto-releases in &lt;350ms</span>
-          </div>
-          <div class="grid grid-cols-3 gap-1.5" role="group" aria-label="Timer Audio Mode">
-            <button type="button" data-audio-mode="sound_vibe" class="audio-mode-pill-btn py-1.5 px-2 rounded-lg text-[11px] font-extrabold border transition bg-emerald-500 text-slate-950 border-emerald-400">
-              🔔 Sound + Vibe
-            </button>
-            <button type="button" data-audio-mode="vibe_only" class="audio-mode-pill-btn py-1.5 px-2 rounded-lg text-[11px] font-bold border transition bg-slate-900 text-slate-300 border-slate-700 hover:text-white">
-              📳 Vibe Only (BT Safe)
-            </button>
-            <button type="button" data-audio-mode="silent" class="audio-mode-pill-btn py-1.5 px-2 rounded-lg text-[11px] font-bold border transition bg-slate-900 text-slate-300 border-slate-700 hover:text-white">
-              🔕 Silent
-            </button>
-          </div>
         </div>
 
         <div id="timer-context-label" class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full py-1 px-3 inline-block">
@@ -380,10 +370,13 @@
           </div>
         </div>
 
-        <!-- USMC Pyramid Rest Calculator (10s per rep in previous set) -->
-        <div class="pt-3 border-t border-slate-800 text-left space-y-2">
-          <div class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">USMC Day 2 Pyramid Rest Helper (10s × Previous Set Reps)</div>
-          <div class="flex flex-wrap gap-1.5">
+        <!-- Compact Expandable USMC Day 2 Pyramid Rest Helper (Collapsed unless Day 2) -->
+        <details id="pyramid-rest-helper-details" class="pt-3 border-t border-slate-800 text-left">
+          <summary class="cursor-pointer flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-emerald-400 hover:text-emerald-300 select-none">
+            <span>Pyramid Rest Helper (10s x Reps)</span>
+            <span class="text-[10px] text-slate-400">▾</span>
+          </summary>
+          <div class="flex flex-wrap gap-1.5 pt-2.5">
             <button type="button" data-timer-sec="10" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">1 Rep (10s)</button>
             <button type="button" data-timer-sec="20" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">2 Reps (20s)</button>
             <button type="button" data-timer-sec="30" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">3 Reps (30s)</button>
@@ -393,7 +386,7 @@
             <button type="button" data-timer-sec="70" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">7 Reps (70s)</button>
             <button type="button" data-timer-sec="80" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">8 Reps (80s)</button>
           </div>
-        </div>
+        </details>
       </div>
     </section>
 
@@ -434,34 +427,7 @@
           </div>
         </div>
 
-        <!-- 1-Tap Diet Framing Toggle: 100% Plant-Based (Default) vs. Budget Comparison -->
-        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-          <div class="flex items-center gap-1.5">
-            <span class="font-bold text-slate-300">Fuel Mode:</span>
-            <button type="button" id="diet-mode-plant-btn" class="px-2.5 py-0.5 rounded-lg font-extrabold bg-emerald-500 text-slate-950 transition">⚡ High-Efficiency Muscle Fuel ($5.55/day)</button>
-            <button type="button" id="diet-mode-flex-btn" class="px-2.5 py-0.5 rounded-lg font-bold bg-slate-900 text-slate-300 border border-slate-700 hover:text-white transition">💰 Why This Beats Meat/Whey Cost</button>
-          </div>
-          <span class="text-[10px] text-emerald-400 font-semibold">12 Cheap Grocery Staples</span>
-        </div>
-        <div id="diet-flex-comparison-box" class="hidden bg-slate-950/95 border border-amber-500/30 rounded-xl p-2.5 text-[11px] space-y-1.5">
-          <div class="font-extrabold text-amber-300">💡 Why Lifters Use This Exact 4-Card Muscle Fuel Formula:</div>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[10px]">
-            <div class="bg-slate-900 border border-slate-800 rounded-lg p-2">
-              <strong class="text-emerald-300 block">1. Extra-Firm Tofu (175g/day)</strong>
-              <span class="text-slate-300">~$1.25/day for 28g protein &amp; 350mg calcium — <strong>65% cheaper</strong> than chicken breast or beef with zero cholesterol.</span>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 rounded-lg p-2">
-              <strong class="text-emerald-300 block">2. Bulk Pea Isolate (75g/day)</strong>
-              <span class="text-slate-300">~$1.65/day for 60g pure protein — <strong>45% cheaper</strong> than whey isolate with zero dairy bloat.</span>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 rounded-lg p-2">
-              <strong class="text-emerald-300 block">3. Oats + Rice + PB + Chia</strong>
-              <span class="text-slate-300">~$2.65/day for all carbs, Omega-3s, Silk Protein B12/Vit D, broccoli &amp; Windsor iodized salt.</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Live Macro Progress Bars (Protein, Calories & Daily Water in ml) -->
+        <!-- Live Macro Progress Bars (Protein, Calories & Daily Water in ml — Immediately Below Card Title) -->
         <div class="grid grid-cols-2 gap-2.5 pt-1">
           <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
             <div class="flex justify-between text-xs font-bold">
@@ -511,21 +477,24 @@
       </div>
       <div id="batch-prep-checklist" class="hidden"></div>
 
-      <!-- Simple 100% Nutrient Coverage Summary -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5">
-        <div class="flex items-center justify-between gap-2">
-          <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400">How These 4 Fuel Cards Cover 100% of Your Nutrients</h3>
-            <p class="text-[11px] text-slate-400">Tap to check off or open your 12-item Weekly Shop List</p>
+      <!-- Collapsed-by-Default 100% Micronutrient Coverage Accordion -->
+      <details id="micronutrient-coverage-accordion" class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 text-xs">
+        <summary class="cursor-pointer font-extrabold text-emerald-400 hover:text-emerald-300 flex items-center justify-between gap-2 select-none">
+          <span>100% Micronutrient Coverage (B12, D, Calcium, Iodine, Omega-3) — Tap to View</span>
+          <span class="text-[10px] text-slate-400 shrink-0">▾</span>
+        </summary>
+        <div class="mt-3 pt-3 border-t border-slate-800 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-[11px] text-slate-400">Covered automatically across your 4 daily Fuel cards</p>
+            <button type="button" id="open-shopping-tab-btn" class="shrink-0 px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-extrabold">
+              🛒 Full Weekly List →
+            </button>
           </div>
-          <button type="button" id="open-shopping-tab-btn" class="shrink-0 px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-extrabold">
-            🛒 Full Weekly List →
-          </button>
+          <div id="vegan-essentials-list" class="grid grid-cols-1 gap-2">
+            <!-- Populated by JS -->
+          </div>
         </div>
-        <div id="vegan-essentials-list" class="grid grid-cols-1 gap-2">
-          <!-- Populated by JS -->
-        </div>
-      </div>
+      </details>
 
       <!-- Hidden Advanced Settings (Preserves all optional controls & IDs cleanly) -->
       <details class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-3 text-xs text-slate-400">
@@ -2030,19 +1999,26 @@
       return state.soundEnabled === false ? 'silent' : 'sound_vibe';
     }
 
+    function syncPyramidRestHelperToggle() {
+      const pyramidDetails = document.getElementById('pyramid-rest-helper-details');
+      if (pyramidDetails) {
+        pyramidDetails.open = (state.selectedDayIndex === 1);
+      }
+    }
+
     function updateAudioModeUI() {
       const mode = getEffectiveAudioMode();
       state.audioMode = mode;
       state.soundEnabled = mode === 'sound_vibe';
 
       const labels = {
-        sound_vibe: '🔔 Sound + Vibe',
-        vibe_only: '📳 Vibe Only (Bluetooth Safe)',
+        sound_vibe: '🔔 Sound & Vibe',
+        vibe_only: '📳 Vibrate Only',
         silent: '🔕 Silent'
       };
       const shortLabels = {
-        sound_vibe: '🔔 Sound+Vibe',
-        vibe_only: '📳 Vibe (BT)',
+        sound_vibe: '🔔 Sound & Vibe',
+        vibe_only: '📳 Vibrate Only',
         silent: '🔕 Silent'
       };
 
@@ -2066,15 +2042,7 @@
               : 'text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 border border-slate-700 transition');
       }
 
-      document.querySelectorAll('.audio-mode-pill-btn').forEach(btn => {
-        const m = btn.getAttribute('data-audio-mode');
-        const active = m === mode;
-        btn.className = active
-          ? (m === 'vibe_only'
-              ? 'audio-mode-pill-btn py-1.5 px-2 rounded-lg text-[11px] font-extrabold border transition bg-sky-400 text-slate-950 border-sky-300 shadow-sm'
-              : 'audio-mode-pill-btn py-1.5 px-2 rounded-lg text-[11px] font-extrabold border transition bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm')
-          : 'audio-mode-pill-btn py-1.5 px-2 rounded-lg text-[11px] font-bold border transition bg-slate-900 text-slate-300 border-slate-700 hover:text-white';
-      });
+      syncPyramidRestHelperToggle();
     }
 
     function cycleAudioMode() {
@@ -2085,8 +2053,8 @@
       updateAudioModeUI();
       saveState();
       const toastMap = {
-        sound_vibe: '🔔 Audio Mode: Sound + Vibe (Chime auto-closes in <350ms)',
-        vibe_only: '📳 Audio Mode: Vibe Only (100% Bluetooth Safe — Zero AudioContext)',
+        sound_vibe: '🔔 Audio Mode: Sound & Vibe',
+        vibe_only: '📳 Audio Mode: Vibrate Only',
         silent: '🔕 Audio Mode: Silent'
       };
       showToast(toastMap[next]);
@@ -2099,57 +2067,66 @@
     }
     configureAmbientAudioSession();
 
+    let cachedChimeWavUrl = null;
+    function createSilentPaddedChimeWavUrl() {
+      if (cachedChimeWavUrl) return cachedChimeWavUrl;
+      const sampleRate = 44100;
+      const durationSec = 0.28;
+      const padSamples = Math.max(1, Math.floor(sampleRate * 0.015));
+      const toneSamples = Math.max(1, Math.floor(sampleRate * durationSec));
+      const numSamples = padSamples * 2 + toneSamples;
+      const dataBytes = numSamples * 2;
+      const buffer = new ArrayBuffer(44 + dataBytes);
+      const view = new DataView(buffer);
+      const writeStr = (offset, str) => {
+        for (let i = 0; i < str.length; i++) {
+          view.setUint8(offset + i, str.charCodeAt(i));
+        }
+      };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataBytes, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataBytes, true);
+
+      let phase = 0;
+      const attackSamples = Math.max(1, Math.floor(sampleRate * 0.01));
+      for (let i = 0; i < toneSamples; i++) {
+        const t = i / sampleRate;
+        const freq = t < 0.12 ? 587.33 : 880.0;
+        phase += (2 * Math.PI * freq) / sampleRate;
+        let env = 0;
+        if (i === 0 || i === toneSamples - 1) {
+          env = 0;
+        } else if (i < attackSamples) {
+          env = 0.5 * (1 - Math.cos((Math.PI * i) / attackSamples));
+        } else {
+          const progress = (i - attackSamples) / Math.max(1, toneSamples - 1 - attackSamples);
+          env = Math.exp(-4.5 * progress) * (1 - progress);
+        }
+        const sampleFloat = Math.sin(phase) * env * 0.25;
+        const pcm16 = Math.max(-32767, Math.min(32767, Math.round(sampleFloat * 32767)));
+        view.setInt16(44 + (padSamples + i) * 2, pcm16, true);
+      }
+
+      const blob = new Blob([buffer], { type: 'audio/wav' });
+      cachedChimeWavUrl = URL.createObjectURL(blob);
+      return cachedChimeWavUrl;
+    }
+
     let cachedChimeAudioEl = null;
     function getPreRenderedChimeAudioEl() {
       if (cachedChimeAudioEl) return cachedChimeAudioEl;
       try {
-        const sampleRate = 44100;
-        const durationSec = 0.28;
-        const numSamples = Math.floor(sampleRate * durationSec);
-        const dataBytes = numSamples * 2;
-        const buffer = new ArrayBuffer(44 + dataBytes);
-        const view = new DataView(buffer);
-        const writeStr = (offset, str) => {
-          for (let i = 0; i < str.length; i++) {
-            view.setUint8(offset + i, str.charCodeAt(i));
-          }
-        };
-        writeStr(0, 'RIFF');
-        view.setUint32(4, 36 + dataBytes, true);
-        writeStr(8, 'WAVE');
-        writeStr(12, 'fmt ');
-        view.setUint32(16, 16, true);
-        view.setUint16(20, 1, true);
-        view.setUint16(22, 1, true);
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * 2, true);
-        view.setUint16(32, 2, true);
-        view.setUint16(34, 16, true);
-        writeStr(36, 'data');
-        view.setUint32(40, dataBytes, true);
-
-        let phase = 0;
-        const attackSamples = Math.max(1, Math.floor(sampleRate * 0.01));
-        for (let i = 0; i < numSamples; i++) {
-          const t = i / sampleRate;
-          const freq = t < 0.12 ? 587.33 : 880.0;
-          phase += (2 * Math.PI * freq) / sampleRate;
-          let env = 0;
-          if (i === 0 || i === numSamples - 1) {
-            env = 0;
-          } else if (i < attackSamples) {
-            env = 0.5 * (1 - Math.cos((Math.PI * i) / attackSamples));
-          } else {
-            const progress = (i - attackSamples) / Math.max(1, numSamples - 1 - attackSamples);
-            env = Math.exp(-4.5 * progress) * (1 - progress);
-          }
-          const sampleFloat = Math.sin(phase) * env * 0.25;
-          const pcm16 = Math.max(-32767, Math.min(32767, Math.round(sampleFloat * 32767)));
-          view.setInt16(44 + i * 2, pcm16, true);
-        }
-
-        const blob = new Blob([buffer], { type: 'audio/wav' });
-        const wavUrl = URL.createObjectURL(blob);
+        const wavUrl = createSilentPaddedChimeWavUrl();
         const audio = new Audio(wavUrl);
         audio.preload = 'auto';
         audio.volume = 0.35;
@@ -4221,15 +4198,39 @@
       const dayObj = DAYS_SCHEDULE[dayIdx];
       renderWarmupCard(dayObj);
 
-      // UPGRADE 7: Pre-Workout Fuel Check-In Prompt on Workout Days (Days 1-5)
+      const hasCrunchToday = state.crunchDays.includes(dayIdx);
+      const exercisesToday = [...dayObj.exercises].map(ex => ({
+        ...ex,
+        name: String(ex.name || '').replace(/^[A-Z]\d+[\.\:\-\)]\s*/i, '').trim()
+      }));
+      if (hasCrunchToday) {
+        exercisesToday.push(CABLE_CRUNCH_EXERCISE);
+      }
+
+      // Count sets completed today in current week BEFORE evaluating Pre-Gym Fuel Check-In banner
+      let todayTotalSets = 0;
+      let todayDoneSets = 0;
+      exercisesToday.forEach(ex => {
+        todayTotalSets += ex.sets;
+        for (let s = 1; s <= ex.sets; s++) {
+          const entry = getLogEntry(week, dayIdx, ex.id, s);
+          if (entry && entry.done) todayDoneSets++;
+        }
+      });
+
+      syncPyramidRestHelperToggle();
+
+      // UPGRADE 7 & CLEANUP 2: Pre-Workout Fuel Check-In Prompt on Workout Days (Days 1-5) only when Fuel 1 is unlogged AND doneSetsToday < totalSetsToday
       const preFuelBanner = document.getElementById('pre-workout-fuel-checkin-banner');
       if (preFuelBanner) {
         const isTrainingDay = dayIdx >= 0 && dayIdx <= 4;
         const isFuel1Logged = isMealCheckedForDay(week, dayIdx, 'pre_shake');
         const dismissKey = `w${week}_d${dayIdx}`;
         const isDismissed = Boolean(state.dismissedPreFuelPrompt && state.dismissedPreFuelPrompt[dismissKey]);
+        const doneSetsToday = todayDoneSets;
+        const totalSetsToday = todayTotalSets;
 
-        if (isTrainingDay && !isFuel1Logged && !isDismissed) {
+        if (isTrainingDay && !isFuel1Logged && !isDismissed && doneSetsToday < totalSetsToday) {
           preFuelBanner.classList.remove('hidden');
           preFuelBanner.innerHTML = `
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -4368,26 +4369,6 @@
           });
         }
       }
-
-      const hasCrunchToday = state.crunchDays.includes(dayIdx);
-      const exercisesToday = [...dayObj.exercises].map(ex => ({
-        ...ex,
-        name: String(ex.name || '').replace(/^[A-Z]\d+[\.\:\-\)]\s*/i, '').trim()
-      }));
-      if (hasCrunchToday) {
-        exercisesToday.push(CABLE_CRUNCH_EXERCISE);
-      }
-
-      // Count sets completed today in current week
-      let todayTotalSets = 0;
-      let todayDoneSets = 0;
-      exercisesToday.forEach(ex => {
-        todayTotalSets += ex.sets;
-        for (let s = 1; s <= ex.sets; s++) {
-          const entry = getLogEntry(week, dayIdx, ex.id, s);
-          if (entry && entry.done) todayDoneSets++;
-        }
-      });
 
       // Populate Quick Exercise & Machine Jump Dropdown
       const jumpSelect = document.getElementById('exercise-jump-select');
@@ -4972,12 +4953,12 @@
                     </span>
                   </div>
 
-                  <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                  <div class="${isImgOpen || (isBarbellEx && activeCalcBarMath && !(isExComplete && isCollapsedDone)) ? 'flex flex-wrap items-center gap-1.5 mt-1' : 'hidden'}">
                     <div id="hdr-setup-${panelKey}" class="${isImgOpen ? 'inline-flex' : 'hidden'} items-center gap-1 text-[11px] font-semibold text-sky-300 bg-sky-500/10 border border-sky-500/25 px-2 py-0.5 rounded-lg" style="display: ${isImgOpen ? 'inline-flex' : 'none'};">
                       <span>🛠️</span>
                       <span class="text-white font-bold">${meta.equipLabel}</span>
                     </div>
-                    ${isBarbellEx && activeCalcBarMath ? `
+                    ${isBarbellEx && activeCalcBarMath && !(isExComplete && isCollapsedDone) ? `
                     <span data-plate-badge="${ex.id}" class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-300 bg-slate-950 border border-slate-800 px-2 py-0.5 rounded-lg">
                       💿 Set ${calcTargetSet}: ${activeCalcBarMath.bar} ${exUnit} Bar + ${activeCalcBarMath.perSide}/side = <strong class="text-white">${activeCalcBarMath.total} ${exUnit}</strong>
                     </span>
@@ -6112,13 +6093,71 @@
     // 7. RENDER USMC PULL-UP VIEW
     // =========================================================================
     function renderUSMCView() {
+      syncProgressiveWeekState(state);
       const tsVal = document.getElementById('pullup-ts-value');
       if (tsVal) tsVal.textContent = `${state.pullupTrainingSetReps} reps`;
 
+      const week = state.selectedWeek || state.currentWeek || 1;
+      state.currentWeek = week;
+      state.selectedWeek = week;
+      const maxUnlocked = state.maxUnlockedWeek || 2;
+
+      const activeWeekBadge = document.getElementById('pullups-active-week-badge');
+      if (activeWeekBadge) {
+        activeWeekBadge.textContent = `Week ${week} • Days 1–5`;
+      }
+
+      const pullupWeekPillsContainer = document.getElementById('pullups-progressive-week-pills');
+      if (pullupWeekPillsContainer) {
+        const rollingStart = maxUnlocked <= 3 ? 1 : Math.max(1, maxUnlocked - 3);
+        const visibleWeeks = [];
+        for (let w = rollingStart; w <= maxUnlocked; w++) {
+          visibleWeeks.push(w);
+        }
+
+        function buildPullupWeekPillHtml(w) {
+          const isCurrentActive = (w === week);
+          const isPastCompleted = (w < week) || (w < maxUnlocked) || Boolean(state.completedWeeks && state.completedWeeks[w]);
+          let pillClasses = '';
+          let labelHtml = `Week ${w}`;
+          if (isCurrentActive) {
+            pillClasses = 'border-sky-400 bg-sky-500/20 text-sky-200 font-bold shadow-sm shadow-sky-500/25';
+            labelHtml = isPastCompleted ? `✓ Week ${w} (Active)` : `Week ${w}`;
+          } else if (isPastCompleted) {
+            pillClasses = 'border-amber-500/50 bg-amber-950/30 text-amber-300 hover:bg-amber-950/50 font-bold';
+            labelHtml = `✓ Done • Week ${w}`;
+          } else {
+            pillClasses = 'bg-slate-900 text-slate-200 border-slate-700 hover:border-sky-400/50 font-semibold';
+          }
+          return `
+            <button
+              type="button"
+              data-pullup-prog-week="${w}"
+              aria-pressed="${isCurrentActive ? 'true' : 'false'}"
+              class="pullup-progressive-week-pill-btn px-2.5 py-1 rounded-lg text-[11px] border transition whitespace-nowrap ${pillClasses}"
+            >
+              ${labelHtml}
+            </button>
+          `;
+        }
+
+        pullupWeekPillsContainer.innerHTML = visibleWeeks.map(w => buildPullupWeekPillHtml(w)).join('');
+        pullupWeekPillsContainer.querySelectorAll('.pullup-progressive-week-pill-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const targetW = parseInt(btn.getAttribute('data-pullup-prog-week'), 10) || 1;
+            state.selectedWeek = targetW;
+            state.currentWeek = targetW;
+            saveState();
+            renderWorkoutView();
+            renderUSMCView();
+            renderVeganView();
+            showToast(`Switched to Week ${targetW}`);
+          });
+        });
+      }
+
       const container = document.getElementById('usmc-days-container');
       if (!container) return;
-
-      const week = state.currentWeek || 1;
 
       container.innerHTML = USMC_DAYS_DATA.map(d => {
         const mapInfo = PULLUP_DAY_TO_EX_ID[d.dayNum];
@@ -7000,36 +7039,20 @@
         }
       }
 
-      // Render Essentials Checklist
+      // Render Static Micronutrient Coverage Badges (Replaced interactive checkboxes with static check badges)
       const essEl = document.getElementById('vegan-essentials-list');
       if (essEl) {
         essEl.innerHTML = VEGAN_ESSENTIALS.map(item => {
-          const checked = !!state.checkedEssentials[item.id];
           return `
-            <button type="button" data-ess-id="${item.id}" class="ess-toggle-btn text-left p-2.5 rounded-xl border transition flex items-start gap-2.5 ${
-              checked
-                ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
-                : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'
-            }">
-              <span class="mt-0.5 w-4 h-4 rounded flex items-center justify-center text-[10px] font-bold ${
-                checked ? 'bg-emerald-500 text-slate-950' : 'border border-slate-600'
-              }">${checked ? '✓' : ''}</span>
+            <div class="text-left p-2.5 rounded-xl border bg-slate-950/70 border-slate-800 text-slate-300 flex items-start gap-2.5">
+              <span class="mt-0.5 w-4 h-4 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center text-[10px] font-extrabold shrink-0" aria-hidden="true">✓</span>
               <div>
                 <div class="text-xs font-bold text-white">${item.name}</div>
                 <div class="text-[11px] text-slate-400 leading-snug">${item.detail}</div>
               </div>
-            </button>
+            </div>
           `;
         }).join('');
-
-        essEl.querySelectorAll('.ess-toggle-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const id = btn.getAttribute('data-ess-id');
-            state.checkedEssentials[id] = !state.checkedEssentials[id];
-            saveState();
-            renderVeganView();
-          });
-        });
       }
 
       // UPGRADE 2: Render 4 Daily Fuel Cards with Ingredient Lists & Prep Collapsed by Default
@@ -7788,6 +7811,8 @@
           }
           saveState();
           renderWorkoutView();
+          renderUSMCView();
+          renderVeganView();
           showToast(`Switched to Week ${state.selectedWeek} (weights suggested from previous week)`);
         });
       }
@@ -7805,6 +7830,8 @@
           state.currentWeek = nextW;
           saveState();
           renderWorkoutView();
+          renderUSMCView();
+          renderVeganView();
           showToast(`🎉 Week ${cur} Complete! Unlocked Week ${nextW} with your previous weights pre-filled.`);
         });
       }
@@ -8523,6 +8550,8 @@
           if (weekSel) weekSel.value = String(nextW);
           saveState();
           renderWorkoutView();
+          renderUSMCView();
+          renderVeganView();
           showToast(`🎉 Week ${cur} Complete! Unlocked Week ${nextW} (your Week ${cur} weights are pre-filled on every set).`);
         });
       }

@@ -407,7 +407,7 @@ export function getTimerAudioModeBehavior(mode: TimerAudioMode): {
       shouldCreateAudioContext: false,
       shouldVibrate: true,
       closeDelayMs: 0,
-      label: '📳 Vibe Only (Bluetooth Safe)'
+      label: '📳 Vibrate Only'
     };
   }
   if (mode === 'silent') {
@@ -422,8 +422,22 @@ export function getTimerAudioModeBehavior(mode: TimerAudioMode): {
     shouldCreateAudioContext: true,
     shouldVibrate: true,
     closeDelayMs: 320,
-    label: '🔔 Sound + Vibe'
+    label: '🔔 Sound & Vibe'
   };
+}
+
+export function shouldExpandPyramidHelperByDefault(selectedDayIndex: number): boolean {
+  return selectedDayIndex === 1;
+}
+
+export function shouldShowBarbellHeaderPlateBadge(
+  isBarbellEx: boolean,
+  isExComplete: boolean,
+  isCollapsedDone: boolean
+): boolean {
+  if (!isBarbellEx) return false;
+  if (isExComplete && isCollapsedDone) return false;
+  return true;
 }
 
 // ============================================================================
@@ -607,10 +621,13 @@ export function calculateDailyFuelMacros(
 export function shouldShowPreWorkoutFuelPrompt(
   dayIdx: number,
   isFuel1Logged: boolean,
-  isDismissedForDay: boolean
+  isDismissedForDay: boolean,
+  doneSetsToday = 0,
+  totalSetsToday = 1
 ): boolean {
   const isTrainingDay = dayIdx >= 0 && dayIdx <= 4;
-  return isTrainingDay && !isFuel1Logged && !isDismissedForDay;
+  const isWorkoutIncomplete = totalSetsToday > 0 && doneSetsToday < totalSetsToday;
+  return isTrainingDay && !isFuel1Logged && !isDismissedForDay && isWorkoutIncomplete;
 }
 
 // ============================================================================
@@ -650,7 +667,9 @@ export function generatePreRenderedChimeWavBytes(
   sampleRate = 44100,
   durationSec = 0.28
 ): Uint8Array {
-  const numSamples = Math.max(1, Math.floor(sampleRate * durationSec));
+  const padSamples = Math.max(1, Math.floor(sampleRate * 0.015)); // Silent lead-in & lead-out padding
+  const toneSamples = Math.max(1, Math.floor(sampleRate * durationSec));
+  const numSamples = padSamples * 2 + toneSamples;
   const dataBytes = numSamples * 2; // 16-bit mono PCM = 2 bytes per sample
   const buffer = new ArrayBuffer(44 + dataBytes);
   const view = new DataView(buffer);
@@ -676,30 +695,38 @@ export function generatePreRenderedChimeWavBytes(
   writeStr(36, 'data');
   view.setUint32(40, dataBytes, true);
 
-  // Synthesize smooth two-tone chime (D5 587.33 Hz -> A5 880 Hz) with zero DC offset at start and end
+  // Synthesize smooth two-tone chime (D5 587.33 Hz -> A5 880 Hz) surrounded by silent padding
   let phase = 0;
   const attackSamples = Math.max(1, Math.floor(sampleRate * 0.01));
-  for (let i = 0; i < numSamples; i++) {
+  for (let i = 0; i < toneSamples; i++) {
     const t = i / sampleRate;
     const freq = t < 0.12 ? 587.33 : 880.0;
     phase += (2 * Math.PI * freq) / sampleRate;
 
     let env = 0;
-    if (i === 0 || i === numSamples - 1) {
+    if (i === 0 || i === toneSamples - 1) {
       env = 0;
     } else if (i < attackSamples) {
-      // Smooth half-cosine ramp up
       env = 0.5 * (1 - Math.cos((Math.PI * i) / attackSamples));
     } else {
-      // Smooth exponential decay + cosine taper to exact 0 at final sample
-      const progress = (i - attackSamples) / Math.max(1, numSamples - 1 - attackSamples);
+      const progress = (i - attackSamples) / Math.max(1, toneSamples - 1 - attackSamples);
       env = Math.exp(-4.5 * progress) * (1 - progress);
     }
 
     const sampleFloat = Math.sin(phase) * env * 0.25;
     const pcm16 = Math.max(-32767, Math.min(32767, Math.round(sampleFloat * 32767)));
-    view.setInt16(44 + i * 2, pcm16, true);
+    view.setInt16(44 + (padSamples + i) * 2, pcm16, true);
   }
 
   return new Uint8Array(buffer);
 }
+
+export function createSilentPaddedChimeWavUrl(): string {
+  const bytes = generatePreRenderedChimeWavBytes(44100, 0.28);
+  if (typeof Blob !== 'undefined' && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+    const blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'audio/wav' });
+    return URL.createObjectURL(blob);
+  }
+  return 'data:audio/wav;base64,';
+}
+
