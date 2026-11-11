@@ -1498,13 +1498,13 @@
           },
           {
             id: 'thu_oh_ext',
-            name: 'Incline Dumbbell Overhead Extensions',
+            name: 'Overhead Rope Extensions',
             sets: 3,
             reps: '10-15',
             restSec: 105,
             restLabel: '1.5-2 min',
-            videoUrl: 'https://youtu.be/3d86xMhHROA',
-            notes: 'Set bench to 45 degrees (2-3 notches up), move arms parallel to torso, keep elbow locked.'
+            videoUrl: 'https://www.youtube.com/watch?v=7yoTblFCUQM',
+            notes: 'Attach a rope to a low or high pulley, face away from the cable stack in a staggered stance, lock your elbows overhead beside your ears, extend your forearms overhead until straight, and control the weight back behind your head for a full triceps stretch.'
           },
           {
             id: 'thu_pushdown',
@@ -3017,10 +3017,17 @@
     function createSilentPaddedChimeWavUrl() {
       if (cachedChimeWavUrl) return cachedChimeWavUrl;
       const sampleRate = 44100;
-      const durationSec = 0.28;
-      const padSamples = Math.max(1, Math.floor(sampleRate * 0.015));
-      const toneSamples = Math.max(1, Math.floor(sampleRate * durationSec));
-      const numSamples = padSamples * 2 + toneSamples;
+      const leadInSilenceSamples = Math.max(1, Math.round(sampleRate * 0.100)); // 100 ms pure digital silence
+      const pulse1Samples = Math.max(1, Math.round(sampleRate * 0.180));        // Pulse 1: 180 ms
+      const gap1Samples = Math.max(1, Math.round(sampleRate * 0.060));          // 60 ms gap
+      const pulse2Samples = Math.max(1, Math.round(sampleRate * 0.180));        // Pulse 2: 180 ms
+      const gap2Samples = Math.max(1, Math.round(sampleRate * 0.060));          // 60 ms gap
+      const pulse3Samples = Math.max(1, Math.round(sampleRate * 0.260));        // Pulse 3: 260 ms
+      const trailingSilenceSamples = Math.max(1, Math.round(sampleRate * 0.400)); // 400 ms pure digital silence
+
+      const activeChimeSamples =
+        pulse1Samples + gap1Samples + pulse2Samples + gap2Samples + pulse3Samples;
+      const numSamples = leadInSilenceSamples + activeChimeSamples + trailingSilenceSamples;
       const dataBytes = numSamples * 2;
       const buffer = new ArrayBuffer(44 + dataBytes);
       const view = new DataView(buffer);
@@ -3043,24 +3050,39 @@
       writeStr(36, 'data');
       view.setUint32(40, dataBytes, true);
 
-      let phase = 0;
-      const attackSamples = Math.max(1, Math.floor(sampleRate * 0.01));
-      for (let i = 0; i < toneSamples; i++) {
-        const t = i / sampleRate;
-        const freq = t < 0.12 ? 587.33 : 880.0;
-        phase += (2 * Math.PI * freq) / sampleRate;
-        let env = 0;
-        if (i === 0 || i === toneSamples - 1) {
-          env = 0;
-        } else if (i < attackSamples) {
-          env = 0.5 * (1 - Math.cos((Math.PI * i) / attackSamples));
-        } else {
-          const progress = (i - attackSamples) / Math.max(1, toneSamples - 1 - attackSamples);
-          env = Math.exp(-4.5 * progress) * (1 - progress);
+      const attackSamples = Math.max(1, Math.round(sampleRate * 0.015));  // 15 ms raised-cosine attack
+      const releaseSamples = Math.max(1, Math.round(sampleRate * 0.035)); // 35 ms raised-cosine release
+      const pulses = [
+        { startOffset: leadInSilenceSamples, length: pulse1Samples },
+        { startOffset: leadInSilenceSamples + pulse1Samples + gap1Samples, length: pulse2Samples },
+        { startOffset: leadInSilenceSamples + pulse1Samples + gap1Samples + pulse2Samples + gap2Samples, length: pulse3Samples }
+      ];
+
+      for (const pulse of pulses) {
+        const len = pulse.length;
+        for (let i = 0; i < len; i++) {
+          if (i === 0 || i === len - 1) {
+            view.setInt16(44 + (pulse.startOffset + i) * 2, 0, true);
+            continue;
+          }
+          let env = 1.0;
+          if (i < attackSamples) {
+            env = 0.5 * (1 - Math.cos((Math.PI * i) / attackSamples));
+          } else if (i >= len - releaseSamples) {
+            const relIdx = i - (len - releaseSamples);
+            env = 0.5 * (1 + Math.cos((Math.PI * relIdx) / releaseSamples));
+          }
+          const t = i / sampleRate;
+          // Layered harmonic triad: 1046.5 Hz fundamental + 2093 Hz octave + 3136 Hz fifth
+          const triad =
+            0.60 * Math.sin(2 * Math.PI * 1046.5 * t) +
+            0.28 * Math.sin(2 * Math.PI * 2093.0 * t) +
+            0.12 * Math.sin(2 * Math.PI * 3136.0 * t);
+          const rawSample = triad * env;
+          const limited = Math.tanh(rawSample * 1.85) * 0.90;
+          const pcm16 = Math.max(-32767, Math.min(32767, Math.round(limited * 32767)));
+          view.setInt16(44 + (pulse.startOffset + i) * 2, pcm16, true);
         }
-        const sampleFloat = Math.sin(phase) * env * 0.25;
-        const pcm16 = Math.max(-32767, Math.min(32767, Math.round(sampleFloat * 32767)));
-        view.setInt16(44 + (padSamples + i) * 2, pcm16, true);
       }
 
       const blob = new Blob([buffer], { type: 'audio/wav' });
@@ -3068,6 +3090,7 @@
       return cachedChimeWavUrl;
     }
 
+    let chimeAudioEl = null;
     let cachedChimeAudioEl = null;
     function getPreRenderedChimeAudioEl() {
       if (cachedChimeAudioEl) return cachedChimeAudioEl;
@@ -3075,7 +3098,8 @@
         const wavUrl = createSilentPaddedChimeWavUrl();
         const audio = new Audio(wavUrl);
         audio.preload = 'auto';
-        audio.volume = 0.35;
+        audio.volume = 1.0;
+        chimeAudioEl = audio;
         cachedChimeAudioEl = audio;
         return cachedChimeAudioEl;
       } catch (e) {
@@ -4136,11 +4160,11 @@
         step2Cue: 'Raise arms in a wide Y-path (15–30° forward) to shoulder height'
       },
       thu_oh_ext: {
-        equipType: 'incline_db',
-        equipLabel: 'Incline Bench (45° / Notch 2–3) + Dumbbells',
+        equipType: 'cable_rope_high',
+        equipLabel: 'Cable Pulley + Rope Attachment',
         defaultWeightLbs: 25,
-        step1Cue: 'Set bench to 45° • Angle straight arms back parallel to torso and lock elbows',
-        step2Cue: 'Bend forearms behind head for full stretch, then extend using only triceps'
+        step1Cue: 'Attach a rope to a low or high pulley, face away from the cable stack in a staggered stance, lock your elbows overhead beside your ears',
+        step2Cue: 'Extend your forearms overhead until straight, and control the weight back behind your head for a full triceps stretch'
       },
       thu_pushdown: {
         equipType: 'cable_rope_high',
@@ -4378,13 +4402,13 @@
       `;
     }
 
-    // Round converted weights to practical gym increments (nearest 2.5 or 1)
+    // Round converted weights to practical gym increments (nearest 2.5 lbs or 1.25 kg)
     function convertAndRoundWeight(val, fromUnit) {
       const num = parseFloat(val);
       if (!num || isNaN(num) || num <= 0) return null;
       if (fromUnit === 'lbs') {
         const rawKg = num / 2.20462;
-        const roundedKg = Math.round(rawKg / 2.5) * 2.5 || Math.round(rawKg);
+        const roundedKg = Math.max(1.25, +(Math.round(rawKg / 1.25) * 1.25).toFixed(2));
         return {
           targetUnit: 'kg',
           rounded: roundedKg,
@@ -4393,7 +4417,7 @@
         };
       } else {
         const rawLbs = num * 2.20462;
-        const roundedLbs = Math.round(rawLbs / 2.5) * 2.5 || Math.round(rawLbs);
+        const roundedLbs = Math.max(2.5, +(Math.round(rawLbs / 2.5) * 2.5).toFixed(2));
         return {
           targetUnit: 'lbs',
           rounded: roundedLbs,
@@ -4401,6 +4425,70 @@
           label: `≈ ${roundedLbs} lbs`
         };
       }
+    }
+
+    const DAY3_PULLUP_GRIP_BLOCKS = [
+      {
+        gripNumber: 1,
+        startSet: 1,
+        endSet: 3,
+        title: 'GRIP 1 OF 3 (SETS 1–3) • NORMAL OVERHAND GRIP',
+        instruction: 'Palms facing away from you, hands slightly wider than shoulder-width. Rest 60s between sets.',
+        videoButtonLabel: 'Grip 1 Video',
+        videoUrl: 'http://www.youtube.com/watch?v=OEXosPwzFdc',
+        bannerClasses: 'bg-sky-950/45 border-sky-400/50 text-sky-200',
+        badgeClasses: 'bg-sky-400 text-slate-950',
+        btnClasses: 'bg-sky-500/20 hover:bg-sky-500/30 border-sky-400/50 text-sky-200'
+      },
+      {
+        gripNumber: 2,
+        startSet: 4,
+        endSet: 6,
+        title: 'CHANGE GRIP -> GRIP 2 OF 3 (SETS 4–6) • CLOSE UNDERHAND (PINKIES TOUCHING)',
+        instruction: 'Palms facing toward your face, hands together so your little fingers (pinkies) are touching each other. Rest 60s between sets.',
+        videoButtonLabel: 'Grip 2 Video',
+        videoUrl: 'http://www.youtube.com/watch?v=ZouXLZwAUvs',
+        bannerClasses: 'bg-amber-950/45 border-amber-400/60 text-amber-200',
+        badgeClasses: 'bg-amber-400 text-slate-950',
+        btnClasses: 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-400/50 text-amber-200'
+      },
+      {
+        gripNumber: 3,
+        startSet: 7,
+        endSet: 9,
+        title: 'CHANGE GRIP -> GRIP 3 OF 3 (SETS 7–9) • WIDE OVERHAND GRIP (LAT FOCUS)',
+        instruction: 'Wide overhand grip (palms away, well outside shoulder-width). Focus on your lats pulling toward the center of your body. Rest 60s between sets.',
+        videoButtonLabel: 'Grip 3 Video',
+        videoUrl: 'http://www.youtube.com/watch?v=bHC16skSN6Q',
+        bannerClasses: 'bg-indigo-950/50 border-emerald-400/55 text-emerald-200',
+        badgeClasses: 'bg-emerald-400 text-slate-950',
+        btnClasses: 'bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-400/50 text-emerald-200'
+      }
+    ];
+
+    function formatDay3PullupSetRowLabel(setNum) {
+      if (setNum <= 3) return `Set ${setNum} (Overhand)`;
+      if (setNum <= 6) return `Set ${setNum} (Close Underhand)`;
+      return `Set ${setNum} (Wide Overhand)`;
+    }
+
+    function getDay3PullupGripDividerHtml(setNum) {
+      const block = DAY3_PULLUP_GRIP_BLOCKS.find(b => b.startSet === setNum);
+      if (!block) return '';
+      return `
+        <div data-day3-grip-divider="${block.gripNumber}" class="col-span-full rounded-xl border ${block.bannerClasses} p-2.5 sm:p-3 space-y-1.5 mt-1.5 first:mt-0 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider shrink-0 ${block.badgeClasses}">Grip ${block.gripNumber}/3</span>
+              <span class="text-[11px] sm:text-xs font-extrabold tracking-tight leading-snug break-words">${block.title}</span>
+            </div>
+            <a href="${block.videoUrl}" target="_blank" rel="noopener noreferrer" class="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] sm:text-[11px] font-extrabold transition ${block.btnClasses}">
+              <span>▶ ${block.videoButtonLabel}</span>
+            </a>
+          </div>
+          <p class="text-[11px] text-slate-200 leading-snug">${block.instruction}</p>
+        </div>
+      `;
     }
 
     function getExerciseUnit(exId) {
@@ -6315,16 +6403,20 @@
         // CRITICAL GUARDRAIL: Declare topSideStep and topBothStep strictly BEFORE the for (let s = 1; s <= ex.sets; s++) loop
         const topSideStep = exUnit === 'kg' ? 1.25 : 2.5;
         const topBothStep = exUnit === 'kg' ? 2.5 : 5;
+        const sideStep = topSideStep;
+        const weightStep = topSideStep;
 
         // Determine first unlogged set for this exercise so the Barbell Plate Calculator defaults to it
         let firstUnloggedSetNum = 1;
         let foundUnloggedForCalc = false;
+        let latestCompletedTodaySetEntry = null;
         for (let sCheck = 1; sCheck <= ex.sets; sCheck++) {
           const eCheck = getLogEntry(week, dayIdx, ex.id, sCheck);
-          if (!eCheck || !eCheck.done) {
+          if (eCheck && eCheck.done) {
+            latestCompletedTodaySetEntry = eCheck;
+          } else if (!foundUnloggedForCalc) {
             firstUnloggedSetNum = sCheck;
             foundUnloggedForCalc = true;
-            break;
           }
         }
         if (!foundUnloggedForCalc) firstUnloggedSetNum = 1;
@@ -6343,19 +6435,32 @@
         let firstUnloggedSetFound = false;
         let setsHtml = '';
         let set1EffectiveTotal = exUnit === 'kg'
-          ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0)
-          : meta.defaultWeightLbs;
+          ? (meta.defaultWeightLbs > 0 ? Math.max(1.25, Math.round((meta.defaultWeightLbs / 2.20462) / 1.25) * 1.25) : 0)
+          : (meta.defaultWeightLbs > 0 ? Math.max(2.5, meta.defaultWeightLbs) : 0);
         const setEffectiveTotals = {};
         const setBarMaths = {};
+        const set1TodayEntry = getLogEntry(week, dayIdx, ex.id, 1);
+        const isSet1LoggedToday = Boolean(set1TodayEntry && set1TodayEntry.done);
 
         for (let s = 1; s <= ex.sets; s++) {
           const logKey = `w${week}_${dayIdx}_${ex.id}_${s}`;
           const existing = getLogEntry(week, dayIdx, ex.id, s);
           const prevSuggestion = getPreviousWeekSuggestion(week, dayIdx, ex.id, s);
+          const isDone = !!(existing && existing.done);
+
+          // Find most recent completed set prior to s today (for Rule B intra-workout cascading suggestion)
+          let priorLoggedTodayEntry = null;
+          for (let prevS = s - 1; prevS >= 1; prevS--) {
+            const pEntry = getLogEntry(week, dayIdx, ex.id, prevS);
+            if (pEntry && pEntry.done) {
+              priorLoggedTodayEntry = pEntry;
+              break;
+            }
+          }
 
           const defaultTotalPlaceholder = exUnit === 'kg'
-            ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0)
-            : meta.defaultWeightLbs;
+            ? (meta.defaultWeightLbs > 0 ? Math.max(1.25, Math.round((meta.defaultWeightLbs / 2.20462) / 1.25) * 1.25) : 0)
+            : (meta.defaultWeightLbs > 0 ? Math.max(2.5, meta.defaultWeightLbs) : 0);
 
           const rawLoggedWeight = (existing && existing.weight !== undefined && existing.weight !== '') ? String(existing.weight) : '';
           let prevWeekCarryWeight = '';
@@ -6368,18 +6473,52 @@
             }
           }
 
-          const weightPlaceholder = prevWeekCarryWeight !== '' ? prevWeekCarryWeight : String(defaultTotalPlaceholder);
-          const displayWeight = rawLoggedWeight;
-
-          let displayReps = existing && existing.reps !== undefined && existing.reps !== '' ? existing.reps : '';
           const pullupDayNum = PULLUP_EX_ID_TO_DAY[ex.id] || 0;
           const baseRepPlaceholder = pullupDayNum ? getPullupDefaultReps(pullupDayNum, s) : ex.reps;
+          const defaultNumericReps = parseTargetRepsNumber(ex.reps, pullupDayNum, s);
+
+          // Rule A & Rule B Set Suggestion State Machine:
+          // Rule B: If an earlier set is logged today and this set is unlogged, suggest that logged set's exact weight & reps.
+          // Rule A: Before Set 1 is logged today, if previous week data exists, pre-fill/suggest last week's weight & reps; else use default weight & target reps.
+          let suggestedWeightVal = '';
+          let suggestedRepsVal = '';
+          let prevWeekHintHtml = '';
+
+          if (isDone) {
+            suggestedWeightVal = rawLoggedWeight !== '' ? rawLoggedWeight : String(defaultTotalPlaceholder);
+            suggestedRepsVal = (existing && existing.reps !== undefined && existing.reps !== '') ? String(existing.reps) : String(defaultNumericReps);
+          } else if (s > 1 && priorLoggedTodayEntry) {
+            suggestedWeightVal = rawLoggedWeight !== ''
+              ? rawLoggedWeight
+              : ((priorLoggedTodayEntry.weight !== undefined && priorLoggedTodayEntry.weight !== '') ? String(priorLoggedTodayEntry.weight) : String(defaultTotalPlaceholder));
+            suggestedRepsVal = (existing && existing.reps !== undefined && existing.reps !== '')
+              ? String(existing.reps)
+              : ((priorLoggedTodayEntry.reps !== undefined && priorLoggedTodayEntry.reps !== '') ? String(priorLoggedTodayEntry.reps) : String(defaultNumericReps));
+          } else if (!isSet1LoggedToday && prevSuggestion && (prevWeekCarryWeight !== '' || (prevSuggestion.reps !== undefined && prevSuggestion.reps !== ''))) {
+            suggestedWeightVal = rawLoggedWeight !== '' ? rawLoggedWeight : (prevWeekCarryWeight !== '' ? prevWeekCarryWeight : String(defaultTotalPlaceholder));
+            suggestedRepsVal = (existing && existing.reps !== undefined && existing.reps !== '')
+              ? String(existing.reps)
+              : ((prevSuggestion.reps !== undefined && prevSuggestion.reps !== '') ? String(prevSuggestion.reps) : '');
+            const prevSrc = prevSuggestion.sourceLabel || 'Prev Wk';
+            const prevWPart = (!isBodyweightRepsOnly && !isTimedHold && prevWeekCarryWeight && prevWeekCarryWeight !== '0')
+              ? `${prevWeekCarryWeight} ${exUnit} × `
+              : '';
+            const prevRPart = prevSuggestion.reps || defaultNumericReps;
+            prevWeekHintHtml = `<span data-prev-week-hint="${logKey}" class="block text-[9px] font-semibold text-sky-400/90 leading-tight mt-0.5">Last (${prevSrc}): ${prevWPart}${prevRPart}</span>`;
+          } else {
+            suggestedWeightVal = rawLoggedWeight;
+            suggestedRepsVal = (existing && existing.reps !== undefined && existing.reps !== '') ? String(existing.reps) : '';
+          }
+
+          const weightPlaceholder = prevWeekCarryWeight !== '' ? prevWeekCarryWeight : String(defaultTotalPlaceholder);
+          const displayWeight = suggestedWeightVal;
+          const displayReps = suggestedRepsVal;
           const repPlaceholder = (displayReps === '' && prevSuggestion && prevSuggestion.reps !== '')
             ? prevSuggestion.reps
             : baseRepPlaceholder;
 
           const setLabelText = (pullupDayNum === 3)
-            ? `Set ${s} <span class="block text-[8px] font-semibold text-sky-400">${s <= 3 ? 'Overhand' : (s <= 6 ? 'Close Pinky' : 'Wide Grip')}</span>`
+            ? formatDay3PullupSetRowLabel(s)
             : `Set ${s}`;
           const setRestSeconds = pullupDayNum
             ? getPullupSetRestSec(pullupDayNum, s, displayReps || repPlaceholder, ex.restSec)
@@ -6400,10 +6539,14 @@
           const isCustomSetOpen = !!(isBarbellEx && barCfg && barCfg.openCustomSets && barCfg.openCustomSets[s]);
           const isSelectedInCalc = isBarbellEx && calcTargetSet === s;
 
-          const isDone = !!(existing && existing.done);
           if (isDone) exDoneSets++;
           const isCurrentTargetSet = !isDone && !firstUnloggedSetFound;
           if (isCurrentTargetSet) firstUnloggedSetFound = true;
+
+          // UPGRADE 1: Insert Visual Grip Block Header & Separator before Set 1, Set 4, and Set 7 on Day 3 Pull-Ups
+          if (pullupDayNum === 3 && (s === 1 || s === 4 || s === 7)) {
+            setsHtml += getDay3PullupGripDividerHtml(s);
+          }
 
           if (isTimedHold) {
             setsHtml += `
@@ -6449,10 +6592,11 @@
                   : 'bg-slate-950/75 border border-slate-800/80'
               }">
                 <div class="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-3">
-                  <div class="min-w-[56px]">
-                    <span class="text-xs font-extrabold whitespace-nowrap ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
+                  <div class="min-w-[56px] max-w-[145px]">
+                    <span class="text-xs font-extrabold leading-tight block ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
+                    ${prevWeekHintHtml}
                   </div>
-                  <div class="min-w-0 max-w-[220px] mx-auto w-full">
+                  <div class="min-w-0 max-w-[200px] mx-auto w-full">
                     <div class="flex items-center bg-slate-900 border border-slate-700/90 rounded-lg overflow-hidden">
                       <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn w-8 h-9 sm:w-9 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
                       <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full min-w-0 bg-transparent py-1 text-xs sm:text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none text-center" />
@@ -6485,6 +6629,7 @@
                 <div class="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-1.5 sm:gap-2">
                   <div class="min-w-[44px]">
                     <span class="text-xs font-extrabold whitespace-nowrap ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
+                    ${prevWeekHintHtml}
                     ${isBarbellEx ? `
                       <button type="button" data-select-calc-ex="${ex.id}" data-set-idx="${s}" class="select-calc-set-btn block text-[9px] font-bold whitespace-nowrap ${isSelectedInCalc ? 'text-amber-300' : 'text-slate-400 hover:text-sky-300'} mt-0.5 transition" title="Select Set ${s} in Plate Calculator">
                         ${isSelectedInCalc ? '💿 Active' : '💿 Plates'}
@@ -6493,9 +6638,9 @@
                   </div>
                   <div class="min-w-0">
                     <div class="flex items-center bg-slate-900 border ${isBarbellEx ? 'border-amber-500/40' : 'border-slate-700/90'} rounded-lg overflow-hidden">
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-${topBothStep}" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Weight">−</button>
-                      <input type="number" step="0.5" inputmode="decimal" placeholder="${weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full min-w-0 bg-transparent py-1 text-center text-xs sm:text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none" />
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="${topBothStep}" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Weight">+</button>
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-${weightStep}" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Weight">−</button>
+                      <input type="number" step="${weightStep}" min="0" inputmode="decimal" placeholder="${weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full min-w-0 bg-transparent py-1 text-center text-xs sm:text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none" />
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="${weightStep}" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Weight">+</button>
                     </div>
                   </div>
                   <div class="min-w-0">
@@ -6644,7 +6789,7 @@
                   }">KG</button>
                 </div>
                 <button type="button" data-overload-ex="${ex.id}" class="overload-bump-btn ${isCollapsedDone ? 'hidden' : 'inline-flex'} text-[10px] font-bold text-sky-300 bg-slate-950 hover:bg-slate-800 border border-slate-700 px-2 py-0.5 rounded-lg transition">
-                  +${meta.defaultWeightLbs === 0 ? '1 Rep' : (isBarbellEx ? `${exUnit === 'kg' ? '1.25/s' : '2.5/s'}` : '2.5')}
+                  +${meta.defaultWeightLbs === 0 ? '1 Rep' : (exUnit === 'kg' ? '1.25 kg' : '2.5 lb')}
                 </button>
               </div>
               `)}
@@ -7497,6 +7642,34 @@
           state.workoutLogs[key].unit = exUnit;
           state.workoutLogs[key].done = !state.workoutLogs[key].done;
 
+          // UPGRADE 4 (Rule B): When Set s is logged (done = true), automatically propagate its exact weight & reps to Set s+1 and subsequent unlogged sets
+          const pullupDayNum = PULLUP_EX_ID_TO_DAY[exId] || 0;
+          if (pullupDayNum && !state.workoutLogs[key].reps && repsInput && repsInput.placeholder && !isNaN(parseInt(repsInput.placeholder, 10))) {
+            state.workoutLogs[key].reps = String(parseInt(repsInput.placeholder, 10));
+          }
+          if (state.workoutLogs[key].done && exObjForSet) {
+            const loggedW = state.workoutLogs[key].weight;
+            const loggedR = state.workoutLogs[key].reps;
+            for (let kNext = setIdx + 1; kNext <= exObjForSet.sets; kNext++) {
+              const nextKey = `w${week}_${dayIdx}_${exId}_${kNext}`;
+              const existingNext = getLogEntry(week, dayIdx, exId, kNext);
+              if (!existingNext || !existingNext.done) {
+                state.workoutLogs[nextKey] = Object.assign({}, existingNext || {}, {
+                  weight: String(loggedW),
+                  reps: String(loggedR),
+                  done: false,
+                  unit: exUnit
+                });
+                if (week === 1) {
+                  state.workoutLogs[`${dayIdx}_${exId}_${kNext}`] = Object.assign({}, state.workoutLogs[nextKey]);
+                }
+                if (pullupDayNum) {
+                  syncPullupStateBothWays(week, pullupDayNum, kNext, state.workoutLogs[nextKey]);
+                }
+              }
+            }
+          }
+
           if (BARBELL_EX_IDS.includes(exId) && exObjForSet) {
             const cfg = getBarbellConfig(exId);
             if (state.workoutLogs[key].done) {
@@ -7518,11 +7691,7 @@
             state.workoutLogs[`${dayIdx}_${exId}_${setIdx}`] = Object.assign({}, state.workoutLogs[key]);
           }
 
-          const pullupDayNum = PULLUP_EX_ID_TO_DAY[exId] || 0;
           if (pullupDayNum) {
-            if (!state.workoutLogs[key].reps && repsInput && repsInput.placeholder && !isNaN(parseInt(repsInput.placeholder, 10))) {
-              state.workoutLogs[key].reps = String(parseInt(repsInput.placeholder, 10));
-            }
             syncPullupStateBothWays(week, pullupDayNum, setIdx, state.workoutLogs[key]);
             renderPullupView();
           }
@@ -7674,13 +7843,18 @@
           const curEntry = getLogEntry(week, dayIdx, exId, setIdx) || { weight: '', reps: '', done: false, unit: exUnit };
 
           if (field === 'weight') {
-            const defW = exUnit === 'kg' ? (meta.defaultWeightLbs > 0 ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : 0) : meta.defaultWeightLbs;
-            const isBarbellStep = BARBELL_EX_IDS.includes(exId);
-            const barWStep = isBarbellStep ? getBarbellBarWeight(exId, exUnit) : 0;
+            const minPositiveStep = exUnit === 'kg' ? 1.25 : 2.5;
+            const defW = exUnit === 'kg'
+              ? (meta.defaultWeightLbs > 0 ? Math.max(1.25, Math.round((meta.defaultWeightLbs / 2.20462) / 1.25) * 1.25) : 0)
+              : (meta.defaultWeightLbs > 0 ? Math.max(2.5, meta.defaultWeightLbs) : 0);
             const placeholderW = (inp && inp.placeholder && !isNaN(parseFloat(inp.placeholder))) ? parseFloat(inp.placeholder) : defW;
             const baseW = (inp && inp.value !== '') ? parseFloat(inp.value) : (curEntry.weight !== '' ? parseFloat(curEntry.weight) : placeholderW);
-            const minAllowed = isBarbellStep ? barWStep : 0;
-            const nextW = Math.max(minAllowed, +(baseW + delta).toFixed(2));
+            let nextW = +(baseW + delta).toFixed(2);
+            if (nextW <= 0) {
+              nextW = 0;
+            } else if (nextW < minPositiveStep) {
+              nextW = delta > 0 ? minPositiveStep : 0;
+            }
             curEntry.weight = String(nextW);
             if (inp) inp.value = String(nextW);
           } else {
@@ -7728,20 +7902,23 @@
             renderPullupView();
             showToast('🚀 Progressive Overload: Added +1 rep across sets (synced w/ Pull-Ups tab)!');
           } else {
-            const isBarbellBump = BARBELL_EX_IDS.includes(exId);
-            const stepTotal = isBarbellBump ? (exUnit === 'kg' ? 2.5 : 5) : 2.5;
+            const stepTotal = exUnit === 'kg' ? 1.25 : 2.5;
             for (let s = 1; s <= exObj.sets; s++) {
               const k = `w${week}_${dayIdx}_${exId}_${s}`;
               const cur = getLogEntry(week, dayIdx, exId, s) || getPreviousWeekSuggestion(week, dayIdx, exId, s) || { weight: '', reps: '', done: false };
-              const baseW = parseFloat(cur.weight) || (exUnit === 'kg' ? Math.round((meta.defaultWeightLbs / 2.20462) / 2.5) * 2.5 : meta.defaultWeightLbs);
+              const defW = exUnit === 'kg'
+                ? Math.max(1.25, Math.round((meta.defaultWeightLbs / 2.20462) / 1.25) * 1.25)
+                : Math.max(2.5, meta.defaultWeightLbs);
+              const baseW = (cur.weight !== undefined && cur.weight !== '') ? parseFloat(cur.weight) : defW;
               const nextW = +(baseW + stepTotal).toFixed(2);
               state.workoutLogs[k] = Object.assign({}, cur, { weight: String(nextW), unit: exUnit });
+              if (week === 1) {
+                state.workoutLogs[`${dayIdx}_${exId}_${s}`] = Object.assign({}, state.workoutLogs[k]);
+              }
             }
             saveState();
             renderWorkoutView();
-            showToast(isBarbellBump
-              ? `🚀 Progressive Overload: Added +${stepTotal / 2} ${exUnit.toUpperCase()}/side (+${stepTotal} ${exUnit.toUpperCase()} both sides) across sets!`
-              : `🚀 Progressive Overload: Added +${stepTotal} ${exUnit.toUpperCase()} across sets!`);
+            showToast(`🚀 Progressive Overload: Added +${stepTotal} ${exUnit === 'kg' ? 'kg' : 'lb'} across sets!`);
           }
         });
       });
@@ -7838,22 +8015,38 @@
             : ((state.pullupLogs && state.pullupLogs[key]) || { reps: '', done: false });
           if (syncedEntry.done) doneSetsCount++;
           const dynRest = getPullupSetRestSec(d.dayNum, s, syncedEntry.reps, d.restSec);
-          const gripHint = d.dayNum === 3
-            ? `<span class="text-[8px] font-semibold text-sky-400">${s <= 3 ? 'Overhand' : (s <= 6 ? 'Close' : 'Wide')}</span>`
-            : '';
 
-          setsRowHtml += `
-            <div class="flex flex-col items-center bg-slate-950/70 border ${syncedEntry.done ? 'border-emerald-500/50 bg-emerald-950/30' : 'border-slate-800'} rounded-xl p-2">
-              <span class="text-[10px] font-bold ${syncedEntry.done ? 'text-emerald-400' : 'text-slate-400'}">Set ${s}</span>
-              ${gripHint}
-              <input type="number" inputmode="numeric" placeholder="${defaultRepPlaceholder}" value="${syncedEntry.reps || ''}" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" aria-label="Pull-Up Day ${d.dayNum} Set ${s} Reps" class="pullup-rep-input w-12 bg-slate-900 border border-slate-700 rounded-lg py-1 text-center text-xs font-bold text-white my-1 focus:outline-none focus:border-emerald-500" />
-              <button type="button" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" data-rest-sec="${dynRest}" data-label="Pull-Up Day ${d.dayNum} Set ${s}" class="pullup-done-btn w-full py-1 rounded-md text-[10px] font-bold ${
-                syncedEntry.done ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }">
-                ${syncedEntry.done ? '✓ Done' : `⏱️ ${dynRest}s`}
-              </button>
-            </div>
-          `;
+          if (d.dayNum === 3) {
+            if (s === 1 || s === 4 || s === 7) {
+              setsRowHtml += getDay3PullupGripDividerHtml(s);
+            }
+            const day3RowLabel = formatDay3PullupSetRowLabel(s);
+            setsRowHtml += `
+              <div class="col-span-full flex items-center justify-between gap-2 bg-slate-950/75 border ${syncedEntry.done ? 'border-emerald-500/50 bg-emerald-950/25' : 'border-slate-800'} rounded-xl px-2.5 py-2">
+                <span class="text-xs font-extrabold ${syncedEntry.done ? 'text-emerald-400' : 'text-slate-200'}">${day3RowLabel}</span>
+                <div class="flex items-center gap-2 shrink-0">
+                  <input type="number" inputmode="numeric" placeholder="${defaultRepPlaceholder}" value="${syncedEntry.reps || ''}" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" aria-label="Pull-Up Day ${d.dayNum} ${day3RowLabel} Reps" class="pullup-rep-input w-14 bg-slate-900 border border-slate-700 rounded-lg py-1 text-center text-xs font-bold text-white focus:outline-none focus:border-emerald-500" />
+                  <button type="button" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" data-rest-sec="${dynRest}" data-label="Pull-Up Day ${d.dayNum} ${day3RowLabel}" class="pullup-done-btn px-3 py-1.5 rounded-lg text-xs font-extrabold whitespace-nowrap ${
+                    syncedEntry.done ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700'
+                  }">
+                    ${syncedEntry.done ? '✓ Done' : `✓ Log (${dynRest}s)`}
+                  </button>
+                </div>
+              </div>
+            `;
+          } else {
+            setsRowHtml += `
+              <div class="flex flex-col items-center bg-slate-950/70 border ${syncedEntry.done ? 'border-emerald-500/50 bg-emerald-950/30' : 'border-slate-800'} rounded-xl p-2">
+                <span class="text-[10px] font-bold ${syncedEntry.done ? 'text-emerald-400' : 'text-slate-400'}">Set ${s}</span>
+                <input type="number" inputmode="numeric" placeholder="${defaultRepPlaceholder}" value="${syncedEntry.reps || ''}" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" aria-label="Pull-Up Day ${d.dayNum} Set ${s} Reps" class="pullup-rep-input w-12 bg-slate-900 border border-slate-700 rounded-lg py-1 text-center text-xs font-bold text-white my-1 focus:outline-none focus:border-emerald-500" />
+                <button type="button" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" data-rest-sec="${dynRest}" data-label="Pull-Up Day ${d.dayNum} Set ${s}" class="pullup-done-btn w-full py-1 rounded-md text-[10px] font-bold ${
+                  syncedEntry.done ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }">
+                  ${syncedEntry.done ? '✓ Done' : `⏱️ ${dynRest}s`}
+                </button>
+              </div>
+            `;
+          }
         }
 
         const dayIdxForPullup = mapInfo ? mapInfo.dayIdx : (d.dayNum - 1);
@@ -7896,7 +8089,7 @@
               <div class="${isPullupImgOpen ? 'block' : 'hidden'}" style="display: ${isPullupImgOpen ? 'block' : 'none'};">
                 ${getStepVisualDiagramHtml({ id: exIdForDay, notes: d.desc }, metaForDay, dayIdxForPullup)}
               </div>
-              <div class="grid grid-cols-5 gap-2">
+              <div class="${d.dayNum === 3 ? 'space-y-1.5' : 'grid grid-cols-5 gap-2'}">
                 ${setsRowHtml}
               </div>
             </div>
@@ -7925,9 +8118,19 @@
           const nextDone = !cur.done;
           const finalReps = (cur.reps !== undefined && cur.reps !== '')
             ? cur.reps
-            : (!isNaN(parseInt(defaultReps, 10)) ? String(parseInt(defaultReps, 10)) : '');
+            : (!isNaN(parseInt(defaultReps, 10)) ? String(parseInt(defaultReps, 10)) : String(state.pullupTrainingSetReps || 5));
 
           syncPullupStateBothWays(week, dayNum, setIdx, { reps: finalReps, done: nextDone });
+          if (nextDone && mapInfo) {
+            const dSpec = PULLUP_DAYS_DATA.find(item => item.dayNum === dayNum);
+            const totalSetsForDay = dSpec ? dSpec.setsCount : 5;
+            for (let kNext = setIdx + 1; kNext <= totalSetsForDay; kNext++) {
+              const existingNext = getLogEntry(week, mapInfo.dayIdx, mapInfo.exId, kNext);
+              if (!existingNext || !existingNext.done) {
+                syncPullupStateBothWays(week, dayNum, kNext, { reps: finalReps, done: false });
+              }
+            }
+          }
           saveState();
           renderPullupView();
           renderWorkoutView();

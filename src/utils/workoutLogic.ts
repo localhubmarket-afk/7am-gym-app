@@ -663,13 +663,23 @@ export function stripBatchStepPrefix(title: string): string {
   return String(title || '').replace(/^#\d+\s+/, '').trim();
 }
 
+export const CHIME_HTML_AUDIO_VOLUME = 1.0;
+
 export function generatePreRenderedChimeWavBytes(
   sampleRate = 44100,
-  durationSec = 0.28
+  _legacyDurationSec = 0.74
 ): Uint8Array {
-  const padSamples = Math.max(1, Math.floor(sampleRate * 0.015)); // Silent lead-in & lead-out padding
-  const toneSamples = Math.max(1, Math.floor(sampleRate * durationSec));
-  const numSamples = padSamples * 2 + toneSamples;
+  const leadInSilenceSamples = Math.max(1, Math.round(sampleRate * 0.100)); // 100 ms pure digital silence
+  const pulse1Samples = Math.max(1, Math.round(sampleRate * 0.180));        // Pulse 1: 180 ms
+  const gap1Samples = Math.max(1, Math.round(sampleRate * 0.060));          // 60 ms gap
+  const pulse2Samples = Math.max(1, Math.round(sampleRate * 0.180));        // Pulse 2: 180 ms
+  const gap2Samples = Math.max(1, Math.round(sampleRate * 0.060));          // 60 ms gap
+  const pulse3Samples = Math.max(1, Math.round(sampleRate * 0.260));        // Pulse 3: 260 ms
+  const trailingSilenceSamples = Math.max(1, Math.round(sampleRate * 0.400)); // 400 ms pure digital silence
+
+  const activeChimeSamples =
+    pulse1Samples + gap1Samples + pulse2Samples + gap2Samples + pulse3Samples;
+  const numSamples = leadInSilenceSamples + activeChimeSamples + trailingSilenceSamples;
   const dataBytes = numSamples * 2; // 16-bit mono PCM = 2 bytes per sample
   const buffer = new ArrayBuffer(44 + dataBytes);
   const view = new DataView(buffer);
@@ -695,34 +705,55 @@ export function generatePreRenderedChimeWavBytes(
   writeStr(36, 'data');
   view.setUint32(40, dataBytes, true);
 
-  // Synthesize smooth two-tone chime (D5 587.33 Hz -> A5 880 Hz) surrounded by silent padding
-  let phase = 0;
-  const attackSamples = Math.max(1, Math.floor(sampleRate * 0.01));
-  for (let i = 0; i < toneSamples; i++) {
-    const t = i / sampleRate;
-    const freq = t < 0.12 ? 587.33 : 880.0;
-    phase += (2 * Math.PI * freq) / sampleRate;
+  const attackSamples = Math.max(1, Math.round(sampleRate * 0.015));  // 15 ms raised-cosine attack
+  const releaseSamples = Math.max(1, Math.round(sampleRate * 0.035)); // 35 ms raised-cosine release
 
-    let env = 0;
-    if (i === 0 || i === toneSamples - 1) {
-      env = 0;
-    } else if (i < attackSamples) {
-      env = 0.5 * (1 - Math.cos((Math.PI * i) / attackSamples));
-    } else {
-      const progress = (i - attackSamples) / Math.max(1, toneSamples - 1 - attackSamples);
-      env = Math.exp(-4.5 * progress) * (1 - progress);
+  const pulses: Array<{ startOffset: number; length: number }> = [
+    { startOffset: leadInSilenceSamples, length: pulse1Samples },
+    { startOffset: leadInSilenceSamples + pulse1Samples + gap1Samples, length: pulse2Samples },
+    {
+      startOffset:
+        leadInSilenceSamples + pulse1Samples + gap1Samples + pulse2Samples + gap2Samples,
+      length: pulse3Samples
     }
+  ];
 
-    const sampleFloat = Math.sin(phase) * env * 0.25;
-    const pcm16 = Math.max(-32767, Math.min(32767, Math.round(sampleFloat * 32767)));
-    view.setInt16(44 + (padSamples + i) * 2, pcm16, true);
+  for (const pulse of pulses) {
+    const len = pulse.length;
+    for (let i = 0; i < len; i++) {
+      if (i === 0 || i === len - 1) {
+        view.setInt16(44 + (pulse.startOffset + i) * 2, 0, true);
+        continue;
+      }
+
+      let env = 1.0;
+      if (i < attackSamples) {
+        env = 0.5 * (1 - Math.cos((Math.PI * i) / attackSamples));
+      } else if (i >= len - releaseSamples) {
+        const relIdx = i - (len - releaseSamples);
+        env = 0.5 * (1 + Math.cos((Math.PI * relIdx) / releaseSamples));
+      }
+
+      const t = i / sampleRate;
+      // Layered harmonic triad: 1046.5 Hz fundamental + 2093 Hz octave + 3136 Hz fifth
+      const triad =
+        0.60 * Math.sin(2 * Math.PI * 1046.5 * t) +
+        0.28 * Math.sin(2 * Math.PI * 2093.0 * t) +
+        0.12 * Math.sin(2 * Math.PI * 3136.0 * t);
+
+      const rawSample = triad * env;
+      // Soft-knee hyperbolic tangent limiter capped at 90% full scale
+      const limited = Math.tanh(rawSample * 1.85) * 0.90;
+      const pcm16 = Math.max(-32767, Math.min(32767, Math.round(limited * 32767)));
+      view.setInt16(44 + (pulse.startOffset + i) * 2, pcm16, true);
+    }
   }
 
   return new Uint8Array(buffer);
 }
 
 export function createSilentPaddedChimeWavUrl(): string {
-  const bytes = generatePreRenderedChimeWavBytes(44100, 0.28);
+  const bytes = generatePreRenderedChimeWavBytes(44100);
   if (typeof Blob !== 'undefined' && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
     const blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'audio/wav' });
     return URL.createObjectURL(blob);
@@ -2642,5 +2673,257 @@ export function buildHealthExportCsv(params: {
   ].join(',');
   return `${header}\n${row}`;
 }
+
+// ============================================================================
+// TECHNICAL & UX UPGRADES 1–5:
+// 1. Day 3 Pull-Ups ("3 Grips x 3 Training Sets") Visual Grip Dividers & 3 Dedicated Videos
+// 2. Switch "Incline Dumbbell Overhead Extensions" to "Overhead Rope Extensions"
+// 3. Global 2.5 lb Minimum Weight & 2.5 lb Stepper Increments Across All Exercises
+// 4. Smart Historical Suggestion (Set 1) & Intra-Workout Cascading Auto-Fill (Set 2+)
+// 5. Louder, Zero-Crackle Bluetooth-Safe Timer Chime (DSP Upgrade)
+// ============================================================================
+
+export interface Day3PullupGripBlockSpec {
+  gripNumber: 1 | 2 | 3;
+  startSet: 1 | 4 | 7;
+  endSet: 3 | 6 | 9;
+  title: string;
+  instruction: string;
+  videoButtonLabel: string;
+  videoUrl: string;
+  shortGripLabel: 'Overhand' | 'Close Underhand' | 'Wide Overhand';
+}
+
+export const DAY3_PULLUP_GRIP_BLOCKS: readonly Day3PullupGripBlockSpec[] = [
+  {
+    gripNumber: 1,
+    startSet: 1,
+    endSet: 3,
+    title: 'GRIP 1 OF 3 (SETS 1–3) • NORMAL OVERHAND GRIP',
+    instruction:
+      'Palms facing away from you, hands slightly wider than shoulder-width. Rest 60s between sets.',
+    videoButtonLabel: 'Grip 1 Video',
+    videoUrl: 'http://www.youtube.com/watch?v=OEXosPwzFdc',
+    shortGripLabel: 'Overhand'
+  },
+  {
+    gripNumber: 2,
+    startSet: 4,
+    endSet: 6,
+    title: 'CHANGE GRIP -> GRIP 2 OF 3 (SETS 4–6) • CLOSE UNDERHAND (PINKIES TOUCHING)',
+    instruction:
+      'Palms facing toward your face, hands together so your little fingers (pinkies) are touching each other. Rest 60s between sets.',
+    videoButtonLabel: 'Grip 2 Video',
+    videoUrl: 'http://www.youtube.com/watch?v=ZouXLZwAUvs',
+    shortGripLabel: 'Close Underhand'
+  },
+  {
+    gripNumber: 3,
+    startSet: 7,
+    endSet: 9,
+    title: 'CHANGE GRIP -> GRIP 3 OF 3 (SETS 7–9) • WIDE OVERHAND GRIP (LAT FOCUS)',
+    instruction:
+      'Wide overhand grip (palms away, well outside shoulder-width). Focus on your lats pulling toward the center of your body. Rest 60s between sets.',
+    videoButtonLabel: 'Grip 3 Video',
+    videoUrl: 'http://www.youtube.com/watch?v=bHC16skSN6Q',
+    shortGripLabel: 'Wide Overhand'
+  }
+] as const;
+
+export function getDay3PullupGripDividerForSet(setNum: number): Day3PullupGripBlockSpec | null {
+  return DAY3_PULLUP_GRIP_BLOCKS.find(b => b.startSet === setNum) || null;
+}
+
+export function formatDay3PullupSetRowLabel(setNum: number): string {
+  const s = Math.max(1, Math.min(9, Math.round(Number(setNum) || 1)));
+  if (s <= 3) return `Set ${s} (Overhand)`;
+  if (s <= 6) return `Set ${s} (Close Underhand)`;
+  return `Set ${s} (Wide Overhand)`;
+}
+
+export const DAY3_OVERHEAD_ROPE_EXTENSION_SPEC = {
+  id: 'thu_oh_ext',
+  name: 'Overhead Rope Extensions',
+  sets: 3,
+  reps: '10-15',
+  restSec: 105,
+  restLabel: '1.5-2 min',
+  videoUrl: 'https://www.youtube.com/watch?v=7yoTblFCUQM',
+  notes:
+    'Attach a rope to a low or high pulley, face away from the cable stack in a staggered stance, lock your elbows overhead beside your ears, extend your forearms overhead until straight, and control the weight back behind your head for a full triceps stretch.'
+} as const;
+
+export function getGlobalWeightStepIncrement(unit: 'lbs' | 'kg' = 'lbs'): number {
+  return unit === 'kg' ? 1.25 : 2.5;
+}
+
+export function formatQuickOverloadButtonLabel(
+  defaultWeightLbs: number,
+  unit: 'lbs' | 'kg' = 'lbs'
+): string {
+  if (Number(defaultWeightLbs) <= 0) return '+1 Rep';
+  return unit === 'kg' ? '+1.25 kg' : '+2.5 lb';
+}
+
+export function stepExerciseWeightValue(
+  currentWeight: number,
+  delta: number,
+  unit: 'lbs' | 'kg' = 'lbs'
+): number {
+  const minPositiveStep = getGlobalWeightStepIncrement(unit);
+  const cur = Number.isFinite(currentWeight) ? currentWeight : 0;
+  const rawNext = +(cur + delta).toFixed(2);
+  if (rawNext <= 0) return 0;
+  if (rawNext < minPositiveStep) {
+    return delta > 0 ? minPositiveStep : 0;
+  }
+  return rawNext;
+}
+
+export function resolveExerciseSetSuggestion(params: {
+  setNum: number;
+  currentEntry?: SetLog | null;
+  todaySet1Entry?: SetLog | null;
+  latestCompletedTodayEntry?: SetLog | null;
+  prevWeekEntry?: { weight?: string; reps?: string; sourceLabel?: string; unit?: 'lbs' | 'kg' } | null;
+  defaultWeight: number | string;
+  defaultReps: number | string;
+}): {
+  suggestedWeight: string;
+  suggestedReps: string;
+  source: 'logged_today' | 'cascaded_from_today_set' | 'previous_week' | 'default';
+  prevWeekBadgeText: string;
+} {
+  const {
+    setNum,
+    currentEntry,
+    todaySet1Entry,
+    latestCompletedTodayEntry,
+    prevWeekEntry,
+    defaultWeight,
+    defaultReps
+  } = params;
+
+  const isSet1DoneToday = Boolean(todaySet1Entry && todaySet1Entry.done);
+  const completedTodaySource =
+    (latestCompletedTodayEntry && latestCompletedTodayEntry.done
+      ? latestCompletedTodayEntry
+      : isSet1DoneToday
+        ? todaySet1Entry
+        : null) || null;
+
+  const hasPrevWeek = Boolean(
+    prevWeekEntry &&
+      ((prevWeekEntry.weight !== undefined && String(prevWeekEntry.weight) !== '') ||
+        (prevWeekEntry.reps !== undefined && String(prevWeekEntry.reps) !== ''))
+  );
+  const prevWeekBadgeText = hasPrevWeek
+    ? `Last (${prevWeekEntry?.sourceLabel || 'Prev Wk'}): ${
+        prevWeekEntry?.weight && prevWeekEntry.weight !== '0'
+          ? `${prevWeekEntry.weight} ${prevWeekEntry.unit || 'lbs'} × `
+          : ''
+      }${prevWeekEntry?.reps || defaultReps}`
+    : '';
+
+  if (currentEntry && currentEntry.done) {
+    return {
+      suggestedWeight:
+        currentEntry.weight !== undefined && currentEntry.weight !== ''
+          ? String(currentEntry.weight)
+          : String(defaultWeight),
+      suggestedReps:
+        currentEntry.reps !== undefined && currentEntry.reps !== ''
+          ? String(currentEntry.reps)
+          : String(defaultReps),
+      source: 'logged_today',
+      prevWeekBadgeText
+    };
+  }
+
+  // Rule B: After Set 1 (or an earlier set) is logged today, suggest that exact weight and reps for subsequent unlogged sets
+  if (setNum > 1 && completedTodaySource) {
+    const w =
+      currentEntry && currentEntry.weight !== undefined && currentEntry.weight !== ''
+        ? String(currentEntry.weight)
+        : String(completedTodaySource.weight ?? defaultWeight);
+    const r =
+      currentEntry && currentEntry.reps !== undefined && currentEntry.reps !== ''
+        ? String(currentEntry.reps)
+        : String(completedTodaySource.reps ?? defaultReps);
+    return {
+      suggestedWeight: w,
+      suggestedReps: r,
+      source: 'cascaded_from_today_set',
+      prevWeekBadgeText
+    };
+  }
+
+  // Rule A: Before Set 1 is logged today, suggest previous week's weight and reps if available, otherwise exercise defaults
+  if (hasPrevWeek && prevWeekEntry) {
+    const w =
+      currentEntry && currentEntry.weight !== undefined && currentEntry.weight !== ''
+        ? String(currentEntry.weight)
+        : prevWeekEntry.weight !== undefined && String(prevWeekEntry.weight) !== ''
+          ? String(prevWeekEntry.weight)
+          : String(defaultWeight);
+    const r =
+      currentEntry && currentEntry.reps !== undefined && currentEntry.reps !== ''
+        ? String(currentEntry.reps)
+        : prevWeekEntry.reps !== undefined && String(prevWeekEntry.reps) !== ''
+          ? String(prevWeekEntry.reps)
+          : String(defaultReps);
+    return {
+      suggestedWeight: w,
+      suggestedReps: r,
+      source: 'previous_week',
+      prevWeekBadgeText
+    };
+  }
+
+  return {
+    suggestedWeight:
+      currentEntry && currentEntry.weight !== undefined && currentEntry.weight !== ''
+        ? String(currentEntry.weight)
+        : String(defaultWeight),
+    suggestedReps:
+      currentEntry && currentEntry.reps !== undefined && currentEntry.reps !== ''
+        ? String(currentEntry.reps)
+        : String(defaultReps),
+    source: 'default',
+    prevWeekBadgeText: ''
+  };
+}
+
+export function cascadeLoggedSetToSubsequentUnloggedSets(
+  workoutLogs: Record<string, SetLog>,
+  week: number,
+  dayIdx: number,
+  exId: string,
+  loggedSetNum: number,
+  totalSets: number,
+  loggedWeight: string,
+  loggedReps: string,
+  unit: 'lbs' | 'kg' = 'lbs'
+): Record<string, SetLog> {
+  const nextLogs: Record<string, SetLog> = { ...(workoutLogs || {}) };
+  for (let k = loggedSetNum + 1; k <= totalSets; k++) {
+    const key = `w${week}_${dayIdx}_${exId}_${k}`;
+    const existing = nextLogs[key];
+    if (!existing || !existing.done) {
+      nextLogs[key] = {
+        ...(existing || { done: false }),
+        weight: String(loggedWeight),
+        reps: String(loggedReps),
+        done: false,
+        unit
+      };
+      if (week === 1) {
+        nextLogs[`${dayIdx}_${exId}_${k}`] = { ...nextLogs[key] };
+      }
+    }
+  }
+  return nextLogs;
+}
+
 
 

@@ -634,4 +634,108 @@ test('UX Simplifications 1-3 & 3-Tier Smartwatch Integration (BLE 0x180D/0x2A37 
   assert.equal(csv.includes('1300,138,2000,118,152'), true);
 });
 
+test('Technical & UX Upgrades 1-5: Day 3 Grip Dividers, Overhead Rope Extensions, 2.5 lb Micro-Loading, Cascading Set Auto-Fill & 3-Pulse DSP Chime', async () => {
+  const mod = await import('./workoutLogic.ts');
+
+  // 1. Day 3 Pull-Ups: 3 Grip Dividers & 3 Dedicated Videos + Set 1-9 Row Labels
+  assert.equal(mod.DAY3_PULLUP_GRIP_BLOCKS.length, 3);
+  const g1 = mod.getDay3PullupGripDividerForSet(1);
+  const g2 = mod.getDay3PullupGripDividerForSet(4);
+  const g3 = mod.getDay3PullupGripDividerForSet(7);
+  assert.equal(mod.getDay3PullupGripDividerForSet(2), null);
+  assert.equal(g1?.title, 'GRIP 1 OF 3 (SETS 1–3) • NORMAL OVERHAND GRIP');
+  assert.equal(g1?.videoUrl, 'http://www.youtube.com/watch?v=OEXosPwzFdc');
+  assert.equal(g2?.title, 'CHANGE GRIP -> GRIP 2 OF 3 (SETS 4–6) • CLOSE UNDERHAND (PINKIES TOUCHING)');
+  assert.equal(g2?.videoUrl, 'http://www.youtube.com/watch?v=ZouXLZwAUvs');
+  assert.equal(g3?.title, 'CHANGE GRIP -> GRIP 3 OF 3 (SETS 7–9) • WIDE OVERHAND GRIP (LAT FOCUS)');
+  assert.equal(g3?.videoUrl, 'http://www.youtube.com/watch?v=bHC16skSN6Q');
+
+  assert.equal(mod.formatDay3PullupSetRowLabel(1), 'Set 1 (Overhand)');
+  assert.equal(mod.formatDay3PullupSetRowLabel(3), 'Set 3 (Overhand)');
+  assert.equal(mod.formatDay3PullupSetRowLabel(4), 'Set 4 (Close Underhand)');
+  assert.equal(mod.formatDay3PullupSetRowLabel(6), 'Set 6 (Close Underhand)');
+  assert.equal(mod.formatDay3PullupSetRowLabel(7), 'Set 7 (Wide Overhand)');
+  assert.equal(mod.formatDay3PullupSetRowLabel(9), 'Set 9 (Wide Overhand)');
+
+  // 2. Day 3 Exercise #6/8: Overhead Rope Extensions
+  assert.equal(mod.DAY3_OVERHEAD_ROPE_EXTENSION_SPEC.id, 'thu_oh_ext');
+  assert.equal(mod.DAY3_OVERHEAD_ROPE_EXTENSION_SPEC.name, 'Overhead Rope Extensions');
+  assert.equal(mod.DAY3_OVERHEAD_ROPE_EXTENSION_SPEC.sets, 3);
+  assert.equal(mod.DAY3_OVERHEAD_ROPE_EXTENSION_SPEC.reps, '10-15');
+  assert.equal(mod.DAY3_OVERHEAD_ROPE_EXTENSION_SPEC.restLabel, '1.5-2 min');
+  assert.equal(
+    mod.DAY3_OVERHEAD_ROPE_EXTENSION_SPEC.videoUrl,
+    'https://www.youtube.com/watch?v=7yoTblFCUQM'
+  );
+
+  // 3. Global 2.5 lb Minimum Weight & 2.5 lb Stepper Increments
+  assert.equal(mod.getGlobalWeightStepIncrement('lbs'), 2.5);
+  assert.equal(mod.getGlobalWeightStepIncrement('kg'), 1.25);
+  assert.equal(mod.formatQuickOverloadButtonLabel(45, 'lbs'), '+2.5 lb');
+  assert.equal(mod.formatQuickOverloadButtonLabel(45, 'kg'), '+1.25 kg');
+  assert.equal(mod.formatQuickOverloadButtonLabel(0, 'lbs'), '+1 Rep');
+  assert.equal(mod.stepExerciseWeightValue(5, -2.5, 'lbs'), 2.5);
+  assert.equal(mod.stepExerciseWeightValue(2.5, -2.5, 'lbs'), 0);
+  assert.equal(mod.stepExerciseWeightValue(0, 2.5, 'lbs'), 2.5);
+  assert.equal(mod.stepExerciseWeightValue(17.5, 2.5, 'lbs'), 20);
+
+  // 4. Smart Historical Suggestion (Rule A) & Cascading Auto-Fill (Rule B)
+  // Rule A: Before Set 1 is logged today, suggest previous week's performance
+  const ruleASug = mod.resolveExerciseSetSuggestion({
+    setNum: 1,
+    currentEntry: null,
+    todaySet1Entry: null,
+    prevWeekEntry: { weight: '62.5', reps: '9', sourceLabel: 'Wk 1', unit: 'lbs' },
+    defaultWeight: 60,
+    defaultReps: 10
+  });
+  assert.equal(ruleASug.source, 'previous_week');
+  assert.equal(ruleASug.suggestedWeight, '62.5');
+  assert.equal(ruleASug.suggestedReps, '9');
+  assert.equal(ruleASug.prevWeekBadgeText, 'Last (Wk 1): 62.5 lbs × 9');
+
+  // Rule B: After Set 1 is logged today (e.g. 67.5 lbs x 11), cascade to Set 2 and Set 3
+  let logs: Record<string, SetLog> = {
+    w2_2_thu_inc_db_1: { weight: '67.5', reps: '11', done: true, unit: 'lbs' }
+  };
+  logs = mod.cascadeLoggedSetToSubsequentUnloggedSets(
+    logs,
+    2,
+    2,
+    'thu_inc_db',
+    1,
+    3,
+    '67.5',
+    '11',
+    'lbs'
+  );
+  assert.equal(logs.w2_2_thu_inc_db_2.weight, '67.5');
+  assert.equal(logs.w2_2_thu_inc_db_2.reps, '11');
+  assert.equal(logs.w2_2_thu_inc_db_2.done, false);
+  assert.equal(logs.w2_2_thu_inc_db_3.weight, '67.5');
+  assert.equal(logs.w2_2_thu_inc_db_3.reps, '11');
+
+  // 5. Louder, Zero-Crackle Bluetooth-Safe Timer Chime (DSP Upgrade)
+  assert.equal(mod.CHIME_HTML_AUDIO_VOLUME, 1.0);
+  const wavBytes = mod.generatePreRenderedChimeWavBytes(44100);
+  // 100ms + (180+60+180+60+260)ms + 400ms = 1240ms -> 54684 samples -> 44 + 109368 = 109412 bytes
+  assert.equal(wavBytes.byteLength, 44 + Math.round(44100 * 1.24) * 2);
+  const view = new DataView(wavBytes.buffer, wavBytes.byteOffset, wavBytes.byteLength);
+  // Verify first 100ms (4410 samples) are pure digital silence (0)
+  assert.equal(view.getInt16(44, true), 0);
+  assert.equal(view.getInt16(44 + 4409 * 2, true), 0);
+  // Verify last 400ms (17640 samples) are pure digital silence (0)
+  const totalSamples = (wavBytes.byteLength - 44) / 2;
+  assert.equal(view.getInt16(44 + (totalSamples - 17640) * 2, true), 0);
+  assert.equal(view.getInt16(44 + (totalSamples - 1) * 2, true), 0);
+  // Verify peak amplitudeinside Pulse 1 is high (> 75% full scale) and capped at <= 90% full scale (29491)
+  let maxAbsPcm = 0;
+  for (let i = 4410; i < totalSamples - 17640; i++) {
+    const val = Math.abs(view.getInt16(44 + i * 2, true));
+    if (val > maxAbsPcm) maxAbsPcm = val;
+  }
+  assert.equal(maxAbsPcm > 25000 && maxAbsPcm <= Math.round(32767 * 0.90) + 1, true);
+});
+
+
 
