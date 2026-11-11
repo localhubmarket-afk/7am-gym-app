@@ -437,3 +437,105 @@ test('Pull-Up & Naming Cleanup Updates 1-4: Zero USMC, Clean Titles, Bodyweight 
   assert.equal(/usmc/i.test(html), false, 'index.html must contain zero case-insensitive matches for USMC');
   assert.equal(/usmc/i.test(apiState), false, 'api/state.js must contain zero case-insensitive matches for USMC');
 });
+
+test('Multi-Preset Fuel Architecture, Immutable Historical Logs, Smart Ingredient Swaps & Coach AI Live Plan Mutation', async () => {
+  const mod = await import('./workoutLogic.ts');
+
+  // 1. Verify Preset 1 (Default for Unlogged/Future Days): almond_cashew_pea
+  const p1 = mod.FUEL_PLAN_PRESETS.almond_cashew_pea;
+  assert.equal(p1.dailyKcalDisplay, 1300);
+  assert.equal(p1.dailyKcalExact, 1295);
+  assert.equal(p1.dailyProtein, 138);
+  assert.equal(p1.meals.pre_shake.kcal, 190);
+  assert.equal(p1.meals.pre_shake.protein, 36);
+  assert.equal(p1.meals.pre_shake.scaleGrams, 400);
+  assert.equal(p1.meals.pre_shake.scaleBadgeG, 'Scale: 400g');
+  assert.equal(p1.meals.pre_shake.scaleBadgeLb, 'Scale: 0.88 lb / 14.1 oz');
+  assert.equal(p1.meals.post_oats.kcal, 390);
+  assert.equal(p1.meals.post_oats.protein, 29);
+  assert.equal(p1.meals.post_oats.scaleGrams, 279);
+  assert.equal(p1.meals.post_oats.scaleBadgeG, 'Scale: 279g');
+  assert.equal(p1.meals.post_oats.scaleBadgeLb, 'Scale: 0.62 lb / 9.8 oz');
+  assert.equal(p1.meals.lunch.kcal, 520);
+  assert.equal(p1.meals.lunch.protein, 33);
+  assert.equal(p1.meals.lunch.scaleGrams, 419);
+  assert.equal(p1.meals.dinner.kcal, 295);
+  assert.equal(p1.meals.dinner.protein, 40);
+  assert.equal(p1.meals.dinner.scaleGrams, 431);
+  assert.equal(p1.meals.dinner.scaleBadgeG, 'Scale: 431g');
+  assert.equal(p1.meals.dinner.scaleBadgeLb, 'Scale: 0.95 lb / 15.2 oz');
+  assert.equal(p1.oatsBatch.scaleBadgeG, 'Batch: 1,116g • 1 Jar Today: 279g');
+  assert.equal(p1.shopItems.item12Name.includes('735g/week • 105g/day'), true);
+
+  // 2. Verify Preset 2 (Preserved Original): classic_silk_protein
+  const p2 = mod.FUEL_PLAN_PRESETS.classic_silk_protein;
+  assert.equal(p2.dailyKcalDisplay, 1400);
+  assert.equal(p2.dailyProtein, 138);
+  assert.equal(p2.meals.pre_shake.scaleGrams, 390);
+  assert.equal(p2.meals.post_oats.scaleGrams, 269);
+  assert.equal(p2.meals.lunch.scaleGrams, 419);
+  assert.equal(p2.meals.dinner.scaleGrams, 421);
+  assert.equal(p2.oatsBatch.scaleBadgeG, 'Batch: 1,076g • 1 Jar Today: 269g');
+  assert.equal(p2.shopItems.item12Name.includes('525g/week • 75g/day'), true);
+
+  // 3. Verify Preset 3 (1:1 Whole-Food Alternative): unsweetened_soy
+  const p3 = mod.FUEL_PLAN_PRESETS.unsweetened_soy;
+  assert.equal(p3.dailyKcalDisplay, 1400);
+  assert.equal(p3.dailyProtein, 138);
+  assert.equal(p3.meals.pre_shake.scaleGrams, 390);
+  assert.equal(p3.meals.post_oats.scaleGrams, 269);
+  assert.equal(p3.meals.dinner.scaleGrams, 421);
+  assert.equal(p3.shopItems.item1Name.includes('Unsweetened Fortified Soy Milk'), true);
+
+  // 4. Verify Backfill of Existing Logged Days locks to classic_silk_protein and preserves yesterday's snapshot
+  const mockState: mod.FuelStateContainer = {
+    checkedMeals: {
+      w1_d0_pre_shake: true,
+      w1_d0_post_oats: true,
+      w1_d0_lunch: true,
+      w1_d0_dinner: true
+    }
+  };
+  mod.backfillHistoricalFuelSnapshots(mockState);
+  assert.equal(mockState.fuelDaySnapshots?.['w1_d0'], 'classic_silk_protein');
+  assert.equal(mockState.loggedMealSnapshots?.['w1_d0_fuel1']?.scaleGrams, 390);
+  assert.equal(mockState.loggedMealSnapshots?.['w1_d0_fuel2']?.scaleGrams, 269);
+  assert.equal(mockState.loggedMealSnapshots?.['w1_d0_fuel4']?.scaleGrams, 421);
+
+  // Switching future preset to almond_cashew_pea MUST NOT overwrite logged Day 1 (w1_d0)
+  mod.applyFuelPresetSwitch(mockState, 'almond_cashew_pea', 'future', 1, 0);
+  const day1PlanAfterSwitch = mod.getEffectiveDayFuelPlan(mockState, 1, 0);
+  assert.equal(day1PlanAfterSwitch.presetId, 'classic_silk_protein');
+  assert.equal(day1PlanAfterSwitch.isLockedHistoricalDay, true);
+  assert.equal(day1PlanAfterSwitch.loggedWithBadge, 'Logged with: Classic Silk Protein Plan');
+  assert.equal(day1PlanAfterSwitch.meals.pre_shake.scaleGrams, 390);
+  assert.equal(day1PlanAfterSwitch.meals.post_oats.scaleGrams, 269);
+
+  // Unlogged Day 2 (w1_d1) automatically gets the default/new preset (almond_cashew_pea)
+  const day2Plan = mod.getEffectiveDayFuelPlan(mockState, 1, 1);
+  assert.equal(day2Plan.presetId, 'almond_cashew_pea');
+  assert.equal(day2Plan.isLockedHistoricalDay, false);
+  assert.equal(day2Plan.meals.pre_shake.scaleGrams, 400);
+  assert.equal(day2Plan.meals.post_oats.scaleGrams, 279);
+  assert.equal(day2Plan.meals.dinner.scaleGrams, 431);
+
+  // 5. Verify Smart Ingredient Swaps on unlogged Day 2 recalculate scale weights & macros
+  mod.applyFuelIngredientSwap(mockState, 'tofu', 'tempeh_115', 'today', 1, 1);
+  const day2Swapped = mod.getEffectiveDayFuelPlan(mockState, 1, 1);
+  // 115g Tempeh (instead of 175g Tofu) reduces bowl weight by 60g: 419g - 60g = 359g
+  assert.equal(day2Swapped.meals.lunch.scaleGrams, 359);
+  assert.equal(day2Swapped.meals.lunch.scaleBadgeG, 'Scale: 359g');
+  assert.equal(day2Swapped.meals.lunch.items[0].label, 'Organic Soy Tempeh');
+  assert.equal(day2Swapped.meals.lunch.items[0].weight, '115g');
+
+  // 6. Verify Coach AI Live Plan Mutation replies & action payloads
+  const silkCoach = mod.buildCoachAiFuelMutationReply('Switch Back to Original Silk Protein', 1, 1);
+  assert.equal(silkCoach.matched, true);
+  assert.equal(silkCoach.actions.length >= 1, true);
+  assert.equal(silkCoach.actions[0].presetId, 'classic_silk_protein');
+
+  const swapCoach = mod.buildCoachAiFuelMutationReply('Ingredient Sold Out / Swap Meal', 1, 1);
+  assert.equal(swapCoach.matched, true);
+  assert.equal(swapCoach.actions.some(a => a.swapId === 'tempeh_115'), true);
+});
+

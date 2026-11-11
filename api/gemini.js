@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
-    const model = body.model || 'gemini-2.5-flash';
+    const model = body.model || 'gemini-3.8-flash';
     const prompt = body.prompt || '';
     const systemInstruction = body.systemInstruction || '';
     const imageBase64 = body.imageBase64 || '';
@@ -31,8 +31,8 @@ export default async function handler(req, res) {
     }
 
     const modelsToTry = imageBase64
-      ? ['gemini-2.5-flash', 'gemini-3.8-flash', model]
-      : [model, 'gemini-3.8-flash', 'gemini-2.5-flash'];
+      ? ['gemini-3.8-flash', model]
+      : [model, 'gemini-3.8-flash'];
     let lastErr = null;
 
     for (const m of modelsToTry) {

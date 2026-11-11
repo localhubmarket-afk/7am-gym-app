@@ -436,8 +436,9 @@
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">💰 ~$5.55/Day (~$39/Wk) • 100% Kitchen Scale (g)</span>
               <span class="text-[9px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/35 px-2 py-0.5 rounded-full">Saves ~$75/wk vs. Takeout</span>
+              <span id="vegan-logged-with-plan-badge" class="hidden text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-950/85 text-purple-200 border border-purple-400/50"></span>
             </div>
-            <h2 class="text-sm sm:text-base font-extrabold text-white leading-snug mt-1">High-Protein Muscle &amp; Recomp Fuel (1,400 kcal • 138g P)</h2>
+            <h2 id="vegan-main-plan-heading" class="text-sm sm:text-base font-extrabold text-white leading-snug mt-1">High-Protein Muscle &amp; Recomp Fuel (1,300 kcal • 138g P)</h2>
           </div>
           <div class="flex flex-wrap items-center gap-1.5 shrink-0">
             <div class="inline-flex items-center rounded-lg bg-slate-950 border border-sky-500/40 p-0.5" role="group" aria-label="Kitchen Scale Weight Unit Toggle">
@@ -445,8 +446,13 @@
               <button type="button" id="fuel-unit-lb-btn" data-fuel-unit="lb" class="px-2.5 py-1 rounded-md text-[10px] font-extrabold text-sky-300 hover:text-white transition">LB</button>
             </div>
             <button type="button" id="log-all-vegan-day-btn" class="text-[11px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 transition">✓ Log All 4</button>
-            <button type="button" id="reset-vegan-day-btn" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white">Reset Today</button>
+            <button type="button" id="reset-vegan-day-btn" class="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Clear today's logged meals and recalculate with the active Fuel Plan">Reset &amp; Recalculate Today</button>
           </div>
+        </div>
+
+        <!-- 1-Tap Fuel Plan Switcher & Smart Ingredient Swap Drawer -->
+        <div id="fuel-plan-switcher-bar" class="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <!-- Populated dynamically by renderVeganView() -->
         </div>
 
         <!-- Live Macro Progress Bars (Protein, Calories & Daily Water in ml — Immediately Below Card Title) -->
@@ -463,7 +469,7 @@
           <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
             <div class="flex justify-between text-xs font-bold">
               <span class="text-slate-300">Daily Calories</span>
-              <span id="macro-kcal-text" class="text-amber-400">0 / 1,400 kcal</span>
+              <span id="macro-kcal-text" class="text-amber-400">0 / 1,300 kcal</span>
             </div>
             <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-1.5">
               <div id="macro-kcal-bar" class="bg-amber-400 h-full transition-all duration-300" style="width: 0%"></div>
@@ -770,6 +776,13 @@
       recipePrepLogs: {},
       collapsedRecipeCards: {},
       fuelWeightUnit: 'g',
+      activeFuelPreset: 'almond_cashew_pea',
+      fuelSwitchScope: 'future',
+      openFuelSwapDrawer: false,
+      fuelDaySnapshots: {},
+      loggedMealSnapshots: {},
+      fuelCustomizations: {},
+      fuelLogs: {},
       prepNotes: {},
       openPrepNoteCards: {},
       activeRiceTimerStage: null,
@@ -1013,6 +1026,16 @@
       if (!merged.audioMode || !['sound_vibe', 'vibe_only', 'silent'].includes(merged.audioMode)) {
         merged.audioMode = merged.soundEnabled === false ? 'silent' : 'sound_vibe';
       }
+      if (!merged.activeFuelPreset || !['almond_cashew_pea', 'classic_silk_protein', 'unsweetened_soy'].includes(merged.activeFuelPreset)) {
+        merged.activeFuelPreset = 'almond_cashew_pea';
+      }
+      if (!merged.fuelSwitchScope || !['today', 'future'].includes(merged.fuelSwitchScope)) {
+        merged.fuelSwitchScope = 'future';
+      }
+      if (!merged.fuelDaySnapshots || typeof merged.fuelDaySnapshots !== 'object') merged.fuelDaySnapshots = {};
+      if (!merged.loggedMealSnapshots || typeof merged.loggedMealSnapshots !== 'object') merged.loggedMealSnapshots = {};
+      if (!merged.fuelCustomizations || typeof merged.fuelCustomizations !== 'object') merged.fuelCustomizations = {};
+      if (!merged.fuelLogs || typeof merged.fuelLogs !== 'object') merged.fuelLogs = {};
       return merged;
     }
 
@@ -1725,18 +1748,797 @@
     // 3. LOW-APPETITE VEGAN NUTRITION DATA
     // =========================================================================
     const VEGAN_MODES = {
-      recomp_6pack: { kcal: 1400, protein: 138, label: '4-Card Muscle & Recomp Fuel Plan' },
+      recomp_6pack: { kcal: 1300, protein: 138, label: '4-Card Muscle & Recomp Fuel Plan' },
       low_appetite: { kcal: 2450, protein: 145, label: 'Low Appetite Bulk' },
       high_growth: { kcal: 2750, protein: 165, label: 'Max Muscle Gain' },
       light_day: { kcal: 2200, protein: 135, label: 'Rest / Light Day' }
     };
 
+    const FUEL_PLAN_PRESETS = {
+      almond_cashew_pea: {
+        id: 'almond_cashew_pea',
+        shortLabel: 'Option B: Almond/Cashew + 105g Pea (Default)',
+        badgeLabel: 'Logged with: Option B Almond/Cashew Plan',
+        title: 'Option B: Unsweetened Almond/Cashew Milk + 105g Pea Protein',
+        dailyKcal: 1300,
+        exactKcal: 1295,
+        dailyProtein: 138,
+        milkName: 'Unsweetened Fortified Almond or Cashew Milk',
+        peaProteinDailyG: 105,
+        peaProteinWeeklyG: 735,
+        batchOats: {
+          batchGrams: 1116,
+          jarGrams: 279,
+          batchScaleG: 'Batch: 1,116g • 1 Jar Today: 279g',
+          batchScaleLb: 'Batch: 2.46 lb • 1 Jar: 0.62 lb / 9.8 oz',
+          subtitle: 'Prep time: 5 mins • Fridge life: 4 days • 29g P & 390 kcal per jar',
+          steps: [
+            { id: 'oats_step_1', title: 'Gluten-Free Protein Oats', detail: '45g per jar × 4 jars', weightBadge: '180g' },
+            { id: 'oats_step_pea', title: 'Pea Protein Isolate (Whisked in Jars)', detail: '10g per jar × 4 jars', weightBadge: '40g' },
+            { id: 'oats_step_2', title: 'Organic Whole Chia Seeds', detail: '6g per jar × 4 jars', weightBadge: '24g' },
+            { id: 'oats_step_3', title: 'Peeled Ripe Banana (Mashed)', detail: '30g per jar × 4 jars', weightBadge: '120g' },
+            { id: 'oats_step_4', title: 'Smooth Natural Peanut Butter', detail: '8g per jar × 4 jars', weightBadge: '32g' },
+            { id: 'oats_step_5', title: 'Unsweetened Fortified Almond or Cashew Milk', detail: '180 ml per jar × 4 jars', weightBadge: '720 ml' },
+            { id: 'oats_step_6', title: 'Stir, Seal & Refrigerate Overnight', detail: 'Divide evenly into 4 jars for 8:15 AM post-gym fuel', weightBadge: '4 Jars' }
+          ]
+        },
+        shopMilkItem: {
+          id: 'shop_silk',
+          name: '1. Unsweetened Fortified Almond or Cashew Milk (1.89L carton — 6,300 ml/week)',
+          qty: '6,300 ml / week (900 ml/day)',
+          note: '360 ml pre-workout shake + 180 ml in oats + 360 ml evening shake (100% Daily B12, Vitamin D & Calcium)'
+        },
+        shopPeaItem: {
+          id: 'shop_isolate',
+          name: '12. Pea Protein Isolate Powder (735g/week • 105g/day)',
+          qty: '735g / week (105g/day)',
+          note: '40g in Fuel 1 Pre-Gym Shake + 10g in Fuel 2 Oats + 55g in Fuel 4 Evening Shake = 84g pure isolate protein/day'
+        },
+        meals: {
+          pre_shake: {
+            slotId: 'pre_shake',
+            mealNum: 1,
+            time: 'FUEL 1 • PRE-GYM SHAKE (6:35 AM)',
+            title: 'Pre-Gym Fast Protein Shake',
+            tip: 'Drink 25 minutes before your workout: 40g Pea Protein Isolate shaken in 360 ml cold Unsweetened Almond/Cashew Milk for 36g fast amino acids with zero stomach bulk.',
+            kcal: 190,
+            protein: 36,
+            scaleGrams: 400,
+            scaleGText: 'Scale: 400g',
+            scaleLbText: 'Scale: 0.88 lb / 14.1 oz',
+            items: [
+              { id: 'm1_pea_isolate', name: 'Pea Protein Isolate', label: 'Pea Protein Isolate', weight: '40g', grams: 40, protein: 35, kcal: 145 },
+              { id: 'm1_silk_milk', name: 'Unsweetened Fortified Almond or Cashew Milk', label: 'Unsweetened Fortified Almond or Cashew Milk', weight: '360 ml', grams: 360, protein: 1, kcal: 45 }
+            ]
+          },
+          post_oats: {
+            slotId: 'post_oats',
+            mealNum: 2,
+            time: 'FUEL 2 • POST-GYM OVERNIGHT OATS (8:15 AM)',
+            title: 'Post-Gym Overnight Protein Oats',
+            tip: 'Eat 15 minutes after finishing your workout (1 × 279g jar from your 4-day fridge batch with 10g Pea Protein Isolate whisked in) to replenish muscle glycogen.',
+            kcal: 390,
+            protein: 29,
+            scaleGrams: 279,
+            scaleGText: 'Scale: 279g',
+            scaleLbText: 'Scale: 0.62 lb / 9.8 oz',
+            items: [
+              { id: 'm2_oats', name: 'Gluten-Free Protein Oats', label: 'Gluten-Free Protein Oats', weight: '45g', grams: 45, protein: 10, kcal: 170 },
+              { id: 'm2_pea_oats', name: 'Pea Protein Isolate (whisked in jar)', label: 'Pea Protein Isolate (whisked in jar)', weight: '10g', grams: 10, protein: 8, kcal: 36 },
+              { id: 'm2_silk_milk', name: 'Unsweetened Fortified Almond or Cashew Milk', label: 'Unsweetened Fortified Almond or Cashew Milk', weight: '180 ml', grams: 180, protein: 1, kcal: 24 },
+              { id: 'm2_banana', name: 'Peeled Ripe Banana', label: 'Peeled Ripe Banana', weight: '30g', grams: 30, protein: 0.5, kcal: 27 },
+              { id: 'm2_pb', name: 'Smooth Natural Peanut Butter', label: 'Smooth Natural Peanut Butter', weight: '8g', grams: 8, protein: 2, kcal: 48 },
+              { id: 'm2_chia', name: 'Organic Whole Chia Seeds', label: 'Organic Whole Chia Seeds', weight: '6g', grams: 6, protein: 1.5, kcal: 35 }
+            ]
+          },
+          lunch: {
+            slotId: 'lunch',
+            mealNum: 3,
+            time: 'FUEL 3 • SAVOURY TOFU & JASMINE RICE BOWL (1:00 PM)',
+            title: 'Savoury Tofu, Rice & Broccoli Bowl',
+            tip: 'Weighing 175g tofu (½ of a 350g block) and 150g cooked rice keeps your midday bowl light while covering 100% Vitamin C and thyroid iodine.',
+            kcal: 520,
+            protein: 33,
+            scaleGrams: 419,
+            scaleGText: 'Scale: 419g',
+            scaleLbText: 'Scale: 0.92 lb / 14.8 oz',
+            items: [
+              { id: 'm2_tofu', name: 'Extra-Firm Tofu', label: 'Extra-Firm Tofu', weight: '175g', grams: 175, protein: 21, kcal: 210 },
+              { id: 'm2_rice', name: 'Cooked White Jasmine Rice', label: 'Cooked White Jasmine Rice', weight: '150g', grams: 150, protein: 4.5, kcal: 195 },
+              { id: 'm2_broccoli', name: 'Steamed Broccoli Florets', label: 'Steamed Broccoli Florets', weight: '75g', grams: 75, protein: 1.5, kcal: 25 },
+              { id: 'm2_nooch', name: 'Fortified Nutritional Yeast', label: 'Fortified Nutritional Yeast', weight: '12g', grams: 12, protein: 6, kcal: 45 },
+              { id: 'm2_sauce', name: 'Toasted Sesame Oil', label: 'Toasted Sesame Oil', weight: '5g', grams: 5, protein: 0, kcal: 45 },
+              { id: 'm2_nori', name: 'Iodized Table Salt', label: 'Iodized Table Salt', weight: '1.5g', grams: 1.5, protein: 0, kcal: 0 }
+            ]
+          },
+          dinner: {
+            slotId: 'dinner',
+            mealNum: 4,
+            time: 'FUEL 4 • EVENING RECOVERY SHAKE (5:30 PM)',
+            title: 'Evening Protein & PB Shake',
+            tip: 'Zero cooking and zero chewing in the evening when appetite is lowest — shake 55g Pea Protein Isolate in 360 ml Almond/Cashew Milk and eat 16g smooth peanut butter.',
+            kcal: 295,
+            protein: 40,
+            scaleGrams: 431,
+            scaleGText: 'Scale: 431g',
+            scaleLbText: 'Scale: 0.95 lb / 15.2 oz',
+            items: [
+              { id: 'm3_pea_isolate', name: 'Pea Protein Isolate', label: 'Pea Protein Isolate', weight: '55g', grams: 55, protein: 35, kcal: 155 },
+              { id: 'm3_silk_milk', name: 'Unsweetened Fortified Almond or Cashew Milk', label: 'Unsweetened Fortified Almond or Cashew Milk', weight: '360 ml', grams: 360, protein: 1, kcal: 45 },
+              { id: 'm3_pb', name: 'Smooth Natural Peanut Butter', label: 'Smooth Natural Peanut Butter', weight: '16g', grams: 16, protein: 4, kcal: 95 }
+            ]
+          }
+        }
+      },
+      classic_silk_protein: {
+        id: 'classic_silk_protein',
+        shortLabel: 'Original: Silk Protein Milk + 75g Pea',
+        badgeLabel: 'Logged with: Classic Silk Protein Plan',
+        title: 'Original Silk Protein Almond & Cashew Milk + 75g Pea Protein',
+        dailyKcal: 1400,
+        exactKcal: 1400,
+        dailyProtein: 138,
+        milkName: 'Unsweetened Silk Protein Milk',
+        peaProteinDailyG: 75,
+        peaProteinWeeklyG: 525,
+        batchOats: {
+          batchGrams: 1076,
+          jarGrams: 269,
+          batchScaleG: 'Batch: 1,076g • 1 Jar Today: 269g',
+          batchScaleLb: 'Batch: 2.37 lb • 1 Jar: 0.59 lb / 9.5 oz',
+          subtitle: 'Prep time: 5 mins • Fridge life: 4 days • 26g P & 395 kcal per jar',
+          steps: [
+            { id: 'oats_step_1', title: 'Gluten-Free Protein Oats', detail: '45g per jar × 4 jars', weightBadge: '180g' },
+            { id: 'oats_step_2', title: 'Organic Whole Chia Seeds', detail: '6g per jar × 4 jars', weightBadge: '24g' },
+            { id: 'oats_step_3', title: 'Peeled Ripe Banana (Mashed)', detail: '30g per jar × 4 jars', weightBadge: '120g' },
+            { id: 'oats_step_4', title: 'Smooth Natural Peanut Butter', detail: '8g per jar × 4 jars', weightBadge: '32g' },
+            { id: 'oats_step_5', title: 'Unsweetened Silk Protein Milk', detail: '180 ml per jar × 4 jars', weightBadge: '720 ml' },
+            { id: 'oats_step_6', title: 'Stir, Seal & Refrigerate Overnight', detail: 'Divide evenly into 4 jars for 8:15 AM post-gym fuel', weightBadge: '4 Jars' }
+          ]
+        },
+        shopMilkItem: {
+          id: 'shop_silk',
+          name: '1. Silk Protein Unsweetened Almond & Cashew Milk (1.75L carton — 6,300 ml/week)',
+          qty: '6,300 ml / week (900 ml/day)',
+          note: '360 ml pre-workout shake + 180 ml in oats + 360 ml evening shake (4 cartons/wk; 200% B12, 95% Vit D)'
+        },
+        shopPeaItem: {
+          id: 'shop_isolate',
+          name: '12. Pea Protein Isolate Powder (525g/week • 75g/day)',
+          qty: '525g / week (75g/day)',
+          note: '30g in Fuel 1 Pre-Gym Shake + 45g in Fuel 4 Evening Shake = 60g pure protein/day with zero fiber bloat'
+        },
+        meals: {
+          pre_shake: {
+            slotId: 'pre_shake',
+            mealNum: 1,
+            time: 'FUEL 1 • PRE-GYM SHAKE (6:35 AM)',
+            title: 'Pre-Gym Fast Protein Shake',
+            tip: 'Drink 25 minutes before your workout for fast amino acids with zero stomach bulk during heavy compounds and abs.',
+            kcal: 170,
+            protein: 36,
+            scaleGrams: 390,
+            scaleGText: 'Scale: 390g',
+            scaleLbText: 'Scale: 0.86 lb / 13.8 oz',
+            items: [
+              { id: 'm1_pea_isolate', name: 'Pea Protein Isolate', label: 'Pea Protein Isolate', weight: '30g', grams: 30, protein: 24, kcal: 90 },
+              { id: 'm1_silk_milk', name: 'Unsweetened Silk Protein Milk', label: 'Unsweetened Silk Protein Milk', weight: '360 ml', grams: 360, protein: 12, kcal: 80 }
+            ]
+          },
+          post_oats: {
+            slotId: 'post_oats',
+            mealNum: 2,
+            time: 'FUEL 2 • POST-GYM OVERNIGHT OATS (8:15 AM)',
+            title: 'Post-Gym Overnight Protein Oats',
+            tip: 'Eat 15 minutes after finishing your workout (1 jar from your 4-day fridge batch) to replenish muscle glycogen.',
+            kcal: 395,
+            protein: 26,
+            scaleGrams: 269,
+            scaleGText: 'Scale: 269g',
+            scaleLbText: 'Scale: 0.59 lb / 9.5 oz',
+            items: [
+              { id: 'm2_oats', name: 'Gluten-Free Protein Oats', label: 'Gluten-Free Protein Oats', weight: '45g', grams: 45, protein: 10, kcal: 170 },
+              { id: 'm2_silk_milk', name: 'Unsweetened Silk Protein Milk', label: 'Unsweetened Silk Protein Milk', weight: '180 ml', grams: 180, protein: 12, kcal: 115 },
+              { id: 'm2_banana', name: 'Peeled Ripe Banana', label: 'Peeled Ripe Banana', weight: '30g', grams: 30, protein: 0.5, kcal: 27 },
+              { id: 'm2_pb', name: 'Smooth Natural Peanut Butter', label: 'Smooth Natural Peanut Butter', weight: '8g', grams: 8, protein: 2, kcal: 48 },
+              { id: 'm2_chia', name: 'Organic Whole Chia Seeds', label: 'Organic Whole Chia Seeds', weight: '6g', grams: 6, protein: 1.5, kcal: 35 }
+            ]
+          },
+          lunch: {
+            slotId: 'lunch',
+            mealNum: 3,
+            time: 'FUEL 3 • SAVOURY TOFU & JASMINE RICE BOWL (1:00 PM)',
+            title: 'Savoury Tofu, Rice & Broccoli Bowl',
+            tip: 'Weighing 175g tofu (½ of a 350g block) and 150g cooked rice keeps your midday bowl light while covering 100% Vitamin C and thyroid iodine.',
+            kcal: 520,
+            protein: 33,
+            scaleGrams: 419,
+            scaleGText: 'Scale: 419g',
+            scaleLbText: 'Scale: 0.92 lb / 14.8 oz',
+            items: [
+              { id: 'm2_tofu', name: 'Extra-Firm Tofu', label: 'Extra-Firm Tofu', weight: '175g', grams: 175, protein: 21, kcal: 210 },
+              { id: 'm2_rice', name: 'Cooked White Jasmine Rice', label: 'Cooked White Jasmine Rice', weight: '150g', grams: 150, protein: 4.5, kcal: 195 },
+              { id: 'm2_broccoli', name: 'Steamed Broccoli Florets', label: 'Steamed Broccoli Florets', weight: '75g', grams: 75, protein: 1.5, kcal: 25 },
+              { id: 'm2_nooch', name: 'Fortified Nutritional Yeast', label: 'Fortified Nutritional Yeast', weight: '12g', grams: 12, protein: 6, kcal: 45 },
+              { id: 'm2_sauce', name: 'Toasted Sesame Oil', label: 'Toasted Sesame Oil', weight: '5g', grams: 5, protein: 0, kcal: 45 },
+              { id: 'm2_nori', name: 'Iodized Table Salt', label: 'Iodized Table Salt', weight: '1.5g', grams: 1.5, protein: 0, kcal: 0 }
+            ]
+          },
+          dinner: {
+            slotId: 'dinner',
+            mealNum: 4,
+            time: 'FUEL 4 • EVENING RECOVERY SHAKE (5:30 PM)',
+            title: 'Evening Protein & PB Shake',
+            tip: 'Zero cooking and zero chewing in the evening when appetite is lowest — shake 45g isolate in 360 ml Silk milk and eat 16g smooth peanut butter.',
+            kcal: 315,
+            protein: 43,
+            scaleGrams: 421,
+            scaleGText: 'Scale: 421g',
+            scaleLbText: 'Scale: 0.93 lb / 14.9 oz',
+            items: [
+              { id: 'm3_pea_isolate', name: 'Pea Protein Isolate', label: 'Pea Protein Isolate', weight: '45g', grams: 45, protein: 27, kcal: 140 },
+              { id: 'm3_silk_milk', name: 'Unsweetened Silk Protein Milk', label: 'Unsweetened Silk Protein Milk', weight: '360 ml', grams: 360, protein: 12, kcal: 80 },
+              { id: 'm3_pb', name: 'Smooth Natural Peanut Butter', label: 'Smooth Natural Peanut Butter', weight: '16g', grams: 16, protein: 4, kcal: 95 }
+            ]
+          }
+        }
+      },
+      unsweetened_soy: {
+        id: 'unsweetened_soy',
+        shortLabel: 'Option A: Unsweetened Soy + 75g Pea',
+        badgeLabel: 'Logged with: Option A Unsweetened Soy Plan',
+        title: 'Unsweetened Fortified Soy Milk (8g P/cup) + 75g Pea Protein',
+        dailyKcal: 1400,
+        exactKcal: 1400,
+        dailyProtein: 138,
+        milkName: 'Unsweetened Fortified Soy Milk',
+        peaProteinDailyG: 75,
+        peaProteinWeeklyG: 525,
+        batchOats: {
+          batchGrams: 1076,
+          jarGrams: 269,
+          batchScaleG: 'Batch: 1,076g • 1 Jar Today: 269g',
+          batchScaleLb: 'Batch: 2.37 lb • 1 Jar: 0.59 lb / 9.5 oz',
+          subtitle: 'Prep time: 5 mins • Fridge life: 4 days • 26g P & 395 kcal per jar',
+          steps: [
+            { id: 'oats_step_1', title: 'Gluten-Free Protein Oats', detail: '45g per jar × 4 jars', weightBadge: '180g' },
+            { id: 'oats_step_2', title: 'Organic Whole Chia Seeds', detail: '6g per jar × 4 jars', weightBadge: '24g' },
+            { id: 'oats_step_3', title: 'Peeled Ripe Banana (Mashed)', detail: '30g per jar × 4 jars', weightBadge: '120g' },
+            { id: 'oats_step_4', title: 'Smooth Natural Peanut Butter', detail: '8g per jar × 4 jars', weightBadge: '32g' },
+            { id: 'oats_step_5', title: 'Unsweetened Fortified Soy Milk', detail: '180 ml per jar × 4 jars', weightBadge: '720 ml' },
+            { id: 'oats_step_6', title: 'Stir, Seal & Refrigerate Overnight', detail: 'Divide evenly into 4 jars for 8:15 AM post-gym fuel', weightBadge: '4 Jars' }
+          ]
+        },
+        shopMilkItem: {
+          id: 'shop_silk',
+          name: '1. Unsweetened Fortified Soy Milk (1.89L carton — 6,300 ml/week)',
+          qty: '6,300 ml / week (900 ml/day)',
+          note: '1:1 high-protein substitute for Silk Protein (8g P/cup): 360 ml pre-gym + 180 ml oats + 360 ml evening shake'
+        },
+        shopPeaItem: {
+          id: 'shop_isolate',
+          name: '12. Pea Protein Isolate Powder (525g/week • 75g/day)',
+          qty: '525g / week (75g/day)',
+          note: '30g in Fuel 1 Pre-Gym Shake + 45g in Fuel 4 Evening Shake = 60g pure protein/day with zero fiber bloat'
+        },
+        meals: {
+          pre_shake: {
+            slotId: 'pre_shake',
+            mealNum: 1,
+            time: 'FUEL 1 • PRE-GYM SHAKE (6:35 AM)',
+            title: 'Pre-Gym Fast Protein Shake',
+            tip: 'Drink 25 minutes before your workout for fast amino acids with zero stomach bulk during heavy compounds and abs.',
+            kcal: 170,
+            protein: 36,
+            scaleGrams: 390,
+            scaleGText: 'Scale: 390g',
+            scaleLbText: 'Scale: 0.86 lb / 13.8 oz',
+            items: [
+              { id: 'm1_pea_isolate', name: 'Pea Protein Isolate', label: 'Pea Protein Isolate', weight: '30g', grams: 30, protein: 24, kcal: 90 },
+              { id: 'm1_silk_milk', name: 'Unsweetened Fortified Soy Milk', label: 'Unsweetened Fortified Soy Milk', weight: '360 ml', grams: 360, protein: 12, kcal: 80 }
+            ]
+          },
+          post_oats: {
+            slotId: 'post_oats',
+            mealNum: 2,
+            time: 'FUEL 2 • POST-GYM OVERNIGHT OATS (8:15 AM)',
+            title: 'Post-Gym Overnight Protein Oats',
+            tip: 'Eat 15 minutes after finishing your workout (1 jar from your 4-day fridge batch) to replenish muscle glycogen.',
+            kcal: 395,
+            protein: 26,
+            scaleGrams: 269,
+            scaleGText: 'Scale: 269g',
+            scaleLbText: 'Scale: 0.59 lb / 9.5 oz',
+            items: [
+              { id: 'm2_oats', name: 'Gluten-Free Protein Oats', label: 'Gluten-Free Protein Oats', weight: '45g', grams: 45, protein: 10, kcal: 170 },
+              { id: 'm2_silk_milk', name: 'Unsweetened Fortified Soy Milk', label: 'Unsweetened Fortified Soy Milk', weight: '180 ml', grams: 180, protein: 12, kcal: 115 },
+              { id: 'm2_banana', name: 'Peeled Ripe Banana', label: 'Peeled Ripe Banana', weight: '30g', grams: 30, protein: 0.5, kcal: 27 },
+              { id: 'm2_pb', name: 'Smooth Natural Peanut Butter', label: 'Smooth Natural Peanut Butter', weight: '8g', grams: 8, protein: 2, kcal: 48 },
+              { id: 'm2_chia', name: 'Organic Whole Chia Seeds', label: 'Organic Whole Chia Seeds', weight: '6g', grams: 6, protein: 1.5, kcal: 35 }
+            ]
+          },
+          lunch: {
+            slotId: 'lunch',
+            mealNum: 3,
+            time: 'FUEL 3 • SAVOURY TOFU & JASMINE RICE BOWL (1:00 PM)',
+            title: 'Savoury Tofu, Rice & Broccoli Bowl',
+            tip: 'Weighing 175g tofu (½ of a 350g block) and 150g cooked rice keeps your midday bowl light while covering 100% Vitamin C and thyroid iodine.',
+            kcal: 520,
+            protein: 33,
+            scaleGrams: 419,
+            scaleGText: 'Scale: 419g',
+            scaleLbText: 'Scale: 0.92 lb / 14.8 oz',
+            items: [
+              { id: 'm2_tofu', name: 'Extra-Firm Tofu', label: 'Extra-Firm Tofu', weight: '175g', grams: 175, protein: 21, kcal: 210 },
+              { id: 'm2_rice', name: 'Cooked White Jasmine Rice', label: 'Cooked White Jasmine Rice', weight: '150g', grams: 150, protein: 4.5, kcal: 195 },
+              { id: 'm2_broccoli', name: 'Steamed Broccoli Florets', label: 'Steamed Broccoli Florets', weight: '75g', grams: 75, protein: 1.5, kcal: 25 },
+              { id: 'm2_nooch', name: 'Fortified Nutritional Yeast', label: 'Fortified Nutritional Yeast', weight: '12g', grams: 12, protein: 6, kcal: 45 },
+              { id: 'm2_sauce', name: 'Toasted Sesame Oil', label: 'Toasted Sesame Oil', weight: '5g', grams: 5, protein: 0, kcal: 45 },
+              { id: 'm2_nori', name: 'Iodized Table Salt', label: 'Iodized Table Salt', weight: '1.5g', grams: 1.5, protein: 0, kcal: 0 }
+            ]
+          },
+          dinner: {
+            slotId: 'dinner',
+            mealNum: 4,
+            time: 'FUEL 4 • EVENING RECOVERY SHAKE (5:30 PM)',
+            title: 'Evening Protein & PB Shake',
+            tip: 'Zero cooking and zero chewing in the evening when appetite is lowest — shake 45g isolate in 360 ml Soy milk and eat 16g smooth peanut butter.',
+            kcal: 315,
+            protein: 43,
+            scaleGrams: 421,
+            scaleGText: 'Scale: 421g',
+            scaleLbText: 'Scale: 0.93 lb / 14.9 oz',
+            items: [
+              { id: 'm3_pea_isolate', name: 'Pea Protein Isolate', label: 'Pea Protein Isolate', weight: '45g', grams: 45, protein: 27, kcal: 140 },
+              { id: 'm3_silk_milk', name: 'Unsweetened Fortified Soy Milk', label: 'Unsweetened Fortified Soy Milk', weight: '360 ml', grams: 360, protein: 12, kcal: 80 },
+              { id: 'm3_pb', name: 'Smooth Natural Peanut Butter', label: 'Smooth Natural Peanut Butter', weight: '16g', grams: 16, protein: 4, kcal: 95 }
+            ]
+          }
+        }
+      }
+    };
+
+    const WHOLE_FOOD_SMART_SWAPS = {
+      tofu: [
+        { id: 'tofu_default', name: 'Extra-Firm Tofu', label: '175g Extra-Firm Tofu (Default)', weight: '175g', grams: 175, protein: 21, kcal: 210, shopName: '2. Sunrise or Rooster Extra-Firm Tofu (350g–454g block)', shopQty: '1,225g / week (175g/day)' },
+        { id: 'tofu_tempeh', name: 'Organic Soy Tempeh', label: '115g Tempeh (22g P)', weight: '115g', grams: 115, protein: 22, kcal: 220, shopName: '2. Organic Soy Tempeh (240g pack — Tofu Swap)', shopQty: '805g / week (115g/day)' },
+        { id: 'tofu_edamame', name: 'Shelled Edamame Beans', label: '200g Shelled Edamame (22g P)', weight: '200g', grams: 200, protein: 22, kcal: 240, shopName: '2. Frozen Shelled Edamame Beans (Tofu Swap)', shopQty: '1,400g / week (200g/day)' },
+        { id: 'tofu_lentils', name: 'Cooked Red or Green Lentils', label: '240g Cooked Lentils (21.5g P)', weight: '240g', grams: 240, protein: 21.5, kcal: 275, shopName: '2. Cooked Lentils (Tofu Swap)', shopQty: '1,680g / week (240g/day)' }
+      ],
+      rice: [
+        { id: 'rice_default', name: 'Cooked White Jasmine Rice', label: '150g Cooked Jasmine Rice (Default)', weight: '150g', grams: 150, protein: 4.5, kcal: 195, shopName: '6. White Jasmine Rice', shopQty: '385g dry / week (1,050g cooked)' },
+        { id: 'rice_quinoa', name: 'Cooked Quinoa', label: '165g Cooked Quinoa (7g P)', weight: '165g', grams: 165, protein: 7, kcal: 198, shopName: '6. Dry Quinoa (Jasmine Rice Swap)', shopQty: '385g dry / week (1,155g cooked)' },
+        { id: 'rice_potato', name: 'Boiled Yellow Potato', label: '230g Boiled Potato (4.5g P)', weight: '230g', grams: 230, protein: 4.5, kcal: 195, shopName: '6. Yellow Potatoes (Jasmine Rice Swap)', shopQty: '1,610g / week (230g/day)' }
+      ],
+      broccoli: [
+        { id: 'broccoli_default', name: 'Steamed Broccoli Florets', label: '75g Broccoli (Default)', weight: '75g', grams: 75, protein: 1.5, kcal: 25, shopName: '3. Broccoli Florets (Fresh Crown or Frozen Bag)', shopQty: '525g / week (75g/day)' },
+        { id: 'broccoli_spinach', name: 'Steamed Baby Spinach', label: '85g Spinach (2.5g P)', weight: '85g', grams: 85, protein: 2.5, kcal: 20, shopName: '3. Baby Spinach (Broccoli Swap)', shopQty: '595g / week (85g/day)' },
+        { id: 'broccoli_green_beans', name: 'Steamed Green Beans', label: '90g Green Beans (1.8g P)', weight: '90g', grams: 90, protein: 1.8, kcal: 28, shopName: '3. Fresh or Frozen Green Beans (Broccoli Swap)', shopQty: '630g / week (90g/day)' }
+      ]
+    };
+
+    const SLOT_TO_MEAL_NUM = {
+      pre_shake: 1,
+      post_oats: 2,
+      lunch: 3,
+      dinner: 4
+    };
+
+    function formatGramsToLbOzBadge(grams) {
+      const lbs = (grams / 453.59237).toFixed(2);
+      const oz = (grams / 28.349523125).toFixed(1);
+      return `Scale: ${lbs} lb / ${oz} oz`;
+    }
+
+    function hasDayAnyLoggedMeals(targetState, w, d) {
+      if (!targetState) return false;
+      const slots = ['pre_shake', 'post_oats', 'lunch', 'dinner'];
+      const checkedMeals = targetState.checkedMeals || {};
+      const checkedIngs = targetState.checkedMealIngredients || {};
+      const fuelLogs = targetState.fuelLogs || {};
+      const dayKey = `w${w}_d${d}`;
+      if (fuelLogs[dayKey] && Object.keys(fuelLogs[dayKey]).some(k => Boolean(fuelLogs[dayKey][k]))) {
+        return true;
+      }
+      for (const s of slots) {
+        if (checkedMeals[`w${w}_d${d}_${s}`]) return true;
+        if (w === 1 && d === 0 && checkedMeals[s]) return true;
+      }
+      const prefix = `w${w}_d${d}_`;
+      if (Object.keys(checkedIngs).some(k => k.startsWith(prefix) && Boolean(checkedIngs[k]))) {
+        return true;
+      }
+      return false;
+    }
+
+    function backfillHistoricalFuelSnapshots(targetState) {
+      if (!targetState || typeof targetState !== 'object') return;
+      if (!targetState.fuelDaySnapshots || typeof targetState.fuelDaySnapshots !== 'object') {
+        targetState.fuelDaySnapshots = {};
+      }
+      if (!targetState.loggedMealSnapshots || typeof targetState.loggedMealSnapshots !== 'object') {
+        targetState.loggedMealSnapshots = {};
+      }
+      if (!targetState.fuelCustomizations || typeof targetState.fuelCustomizations !== 'object') {
+        targetState.fuelCustomizations = {};
+      }
+      if (!targetState.activeFuelPreset || !FUEL_PLAN_PRESETS[targetState.activeFuelPreset]) {
+        targetState.activeFuelPreset = 'almond_cashew_pea';
+      }
+      if (!targetState.fuelSwitchScope || !['today', 'future'].includes(targetState.fuelSwitchScope)) {
+        targetState.fuelSwitchScope = 'future';
+      }
+
+      const classicPreset = FUEL_PLAN_PRESETS.classic_silk_protein;
+      for (let w = 1; w <= 12; w++) {
+        for (let d = 0; d < 7; d++) {
+          const dayKey = `w${w}_d${d}`;
+          const hasLogged = hasDayAnyLoggedMeals(targetState, w, d);
+          if (hasLogged && !targetState.fuelDaySnapshots[dayKey]) {
+            targetState.fuelDaySnapshots[dayKey] = 'classic_silk_protein';
+            ['pre_shake', 'post_oats', 'lunch', 'dinner'].forEach(slotId => {
+              const mealNum = SLOT_TO_MEAL_NUM[slotId];
+              const mealSnapKey = `${dayKey}_fuel${mealNum}`;
+              const isSlotLogged = Boolean(
+                (targetState.checkedMeals && targetState.checkedMeals[`${dayKey}_${slotId}`]) ||
+                (w === 1 && d === 0 && targetState.checkedMeals && targetState.checkedMeals[slotId]) ||
+                (targetState.fuelLogs && targetState.fuelLogs[dayKey] && targetState.fuelLogs[dayKey][slotId])
+              );
+              if (isSlotLogged && !targetState.loggedMealSnapshots[mealSnapKey]) {
+                const m = classicPreset.meals[slotId];
+                targetState.loggedMealSnapshots[mealSnapKey] = JSON.parse(JSON.stringify({
+                  presetId: 'classic_silk_protein',
+                  slotId,
+                  mealNum,
+                  title: m.title,
+                  kcal: m.kcal,
+                  protein: m.protein,
+                  scaleGrams: m.scaleGrams,
+                  scaleGText: m.scaleGText,
+                  scaleLbText: m.scaleLbText,
+                  items: m.items
+                }));
+              }
+            });
+          }
+        }
+      }
+    }
+    backfillHistoricalFuelSnapshots(state);
+
+    function getEffectiveDayFuelPlan(targetState, w, d) {
+      const s = targetState || {};
+      const dayKey = `w${w}_d${d}`;
+      const isDayLogged = hasDayAnyLoggedMeals(s, w, d);
+      const dayCustom = (s.fuelCustomizations && s.fuelCustomizations[dayKey]) || {};
+      const globalCustom = (s.fuelCustomizations && s.fuelCustomizations.global) || {};
+
+      let presetId = s.activeFuelPreset || 'almond_cashew_pea';
+      if (s.fuelDaySnapshots && s.fuelDaySnapshots[dayKey]) {
+        presetId = s.fuelDaySnapshots[dayKey];
+      } else if (dayCustom.presetId && FUEL_PLAN_PRESETS[dayCustom.presetId]) {
+        presetId = dayCustom.presetId;
+      }
+
+      const basePreset = FUEL_PLAN_PRESETS[presetId] || FUEL_PLAN_PRESETS.almond_cashew_pea;
+      const plan = JSON.parse(JSON.stringify(basePreset));
+      plan.isHistoricalSnapshot = Boolean(s.fuelDaySnapshots && s.fuelDaySnapshots[dayKey] && isDayLogged);
+
+      const slots = ['pre_shake', 'post_oats', 'lunch', 'dinner'];
+      let totalKcal = 0;
+      let totalProtein = 0;
+
+      slots.forEach(slotId => {
+        const mealNum = SLOT_TO_MEAL_NUM[slotId];
+        const snapKey = `${dayKey}_fuel${mealNum}`;
+        const mealSnap = s.loggedMealSnapshots && s.loggedMealSnapshots[snapKey];
+        const isSlotLogged = Boolean(
+          (s.checkedMeals && s.checkedMeals[`${dayKey}_${slotId}`]) ||
+          (w === 1 && d === 0 && s.checkedMeals && s.checkedMeals[slotId])
+        );
+
+        if (mealSnap && isSlotLogged) {
+          plan.meals[slotId] = Object.assign({}, plan.meals[slotId], JSON.parse(JSON.stringify(mealSnap)));
+        } else {
+          const activeSwaps = Object.assign({}, globalCustom.swaps || {}, dayCustom.swaps || {});
+          const customOverrides = Object.assign({}, globalCustom.customItems || {}, dayCustom.customItems || {});
+
+          if (slotId === 'lunch') {
+            ['tofu', 'rice', 'broccoli'].forEach(cat => {
+              const swapId = activeSwaps[cat];
+              if (swapId) {
+                const swapChoice = (WHOLE_FOOD_SMART_SWAPS[cat] || []).find(sw => sw.id === swapId);
+                const itemIdMap = { tofu: 'm2_tofu', rice: 'm2_rice', broccoli: 'm2_broccoli' };
+                const targetItemId = itemIdMap[cat];
+                const idx = plan.meals.lunch.items.findIndex(it => it.id === targetItemId);
+                if (swapChoice && idx >= 0) {
+                  plan.meals.lunch.items[idx] = {
+                    id: targetItemId,
+                    name: swapChoice.name,
+                    label: swapChoice.name,
+                    weight: swapChoice.weight,
+                    grams: swapChoice.grams,
+                    protein: swapChoice.protein,
+                    kcal: swapChoice.kcal
+                  };
+                }
+              }
+            });
+          }
+
+          Object.keys(customOverrides).forEach(overrideKey => {
+            const ov = customOverrides[overrideKey];
+            if (ov && ov.slotId === slotId) {
+              const idx = plan.meals[slotId].items.findIndex(it => it.id === ov.itemId);
+              if (idx >= 0) {
+                plan.meals[slotId].items[idx] = {
+                  id: ov.itemId,
+                  name: ov.name || plan.meals[slotId].items[idx].name,
+                  label: ov.name || plan.meals[slotId].items[idx].label,
+                  weight: `${ov.grams}g`,
+                  grams: ov.grams,
+                  protein: ov.protein,
+                  kcal: ov.kcal
+                };
+              }
+            }
+          });
+
+          const items = plan.meals[slotId].items;
+          const sumGrams = Math.round(items.reduce((acc, it) => acc + (Number(it.grams) || 0), 0));
+          const sumProt = Math.round(items.reduce((acc, it) => acc + (Number(it.protein) || 0), 0));
+          const sumKcal = Math.round(items.reduce((acc, it) => acc + (Number(it.kcal) || 0), 0));
+          plan.meals[slotId].scaleGrams = sumGrams;
+          plan.meals[slotId].scaleGText = `Scale: ${sumGrams}g`;
+          plan.meals[slotId].scaleLbText = formatGramsToLbOzBadge(sumGrams);
+
+          const hasCustomOrSwap = Boolean(
+            (slotId === 'lunch' && (activeSwaps.tofu || activeSwaps.rice || activeSwaps.broccoli)) ||
+            Object.keys(customOverrides).some(k => customOverrides[k] && customOverrides[k].slotId === slotId)
+          );
+          if (hasCustomOrSwap) {
+            plan.meals[slotId].protein = sumProt;
+            plan.meals[slotId].kcal = sumKcal;
+          }
+        }
+
+        totalKcal += plan.meals[slotId].kcal;
+        totalProtein += plan.meals[slotId].protein;
+      });
+
+      if (presetId === 'almond_cashew_pea' && totalKcal === 1395) {
+        plan.dailyKcal = 1300;
+      } else {
+        plan.dailyKcal = totalKcal;
+      }
+      plan.dailyProtein = totalProtein;
+      return plan;
+    }
+
+    function snapshotMealOnLog(targetState, w, d, slotId) {
+      if (!targetState) return;
+      if (!targetState.fuelDaySnapshots) targetState.fuelDaySnapshots = {};
+      if (!targetState.loggedMealSnapshots) targetState.loggedMealSnapshots = {};
+      if (!targetState.fuelLogs) targetState.fuelLogs = {};
+
+      const dayKey = `w${w}_d${d}`;
+      const effectivePlan = getEffectiveDayFuelPlan(targetState, w, d);
+      if (!targetState.fuelDaySnapshots[dayKey]) {
+        targetState.fuelDaySnapshots[dayKey] = effectivePlan.id;
+      }
+      if (!targetState.fuelLogs[dayKey]) targetState.fuelLogs[dayKey] = {};
+      targetState.fuelLogs[dayKey][slotId] = true;
+
+      const mealNum = SLOT_TO_MEAL_NUM[slotId] || 1;
+      const snapKey = `${dayKey}_fuel${mealNum}`;
+      const mealObj = effectivePlan.meals[slotId];
+      if (mealObj) {
+        targetState.loggedMealSnapshots[snapKey] = JSON.parse(JSON.stringify({
+          presetId: effectivePlan.id,
+          slotId,
+          mealNum,
+          title: mealObj.title,
+          kcal: mealObj.kcal,
+          protein: mealObj.protein,
+          scaleGrams: mealObj.scaleGrams,
+          scaleGText: mealObj.scaleGText,
+          scaleLbText: mealObj.scaleLbText,
+          items: mealObj.items
+        }));
+      }
+    }
+
+    function applyFuelPresetSwitch(targetState, presetId, scope, currentWeek, currentDayIdx) {
+      if (!targetState || !FUEL_PLAN_PRESETS[presetId]) return;
+      if (!targetState.fuelCustomizations) targetState.fuelCustomizations = {};
+      if (!targetState.fuelDaySnapshots) targetState.fuelDaySnapshots = {};
+      const dayKey = `w${currentWeek}_d${currentDayIdx}`;
+      const todayHasLogged = hasDayAnyLoggedMeals(targetState, currentWeek, currentDayIdx);
+
+      if (scope === 'today') {
+        if (!targetState.fuelCustomizations[dayKey]) targetState.fuelCustomizations[dayKey] = {};
+        targetState.fuelCustomizations[dayKey].presetId = presetId;
+        if (!todayHasLogged) {
+          delete targetState.fuelDaySnapshots[dayKey];
+        }
+      } else {
+        targetState.activeFuelPreset = presetId;
+        if (targetState.fuelCustomizations[dayKey] && !todayHasLogged) {
+          delete targetState.fuelCustomizations[dayKey].presetId;
+          delete targetState.fuelDaySnapshots[dayKey];
+        }
+      }
+    }
+
+    function applyFuelIngredientSwap(targetState, swapCategory, swapId, scope, currentWeek, currentDayIdx) {
+      if (!targetState || !WHOLE_FOOD_SMART_SWAPS[swapCategory]) return;
+      if (!targetState.fuelCustomizations) targetState.fuelCustomizations = {};
+      const dayKey = `w${currentWeek}_d${currentDayIdx}`;
+      const targetBucketKey = scope === 'today' ? dayKey : 'global';
+      if (!targetState.fuelCustomizations[targetBucketKey]) {
+        targetState.fuelCustomizations[targetBucketKey] = {};
+      }
+      if (!targetState.fuelCustomizations[targetBucketKey].swaps) {
+        targetState.fuelCustomizations[targetBucketKey].swaps = {};
+      }
+      if (swapId.endsWith('_default')) {
+        delete targetState.fuelCustomizations[targetBucketKey].swaps[swapCategory];
+      } else {
+        targetState.fuelCustomizations[targetBucketKey].swaps[swapCategory] = swapId;
+      }
+    }
+
+    function resetDayFuelLogsAndSnapshots(targetState, w, d) {
+      if (!targetState) return;
+      const dayKey = `w${w}_d${d}`;
+      if (targetState.fuelDaySnapshots) {
+        delete targetState.fuelDaySnapshots[dayKey];
+      }
+      if (targetState.fuelLogs) {
+        delete targetState.fuelLogs[dayKey];
+      }
+      if (targetState.loggedMealSnapshots) {
+        [1, 2, 3, 4].forEach(num => {
+          delete targetState.loggedMealSnapshots[`${dayKey}_fuel${num}`];
+        });
+      }
+      if (targetState.checkedMeals) {
+        ['pre_shake', 'post_oats', 'lunch', 'dinner'].forEach(slotId => {
+          delete targetState.checkedMeals[`${dayKey}_${slotId}`];
+          if (w === 1 && d === 0) delete targetState.checkedMeals[slotId];
+        });
+      }
+      if (targetState.checkedMealIngredients) {
+        const prefix = `${dayKey}_`;
+        Object.keys(targetState.checkedMealIngredients).forEach(k => {
+          if (k.startsWith(prefix)) delete targetState.checkedMealIngredients[k];
+        });
+      }
+    }
+
+    function buildCoachAiFuelMutationReply(promptText, activePresetId, currentDayNum) {
+      const q = String(promptText || '').toLowerCase();
+      const preset = FUEL_PLAN_PRESETS[activePresetId] || FUEL_PLAN_PRESETS.almond_cashew_pea;
+
+      if (q.includes('silk') || q.includes('original') || q.includes('switch back') || q.includes('found silk')) {
+        return {
+          reply:
+            `**🥛 Coach AI Live Plan Switcher (Day ${currentDayNum}):**\n` +
+            `• **Great news!** Switching to **Original Silk Protein Almond & Cashew Milk (8g P / 240 ml)** restores your shakes to **30g Pea Protein Isolate** (Fuel 1: \`Scale: 390g\`, \`170 kcal • 36g P\`) and **45g Pea Protein Isolate** (Fuel 4: \`Scale: 421g\`, \`315 kcal • 43g P\`), and removes the extra 10g pea protein from your Overnight Oats jar (\`Scale: 269g\`, \`395 kcal • 26g P\`).\n` +
+            `• **Daily Total:** \`1,400 kcal • 138g P\` (\`525g/week\` Pea Protein Isolate instead of \`735g/week\`).\n` +
+            `• **Zero Past Log Overwrite:** Your previously logged days remain permanently locked to their historical snapshots. Tap a button below to update your live plan:`,
+          actions: [
+            {
+              id: 'act_silk_today',
+              label: `Apply to Today (Day ${currentDayNum}): Original Silk Protein Plan`,
+              actionType: 'switch_preset',
+              presetId: 'classic_silk_protein',
+              scope: 'today'
+            },
+            {
+              id: 'act_silk_future',
+              label: 'Apply to Today & Future Unlogged Days: Original Silk Protein Plan',
+              actionType: 'switch_preset',
+              presetId: 'classic_silk_protein',
+              scope: 'future'
+            },
+            {
+              id: 'act_optb_future',
+              label: 'Keep Option B: Almond/Cashew + 105g Pea (Default)',
+              actionType: 'switch_preset',
+              presetId: 'almond_cashew_pea',
+              scope: 'future'
+            }
+          ]
+        };
+      }
+
+      if (q.includes('soy') || q.includes('option a')) {
+        return {
+          reply:
+            `**🥛 Coach AI Soy Milk 1:1 Swap (Day ${currentDayNum}):**\n` +
+            `• **Unsweetened Fortified Soy Milk (8g P / 240 ml)** matches Original Silk Protein Milk 1-for-1 in protein and scale weights (\`390g\`, \`269g\`, \`419g\`, \`421g\` • \`1,400 kcal • 138g P\`).\n` +
+            `• Tap below to apply **Option A: Unsweetened Soy Milk + 75g Pea Protein** without altering any past logged days:`,
+          actions: [
+            {
+              id: 'act_soy_future',
+              label: 'Apply to Today & Future Days: Option A Unsweetened Soy Plan',
+              actionType: 'switch_preset',
+              presetId: 'unsweetened_soy',
+              scope: 'future'
+            },
+            {
+              id: 'act_soy_today',
+              label: `Apply to Today Only (Day ${currentDayNum}): Unsweetened Soy Plan`,
+              actionType: 'switch_preset',
+              presetId: 'unsweetened_soy',
+              scope: 'today'
+            }
+          ]
+        };
+      }
+
+      if (q.includes('sold out') || q.includes('swap') || q.includes('tofu') || q.includes('tempeh') || q.includes('edamame') || q.includes('rice') || q.includes('quinoa') || q.includes('broccoli') || q.includes('spinach')) {
+        return {
+          reply:
+            `**🔄 Coach AI Iso-Protein Ingredient Swap (${preset.shortLabel}):**\n` +
+            `• **Tofu Sold Out? (Fuel 3 Target: 21g P):** Swap \`175g Extra-Firm Tofu\` for **\`115g Tempeh\`** (\`22g P\`, updates bowl scale weight to \`359g\`) or **\`200g Shelled Edamame\`** (\`22g P\`, updates bowl scale weight to \`444g\`).\n` +
+            `• **Jasmine Rice or Broccoli Swap:** Swap \`150g Cooked Jasmine Rice\` for **\`165g Cooked Quinoa\`** (\`+2.5g P\`) or swap \`75g Broccoli\` for **\`85g Steamed Spinach\`**.\n` +
+            `• Tap any 1-tap button below to apply the swap directly to your Fuel 3 card and Shop List:`,
+          actions: [
+            {
+              id: 'act_swap_tempeh_today',
+              label: `Swap Tofu → 115g Tempeh (Today • Day ${currentDayNum})`,
+              actionType: 'swap_ingredient',
+              swapCategory: 'tofu',
+              swapId: 'tofu_tempeh',
+              scope: 'today'
+            },
+            {
+              id: 'act_swap_edamame_today',
+              label: `Swap Tofu → 200g Edamame (Today • Day ${currentDayNum})`,
+              actionType: 'swap_ingredient',
+              swapCategory: 'tofu',
+              swapId: 'tofu_edamame',
+              scope: 'today'
+            },
+            {
+              id: 'act_swap_quinoa_today',
+              label: `Swap Rice → 165g Cooked Quinoa (Today • Day ${currentDayNum})`,
+              actionType: 'swap_ingredient',
+              swapCategory: 'rice',
+              swapId: 'rice_quinoa',
+              scope: 'today'
+            },
+            {
+              id: 'act_swap_spinach_today',
+              label: `Swap Broccoli → 85g Spinach (Today • Day ${currentDayNum})`,
+              actionType: 'swap_ingredient',
+              swapCategory: 'broccoli',
+              swapId: 'broccoli_spinach',
+              scope: 'today'
+            },
+            {
+              id: 'act_swap_reset_tofu',
+              label: 'Restore Default 175g Tofu + 150g Rice + 75g Broccoli',
+              actionType: 'swap_ingredient',
+              swapCategory: 'tofu',
+              swapId: 'tofu_default',
+              scope: 'future'
+            }
+          ]
+        };
+      }
+
+      return null;
+    }
+
     // Legacy item ID map for backward compatibility:
     // id: 'm1_pea_isolate', id: 'm1_silk_milk', id: 'm3_pea_isolate', id: 'm3_silk_milk', id: 'shop_tamari', id: 'creatine', id: 'shop_nooch', id: 'd3k2', id: 'leucine', id: 'shop_creatine', id: 'shop_edamame', id: 'shop_iodine', id: 'shop_potatoes', id: 'shop_seitan', id: 'shop_tempeh', id: 'shop_vitc', id: 'shop_isolate', id: 'sun_dead_bug'
     const VEGAN_ESSENTIALS = [
-      { id: 'b12', name: '✓ B12, Vitamin D & Calcium (200% B12, 95% D, 120% Ca)', detail: 'Covered automatically by your 900 ml/day of Silk Protein milk (360 ml pre-gym shake + 180 ml in oats + 360 ml evening shake) + 12g nutritional yeast + 175g tofu.' },
+      { id: 'b12', name: '✓ B12, Vitamin D & Calcium (200% B12, 95% D, 120% Ca)', detail: 'Covered automatically by your 900 ml/day of fortified plant milk (360 ml pre-gym shake + 180 ml in oats + 360 ml evening shake) + 12g nutritional yeast + 175g tofu.' },
       { id: 'iodine_zinc', name: '✓ Thyroid Iodine (1.5g Iodized Table Salt) + Iron & Vitamin C (75g Broccoli)', detail: '1.5g (~¼ tsp) of Iodized Table Salt (Windsor Iodized Salt — NOT sea salt or pink Himalayan salt) covers 100% daily thyroid iodine; 75g broccoli unlocks iron in pea protein, oats & tofu.' },
-      { id: 'omega3', name: '✓ Omega-3 ALA & 138g Complete Protein (All in Grams)', detail: '75g/day Pea Protein Isolate + 45g/day Gluten-Free Protein Oats + 175g/day tofu + 6g/day chia seeds, 24g/day peanut butter & 5g/day toasted sesame oil.' }
+      { id: 'omega3', name: '✓ Omega-3 ALA & 138g Complete Protein (All in Grams)', detail: '105g/day Pea Protein Isolate (or 75g on Silk/Soy plan) + 45g/day Gluten-Free Protein Oats + 175g/day tofu + 6g/day chia seeds, 24g/day peanut butter & 5g/day toasted sesame oil.' }
     ];
 
     const VEGAN_MEALS = [
@@ -1749,31 +2551,31 @@
           {
             name: 'Pre-Gym Fast Protein Shake',
             protein: 36,
-            kcal: 170,
-            volume: '170 kcal • 36g Protein',
-            ingredients: '30g Pea Protein Isolate shaken in 360 ml Unsweetened Silk Protein Milk.',
+            kcal: 190,
+            volume: '190 kcal • 36g Protein',
+            ingredients: '40g Pea Protein Isolate shaken in 360 ml Unsweetened Fortified Almond or Cashew Milk.',
             ingredientRows: [
-              { name: 'Pea Protein Isolate', amount: '30g' },
-              { name: 'Unsweetened Silk Protein Milk', amount: '360 ml' }
+              { name: 'Pea Protein Isolate', amount: '40g' },
+              { name: 'Unsweetened Fortified Almond or Cashew Milk', amount: '360 ml' }
             ],
             items: [
               {
                 id: 'm1_pea_isolate',
                 name: 'Pea Protein Isolate',
-                weight: '30g',
+                weight: '40g',
                 label: 'Pea Protein Isolate',
                 subPills: ['Fast-digesting pre-workout amino acids'],
-                protein: 24,
-                kcal: 90
+                protein: 35,
+                kcal: 145
               },
               {
                 id: 'm1_silk_milk',
-                name: 'Unsweetened Silk Protein Milk',
+                name: 'Unsweetened Fortified Almond or Cashew Milk',
                 weight: '360 ml',
-                label: 'Unsweetened Silk Protein Milk',
-                subPills: ['Cold almond & cashew protein milk (100% Daily B12)'],
-                protein: 12,
-                kcal: 80
+                label: 'Unsweetened Fortified Almond or Cashew Milk',
+                subPills: ['Cold unsweetened almond or cashew milk (100% Daily B12)'],
+                protein: 1,
+                kcal: 45
               }
             ]
           }
@@ -1787,13 +2589,14 @@
         options: [
           {
             name: 'Post-Gym Overnight Protein Oats',
-            protein: 26,
-            kcal: 395,
-            volume: '395 kcal • 26g Protein',
-            ingredients: '45g Gluten-Free Protein Oats + 180 ml Unsweetened Silk Protein Milk + 30g Peeled Ripe Banana + 8g Smooth Natural Peanut Butter + 6g Organic Whole Chia Seeds.',
+            protein: 29,
+            kcal: 390,
+            volume: '390 kcal • 29g Protein',
+            ingredients: '45g Gluten-Free Protein Oats + 10g Pea Protein Isolate (whisked in jar) + 180 ml Unsweetened Fortified Almond or Cashew Milk + 30g Peeled Ripe Banana + 8g Smooth Natural Peanut Butter + 6g Organic Whole Chia Seeds.',
             ingredientRows: [
               { name: 'Gluten-Free Protein Oats', amount: '45g' },
-              { name: 'Unsweetened Silk Protein Milk', amount: '180 ml' },
+              { name: 'Pea Protein Isolate (whisked in jar)', amount: '10g' },
+              { name: 'Unsweetened Fortified Almond or Cashew Milk', amount: '180 ml' },
               { name: 'Peeled Ripe Banana', amount: '30g' },
               { name: 'Smooth Natural Peanut Butter', amount: '8g' },
               { name: 'Organic Whole Chia Seeds', amount: '6g' }
@@ -1809,13 +2612,22 @@
                 kcal: 170
               },
               {
+                id: 'm2_pea_oats',
+                name: 'Pea Protein Isolate (whisked in jar)',
+                weight: '10g',
+                label: 'Pea Protein Isolate (whisked in jar)',
+                subPills: ['Whisked into jar for +8g complete protein'],
+                protein: 8,
+                kcal: 36
+              },
+              {
                 id: 'm2_silk_milk',
-                name: 'Unsweetened Silk Protein Milk',
+                name: 'Unsweetened Fortified Almond or Cashew Milk',
                 weight: '180 ml',
-                label: 'Unsweetened Silk Protein Milk',
+                label: 'Unsweetened Fortified Almond or Cashew Milk',
                 subPills: ['Soaked overnight with oats & chia'],
-                protein: 12,
-                kcal: 115
+                protein: 1,
+                kcal: 24
               },
               {
                 id: 'm2_banana',
@@ -1931,37 +2743,37 @@
         slotId: 'dinner',
         time: 'FUEL 4 • EVENING RECOVERY SHAKE (5:30 PM)',
         title: 'Evening Protein & PB Shake',
-        tip: 'Zero cooking and zero chewing in the evening when appetite is lowest — shake 45g isolate in 360 ml Silk milk and eat 16g smooth peanut butter.',
+        tip: 'Zero cooking and zero chewing in the evening when appetite is lowest — shake 55g isolate in 360 ml Almond/Cashew milk and eat 16g smooth peanut butter.',
         options: [
           {
             name: 'Evening Protein & PB Shake',
-            protein: 43,
-            kcal: 315,
-            volume: '315 kcal • 43g Protein',
-            ingredients: '45g Pea Protein Isolate + 360 ml Unsweetened Silk Protein Milk + 16g Smooth Natural Peanut Butter.',
+            protein: 40,
+            kcal: 295,
+            volume: '295 kcal • 40g Protein',
+            ingredients: '55g Pea Protein Isolate + 360 ml Unsweetened Fortified Almond or Cashew Milk + 16g Smooth Natural Peanut Butter.',
             ingredientRows: [
-              { name: 'Pea Protein Isolate', amount: '45g' },
-              { name: 'Unsweetened Silk Protein Milk', amount: '360 ml' },
+              { name: 'Pea Protein Isolate', amount: '55g' },
+              { name: 'Unsweetened Fortified Almond or Cashew Milk', amount: '360 ml' },
               { name: 'Smooth Natural Peanut Butter', amount: '16g' }
             ],
             items: [
               {
                 id: 'm3_pea_isolate',
                 name: 'Pea Protein Isolate',
-                weight: '45g',
+                weight: '55g',
                 label: 'Pea Protein Isolate',
                 subPills: ['Sustained overnight muscle protein synthesis'],
-                protein: 27,
-                kcal: 140
+                protein: 35,
+                kcal: 155
               },
               {
                 id: 'm3_silk_milk',
-                name: 'Unsweetened Silk Protein Milk',
+                name: 'Unsweetened Fortified Almond or Cashew Milk',
                 weight: '360 ml',
-                label: 'Unsweetened Silk Protein Milk',
-                subPills: ['Cold almond & cashew protein milk'],
-                protein: 12,
-                kcal: 80
+                label: 'Unsweetened Fortified Almond or Cashew Milk',
+                subPills: ['Cold unsweetened almond or cashew milk'],
+                protein: 1,
+                kcal: 45
               },
               {
                 id: 'm3_pb',
@@ -1979,7 +2791,7 @@
     ];
 
     const GROCERY_ITEMS = [
-      'Silk Protein Milk (6,300g/wk — 900g/day)',
+      'Unsweetened Fortified Almond or Cashew Milk (1.89L carton — 6,300 ml/week)',
       'Extra-Firm Tofu (1,225g/wk — 175g/day)',
       'Broccoli Florets (525g/wk — 75g/day)',
       'Ripe Bananas (210g peeled/wk — 30g/day)',
@@ -1990,7 +2802,7 @@
       'Fortified Nutritional Yeast (84g/wk — 12g/day)',
       'Iodized Table Salt — Windsor Iodized (10.5g/wk — 1.5g/day)',
       'Toasted Sesame Oil (35g/wk — 5g/day)',
-      'Pea Protein Isolate (525g/wk — 75g/day)'
+      'Pea Protein Isolate Powder (735g/week • 105g/day)'
     ];
 
     const PANTRY_STAPLE_SHOP_IDS = ['shop_oats', 'shop_rice', 'shop_pb', 'shop_chia', 'shop_iodine', 'shop_sesame', 'shop_isolate'];
@@ -2000,7 +2812,7 @@
         category: 'Aisle 1: Produce & Refrigerated Cooler (Weekly Fresh Run)',
         badge: '4 Fresh Staples • No Frills / Walmart',
         items: [
-          { id: 'shop_silk', name: '1. Silk Protein Unsweetened Almond & Cashew (1,750g carton)', qty: '6,300g / week (900 ml/day)', note: '360 ml pre-workout shake + 180 ml in oats + 360 ml evening shake (4 cartons/wk; 200% B12, 95% Vit D)' },
+          { id: 'shop_silk', name: '1. Unsweetened Fortified Almond or Cashew Milk (1.89L carton — 6,300 ml/week)', qty: '6,300 ml / week (900 ml/day)', note: '360 ml pre-workout shake + 180 ml in oats + 360 ml evening shake (100% Daily B12, Vitamin D & Calcium)' },
           { id: 'shop_tofu', name: '2. Sunrise or Rooster Extra-Firm Tofu (350g–454g block)', qty: '1,225g / week (175g/day)', note: 'Weigh 175g/day (½ of a 350g block) for Fuel 3 — only 2.7 to 3.5 blocks/week!' },
           { id: 'shop_broccoli', name: '3. Broccoli Florets (Fresh Crown or Frozen Bag)', qty: '525g / week (75g/day)', note: '75g steamed broccoli/day for Fuel 3 (100% daily Vitamin C to unlock iron in tofu, oats & pea protein)' },
           { id: 'shop_banana', name: '4. Ripe Bananas (Peeled Weight)', qty: '210g / week (30g/day)', note: '120g peeled banana (1 medium) per 4-day overnight oats batch (~2 medium bananas/wk)' }
@@ -2029,10 +2841,67 @@
         category: 'Aisle 4: Online / Bulk Protein Supplement',
         badge: '1 Bulk Staple • Yupik / Micro Ingredients / Canadian Protein',
         items: [
-          { id: 'shop_isolate', name: '12. Pea Protein Isolate Powder (1,000g–2,268g bag)', qty: '525g / week (75g/day)', note: '30g in Fuel 1 Pre-Gym Shake + 45g in Fuel 4 Evening Shake = 60g pure protein/day with zero fiber bloat' }
+          { id: 'shop_isolate', name: '12. Pea Protein Isolate Powder (735g/week • 105g/day)', qty: '735g / week (105g/day)', note: '40g in Fuel 1 Pre-Gym Shake + 10g in Fuel 2 Oats + 55g in Fuel 4 Evening Shake = 84g pure isolate protein/day' }
         ]
       }
     ];
+
+    function getDynamicWeeklyShoppingCategories(targetState) {
+      const s = targetState || state || {};
+      const w = s.currentWeek || 1;
+      const d = s.selectedDayIndex || 0;
+      const dayKey = `w${w}_d${d}`;
+      const dayCustom = (s.fuelCustomizations && s.fuelCustomizations[dayKey]) || {};
+      const globalCustom = (s.fuelCustomizations && s.fuelCustomizations.global) || {};
+      const activeSwaps = Object.assign({}, globalCustom.swaps || {}, dayCustom.swaps || {});
+
+      const presetId = (dayCustom.presetId && FUEL_PLAN_PRESETS[dayCustom.presetId])
+        ? dayCustom.presetId
+        : (s.activeFuelPreset || 'almond_cashew_pea');
+      const preset = FUEL_PLAN_PRESETS[presetId] || FUEL_PLAN_PRESETS.almond_cashew_pea;
+
+      const cats = JSON.parse(JSON.stringify(WEEKLY_SHOPPING_CATEGORIES));
+      if (cats[0] && cats[0].items && cats[0].items[0]) {
+        cats[0].items[0] = JSON.parse(JSON.stringify(preset.shopMilkItem));
+      }
+      if (cats[3] && cats[3].items && cats[3].items[0]) {
+        cats[3].items[0] = JSON.parse(JSON.stringify(preset.shopPeaItem));
+      }
+
+      if (activeSwaps.tofu && cats[0] && cats[0].items && cats[0].items[1]) {
+        const sw = (WHOLE_FOOD_SMART_SWAPS.tofu || []).find(x => x.id === activeSwaps.tofu);
+        if (sw && sw.shopName) {
+          cats[0].items[1].name = sw.shopName;
+          cats[0].items[1].qty = sw.shopQty;
+        }
+      }
+      if (activeSwaps.broccoli && cats[0] && cats[0].items && cats[0].items[2]) {
+        const sw = (WHOLE_FOOD_SMART_SWAPS.broccoli || []).find(x => x.id === activeSwaps.broccoli);
+        if (sw && sw.shopName) {
+          cats[0].items[2].name = sw.shopName;
+          cats[0].items[2].qty = sw.shopQty;
+        }
+      }
+      if (activeSwaps.rice && cats[1] && cats[1].items && cats[1].items[1]) {
+        const sw = (WHOLE_FOOD_SMART_SWAPS.rice || []).find(x => x.id === activeSwaps.rice);
+        if (sw && sw.shopName) {
+          cats[1].items[1].name = sw.shopName;
+          cats[1].items[1].qty = sw.shopQty;
+        }
+      }
+      return cats;
+    }
+
+    function getDynamicGroceryItems(targetState) {
+      const cats = getDynamicWeeklyShoppingCategories(targetState);
+      const list = [];
+      cats.forEach(c => {
+        (c.items || []).forEach(it => {
+          list.push(it.name.replace(/^\d+\.\s*/, '') + ' — ' + it.qty);
+        });
+      });
+      return list;
+    }
 
     // =========================================================================
     // 4. BLUETOOTH-SAFE WEB AUDIO API TIMER CHIME (ZERO PERSISTENT AUDIOCONTEXT)
@@ -4367,12 +5236,13 @@
       if (!state.checkedMealIngredients) state.checkedMealIngredients = {};
       const k = `w${w}_d${d}_${slotId}`;
       if (state.checkedMeals[k] !== undefined) return !!state.checkedMeals[k];
-      const slot = VEGAN_MEALS.find(s => s.slotId === slotId);
-      const opt = slot ? slot.options[0] : null;
-      if (opt && opt.items && opt.items.length > 0) {
-        const anyExplicit = opt.items.some(it => state.checkedMealIngredients[`w${w}_d${d}_${slotId}_${it.id}`] !== undefined);
+      const dayPlan = getEffectiveDayFuelPlan(state, w, d);
+      const mealObj = dayPlan && dayPlan.meals ? dayPlan.meals[slotId] : null;
+      const itemsList = (mealObj && mealObj.items) || [];
+      if (itemsList.length > 0) {
+        const anyExplicit = itemsList.some(it => state.checkedMealIngredients[`w${w}_d${d}_${slotId}_${it.id}`] !== undefined);
         if (anyExplicit) {
-          return opt.items.every(it => isIngredientChecked(w, d, slotId, it.id));
+          return itemsList.every(it => isIngredientChecked(w, d, slotId, it.id));
         }
       }
       if (w === 1 && d === 0 && state.checkedMeals[slotId] !== undefined) return !!state.checkedMeals[slotId];
@@ -4387,11 +5257,12 @@
     }
 
     function isMealPartiallyCheckedForDay(w, d, slotId) {
-      const slot = VEGAN_MEALS.find(s => s.slotId === slotId);
-      const opt = slot ? slot.options[0] : null;
-      if (!opt || !opt.items || opt.items.length === 0) return false;
-      const checkedCount = opt.items.filter(it => isIngredientChecked(w, d, slotId, it.id)).length;
-      return checkedCount > 0 && checkedCount < opt.items.length;
+      const dayPlan = getEffectiveDayFuelPlan(state, w, d);
+      const mealObj = dayPlan && dayPlan.meals ? dayPlan.meals[slotId] : null;
+      const itemsList = (mealObj && mealObj.items) || [];
+      if (itemsList.length === 0) return false;
+      const checkedCount = itemsList.filter(it => isIngredientChecked(w, d, slotId, it.id)).length;
+      return checkedCount > 0 && checkedCount < itemsList.length;
     }
 
     function setMealCheckedForDay(w, d, slotId, val) {
@@ -4400,12 +5271,21 @@
       const k = `w${w}_d${d}_${slotId}`;
       state.checkedMeals[k] = !!val;
       if (w === 1 && d === 0) state.checkedMeals[slotId] = !!val;
-      const slot = VEGAN_MEALS.find(s => s.slotId === slotId);
-      const opt = slot ? slot.options[0] : null;
-      if (opt && opt.items) {
-        opt.items.forEach(it => {
+      const dayPlan = getEffectiveDayFuelPlan(state, w, d);
+      const mealObj = dayPlan && dayPlan.meals ? dayPlan.meals[slotId] : null;
+      if (mealObj && mealObj.items) {
+        mealObj.items.forEach(it => {
           state.checkedMealIngredients[`w${w}_d${d}_${slotId}_${it.id}`] = !!val;
         });
+      }
+      if (val) {
+        snapshotMealOnLog(state, w, d, slotId);
+      } else if (state.loggedMealSnapshots) {
+        const mealNum = SLOT_TO_MEAL_NUM[slotId] || 1;
+        delete state.loggedMealSnapshots[`w${w}_d${d}_fuel${mealNum}`];
+        if (!hasDayAnyLoggedMeals(state, w, d) && state.fuelDaySnapshots) {
+          delete state.fuelDaySnapshots[`w${w}_d${d}`];
+        }
       }
     }
 
@@ -6987,6 +7867,215 @@
         });
       }
 
+      // UPGRADE: Non-Destructive Multi-Preset Fuel Plan, Immutable Historical Day Snapshot & Smart Ingredient Swaps
+      backfillHistoricalFuelSnapshots(state);
+      const dayPlan = getEffectiveDayFuelPlan(state, week, dayIdx);
+      const dayKey = `w${week}_d${dayIdx}`;
+      const isDayLoggedToday = hasDayAnyLoggedMeals(state, week, dayIdx);
+
+      const loggedWithBadgeEl = document.getElementById('vegan-logged-with-plan-badge');
+      if (loggedWithBadgeEl) {
+        if (isDayLoggedToday && state.fuelDaySnapshots && state.fuelDaySnapshots[dayKey]) {
+          loggedWithBadgeEl.textContent = `🔒 ${dayPlan.badgeLabel}`;
+          loggedWithBadgeEl.classList.remove('hidden');
+        } else {
+          loggedWithBadgeEl.classList.add('hidden');
+        }
+      }
+
+      const mainPlanHeadingEl = document.getElementById('vegan-main-plan-heading');
+      if (mainPlanHeadingEl) {
+        mainPlanHeadingEl.textContent = `4-Card Muscle & Recomp Fuel Plan (${dayPlan.dailyKcal.toLocaleString()} kcal • ${dayPlan.dailyProtein}g P)`;
+      }
+
+      const switcherBarEl = document.getElementById('fuel-plan-switcher-bar');
+      if (switcherBarEl) {
+        const curScope = state.fuelSwitchScope || 'future';
+        const isSwapDrawerOpen = Boolean(state.openFuelSwapDrawer);
+        const dayCustom = (state.fuelCustomizations && state.fuelCustomizations[dayKey]) || {};
+        const globalCustom = (state.fuelCustomizations && state.fuelCustomizations.global) || {};
+        const activeSwaps = Object.assign({}, globalCustom.swaps || {}, dayCustom.swaps || {});
+        const activeSwapCount = ['tofu', 'rice', 'broccoli'].filter(cat => activeSwaps[cat] && !activeSwaps[cat].endsWith('_default')).length;
+
+        const presetOrder = ['almond_cashew_pea', 'classic_silk_protein', 'unsweetened_soy'];
+        const presetPillsHtml = presetOrder.map(pid => {
+          const p = FUEL_PLAN_PRESETS[pid];
+          const isSelected = dayPlan.id === pid;
+          return `
+            <button
+              type="button"
+              data-fuel-preset-btn="${pid}"
+              aria-pressed="${isSelected ? 'true' : 'false'}"
+              class="fuel-preset-switch-btn px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold border transition text-left ${
+                isSelected
+                  ? 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-sm shadow-emerald-500/30'
+                  : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-700'
+              }"
+            >
+              ${isSelected ? '✓ ' : ''}${p.shortLabel}
+            </button>
+          `;
+        }).join('');
+
+        function renderSwapCategoryRow(catKey, catTitle) {
+          const choices = WHOLE_FOOD_SMART_SWAPS[catKey] || [];
+          const curSwapId = activeSwaps[catKey] || `${catKey}_default`;
+          return `
+            <div class="space-y-1">
+              <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">${catTitle}</div>
+              <div class="flex flex-wrap gap-1.5">
+                ${choices.map(ch => {
+                  const isSel = ch.id === curSwapId;
+                  return `
+                    <button
+                      type="button"
+                      data-swap-cat="${catKey}"
+                      data-swap-id="${ch.id}"
+                      class="fuel-smart-swap-btn px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition ${
+                        isSel
+                          ? 'bg-sky-400 text-slate-950 border-sky-300'
+                          : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                      }"
+                    >
+                      ${isSel ? '✓ ' : ''}${ch.label}
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        switcherBarEl.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">🥛 Active Milk &amp; Protein Plan:</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-900 border border-slate-700 text-slate-300">${dayPlan.dailyKcal.toLocaleString()} kcal • ${dayPlan.dailyProtein}g P • ${dayPlan.peaProteinDailyG}g Pea/day</span>
+            </div>
+            <div class="inline-flex items-center rounded-lg bg-slate-900 border border-slate-700 p-0.5" role="group" aria-label="Plan Switch Scope">
+              <button
+                type="button"
+                data-fuel-scope="today"
+                class="fuel-scope-btn px-2 py-1 rounded-md text-[10px] font-extrabold transition ${
+                  curScope === 'today'
+                    ? 'bg-sky-400 text-slate-950'
+                    : 'text-slate-300 hover:text-white'
+                }"
+              >
+                Today Only (Day ${dayIdx + 1})
+              </button>
+              <button
+                type="button"
+                data-fuel-scope="future"
+                class="fuel-scope-btn px-2 py-1 rounded-md text-[10px] font-extrabold transition ${
+                  curScope === 'future'
+                    ? 'bg-sky-400 text-slate-950'
+                    : 'text-slate-300 hover:text-white'
+                }"
+              >
+                Today &amp; Future Unlogged Days
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+            ${presetPillsHtml}
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
+            <button
+              type="button"
+              id="toggle-fuel-swap-drawer-btn"
+              aria-expanded="${isSwapDrawerOpen ? 'true' : 'false'}"
+              class="px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold border transition flex items-center gap-1.5 ${
+                isSwapDrawerOpen || activeSwapCount > 0
+                  ? 'bg-sky-500/20 border-sky-400/50 text-sky-200'
+                  : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300'
+              }"
+            >
+              <span>🔄 Swap Sold-Out Ingredients ${activeSwapCount > 0 ? `(${activeSwapCount} active)` : ''}</span>
+              <span class="text-[10px]">${isSwapDrawerOpen ? '▴' : '▾'}</span>
+            </button>
+            <span class="text-[10px] text-slate-400">Past logged days stay locked to their original snapshot.</span>
+          </div>
+
+          <div id="fuel-swap-drawer-body" class="${isSwapDrawerOpen ? 'space-y-2.5 pt-2 border-t border-slate-800/80' : 'hidden'}" style="display: ${isSwapDrawerOpen ? 'block' : 'none'};">
+            ${renderSwapCategoryRow('tofu', 'Fuel 3 Protein Swap (Replaces 175g Extra-Firm Tofu • 21g P)')}
+            ${renderSwapCategoryRow('rice', 'Fuel 3 Carb Swap (Replaces 150g Cooked Jasmine Rice)')}
+            ${renderSwapCategoryRow('broccoli', 'Fuel 3 Veggie Swap (Replaces 75g Steamed Broccoli)')}
+          </div>
+        `;
+
+        switcherBarEl.querySelectorAll('.fuel-scope-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const sc = btn.getAttribute('data-fuel-scope');
+            if (sc === 'today' || sc === 'future') {
+              state.fuelSwitchScope = sc;
+              saveState();
+              renderVeganView();
+            }
+          });
+        });
+
+        switcherBarEl.querySelectorAll('.fuel-preset-switch-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const pid = btn.getAttribute('data-fuel-preset-btn');
+            if (!pid || !FUEL_PLAN_PRESETS[pid]) return;
+            const scope = state.fuelSwitchScope || 'future';
+            if (isDayLoggedToday) {
+              // If today is already logged and user taps a preset pill, unlock today's snapshot so today updates intentionally while keeping other logged days locked
+              delete state.fuelDaySnapshots[dayKey];
+              [1, 2, 3, 4].forEach(num => {
+                if (state.loggedMealSnapshots) delete state.loggedMealSnapshots[`${dayKey}_fuel${num}`];
+              });
+              applyFuelPresetSwitch(state, pid, scope, week, dayIdx);
+              ['pre_shake', 'post_oats', 'lunch', 'dinner'].forEach(sl => {
+                if (isMealCheckedForDay(week, dayIdx, sl)) {
+                  snapshotMealOnLog(state, week, dayIdx, sl);
+                }
+              });
+            } else {
+              applyFuelPresetSwitch(state, pid, scope, week, dayIdx);
+            }
+            saveState();
+            renderVeganView();
+            renderShoppingView();
+            renderWorkoutView();
+            const chosen = FUEL_PLAN_PRESETS[pid];
+            showToast(`🥛 Switched ${scope === 'today' ? `Day ${dayIdx + 1}` : 'active plan'} to ${chosen.shortLabel}`);
+          });
+        });
+
+        const swapToggleBtn = document.getElementById('toggle-fuel-swap-drawer-btn');
+        if (swapToggleBtn) {
+          swapToggleBtn.addEventListener('click', () => {
+            state.openFuelSwapDrawer = !state.openFuelSwapDrawer;
+            saveState();
+            renderVeganView();
+          });
+        }
+
+        switcherBarEl.querySelectorAll('.fuel-smart-swap-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const cat = btn.getAttribute('data-swap-cat');
+            const swapId = btn.getAttribute('data-swap-id');
+            if (!cat || !swapId) return;
+            const scope = state.fuelSwitchScope || 'future';
+            if (isDayLoggedToday && state.loggedMealSnapshots) {
+              delete state.loggedMealSnapshots[`${dayKey}_fuel3`];
+            }
+            applyFuelIngredientSwap(state, cat, swapId, scope, week, dayIdx);
+            if (isDayLoggedToday && isMealCheckedForDay(week, dayIdx, 'lunch')) {
+              snapshotMealOnLog(state, week, dayIdx, 'lunch');
+            }
+            saveState();
+            renderVeganView();
+            renderShoppingView();
+            showToast('🔄 Updated Fuel 3 ingredient & recalculated bowl scale weight!');
+          });
+        });
+      }
+
       // UPGRADE 1, 2, 3 & 4 HELPERS: G|LB Scale Weight Badges, Prep Videos, 3-Stage Rice Timer & Kitchen Prep Notes/Photos
       if (!state.fuelWeightUnit || (state.fuelWeightUnit !== 'g' && state.fuelWeightUnit !== 'lb')) {
         state.fuelWeightUnit = 'g';
@@ -7027,23 +8116,16 @@
       }
 
       function getFuelCardScaleBadgeText(slotId, unit) {
-        const map = {
-          pre_shake: { g: 'Scale: 390g', lb: 'Scale: 0.86 lb / 13.8 oz' },
-          post_oats: { g: 'Scale: 269g', lb: 'Scale: 0.59 lb / 9.5 oz' },
-          lunch: { g: 'Scale: 419g', lb: 'Scale: 0.92 lb / 14.8 oz' },
-          dinner: { g: 'Scale: 421g', lb: 'Scale: 0.93 lb / 14.9 oz' }
-        };
-        const entry = map[slotId];
-        if (!entry) return '';
-        return unit === 'lb' ? entry.lb : entry.g;
+        const mealObj = dayPlan && dayPlan.meals && dayPlan.meals[slotId];
+        if (!mealObj) return '';
+        return unit === 'lb' ? mealObj.scaleLbText : mealObj.scaleGText;
       }
 
       function getBatchCardScaleBadgeText(recipeId, unit) {
+        if (recipeId === 'recipe_oats_batch' && dayPlan && dayPlan.batchOats) {
+          return unit === 'lb' ? dayPlan.batchOats.batchScaleLb : dayPlan.batchOats.batchScaleG;
+        }
         const map = {
-          recipe_oats_batch: {
-            g: 'Batch: 1,076g • 1 Jar Today: 269g',
-            lb: 'Batch: 2.37 lb • 1 Jar: 0.59 lb / 9.5 oz'
-          },
           recipe_rice_batch: {
             g: 'Cooked Batch: 600g • 1 Bowl Today: 150g',
             lb: 'Batch: 1.32 lb • 1 Bowl: 0.33 lb / 5.3 oz'
@@ -7261,47 +8343,10 @@
             badge: 'Batch 1/2',
             yieldPill: '4 Jars in Fridge (4 Days)',
             title: '4-Day Overnight Protein Oats Batch',
-            subtitle: 'Prep time: 5 mins • Fridge life: 4 days • 26g P & 395 kcal per jar',
+            subtitle: dayPlan.batchOats.subtitle,
             videoUrl: 'https://www.youtube.com/watch?v=_wgQBioExZA',
             videoTitle: 'High-Protein Overnight Oats Without Whey',
-            steps: [
-              {
-                id: 'oats_step_1',
-                title: 'Gluten-Free Protein Oats',
-                detail: '45g per jar × 4 jars',
-                weightBadge: '180g'
-              },
-              {
-                id: 'oats_step_2',
-                title: 'Organic Whole Chia Seeds',
-                detail: '6g per jar × 4 jars',
-                weightBadge: '24g'
-              },
-              {
-                id: 'oats_step_3',
-                title: 'Peeled Ripe Banana (Mashed)',
-                detail: '30g per jar × 4 jars',
-                weightBadge: '120g'
-              },
-              {
-                id: 'oats_step_4',
-                title: 'Smooth Natural Peanut Butter',
-                detail: '8g per jar × 4 jars',
-                weightBadge: '32g'
-              },
-              {
-                id: 'oats_step_5',
-                title: 'Unsweetened Silk Protein Milk',
-                detail: '180 ml per jar × 4 jars',
-                weightBadge: '720 ml'
-              },
-              {
-                id: 'oats_step_6',
-                title: 'Stir, Seal & Refrigerate Overnight',
-                detail: 'Divide evenly into 4 jars for 8:15 AM post-gym fuel',
-                weightBadge: '4 Jars'
-              }
-            ]
+            steps: dayPlan.batchOats.steps
           },
           {
             id: 'recipe_rice_batch',
@@ -7491,31 +8536,30 @@
         });
       }
 
-      // Calculate Checked Macros for Selected Day (Supports Per-Ingredient & Per-Meal Green Checkmarks!)
+      // Calculate Checked Macros for Selected Day (Supports Per-Ingredient & Per-Meal Green Checkmarks & Historical Snapshots!)
       let eatenProtein = 0;
       let eatenKcal = 0;
       let todayMealsDone = 0;
       VEGAN_MEALS.forEach(slot => {
-        const varIdx = state.selectedMealVariant[slot.slotId] || 0;
-        const opt = slot.options[varIdx] || slot.options[0];
-        if (opt.items && opt.items.length > 0) {
-          opt.items.forEach(it => {
+        const mealObj = (dayPlan && dayPlan.meals && dayPlan.meals[slot.slotId]) || slot.options[0];
+        const items = (mealObj && mealObj.items) || [];
+        if (isMealCheckedForDay(week, dayIdx, slot.slotId)) {
+          eatenProtein += mealObj.protein;
+          eatenKcal += mealObj.kcal;
+          todayMealsDone++;
+        } else if (items.length > 0) {
+          items.forEach(it => {
             if (isIngredientChecked(week, dayIdx, slot.slotId, it.id)) {
               eatenProtein += it.protein;
               eatenKcal += it.kcal;
             }
           });
-          if (isMealCheckedForDay(week, dayIdx, slot.slotId)) {
-            todayMealsDone++;
-          }
-        } else if (isMealCheckedForDay(week, dayIdx, slot.slotId)) {
-          eatenProtein += opt.protein;
-          eatenKcal += opt.kcal;
-          todayMealsDone++;
         }
       });
       eatenProtein = +eatenProtein.toFixed(1);
       eatenKcal = Math.round(eatenKcal);
+      const effectiveTargetProtein = state.mealMode === 'recomp_6pack' ? dayPlan.dailyProtein : target.protein;
+      const effectiveTargetKcal = state.mealMode === 'recomp_6pack' ? dayPlan.dailyKcal : target.kcal;
 
       const veganTitleEl = document.getElementById('vegan-week-day-title');
       if (veganTitleEl) {
@@ -7540,10 +8584,10 @@
       const kText = document.getElementById('macro-kcal-text');
       const kBar = document.getElementById('macro-kcal-bar');
 
-      if (pText) pText.textContent = `${eatenProtein} / ${target.protein}g`;
-      if (pBar) pBar.style.width = Math.min(100, Math.round((eatenProtein / target.protein) * 100)) + '%';
-      if (kText) kText.textContent = `${eatenKcal.toLocaleString()} / ${target.kcal.toLocaleString()} kcal`;
-      if (kBar) kBar.style.width = Math.min(100, Math.round((eatenKcal / target.kcal) * 100)) + '%';
+      if (pText) pText.textContent = `${eatenProtein} / ${effectiveTargetProtein}g`;
+      if (pBar) pBar.style.width = Math.min(100, Math.round((eatenProtein / effectiveTargetProtein) * 100)) + '%';
+      if (kText) kText.textContent = `${eatenKcal.toLocaleString()} / ${effectiveTargetKcal.toLocaleString()} kcal`;
+      if (kBar) kBar.style.width = Math.min(100, Math.round((eatenKcal / effectiveTargetKcal) * 100)) + '%';
 
       const waterCardEl = document.getElementById('daily-water-tracker-card');
       if (waterCardEl) {
@@ -7575,7 +8619,7 @@
                 <span class="text-xs font-extrabold text-sky-300">💧 Daily Water Need (${isLiftDayHydration ? 'Lift Day' : 'Rest Day'})</span>
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">${waterLoggedMl.toLocaleString()} / ${waterTargetMl.toLocaleString()} ml</span>
               </div>
-              <p class="text-[10px] text-slate-400 mt-0.5">+ 900 ml Silk Protein Milk in shakes/oats = <strong>${(waterTargetMl + 900).toLocaleString()} ml (${((waterTargetMl + 900) / 1000).toFixed(1)} L)</strong> total hydration</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">+ 900 ml ${dayPlan.milkName} in shakes/oats = <strong>${(waterTargetMl + 900).toLocaleString()} ml (${((waterTargetMl + 900) / 1000).toFixed(1)} L)</strong> total hydration</p>
             </div>
             <div class="flex items-center gap-1">
               <button type="button" data-water-delta="250" class="water-step-btn px-2 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-200 text-[10px] font-extrabold transition">+250 ml</button>
@@ -7669,18 +8713,17 @@
         };
 
         mealsEl.innerHTML = VEGAN_MEALS.map((slot, mealIdx) => {
-          const varIdx = state.selectedMealVariant[slot.slotId] || 0;
-          const opt = slot.options[varIdx] || slot.options[0];
+          const mealObj = (dayPlan && dayPlan.meals && dayPlan.meals[slot.slotId]) || slot.options[0];
           const isDone = isMealCheckedForDay(week, dayIdx, slot.slotId);
           const isPartial = isMealPartiallyCheckedForDay(week, dayIdx, slot.slotId);
           const slotSched = (adaptiveSched && adaptiveSched.slots && adaptiveSched.slots[slot.slotId]) || {
             headerText: slot.time,
             roleBadge: `FUEL ${mealIdx + 1}`,
             isPostWorkoutTarget: mealIdx === 1,
-            contextTip: slot.tip
+            contextTip: mealObj.tip || slot.tip
           };
 
-          const itemsList = opt.items || [];
+          const itemsList = mealObj.items || [];
           const doneIngCount = itemsList.filter(it => isIngredientChecked(week, dayIdx, slot.slotId, it.id)).length;
           // Collapsed by default unless explicitly expanded by the user
           const isCardExpanded = Boolean(state.openFuelCards && state.openFuelCards[slot.slotId]);
@@ -7702,7 +8745,7 @@
                       ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/40'
                       : 'bg-slate-900 border border-slate-700 text-slate-400'
                   }">${ingDone ? '✓' : ''}</span>
-                  <span class="text-xs font-bold leading-snug break-words ${ingDone ? 'line-through text-emerald-200/80' : 'text-white'}">${it.label}</span>
+                  <span class="text-xs font-bold leading-snug break-words ${ingDone ? 'line-through text-emerald-200/80' : 'text-white'}">${it.label || it.name}</span>
                 </div>
                 <span class="meal-ing-weight-badge shrink-0 text-[11px] font-mono font-extrabold px-2.5 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 whitespace-nowrap">
                   ${convertedIngWeight}
@@ -7720,7 +8763,7 @@
               <div class="flex items-center justify-between gap-2">
                 <div class="flex flex-wrap items-center gap-1.5 min-w-0">
                   <span class="text-[11px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">${topFuelBadgeText}</span>
-                  <span data-fuel-kcal-badge="${slot.slotId}" class="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-amber-950/60 border border-amber-500/40 text-amber-300 whitespace-nowrap">${opt.kcal} kcal • ${opt.protein}g P</span>
+                  <span data-fuel-kcal-badge="${slot.slotId}" class="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-amber-950/60 border border-amber-500/40 text-amber-300 whitespace-nowrap">${mealObj.kcal} kcal • ${mealObj.protein}g P</span>
                   <span data-fuel-scale-badge="${slot.slotId}" class="text-[11px] px-2 py-0.5 rounded-md bg-sky-950/70 border border-sky-400/50 text-sky-200 font-bold whitespace-nowrap">${scaleWeightBadgeText}</span>
                   ${fuelPrepNotePillHtml}
                 </div>
@@ -7737,7 +8780,7 @@
 
               <!-- Middle Row: Clean Card Title -->
               <div data-toggle-fuel-card="${slot.slotId}" class="fuel-card-toggle-btn cursor-pointer select-none">
-                <h4 class="text-sm sm:text-base font-extrabold text-white leading-snug break-words">${slot.title}</h4>
+                <h4 class="text-sm sm:text-base font-extrabold text-white leading-snug break-words">${mealObj.title || slot.title}</h4>
               </div>
 
               <!-- Bottom Toggle Bar: Show/Hide Ingredients & Prep (N items) -->
@@ -7756,7 +8799,7 @@
                   ${scannableRowsHtml}
                 </div>
                 <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl px-3 py-2 text-[11px] text-amber-300/95 leading-snug">
-                  💡 <strong>Timing &amp; Prep Tip:</strong> ${slotSched.contextTip || slot.tip} ${slotSched.batchTip || ''}
+                  💡 <strong>Timing &amp; Prep Tip:</strong> ${mealObj.tip || slotSched.contextTip || slot.tip} ${slotSched.batchTip || ''}
                 </div>
                 ${buildPrepNoteCollapsibleSectionHtml(slot.slotId, `FUEL ${mealIdx + 1}`)}
               </div>
@@ -7773,8 +8816,8 @@
           renderVeganView();
           renderWorkoutView();
           if (!curVal) {
-            const slotObj = VEGAN_MEALS.find(s => s.slotId === slotId);
-            showToast(`⚡ Logged ${slotObj ? slotObj.title : slotId.toUpperCase()} (${dayObj.dayFull})!`);
+            const mealObj = dayPlan && dayPlan.meals && dayPlan.meals[slotId];
+            showToast(`⚡ Logged ${mealObj ? mealObj.title : slotId.toUpperCase()} (${dayObj.dayFull})!`);
           }
         }
 
@@ -7803,13 +8846,14 @@
             const cur = isIngredientChecked(week, dayIdx, slotId, ingId);
             const nextVal = !cur;
             state.checkedMealIngredients[`w${week}_d${dayIdx}_${slotId}_${ingId}`] = nextVal;
-            // Sync parent meal checked status if all ingredients are now checked/unchecked
-            const slot = VEGAN_MEALS.find(s => s.slotId === slotId);
-            const opt = slot ? slot.options[0] : null;
-            if (opt && opt.items) {
-              const allChecked = opt.items.every(it => isIngredientChecked(week, dayIdx, slotId, it.id));
+            const mealObj = dayPlan && dayPlan.meals && dayPlan.meals[slotId];
+            if (mealObj && mealObj.items) {
+              const allChecked = mealObj.items.every(it => isIngredientChecked(week, dayIdx, slotId, it.id));
               state.checkedMeals[`w${week}_d${dayIdx}_${slotId}`] = allChecked;
               if (week === 1 && dayIdx === 0) state.checkedMeals[slotId] = allChecked;
+              if (allChecked) {
+                snapshotMealOnLog(state, week, dayIdx, slotId);
+              }
             }
             saveState();
             renderVeganView();
@@ -7821,7 +8865,8 @@
       // Render Grocery List
       const grocEl = document.getElementById('grocery-list-container');
       if (grocEl) {
-        grocEl.innerHTML = GROCERY_ITEMS.map((item, idx) => {
+        const dynamicGrocItems = getDynamicGroceryItems(state);
+        grocEl.innerHTML = dynamicGrocItems.map((item, idx) => {
           const checked = !!state.checkedGroceries[idx];
           return `
             <button type="button" data-groc-idx="${idx}" class="groc-toggle-btn text-left px-2.5 py-2 rounded-xl border text-xs font-medium transition flex items-center gap-2 ${
@@ -7855,8 +8900,9 @@
       const container = document.getElementById('weekly-shopping-categories');
       if (!container) return;
 
+      const dynamicCategories = getDynamicWeeklyShoppingCategories(state);
       const allBuiltIn = [];
-      WEEKLY_SHOPPING_CATEGORIES.forEach(cat => {
+      dynamicCategories.forEach(cat => {
         cat.items.forEach(it => allBuiltIn.push(it));
       });
       const customList = Array.isArray(state.customShoppingItems) ? state.customShoppingItems : [];
@@ -7875,7 +8921,7 @@
       if (countEl) countEl.textContent = `${checkedCount} / ${totalCount}`;
       if (barEl) barEl.style.width = (totalCount > 0 ? Math.min(100, Math.round((checkedCount / totalCount) * 100)) : 0) + '%';
 
-      let html = WEEKLY_SHOPPING_CATEGORIES.map(cat => `
+      let html = dynamicCategories.map(cat => `
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5">
           <div class="flex items-center justify-between gap-2">
             <h3 class="text-xs font-extrabold uppercase tracking-wider text-white">${cat.category}</h3>
@@ -8070,7 +9116,7 @@
           }
         ];
       }
-      box.innerHTML = state.geminiChatHistory.map(msg => {
+      box.innerHTML = state.geminiChatHistory.map((msg, msgIdx) => {
         const isUser = msg.role === 'user';
         const formatted = String(msg.text || '')
           .replace(/&/g, '&amp;')
@@ -8078,6 +9124,21 @@
           .replace(/>/g, '&gt;')
           .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
           .replace(/\n/g, '<br/>');
+        const actions = Array.isArray(msg.actions) ? msg.actions : [];
+        const actionsHtml = actions.length > 0 ? `
+          <div class="mt-2.5 pt-2 border-t border-purple-500/30 flex flex-wrap gap-1.5">
+            ${actions.map((act, actIdx) => `
+              <button
+                type="button"
+                data-coach-msg-idx="${msgIdx}"
+                data-coach-act-idx="${actIdx}"
+                class="coach-ai-mutation-btn px-2.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[11px] font-extrabold transition shadow-sm"
+              >
+                ⚡ ${String(act.label || 'Apply Swap').replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+              </button>
+            `).join('')}
+          </div>
+        ` : '';
         return `
           <div class="flex ${isUser ? 'justify-end' : 'justify-start'}">
             <div class="max-w-[90%] rounded-xl px-3 py-2 leading-relaxed ${
@@ -8086,10 +9147,57 @@
                 : 'bg-slate-900 border border-purple-500/30 text-slate-200'
             }">
               ${formatted}
+              ${actionsHtml}
             </div>
           </div>
         `;
       }).join('');
+
+      box.querySelectorAll('.coach-ai-mutation-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const mIdx = parseInt(btn.getAttribute('data-coach-msg-idx'), 10);
+          const aIdx = parseInt(btn.getAttribute('data-coach-act-idx'), 10);
+          const msgObj = state.geminiChatHistory && state.geminiChatHistory[mIdx];
+          const actObj = msgObj && Array.isArray(msgObj.actions) ? msgObj.actions[aIdx] : null;
+          if (!actObj) return;
+          const w = state.currentWeek || 1;
+          const d = state.selectedDayIndex || 0;
+          const dayKey = `w${w}_d${d}`;
+          const isDayLogged = hasDayAnyLoggedMeals(state, w, d);
+          if (actObj.actionType === 'switch_preset' && actObj.presetId) {
+            if (isDayLogged && actObj.scope === 'today') {
+              delete state.fuelDaySnapshots[dayKey];
+              [1, 2, 3, 4].forEach(n => {
+                if (state.loggedMealSnapshots) delete state.loggedMealSnapshots[`${dayKey}_fuel${n}`];
+              });
+            }
+            applyFuelPresetSwitch(state, actObj.presetId, actObj.scope || 'future', w, d);
+            if (isDayLogged && actObj.scope === 'today') {
+              ['pre_shake', 'post_oats', 'lunch', 'dinner'].forEach(sl => {
+                if (isMealCheckedForDay(w, d, sl)) snapshotMealOnLog(state, w, d, sl);
+              });
+            }
+            saveState();
+            renderVeganView();
+            renderShoppingView();
+            renderWorkoutView();
+            showToast(`✅ Applied: ${actObj.label}`);
+          } else if (actObj.actionType === 'swap_ingredient' && actObj.swapCategory && actObj.swapId) {
+            if (isDayLogged && state.loggedMealSnapshots) {
+              delete state.loggedMealSnapshots[`${dayKey}_fuel3`];
+            }
+            applyFuelIngredientSwap(state, actObj.swapCategory, actObj.swapId, actObj.scope || 'today', w, d);
+            if (isDayLogged && isMealCheckedForDay(w, d, 'lunch')) {
+              snapshotMealOnLog(state, w, d, 'lunch');
+            }
+            saveState();
+            renderVeganView();
+            renderShoppingView();
+            showToast(`✅ Applied: ${actObj.label}`);
+          }
+        });
+      });
+
       box.scrollTop = box.scrollHeight;
     }
 
@@ -8102,6 +9210,21 @@
       renderGeminiChatMessages();
 
       const ctx = buildLiveUserContextSummary();
+      const w = state.currentWeek || 1;
+      const d = state.selectedDayIndex || 0;
+      const effectivePlan = getEffectiveDayFuelPlan(state, w, d);
+      const mutationReply = buildCoachAiFuelMutationReply(cleanPrompt, effectivePlan.id, d + 1);
+      if (mutationReply) {
+        state.geminiChatHistory[state.geminiChatHistory.length - 1] = {
+          role: 'assistant',
+          text: mutationReply.reply,
+          actions: mutationReply.actions
+        };
+        saveState();
+        renderGeminiChatMessages();
+        return;
+      }
+
       const modelName = state.geminiModel || 'gemini-3.8-flash';
       const systemInstruction = `You are a Senior Strength & Conditioning Coach, Heuristic UX Advisor, and Low-Budget High-Protein Nutritionist powered by Google ${modelName}. Keep answers concise (3-4 bullet points max), practical, and tailored to this athlete's live state: ${JSON.stringify(ctx)}. Never mention PDF, exercise alternatives, or espresso.`;
 
@@ -8289,6 +9412,12 @@
         exerciseNotes: JSON.parse(JSON.stringify(state.exerciseNotes || {})),
         prepNotes: JSON.parse(JSON.stringify(state.prepNotes || {})),
         fuelWeightUnit: state.fuelWeightUnit || 'g',
+        activeFuelPreset: state.activeFuelPreset || 'almond_cashew_pea',
+        fuelSwitchScope: state.fuelSwitchScope || 'future',
+        fuelDaySnapshots: JSON.parse(JSON.stringify(state.fuelDaySnapshots || {})),
+        loggedMealSnapshots: JSON.parse(JSON.stringify(state.loggedMealSnapshots || {})),
+        fuelCustomizations: JSON.parse(JSON.stringify(state.fuelCustomizations || {})),
+        fuelLogs: JSON.parse(JSON.stringify(state.fuelLogs || {})),
         timedHoldSeconds: JSON.parse(JSON.stringify(state.timedHoldSeconds || {})),
         audioMode: state.audioMode || 'sound_vibe',
         gymScheduleByDay: JSON.parse(JSON.stringify(state.gymScheduleByDay || {})),
@@ -8313,6 +9442,13 @@
       state.exerciseNotes = s.exerciseNotes ? JSON.parse(JSON.stringify(s.exerciseNotes)) : {};
       state.prepNotes = s.prepNotes ? JSON.parse(JSON.stringify(s.prepNotes)) : {};
       if (s.fuelWeightUnit === 'g' || s.fuelWeightUnit === 'lb') state.fuelWeightUnit = s.fuelWeightUnit;
+      if (s.activeFuelPreset && FUEL_PLAN_PRESETS[s.activeFuelPreset]) state.activeFuelPreset = s.activeFuelPreset;
+      if (s.fuelSwitchScope === 'today' || s.fuelSwitchScope === 'future') state.fuelSwitchScope = s.fuelSwitchScope;
+      state.fuelDaySnapshots = s.fuelDaySnapshots ? JSON.parse(JSON.stringify(s.fuelDaySnapshots)) : {};
+      state.loggedMealSnapshots = s.loggedMealSnapshots ? JSON.parse(JSON.stringify(s.loggedMealSnapshots)) : {};
+      state.fuelCustomizations = s.fuelCustomizations ? JSON.parse(JSON.stringify(s.fuelCustomizations)) : {};
+      state.fuelLogs = s.fuelLogs ? JSON.parse(JSON.stringify(s.fuelLogs)) : {};
+      backfillHistoricalFuelSnapshots(state);
       state.timedHoldSeconds = s.timedHoldSeconds ? JSON.parse(JSON.stringify(s.timedHoldSeconds)) : {};
       if (s.audioMode) state.audioMode = s.audioMode;
       state.gymScheduleByDay = s.gymScheduleByDay ? JSON.parse(JSON.stringify(s.gymScheduleByDay)) : {};
@@ -8812,43 +9948,26 @@
         logAllVeganBtn.addEventListener('click', () => {
           const w = state.currentWeek || 1;
           const d = state.selectedDayIndex || 0;
-          if (!state.checkedMealIngredients) state.checkedMealIngredients = {};
-          VEGAN_MEALS.forEach(sl => {
-            state.checkedMeals[`w${w}_d${d}_${sl.slotId}`] = true;
-            if (w === 1 && d === 0) state.checkedMeals[sl.slotId] = true;
-            const opt = sl.options[0];
-            if (opt && opt.items) {
-              opt.items.forEach(it => {
-                state.checkedMealIngredients[`w${w}_d${d}_${sl.slotId}_${it.id}`] = true;
-              });
-            }
+          ['pre_shake', 'post_oats', 'lunch', 'dinner'].forEach(slotId => {
+            setMealCheckedForDay(w, d, slotId, true);
           });
           saveState();
           renderVeganView();
           renderWorkoutView();
-          showToast(`✓ All 4 fuel cards logged for Day ${d + 1} (1,400 kcal • 138g P)!`);
+          const dayPlan = getEffectiveDayFuelPlan(state, w, d);
+          showToast(`✓ All 4 fuel cards logged & snapshotted for Day ${d + 1} (${dayPlan.dailyKcal.toLocaleString()} kcal • ${dayPlan.dailyProtein}g P)!`);
         });
       }
 
       document.getElementById('reset-vegan-day-btn').addEventListener('click', () => {
         const w = state.currentWeek || 1;
         const d = state.selectedDayIndex || 0;
-        if (!state.checkedMealIngredients) state.checkedMealIngredients = {};
-        VEGAN_MEALS.forEach(sl => {
-          delete state.checkedMeals[`w${w}_d${d}_${sl.slotId}`];
-          if (w === 1 && d === 0) delete state.checkedMeals[sl.slotId];
-          const opt = sl.options[0];
-          if (opt && opt.items) {
-            opt.items.forEach(it => {
-              delete state.checkedMealIngredients[`w${w}_d${d}_${sl.slotId}_${it.id}`];
-            });
-          }
-        });
+        resetDayFuelLogsAndSnapshots(state, w, d);
         state.checkedEssentials = {};
         saveState();
         renderVeganView();
         renderWorkoutView();
-        showToast(`Reset all 4 fuel cards for Day ${d + 1}`);
+        showToast(`↺ Reset & recalculated all 4 fuel cards for Day ${d + 1}`);
       });
 
       const checkPantryBtn = document.getElementById('check-pantry-staples-btn');
@@ -8899,7 +10018,8 @@
       if (copyShopBtn) {
         copyShopBtn.addEventListener('click', () => {
           const lines = ['🛒 Weekly Muscle Fuel Shopping List:'];
-          WEEKLY_SHOPPING_CATEGORIES.forEach(cat => {
+          const dynamicCats = getDynamicWeeklyShoppingCategories(state);
+          dynamicCats.forEach(cat => {
             cat.items.forEach(it => {
               if (!state.checkedGroceries[it.id]) {
                 lines.push(`- ${it.name} (${it.qty})`);
@@ -10034,11 +11154,12 @@
 
       <!-- 1-Tap Smart Coaching Chips (Zero Typing Required in the Gym!) -->
       <div class="space-y-1 shrink-0">
-        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">1-Tap Gym &amp; Budget Prompts:</span>
+        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">1-Tap Gym, Fuel Plan &amp; Swap Prompts:</span>
         <div class="flex flex-wrap gap-1.5">
+          <button type="button" data-ai-prompt="Switch Back to Original Silk Protein" class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-emerald-500/40 hover:border-emerald-400 text-[10px] font-bold text-emerald-300 transition">🥛 Switch Back to Original Silk Protein</button>
+          <button type="button" data-ai-prompt="Ingredient Sold Out / Swap Meal" class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-amber-500/40 hover:border-amber-400 text-[10px] font-bold text-amber-300 transition">🔄 Ingredient Sold Out / Swap Meal</button>
           <button type="button" data-ai-prompt="Analyze my workout today and tell me the exact weight and reps to hit on my next session for progressive overload." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-purple-200 transition">📈 Next Week Overload</button>
-          <button type="button" data-ai-prompt="Based on my gym time today, give me my exact pre-workout shake and post-workout meal schedule in grams." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-emerald-300 transition">⏱️ Adapt My Meal Timing</button>
-          <button type="button" data-ai-prompt="How can I keep my grocery cost around $38/week ($5.55/day) while hitting 138g protein and 1,495 kcal?" class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-amber-300 transition">💰 $38/Wk Grocery Tips</button>
+          <button type="button" data-ai-prompt="Based on my gym time today, give me my exact pre-workout shake and post-workout meal schedule in grams." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-slate-200 transition">⏱️ Adapt My Meal Timing</button>
           <button type="button" data-ai-prompt="Give me a specific biomechanics cue and rest strategy to add +2 reps to my Overhand Pull-Ups." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-sky-300 transition">💪 Pull-Up Plateau Buster</button>
         </div>
       </div>

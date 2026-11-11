@@ -948,3 +948,1397 @@ export function isBodyweightRepsOnlyExercise(ex: {
   if (ex.isBodyweightRepsOnly === true) return true;
   return (PULLUP_BODYWEIGHT_EX_IDS as readonly string[]).includes(String(ex.id || ''));
 }
+
+// ============================================================================
+// NON-DESTRUCTIVE MULTI-PRESET FUEL ARCHITECTURE, IMMUTABLE HISTORICAL LOGS,
+// 1-TAP SMART INGREDIENT SWAPS & COACH AI LIVE PLAN MUTATION
+// ============================================================================
+export type FuelPresetId = 'almond_cashew_pea' | 'classic_silk_protein' | 'unsweetened_soy';
+export type FuelSwitchScope = 'today' | 'future';
+export type FuelSlotId = 'pre_shake' | 'post_oats' | 'lunch' | 'dinner';
+
+export interface FuelPresetIngredientItem {
+  id: string;
+  name: string;
+  label: string;
+  weight: string;
+  grams: number;
+  protein: number;
+  kcal: number;
+  subPills?: string[];
+}
+
+export interface FuelPresetMealSpec {
+  slotId: FuelSlotId;
+  fuelNum: 1 | 2 | 3 | 4;
+  defaultTime: string;
+  title: string;
+  kcal: number;
+  protein: number;
+  scaleGrams: number;
+  scaleBadgeG: string;
+  scaleBadgeLb: string;
+  tip: string;
+  items: FuelPresetIngredientItem[];
+}
+
+export interface FuelPresetSpec {
+  id: FuelPresetId;
+  shortPillLabel: string;
+  fullName: string;
+  loggedWithBadge: string;
+  dailyKcalDisplay: number;
+  dailyKcalExact: number;
+  dailyProtein: number;
+  headerSummaryText: string;
+  hydrationMilkLabel: string;
+  meals: Record<FuelSlotId, FuelPresetMealSpec>;
+  oatsBatch: {
+    scaleBadgeG: string;
+    scaleBadgeLb: string;
+    subtitle: string;
+    steps: Array<{
+      id: string;
+      title: string;
+      detail: string;
+      weightBadge: string;
+    }>;
+  };
+  shopItems: {
+    item1Name: string;
+    item1Qty: string;
+    item1Note: string;
+    item12Name: string;
+    item12Qty: string;
+    item12Note: string;
+  };
+}
+
+export function formatScaleGramsToBadges(grams: number): { g: string; lb: string; grams: number } {
+  const roundedG = Math.round(Number(grams) || 0);
+  const lbs = (roundedG / 453.59237).toFixed(2);
+  const oz = (roundedG / 28.349523125).toFixed(1);
+  return {
+    grams: roundedG,
+    g: `Scale: ${roundedG}g`,
+    lb: `Scale: ${lbs} lb / ${oz} oz`
+  };
+}
+
+export const FUEL_PLAN_PRESETS: Record<FuelPresetId, FuelPresetSpec> = {
+  almond_cashew_pea: {
+    id: 'almond_cashew_pea',
+    shortPillLabel: 'Option B: Almond/Cashew + 105g Pea (Default)',
+    fullName: 'Option B: Unsweetened Almond/Cashew Milk + 105g Pea Protein',
+    loggedWithBadge: 'Logged with: Option B Almond/Cashew Plan',
+    dailyKcalDisplay: 1300,
+    dailyKcalExact: 1295,
+    dailyProtein: 138,
+    headerSummaryText: 'High-Protein Muscle & Recomp Fuel (1,300 kcal • 138g P)',
+    hydrationMilkLabel: 'Unsweetened Almond/Cashew Milk',
+    meals: {
+      pre_shake: {
+        slotId: 'pre_shake',
+        fuelNum: 1,
+        defaultTime: '6:35 AM',
+        title: 'Pre-Gym Fast Protein Shake',
+        kcal: 190,
+        protein: 36,
+        scaleGrams: 400,
+        scaleBadgeG: 'Scale: 400g',
+        scaleBadgeLb: 'Scale: 0.88 lb / 14.1 oz',
+        tip: 'Drink 25 minutes before your workout: 40g Pea Protein Isolate shaken in 360 ml Unsweetened Fortified Almond or Cashew Milk.',
+        items: [
+          {
+            id: 'm1_pea_isolate',
+            name: 'Pea Protein Isolate',
+            label: 'Pea Protein Isolate',
+            weight: '40g',
+            grams: 40,
+            protein: 32,
+            kcal: 145
+          },
+          {
+            id: 'm1_silk_milk',
+            name: 'Unsweetened Fortified Almond or Cashew Milk',
+            label: 'Unsweetened Fortified Almond or Cashew Milk',
+            weight: '360 ml',
+            grams: 360,
+            protein: 4,
+            kcal: 45
+          }
+        ]
+      },
+      post_oats: {
+        slotId: 'post_oats',
+        fuelNum: 2,
+        defaultTime: '8:15 AM',
+        title: 'Post-Gym Overnight Protein Oats',
+        kcal: 390,
+        protein: 29,
+        scaleGrams: 279,
+        scaleBadgeG: 'Scale: 279g',
+        scaleBadgeLb: 'Scale: 0.62 lb / 9.8 oz',
+        tip: 'Eat 15 minutes after finishing your workout (1 jar = 279g from your 4-day batch with 10g pea protein whisked inside).',
+        items: [
+          {
+            id: 'm2_oats',
+            name: 'Gluten-Free Protein Oats',
+            label: 'Gluten-Free Protein Oats',
+            weight: '45g',
+            grams: 45,
+            protein: 15,
+            kcal: 170
+          },
+          {
+            id: 'm2_pea_oats',
+            name: 'Pea Protein Isolate (whisked in jar)',
+            label: 'Pea Protein Isolate (whisked in jar)',
+            weight: '10g',
+            grams: 10,
+            protein: 8,
+            kcal: 35
+          },
+          {
+            id: 'm2_silk_milk',
+            name: 'Unsweetened Fortified Almond or Cashew Milk',
+            label: 'Unsweetened Fortified Almond or Cashew Milk',
+            weight: '180 ml',
+            grams: 180,
+            protein: 1.5,
+            kcal: 25
+          },
+          {
+            id: 'm2_banana',
+            name: 'Peeled Ripe Banana',
+            label: 'Peeled Ripe Banana',
+            weight: '30g',
+            grams: 30,
+            protein: 0.5,
+            kcal: 30
+          },
+          {
+            id: 'm2_pb',
+            name: 'Smooth Natural Peanut Butter',
+            label: 'Smooth Natural Peanut Butter',
+            weight: '8g',
+            grams: 8,
+            protein: 2,
+            kcal: 50
+          },
+          {
+            id: 'm2_chia',
+            name: 'Organic Whole Chia Seeds',
+            label: 'Organic Whole Chia Seeds',
+            weight: '6g',
+            grams: 6,
+            protein: 2,
+            kcal: 80
+          }
+        ]
+      },
+      lunch: {
+        slotId: 'lunch',
+        fuelNum: 3,
+        defaultTime: '1:00 PM',
+        title: 'Savoury Tofu, Rice & Broccoli Bowl',
+        kcal: 520,
+        protein: 33,
+        scaleGrams: 419,
+        scaleBadgeG: 'Scale: 419g',
+        scaleBadgeLb: 'Scale: 0.92 lb / 14.8 oz',
+        tip: 'Weighing 175g tofu (½ of a 350g block) and 150g cooked rice keeps your midday bowl light while covering 100% Vitamin C and thyroid iodine.',
+        items: [
+          {
+            id: 'm2_tofu',
+            name: 'Extra-Firm Tofu',
+            label: 'Extra-Firm Tofu',
+            weight: '175g',
+            grams: 175,
+            protein: 21,
+            kcal: 210
+          },
+          {
+            id: 'm2_rice',
+            name: 'Cooked White Jasmine Rice',
+            label: 'Cooked White Jasmine Rice',
+            weight: '150g',
+            grams: 150,
+            protein: 4.5,
+            kcal: 195
+          },
+          {
+            id: 'm2_broccoli',
+            name: 'Steamed Broccoli Florets',
+            label: 'Steamed Broccoli Florets',
+            weight: '75g',
+            grams: 75,
+            protein: 1.5,
+            kcal: 25
+          },
+          {
+            id: 'm2_nooch',
+            name: 'Fortified Nutritional Yeast',
+            label: 'Fortified Nutritional Yeast',
+            weight: '12g',
+            grams: 12,
+            protein: 6,
+            kcal: 45
+          },
+          {
+            id: 'm2_sauce',
+            name: 'Toasted Sesame Oil',
+            label: 'Toasted Sesame Oil',
+            weight: '5g',
+            grams: 5,
+            protein: 0,
+            kcal: 45
+          },
+          {
+            id: 'm2_nori',
+            name: 'Iodized Table Salt',
+            label: 'Iodized Table Salt',
+            weight: '1.5g',
+            grams: 1.5,
+            protein: 0,
+            kcal: 0
+          }
+        ]
+      },
+      dinner: {
+        slotId: 'dinner',
+        fuelNum: 4,
+        defaultTime: '5:30 PM',
+        title: 'Evening Protein & PB Shake',
+        kcal: 295,
+        protein: 40,
+        scaleGrams: 431,
+        scaleBadgeG: 'Scale: 431g',
+        scaleBadgeLb: 'Scale: 0.95 lb / 15.2 oz',
+        tip: 'Zero cooking in the evening — shake 55g Pea Protein Isolate in 360 ml Unsweetened Almond/Cashew Milk and eat 16g smooth peanut butter.',
+        items: [
+          {
+            id: 'm3_pea_isolate',
+            name: 'Pea Protein Isolate',
+            label: 'Pea Protein Isolate',
+            weight: '55g',
+            grams: 55,
+            protein: 34,
+            kcal: 155
+          },
+          {
+            id: 'm3_silk_milk',
+            name: 'Unsweetened Fortified Almond or Cashew Milk',
+            label: 'Unsweetened Fortified Almond or Cashew Milk',
+            weight: '360 ml',
+            grams: 360,
+            protein: 2,
+            kcal: 45
+          },
+          {
+            id: 'm3_pb',
+            name: 'Smooth Natural Peanut Butter',
+            label: 'Smooth Natural Peanut Butter',
+            weight: '16g',
+            grams: 16,
+            protein: 4,
+            kcal: 95
+          }
+        ]
+      }
+    },
+    oatsBatch: {
+      scaleBadgeG: 'Batch: 1,116g • 1 Jar Today: 279g',
+      scaleBadgeLb: 'Batch: 2.46 lb • 1 Jar: 0.62 lb / 9.8 oz',
+      subtitle: 'Prep time: 5 mins • Fridge life: 4 days • 29g P & 390 kcal per jar',
+      steps: [
+        { id: 'oats_step_1', title: 'Gluten-Free Protein Oats', detail: '45g per jar × 4 jars', weightBadge: '180g' },
+        { id: 'oats_step_1b', title: 'Pea Protein Isolate (Whisked in Jars)', detail: '10g per jar × 4 jars', weightBadge: '40g' },
+        { id: 'oats_step_2', title: 'Organic Whole Chia Seeds', detail: '6g per jar × 4 jars', weightBadge: '24g' },
+        { id: 'oats_step_3', title: 'Peeled Ripe Banana (Mashed)', detail: '30g per jar × 4 jars', weightBadge: '120g' },
+        { id: 'oats_step_4', title: 'Smooth Natural Peanut Butter', detail: '8g per jar × 4 jars', weightBadge: '32g' },
+        { id: 'oats_step_5', title: 'Unsweetened Almond/Cashew Milk', detail: '180 ml per jar × 4 jars', weightBadge: '720 ml' },
+        { id: 'oats_step_6', title: 'Stir, Seal & Refrigerate Overnight', detail: 'Divide evenly into 4 jars (279g/jar) for 8:15 AM post-gym fuel', weightBadge: '4 Jars' }
+      ]
+    },
+    shopItems: {
+      item1Name: '1. Unsweetened Fortified Almond or Cashew Milk (1.89L carton — 6,300 ml/week)',
+      item1Qty: '6,300 ml / week (900 ml/day)',
+      item1Note: '360 ml pre-gym shake + 180 ml in oats + 360 ml evening shake (3.4 cartons/wk; fortified with B12, Vit D & Calcium)',
+      item12Name: '12. Pea Protein Isolate Powder (735g/week • 105g/day)',
+      item12Qty: '735g / week (105g/day)',
+      item12Note: '40g in Fuel 1 + 10g whisked in Fuel 2 Oats + 55g in Fuel 4 Evening Shake = 105g/day to lock in 138g daily protein'
+    }
+  },
+
+  classic_silk_protein: {
+    id: 'classic_silk_protein',
+    shortPillLabel: 'Original: Silk Protein Milk + 75g Pea',
+    fullName: 'Original Silk Protein Almond & Cashew Milk + 75g Pea Protein',
+    loggedWithBadge: 'Logged with: Classic Silk Protein Plan',
+    dailyKcalDisplay: 1400,
+    dailyKcalExact: 1400,
+    dailyProtein: 138,
+    headerSummaryText: 'High-Protein Muscle & Recomp Fuel (1,400 kcal • 138g P)',
+    hydrationMilkLabel: 'Silk Protein Milk',
+    meals: {
+      pre_shake: {
+        slotId: 'pre_shake',
+        fuelNum: 1,
+        defaultTime: '6:35 AM',
+        title: 'Pre-Gym Fast Protein Shake',
+        kcal: 170,
+        protein: 36,
+        scaleGrams: 390,
+        scaleBadgeG: 'Scale: 390g',
+        scaleBadgeLb: 'Scale: 0.86 lb / 13.8 oz',
+        tip: 'Drink 25 minutes before your workout for fast amino acids with zero stomach bulk during heavy compounds and abs.',
+        items: [
+          {
+            id: 'm1_pea_isolate',
+            name: 'Pea Protein Isolate',
+            label: 'Pea Protein Isolate',
+            weight: '30g',
+            grams: 30,
+            protein: 24,
+            kcal: 90
+          },
+          {
+            id: 'm1_silk_milk',
+            name: 'Unsweetened Silk Protein Milk',
+            label: 'Unsweetened Silk Protein Milk',
+            weight: '360 ml',
+            grams: 360,
+            protein: 12,
+            kcal: 80
+          }
+        ]
+      },
+      post_oats: {
+        slotId: 'post_oats',
+        fuelNum: 2,
+        defaultTime: '8:15 AM',
+        title: 'Post-Gym Overnight Protein Oats',
+        kcal: 395,
+        protein: 26,
+        scaleGrams: 269,
+        scaleBadgeG: 'Scale: 269g',
+        scaleBadgeLb: 'Scale: 0.59 lb / 9.5 oz',
+        tip: 'Eat 15 minutes after finishing your workout (1 jar from your 4-day fridge batch) to replenish muscle glycogen.',
+        items: [
+          {
+            id: 'm2_oats',
+            name: 'Gluten-Free Protein Oats',
+            label: 'Gluten-Free Protein Oats',
+            weight: '45g',
+            grams: 45,
+            protein: 10,
+            kcal: 170
+          },
+          {
+            id: 'm2_silk_milk',
+            name: 'Unsweetened Silk Protein Milk',
+            label: 'Unsweetened Silk Protein Milk',
+            weight: '180 ml',
+            grams: 180,
+            protein: 12,
+            kcal: 115
+          },
+          {
+            id: 'm2_banana',
+            name: 'Peeled Ripe Banana',
+            label: 'Peeled Ripe Banana',
+            weight: '30g',
+            grams: 30,
+            protein: 0.5,
+            kcal: 27
+          },
+          {
+            id: 'm2_pb',
+            name: 'Smooth Natural Peanut Butter',
+            label: 'Smooth Natural Peanut Butter',
+            weight: '8g',
+            grams: 8,
+            protein: 2,
+            kcal: 48
+          },
+          {
+            id: 'm2_chia',
+            name: 'Organic Whole Chia Seeds',
+            label: 'Organic Whole Chia Seeds',
+            weight: '6g',
+            grams: 6,
+            protein: 1.5,
+            kcal: 35
+          }
+        ]
+      },
+      lunch: {
+        slotId: 'lunch',
+        fuelNum: 3,
+        defaultTime: '1:00 PM',
+        title: 'Savoury Tofu, Rice & Broccoli Bowl',
+        kcal: 520,
+        protein: 33,
+        scaleGrams: 419,
+        scaleBadgeG: 'Scale: 419g',
+        scaleBadgeLb: 'Scale: 0.92 lb / 14.8 oz',
+        tip: 'Weighing 175g tofu (½ of a 350g block) and 150g cooked rice keeps your midday bowl light while covering 100% Vitamin C and thyroid iodine.',
+        items: [
+          {
+            id: 'm2_tofu',
+            name: 'Extra-Firm Tofu',
+            label: 'Extra-Firm Tofu',
+            weight: '175g',
+            grams: 175,
+            protein: 21,
+            kcal: 210
+          },
+          {
+            id: 'm2_rice',
+            name: 'Cooked White Jasmine Rice',
+            label: 'Cooked White Jasmine Rice',
+            weight: '150g',
+            grams: 150,
+            protein: 4.5,
+            kcal: 195
+          },
+          {
+            id: 'm2_broccoli',
+            name: 'Steamed Broccoli Florets',
+            label: 'Steamed Broccoli Florets',
+            weight: '75g',
+            grams: 75,
+            protein: 1.5,
+            kcal: 25
+          },
+          {
+            id: 'm2_nooch',
+            name: 'Fortified Nutritional Yeast',
+            label: 'Fortified Nutritional Yeast',
+            weight: '12g',
+            grams: 12,
+            protein: 6,
+            kcal: 45
+          },
+          {
+            id: 'm2_sauce',
+            name: 'Toasted Sesame Oil',
+            label: 'Toasted Sesame Oil',
+            weight: '5g',
+            grams: 5,
+            protein: 0,
+            kcal: 45
+          },
+          {
+            id: 'm2_nori',
+            name: 'Iodized Table Salt',
+            label: 'Iodized Table Salt',
+            weight: '1.5g',
+            grams: 1.5,
+            protein: 0,
+            kcal: 0
+          }
+        ]
+      },
+      dinner: {
+        slotId: 'dinner',
+        fuelNum: 4,
+        defaultTime: '5:30 PM',
+        title: 'Evening Protein & PB Shake',
+        kcal: 315,
+        protein: 43,
+        scaleGrams: 421,
+        scaleBadgeG: 'Scale: 421g',
+        scaleBadgeLb: 'Scale: 0.93 lb / 14.9 oz',
+        tip: 'Zero cooking and zero chewing in the evening when appetite is lowest — shake 45g isolate in 360 ml Silk milk and eat 16g smooth peanut butter.',
+        items: [
+          {
+            id: 'm3_pea_isolate',
+            name: 'Pea Protein Isolate',
+            label: 'Pea Protein Isolate',
+            weight: '45g',
+            grams: 45,
+            protein: 27,
+            kcal: 140
+          },
+          {
+            id: 'm3_silk_milk',
+            name: 'Unsweetened Silk Protein Milk',
+            label: 'Unsweetened Silk Protein Milk',
+            weight: '360 ml',
+            grams: 360,
+            protein: 12,
+            kcal: 80
+          },
+          {
+            id: 'm3_pb',
+            name: 'Smooth Natural Peanut Butter',
+            label: 'Smooth Natural Peanut Butter',
+            weight: '16g',
+            grams: 16,
+            protein: 4,
+            kcal: 95
+          }
+        ]
+      }
+    },
+    oatsBatch: {
+      scaleBadgeG: 'Batch: 1,076g • 1 Jar Today: 269g',
+      scaleBadgeLb: 'Batch: 2.37 lb • 1 Jar: 0.59 lb / 9.5 oz',
+      subtitle: 'Prep time: 5 mins • Fridge life: 4 days • 26g P & 395 kcal per jar',
+      steps: [
+        { id: 'oats_step_1', title: 'Gluten-Free Protein Oats', detail: '45g per jar × 4 jars', weightBadge: '180g' },
+        { id: 'oats_step_2', title: 'Organic Whole Chia Seeds', detail: '6g per jar × 4 jars', weightBadge: '24g' },
+        { id: 'oats_step_3', title: 'Peeled Ripe Banana (Mashed)', detail: '30g per jar × 4 jars', weightBadge: '120g' },
+        { id: 'oats_step_4', title: 'Smooth Natural Peanut Butter', detail: '8g per jar × 4 jars', weightBadge: '32g' },
+        { id: 'oats_step_5', title: 'Unsweetened Silk Protein Milk', detail: '180 ml per jar × 4 jars', weightBadge: '720 ml' },
+        { id: 'oats_step_6', title: 'Stir, Seal & Refrigerate Overnight', detail: 'Divide evenly into 4 jars for 8:15 AM post-gym fuel', weightBadge: '4 Jars' }
+      ]
+    },
+    shopItems: {
+      item1Name: '1. Silk Protein Unsweetened Almond & Cashew Milk (1.75L carton — 6,300 ml/week)',
+      item1Qty: '6,300 ml / week (900 ml/day)',
+      item1Note: '360 ml pre-workout shake + 180 ml in oats + 360 ml evening shake (4 cartons/wk; 200% B12, 95% Vit D)',
+      item12Name: '12. Pea Protein Isolate Powder (525g/week • 75g/day)',
+      item12Qty: '525g / week (75g/day)',
+      item12Note: '30g in Fuel 1 Pre-Gym Shake + 45g in Fuel 4 Evening Shake = 60g pure protein/day with zero fiber bloat'
+    }
+  },
+
+  unsweetened_soy: {
+    id: 'unsweetened_soy',
+    shortPillLabel: 'Option A: Unsweetened Soy + 75g Pea',
+    fullName: 'Unsweetened Fortified Soy Milk (8g P/cup) + 75g Pea Protein',
+    loggedWithBadge: 'Logged with: Option A Unsweetened Soy Plan',
+    dailyKcalDisplay: 1400,
+    dailyKcalExact: 1400,
+    dailyProtein: 138,
+    headerSummaryText: 'High-Protein Muscle & Recomp Fuel (1,400 kcal • 138g P)',
+    hydrationMilkLabel: 'Unsweetened Fortified Soy Milk',
+    meals: {
+      pre_shake: {
+        slotId: 'pre_shake',
+        fuelNum: 1,
+        defaultTime: '6:35 AM',
+        title: 'Pre-Gym Fast Protein Shake',
+        kcal: 170,
+        protein: 36,
+        scaleGrams: 390,
+        scaleBadgeG: 'Scale: 390g',
+        scaleBadgeLb: 'Scale: 0.86 lb / 13.8 oz',
+        tip: 'Drink 25 minutes before your workout: 30g Pea Protein Isolate shaken in 360 ml Unsweetened Fortified Soy Milk.',
+        items: [
+          {
+            id: 'm1_pea_isolate',
+            name: 'Pea Protein Isolate',
+            label: 'Pea Protein Isolate',
+            weight: '30g',
+            grams: 30,
+            protein: 24,
+            kcal: 90
+          },
+          {
+            id: 'm1_silk_milk',
+            name: 'Unsweetened Fortified Soy Milk',
+            label: 'Unsweetened Fortified Soy Milk',
+            weight: '360 ml',
+            grams: 360,
+            protein: 12,
+            kcal: 80
+          }
+        ]
+      },
+      post_oats: {
+        slotId: 'post_oats',
+        fuelNum: 2,
+        defaultTime: '8:15 AM',
+        title: 'Post-Gym Overnight Protein Oats',
+        kcal: 395,
+        protein: 26,
+        scaleGrams: 269,
+        scaleBadgeG: 'Scale: 269g',
+        scaleBadgeLb: 'Scale: 0.59 lb / 9.5 oz',
+        tip: 'Eat 15 minutes after finishing your workout (1 jar from your 4-day batch soaked in Unsweetened Soy Milk).',
+        items: [
+          {
+            id: 'm2_oats',
+            name: 'Gluten-Free Protein Oats',
+            label: 'Gluten-Free Protein Oats',
+            weight: '45g',
+            grams: 45,
+            protein: 10,
+            kcal: 170
+          },
+          {
+            id: 'm2_silk_milk',
+            name: 'Unsweetened Fortified Soy Milk',
+            label: 'Unsweetened Fortified Soy Milk',
+            weight: '180 ml',
+            grams: 180,
+            protein: 12,
+            kcal: 115
+          },
+          {
+            id: 'm2_banana',
+            name: 'Peeled Ripe Banana',
+            label: 'Peeled Ripe Banana',
+            weight: '30g',
+            grams: 30,
+            protein: 0.5,
+            kcal: 27
+          },
+          {
+            id: 'm2_pb',
+            name: 'Smooth Natural Peanut Butter',
+            label: 'Smooth Natural Peanut Butter',
+            weight: '8g',
+            grams: 8,
+            protein: 2,
+            kcal: 48
+          },
+          {
+            id: 'm2_chia',
+            name: 'Organic Whole Chia Seeds',
+            label: 'Organic Whole Chia Seeds',
+            weight: '6g',
+            grams: 6,
+            protein: 1.5,
+            kcal: 35
+          }
+        ]
+      },
+      lunch: {
+        slotId: 'lunch',
+        fuelNum: 3,
+        defaultTime: '1:00 PM',
+        title: 'Savoury Tofu, Rice & Broccoli Bowl',
+        kcal: 520,
+        protein: 33,
+        scaleGrams: 419,
+        scaleBadgeG: 'Scale: 419g',
+        scaleBadgeLb: 'Scale: 0.92 lb / 14.8 oz',
+        tip: 'Weighing 175g tofu (½ of a 350g block) and 150g cooked rice keeps your midday bowl light while covering 100% Vitamin C and thyroid iodine.',
+        items: [
+          {
+            id: 'm2_tofu',
+            name: 'Extra-Firm Tofu',
+            label: 'Extra-Firm Tofu',
+            weight: '175g',
+            grams: 175,
+            protein: 21,
+            kcal: 210
+          },
+          {
+            id: 'm2_rice',
+            name: 'Cooked White Jasmine Rice',
+            label: 'Cooked White Jasmine Rice',
+            weight: '150g',
+            grams: 150,
+            protein: 4.5,
+            kcal: 195
+          },
+          {
+            id: 'm2_broccoli',
+            name: 'Steamed Broccoli Florets',
+            label: 'Steamed Broccoli Florets',
+            weight: '75g',
+            grams: 75,
+            protein: 1.5,
+            kcal: 25
+          },
+          {
+            id: 'm2_nooch',
+            name: 'Fortified Nutritional Yeast',
+            label: 'Fortified Nutritional Yeast',
+            weight: '12g',
+            grams: 12,
+            protein: 6,
+            kcal: 45
+          },
+          {
+            id: 'm2_sauce',
+            name: 'Toasted Sesame Oil',
+            label: 'Toasted Sesame Oil',
+            weight: '5g',
+            grams: 5,
+            protein: 0,
+            kcal: 45
+          },
+          {
+            id: 'm2_nori',
+            name: 'Iodized Table Salt',
+            label: 'Iodized Table Salt',
+            weight: '1.5g',
+            grams: 1.5,
+            protein: 0,
+            kcal: 0
+          }
+        ]
+      },
+      dinner: {
+        slotId: 'dinner',
+        fuelNum: 4,
+        defaultTime: '5:30 PM',
+        title: 'Evening Protein & PB Shake',
+        kcal: 315,
+        protein: 43,
+        scaleGrams: 421,
+        scaleBadgeG: 'Scale: 421g',
+        scaleBadgeLb: 'Scale: 0.93 lb / 14.9 oz',
+        tip: 'Zero cooking in the evening — shake 45g Pea Protein Isolate in 360 ml Unsweetened Fortified Soy Milk and eat 16g smooth peanut butter.',
+        items: [
+          {
+            id: 'm3_pea_isolate',
+            name: 'Pea Protein Isolate',
+            label: 'Pea Protein Isolate',
+            weight: '45g',
+            grams: 45,
+            protein: 27,
+            kcal: 140
+          },
+          {
+            id: 'm3_silk_milk',
+            name: 'Unsweetened Fortified Soy Milk',
+            label: 'Unsweetened Fortified Soy Milk',
+            weight: '360 ml',
+            grams: 360,
+            protein: 12,
+            kcal: 80
+          },
+          {
+            id: 'm3_pb',
+            name: 'Smooth Natural Peanut Butter',
+            label: 'Smooth Natural Peanut Butter',
+            weight: '16g',
+            grams: 16,
+            protein: 4,
+            kcal: 95
+          }
+        ]
+      }
+    },
+    oatsBatch: {
+      scaleBadgeG: 'Batch: 1,076g • 1 Jar Today: 269g',
+      scaleBadgeLb: 'Batch: 2.37 lb • 1 Jar: 0.59 lb / 9.5 oz',
+      subtitle: 'Prep time: 5 mins • Fridge life: 4 days • 26g P & 395 kcal per jar',
+      steps: [
+        { id: 'oats_step_1', title: 'Gluten-Free Protein Oats', detail: '45g per jar × 4 jars', weightBadge: '180g' },
+        { id: 'oats_step_2', title: 'Organic Whole Chia Seeds', detail: '6g per jar × 4 jars', weightBadge: '24g' },
+        { id: 'oats_step_3', title: 'Peeled Ripe Banana (Mashed)', detail: '30g per jar × 4 jars', weightBadge: '120g' },
+        { id: 'oats_step_4', title: 'Smooth Natural Peanut Butter', detail: '8g per jar × 4 jars', weightBadge: '32g' },
+        { id: 'oats_step_5', title: 'Unsweetened Fortified Soy Milk', detail: '180 ml per jar × 4 jars', weightBadge: '720 ml' },
+        { id: 'oats_step_6', title: 'Stir, Seal & Refrigerate Overnight', detail: 'Divide evenly into 4 jars for 8:15 AM post-gym fuel', weightBadge: '4 Jars' }
+      ]
+    },
+    shopItems: {
+      item1Name: '1. Unsweetened Fortified Soy Milk (1.89L carton — 6,300 ml/week)',
+      item1Qty: '6,300 ml / week (900 ml/day)',
+      item1Note: '1:1 replacement for Silk Protein Milk (8g protein per 250 ml cup) — 360 ml pre-gym + 180 ml in oats + 360 ml evening shake',
+      item12Name: '12. Pea Protein Isolate Powder (525g/week • 75g/day)',
+      item12Qty: '525g / week (75g/day)',
+      item12Note: '30g in Fuel 1 Pre-Gym Shake + 45g in Fuel 4 Evening Shake = 60g pure protein/day with zero fiber bloat'
+    }
+  }
+};
+
+export interface WholeFoodSwapOption {
+  id: string;
+  category: 'tofu' | 'rice' | 'broccoli';
+  targetItemId: 'm2_tofu' | 'm2_rice' | 'm2_broccoli';
+  buttonLabel: string;
+  label: string;
+  weight: string;
+  grams: number;
+  protein: number;
+  kcal: number;
+}
+
+export const WHOLE_FOOD_SMART_SWAPS: Record<'tofu' | 'rice' | 'broccoli', WholeFoodSwapOption[]> = {
+  tofu: [
+    { id: 'tofu_175', category: 'tofu', targetItemId: 'm2_tofu', buttonLabel: '175g Tofu (Default)', label: 'Extra-Firm Tofu', weight: '175g', grams: 175, protein: 21, kcal: 210 },
+    { id: 'tempeh_115', category: 'tofu', targetItemId: 'm2_tofu', buttonLabel: '115g Tempeh', label: 'Organic Soy Tempeh', weight: '115g', grams: 115, protein: 21, kcal: 220 },
+    { id: 'edamame_200', category: 'tofu', targetItemId: 'm2_tofu', buttonLabel: '200g Edamame', label: 'Shelled Edamame Beans', weight: '200g', grams: 200, protein: 22, kcal: 240 },
+    { id: 'lentils_240', category: 'tofu', targetItemId: 'm2_tofu', buttonLabel: '240g Cooked Lentils', label: 'Cooked Green/Red Lentils', weight: '240g', grams: 240, protein: 21, kcal: 275 }
+  ],
+  rice: [
+    { id: 'rice_150', category: 'rice', targetItemId: 'm2_rice', buttonLabel: '150g Cooked Jasmine Rice (Default)', label: 'Cooked White Jasmine Rice', weight: '150g', grams: 150, protein: 4.5, kcal: 195 },
+    { id: 'quinoa_165', category: 'rice', targetItemId: 'm2_rice', buttonLabel: '165g Cooked Quinoa', label: 'Cooked Quinoa', weight: '165g', grams: 165, protein: 7, kcal: 198 },
+    { id: 'potato_230', category: 'rice', targetItemId: 'm2_rice', buttonLabel: '230g Boiled Potato', label: 'Boiled White/Yellow Potato', weight: '230g', grams: 230, protein: 4.5, kcal: 198 }
+  ],
+  broccoli: [
+    { id: 'broccoli_75', category: 'broccoli', targetItemId: 'm2_broccoli', buttonLabel: '75g Broccoli (Default)', label: 'Steamed Broccoli Florets', weight: '75g', grams: 75, protein: 1.5, kcal: 25 },
+    { id: 'spinach_85', category: 'broccoli', targetItemId: 'm2_broccoli', buttonLabel: '85g Spinach', label: 'Steamed Baby Spinach', weight: '85g', grams: 85, protein: 2.5, kcal: 20 },
+    { id: 'green_beans_90', category: 'broccoli', targetItemId: 'm2_broccoli', buttonLabel: '90g Green Beans', label: 'Steamed Green Beans', weight: '90g', grams: 90, protein: 2, kcal: 28 }
+  ]
+};
+
+export interface LoggedMealSnapshot {
+  slotId: FuelSlotId;
+  fuelNum: 1 | 2 | 3 | 4;
+  presetId: FuelPresetId;
+  title: string;
+  kcal: number;
+  protein: number;
+  scaleGrams: number;
+  scaleBadgeG: string;
+  scaleBadgeLb: string;
+  items: FuelPresetIngredientItem[];
+  loggedAt: string;
+}
+
+export interface DayFuelCustomization {
+  presetId?: FuelPresetId;
+  swaps?: Partial<Record<'tofu' | 'rice' | 'broccoli', string>>;
+  customOverrides?: Partial<Record<string, { label: string; grams: number; protein?: number; kcal?: number }>>;
+}
+
+export interface FuelStateContainer {
+  activeFuelPreset?: FuelPresetId;
+  fuelSwitchScope?: FuelSwitchScope;
+  fuelDaySnapshots?: Record<string, FuelPresetId>;
+  loggedMealSnapshots?: Record<string, LoggedMealSnapshot>;
+  fuelCustomizations?: Record<string, DayFuelCustomization>;
+  checkedMeals?: Record<string, boolean>;
+  checkedMealIngredients?: Record<string, boolean>;
+  fuelLogs?: Record<string, boolean>;
+}
+
+const SLOT_ORDER: readonly FuelSlotId[] = ['pre_shake', 'post_oats', 'lunch', 'dinner'] as const;
+
+export function getFuelNumForSlot(slotId: FuelSlotId): 1 | 2 | 3 | 4 {
+  if (slotId === 'pre_shake') return 1;
+  if (slotId === 'post_oats') return 2;
+  if (slotId === 'lunch') return 3;
+  return 4;
+}
+
+export function isAnyMealLoggedOnDay(
+  state: FuelStateContainer,
+  week: number,
+  dayIdx: number
+): boolean {
+  const dayPrefix = `w${week}_d${dayIdx}_`;
+  const cm = state.checkedMeals || {};
+  const fl = state.fuelLogs || {};
+  const ci = state.checkedMealIngredients || {};
+  for (const slotId of SLOT_ORDER) {
+    if (cm[`${dayPrefix}${slotId}`] || fl[`${dayPrefix}${slotId}`]) return true;
+    if (week === 1 && dayIdx === 0 && (cm[slotId] || fl[slotId])) return true;
+  }
+  return Object.keys(ci).some(k => k.startsWith(dayPrefix) && Boolean(ci[k]));
+}
+
+export function buildMealSpecWithCustomizations(
+  presetId: FuelPresetId,
+  slotId: FuelSlotId,
+  customization?: DayFuelCustomization
+): FuelPresetMealSpec {
+  const preset = FUEL_PLAN_PRESETS[presetId] || FUEL_PLAN_PRESETS.almond_cashew_pea;
+  const baseMeal = JSON.parse(JSON.stringify(preset.meals[slotId])) as FuelPresetMealSpec;
+  if (!customization) return baseMeal;
+
+  let recalcNeeded = false;
+  if (slotId === 'lunch' && customization.swaps) {
+    (['tofu', 'rice', 'broccoli'] as const).forEach(cat => {
+      const swapId = customization.swaps?.[cat];
+      if (!swapId) return;
+      const found = WHOLE_FOOD_SMART_SWAPS[cat].find(s => s.id === swapId);
+      if (found) {
+        const idx = baseMeal.items.findIndex(it => it.id === found.targetItemId);
+        if (idx >= 0) {
+          baseMeal.items[idx] = {
+            ...baseMeal.items[idx],
+            name: found.label,
+            label: found.label,
+            weight: found.weight,
+            grams: found.grams,
+            protein: found.protein,
+            kcal: found.kcal
+          };
+          recalcNeeded = true;
+        }
+      }
+    });
+  }
+
+  if (customization.customOverrides) {
+    baseMeal.items.forEach((it, idx) => {
+      const ov = customization.customOverrides?.[it.id];
+      if (ov && ov.grams > 0) {
+        const ratio = it.grams > 0 ? ov.grams / it.grams : 1;
+        baseMeal.items[idx] = {
+          ...it,
+          name: ov.label || it.name,
+          label: ov.label || it.label,
+          weight: `${Math.round(ov.grams)}g`,
+          grams: Math.round(ov.grams),
+          protein: ov.protein !== undefined ? ov.protein : +(it.protein * ratio).toFixed(1),
+          kcal: ov.kcal !== undefined ? ov.kcal : Math.round(it.kcal * ratio)
+        };
+        recalcNeeded = true;
+      }
+    });
+  }
+
+  if (recalcNeeded) {
+    const totalGrams = Math.round(baseMeal.items.reduce((acc, it) => acc + (Number(it.grams) || 0), 0));
+    const totalProtein = Math.round(baseMeal.items.reduce((acc, it) => acc + (Number(it.protein) || 0), 0));
+    const totalKcal = Math.round(baseMeal.items.reduce((acc, it) => acc + (Number(it.kcal) || 0), 0));
+    const badges = formatScaleGramsToBadges(totalGrams);
+    baseMeal.scaleGrams = badges.grams;
+    baseMeal.scaleBadgeG = badges.g;
+    baseMeal.scaleBadgeLb = badges.lb;
+    baseMeal.protein = totalProtein;
+    baseMeal.kcal = totalKcal;
+  }
+
+  return baseMeal;
+}
+
+export function backfillHistoricalFuelSnapshots(state: FuelStateContainer): FuelStateContainer {
+  if (!state.fuelDaySnapshots || typeof state.fuelDaySnapshots !== 'object') {
+    state.fuelDaySnapshots = {};
+  }
+  if (!state.loggedMealSnapshots || typeof state.loggedMealSnapshots !== 'object') {
+    state.loggedMealSnapshots = {};
+  }
+  if (!state.fuelCustomizations || typeof state.fuelCustomizations !== 'object') {
+    state.fuelCustomizations = {};
+  }
+  if (!state.activeFuelPreset || !FUEL_PLAN_PRESETS[state.activeFuelPreset]) {
+    state.activeFuelPreset = 'almond_cashew_pea';
+  }
+
+  // Scan all existing logged meals in checkedMeals, fuelLogs, and checkedMealIngredients
+  const allDaysToCheck = new Set<string>();
+  const collectKeys = (obj?: Record<string, boolean>) => {
+    if (!obj || typeof obj !== 'object') return;
+    Object.keys(obj).forEach(k => {
+      if (!obj[k]) return;
+      const m = /^w(\d+)_d(\d+)_/.exec(k);
+      if (m) {
+        allDaysToCheck.add(`w${m[1]}_d${m[2]}`);
+      } else if (SLOT_ORDER.includes(k as FuelSlotId)) {
+        allDaysToCheck.add('w1_d0');
+      }
+    });
+  };
+  collectKeys(state.checkedMeals);
+  collectKeys(state.fuelLogs);
+  collectKeys(state.checkedMealIngredients);
+
+  allDaysToCheck.forEach(dayKey => {
+    const m = /^w(\d+)_d(\d+)$/.exec(dayKey);
+    if (!m) return;
+    const w = parseInt(m[1], 10);
+    const d = parseInt(m[2], 10);
+    if (!isAnyMealLoggedOnDay(state, w, d)) return;
+
+    // Lock existing logged days to classic_silk_protein if not already snapshotted
+    if (!state.fuelDaySnapshots![dayKey]) {
+      state.fuelDaySnapshots![dayKey] = 'classic_silk_protein';
+    }
+    const lockedPreset = state.fuelDaySnapshots![dayKey] || 'classic_silk_protein';
+
+    SLOT_ORDER.forEach(slotId => {
+      const mealNum = getFuelNumForSlot(slotId);
+      const snapKey = `${dayKey}_fuel${mealNum}`;
+      const isSlotLogged =
+        Boolean(state.checkedMeals?.[`${dayKey}_${slotId}`]) ||
+        Boolean(state.fuelLogs?.[`${dayKey}_${slotId}`]) ||
+        (w === 1 && d === 0 && (Boolean(state.checkedMeals?.[slotId]) || Boolean(state.fuelLogs?.[slotId])));
+      if (isSlotLogged && !state.loggedMealSnapshots![snapKey]) {
+        const spec = buildMealSpecWithCustomizations(lockedPreset, slotId);
+        state.loggedMealSnapshots![snapKey] = {
+          slotId,
+          fuelNum: mealNum,
+          presetId: lockedPreset,
+          title: spec.title,
+          kcal: spec.kcal,
+          protein: spec.protein,
+          scaleGrams: spec.scaleGrams,
+          scaleBadgeG: spec.scaleBadgeG,
+          scaleBadgeLb: spec.scaleBadgeLb,
+          items: JSON.parse(JSON.stringify(spec.items)),
+          loggedAt: new Date().toISOString()
+        };
+      }
+    });
+  });
+
+  return state;
+}
+
+export function getEffectiveDayFuelPlan(
+  state: FuelStateContainer,
+  week: number,
+  dayIdx: number
+): {
+  dayKey: string;
+  presetId: FuelPresetId;
+  preset: FuelPresetSpec;
+  isLockedHistoricalDay: boolean;
+  loggedWithBadge: string;
+  meals: Record<FuelSlotId, FuelPresetMealSpec>;
+  dailyTargetKcal: number;
+  dailyTargetProtein: number;
+} {
+  const dayKey = `w${week}_d${dayIdx}`;
+  const hasLoggedMeal = isAnyMealLoggedOnDay(state, week, dayIdx);
+  const lockedPresetId = state.fuelDaySnapshots?.[dayKey];
+  const dayCustom = state.fuelCustomizations?.[dayKey];
+  const globalCustom = state.fuelCustomizations?.default;
+
+  const effectivePresetId: FuelPresetId =
+    (hasLoggedMeal && lockedPresetId && FUEL_PLAN_PRESETS[lockedPresetId])
+      ? lockedPresetId
+      : (dayCustom?.presetId && FUEL_PLAN_PRESETS[dayCustom.presetId])
+        ? dayCustom.presetId
+        : (state.activeFuelPreset && FUEL_PLAN_PRESETS[state.activeFuelPreset])
+          ? state.activeFuelPreset
+          : 'almond_cashew_pea';
+
+  const preset = FUEL_PLAN_PRESETS[effectivePresetId];
+  const mergedCustom: DayFuelCustomization = {
+    presetId: effectivePresetId,
+    swaps: { ...(globalCustom?.swaps || {}), ...(dayCustom?.swaps || {}) },
+    customOverrides: { ...(globalCustom?.customOverrides || {}), ...(dayCustom?.customOverrides || {}) }
+  };
+
+  const meals = {} as Record<FuelSlotId, FuelPresetMealSpec>;
+  SLOT_ORDER.forEach(slotId => {
+    const mealNum = getFuelNumForSlot(slotId);
+    const snapKey = `${dayKey}_fuel${mealNum}`;
+    const snap = state.loggedMealSnapshots?.[snapKey];
+    const isSlotLogged =
+      Boolean(state.checkedMeals?.[`${dayKey}_${slotId}`]) ||
+      Boolean(state.fuelLogs?.[`${dayKey}_${slotId}`]) ||
+      (week === 1 && dayIdx === 0 && (Boolean(state.checkedMeals?.[slotId]) || Boolean(state.fuelLogs?.[slotId])));
+
+    if (isSlotLogged && snap) {
+      const baseMeal = preset.meals[slotId];
+      meals[slotId] = {
+        ...baseMeal,
+        title: snap.title,
+        kcal: snap.kcal,
+        protein: snap.protein,
+        scaleGrams: snap.scaleGrams,
+        scaleBadgeG: snap.scaleBadgeG,
+        scaleBadgeLb: snap.scaleBadgeLb,
+        items: JSON.parse(JSON.stringify(snap.items))
+      };
+    } else {
+      meals[slotId] = buildMealSpecWithCustomizations(effectivePresetId, slotId, hasLoggedMeal ? undefined : mergedCustom);
+    }
+  });
+
+  const isLockedHistoricalDay = Boolean(hasLoggedMeal && state.fuelDaySnapshots?.[dayKey]);
+  const hasActiveSwaps = Boolean(
+    !isLockedHistoricalDay &&
+    ((mergedCustom.swaps && Object.keys(mergedCustom.swaps).length > 0) ||
+     (mergedCustom.customOverrides && Object.keys(mergedCustom.customOverrides).length > 0))
+  );
+
+  const computedKcal = SLOT_ORDER.reduce((acc, s) => acc + meals[s].kcal, 0);
+  const computedProt = SLOT_ORDER.reduce((acc, s) => acc + meals[s].protein, 0);
+
+  return {
+    dayKey,
+    presetId: effectivePresetId,
+    preset,
+    isLockedHistoricalDay,
+    loggedWithBadge: isLockedHistoricalDay ? preset.loggedWithBadge : '',
+    meals,
+    dailyTargetKcal: hasActiveSwaps ? computedKcal : preset.dailyKcalDisplay,
+    dailyTargetProtein: hasActiveSwaps ? computedProt : preset.dailyProtein
+  };
+}
+
+export function snapshotMealOnLog(
+  state: FuelStateContainer,
+  week: number,
+  dayIdx: number,
+  slotId: FuelSlotId
+): LoggedMealSnapshot {
+  if (!state.fuelDaySnapshots) state.fuelDaySnapshots = {};
+  if (!state.loggedMealSnapshots) state.loggedMealSnapshots = {};
+  const dayKey = `w${week}_d${dayIdx}`;
+  const plan = getEffectiveDayFuelPlan(state, week, dayIdx);
+
+  if (!state.fuelDaySnapshots[dayKey]) {
+    state.fuelDaySnapshots[dayKey] = plan.presetId;
+  }
+  const mealSpec = plan.meals[slotId];
+  const mealNum = getFuelNumForSlot(slotId);
+  const snapKey = `${dayKey}_fuel${mealNum}`;
+
+  const snapshot: LoggedMealSnapshot = {
+    slotId,
+    fuelNum: mealNum,
+    presetId: state.fuelDaySnapshots[dayKey],
+    title: mealSpec.title,
+    kcal: mealSpec.kcal,
+    protein: mealSpec.protein,
+    scaleGrams: mealSpec.scaleGrams,
+    scaleBadgeG: mealSpec.scaleBadgeG,
+    scaleBadgeLb: mealSpec.scaleBadgeLb,
+    items: JSON.parse(JSON.stringify(mealSpec.items)),
+    loggedAt: new Date().toISOString()
+  };
+  state.loggedMealSnapshots[snapKey] = snapshot;
+  return snapshot;
+}
+
+export function applyFuelPresetSwitch(
+  state: FuelStateContainer,
+  presetId: FuelPresetId,
+  scope: FuelSwitchScope,
+  week: number,
+  dayIdx: number
+): { updatedToday: boolean; updatedFutureDefault: boolean } {
+  if (!FUEL_PLAN_PRESETS[presetId]) {
+    return { updatedToday: false, updatedFutureDefault: false };
+  }
+  if (!state.fuelCustomizations) state.fuelCustomizations = {};
+  if (!state.fuelDaySnapshots) state.fuelDaySnapshots = {};
+  const dayKey = `w${week}_d${dayIdx}`;
+  const todayHasLogs = isAnyMealLoggedOnDay(state, week, dayIdx);
+
+  if (scope === 'future') {
+    state.activeFuelPreset = presetId;
+  }
+
+  let updatedToday = false;
+  if (!todayHasLogs) {
+    if (!state.fuelCustomizations[dayKey]) state.fuelCustomizations[dayKey] = {};
+    state.fuelCustomizations[dayKey].presetId = presetId;
+    delete state.fuelDaySnapshots[dayKey];
+    updatedToday = true;
+  }
+
+  return {
+    updatedToday,
+    updatedFutureDefault: scope === 'future'
+  };
+}
+
+export function applyFuelIngredientSwap(
+  state: FuelStateContainer,
+  category: 'tofu' | 'rice' | 'broccoli',
+  swapId: string,
+  scope: FuelSwitchScope,
+  week: number,
+  dayIdx: number
+): boolean {
+  const options = WHOLE_FOOD_SMART_SWAPS[category];
+  if (!options || !options.some(o => o.id === swapId)) return false;
+  if (!state.fuelCustomizations) state.fuelCustomizations = {};
+
+  const targetKey = scope === 'future' ? 'default' : `w${week}_d${dayIdx}`;
+  if (!state.fuelCustomizations[targetKey]) state.fuelCustomizations[targetKey] = {};
+  if (!state.fuelCustomizations[targetKey].swaps) state.fuelCustomizations[targetKey].swaps = {};
+  state.fuelCustomizations[targetKey].swaps![category] = swapId;
+
+  if (scope === 'future') {
+    const dayKey = `w${week}_d${dayIdx}`;
+    if (!isAnyMealLoggedOnDay(state, week, dayIdx) && state.fuelCustomizations[dayKey]?.swaps) {
+      state.fuelCustomizations[dayKey].swaps![category] = swapId;
+    }
+  }
+  return true;
+}
+
+export function resetDayFuelLogsAndSnapshots(
+  state: FuelStateContainer,
+  week: number,
+  dayIdx: number
+): void {
+  const dayKey = `w${week}_d${dayIdx}`;
+  if (state.fuelDaySnapshots) delete state.fuelDaySnapshots[dayKey];
+  if (state.loggedMealSnapshots) {
+    for (let m = 1; m <= 4; m++) {
+      delete state.loggedMealSnapshots[`${dayKey}_fuel${m}`];
+    }
+  }
+  if (state.fuelCustomizations && state.fuelCustomizations[dayKey]) {
+    delete state.fuelCustomizations[dayKey];
+  }
+  SLOT_ORDER.forEach(slotId => {
+    if (state.checkedMeals) {
+      delete state.checkedMeals[`${dayKey}_${slotId}`];
+      if (week === 1 && dayIdx === 0) delete state.checkedMeals[slotId];
+    }
+    if (state.fuelLogs) {
+      delete state.fuelLogs[`${dayKey}_${slotId}`];
+      if (week === 1 && dayIdx === 0) delete state.fuelLogs[slotId];
+    }
+  });
+  if (state.checkedMealIngredients) {
+    Object.keys(state.checkedMealIngredients).forEach(k => {
+      if (k.startsWith(`${dayKey}_`)) {
+        delete state.checkedMealIngredients![k];
+      }
+    });
+  }
+}
+
+export interface CoachAiMutationAction {
+  actionId: string;
+  buttonLabel: string;
+  mutationType: 'switch_preset' | 'swap_ingredient';
+  presetId?: FuelPresetId;
+  swapCategory?: 'tofu' | 'rice' | 'broccoli';
+  swapId?: string;
+  scope: FuelSwitchScope;
+}
+
+export function buildCoachAiFuelMutationReply(
+  promptText: string,
+  week = 1,
+  dayIdx = 0
+): {
+  matched: boolean;
+  replyText: string;
+  actions: CoachAiMutationAction[];
+} {
+  const q = String(promptText || '').toLowerCase();
+
+  if (q.includes('silk') || q.includes('original') || q.includes('75g pea')) {
+    return {
+      matched: true,
+      replyText:
+        `**🥛 Coach AI Live Plan Switch — Original Silk Protein Plan (1,400 kcal • 138g P):**\n` +
+        `• **Exact Math:** Restores **900 ml Unsweetened Silk Protein Milk** (` +
+        `360 ml in Fuel 1 + 180 ml in Fuel 2 Oats + 360 ml in Fuel 4) and reduces Pea Protein Isolate to **75g/day** (` +
+        `30g in Fuel 1 + 45g in Fuel 4, removing the 10g powder from your Oats jar).\n` +
+        `• **Updated Scale Weights:** Fuel 1 = **390g** • Fuel 2 = **269g** • Fuel 3 = **419g** • Fuel 4 = **421g**.\n` +
+        `• **Non-Destructive Guarantee:** Past logged days remain locked to their original snapshots.`,
+      actions: [
+        {
+          actionId: `switch_silk_today_w${week}_d${dayIdx}`,
+          buttonLabel: `Apply to Today (Day ${dayIdx + 1}): Switch to Original Silk Protein Plan`,
+          mutationType: 'switch_preset',
+          presetId: 'classic_silk_protein',
+          scope: 'today'
+        },
+        {
+          actionId: `switch_silk_future_w${week}_d${dayIdx}`,
+          buttonLabel: 'Apply to Future Days: Original Silk Protein Plan',
+          mutationType: 'switch_preset',
+          presetId: 'classic_silk_protein',
+          scope: 'future'
+        }
+      ]
+    };
+  }
+
+  if (q.includes('almond') || q.includes('cashew') || q.includes('option b') || q.includes('105g')) {
+    return {
+      matched: true,
+      replyText:
+        `**🥛 Coach AI Live Plan Switch — Option B Almond/Cashew + 105g Pea Plan (1,300 kcal • 138g P):**\n` +
+        `• **Exact Math:** Uses **900 ml Unsweetened Almond/Cashew Milk** across Fuel 1, 2 & 4 and adds **+30g Pea Protein Isolate** (` +
+        `40g in Fuel 1, 10g whisked into Fuel 2 Oats, 55g in Fuel 4 = **105g/day**) to lock in **138g protein** at **1,295 kcal**.\n` +
+        `• **Updated Scale Weights:** Fuel 1 = **400g** • Fuel 2 = **279g** • Fuel 3 = **419g** • Fuel 4 = **431g**.`,
+      actions: [
+        {
+          actionId: `switch_almond_future_w${week}_d${dayIdx}`,
+          buttonLabel: 'Apply to Future Days: Option B Almond/Cashew Plan',
+          mutationType: 'switch_preset',
+          presetId: 'almond_cashew_pea',
+          scope: 'future'
+        },
+        {
+          actionId: `switch_almond_today_w${week}_d${dayIdx}`,
+          buttonLabel: `Apply to Today (Day ${dayIdx + 1}): Option B Almond/Cashew Plan`,
+          mutationType: 'switch_preset',
+          presetId: 'almond_cashew_pea',
+          scope: 'today'
+        }
+      ]
+    };
+  }
+
+  if (q.includes('soy milk') || q.includes('option a')) {
+    return {
+      matched: true,
+      replyText:
+        `**🥛 Coach AI Live Plan Switch — Option A Unsweetened Soy Milk + 75g Pea Plan (1,400 kcal • 138g P):**\n` +
+        `• **Exact Math:** 1:1 macro match for Silk Protein Milk (**8g protein per 250 ml cup**). Uses **900 ml Unsweetened Fortified Soy Milk** + **75g Pea Protein Isolate**.\n` +
+        `• **Scale Weights:** Fuel 1 = **390g** • Fuel 2 = **269g** • Fuel 3 = **419g** • Fuel 4 = **421g**.`,
+      actions: [
+        {
+          actionId: `switch_soy_future_w${week}_d${dayIdx}`,
+          buttonLabel: 'Apply to Future Days: Option A Unsweetened Soy Plan',
+          mutationType: 'switch_preset',
+          presetId: 'unsweetened_soy',
+          scope: 'future'
+        }
+      ]
+    };
+  }
+
+  if (
+    q.includes('sold out') ||
+    q.includes('swap') ||
+    q.includes('tofu') ||
+    q.includes('tempeh') ||
+    q.includes('edamame') ||
+    q.includes('lentil') ||
+    q.includes('quinoa') ||
+    q.includes('potato') ||
+    q.includes('spinach') ||
+    q.includes('broccoli')
+  ) {
+    return {
+      matched: true,
+      replyText:
+        `**🔄 Coach AI Iso-Protein Smart Ingredient Swaps (Fuel 3 Bowl):**\n` +
+        `• **Protein Swap (21g P target):** Swap **175g Extra-Firm Tofu** for **115g Tempeh** (21g P • 220 kcal), **200g Shelled Edamame** (22g P • 240 kcal), or **240g Cooked Lentils** (21g P • 275 kcal).\n` +
+        `• **Carb & Veggie Swaps:** Swap **150g Cooked Jasmine Rice** for **165g Cooked Quinoa** or **230g Boiled Potato**; swap **75g Broccoli** for **85g Spinach** or **90g Green Beans**.\n` +
+        `• Tap any button below to update your live Fuel 3 scale weights without altering past logged days:`,
+      actions: [
+        {
+          actionId: `swap_tempeh_today_w${week}_d${dayIdx}`,
+          buttonLabel: 'Swap Tofu for 115g Tempeh Today',
+          mutationType: 'swap_ingredient',
+          swapCategory: 'tofu',
+          swapId: 'tempeh_115',
+          scope: 'today'
+        },
+        {
+          actionId: `swap_edamame_today_w${week}_d${dayIdx}`,
+          buttonLabel: 'Swap Tofu for 200g Edamame Today',
+          mutationType: 'swap_ingredient',
+          swapCategory: 'tofu',
+          swapId: 'edamame_200',
+          scope: 'today'
+        },
+        {
+          actionId: `swap_quinoa_today_w${week}_d${dayIdx}`,
+          buttonLabel: 'Swap Rice for 165g Cooked Quinoa Today',
+          mutationType: 'swap_ingredient',
+          swapCategory: 'rice',
+          swapId: 'quinoa_165',
+          scope: 'today'
+        },
+        {
+          actionId: `swap_spinach_today_w${week}_d${dayIdx}`,
+          buttonLabel: 'Swap Broccoli for 85g Spinach Today',
+          mutationType: 'swap_ingredient',
+          swapCategory: 'broccoli',
+          swapId: 'spinach_85',
+          scope: 'today'
+        }
+      ]
+    };
+  }
+
+  return {
+    matched: false,
+    replyText: '',
+    actions: []
+  };
+}
+
