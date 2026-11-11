@@ -663,23 +663,75 @@ export function stripBatchStepPrefix(title: string): string {
   return String(title || '').replace(/^#\d+\s+/, '').trim();
 }
 
-export const CHIME_HTML_AUDIO_VOLUME = 1.0;
+export type TimerTonePreset = 'warm_marimba' | 'soft_bell' | 'gentle_tap';
+
+export const DEFAULT_TIMER_TONE: TimerTonePreset = 'warm_marimba';
+export const DEFAULT_TIMER_VOLUME = 0.55;
+export const CHIME_HTML_AUDIO_VOLUME = DEFAULT_TIMER_VOLUME;
+export const CHIME_MAX_LINEAR_PEAK = 0.55; // -5.2 dBFS pure linear headroom (zero Math.tanh distortion)
+
+export const TIMER_TONE_PRESET_SPECS: Record<
+  TimerTonePreset,
+  {
+    id: TimerTonePreset;
+    label: string;
+    description: string;
+    activeDurationSec: number;
+  }
+> = {
+  warm_marimba: {
+    id: 'warm_marimba',
+    label: 'Warm Chime',
+    description: 'Ascending C5 to G5 Perfect Fifth (Hevy / Apple Fitness style)',
+    activeDurationSec: 0.62 // 0.10s to 0.72s
+  },
+  soft_bell: {
+    id: 'soft_bell',
+    label: 'Soft Bell',
+    description: 'Warm Zen Singing Chord (A4 + E5 + A5 consonance)',
+    activeDurationSec: 0.68 // 0.10s to 0.78s
+  },
+  gentle_tap: {
+    id: 'gentle_tap',
+    label: 'Gentle Tap',
+    description: 'Minimalist Low-Mid Double Woodblock Cue (B4 to E5)',
+    activeDurationSec: 0.32 // 0.10s to 0.42s
+  }
+};
+
+export function normalizeTimerTonePreset(tone?: string | null): TimerTonePreset {
+  if (tone === 'warm_marimba' || tone === 'soft_bell' || tone === 'gentle_tap') {
+    return tone;
+  }
+  return DEFAULT_TIMER_TONE;
+}
+
+export function clampTimerVolume(volume?: number | null): number {
+  const num = typeof volume === 'number' && Number.isFinite(volume) ? volume : DEFAULT_TIMER_VOLUME;
+  return Math.max(0.05, Math.min(1.0, +num.toFixed(2)));
+}
+
+export function formatTimerVolumePercent(volume?: number | null): string {
+  return `${Math.round(clampTimerVolume(volume) * 100)}%`;
+}
 
 export function generatePreRenderedChimeWavBytes(
   sampleRate = 44100,
-  _legacyDurationSec = 0.74
+  toneOrDuration: TimerTonePreset | number = 'warm_marimba'
 ): Uint8Array {
-  const leadInSilenceSamples = Math.max(1, Math.round(sampleRate * 0.100)); // 100 ms pure digital silence
-  const pulse1Samples = Math.max(1, Math.round(sampleRate * 0.180));        // Pulse 1: 180 ms
-  const gap1Samples = Math.max(1, Math.round(sampleRate * 0.060));          // 60 ms gap
-  const pulse2Samples = Math.max(1, Math.round(sampleRate * 0.180));        // Pulse 2: 180 ms
-  const gap2Samples = Math.max(1, Math.round(sampleRate * 0.060));          // 60 ms gap
-  const pulse3Samples = Math.max(1, Math.round(sampleRate * 0.260));        // Pulse 3: 260 ms
-  const trailingSilenceSamples = Math.max(1, Math.round(sampleRate * 0.400)); // 400 ms pure digital silence
+  const toneType: TimerTonePreset =
+    typeof toneOrDuration === 'string' ? normalizeTimerTonePreset(toneOrDuration) : 'warm_marimba';
 
-  const activeChimeSamples =
-    pulse1Samples + gap1Samples + pulse2Samples + gap2Samples + pulse3Samples;
-  const numSamples = leadInSilenceSamples + activeChimeSamples + trailingSilenceSamples;
+  const leadInSec = 0.10; // 100 ms pure digital silence at start
+  const trailingSilenceSec = 0.45; // 450 ms pure digital silence at end
+  const activeEndSec =
+    toneType === 'soft_bell' ? 0.78 : toneType === 'gentle_tap' ? 0.42 : 0.72;
+  const totalDurationSec = +(activeEndSec + trailingSilenceSec).toFixed(4);
+
+  const leadInSilenceSamples = Math.max(1, Math.round(sampleRate * leadInSec));
+  const activeEndSample = Math.max(leadInSilenceSamples + 1, Math.round(sampleRate * activeEndSec));
+  const numSamples = Math.max(activeEndSample + 1, Math.round(sampleRate * totalDurationSec));
+
   const dataBytes = numSamples * 2; // 16-bit mono PCM = 2 bytes per sample
   const buffer = new ArrayBuffer(44 + dataBytes);
   const view = new DataView(buffer);
@@ -705,55 +757,87 @@ export function generatePreRenderedChimeWavBytes(
   writeStr(36, 'data');
   view.setUint32(40, dataBytes, true);
 
-  const attackSamples = Math.max(1, Math.round(sampleRate * 0.015));  // 15 ms raised-cosine attack
-  const releaseSamples = Math.max(1, Math.round(sampleRate * 0.035)); // 35 ms raised-cosine release
-
-  const pulses: Array<{ startOffset: number; length: number }> = [
-    { startOffset: leadInSilenceSamples, length: pulse1Samples },
-    { startOffset: leadInSilenceSamples + pulse1Samples + gap1Samples, length: pulse2Samples },
-    {
-      startOffset:
-        leadInSilenceSamples + pulse1Samples + gap1Samples + pulse2Samples + gap2Samples,
-      length: pulse3Samples
+  const shapeNoteEnvelope = (
+    tNote: number,
+    noteDuration: number,
+    attackSec: number,
+    decayRate: number,
+    fadeOutSec: number
+  ): number => {
+    if (tNote <= 0 || tNote >= noteDuration) return 0;
+    let attackEnv = 1.0;
+    if (tNote < attackSec) {
+      attackEnv = 0.5 * (1 - Math.cos((Math.PI * tNote) / attackSec));
     }
-  ];
-
-  for (const pulse of pulses) {
-    const len = pulse.length;
-    for (let i = 0; i < len; i++) {
-      if (i === 0 || i === len - 1) {
-        view.setInt16(44 + (pulse.startOffset + i) * 2, 0, true);
-        continue;
-      }
-
-      let env = 1.0;
-      if (i < attackSamples) {
-        env = 0.5 * (1 - Math.cos((Math.PI * i) / attackSamples));
-      } else if (i >= len - releaseSamples) {
-        const relIdx = i - (len - releaseSamples);
-        env = 0.5 * (1 + Math.cos((Math.PI * relIdx) / releaseSamples));
-      }
-
-      const t = i / sampleRate;
-      // Layered harmonic triad: 1046.5 Hz fundamental + 2093 Hz octave + 3136 Hz fifth
-      const triad =
-        0.60 * Math.sin(2 * Math.PI * 1046.5 * t) +
-        0.28 * Math.sin(2 * Math.PI * 2093.0 * t) +
-        0.12 * Math.sin(2 * Math.PI * 3136.0 * t);
-
-      const rawSample = triad * env;
-      // Soft-knee hyperbolic tangent limiter capped at 90% full scale
-      const limited = Math.tanh(rawSample * 1.85) * 0.90;
-      const pcm16 = Math.max(-32767, Math.min(32767, Math.round(limited * 32767)));
-      view.setInt16(44 + (pulse.startOffset + i) * 2, pcm16, true);
+    const expDecay = Math.exp(-tNote * decayRate);
+    let fadeOutEnv = 1.0;
+    if (tNote > noteDuration - fadeOutSec) {
+      const tRem = noteDuration - tNote;
+      fadeOutEnv = 0.5 * (1 - Math.cos((Math.PI * Math.max(0, tRem)) / fadeOutSec));
     }
+    return attackEnv * expDecay * fadeOutEnv;
+  };
+
+  for (let i = leadInSilenceSamples; i < activeEndSample; i++) {
+    const t = i / sampleRate;
+    let sample = 0;
+
+    if (toneType === 'warm_marimba') {
+      // Note 1 (0.10s to 0.32s): Warm C5 (523.25 Hz @ 85% + 1046.5 Hz @ 15%)
+      if (t >= 0.10 && t <= 0.32) {
+        const tNote1 = t - 0.10;
+        const env1 = shapeNoteEnvelope(tNote1, 0.22, 0.010, 9.5, 0.020);
+        const wave1 =
+          0.85 * Math.sin(2 * Math.PI * 523.25 * tNote1) +
+          0.15 * Math.sin(2 * Math.PI * 1046.5 * tNote1);
+        sample += wave1 * env1;
+      }
+      // Note 2 (0.26s to 0.72s): Warm G5 (783.99 Hz @ 88% + 1567.98 Hz @ 12%)
+      if (t >= 0.26 && t <= 0.72) {
+        const tNote2 = t - 0.26;
+        const env2 = shapeNoteEnvelope(tNote2, 0.46, 0.012, 5.5, 0.030);
+        const wave2 =
+          0.88 * Math.sin(2 * Math.PI * 783.99 * tNote2) +
+          0.12 * Math.sin(2 * Math.PI * 1567.98 * tNote2);
+        sample += wave2 * env2;
+      }
+    } else if (toneType === 'soft_bell') {
+      // Single lush resonant chord (0.10s to 0.78s): 440 Hz (60%) + 659.25 Hz (30%) + 880 Hz (10%)
+      if (t >= 0.10 && t <= 0.78) {
+        const tNote = t - 0.10;
+        const env = shapeNoteEnvelope(tNote, 0.68, 0.018, 4.2, 0.030);
+        const chord =
+          0.60 * Math.sin(2 * Math.PI * 440.0 * tNote) +
+          0.30 * Math.sin(2 * Math.PI * 659.25 * tNote) +
+          0.10 * Math.sin(2 * Math.PI * 880.0 * tNote);
+        sample = chord * env;
+      }
+    } else if (toneType === 'gentle_tap') {
+      // Tap 1 (0.10s to 0.20s at 493.88 Hz B4, fast decay exp(-tNote * 18))
+      if (t >= 0.10 && t <= 0.20) {
+        const tTap1 = t - 0.10;
+        const env1 = shapeNoteEnvelope(tTap1, 0.10, 0.006, 18.0, 0.012);
+        sample += Math.sin(2 * Math.PI * 493.88 * tTap1) * env1;
+      }
+      // Tap 2 (0.24s to 0.42s at 659.25 Hz E5, decay exp(-tNote * 12))
+      if (t >= 0.24 && t <= 0.42) {
+        const tTap2 = t - 0.24;
+        const env2 = shapeNoteEnvelope(tTap2, 0.18, 0.006, 12.0, 0.015);
+        sample += Math.sin(2 * Math.PI * 659.25 * tTap2) * env2;
+      }
+    }
+
+    // Pure linear headroom: clamp normalized signal to [-1, 1] and scale by 0.55 (-5.2 dBFS max peak)
+    const clampedLinear = Math.max(-1.0, Math.min(1.0, sample));
+    const pcm16 = Math.round(clampedLinear * CHIME_MAX_LINEAR_PEAK * 32767);
+    view.setInt16(44 + i * 2, pcm16, true);
   }
 
   return new Uint8Array(buffer);
 }
 
-export function createSilentPaddedChimeWavUrl(): string {
-  const bytes = generatePreRenderedChimeWavBytes(44100);
+export function createSilentPaddedChimeWavUrl(toneType: TimerTonePreset = 'warm_marimba'): string {
+  const bytes = generatePreRenderedChimeWavBytes(44100, toneType);
   if (typeof Blob !== 'undefined' && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
     const blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'audio/wav' });
     return URL.createObjectURL(blob);

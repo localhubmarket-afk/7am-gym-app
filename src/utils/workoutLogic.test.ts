@@ -715,26 +715,47 @@ test('Technical & UX Upgrades 1-5: Day 3 Grip Dividers, Overhead Rope Extensions
   assert.equal(logs.w2_2_thu_inc_db_3.weight, '67.5');
   assert.equal(logs.w2_2_thu_inc_db_3.reps, '11');
 
-  // 5. Louder, Zero-Crackle Bluetooth-Safe Timer Chime (DSP Upgrade)
-  assert.equal(mod.CHIME_HTML_AUDIO_VOLUME, 1.0);
-  const wavBytes = mod.generatePreRenderedChimeWavBytes(44100);
-  // 100ms + (180+60+180+60+260)ms + 400ms = 1240ms -> 54684 samples -> 44 + 109368 = 109412 bytes
-  assert.equal(wavBytes.byteLength, 44 + Math.round(44100 * 1.24) * 2);
-  const view = new DataView(wavBytes.buffer, wavBytes.byteOffset, wavBytes.byteLength);
-  // Verify first 100ms (4410 samples) are pure digital silence (0)
-  assert.equal(view.getInt16(44, true), 0);
-  assert.equal(view.getInt16(44 + 4409 * 2, true), 0);
-  // Verify last 400ms (17640 samples) are pure digital silence (0)
-  const totalSamples = (wavBytes.byteLength - 44) / 2;
-  assert.equal(view.getInt16(44 + (totalSamples - 17640) * 2, true), 0);
-  assert.equal(view.getInt16(44 + (totalSamples - 1) * 2, true), 0);
-  // Verify peak amplitudeinside Pulse 1 is high (> 75% full scale) and capped at <= 90% full scale (29491)
-  let maxAbsPcm = 0;
-  for (let i = 4410; i < totalSamples - 17640; i++) {
-    const val = Math.abs(view.getInt16(44 + i * 2, true));
-    if (val > maxAbsPcm) maxAbsPcm = val;
+  // 5. Warm Harmonious Acoustic Timer Chime (Zero-Crackle 0.55 Linear Headroom + 3 Tone Presets + 55% Default Volume)
+  assert.equal(mod.DEFAULT_TIMER_TONE, 'warm_marimba');
+  assert.equal(mod.DEFAULT_TIMER_VOLUME, 0.55);
+  assert.equal(mod.CHIME_HTML_AUDIO_VOLUME, 0.55);
+  assert.equal(mod.CHIME_MAX_LINEAR_PEAK, 0.55);
+  assert.equal(mod.clampTimerVolume(undefined), 0.55);
+  assert.equal(mod.clampTimerVolume(0.01), 0.05);
+  assert.equal(mod.clampTimerVolume(1.5), 1.0);
+  assert.equal(mod.formatTimerVolumePercent(0.55), '55%');
+  assert.equal(mod.normalizeTimerTonePreset('soft_bell'), 'soft_bell');
+  assert.equal(mod.normalizeTimerTonePreset('gentle_tap'), 'gentle_tap');
+  assert.equal(mod.normalizeTimerTonePreset('invalid_tone'), 'warm_marimba');
+
+  const maxAllowedPcm = Math.round(32767 * 0.55); // 18022 (-5.2 dBFS pure linear headroom)
+  for (const preset of ['warm_marimba', 'soft_bell', 'gentle_tap'] as const) {
+    const wavBytes = mod.generatePreRenderedChimeWavBytes(44100, preset);
+    const view = new DataView(wavBytes.buffer, wavBytes.byteOffset, wavBytes.byteLength);
+    const totalSamples = (wavBytes.byteLength - 44) / 2;
+    const leadInSamples = Math.round(44100 * 0.10); // 100ms
+    const trailingSamples = Math.round(44100 * 0.45); // 450ms
+
+    // Verify first 100ms (4410 samples) are pure digital silence (0)
+    assert.equal(view.getInt16(44, true), 0);
+    assert.equal(view.getInt16(44 + (leadInSamples - 1) * 2, true), 0);
+
+    // Verify last 450ms (19845 samples) are pure digital silence (0)
+    assert.equal(view.getInt16(44 + (totalSamples - trailingSamples) * 2, true), 0);
+    assert.equal(view.getInt16(44 + (totalSamples - 1) * 2, true), 0);
+
+    // Verify active signal is non-zero and strictly bounded by 0.55 linear headroom (<= 18022)
+    let maxAbsPcm = 0;
+    for (let i = leadInSamples; i < totalSamples - trailingSamples; i++) {
+      const val = Math.abs(view.getInt16(44 + i * 2, true));
+      if (val > maxAbsPcm) maxAbsPcm = val;
+    }
+    assert.equal(
+      maxAbsPcm > 8000 && maxAbsPcm <= maxAllowedPcm,
+      true,
+      `Preset ${preset} peak PCM ${maxAbsPcm} must be in (8000, ${maxAllowedPcm}]`
+    );
   }
-  assert.equal(maxAbsPcm > 25000 && maxAbsPcm <= Math.round(32767 * 0.90) + 1, true);
 });
 
 
