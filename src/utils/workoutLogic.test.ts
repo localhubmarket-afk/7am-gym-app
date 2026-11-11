@@ -539,3 +539,99 @@ test('Multi-Preset Fuel Architecture, Immutable Historical Logs, Smart Ingredien
   assert.equal(swapCoach.actions.some(a => a.swapId === 'tempeh_115'), true);
 });
 
+test('UX Simplifications 1-3 & 3-Tier Smartwatch Integration (BLE 0x180D/0x2A37 + Wrist Alerts + Health Bridge)', async () => {
+  const mod = await import('./workoutLogic.ts');
+
+  // 1. Simplify Muscle Fuel Header Card & Collapsible Plan/Swap Drawer
+  assert.equal(mod.formatCompactMuscleFuelTitle(1300, 138), 'Daily Muscle Fuel (1,300 kcal • 138g P)');
+  assert.equal(
+    mod.formatFuelPlanSubheaderPill('almond_cashew_pea', 0),
+    'Plan: Option B (Almond/Cashew) • Change / Swap Ingredients'
+  );
+  assert.equal(
+    mod.formatFuelPlanSubheaderPill('classic_silk_protein', 1),
+    'Plan: Original Silk (1 swap) • Change / Swap Ingredients'
+  );
+  assert.equal(mod.isFuelPlanDrawerExpanded(undefined), false);
+  assert.equal(mod.isFuelPlanDrawerExpanded(true), true);
+
+  // 2. Hide Timing & Prep Tip by default on Fuel 1-4 cards
+  assert.equal(mod.isFuelTimingTipExpanded(undefined, 'pre_shake'), false);
+  assert.equal(mod.isFuelTimingTipExpanded({}, 'post_oats'), false);
+  assert.equal(mod.isFuelTimingTipExpanded({ post_oats: true }, 'post_oats'), true);
+
+  // 3. Declutter 4-Day Batch Prep Card Headers
+  const oatsHeader = mod.getCompactBatchCardHeaderSpec('recipe_oats_batch', 'almond_cashew_pea', 'g');
+  assert.equal(oatsHeader.badge, 'Batch 1/2');
+  assert.equal(oatsHeader.fridgePill, '4 Jars in Fridge');
+  assert.equal(oatsHeader.weightBadge, '1,116g (279g/jar)');
+  assert.equal(oatsHeader.title, '4-Day Overnight Protein Oats Batch');
+
+  const riceHeader = mod.getCompactBatchCardHeaderSpec('recipe_rice_batch', 'almond_cashew_pea', 'g');
+  assert.equal(riceHeader.badge, 'Batch 2/2');
+  assert.equal(riceHeader.weightBadge, '600g (150g/bowl)');
+  assert.equal(riceHeader.title, '4-Day Jasmine Rice Batch Prep');
+
+  // 4A. Tier 1: Parse 8-bit and 16-bit BLE Heart Rate Measurement (0x2A37)
+  const packet8Bit = new Uint8Array([0x06, 138]); // 8-bit BPM = 138, contact detected
+  const parsed8 = mod.parseBleHeartRateMeasurement(packet8Bit);
+  assert.equal(parsed8.bpm, 138);
+  assert.equal(parsed8.is16Bit, false);
+  assert.equal(parsed8.contactDetected, true);
+
+  const packet16Bit = new Uint8Array([0x01, 0x98, 0x00]); // 16-bit little-endian BPM = 152
+  const parsed16 = mod.parseBleHeartRateMeasurement(packet16Bit);
+  assert.equal(parsed16.bpm, 152);
+  assert.equal(parsed16.is16Bit, true);
+
+  const zoneInfo = mod.getHeartRateZoneInfo(138, 190);
+  assert.equal(zoneInfo.zone, 3);
+  assert.equal(zoneInfo.pillText, '138 BPM • Zone 3');
+
+  const recovery = mod.formatRestHeartRateRecovery(152, 118);
+  assert.equal(recovery.hasRecovery, true);
+  assert.equal(recovery.deltaBpm, -34);
+  assert.equal(recovery.text, '152 -> 118 BPM (-34 BPM recovery)');
+
+  // 4B. Tier 2: Smartwatch Wrist Haptic Notification Payload
+  const wristAlert = mod.buildWristNotificationPayload({
+    nextSetNumber: 2,
+    exerciseName: 'Barbell Bench Press',
+    weight: 135,
+    unit: 'lbs',
+    reps: 8
+  });
+  assert.equal(wristAlert.tag, '7am-timer-alert');
+  assert.equal(wristAlert.renotify, true);
+  assert.deepEqual(wristAlert.vibrate, [200, 100, 200]);
+  assert.equal(
+    wristAlert.body,
+    'Rest Complete! Up Next: Set 2 Barbell Bench Press (135 lbs x 8)'
+  );
+
+  // 4C. Tier 3: Capacitor HealthKit / Health Connect Bridge & CSV Export
+  assert.equal(mod.detectCapacitorHealthBridge({}).isNativeAvailable, false);
+  assert.equal(
+    mod.detectCapacitorHealthBridge({ Capacitor: { Plugins: { Health: {} } } }).isNativeAvailable,
+    true
+  );
+  assert.equal(
+    mod.detectCapacitorHealthBridge({ Capacitor: { Plugins: { HealthFitness: {} } } }).pluginName,
+    'HealthFitness'
+  );
+
+  const csv = mod.buildHealthExportCsv({
+    week: 1,
+    dayNumber: 1,
+    completedSets: 18,
+    totalVolumeLbs: 9450,
+    dailyKcal: 1300,
+    dailyProteinG: 138,
+    waterMl: 2000,
+    lastBpm: 118,
+    startRestBpm: 152
+  });
+  assert.equal(csv.includes('1300,138,2000,118,152'), true);
+});
+
+

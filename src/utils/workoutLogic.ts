@@ -2342,3 +2342,305 @@ export function buildCoachAiFuelMutationReply(
   };
 }
 
+// ============================================================================
+// UX SIMPLIFICATIONS 1–3 & 3-TIER SMARTWATCH INTEGRATION (BLE + WRIST ALERTS + HEALTH SYNC)
+// ============================================================================
+
+export function formatCompactMuscleFuelTitle(dailyKcal = 1300, dailyProtein = 138): string {
+  return `Daily Muscle Fuel (${Number(dailyKcal).toLocaleString()} kcal • ${dailyProtein}g P)`;
+}
+
+export function formatFuelPlanSubheaderPill(
+  presetId: FuelPresetId = 'almond_cashew_pea',
+  activeSwapCount = 0
+): string {
+  const shortPlanMap: Record<FuelPresetId, string> = {
+    almond_cashew_pea: 'Option B (Almond/Cashew)',
+    classic_silk_protein: 'Original Silk',
+    unsweetened_soy: 'Option A (Soy)'
+  };
+  const planName = shortPlanMap[presetId] || shortPlanMap.almond_cashew_pea;
+  const swapSuffix = activeSwapCount > 0 ? ` (${activeSwapCount} swap${activeSwapCount > 1 ? 's' : ''})` : '';
+  return `Plan: ${planName}${swapSuffix} • Change / Swap Ingredients`;
+}
+
+export function isFuelPlanDrawerExpanded(openFuelPlanDrawer?: boolean): boolean {
+  return Boolean(openFuelPlanDrawer);
+}
+
+export function isFuelTimingTipExpanded(
+  openFuelTips: Record<string, boolean> | undefined,
+  slotId: string
+): boolean {
+  if (!openFuelTips || openFuelTips[slotId] === undefined) {
+    return false; // Hidden by default on all Fuel 1-4 cards
+  }
+  return Boolean(openFuelTips[slotId]);
+}
+
+export function getCompactBatchCardHeaderSpec(
+  recipeId: 'recipe_oats_batch' | 'recipe_rice_batch',
+  presetId: FuelPresetId = 'almond_cashew_pea',
+  unit: FuelWeightUnit = 'g'
+): {
+  badge: string;
+  fridgePill: string;
+  weightBadge: string;
+  title: string;
+} {
+  if (recipeId === 'recipe_oats_batch') {
+    const isOptionB = presetId === 'almond_cashew_pea';
+    const weightBadge =
+      unit === 'lb'
+        ? isOptionB
+          ? '2.46 lb (9.8 oz/jar)'
+          : '2.37 lb (9.5 oz/jar)'
+        : isOptionB
+          ? '1,116g (279g/jar)'
+          : '1,076g (269g/jar)';
+    return {
+      badge: 'Batch 1/2',
+      fridgePill: '4 Jars in Fridge',
+      weightBadge,
+      title: '4-Day Overnight Protein Oats Batch'
+    };
+  }
+  return {
+    badge: 'Batch 2/2',
+    fridgePill: '4 Bowls in Fridge',
+    weightBadge: unit === 'lb' ? '1.32 lb (5.3 oz/bowl)' : '600g (150g/bowl)',
+    title: '4-Day Jasmine Rice Batch Prep'
+  };
+}
+
+// Tier 1: Real-Time Web Bluetooth Heart Rate Measurement Parser (0x180D / 0x2A37)
+export interface BleHeartRateMeasurement {
+  bpm: number;
+  is16Bit: boolean;
+  contactDetected: boolean | null;
+  energyExpendedKJ: number | null;
+  rrIntervalsMs: number[];
+}
+
+export function parseBleHeartRateMeasurement(
+  input: DataView | Uint8Array
+): BleHeartRateMeasurement {
+  const view =
+    input instanceof DataView
+      ? input
+      : new DataView(input.buffer, input.byteOffset, input.byteLength);
+
+  if (view.byteLength < 2) {
+    return {
+      bpm: 0,
+      is16Bit: false,
+      contactDetected: null,
+      energyExpendedKJ: null,
+      rrIntervalsMs: []
+    };
+  }
+
+  const flags = view.getUint8(0);
+  const is16Bit = (flags & 0x01) !== 0;
+  let offset = 1;
+  let bpm = 0;
+
+  if (is16Bit) {
+    if (view.byteLength >= 3) {
+      bpm = view.getUint16(offset, true);
+      offset += 2;
+    }
+  } else {
+    bpm = view.getUint8(offset);
+    offset += 1;
+  }
+
+  const contactBits = (flags >> 1) & 0x03;
+  let contactDetected: boolean | null = null;
+  if (contactBits === 2) contactDetected = false;
+  else if (contactBits === 3) contactDetected = true;
+
+  let energyExpendedKJ: number | null = null;
+  if ((flags & 0x08) !== 0 && view.byteLength >= offset + 2) {
+    energyExpendedKJ = view.getUint16(offset, true);
+    offset += 2;
+  }
+
+  const rrIntervalsMs: number[] = [];
+  if ((flags & 0x10) !== 0) {
+    while (view.byteLength >= offset + 2) {
+      const rawRr = view.getUint16(offset, true);
+      rrIntervalsMs.push(Math.round((rawRr / 1024) * 1000));
+      offset += 2;
+    }
+  }
+
+  return {
+    bpm,
+    is16Bit,
+    contactDetected,
+    energyExpendedKJ,
+    rrIntervalsMs
+  };
+}
+
+export function getHeartRateZoneInfo(
+  bpm: number,
+  maxHr = 190
+): {
+  bpm: number;
+  zone: 1 | 2 | 3 | 4 | 5;
+  zoneName: string;
+  pillText: string;
+} {
+  const cleanBpm = Math.max(0, Math.round(Number(bpm) || 0));
+  const safeMax = Math.max(120, Number(maxHr) || 190);
+  const pct = cleanBpm / safeMax;
+
+  let zone: 1 | 2 | 3 | 4 | 5 = 1;
+  let zoneName = 'Warm-Up / Recovery';
+  if (pct >= 0.9) {
+    zone = 5;
+    zoneName = 'Peak Anaerobic';
+  } else if (pct >= 0.8) {
+    zone = 4;
+    zoneName = 'Anaerobic Threshold';
+  } else if (pct >= 0.7) {
+    zone = 3;
+    zoneName = 'Aerobic Tempo';
+  } else if (pct >= 0.6) {
+    zone = 2;
+    zoneName = 'Fat Burn / Base';
+  }
+
+  return {
+    bpm: cleanBpm,
+    zone,
+    zoneName,
+    pillText: `${cleanBpm} BPM • Zone ${zone}`
+  };
+}
+
+export function formatRestHeartRateRecovery(
+  startRestBpm: number | null | undefined,
+  currentBpm: number | null | undefined
+): {
+  hasRecovery: boolean;
+  startBpm: number;
+  currentBpm: number;
+  deltaBpm: number;
+  text: string;
+} {
+  const start = Math.round(Number(startRestBpm) || 0);
+  const current = Math.round(Number(currentBpm) || 0);
+  if (start <= 0 || current <= 0) {
+    return {
+      hasRecovery: false,
+      startBpm: 0,
+      currentBpm: 0,
+      deltaBpm: 0,
+      text: ''
+    };
+  }
+  const deltaBpm = current - start;
+  const sign = deltaBpm > 0 ? `+${deltaBpm}` : `${deltaBpm}`;
+  return {
+    hasRecovery: true,
+    startBpm: start,
+    currentBpm: current,
+    deltaBpm,
+    text: `${start} -> ${current} BPM (${sign} BPM recovery)`
+  };
+}
+
+// Tier 2: Smartwatch Wrist Haptic Notification Payload Builder
+export interface WristNotificationPayload {
+  title: string;
+  body: string;
+  tag: '7am-timer-alert';
+  renotify: true;
+  vibrate: [number, number, number];
+}
+
+export function buildWristNotificationPayload(params: {
+  nextSetNumber?: number;
+  exerciseName?: string;
+  weight?: string | number;
+  unit?: 'lbs' | 'kg';
+  reps?: string | number;
+  customBody?: string;
+}): WristNotificationPayload {
+  if (params.customBody) {
+    return {
+      title: '7AM Gym • Watch Timer Alert',
+      body: params.customBody,
+      tag: '7am-timer-alert',
+      renotify: true,
+      vibrate: [200, 100, 200]
+    };
+  }
+  const setNum = params.nextSetNumber || 1;
+  const exName = params.exerciseName || 'Barbell Bench Press';
+  const weightVal = params.weight !== undefined && params.weight !== '' ? params.weight : 135;
+  const unitVal = params.unit || 'lbs';
+  const repsVal = params.reps !== undefined && params.reps !== '' ? params.reps : 8;
+
+  return {
+    title: '7AM Gym • Rest Complete!',
+    body: `Rest Complete! Up Next: Set ${setNum} ${exName} (${weightVal} ${unitVal} x ${repsVal})`,
+    tag: '7am-timer-alert',
+    renotify: true,
+    vibrate: [200, 100, 200]
+  };
+}
+
+// Tier 3: Apple HealthKit & Google Health Connect Bridge Detection & CSV Export
+export function detectCapacitorHealthBridge(winObj?: unknown): {
+  isNativeAvailable: boolean;
+  pluginName: 'Health' | 'HealthFitness' | null;
+} {
+  const w = winObj as {
+    Capacitor?: {
+      Plugins?: {
+        Health?: unknown;
+        HealthFitness?: unknown;
+      };
+    };
+  } | undefined;
+
+  if (w?.Capacitor?.Plugins?.Health) {
+    return { isNativeAvailable: true, pluginName: 'Health' };
+  }
+  if (w?.Capacitor?.Plugins?.HealthFitness) {
+    return { isNativeAvailable: true, pluginName: 'HealthFitness' };
+  }
+  return { isNativeAvailable: false, pluginName: null };
+}
+
+export function buildHealthExportCsv(params: {
+  week: number;
+  dayNumber: number;
+  completedSets: number;
+  totalVolumeLbs: number;
+  dailyKcal: number;
+  dailyProteinG: number;
+  waterMl: number;
+  lastBpm?: number;
+  startRestBpm?: number;
+}): string {
+  const header = 'Week,Day,Completed_Sets,Total_Volume_Lbs,Daily_Kcal,Daily_Protein_G,Water_Ml,Live_BPM,Start_Rest_BPM';
+  const row = [
+    params.week,
+    params.dayNumber,
+    params.completedSets,
+    params.totalVolumeLbs,
+    params.dailyKcal,
+    params.dailyProteinG,
+    params.waterMl,
+    params.lastBpm || '',
+    params.startRestBpm || ''
+  ].join(',');
+  return `${header}\n${row}`;
+}
+
+

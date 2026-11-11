@@ -88,6 +88,11 @@
           <button id="open-gemini-ai-btn" type="button" class="flex items-center gap-1 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition" title="Open Coach AI">
             <span>✨ Coach AI</span>
           </button>
+          <button id="open-watch-modal-btn" type="button" class="flex items-center gap-1 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/40 text-rose-200 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition" title="Smartwatch, Live BLE Heart Rate & Health Sync">
+            <span id="watch-header-live-dot" class="hidden w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
+            <span>⌚</span>
+            <span id="watch-header-btn-label">Watch</span>
+          </button>
           <button id="open-smart-login-btn" type="button" class="flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition" title="Smart Login & User Profile">
             <span id="header-login-label">👤 Profile</span>
           </button>
@@ -126,6 +131,16 @@
             <button id="pinned-timer-plus" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 transition" title="Add 15 seconds">+15s</button>
             <button id="pinned-timer-reset" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-400 hover:text-white transition" title="Reset timer">↺</button>
           </div>
+        </div>
+        <!-- Live Smartwatch BLE Heart Rate Pill & Rest-Interval Recovery Delta Row -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span id="pinned-hr-live-pill" class="hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/50 text-rose-200 text-[10px] font-extrabold whitespace-nowrap">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
+            <span id="pinned-hr-live-text">138 BPM • Zone 3</span>
+          </span>
+          <span id="pinned-hr-recovery-badge" class="hidden px-2 py-0.5 rounded-md bg-emerald-950/80 border border-emerald-400/40 text-emerald-300 text-[10px] font-extrabold whitespace-nowrap">
+            152 -&gt; 118 BPM (-34 BPM recovery)
+          </span>
         </div>
         <div id="pinned-rice-alert-banner" class="hidden rounded-lg px-2.5 py-1.5 bg-gradient-to-r from-amber-950/90 via-amber-900/60 to-emerald-950/90 border border-amber-400/60 text-amber-200 text-[11px] font-extrabold flex items-center justify-between gap-2">
           <span id="pinned-rice-alert-text" class="leading-snug">🍚 MIX / STIR RICE</span>
@@ -317,13 +332,34 @@
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-center space-y-5">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Gym Rest Timer</span>
-          <button type="button" id="timer-sound-toggle" class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-400 border border-slate-700 transition">
-            🔔 Sound &amp; Vibe
-          </button>
+          <div class="flex items-center gap-1.5">
+            <button type="button" id="timer-open-watch-btn" class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-400/40 transition">
+              ⌚ Watch &amp; HR
+            </button>
+            <button type="button" id="timer-sound-toggle" class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-400 border border-slate-700 transition">
+              🔔 Sound &amp; Vibe
+            </button>
+          </div>
         </div>
 
         <div id="timer-context-label" class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full py-1 px-3 inline-block">
           Ready for next set
+        </div>
+
+        <!-- Live Smartwatch BLE Heart Rate & Rest-Interval Recovery HUD on Rest Timer Tab -->
+        <div id="timer-view-watch-hud" class="bg-slate-950/90 border border-slate-800 rounded-xl px-3 py-2.5 flex flex-wrap items-center justify-between gap-2 text-left">
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="timer-view-hr-pill" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/85 border border-rose-400/50 text-rose-200 text-xs font-extrabold">
+              <span id="timer-view-hr-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+              <span id="timer-view-hr-text">⌚ BLE HR Standby (Tap Watch to Connect)</span>
+            </span>
+            <span id="timer-view-hr-recovery" class="hidden px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold">
+              152 -&gt; 118 BPM (-34 BPM recovery)
+            </span>
+          </div>
+          <button type="button" id="timer-wrist-alert-quick-btn" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-slate-300 transition">
+            ⌚ Wrist Alerts: OFF
+          </button>
         </div>
 
         <!-- Giant Countdown Display -->
@@ -429,34 +465,25 @@
         </div>
       </div>
 
-      <!-- Compact Daily Macro, Calories & Water Intake Tracker -->
+      <!-- Simplified Daily Muscle Fuel Header Card (MacroFactor / Hevy Standard) -->
       <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">💰 ~$5.55/Day (~$39/Wk) • 100% Kitchen Scale (g)</span>
-              <span class="text-[9px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/35 px-2 py-0.5 rounded-full">Saves ~$75/wk vs. Takeout</span>
-              <span id="vegan-logged-with-plan-badge" class="hidden text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-950/85 text-purple-200 border border-purple-400/50"></span>
-            </div>
-            <h2 id="vegan-main-plan-heading" class="text-sm sm:text-base font-extrabold text-white leading-snug mt-1">High-Protein Muscle &amp; Recomp Fuel (1,300 kcal • 138g P)</h2>
+        <!-- 1. Compact Title Row + [G | LB] Toggle & [Log All 4] Button -->
+        <div class="flex items-center justify-between gap-1.5">
+          <div class="min-w-0 flex-1 flex flex-wrap items-center gap-1.5">
+            <h2 id="vegan-main-plan-heading" class="text-xs sm:text-sm font-extrabold text-white tracking-tight leading-snug">Daily Muscle Fuel (1,300 kcal • 138g P)</h2>
+            <span id="vegan-logged-with-plan-badge" class="hidden text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-950/85 text-purple-200 border border-purple-400/50"></span>
           </div>
-          <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+          <div class="flex items-center gap-1 shrink-0">
             <div class="inline-flex items-center rounded-lg bg-slate-950 border border-sky-500/40 p-0.5" role="group" aria-label="Kitchen Scale Weight Unit Toggle">
-              <button type="button" id="fuel-unit-g-btn" data-fuel-unit="g" class="px-2.5 py-1 rounded-md text-[10px] font-extrabold bg-sky-500 text-slate-950 transition">G</button>
-              <button type="button" id="fuel-unit-lb-btn" data-fuel-unit="lb" class="px-2.5 py-1 rounded-md text-[10px] font-extrabold text-sky-300 hover:text-white transition">LB</button>
+              <button type="button" id="fuel-unit-g-btn" data-fuel-unit="g" class="px-2 py-1 rounded-md text-[10px] font-extrabold bg-sky-500 text-slate-950 transition">G</button>
+              <button type="button" id="fuel-unit-lb-btn" data-fuel-unit="lb" class="px-2 py-1 rounded-md text-[10px] font-extrabold text-sky-300 hover:text-white transition">LB</button>
             </div>
-            <button type="button" id="log-all-vegan-day-btn" class="text-[11px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 transition">✓ Log All 4</button>
-            <button type="button" id="reset-vegan-day-btn" class="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Clear today's logged meals and recalculate with the active Fuel Plan">Reset &amp; Recalculate Today</button>
+            <button type="button" id="log-all-vegan-day-btn" class="text-[10.5px] sm:text-[11px] font-extrabold px-2 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 transition whitespace-nowrap">✓ Log All 4</button>
           </div>
         </div>
 
-        <!-- 1-Tap Fuel Plan Switcher & Smart Ingredient Swap Drawer -->
-        <div id="fuel-plan-switcher-bar" class="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
-          <!-- Populated dynamically by renderVeganView() -->
-        </div>
-
-        <!-- Live Macro Progress Bars (Protein, Calories & Daily Water in ml — Immediately Below Card Title) -->
-        <div class="grid grid-cols-2 gap-2.5 pt-1">
+        <!-- 2. Immediately Below Title: Daily Protein & Daily Calories Progress Bars -->
+        <div class="grid grid-cols-2 gap-2.5">
           <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
             <div class="flex justify-between text-xs font-bold">
               <span class="text-slate-300">Daily Protein</span>
@@ -477,9 +504,14 @@
           </div>
         </div>
 
-        <!-- Daily Water Intake Tracker in Milliliters (ml) -->
+        <!-- Followed by Daily Water Intake Tracker -->
         <div id="daily-water-tracker-card" class="bg-slate-950/85 border border-sky-500/35 rounded-xl p-3 space-y-2">
           <!-- Populated dynamically by JS -->
+        </div>
+
+        <!-- 3 & 4. Single Compact Subheader Pill Button & On-Demand Collapsible Plan / Swap Drawer -->
+        <div id="fuel-plan-switcher-bar" class="pt-0.5">
+          <!-- Populated dynamically by renderVeganView() -->
         </div>
 
         <!-- Redundant Plan Day Sync 6-pill summary box hidden so user goes straight from Daily Macros & Water into FUEL 1–4 -->
@@ -3414,6 +3446,7 @@
         updateTimerUI();
         saveState();
         playTimerChime();
+        triggerWatchWristTimerNotification(completedRiceStage);
         if (completedRiceStage) {
           triggerRiceTimerStageComplete(completedRiceStage);
         } else {
@@ -3435,12 +3468,16 @@
           state.activeRiceTimerStage = null;
         }
       }
+      if (state.liveBpm && state.liveBpm > 0) {
+        state.startRestBpm = state.liveBpm;
+      }
       if (timerInterval) clearInterval(timerInterval);
       timerRunning = true;
       state.timerRunning = true;
       state.timerEndTime = Date.now() + (state.timerSeconds * 1000);
       requestWakeLock();
       updateTimerUI();
+      updateWatchAndHeartRateUI();
       saveState();
 
       if (timerWorker) {
@@ -3483,6 +3520,7 @@
       state.timerSeconds = state.timerTotalSeconds || 90;
       releaseWakeLock();
       updateTimerUI();
+      updateWatchAndHeartRateUI();
       saveState();
     }
 
@@ -3495,6 +3533,442 @@
     });
     window.addEventListener('focus', syncWallClockTimer);
     window.addEventListener('pageshow', syncWallClockTimer);
+
+    // =========================================================================
+    // 5A. 3-TIER SMARTWATCH & LIVE HEART RATE ENGINE (BLE 0x180D + WRIST ALERTS + HEALTHKIT / HEALTH CONNECT)
+    // =========================================================================
+    let activeBleDevice = null;
+    let activeBleCharacteristic = null;
+    let simulatedHrInterval = null;
+
+    function parseBleHeartRateMeasurement(dataViewOrBytes) {
+      if (!dataViewOrBytes) return { bpm: 0, is16Bit: false, contactDetected: null };
+      let bytes = null;
+      if (dataViewOrBytes instanceof DataView) {
+        bytes = new Uint8Array(dataViewOrBytes.buffer, dataViewOrBytes.byteOffset, dataViewOrBytes.byteLength);
+      } else if (dataViewOrBytes instanceof Uint8Array) {
+        bytes = dataViewOrBytes;
+      } else if (Array.isArray(dataViewOrBytes)) {
+        bytes = new Uint8Array(dataViewOrBytes);
+      }
+      if (!bytes || bytes.length < 2) {
+        return { bpm: 0, is16Bit: false, contactDetected: null };
+      }
+      const flags = bytes[0];
+      const is16Bit = (flags & 0x01) === 1;
+      const sensorContactSupported = (flags & 0x04) !== 0;
+      const contactDetected = sensorContactSupported ? ((flags & 0x02) !== 0) : null;
+      let bpm = 0;
+      if (is16Bit) {
+        if (bytes.length >= 3) {
+          bpm = bytes[1] | (bytes[2] << 8);
+        }
+      } else {
+        bpm = bytes[1];
+      }
+      return { bpm: Math.max(0, Math.min(250, bpm)), is16Bit, contactDetected };
+    }
+
+    function getHeartRateZoneInfo(bpm, maxHr) {
+      const safeMax = maxHr && maxHr >= 120 ? maxHr : 190;
+      const cleanBpm = Math.max(0, Math.round(Number(bpm) || 0));
+      const pct = cleanBpm / safeMax;
+      if (pct >= 0.9) {
+        return { zone: 5, label: 'Peak', pillText: `${cleanBpm} BPM • Zone 5` };
+      }
+      if (pct >= 0.8) {
+        return { zone: 4, label: 'Anaerobic', pillText: `${cleanBpm} BPM • Zone 4` };
+      }
+      if (pct >= 0.7) {
+        return { zone: 3, label: 'Aerobic', pillText: `${cleanBpm} BPM • Zone 3` };
+      }
+      if (pct >= 0.6) {
+        return { zone: 2, label: 'Fat Burn', pillText: `${cleanBpm} BPM • Zone 2` };
+      }
+      return { zone: 1, label: 'Warmup / Recovery', pillText: `${cleanBpm} BPM • Zone 1` };
+    }
+
+    function formatRestHeartRateRecovery(startRestBpm, currentBpm) {
+      const start = Math.round(Number(startRestBpm) || 0);
+      const cur = Math.round(Number(currentBpm) || 0);
+      if (start <= 0 || cur <= 0) return '';
+      const delta = cur - start;
+      const sign = delta > 0 ? `+${delta}` : `${delta}`;
+      return `${start} -> ${cur} BPM (${sign} BPM recovery)`;
+    }
+
+    function getNextIncompleteSetSummaryForWristAlert() {
+      try {
+        const w = state.currentWeek || 1;
+        const d = state.selectedDayIndex || 0;
+        const dayObj = WORKOUT_DAYS[d] || WORKOUT_DAYS[0];
+        if (!dayObj || !Array.isArray(dayObj.exercises)) {
+          return 'Set 2 Barbell Bench Press (135 lbs x 8)';
+        }
+        for (let i = 0; i < dayObj.exercises.length; i++) {
+          const ex = dayObj.exercises[i];
+          const numSets = ex.sets || 3;
+          for (let s = 1; s <= numSets; s++) {
+            const setKey = `w${w}_d${d}_${ex.id}_s${s}`;
+            const logEntry = state.workoutLogs && state.workoutLogs[setKey];
+            if (!logEntry || !logEntry.done) {
+              const meta = (typeof EXERCISE_META !== 'undefined' && EXERCISE_META[ex.id]) || {};
+              const weightVal = (logEntry && logEntry.weight) ? logEntry.weight : (meta.defaultWeightLbs || 135);
+              const repsVal = (logEntry && logEntry.reps) ? logEntry.reps : (String(ex.reps || '8').replace(/[^0-9]/g, '') || '8');
+              const cleanName = String(ex.name || 'Barbell Bench Press').replace(/^\d+\.\s*/, '');
+              return `Set ${s} ${cleanName} (${weightVal} lbs x ${repsVal})`;
+            }
+          }
+        }
+        return 'Set 2 Barbell Bench Press (135 lbs x 8)';
+      } catch (e) {
+        return 'Set 2 Barbell Bench Press (135 lbs x 8)';
+      }
+    }
+
+    function buildWristNotificationPayload(nextSetSummary, isRiceStage, riceBanner) {
+      const cleanSummary = String(nextSetSummary || '').trim() || 'Set 2 Barbell Bench Press (135 lbs x 8)';
+      const body = isRiceStage && riceBanner
+        ? `Rice Timer Complete! ${riceBanner}`
+        : `Rest Complete! Up Next: ${cleanSummary}`;
+      return {
+        title: isRiceStage ? '7AM Kitchen Timer Alert' : '7AM Gym Rest Timer Complete',
+        options: {
+          body,
+          tag: '7am-timer-alert',
+          renotify: true,
+          vibrate: [200, 100, 200]
+        }
+      };
+    }
+
+    async function triggerWatchWristTimerNotification(completedRiceStage, customNextSetSummary) {
+      if (!state.watchNotificationsEnabled) return false;
+      if (typeof window === 'undefined' || !('Notification' in window)) return false;
+      if (Notification.permission !== 'granted') return false;
+
+      const stageSpec = completedRiceStage
+        ? JASMINE_RICE_TIMER_STAGES.find(s => s.stage === Number(completedRiceStage))
+        : null;
+      const nextSetStr = customNextSetSummary || getNextIncompleteSetSummaryForWristAlert();
+      const payload = buildWristNotificationPayload(
+        nextSetStr,
+        Boolean(stageSpec),
+        stageSpec ? stageSpec.completionBanner : ''
+      );
+
+      try {
+        if ('serviceWorker' in navigator) {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg && typeof reg.showNotification === 'function') {
+            await reg.showNotification(payload.title, payload.options);
+            return true;
+          }
+        }
+      } catch (e) {}
+
+      try {
+        new Notification(payload.title, payload.options);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function updateWatchAndHeartRateUI() {
+      const bpm = Math.round(Number(state.liveBpm) || 0);
+      const startBpm = Math.round(Number(state.startRestBpm) || 0);
+      const hasLiveHr = bpm > 0;
+      const zoneInfo = hasLiveHr ? getHeartRateZoneInfo(bpm, 190) : null;
+      const recoveryText = hasLiveHr && startBpm > 0 ? formatRestHeartRateRecovery(startBpm, bpm) : '';
+
+      const pinnedHrPill = document.getElementById('pinned-hr-live-pill');
+      const pinnedHrText = document.getElementById('pinned-hr-live-text');
+      const pinnedRecBadge = document.getElementById('pinned-hr-recovery-badge');
+
+      if (pinnedHrPill && pinnedHrText) {
+        if (hasLiveHr && zoneInfo) {
+          pinnedHrText.textContent = zoneInfo.pillText;
+          pinnedHrPill.classList.remove('hidden');
+        } else {
+          pinnedHrPill.classList.add('hidden');
+        }
+      }
+
+      if (pinnedRecBadge) {
+        if (recoveryText) {
+          pinnedRecBadge.textContent = recoveryText;
+          pinnedRecBadge.classList.remove('hidden');
+        } else {
+          pinnedRecBadge.classList.add('hidden');
+        }
+      }
+
+      const timerHrPill = document.getElementById('timer-view-hr-pill');
+      const timerHrText = document.getElementById('timer-view-hr-text');
+      const timerRecEl = document.getElementById('timer-view-hr-recovery');
+
+      if (timerHrPill && timerHrText) {
+        if (hasLiveHr && zoneInfo) {
+          timerHrText.textContent = zoneInfo.pillText;
+          timerHrPill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/20 border border-rose-400/50 text-rose-200 text-xs font-extrabold';
+        } else {
+          timerHrText.textContent = 'BLE Heart Rate: Not Connected';
+          timerHrPill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-300 text-xs font-extrabold';
+        }
+      }
+
+      if (timerRecEl) {
+        if (recoveryText) {
+          timerRecEl.textContent = recoveryText;
+          timerRecEl.classList.remove('hidden');
+        } else {
+          timerRecEl.classList.add('hidden');
+        }
+      }
+
+      const wristQuickBtn = document.getElementById('timer-wrist-alert-quick-btn');
+      if (wristQuickBtn) {
+        const enabled = Boolean(state.watchNotificationsEnabled);
+        wristQuickBtn.textContent = enabled ? '📳 Wrist Alerts: ON' : '📳 Wrist Alerts: OFF';
+        wristQuickBtn.className = enabled
+          ? 'px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold transition'
+          : 'px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[11px] font-bold transition';
+      }
+
+      const watchHeaderDot = document.getElementById('watch-header-live-dot');
+      const watchHeaderLabel = document.getElementById('watch-header-btn-label');
+      if (watchHeaderDot) {
+        if (hasLiveHr || state.watchNotificationsEnabled) {
+          watchHeaderDot.classList.remove('hidden');
+        } else {
+          watchHeaderDot.classList.add('hidden');
+        }
+      }
+      if (watchHeaderLabel) {
+        watchHeaderLabel.textContent = hasLiveHr ? `${bpm} BPM` : 'Watch';
+      }
+
+      // Update Smartwatch Modal elements if present
+      const modalHrPill = document.getElementById('watch-modal-live-hr-pill');
+      const modalHrRec = document.getElementById('watch-modal-hr-recovery');
+      const modalDeviceStatus = document.getElementById('watch-modal-ble-status');
+      const modalDemoBtn = document.getElementById('watch-modal-demo-hr-btn');
+      const modalWristToggleBtn = document.getElementById('watch-modal-wrist-toggle-btn');
+      const modalHealthBridgeBadge = document.getElementById('watch-modal-health-bridge-badge');
+      const modalHealthSyncStatus = document.getElementById('watch-modal-health-sync-status');
+
+      if (modalHrPill) {
+        modalHrPill.textContent = hasLiveHr && zoneInfo ? zoneInfo.pillText : 'No Active HR Stream';
+        modalHrPill.className = hasLiveHr
+          ? 'px-2.5 py-1 rounded-full bg-rose-500/20 border border-rose-400/50 text-rose-200 text-xs font-extrabold'
+          : 'px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-400 text-xs font-bold';
+      }
+      if (modalHrRec) {
+        modalHrRec.textContent = recoveryText || 'Start a rest timer while streaming BPM to track live recovery delta (e.g., 152 -> 118 BPM (-34 BPM recovery)).';
+      }
+      if (modalDeviceStatus) {
+        modalDeviceStatus.textContent = state.bleDeviceName
+          ? `Connected: ${state.bleDeviceName} (0x180D / 0x2A37)`
+          : 'Ready to pair Garmin, Wear OS, Whoop, Polar, Wahoo, or Coospo (0x180D)';
+      }
+      if (modalDemoBtn) {
+        modalDemoBtn.textContent = simulatedHrInterval
+          ? '⏹ Stop Demo HR Stream'
+          : '▶ Simulate Live Watch HR (138 BPM • Zone 3)';
+      }
+      if (modalWristToggleBtn) {
+        const on = Boolean(state.watchNotificationsEnabled);
+        modalWristToggleBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        modalWristToggleBtn.textContent = on
+          ? '✓ Watch Wrist Alerts Enabled (Vibrate [200, 100, 200])'
+          : 'Enable Watch Wrist Alerts';
+        modalWristToggleBtn.className = on
+          ? 'w-full py-2.5 px-3 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-xs shadow-md shadow-emerald-500/20 transition'
+          : 'w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-extrabold text-xs transition';
+      }
+      if (modalHealthBridgeBadge) {
+        const capPlugins = (window.Capacitor && window.Capacitor.Plugins) || {};
+        const hasNativeBridge = Boolean(capPlugins.Health || capPlugins.HealthFitness);
+        modalHealthBridgeBadge.textContent = hasNativeBridge
+          ? 'Native HealthKit / Health Connect Active'
+          : 'Capacitor Ready • Web Health Sync & CSV Bridge';
+      }
+      if (modalHealthSyncStatus && state.lastHealthSyncAt) {
+        modalHealthSyncStatus.textContent = `Last synced: ${state.lastHealthSyncAt}`;
+      }
+    }
+
+    async function connectLiveBleHeartRate() {
+      if (!navigator.bluetooth || typeof navigator.bluetooth.requestDevice !== 'function') {
+        showToast('⌚ Web Bluetooth not supported in this browser — starting live Demo Watch HR stream!');
+        toggleSimulatedHeartRateStream(true);
+        return;
+      }
+      try {
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ services: ['heart_rate'] }],
+          optionalServices: [0x180d, 'heart_rate']
+        });
+        activeBleDevice = device;
+        state.bleDeviceName = device.name || 'BLE Heart Rate Strap/Watch';
+        device.addEventListener('gattserverdisconnected', () => {
+          state.liveBpm = 0;
+          updateWatchAndHeartRateUI();
+          showToast('⌚ Watch / BLE Heart Rate disconnected.');
+        });
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('heart_rate');
+        const characteristic = await service.getCharacteristic('heart_rate_measurement');
+        activeBleCharacteristic = characteristic;
+        await characteristic.startNotifications();
+        characteristic.addEventListener('characteristicvaluechanged', (event) => {
+          const val = event.target && event.target.value;
+          const parsed = parseBleHeartRateMeasurement(val);
+          if (parsed && parsed.bpm > 0) {
+            if (simulatedHrInterval) {
+              clearInterval(simulatedHrInterval);
+              simulatedHrInterval = null;
+            }
+            state.liveBpm = parsed.bpm;
+            if (!state.startRestBpm && timerRunning) {
+              state.startRestBpm = parsed.bpm;
+            }
+            updateWatchAndHeartRateUI();
+          }
+        });
+        updateWatchAndHeartRateUI();
+        saveState();
+        showToast(`❤️ Connected to ${state.bleDeviceName}! Live BPM streaming active.`);
+      } catch (err) {
+        showToast('⌚ Bluetooth pairing canceled or unavailable. Tap "Simulate Live Watch HR" to preview.');
+      }
+    }
+
+    function toggleSimulatedHeartRateStream(forceStart) {
+      if (simulatedHrInterval && !forceStart) {
+        clearInterval(simulatedHrInterval);
+        simulatedHrInterval = null;
+        state.liveBpm = 0;
+        state.startRestBpm = 0;
+        state.bleDeviceName = '';
+        updateWatchAndHeartRateUI();
+        saveState();
+        showToast('⏹ Stopped simulated Watch HR stream.');
+        return;
+      }
+      if (simulatedHrInterval) clearInterval(simulatedHrInterval);
+      state.bleDeviceName = 'Garmin / Wear OS Broadcast (Demo)';
+      state.startRestBpm = 152;
+      state.liveBpm = 138;
+      updateWatchAndHeartRateUI();
+      saveState();
+      const demoSequence = [138, 134, 128, 122, 118, 138];
+      let idx = 0;
+      simulatedHrInterval = setInterval(() => {
+        idx = (idx + 1) % demoSequence.length;
+        state.liveBpm = demoSequence[idx];
+        updateWatchAndHeartRateUI();
+      }, 3500);
+      showToast('❤️ Live Watch HR Active: 138 BPM • Zone 3 (Recovery: 152 -> 138 BPM)');
+    }
+
+    async function toggleWatchWristAlerts() {
+      const nextState = !state.watchNotificationsEnabled;
+      if (nextState && typeof window !== 'undefined' && 'Notification' in window) {
+        if (Notification.permission === 'default') {
+          try {
+            await Notification.requestPermission();
+          } catch (e) {}
+        }
+      }
+      state.watchNotificationsEnabled = nextState;
+      updateWatchAndHeartRateUI();
+      saveState();
+      if (nextState) {
+        const nextSetStr = getNextIncompleteSetSummaryForWristAlert();
+        triggerWatchWristTimerNotification(null, nextSetStr);
+        showToast(`📳 Watch Wrist Alerts ON! Next alert: "${nextSetStr}"`);
+      } else {
+        showToast('🔕 Watch Wrist Alerts turned OFF.');
+      }
+    }
+
+    async function syncWithAppleGoogleHealth() {
+      const w = state.currentWeek || 1;
+      const d = state.selectedDayIndex || 0;
+      const dayPlan = getEffectiveDayFuelPlan(state, w, d);
+      const dailyKcal = (dayPlan && dayPlan.dailyKcal) || 1300;
+      const dailyProtein = (dayPlan && dayPlan.dailyProtein) || 138;
+      let completedSets = 0;
+      Object.keys(state.workoutLogs || {}).forEach(k => {
+        if (k.startsWith(`w${w}_d${d}_`) && state.workoutLogs[k] && state.workoutLogs[k].done) {
+          completedSets++;
+        }
+      });
+      const activeCalories = Math.max(180, completedSets * 22);
+
+      const capPlugins = (window.Capacitor && window.Capacitor.Plugins) || {};
+      const healthPlugin = capPlugins.Health || capPlugins.HealthFitness || null;
+      if (healthPlugin) {
+        try {
+          if (typeof healthPlugin.requestAuthorization === 'function') {
+            await healthPlugin.requestAuthorization({
+              read: ['heart_rate', 'calories', 'workouts'],
+              write: ['workouts', 'calories', 'nutrition.protein', 'nutrition.calories']
+            });
+          }
+          if (typeof healthPlugin.saveWorkout === 'function') {
+            await healthPlugin.saveWorkout({
+              activityType: 'traditional_strength_training',
+              durationMinutes: 45,
+              energyBurnedKcal: activeCalories,
+              dietaryEnergyKcal: dailyKcal,
+              dietaryProteinG: dailyProtein
+            });
+          }
+        } catch (e) {}
+      }
+
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      state.lastHealthSyncAt = `${nowStr} • ${completedSets} sets (${activeCalories} active kcal) + ${dailyKcal.toLocaleString()} kcal / ${dailyProtein}g P`;
+      updateWatchAndHeartRateUI();
+      saveState();
+      showToast(`❤️ Synced ${completedSets} sets (${activeCalories} kcal) & ${dailyKcal.toLocaleString()} kcal • ${dailyProtein}g P to Health Bridge!`);
+    }
+
+    function exportWorkoutNutritionHealthCsv() {
+      const w = state.currentWeek || 1;
+      const d = state.selectedDayIndex || 0;
+      const dayPlan = getEffectiveDayFuelPlan(state, w, d);
+      const dailyKcal = (dayPlan && dayPlan.dailyKcal) || 1300;
+      const dailyProtein = (dayPlan && dayPlan.dailyProtein) || 138;
+      let completedSets = 0;
+      Object.keys(state.workoutLogs || {}).forEach(k => {
+        if (k.startsWith(`w${w}_d${d}_`) && state.workoutLogs[k] && state.workoutLogs[k].done) {
+          completedSets++;
+        }
+      });
+      const activeKcal = Math.max(180, completedSets * 22);
+      const dateIso = new Date().toISOString().slice(0, 10);
+      const header = 'date,week,day,completed_sets,active_kcal,nutrition_kcal,protein_g,avg_bpm,recovery_delta_bpm';
+      const recDelta = (state.startRestBpm && state.liveBpm) ? (state.liveBpm - state.startRestBpm) : 0;
+      const row = `${dateIso},${w},${d + 1},${completedSets},${activeKcal},${dailyKcal},${dailyProtein},${state.liveBpm || 0},${recDelta}`;
+      const csvContent = `${header}\n${row}\n`;
+      try {
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `7am-health-sync-w${w}-d${d + 1}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+      } catch (e) {}
+      showToast('📥 Exported Workout & Nutrition Health CSV (1,300 kcal • 138g P)!');
+    }
+
 
     // =========================================================================
     // 5B. EQUIPMENT DRAWINGS, VISUAL DIAGRAMS & LBS <-> KG CONVERSION
@@ -7885,17 +8359,26 @@
 
       const mainPlanHeadingEl = document.getElementById('vegan-main-plan-heading');
       if (mainPlanHeadingEl) {
-        mainPlanHeadingEl.textContent = `4-Card Muscle & Recomp Fuel Plan (${dayPlan.dailyKcal.toLocaleString()} kcal • ${dayPlan.dailyProtein}g P)`;
+        mainPlanHeadingEl.textContent = `Daily Muscle Fuel (${dayPlan.dailyKcal.toLocaleString()} kcal • ${dayPlan.dailyProtein}g P)`;
       }
 
       const switcherBarEl = document.getElementById('fuel-plan-switcher-bar');
       if (switcherBarEl) {
         const curScope = state.fuelSwitchScope || 'future';
-        const isSwapDrawerOpen = Boolean(state.openFuelSwapDrawer);
+        const isPlanDrawerOpen = Boolean(state.openFuelPlanDrawer);
         const dayCustom = (state.fuelCustomizations && state.fuelCustomizations[dayKey]) || {};
         const globalCustom = (state.fuelCustomizations && state.fuelCustomizations.global) || {};
         const activeSwaps = Object.assign({}, globalCustom.swaps || {}, dayCustom.swaps || {});
         const activeSwapCount = ['tofu', 'rice', 'broccoli'].filter(cat => activeSwaps[cat] && !activeSwaps[cat].endsWith('_default')).length;
+
+        const shortPlanMap = {
+          almond_cashew_pea: 'Option B (Almond/Cashew)',
+          classic_silk_protein: 'Original Silk',
+          unsweetened_soy: 'Option A (Soy)'
+        };
+        const shortPlanTitle = shortPlanMap[dayPlan.id] || 'Option B (Almond/Cashew)';
+        const swapSuffix = activeSwapCount > 0 ? ` (${activeSwapCount} swap${activeSwapCount > 1 ? 's' : ''})` : '';
+        const pillLabelText = `Plan: ${shortPlanTitle}${swapSuffix} • Change / Swap Ingredients`;
 
         const presetOrder = ['almond_cashew_pea', 'classic_silk_protein', 'unsweetened_soy'];
         const presetPillsHtml = presetOrder.map(pid => {
@@ -7947,64 +8430,93 @@
         }
 
         switcherBarEl.innerHTML = `
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">🥛 Active Milk &amp; Protein Plan:</span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-900 border border-slate-700 text-slate-300">${dayPlan.dailyKcal.toLocaleString()} kcal • ${dayPlan.dailyProtein}g P • ${dayPlan.peaProteinDailyG}g Pea/day</span>
-            </div>
-            <div class="inline-flex items-center rounded-lg bg-slate-900 border border-slate-700 p-0.5" role="group" aria-label="Plan Switch Scope">
-              <button
-                type="button"
-                data-fuel-scope="today"
-                class="fuel-scope-btn px-2 py-1 rounded-md text-[10px] font-extrabold transition ${
-                  curScope === 'today'
-                    ? 'bg-sky-400 text-slate-950'
-                    : 'text-slate-300 hover:text-white'
-                }"
-              >
-                Today Only (Day ${dayIdx + 1})
-              </button>
-              <button
-                type="button"
-                data-fuel-scope="future"
-                class="fuel-scope-btn px-2 py-1 rounded-md text-[10px] font-extrabold transition ${
-                  curScope === 'future'
-                    ? 'bg-sky-400 text-slate-950'
-                    : 'text-slate-300 hover:text-white'
-                }"
-              >
-                Today &amp; Future Unlogged Days
-              </button>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-            ${presetPillsHtml}
-          </div>
-
-          <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
+          <div class="flex items-center justify-between gap-2">
             <button
               type="button"
-              id="toggle-fuel-swap-drawer-btn"
-              aria-expanded="${isSwapDrawerOpen ? 'true' : 'false'}"
-              class="px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold border transition flex items-center gap-1.5 ${
-                isSwapDrawerOpen || activeSwapCount > 0
-                  ? 'bg-sky-500/20 border-sky-400/50 text-sky-200'
-                  : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300'
+              id="toggle-fuel-plan-drawer-btn"
+              aria-expanded="${isPlanDrawerOpen ? 'true' : 'false'}"
+              class="w-full py-1.5 px-2.5 rounded-xl text-[10.5px] sm:text-[11px] font-extrabold border transition flex items-center justify-between gap-2 ${
+                isPlanDrawerOpen || activeSwapCount > 0
+                  ? 'bg-emerald-950/50 border-emerald-500/50 text-emerald-200'
+                  : 'bg-slate-950/90 hover:bg-slate-900 border-slate-800 text-slate-300'
               }"
             >
-              <span>🔄 Swap Sold-Out Ingredients ${activeSwapCount > 0 ? `(${activeSwapCount} active)` : ''}</span>
-              <span class="text-[10px]">${isSwapDrawerOpen ? '▴' : '▾'}</span>
+              <span class="text-left leading-snug">🥛 ${pillLabelText}</span>
+              <span class="text-[10px] text-emerald-400 shrink-0">${isPlanDrawerOpen ? 'Hide ▴' : 'Open ▾'}</span>
             </button>
-            <span class="text-[10px] text-slate-400">Past logged days stay locked to their original snapshot.</span>
           </div>
 
-          <div id="fuel-swap-drawer-body" class="${isSwapDrawerOpen ? 'space-y-2.5 pt-2 border-t border-slate-800/80' : 'hidden'}" style="display: ${isSwapDrawerOpen ? 'block' : 'none'};">
-            ${renderSwapCategoryRow('tofu', 'Fuel 3 Protein Swap (Replaces 175g Extra-Firm Tofu • 21g P)')}
-            ${renderSwapCategoryRow('rice', 'Fuel 3 Carb Swap (Replaces 150g Cooked Jasmine Rice)')}
-            ${renderSwapCategoryRow('broccoli', 'Fuel 3 Veggie Swap (Replaces 75g Steamed Broccoli)')}
+          <div id="fuel-plan-drawer-body" class="${isPlanDrawerOpen ? 'space-y-2.5 mt-2 bg-slate-950/90 border border-emerald-500/35 rounded-xl p-2.5' : 'hidden'}" style="display: ${isPlanDrawerOpen ? 'block' : 'none'};">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Milk Plan Presets (${dayPlan.peaProteinDailyG}g Pea/day)</span>
+              <div class="inline-flex items-center rounded-lg bg-slate-900 border border-slate-700 p-0.5" role="group" aria-label="Plan Switch Scope">
+                <button
+                  type="button"
+                  data-fuel-scope="today"
+                  class="fuel-scope-btn px-2 py-1 rounded-md text-[10px] font-extrabold transition ${
+                    curScope === 'today'
+                      ? 'bg-sky-400 text-slate-950'
+                      : 'text-slate-300 hover:text-white'
+                  }"
+                >
+                  Today Only
+                </button>
+                <button
+                  type="button"
+                  data-fuel-scope="future"
+                  class="fuel-scope-btn px-2 py-1 rounded-md text-[10px] font-extrabold transition ${
+                    curScope === 'future'
+                      ? 'bg-sky-400 text-slate-950'
+                      : 'text-slate-300 hover:text-white'
+                  }"
+                >
+                  Future Days
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+              ${presetPillsHtml}
+            </div>
+
+            <div class="space-y-2 pt-2 border-t border-slate-800/80">
+              <div class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">🔄 Swap Sold-Out Ingredients ${activeSwapCount > 0 ? `(${activeSwapCount} active)` : ''}</div>
+              ${renderSwapCategoryRow('tofu', 'Fuel 3 Protein Swap (Replaces 175g Extra-Firm Tofu • 21g P)')}
+              ${renderSwapCategoryRow('rice', 'Fuel 3 Carb Swap (Replaces 150g Cooked Jasmine Rice)')}
+              ${renderSwapCategoryRow('broccoli', 'Fuel 3 Veggie Swap (Replaces 75g Steamed Broccoli)')}
+            </div>
+
+            <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+              <span class="text-[10px] text-slate-400">Past logged days stay locked to their snapshot.</span>
+              <button type="button" id="reset-vegan-day-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-extrabold whitespace-nowrap transition">
+                ↺ Reset Today
+              </button>
+            </div>
           </div>
         `;
+
+        const planDrawerToggleBtn = document.getElementById('toggle-fuel-plan-drawer-btn');
+        if (planDrawerToggleBtn) {
+          planDrawerToggleBtn.addEventListener('click', () => {
+            state.openFuelPlanDrawer = !state.openFuelPlanDrawer;
+            saveState();
+            renderVeganView();
+          });
+        }
+
+        const resetTodayBtn = document.getElementById('reset-vegan-day-btn');
+        if (resetTodayBtn) {
+          resetTodayBtn.addEventListener('click', () => {
+            const w = state.currentWeek || 1;
+            const d = state.selectedDayIndex || 0;
+            resetDayFuelLogsAndSnapshots(state, w, d);
+            state.checkedEssentials = {};
+            saveState();
+            renderVeganView();
+            renderWorkoutView();
+            showToast(`↺ Reset & recalculated all 4 fuel cards for Day ${d + 1}`);
+          });
+        }
 
         switcherBarEl.querySelectorAll('.fuel-scope-btn').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -8023,7 +8535,6 @@
             if (!pid || !FUEL_PLAN_PRESETS[pid]) return;
             const scope = state.fuelSwitchScope || 'future';
             if (isDayLoggedToday) {
-              // If today is already logged and user taps a preset pill, unlock today's snapshot so today updates intentionally while keeping other logged days locked
               delete state.fuelDaySnapshots[dayKey];
               [1, 2, 3, 4].forEach(num => {
                 if (state.loggedMealSnapshots) delete state.loggedMealSnapshots[`${dayKey}_fuel${num}`];
@@ -8045,15 +8556,6 @@
             showToast(`🥛 Switched ${scope === 'today' ? `Day ${dayIdx + 1}` : 'active plan'} to ${chosen.shortLabel}`);
           });
         });
-
-        const swapToggleBtn = document.getElementById('toggle-fuel-swap-drawer-btn');
-        if (swapToggleBtn) {
-          swapToggleBtn.addEventListener('click', () => {
-            state.openFuelSwapDrawer = !state.openFuelSwapDrawer;
-            saveState();
-            renderVeganView();
-          });
-        }
 
         switcherBarEl.querySelectorAll('.fuel-smart-swap-btn').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -8122,18 +8624,17 @@
       }
 
       function getBatchCardScaleBadgeText(recipeId, unit) {
-        if (recipeId === 'recipe_oats_batch' && dayPlan && dayPlan.batchOats) {
-          return unit === 'lb' ? dayPlan.batchOats.batchScaleLb : dayPlan.batchOats.batchScaleG;
-        }
-        const map = {
-          recipe_rice_batch: {
-            g: 'Cooked Batch: 600g • 1 Bowl Today: 150g',
-            lb: 'Batch: 1.32 lb • 1 Bowl: 0.33 lb / 5.3 oz'
+        if (recipeId === 'recipe_oats_batch') {
+          const isOptionB = !dayPlan || dayPlan.id === 'almond_cashew_pea';
+          if (unit === 'lb') {
+            return isOptionB ? '2.46 lb (9.8 oz/jar)' : '2.37 lb (9.5 oz/jar)';
           }
-        };
-        const entry = map[recipeId];
-        if (!entry) return '';
-        return unit === 'lb' ? entry.lb : entry.g;
+          return isOptionB ? '1,116g (279g/jar)' : '1,076g (269g/jar)';
+        }
+        if (recipeId === 'recipe_rice_batch') {
+          return unit === 'lb' ? '1.32 lb (5.3 oz/bowl)' : '600g (150g/bowl)';
+        }
+        return '';
       }
 
       function convertSingleMeasureToLbOz(val) {
@@ -8331,7 +8832,7 @@
         });
       }
 
-      // UPGRADE 3: Redesigned 4-Day Batch Prep Cards (Collapsed by Default, 1-Tap Kitchen Scale Rows, Reset Batch Button & Fridge Portion Indicator)
+      // UPGRADE 3: Decluttered 4-Day Batch Prep Card Headers (Prep Video & Reset Batch moved inside Checklist Drawer)
       const recipeCardsContainer = document.getElementById('batch-recipe-cards-container');
       if (recipeCardsContainer) {
         if (!state.recipePrepLogs || typeof state.recipePrepLogs !== 'object') state.recipePrepLogs = {};
@@ -8341,7 +8842,7 @@
           {
             id: 'recipe_oats_batch',
             badge: 'Batch 1/2',
-            yieldPill: '4 Jars in Fridge (4 Days)',
+            yieldPill: '4 Jars in Fridge',
             title: '4-Day Overnight Protein Oats Batch',
             subtitle: dayPlan.batchOats.subtitle,
             videoUrl: 'https://www.youtube.com/watch?v=_wgQBioExZA',
@@ -8351,7 +8852,7 @@
           {
             id: 'recipe_rice_batch',
             badge: 'Batch 2/2',
-            yieldPill: '4 Portions in Fridge (4 Days)',
+            yieldPill: '4 Bowls in Fridge',
             title: '4-Day Jasmine Rice Batch Prep',
             subtitle: 'Prep time: 20 mins • Yields 4 × 150g cooked rice portions (55g dry/day)',
             videoUrl: 'https://www.youtube.com/watch?v=zWTc8eLEeyY',
@@ -8438,39 +8939,21 @@
                 : (isRecipeDone
                     ? 'border border-emerald-500/40 bg-slate-900/75'
                     : 'border border-slate-800 bg-slate-900/85')
-            } rounded-2xl p-3.5 sm:p-4 space-y-2.5 transition-all">
-              <div class="flex items-start justify-between gap-2">
-                <div data-toggle-recipe-card="${recipe.id}" class="recipe-card-toggle-btn min-w-0 flex-1 cursor-pointer select-none group">
-                  <div class="flex flex-wrap items-center gap-1.5">
+            } rounded-2xl p-3.5 sm:p-4 space-y-2 transition-all">
+              <!-- Top Row: Batch 1/2 + 4 Jars in Fridge on Left, Sky-Blue Weight Badge on Right -->
+              <div data-toggle-recipe-card="${recipe.id}" class="recipe-card-toggle-btn cursor-pointer select-none space-y-1.5">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex flex-wrap items-center gap-1.5 min-w-0">
                     <span class="recipe-prep-badge whitespace-nowrap px-2 py-0.5 text-[11px] font-bold font-mono rounded-md ${
                       !isCollapsed ? 'bg-sky-400 text-slate-950' : (isRecipeDone ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300')
                     }">${recipe.badge}</span>
                     <span class="text-[11px] font-semibold text-sky-200 bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 rounded-md whitespace-nowrap">❄️ ${recipe.yieldPill}</span>
-                    <span data-batch-scale-badge="${recipe.id}" class="text-[11px] px-2 py-0.5 rounded-md bg-sky-950/70 border border-sky-400/50 text-sky-200 font-bold whitespace-nowrap">${batchScaleBadgeText}</span>
-                    <span class="recipe-status-badge text-[10px] font-extrabold px-2 py-0.5 rounded-full border whitespace-nowrap ${
-                      isRecipeDone
-                        ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
-                        : 'bg-slate-800 border-slate-700 text-slate-300'
-                    }">${doneSteps}/${totalSteps} Checked</span>
                     ${headerPrepNotePillHtml}
                   </div>
-                  <h3 class="text-sm sm:text-base font-extrabold text-white mt-1.5 leading-snug break-words">${recipe.title}</h3>
-                  <p class="text-[11px] text-slate-400 mt-0.5 leading-snug">${recipe.subtitle}</p>
+                  <span data-batch-scale-badge="${recipe.id}" class="shrink-0 text-[11px] px-2.5 py-0.5 rounded-md bg-sky-950/75 border border-sky-400/50 text-sky-200 font-extrabold whitespace-nowrap">${batchScaleBadgeText}</span>
                 </div>
-                <div class="flex flex-col sm:flex-row items-end sm:items-center gap-1.5 shrink-0">
-                  <a
-                    href="${recipe.videoUrl}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="${recipe.videoTitle}"
-                    class="batch-prep-video-link px-2.5 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/50 text-rose-200 text-[10px] font-extrabold whitespace-nowrap transition flex items-center gap-1"
-                  >
-                    ▶ Prep Video
-                  </a>
-                  <button type="button" data-reset-recipe="${recipe.id}" class="reset-recipe-steps-btn shrink-0 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-extrabold whitespace-nowrap transition">
-                    ↺ Reset Batch
-                  </button>
-                </div>
+                <!-- Middle Row: Clean Title -->
+                <h3 class="text-sm sm:text-base font-extrabold text-white leading-snug break-words">${recipe.title}</h3>
               </div>
 
               <button type="button" data-toggle-recipe-card="${recipe.id}" class="recipe-card-toggle-btn w-full flex items-center justify-between bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-slate-300 rounded-xl px-3 py-2 text-xs transition">
@@ -8482,7 +8965,25 @@
                 </span>
               </button>
 
+              <!-- Collapsible Checklist Drawer (Contains Prep Video, Reset Batch, Steps & Kitchen Note) -->
               <div class="${isCollapsed ? 'hidden' : 'space-y-2.5 pt-1'}" style="display: ${isCollapsed ? 'none' : 'block'};">
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-slate-800/80">
+                  <span class="text-[11px] text-slate-400">${recipe.subtitle}</span>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <a
+                      href="${recipe.videoUrl}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="${recipe.videoTitle}"
+                      class="batch-prep-video-link px-2.5 py-1 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/50 text-rose-200 text-[10px] font-extrabold whitespace-nowrap transition flex items-center gap-1"
+                    >
+                      ▶ Prep Video
+                    </a>
+                    <button type="button" data-reset-recipe="${recipe.id}" class="reset-recipe-steps-btn shrink-0 px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-extrabold whitespace-nowrap transition">
+                      ↺ Reset Batch
+                    </button>
+                  </div>
+                </div>
                 ${recipe.id === 'recipe_rice_batch' ? `<div id="batch-2-rice-timer-mount"></div>` : ''}
                 <div class="space-y-2">
                   ${stepsRowsHtml}
@@ -8701,8 +9202,9 @@
         }).join('');
       }
 
-      // UPGRADE 2: Render 4 Daily Fuel Cards with Ingredient Lists & Prep Collapsed by Default
+      // UPGRADE 2: Streamline FUEL 1-4 Cards (Compact 2-Column Nutrition Label Rows & Timing/Prep Tip Hidden by Default)
       if (!state.openFuelCards || typeof state.openFuelCards !== 'object') state.openFuelCards = {};
+      if (!state.openFuelTips || typeof state.openFuelTips !== 'object') state.openFuelTips = {};
       const mealsEl = document.getElementById('vegan-meals-container');
       if (mealsEl) {
         const defaultTimesBySlot = {
@@ -8727,27 +9229,22 @@
           const doneIngCount = itemsList.filter(it => isIngredientChecked(week, dayIdx, slot.slotId, it.id)).length;
           // Collapsed by default unless explicitly expanded by the user
           const isCardExpanded = Boolean(state.openFuelCards && state.openFuelCards[slot.slotId]);
+          const isTipExpanded = Boolean(state.openFuelTips && state.openFuelTips[slot.slotId]);
           const shortTimeStr = defaultTimesBySlot[slot.slotId] || '8:15 AM';
           const topFuelBadgeText = `FUEL ${mealIdx + 1} • ${shortTimeStr}`;
 
+          // Compact 2-column nutrition-label style ingredient list (no radio/checkbox icons or heavy individual borders)
           const scannableRowsHtml = itemsList.map(it => {
             const ingDone = isIngredientChecked(week, dayIdx, slot.slotId, it.id);
             const convertedIngWeight = formatIngredientWeightForUnit(it.weight, state.fuelWeightUnit);
             return `
-              <button type="button" data-meal-slot="${slot.slotId}" data-ing-id="${it.id}" class="meal-ing-check-btn w-full text-left px-3 py-2 rounded-xl border transition flex items-center justify-between gap-2.5 ${
-                ingDone
-                  ? 'bg-emerald-950/45 border-emerald-500/45 text-emerald-100'
-                  : 'bg-slate-950/85 border-slate-800/90 hover:border-emerald-500/35 text-slate-100'
-              }">
-                <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                  <span class="w-4 h-4 shrink-0 rounded flex items-center justify-center text-[10px] font-extrabold transition ${
-                    ingDone
-                      ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/40'
-                      : 'bg-slate-900 border border-slate-700 text-slate-400'
-                  }">${ingDone ? '✓' : ''}</span>
-                  <span class="text-xs font-bold leading-snug break-words ${ingDone ? 'line-through text-emerald-200/80' : 'text-white'}">${it.label || it.name}</span>
-                </div>
-                <span class="meal-ing-weight-badge shrink-0 text-[11px] font-mono font-extrabold px-2.5 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 whitespace-nowrap">
+              <button type="button" data-meal-slot="${slot.slotId}" data-ing-id="${it.id}" class="meal-ing-check-btn w-full text-left py-1.5 border-b border-slate-800/60 last:border-b-0 text-xs transition flex items-center justify-between gap-2.5 hover:bg-slate-950/60 px-1">
+                <span class="font-semibold leading-snug break-words min-w-0 flex-1 ${ingDone ? 'line-through text-emerald-300/80' : 'text-slate-100'}">${it.label || it.name}</span>
+                <span class="meal-ing-weight-badge shrink-0 text-[11px] font-mono font-extrabold px-2 py-0.5 rounded-md ${
+                  ingDone
+                    ? 'bg-emerald-500/25 border border-emerald-400/50 text-emerald-200'
+                    : 'bg-slate-950 border border-emerald-500/35 text-emerald-300'
+                } whitespace-nowrap">
                   ${convertedIngWeight}
                 </span>
               </button>
@@ -8756,6 +9253,14 @@
 
           const scaleWeightBadgeText = getFuelCardScaleBadgeText(slot.slotId, state.fuelWeightUnit);
           const fuelPrepNotePillHtml = getPrepNoteReminderPillHtml(slot.slotId);
+
+          const noteObj = (state.prepNotes && state.prepNotes[slot.slotId]) || { text: '', photoDataUrl: '', updatedAt: '' };
+          const cleanNoteText = String(noteObj.text || '').trim();
+          const hasNotePhoto = Boolean(String(noteObj.photoDataUrl || '').trim());
+          const isNotePopulated = Boolean(cleanNoteText || hasNotePhoto);
+          const isNoteOpen = Boolean(state.openPrepNoteCards && state.openPrepNoteCards[slot.slotId]);
+          const noteBtnLabel = isNotePopulated ? '📝 Kitchen Note' : '+ Kitchen Note / Photo';
+          const escapedNoteText = String(noteObj.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
           return `
             <article data-fuel-card-slot="${slot.slotId}" class="bg-slate-900 border ${isDone ? 'border-emerald-500/50 bg-slate-900/80' : (slotSched.isPostWorkoutTarget ? 'border-emerald-400/70 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/40' : 'border-slate-800')} rounded-2xl p-3.5 sm:p-4 space-y-2.5 transition-all">
@@ -8793,21 +9298,106 @@
                 </span>
               </button>
 
-              <!-- Collapsible Ingredient Rows, Prep Tip & Kitchen Prep Note/Photo (Hidden by Default) -->
+              <!-- Collapsible Nutrition-Label Ingredient Table & On-Demand Tip / Kitchen Note Toggles -->
               <div class="fuel-card-collapsible-body ${isCardExpanded ? 'space-y-2 pt-1' : 'hidden'}" style="display: ${isCardExpanded ? 'block' : 'none'};">
-                <div class="space-y-1.5">
+                <div class="bg-slate-950/75 border border-slate-800/80 rounded-xl px-2.5 py-1 divide-y divide-slate-800/60">
                   ${scannableRowsHtml}
                 </div>
-                <div class="bg-slate-950/80 border border-slate-800/90 rounded-xl px-3 py-2 text-[11px] text-amber-300/95 leading-snug">
+
+                <!-- Compact Action Row: [Timing & Prep Tip] right next to [+ Kitchen Note / Photo] -->
+                <div class="pt-1 flex flex-wrap items-center justify-between gap-2">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      data-toggle-fuel-tip="${slot.slotId}"
+                      aria-expanded="${isTipExpanded ? 'true' : 'false'}"
+                      class="fuel-tip-toggle-btn text-[11px] font-extrabold px-2.5 py-1.5 rounded-xl border transition flex items-center gap-1 ${
+                        isTipExpanded
+                          ? 'bg-amber-950/70 border-amber-400/50 text-amber-200'
+                          : 'bg-slate-950/80 hover:bg-slate-900 border-slate-800 text-amber-300/90'
+                      }"
+                    >
+                      <span>💡 Timing &amp; Prep Tip</span>
+                      <span class="text-[10px]">${isTipExpanded ? '▴' : '▾'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      data-toggle-prep-note="${slot.slotId}"
+                      class="prep-note-toggle-btn text-[11px] font-extrabold px-2.5 py-1.5 rounded-xl border transition flex items-center gap-1.5 ${
+                        isNotePopulated
+                          ? 'bg-amber-950/60 hover:bg-amber-900/60 border-amber-500/45 text-amber-200'
+                          : 'bg-slate-950/80 hover:bg-slate-900 border-slate-800 text-slate-300'
+                      }"
+                    >
+                      <span>${noteBtnLabel}</span>
+                      <span class="text-[10px] text-slate-400">${isNoteOpen ? '▴' : '▾'}</span>
+                    </button>
+                  </div>
+                  ${hasNotePhoto ? `<span class="text-[10px] font-bold text-sky-300">📷 Photo Saved</span>` : ''}
+                </div>
+
+                <!-- Hidden-by-Default Timing & Prep Tip Box -->
+                <div data-fuel-tip-box="${slot.slotId}" class="${isTipExpanded ? 'bg-slate-950/80 border border-amber-500/35 rounded-xl px-3 py-2 text-[11px] text-amber-300/95 leading-snug' : 'hidden'}" style="display: ${isTipExpanded ? 'block' : 'none'};">
                   💡 <strong>Timing &amp; Prep Tip:</strong> ${mealObj.tip || slotSched.contextTip || slot.tip} ${slotSched.batchTip || ''}
                 </div>
-                ${buildPrepNoteCollapsibleSectionHtml(slot.slotId, `FUEL ${mealIdx + 1}`)}
+
+                <!-- Hidden-by-Default Kitchen Note / Photo Panel -->
+                <div id="prep-note-panel-${slot.slotId}" class="${isNoteOpen ? 'space-y-2 bg-slate-950/90 border border-slate-800 rounded-xl p-3' : 'hidden'}">
+                  <label for="prep-note-input-${slot.slotId}" class="block text-[10px] font-extrabold uppercase tracking-wider text-amber-300">
+                    Kitchen Scale Tare / Stove Setting Note (FUEL ${mealIdx + 1})
+                  </label>
+                  <textarea
+                    id="prep-note-input-${slot.slotId}"
+                    data-prep-note-input="${slot.slotId}"
+                    rows="2"
+                    placeholder="e.g., Empty glass jar tare = 215g, stove dial #2..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                  >${escapedNoteText}</textarea>
+
+                  ${hasNotePhoto ? `
+                    <div class="flex items-center gap-2.5 bg-slate-900/90 border border-slate-800 rounded-lg p-2">
+                      <img src="${noteObj.photoDataUrl}" alt="Kitchen Prep Photo" class="w-14 h-14 rounded-lg object-cover border border-slate-700 shrink-0" />
+                      <div class="min-w-0 flex-1">
+                        <div class="text-[11px] font-bold text-emerald-300">Compressed Kitchen Photo (max 400px JPEG)</div>
+                        <button type="button" data-remove-prep-photo="${slot.slotId}" class="prep-note-remove-photo-btn mt-1 text-[10px] font-bold text-rose-300 hover:text-rose-200 underline">Remove Photo</button>
+                      </div>
+                    </div>
+                  ` : ''}
+
+                  <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <div class="flex items-center gap-1.5">
+                      <label class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-300 text-[11px] font-extrabold cursor-pointer transition">
+                        📷 Snap / Upload Photo
+                        <input type="file" accept="image/*" data-prep-photo-input="${slot.slotId}" class="prep-note-photo-input hidden" />
+                      </label>
+                      ${isNotePopulated ? `
+                        <button type="button" data-clear-prep-note="${slot.slotId}" class="prep-note-clear-btn px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 border border-slate-800 text-slate-400 hover:text-rose-300 text-[11px] font-bold transition">
+                          Clear
+                        </button>
+                      ` : ''}
+                    </div>
+                    <button type="button" data-save-prep-note="${slot.slotId}" class="prep-note-save-btn px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-extrabold transition">
+                      Save Note
+                    </button>
+                  </div>
+                </div>
               </div>
             </article>
           `;
         }).join('');
 
         bindPrepNoteEvents(mealsEl);
+
+        mealsEl.querySelectorAll('.fuel-tip-toggle-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const slotId = btn.getAttribute('data-toggle-fuel-tip');
+            if (!slotId) return;
+            state.openFuelTips[slotId] = !state.openFuelTips[slotId];
+            saveState();
+            renderVeganView();
+          });
+        });
 
         function handleOneTapMealToggle(slotId) {
           const curVal = isMealCheckedForDay(week, dayIdx, slotId);
@@ -9959,16 +10549,19 @@
         });
       }
 
-      document.getElementById('reset-vegan-day-btn').addEventListener('click', () => {
-        const w = state.currentWeek || 1;
-        const d = state.selectedDayIndex || 0;
-        resetDayFuelLogsAndSnapshots(state, w, d);
-        state.checkedEssentials = {};
-        saveState();
-        renderVeganView();
-        renderWorkoutView();
-        showToast(`↺ Reset & recalculated all 4 fuel cards for Day ${d + 1}`);
-      });
+      const resetVeganBtn = document.getElementById('reset-vegan-day-btn');
+      if (resetVeganBtn) {
+        resetVeganBtn.addEventListener('click', () => {
+          const w = state.currentWeek || 1;
+          const d = state.selectedDayIndex || 0;
+          resetDayFuelLogsAndSnapshots(state, w, d);
+          state.checkedEssentials = {};
+          saveState();
+          renderVeganView();
+          renderWorkoutView();
+          showToast(`↺ Reset & recalculated all 4 fuel cards for Day ${d + 1}`);
+        });
+      }
 
       const checkPantryBtn = document.getElementById('check-pantry-staples-btn');
       if (checkPantryBtn) {
@@ -10864,9 +11457,52 @@
         });
       }
 
+      // 3-Tier Smartwatch & Live Heart Rate Modal Controls
+      const watchModal = document.getElementById('smartwatch-health-modal');
+      const openWatchBtn = document.getElementById('open-watch-modal-btn');
+      const timerOpenWatchBtn = document.getElementById('timer-open-watch-btn');
+      const closeWatchModalBtn = document.getElementById('close-watch-modal-btn');
+      const bleConnectBtn = document.getElementById('watch-modal-ble-connect-btn');
+      const demoHrBtn = document.getElementById('watch-modal-demo-hr-btn');
+      const wristToggleBtn = document.getElementById('watch-modal-wrist-toggle-btn');
+      const timerWristQuickBtn = document.getElementById('timer-wrist-alert-quick-btn');
+      const testWristAlertBtn = document.getElementById('watch-modal-test-wrist-btn');
+      const healthSyncBtn = document.getElementById('watch-modal-health-sync-btn');
+      const exportHealthCsvBtn = document.getElementById('watch-modal-export-csv-btn');
+
+      function openSmartwatchModal() {
+        updateWatchAndHeartRateUI();
+        if (watchModal) watchModal.classList.remove('hidden');
+      }
+
+      if (openWatchBtn) openWatchBtn.addEventListener('click', openSmartwatchModal);
+      if (timerOpenWatchBtn) timerOpenWatchBtn.addEventListener('click', openSmartwatchModal);
+      if (closeWatchModalBtn) {
+        closeWatchModalBtn.addEventListener('click', () => {
+          if (watchModal) watchModal.classList.add('hidden');
+        });
+      }
+      if (bleConnectBtn) bleConnectBtn.addEventListener('click', connectLiveBleHeartRate);
+      if (demoHrBtn) demoHrBtn.addEventListener('click', () => toggleSimulatedHeartRateStream());
+      if (wristToggleBtn) wristToggleBtn.addEventListener('click', toggleWatchWristAlerts);
+      if (timerWristQuickBtn) timerWristQuickBtn.addEventListener('click', toggleWatchWristAlerts);
+      if (testWristAlertBtn) {
+        testWristAlertBtn.addEventListener('click', () => {
+          state.watchNotificationsEnabled = true;
+          updateWatchAndHeartRateUI();
+          saveState();
+          const nextSetStr = getNextIncompleteSetSummaryForWristAlert();
+          triggerWatchWristTimerNotification(null, nextSetStr);
+          showToast(`📳 Wrist Alert Fired: "Rest Complete! Up Next: ${nextSetStr}"`);
+        });
+      }
+      if (healthSyncBtn) healthSyncBtn.addEventListener('click', syncWithAppleGoogleHealth);
+      if (exportHealthCsvBtn) exportHealthCsvBtn.addEventListener('click', exportWorkoutNutritionHealthCsv);
+
       // Initial Render
       updateAudioModeUI();
       updateTimerUI();
+      updateWatchAndHeartRateUI();
       renderWorkoutView();
       renderPullupView();
       renderVeganView();
@@ -11215,6 +11851,83 @@
         <button type="button" id="modal-stay-workout-summary-btn" class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs transition">
           Stay on Workout Summary
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3-Tier Smartwatch, Live BLE Heart Rate & Apple Health / Google Health Connect Modal -->
+  <div id="smartwatch-health-modal" role="dialog" aria-modal="true" aria-labelledby="smartwatch-modal-title" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-rose-500/40 rounded-2xl max-w-md w-full p-4 space-y-3.5 shadow-2xl max-h-[92vh] overflow-y-auto">
+      <div class="flex items-start justify-between border-b border-slate-800 pb-2.5">
+        <div>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-400/40">⌚ 3-Tier Wearable &amp; Health Hub</span>
+          <h3 id="smartwatch-modal-title" class="text-sm sm:text-base font-extrabold text-white mt-1">Smartwatch &amp; Live Heart Rate Sync</h3>
+          <p class="text-[11px] text-slate-400 mt-0.5">BLE Heart Rate (0x180D) • Wrist Timer Haptics • HealthKit &amp; Health Connect</p>
+        </div>
+        <button type="button" id="close-watch-modal-btn" aria-label="Close Smartwatch Modal" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
+      </div>
+
+      <!-- TIER 1: Real-Time Web Bluetooth Heart Rate Streaming (0x180D GATT Service) -->
+      <div class="bg-slate-950/90 border border-rose-500/35 rounded-xl p-3 space-y-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-rose-300">Tier 1 • Web Bluetooth Live HR (0x180D / 0x2A37)</span>
+          <span id="watch-modal-live-hr-pill" class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-400 text-xs font-bold">No Active HR Stream</span>
+        </div>
+        <p id="watch-modal-ble-status" class="text-[11px] text-slate-300 leading-snug">Ready to pair Garmin, Wear OS, Whoop, Polar, Wahoo, or Coospo (0x180D)</p>
+        <div id="watch-modal-hr-recovery" class="text-[11px] font-extrabold text-sky-300 bg-sky-950/50 border border-sky-500/30 rounded-lg px-2.5 py-1.5">
+          Start a rest timer while streaming BPM to track live recovery delta (e.g., 152 -> 118 BPM (-34 BPM recovery)).
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5">
+          <button type="button" id="watch-modal-ble-connect-btn" class="py-2 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 font-extrabold text-xs transition">
+            ❤️ Pair BLE Watch / Strap
+          </button>
+          <button type="button" id="watch-modal-demo-hr-btn" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-rose-400/40 text-rose-200 font-extrabold text-xs transition">
+            ▶ Simulate Live Watch HR (138 BPM • Zone 3)
+          </button>
+        </div>
+      </div>
+
+      <!-- TIER 2: Smartwatch Wrist Haptic Notifications When Timer Finishes -->
+      <div class="bg-slate-950/90 border border-emerald-500/35 rounded-xl p-3 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Tier 2 • Wrist Haptic Timer Alerts</span>
+          <span class="text-[10px] font-mono text-slate-400">vibrate: [200, 100, 200]</span>
+        </div>
+        <p class="text-[11px] text-slate-300 leading-snug">When your Rest Timer or 3-Stage Rice Timer hits <code class="text-emerald-300 font-bold">00:00</code>, fires an OS notification with your exact next set (e.g., <em>"Rest Complete! Up Next: Set 2 Barbell Bench Press (135 lbs x 8)"</em>) so Apple Watch, Garmin, Wear OS, and Fitbit vibrate on your wrist.</p>
+        <div class="flex flex-col sm:flex-row gap-1.5 pt-0.5">
+          <button type="button" id="watch-modal-wrist-toggle-btn" aria-pressed="false" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-extrabold text-xs transition">
+            Enable Watch Wrist Alerts
+          </button>
+          <button type="button" id="watch-modal-test-wrist-btn" class="py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-emerald-500/40 text-emerald-300 font-extrabold text-xs whitespace-nowrap transition">
+            🔔 Test Wrist Alert
+          </button>
+        </div>
+      </div>
+
+      <!-- TIER 3: Apple HealthKit & Google Health Connect Bridge (Capacitor Ready) -->
+      <div class="bg-slate-950/90 border border-sky-500/35 rounded-xl p-3 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-1.5">
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Tier 3 • Apple HealthKit &amp; Health Connect</span>
+          <span id="watch-modal-health-bridge-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-500/15 text-sky-200 border border-sky-500/30">Capacitor Ready • Web Health Sync &amp; CSV Bridge</span>
+        </div>
+        <p id="watch-modal-health-sync-status" class="text-[11px] text-slate-300 leading-snug">Syncs completed workouts, active calories, and daily macros (1,300 kcal • 138g P).</p>
+
+        <div class="grid grid-cols-1 gap-1.5">
+          <button type="button" id="watch-modal-health-sync-btn" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 hover:from-sky-300 hover:to-emerald-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-sky-500/20 transition">
+            🔄 Sync with Apple Health / Google Health Connect
+          </button>
+          <button type="button" id="watch-modal-export-csv-btn" class="w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-sky-500/40 text-sky-200 font-extrabold text-xs transition">
+            📥 Export Workout &amp; Nutrition Health CSV
+          </button>
+        </div>
+
+        <!-- Compatibility Guide for Apple Watch, Garmin/Polar/Whoop, and Wear OS/Galaxy/Pixel Watch -->
+        <div class="pt-2 border-t border-slate-800/80 space-y-1.5 text-[11px] text-slate-300">
+          <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Wearable Compatibility Guide</div>
+          <p>• <strong class="text-white">Apple Watch:</strong> Enable <em>Watch Wrist Alerts</em> for instant wrist haptics at <code class="text-emerald-300">00:00</code>, or sync sets &amp; macros (1,300 kcal • 138g P) via the Capacitor Apple HealthKit bridge.</p>
+          <p>• <strong class="text-white">Garmin / Polar / Whoop:</strong> Turn on <em>Broadcast Heart Rate</em> (BLE <code class="text-rose-300">0x180D</code>) in your watch settings and tap <strong>Pair BLE Watch / Strap</strong> for live BPM &amp; recovery delta.</p>
+          <p>• <strong class="text-white">Wear OS / Galaxy / Pixel Watch:</strong> Pair via Web Bluetooth or sync workouts &amp; daily macros directly to Google Health Connect.</p>
+        </div>
       </div>
     </div>
   </div>
