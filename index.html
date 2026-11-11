@@ -132,7 +132,7 @@
             <button id="pinned-timer-reset" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-400 hover:text-white transition" title="Reset timer">↺</button>
           </div>
         </div>
-        <!-- Live Smartwatch BLE Heart Rate Pill & Rest-Interval Recovery Delta Row -->
+        <!-- Live Smartwatch BLE Heart Rate Pill, Rest-Interval Recovery Delta & HR Readiness Alert Row -->
         <div class="flex flex-wrap items-center gap-1.5">
           <span id="pinned-hr-live-pill" class="hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/50 text-rose-200 text-[10px] font-extrabold whitespace-nowrap">
             <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
@@ -140,6 +140,9 @@
           </span>
           <span id="pinned-hr-recovery-badge" class="hidden px-2 py-0.5 rounded-md bg-emerald-950/80 border border-emerald-400/40 text-emerald-300 text-[10px] font-extrabold whitespace-nowrap">
             152 -&gt; 118 BPM (-34 BPM recovery)
+          </span>
+          <span id="pinned-hr-readiness-badge" class="hidden px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-extrabold whitespace-nowrap shadow-sm">
+            HR Recovered (118 BPM) — Ready for Next Set!
           </span>
         </div>
         <div id="pinned-rice-alert-banner" class="hidden rounded-lg px-2.5 py-1.5 bg-gradient-to-r from-amber-950/90 via-amber-900/60 to-emerald-950/90 border border-amber-400/60 text-amber-200 text-[11px] font-extrabold flex items-center justify-between gap-2">
@@ -186,7 +189,10 @@
             </select>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
-            <button type="button" id="quick-next-week-btn" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-300 text-[10px] font-extrabold whitespace-nowrap transition" title="Finish current week, unlock next week & carry forward weights as placeholders">
+            <button type="button" id="gym-open-dashboard-pill-btn" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-300 text-[10px] font-extrabold whitespace-nowrap transition" title="Open Progress &amp; Analytics Dashboard">
+              📊 Stats / Dashboard
+            </button>
+            <button type="button" id="quick-next-week-btn" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-300 text-[10px] font-extrabold whitespace-nowrap transition" title="Finish current week, unlock next week &amp; carry forward weights as placeholders">
               ✓ Finish Week → Next
             </button>
 
@@ -346,7 +352,7 @@
           Ready for next set
         </div>
 
-        <!-- Live Smartwatch BLE Heart Rate & Rest-Interval Recovery HUD on Rest Timer Tab -->
+        <!-- Live Smartwatch BLE Heart Rate, Rest-Interval Recovery & HR Readiness Alert HUD on Rest Timer Tab -->
         <div id="timer-view-watch-hud" class="bg-slate-950/90 border border-slate-800 rounded-xl px-3 py-2.5 flex flex-wrap items-center justify-between gap-2 text-left">
           <div class="flex flex-wrap items-center gap-2">
             <span id="timer-view-hr-pill" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/85 border border-rose-400/50 text-rose-200 text-xs font-extrabold">
@@ -355,6 +361,9 @@
             </span>
             <span id="timer-view-hr-recovery" class="hidden px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold">
               152 -&gt; 118 BPM (-34 BPM recovery)
+            </span>
+            <span id="timer-view-hr-readiness-badge" class="hidden px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 text-xs font-extrabold shadow-sm">
+              HR Recovered (118 BPM) — Ready for Next Set!
             </span>
           </div>
           <button type="button" id="timer-wrist-alert-quick-btn" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-slate-300 transition">
@@ -810,7 +819,53 @@
     /*__BAKED_STATE_START__*/
     const FRANCOIS_WEEK1_SEED_LOGS = {"w1_0_day1_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "0_day1_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_0_day1_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "0_day1_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_0_day1_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "0_day1_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_0_day1_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "0_day1_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_0_day1_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "0_day1_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_1_day2_pullups_1": {"weight": "0", "reps": "1", "done": true, "unit": "lbs"}, "1_day2_pullups_1": {"weight": "0", "reps": "1", "done": true, "unit": "lbs"}, "w1_1_day2_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "1_day2_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_1_day2_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "1_day2_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_1_day2_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "1_day2_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_1_day2_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "1_day2_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_6": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_6": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_7": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_7": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_8": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_8": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_2_day3_pullups_9": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "2_day3_pullups_9": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_3_fri_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "3_fri_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_3_fri_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "3_fri_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_3_fri_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "3_fri_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_3_fri_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "3_fri_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_3_fri_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "3_fri_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_4_day5_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "4_day5_pullups_1": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_4_day5_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "4_day5_pullups_2": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_4_day5_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "4_day5_pullups_3": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_4_day5_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "4_day5_pullups_4": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_4_day5_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "4_day5_pullups_5": {"weight": "0", "reps": "2", "done": true, "unit": "lbs"}, "w1_0_mon_bench_1": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_bench_1": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_bench_2": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_bench_2": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_bench_3": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_bench_3": {"weight": "45", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_cs_row_1": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_cs_row_1": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_cs_row_2": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_cs_row_2": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_cs_row_3": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_cs_row_3": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_ohp_1": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_ohp_1": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_ohp_2": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_ohp_2": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_ohp_3": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "0_mon_ohp_3": {"weight": "85", "reps": "8", "done": true, "unit": "lbs"}, "w1_0_mon_lat_pd_1": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_lat_pd_1": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_lat_pd_2": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_lat_pd_2": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_lat_pd_3": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_lat_pd_3": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_cable_fly_1": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "0_mon_cable_fly_1": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_0_mon_cable_fly_2": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "0_mon_cable_fly_2": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_0_mon_cable_fly_3": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "0_mon_cable_fly_3": {"weight": "12.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_0_mon_lat_raise_1": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "0_mon_lat_raise_1": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "w1_0_mon_lat_raise_2": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "0_mon_lat_raise_2": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "w1_0_mon_lat_raise_3": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "0_mon_lat_raise_3": {"weight": "2.8", "reps": "15", "done": true, "unit": "lbs"}, "w1_0_mon_face_pull_1": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_face_pull_1": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_mon_face_pull_2": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "0_mon_face_pull_2": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "w1_0_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "0_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_0_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "0_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_0_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "0_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_squat_1": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "1_tue_squat_1": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "w1_1_tue_squat_2": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "1_tue_squat_2": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "w1_1_tue_squat_3": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "1_tue_squat_3": {"weight": "135", "reps": "8", "done": true, "unit": "lbs"}, "w1_1_tue_rdl_1": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_rdl_1": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_rdl_2": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_rdl_2": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_rdl_3": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_rdl_3": {"weight": "50", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_leg_ext_1": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_leg_ext_1": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_leg_ext_2": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_leg_ext_2": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_leg_ext_3": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_leg_ext_3": {"weight": "90", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_lunges_1": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_lunges_1": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_lunges_2": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_lunges_2": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_lunges_3": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "1_tue_lunges_3": {"weight": "30", "reps": "10", "done": true, "unit": "lbs"}, "w1_1_tue_calf_1": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_calf_1": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_calf_2": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_calf_2": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_calf_3": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "1_tue_calf_3": {"weight": "100", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_tue_side_plank_1": {"weight": "0", "reps": "30", "done": true, "unit": "lbs"}, "1_tue_side_plank_1": {"weight": "0", "reps": "30", "done": true, "unit": "lbs"}, "w1_1_tue_side_plank_2": {"weight": "0", "reps": "30", "done": true, "unit": "lbs"}, "1_tue_side_plank_2": {"weight": "0", "reps": "30", "done": true, "unit": "lbs"}, "w1_1_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "1_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "1_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_1_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "1_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_inc_db_1": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_inc_db_1": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_inc_db_2": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_inc_db_2": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_inc_db_3": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_inc_db_3": {"weight": "40", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_mid_fly_1": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_mid_fly_1": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_mid_fly_2": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_mid_fly_2": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_mid_fly_3": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_mid_fly_3": {"weight": "15", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_flat_db_1": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_flat_db_1": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_flat_db_2": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_flat_db_2": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_flat_db_3": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_flat_db_3": {"weight": "45", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_db_lat_1": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "2_thu_db_lat_1": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "w1_2_thu_db_lat_2": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "2_thu_db_lat_2": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "w1_2_thu_db_lat_3": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "2_thu_db_lat_3": {"weight": "15", "reps": "15", "done": true, "unit": "lbs"}, "w1_2_thu_oh_ext_1": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_oh_ext_1": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_oh_ext_2": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_oh_ext_2": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_oh_ext_3": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "2_thu_oh_ext_3": {"weight": "25", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_thu_pushdown_1": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_pushdown_1": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_pushdown_2": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_pushdown_2": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_thu_pushdown_3": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "2_thu_pushdown_3": {"weight": "35", "reps": "10", "done": true, "unit": "lbs"}, "w1_2_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "2_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "2_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_2_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "2_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_fri_lat_row_1": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_lat_row_1": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_lat_row_2": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_lat_row_2": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_lat_row_3": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_lat_row_3": {"weight": "70", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_rear_row_1": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "3_fri_rear_row_1": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_fri_rear_row_2": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "3_fri_rear_row_2": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_fri_rear_row_3": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "3_fri_rear_row_3": {"weight": "55", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_fri_inc_curl_1": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_inc_curl_1": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_inc_curl_2": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_inc_curl_2": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_inc_curl_3": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_inc_curl_3": {"weight": "20", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_hammer_1": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_hammer_1": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_hammer_2": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_hammer_2": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_hammer_3": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_hammer_3": {"weight": "25", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_face_pull_1": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_face_pull_1": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_fri_face_pull_2": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "3_fri_face_pull_2": {"weight": "13.8", "reps": "10", "done": true, "unit": "lbs"}, "w1_3_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "3_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "3_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_3_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "3_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_deadlift_1": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "4_sat_deadlift_1": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "w1_4_sat_deadlift_2": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "4_sat_deadlift_2": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "w1_4_sat_deadlift_3": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "4_sat_deadlift_3": {"weight": "185", "reps": "6", "done": true, "unit": "lbs"}, "w1_4_sat_bss_1": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "4_sat_bss_1": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "w1_4_sat_bss_2": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "4_sat_bss_2": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "w1_4_sat_bss_3": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "4_sat_bss_3": {"weight": "30", "reps": "8", "done": true, "unit": "lbs"}, "w1_4_sat_hip_thrust_1": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_hip_thrust_1": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_hip_thrust_2": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_hip_thrust_2": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_hip_thrust_3": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_hip_thrust_3": {"weight": "155", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_leg_curl_1": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_leg_curl_1": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_leg_curl_2": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_leg_curl_2": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_leg_curl_3": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_leg_curl_3": {"weight": "70", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_abduction_1": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_abduction_1": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_abduction_2": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_abduction_2": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_abduction_3": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "4_sat_abduction_3": {"weight": "0", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_sat_seated_calf_1": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "4_sat_seated_calf_1": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "w1_4_sat_seated_calf_2": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "4_sat_seated_calf_2": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "w1_4_sat_seated_calf_3": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "4_sat_seated_calf_3": {"weight": "90", "reps": "10", "done": true, "unit": "lbs"}, "w1_4_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "4_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "4_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_4_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "4_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_5_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "5_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_5_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "5_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_5_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "5_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_6_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "6_cable_ab_crunch_1": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_6_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "6_cable_ab_crunch_2": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "w1_6_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}, "6_cable_ab_crunch_3": {"weight": "57.5", "reps": "12", "done": true, "unit": "lbs"}};
     const FRANCOIS_WEEK1_SEED_PULLUPS = {"w1_day_1_set_1": {"reps": "2", "done": true}, "day_1_set_1": {"reps": "2", "done": true}, "w1_day_1_set_2": {"reps": "2", "done": true}, "day_1_set_2": {"reps": "2", "done": true}, "w1_day_1_set_3": {"reps": "2", "done": true}, "day_1_set_3": {"reps": "2", "done": true}, "w1_day_1_set_4": {"reps": "2", "done": true}, "day_1_set_4": {"reps": "2", "done": true}, "w1_day_1_set_5": {"reps": "2", "done": true}, "day_1_set_5": {"reps": "2", "done": true}, "w1_day_2_set_1": {"reps": "1", "done": true}, "day_2_set_1": {"reps": "1", "done": true}, "w1_day_2_set_2": {"reps": "2", "done": true}, "day_2_set_2": {"reps": "2", "done": true}, "w1_day_2_set_3": {"reps": "2", "done": true}, "day_2_set_3": {"reps": "2", "done": true}, "w1_day_2_set_4": {"reps": "2", "done": true}, "day_2_set_4": {"reps": "2", "done": true}, "w1_day_2_set_5": {"reps": "2", "done": true}, "day_2_set_5": {"reps": "2", "done": true}, "w1_day_3_set_1": {"reps": "2", "done": true}, "day_3_set_1": {"reps": "2", "done": true}, "w1_day_3_set_2": {"reps": "2", "done": true}, "day_3_set_2": {"reps": "2", "done": true}, "w1_day_3_set_3": {"reps": "2", "done": true}, "day_3_set_3": {"reps": "2", "done": true}, "w1_day_3_set_4": {"reps": "2", "done": true}, "day_3_set_4": {"reps": "2", "done": true}, "w1_day_3_set_5": {"reps": "2", "done": true}, "day_3_set_5": {"reps": "2", "done": true}, "w1_day_3_set_6": {"reps": "2", "done": true}, "day_3_set_6": {"reps": "2", "done": true}, "w1_day_3_set_7": {"reps": "2", "done": true}, "day_3_set_7": {"reps": "2", "done": true}, "w1_day_3_set_8": {"reps": "2", "done": true}, "day_3_set_8": {"reps": "2", "done": true}, "w1_day_3_set_9": {"reps": "2", "done": true}, "day_3_set_9": {"reps": "2", "done": true}, "w1_day_4_set_1": {"reps": "2", "done": true}, "day_4_set_1": {"reps": "2", "done": true}, "w1_day_4_set_2": {"reps": "2", "done": true}, "day_4_set_2": {"reps": "2", "done": true}, "w1_day_4_set_3": {"reps": "2", "done": true}, "day_4_set_3": {"reps": "2", "done": true}, "w1_day_4_set_4": {"reps": "2", "done": true}, "day_4_set_4": {"reps": "2", "done": true}, "w1_day_4_set_5": {"reps": "2", "done": true}, "day_4_set_5": {"reps": "2", "done": true}, "w1_day_4_set_6": {"reps": "2", "done": true}, "day_4_set_6": {"reps": "2", "done": true}, "w1_day_4_set_7": {"reps": "2", "done": true}, "day_4_set_7": {"reps": "2", "done": true}, "w1_day_4_set_8": {"reps": "2", "done": true}, "day_4_set_8": {"reps": "2", "done": true}, "w1_day_4_set_9": {"reps": "2", "done": true}, "day_4_set_9": {"reps": "2", "done": true}, "w1_day_5_set_1": {"reps": "2", "done": true}, "day_5_set_1": {"reps": "2", "done": true}, "w1_day_5_set_2": {"reps": "2", "done": true}, "day_5_set_2": {"reps": "2", "done": true}, "w1_day_5_set_3": {"reps": "2", "done": true}, "day_5_set_3": {"reps": "2", "done": true}, "w1_day_5_set_4": {"reps": "2", "done": true}, "day_5_set_4": {"reps": "2", "done": true}, "w1_day_5_set_5": {"reps": "2", "done": true}, "day_5_set_5": {"reps": "2", "done": true}};
-    const FRANCOIS_DEFAULT_PROFILE = {"name": "François", "email": "francois@7amgym.app", "phone": "", "goal": "6-Pack Recomp", "diet": "100% Plant-Based ($5.55/day)", "gymTime": "07:00", "signedInAt": "2026-11-01T07:00:00.000Z"};
+    const FRANCOIS_DEFAULT_PROFILE = {
+      "name": "François",
+      "email": "francois@7amgym.app",
+      "phone": "",
+      "goal": "6-Pack Recomp",
+      "goalType": "Recomp / Lean Mass",
+      "diet": "100% Plant-Based ($5.55/day)",
+      "gymTime": "07:00",
+      "heightCm": 178,
+      "heightUnit": "cm",
+      "startWeightLbs": 172.0,
+      "currentWeightLbs": 168.5,
+      "targetWeightLbs": 162.0,
+      "unitPreference": "lbs",
+      "signedInAt": "2026-11-01T07:00:00.000Z"
+    };
+    const FRANCOIS_SEED_WEIGHT_LOGS = [
+      { date: '2026-11-05', weight: 172.0, unit: 'lbs', note: 'Week 1 Baseline' },
+      { date: '2026-11-06', weight: 171.4, unit: 'lbs', note: 'Morning weigh-in' },
+      { date: '2026-11-07', weight: 171.8, unit: 'lbs', note: 'High leg-day glycogen' },
+      { date: '2026-11-08', weight: 170.6, unit: 'lbs', note: 'Post-rest drop' },
+      { date: '2026-11-09', weight: 169.8, unit: 'lbs', note: 'On track (1,300 kcal)' },
+      { date: '2026-11-10', weight: 169.2, unit: 'lbs', note: 'Upper Push session' },
+      { date: '2026-11-11', weight: 168.5, unit: 'lbs', note: 'Week 2 Check-in' }
+    ];
+    const FRANCOIS_SEED_PROGRESS_PHOTOS = [
+      {
+        id: 'photo_seed_wk1',
+        date: '2026-11-01',
+        week: 1,
+        weight: 172.0,
+        unit: 'lbs',
+        pose: 'Front',
+        note: 'Week 1 Baseline — Starting 6-Pack Recomp',
+        dataUrl: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 380"><defs><linearGradient id="bg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0f172a"/><stop offset="100%" stop-color="#020617"/></linearGradient></defs><rect width="300" height="380" fill="url(#bg1)"/><circle cx="150" cy="72" r="24" fill="#334155" stroke="#64748b" stroke-width="2"/><path d="M104 114 C118 102 182 102 196 114 L184 212 L116 212 Z" fill="#1e293b" stroke="#38bdf8" stroke-width="2.5"/><rect x="122" y="132" width="56" height="68" rx="8" fill="#0f172a" stroke="#475569" stroke-width="1.5"/><path d="M116 214 L108 320 L138 320 L146 238 L154 238 L162 320 L192 320 L184 214 Z" fill="#1e293b" stroke="#475569" stroke-width="2"/><text x="150" y="34" text-anchor="middle" fill="#94a3b8" font-family="sans-serif" font-size="11" font-weight="bold">WEEK 1 • START SNAPSHOT</text></svg>`)
+      },
+      {
+        id: 'photo_seed_wk2',
+        date: '2026-11-11',
+        week: 2,
+        weight: 168.5,
+        unit: 'lbs',
+        pose: 'Front',
+        note: 'Week 2 Check-In — Leaner Waist & Fuller Lats',
+        dataUrl: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 380"><defs><linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#064e3b"/><stop offset="100%" stop-color="#020617"/></linearGradient></defs><rect width="300" height="380" fill="url(#bg2)"/><circle cx="150" cy="72" r="24" fill="#1e293b" stroke="#10b981" stroke-width="2.5"/><path d="M98 112 C116 98 184 98 202 112 L176 212 L124 212 Z" fill="#0f172a" stroke="#10b981" stroke-width="2.5"/><line x1="150" y1="128" x2="150" y2="202" stroke="#10b981" stroke-width="1.8"/><line x1="128" y1="150" x2="172" y2="150" stroke="#10b981" stroke-width="1.5"/><line x1="130" y1="172" x2="170" y2="172" stroke="#10b981" stroke-width="1.5"/><path d="M124 214 L112 320 L140 320 L147 238 L153 238 L160 320 L188 320 L176 214 Z" fill="#0f172a" stroke="#10b981" stroke-width="2"/><text x="150" y="34" text-anchor="middle" fill="#6ee7b7" font-family="sans-serif" font-size="11" font-weight="bold">WEEK 2 • RECOMP PROGRESS</text></svg>`)
+      }
+    ];
     const LEGACY_PULLUP_LOGS_KEY = ['u', 's', 'm', 'c', 'Logs'].join('');
 
     const DEFAULT_STATE = {
@@ -823,6 +878,15 @@
       audioMode: 'sound_vibe', // 'sound_vibe' | 'vibe_only' | 'silent'
       timerTone: 'warm_marimba', // 'warm_marimba' | 'soft_bell' | 'gentle_tap'
       timerVolume: 0.55, // 55% default calibrated volume
+      watchSettings: {
+        hrRecoveryAlert: true,
+        targetRecoveryBpm: 120,
+        targetDropBpm: 25
+      },
+      bodyWeightLogs: JSON.parse(JSON.stringify(FRANCOIS_SEED_WEIGHT_LOGS)),
+      progressPhotos: JSON.parse(JSON.stringify(FRANCOIS_SEED_PROGRESS_PHOTOS)),
+      comparePhotoBeforeId: 'photo_seed_wk1',
+      comparePhotoAfterId: 'photo_seed_wk2',
       timedHoldSeconds: {},
       exerciseNotes: {},
       openNotePanels: {},
@@ -1124,6 +1188,30 @@
       if (!merged.loggedMealSnapshots || typeof merged.loggedMealSnapshots !== 'object') merged.loggedMealSnapshots = {};
       if (!merged.fuelCustomizations || typeof merged.fuelCustomizations !== 'object') merged.fuelCustomizations = {};
       if (!merged.fuelLogs || typeof merged.fuelLogs !== 'object') merged.fuelLogs = {};
+      if (!merged.watchSettings || typeof merged.watchSettings !== 'object') {
+        merged.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25 };
+      } else {
+        if (typeof merged.watchSettings.hrRecoveryAlert !== 'boolean') merged.watchSettings.hrRecoveryAlert = true;
+        if (!merged.watchSettings.targetRecoveryBpm) merged.watchSettings.targetRecoveryBpm = 120;
+        if (!merged.watchSettings.targetDropBpm) merged.watchSettings.targetDropBpm = 25;
+      }
+      if (!merged.userProfile || typeof merged.userProfile !== 'object') {
+        merged.userProfile = JSON.parse(JSON.stringify(FRANCOIS_DEFAULT_PROFILE));
+      } else {
+        if (!merged.userProfile.heightCm) merged.userProfile.heightCm = 178;
+        if (!merged.userProfile.heightUnit) merged.userProfile.heightUnit = 'cm';
+        if (!merged.userProfile.startWeightLbs) merged.userProfile.startWeightLbs = 172.0;
+        if (!merged.userProfile.currentWeightLbs) merged.userProfile.currentWeightLbs = 168.5;
+        if (!merged.userProfile.targetWeightLbs) merged.userProfile.targetWeightLbs = 162.0;
+        if (!merged.userProfile.unitPreference) merged.userProfile.unitPreference = 'lbs';
+        if (!merged.userProfile.goalType) merged.userProfile.goalType = 'Recomp / Lean Mass';
+      }
+      if (!Array.isArray(merged.bodyWeightLogs) || merged.bodyWeightLogs.length === 0) {
+        merged.bodyWeightLogs = JSON.parse(JSON.stringify(FRANCOIS_SEED_WEIGHT_LOGS));
+      }
+      if (!Array.isArray(merged.progressPhotos) || merged.progressPhotos.length === 0) {
+        merged.progressPhotos = JSON.parse(JSON.stringify(FRANCOIS_SEED_PROGRESS_PHOTOS));
+      }
       return merged;
     }
 
@@ -3320,6 +3408,59 @@
       return String(m).padStart(2, '0') + ':' + String(rem).padStart(2, '0');
     }
 
+    function syncWatchMediaSessionMetadata() {
+      if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+      try {
+        const nextSetStr = getNextIncompleteSetSummaryForWristAlert();
+        const remSec = Math.max(0, Math.round(Number(state.timerSeconds) || 0));
+        const mm = String(Math.floor(remSec / 60)).padStart(2, '0');
+        const ss = String(remSec % 60).padStart(2, '0');
+        const ctxLabel = String(state.timerContextLabel || '').trim();
+        const title = timerRunning
+          ? `⏱️ ${mm}:${ss} Rest • ${ctxLabel || nextSetStr}`
+          : (ctxLabel || `Up Next: ${nextSetStr}`);
+        const artist = `${state.liveBpm > 0 ? `❤️ ${state.liveBpm} BPM • ` : ''}${nextSetStr}`;
+        const album = `Week ${state.currentWeek || 1} • Day ${(state.selectedDayIndex || 0) + 1} • 7AM Gym Hub`;
+        if (typeof MediaMetadata !== 'undefined') {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title,
+            artist,
+            album
+          });
+        }
+        navigator.mediaSession.playbackState = timerRunning ? 'playing' : 'paused';
+        const safeSetHandler = (action, fn) => {
+          try { navigator.mediaSession.setActionHandler(action, fn); } catch (e) {}
+        };
+        safeSetHandler('play', () => {
+          if (!timerRunning) toggleTimer();
+        });
+        safeSetHandler('pause', () => {
+          if (timerRunning) toggleTimer();
+        });
+        safeSetHandler('seekforward', () => {
+          state.timerSeconds = (state.timerSeconds || 0) + 15;
+          state.timerTotalSeconds = Math.max(state.timerTotalSeconds || 90, state.timerSeconds);
+          if (timerRunning && state.timerEndTime) state.timerEndTime += 15000;
+          updateTimerUI();
+          saveState();
+          showToast('⌚ Watch Media Control: +15s Added to Rest Timer');
+        });
+        safeSetHandler('previoustrack', () => {
+          state.timerSeconds = (state.timerSeconds || 0) + 15;
+          state.timerTotalSeconds = Math.max(state.timerTotalSeconds || 90, state.timerSeconds);
+          if (timerRunning && state.timerEndTime) state.timerEndTime += 15000;
+          updateTimerUI();
+          saveState();
+          showToast('⌚ Watch Media Control: +15s Added to Rest Timer');
+        });
+        safeSetHandler('nexttrack', () => {
+          resetTimer();
+          showToast('⌚ Watch Media Control: Skipped Rest — Ready for Next Set!');
+        });
+      } catch (e) {}
+    }
+
     function updateTimerUI() {
       const formatted = formatTime(state.timerSeconds);
       const headerDisp = document.getElementById('header-timer-display');
@@ -3371,6 +3512,7 @@
           ? 'bg-emerald-400 h-full transition-all duration-300'
           : 'bg-slate-700 h-full transition-all duration-300';
       }
+      syncWatchMediaSessionMetadata();
       const RiceAlertBadge = document.getElementById('pinned-rice-alert-badge');
       const RiceAlertBanner = document.getElementById('pinned-rice-alert-banner');
       const RiceAlertText = document.getElementById('pinned-rice-alert-text');
@@ -3598,6 +3740,7 @@
         if (nextSec !== state.timerSeconds) {
           state.timerSeconds = nextSec;
           updateTimerUI();
+          updateWatchAndHeartRateUI();
         }
       } else {
         if (timerInterval) clearInterval(timerInterval);
@@ -3612,6 +3755,7 @@
         state.timerSeconds = 0;
         releaseWakeLock();
         updateTimerUI();
+        updateWatchAndHeartRateUI();
         saveState();
         playTimerChime();
         triggerWatchWristTimerNotification(completedRiceStage);
@@ -3642,6 +3786,9 @@
       if (timerInterval) clearInterval(timerInterval);
       timerRunning = true;
       state.timerRunning = true;
+      state.timerStartTime = Date.now();
+      state.hrRecoveryAlertFiredForCurrentRest = false;
+      state.hrRecoveryForcePreview = false;
       state.timerEndTime = Date.now() + (state.timerSeconds * 1000);
       requestWakeLock();
       updateTimerUI();
@@ -3667,6 +3814,7 @@
         state.timerEndTime = null;
         releaseWakeLock();
         updateTimerUI();
+        updateWatchAndHeartRateUI();
         saveState();
       } else {
         if (state.timerSeconds <= 0) {
@@ -3685,6 +3833,9 @@
       timerRunning = false;
       state.timerRunning = false;
       state.timerEndTime = null;
+      state.timerStartTime = null;
+      state.hrRecoveryAlertFiredForCurrentRest = false;
+      state.hrRecoveryForcePreview = false;
       state.timerSeconds = state.timerTotalSeconds || 90;
       releaseWakeLock();
       updateTimerUI();
@@ -3769,7 +3920,7 @@
       try {
         const w = state.currentWeek || 1;
         const d = state.selectedDayIndex || 0;
-        const dayObj = WORKOUT_DAYS[d] || WORKOUT_DAYS[0];
+        const dayObj = DAYS_SCHEDULE[d] || DAYS_SCHEDULE[0];
         if (!dayObj || !Array.isArray(dayObj.exercises)) {
           return 'Set 2 Barbell Bench Press (135 lbs x 8)';
         }
@@ -3843,16 +3994,50 @@
       }
     }
 
+    function evaluateHrRecoveryReadinessState() {
+      const ws = Object.assign({ hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25 }, state.watchSettings || {});
+      const bpm = Math.round(Number(state.liveBpm) || 0);
+      const startBpm = Math.round(Number(state.startRestBpm) || 0);
+      const totalSec = Math.max(0, Number(state.timerTotalSeconds) || 90);
+      const remSec = Math.max(0, Number(state.timerSeconds) || 0);
+      const elapsedByCountdown = Math.max(0, totalSec - remSec);
+      const elapsedByClock = state.timerStartTime ? Math.max(0, Math.floor((Date.now() - state.timerStartTime) / 1000)) : 0;
+      const elapsedRestSec = state.hrRecoveryForcePreview ? 25 : Math.max(elapsedByCountdown, elapsedByClock);
+      const isTimerActiveOrPreview = Boolean(timerRunning || state.hrRecoveryForcePreview);
+
+      if (!ws.hrRecoveryAlert || !isTimerActiveOrPreview || bpm <= 0 || elapsedRestSec < 20) {
+        return { isReady: false, badgeText: '', reason: null };
+      }
+      const reachedTargetBpm = bpm <= (Number(ws.targetRecoveryBpm) || 120);
+      const reachedDropBpm = startBpm > 0 && (startBpm - bpm) >= (Number(ws.targetDropBpm) || 25);
+      if (!reachedTargetBpm && !reachedDropBpm) {
+        return { isReady: false, badgeText: '', reason: null };
+      }
+      return {
+        isReady: true,
+        badgeText: `HR Recovered (${bpm} BPM) — Ready for Next Set!`,
+        reason: reachedTargetBpm ? 'target_bpm' : 'peak_drop'
+      };
+    }
+
     function updateWatchAndHeartRateUI() {
       const bpm = Math.round(Number(state.liveBpm) || 0);
       const startBpm = Math.round(Number(state.startRestBpm) || 0);
       const hasLiveHr = bpm > 0;
       const zoneInfo = hasLiveHr ? getHeartRateZoneInfo(bpm, 190) : null;
       const recoveryText = hasLiveHr && startBpm > 0 ? formatRestHeartRateRecovery(startBpm, bpm) : '';
+      const readiness = evaluateHrRecoveryReadinessState();
+
+      if (readiness.isReady && !state.hrRecoveryAlertFiredForCurrentRest) {
+        state.hrRecoveryAlertFiredForCurrentRest = true;
+        playTimerChime('gentle_tap');
+        showToast(`💚 ${readiness.badgeText}`);
+      }
 
       const pinnedHrPill = document.getElementById('pinned-hr-live-pill');
       const pinnedHrText = document.getElementById('pinned-hr-live-text');
       const pinnedRecBadge = document.getElementById('pinned-hr-recovery-badge');
+      const pinnedReadinessBadge = document.getElementById('pinned-hr-readiness-badge');
 
       if (pinnedHrPill && pinnedHrText) {
         if (hasLiveHr && zoneInfo) {
@@ -3864,7 +4049,7 @@
       }
 
       if (pinnedRecBadge) {
-        if (recoveryText) {
+        if (recoveryText && !readiness.isReady) {
           pinnedRecBadge.textContent = recoveryText;
           pinnedRecBadge.classList.remove('hidden');
         } else {
@@ -3872,9 +4057,19 @@
         }
       }
 
+      if (pinnedReadinessBadge) {
+        if (readiness.isReady) {
+          pinnedReadinessBadge.textContent = readiness.badgeText;
+          pinnedReadinessBadge.classList.remove('hidden');
+        } else {
+          pinnedReadinessBadge.classList.add('hidden');
+        }
+      }
+
       const timerHrPill = document.getElementById('timer-view-hr-pill');
       const timerHrText = document.getElementById('timer-view-hr-text');
       const timerRecEl = document.getElementById('timer-view-hr-recovery');
+      const timerReadinessEl = document.getElementById('timer-view-hr-readiness-badge');
 
       if (timerHrPill && timerHrText) {
         if (hasLiveHr && zoneInfo) {
@@ -3892,6 +4087,15 @@
           timerRecEl.classList.remove('hidden');
         } else {
           timerRecEl.classList.add('hidden');
+        }
+      }
+
+      if (timerReadinessEl) {
+        if (readiness.isReady) {
+          timerReadinessEl.textContent = readiness.badgeText;
+          timerReadinessEl.classList.remove('hidden');
+        } else {
+          timerReadinessEl.classList.add('hidden');
         }
       }
 
@@ -3920,11 +4124,14 @@
       // Update Smartwatch Modal elements if present
       const modalHrPill = document.getElementById('watch-modal-live-hr-pill');
       const modalHrRec = document.getElementById('watch-modal-hr-recovery');
+      const modalReadinessBadge = document.getElementById('watch-modal-hr-readiness-badge');
       const modalDeviceStatus = document.getElementById('watch-modal-ble-status');
       const modalDemoBtn = document.getElementById('watch-modal-demo-hr-btn');
       const modalWristToggleBtn = document.getElementById('watch-modal-wrist-toggle-btn');
       const modalHealthBridgeBadge = document.getElementById('watch-modal-health-bridge-badge');
       const modalHealthSyncStatus = document.getElementById('watch-modal-health-sync-status');
+      const modalHrAlertToggleBtn = document.getElementById('watch-modal-hr-alert-toggle-btn');
+      const modalHrTargetSelect = document.getElementById('watch-modal-hr-target-select');
 
       if (modalHrPill) {
         modalHrPill.textContent = hasLiveHr && zoneInfo ? zoneInfo.pillText : 'No Active HR Stream';
@@ -3935,6 +4142,28 @@
       if (modalHrRec) {
         modalHrRec.textContent = recoveryText || 'Start a rest timer while streaming BPM to track live recovery delta (e.g., 152 -> 118 BPM (-34 BPM recovery)).';
       }
+      if (modalReadinessBadge) {
+        if (readiness.isReady) {
+          modalReadinessBadge.textContent = readiness.badgeText;
+          modalReadinessBadge.classList.remove('hidden');
+        } else {
+          modalReadinessBadge.classList.add('hidden');
+        }
+      }
+      if (modalHrAlertToggleBtn) {
+        const ws = Object.assign({ hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25 }, state.watchSettings || {});
+        const alertOn = Boolean(ws.hrRecoveryAlert);
+        modalHrAlertToggleBtn.setAttribute('aria-pressed', alertOn ? 'true' : 'false');
+        modalHrAlertToggleBtn.textContent = alertOn
+          ? `✓ HR Recovery Alert: ON (≤${ws.targetRecoveryBpm} BPM or -${ws.targetDropBpm} BPM)`
+          : 'HR Recovery Readiness Alert: OFF';
+        modalHrAlertToggleBtn.className = alertOn
+          ? 'flex-1 py-2 px-3 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 font-extrabold text-xs transition'
+          : 'flex-1 py-2 px-3 rounded-xl bg-slate-900 border border-slate-700 text-slate-400 font-bold text-xs transition';
+      }
+      if (modalHrTargetSelect && state.watchSettings) {
+        modalHrTargetSelect.value = String(state.watchSettings.targetRecoveryBpm || 120);
+      }
       if (modalDeviceStatus) {
         modalDeviceStatus.textContent = state.bleDeviceName
           ? `Connected: ${state.bleDeviceName} (0x180D / 0x2A37)`
@@ -3943,7 +4172,7 @@
       if (modalDemoBtn) {
         modalDemoBtn.textContent = simulatedHrInterval
           ? '⏹ Stop Demo HR Stream'
-          : '▶ Simulate Live Watch HR (138 BPM • Zone 3)';
+          : '▶ Simulate Live Watch HR (138 -> 118 BPM Recovery)';
       }
       if (modalWristToggleBtn) {
         const on = Boolean(state.watchNotificationsEnabled);
@@ -3965,6 +4194,7 @@
       if (modalHealthSyncStatus && state.lastHealthSyncAt) {
         modalHealthSyncStatus.textContent = `Last synced: ${state.lastHealthSyncAt}`;
       }
+      syncWatchMediaSessionMetadata();
     }
 
     async function connectLiveBleHeartRate() {
@@ -10363,7 +10593,10 @@
         currentWeek: state.currentWeek || 1,
         selectedDayIndex: state.selectedDayIndex || 0,
         pullupTrainingSetReps: state.pullupTrainingSetReps || 3,
-        geminiChatHistory: JSON.parse(JSON.stringify(state.geminiChatHistory || []))
+        geminiChatHistory: JSON.parse(JSON.stringify(state.geminiChatHistory || [])),
+        bodyWeightLogs: JSON.parse(JSON.stringify(state.bodyWeightLogs || [])),
+        progressPhotos: JSON.parse(JSON.stringify(state.progressPhotos || [])),
+        watchSettings: JSON.parse(JSON.stringify(state.watchSettings || { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25 }))
       };
     }
 
@@ -10397,6 +10630,11 @@
       state.selectedDayIndex = s.selectedDayIndex || 0;
       state.pullupTrainingSetReps = s.pullupTrainingSetReps || 3;
       state.geminiChatHistory = s.geminiChatHistory ? JSON.parse(JSON.stringify(s.geminiChatHistory)) : [];
+      if (Array.isArray(s.bodyWeightLogs)) state.bodyWeightLogs = JSON.parse(JSON.stringify(s.bodyWeightLogs));
+      if (Array.isArray(s.progressPhotos)) state.progressPhotos = JSON.parse(JSON.stringify(s.progressPhotos));
+      if (s.watchSettings && typeof s.watchSettings === 'object') {
+        state.watchSettings = Object.assign({ hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25 }, s.watchSettings);
+      }
       state.cardCollapsedState = {};
     }
 
@@ -11313,44 +11551,716 @@
         });
       }
 
+      const profSecDashboardBtn = document.getElementById('profile-section-dashboard-btn');
+      const profSecBodyPhotosBtn = document.getElementById('profile-section-body-photos-btn');
       const profSecAccountBtn = document.getElementById('profile-section-account-btn');
       const profSecGearBtn = document.getElementById('profile-section-gear-btn');
+
+      const profDashboardWrap = document.getElementById('profile-dashboard-section-wrap');
+      const profBodyPhotosWrap = document.getElementById('profile-body-photos-section-wrap');
       const profAccountWrap = document.getElementById('profile-account-section-wrap');
       const profGearWrap = document.getElementById('profile-gear-section-wrap');
 
+      function computeBodyWeightTrendSeriesLocal(logs, targetUnit) {
+        const unit = targetUnit === 'kg' ? 'kg' : 'lbs';
+        if (!Array.isArray(logs) || logs.length === 0) return [];
+        const byDate = {};
+        logs.forEach(entry => {
+          if (!entry || !entry.date) return;
+          const rawW = Number(entry.weight);
+          if (!Number.isFinite(rawW) || rawW <= 0) return;
+          const entryUnit = entry.unit === 'kg' ? 'kg' : 'lbs';
+          let norm = rawW;
+          if (entryUnit !== unit) {
+            norm = unit === 'kg' ? rawW * 0.45359237 : rawW / 0.45359237;
+          }
+          byDate[String(entry.date).slice(0, 10)] = {
+            date: String(entry.date).slice(0, 10),
+            scaleWeight: Math.round(norm * 10) / 10,
+            unit,
+            note: String(entry.note || '')
+          };
+        });
+        const sorted = Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
+        const alpha = 0.25;
+        let prevTrend = null;
+        return sorted.map(item => {
+          const trend = prevTrend === null ? item.scaleWeight : (alpha * item.scaleWeight) + ((1 - alpha) * prevTrend);
+          prevTrend = trend;
+          const cleanTrend = Math.round(trend * 10) / 10;
+          return {
+            date: item.date,
+            scaleWeight: item.scaleWeight,
+            trendWeight: cleanTrend,
+            deltaFromTrend: Math.round((item.scaleWeight - cleanTrend) * 10) / 10,
+            unit: item.unit,
+            note: item.note
+          };
+        });
+      }
+
+      function formatHeightDisplayLocal(heightCm, mode) {
+        const cm = Math.max(100, Math.min(250, Math.round(Number(heightCm) || 178)));
+        if (mode === 'ft_in') {
+          const totalInches = Math.round(cm / 2.54);
+          const feet = Math.floor(totalInches / 12);
+          const inches = totalInches % 12;
+          return `${feet}'${inches}" (${cm} cm)`;
+        }
+        return `${cm} cm`;
+      }
+
+      function renderAthleteDashboardTab() {
+        if (!profDashboardWrap) return;
+        const activeW = state.selectedWeek || state.currentWeek || 1;
+        const maxW = Math.max(activeW, state.maxUnlockedWeek || 2);
+
+        // 1. Workout Completion & Consistency for Active Week
+        let loggedSetsActiveWeek = 0;
+        let totalSetsActiveWeek = 0;
+        const dayCompletionList = [];
+        DAYS_SCHEDULE.forEach((dayObj, dIdx) => {
+          const isRestDay = dIdx >= 5;
+          const prog = typeof getDayCompletionStatus === 'function'
+            ? getDayCompletionStatus(activeW, dIdx)
+            : { doneSets: 0, totalSets: 0, status: 'none' };
+          const dayDone = prog.doneSets || 0;
+          const dayTotal = prog.totalSets || 0;
+          loggedSetsActiveWeek += dayDone;
+          totalSetsActiveWeek += dayTotal;
+          const completed = prog.status === 'complete';
+          const partial = prog.status === 'partial';
+          dayCompletionList.push({
+            dayNumber: dIdx + 1,
+            shortLabel: `D${dIdx + 1}`,
+            isRestDay,
+            dayDone,
+            dayTotal,
+            completed,
+            partial
+          });
+        });
+        const completedWorkoutDaysCount = dayCompletionList.filter(d => !d.isRestDay && d.completed).length;
+        const completionPct = totalSetsActiveWeek > 0 ? Math.min(100, Math.round((loggedSetsActiveWeek / totalSetsActiveWeek) * 100)) : 0;
+
+        // 2. Total Weekly Volume (Tonnage Lifted) across unlocked weeks
+        const tonnageByWeek = [];
+        let maxWeekTonnage = 1000;
+        for (let w = 1; w <= maxW; w++) {
+          let wTonnage = 0;
+          let wSets = 0;
+          Object.keys(state.workoutLogs || {}).forEach(k => {
+            if (!k.startsWith(`w${w}_`)) return;
+            const entry = state.workoutLogs[k];
+            if (!entry || !entry.done) return;
+            const wt = parseFloat(String(entry.weight ?? ''));
+            const rp = parseInt(String(entry.reps ?? ''), 10);
+            if (Number.isFinite(wt) && wt > 0 && Number.isFinite(rp) && rp > 0) {
+              wTonnage += Math.round(wt * rp);
+              wSets++;
+            }
+          });
+          if (wTonnage > maxWeekTonnage) maxWeekTonnage = wTonnage;
+          tonnageByWeek.push({ week: w, tonnageLbs: wTonnage, setsCount: wSets });
+        }
+
+        // 3. Pull-Up & Key Lift PR Tracker (Epley 1RM: weight * (1 + reps / 30))
+        const keyLiftSpecs = [
+          { id: 'mon_bench', label: 'Barbell Bench Press', matchIds: ['mon_bench', 'd1_e1'] },
+          { id: 'tue_squat', label: 'Barbell Back Squat', matchIds: ['tue_squat', 'd1_e3', 'd5_e1'] },
+          { id: 'mon_ohp', label: 'Standing Overhead Press', matchIds: ['mon_ohp', 'd3_e2'] },
+          { id: 'sat_deadlift', label: 'Barbell Deadlift', matchIds: ['sat_deadlift', 'd3_e3'] }
+        ];
+        const keyLiftCards = keyLiftSpecs.map(spec => {
+          let best1Rm = 0;
+          let bestW = 0;
+          let bestR = 0;
+          Object.keys(state.workoutLogs || {}).forEach(k => {
+            const m = k.match(/^w(\d+)_(?:d)?(\d+)_([a-z0-9_]+)_(?:s)?(\d+)$/i);
+            if (!m) return;
+            const exId = m[3];
+            if (!spec.matchIds.includes(exId)) return;
+            const entry = state.workoutLogs[k];
+            if (!entry || !entry.done) return;
+            const rawWt = parseFloat(String(entry.weight ?? ''));
+            const wt = entry.unit === 'kg' ? Math.round(rawWt * 2.20462 * 10) / 10 : rawWt;
+            const rp = parseInt(String(entry.reps ?? ''), 10);
+            if (!Number.isFinite(wt) || wt <= 0 || !Number.isFinite(rp) || rp <= 0) return;
+            const epley = rp === 1 ? wt : Math.round(wt * (1 + rp / 30) * 10) / 10;
+            if (epley > best1Rm) {
+              best1Rm = epley;
+              bestW = wt;
+              bestR = rp;
+            }
+          });
+          return { label: spec.label, best1Rm, bestW, bestR };
+        });
+
+        let highestPullupSet = 0;
+        let weeklyPullupReps = 0;
+        const pullupIdSet = new Set(['day1_pullups', 'day2_pullups', 'day3_pullups', 'fri_pullups', 'day4_pullups', 'day5_pullups', 'd2_e1']);
+        Object.keys(state.workoutLogs || {}).forEach(k => {
+          const m = k.match(/^w(\d+)_(?:d)?(\d+)_([a-z0-9_]+)_(?:s)?(\d+)$/i);
+          if (!m || !pullupIdSet.has(m[3])) return;
+          const entry = state.workoutLogs[k];
+          if (!entry || !entry.done) return;
+          const rp = parseInt(String(entry.reps ?? ''), 10);
+          if (Number.isFinite(rp) && rp > 0) {
+            if (rp > highestPullupSet) highestPullupSet = rp;
+            if (Number(m[1]) === activeW) weeklyPullupReps += rp;
+          }
+        });
+        Object.keys(state.pullupLogs || {}).forEach(k => {
+          const entry = state.pullupLogs[k];
+          if (!entry || !entry.done) return;
+          const rp = parseInt(String(entry.reps ?? ''), 10);
+          if (Number.isFinite(rp) && rp > 0) {
+            if (rp > highestPullupSet) highestPullupSet = rp;
+            if (k.startsWith(`w${activeW}_`)) weeklyPullupReps += rp;
+          }
+        });
+
+        // 4. 7-Day Muscle Fuel & Hydration Adherence
+        let totalWeekProtein = 0;
+        let totalWeekKcal = 0;
+        let loggedFuelDays = 0;
+        let totalWeekWaterMl = 0;
+        let loggedWaterDays = 0;
+
+        for (let d = 0; d < 7; d++) {
+          const dayPlan = getEffectiveDayFuelPlan(state, activeW, d);
+          let dayP = 0;
+          let dayK = 0;
+          (VEGAN_MEALS || []).forEach(slot => {
+            const mealObj = (dayPlan && dayPlan.meals && dayPlan.meals[slot.slotId]) || (slot.options && slot.options[0]);
+            if (!mealObj) return;
+            if (typeof isMealCheckedForDay === 'function' && isMealCheckedForDay(activeW, d, slot.slotId)) {
+              dayP += Number(mealObj.protein) || 0;
+              dayK += Number(mealObj.kcal) || 0;
+            }
+          });
+          if (dayP > 0 || dayK > 0) {
+            totalWeekProtein += dayP;
+            totalWeekKcal += dayK;
+            loggedFuelDays++;
+          }
+          const wMl = getDailyWaterLoggedMl(activeW, d);
+          if (wMl > 0) {
+            totalWeekWaterMl += wMl;
+            loggedWaterDays++;
+          }
+        }
+        const avgProtein = loggedFuelDays > 0 ? Math.round(totalWeekProtein / loggedFuelDays) : 138;
+        const avgKcal = loggedFuelDays > 0 ? Math.round(totalWeekKcal / loggedFuelDays) : 1300;
+        const avgWaterMl = loggedWaterDays > 0 ? Math.round(totalWeekWaterMl / loggedWaterDays) : 3000;
+
+        profDashboardWrap.innerHTML = `
+          <div class="space-y-3 text-xs">
+            <!-- KPI 1: Workout Completion & Consistency -->
+            <div class="bg-slate-950 border border-emerald-500/35 rounded-xl p-3 space-y-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">1. Workout Completion &amp; Consistency</span>
+                  <div class="text-sm font-extrabold text-white mt-0.5">Week ${activeW}: ${loggedSetsActiveWeek} / ${totalSetsActiveWeek} Sets Logged (${completionPct}%)</div>
+                </div>
+                <span class="px-2 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-extrabold shrink-0">${completedWorkoutDaysCount}/5 Lift Days</span>
+              </div>
+              <div class="w-full h-2 rounded-full bg-slate-900 overflow-hidden border border-slate-800">
+                <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300" style="width: ${completionPct}%"></div>
+              </div>
+              <div class="grid grid-cols-7 gap-1 pt-0.5">
+                ${dayCompletionList.map(d => `
+                  <div class="rounded-lg p-1.5 text-center border ${d.completed ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200' : (d.partial ? 'bg-sky-500/20 border-sky-400/50 text-sky-200' : 'bg-slate-900 border-slate-800 text-slate-400')}">
+                    <div class="text-[9px] font-extrabold">${d.shortLabel}</div>
+                    <div class="text-[11px] font-black mt-0.5">${d.isRestDay ? '🧘' : (d.completed ? '✓' : (d.partial ? `${d.dayDone}` : '•'))}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- KPI 2: Total Weekly Volume (Tonnage Lifted) -->
+            <div class="bg-slate-950 border border-sky-500/35 rounded-xl p-3 space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">2. Total Weekly Volume (Tonnage Lifted)</span>
+                  <div class="text-xs font-extrabold text-white mt-0.5">Progressive Overload Bar Comparison (Weight × Reps)</div>
+                </div>
+                <span class="text-[10px] font-extrabold text-sky-300 bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 rounded-lg">Hevy / Strong Standard</span>
+              </div>
+              <div class="space-y-1.5 pt-1">
+                ${tonnageByWeek.map(row => {
+                  const barPct = maxWeekTonnage > 0 ? Math.max(8, Math.round((row.tonnageLbs / maxWeekTonnage) * 100)) : 8;
+                  const isCurrent = row.week === activeW;
+                  return `
+                    <div class="space-y-1">
+                      <div class="flex items-center justify-between text-[11px]">
+                        <span class="font-extrabold ${isCurrent ? 'text-sky-300' : 'text-slate-300'}">Week ${row.week} ${isCurrent ? '• Active' : ''}</span>
+                        <span class="font-mono font-extrabold text-white">${row.tonnageLbs.toLocaleString()} lbs <span class="text-slate-400 font-normal">(${row.setsCount} sets)</span></span>
+                      </div>
+                      <div class="w-full h-2.5 rounded-full bg-slate-900 overflow-hidden border border-slate-800">
+                        <div class="h-full rounded-full ${isCurrent ? 'bg-gradient-to-r from-sky-400 to-emerald-400' : 'bg-slate-600'}" style="width: ${barPct}%"></div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- KPI 3: Pull-Up & Key Lift PR Tracker (Estimated 1RM Epley Formula) -->
+            <div class="bg-slate-950 border border-amber-500/35 rounded-xl p-3 space-y-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-400">3. Pull-Up &amp; Key Lift PR Tracker</span>
+                  <div class="text-xs font-extrabold text-white mt-0.5">Estimated 1-Rep Max (Epley: Weight × (1 + Reps/30))</div>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-1.5">
+                <div class="bg-slate-900/90 border border-emerald-500/30 rounded-lg p-2">
+                  <div class="text-[9px] font-bold uppercase text-emerald-300">Best Pull-Up Set</div>
+                  <div class="text-sm font-black text-white mt-0.5">${highestPullupSet} Reps</div>
+                  <div class="text-[10px] text-slate-400">Week ${activeW} Vol: ${weeklyPullupReps} total reps</div>
+                </div>
+                ${keyLiftCards.map(lift => `
+                  <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2">
+                    <div class="text-[9px] font-bold uppercase text-slate-400 truncate">${lift.label}</div>
+                    <div class="text-sm font-black text-amber-300 mt-0.5">${lift.best1Rm > 0 ? `${lift.best1Rm} lbs 1RM` : 'Not logged'}</div>
+                    <div class="text-[10px] text-slate-400">${lift.bestW > 0 ? `Best: ${lift.bestW} lbs × ${lift.bestR}` : 'Log a set to calc'}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- KPI 4: 7-Day Muscle Fuel & Hydration Adherence -->
+            <div class="bg-slate-950 border border-teal-500/35 rounded-xl p-3 space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <span class="text-[10px] font-extrabold uppercase tracking-wider text-teal-300">4. 7-Day Muscle Fuel &amp; Hydration Adherence</span>
+                  <div class="text-xs font-extrabold text-white mt-0.5">MacroFactor Daily Target Consistency (Week ${activeW})</div>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-teal-500/15 text-teal-200 border border-teal-500/30">${loggedFuelDays}/7 Days Logged</span>
+              </div>
+              <div class="grid grid-cols-3 gap-1.5 pt-0.5">
+                <div class="bg-slate-900 border border-slate-800 rounded-lg p-2 text-center">
+                  <div class="text-[9px] font-bold uppercase text-slate-400">Avg Protein</div>
+                  <div class="text-xs font-black text-emerald-300 mt-0.5">${avgProtein}g / 138g</div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-lg p-2 text-center">
+                  <div class="text-[9px] font-bold uppercase text-slate-400">Avg Calories</div>
+                  <div class="text-xs font-black text-sky-300 mt-0.5">${avgKcal} / 1,300</div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-lg p-2 text-center">
+                  <div class="text-[9px] font-bold uppercase text-slate-400">Avg Water</div>
+                  <div class="text-xs font-black text-cyan-300 mt-0.5">${avgWaterMl} ml</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderBodyAndPhotosTab() {
+        if (!profBodyPhotosWrap) return;
+        if (!state.userProfile) state.userProfile = {};
+        const p = state.userProfile;
+        const unitPref = p.unitPreference === 'kg' ? 'kg' : 'lbs';
+        const heightUnit = p.heightUnitPreference === 'ft_in' ? 'ft_in' : 'cm';
+        const heightCm = Number(p.heightCm) || 178;
+        const goalType = p.goalType || 'Recomp / Lean Mass';
+        const trendSeries = computeBodyWeightTrendSeriesLocal(state.bodyWeightLogs || [], unitPref).slice(-20);
+        const latestPoint = trendSeries.length > 0 ? trendSeries[trendSeries.length - 1] : null;
+        const currentScale = latestPoint ? latestPoint.scaleWeight : (Number(p.currentWeightLbs) || 180.8);
+        const currentTrend = latestPoint ? latestPoint.trendWeight : currentScale;
+        const startW = Number(p.startWeightLbs) || 185.0;
+        const targetW = Number(p.targetWeightLbs) || 175.0;
+        const todayIso = new Date().toISOString().slice(0, 10);
+
+        // Build SVG Line Chart for Scale Weight (Sky-Blue dots) vs 7-Day EMA Trend Weight (Emerald smooth line)
+        let svgChartHtml = '<div class="text-[11px] text-slate-400 py-4 text-center">Log your first daily weigh-in below to render your Scale vs. 7-Day Trend Weight curve.</div>';
+        if (trendSeries.length >= 1) {
+          const weights = trendSeries.flatMap(pt => [pt.scaleWeight, pt.trendWeight]);
+          const minW = Math.floor(Math.min(...weights) - 1.5);
+          const maxW = Math.ceil(Math.max(...weights) + 1.5);
+          const rangeW = Math.max(2, maxW - minW);
+          const width = 320;
+          const height = 115;
+          const padX = 24;
+          const padY = 16;
+          const plotW = width - padX * 2;
+          const plotH = height - padY * 2;
+
+          const toX = (idx) => trendSeries.length === 1 ? width / 2 : padX + (idx / (trendSeries.length - 1)) * plotW;
+          const toY = (val) => padY + plotH - ((val - minW) / rangeW) * plotH;
+
+          const trendPolyline = trendSeries.map((pt, idx) => `${toX(idx).toFixed(1)},${toY(pt.trendWeight).toFixed(1)}`).join(' ');
+          const scalePolyline = trendSeries.map((pt, idx) => `${toX(idx).toFixed(1)},${toY(pt.scaleWeight).toFixed(1)}`).join(' ');
+
+          svgChartHtml = `
+            <svg viewBox="0 0 ${width} ${height}" class="w-full h-28 bg-slate-900/90 rounded-xl border border-slate-800 overflow-visible">
+              <line x1="${padX}" y1="${padY}" x2="${width - padX}" y2="${padY}" stroke="#1e293b" stroke-dasharray="3 3" stroke-width="1" />
+              <line x1="${padX}" y1="${height - padY}" x2="${width - padX}" y2="${height - padY}" stroke="#1e293b" stroke-dasharray="3 3" stroke-width="1" />
+              <text x="4" y="${padY + 4}" fill="#64748b" font-size="8" font-weight="bold">${maxW}</text>
+              <text x="4" y="${height - padY + 3}" fill="#64748b" font-size="8" font-weight="bold">${minW}</text>
+              ${trendSeries.length > 1 ? `<polyline fill="none" stroke="#38bdf8" stroke-width="1.25" stroke-dasharray="2 2" opacity="0.65" points="${scalePolyline}" />` : ''}
+              ${trendSeries.length > 1 ? `<polyline fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${trendPolyline}" />` : ''}
+              ${trendSeries.map((pt, idx) => `
+                <circle cx="${toX(idx).toFixed(1)}" cy="${toY(pt.scaleWeight).toFixed(1)}" r="3" fill="#38bdf8" stroke="#020617" stroke-width="1">
+                  <title>${pt.date}: Scale ${pt.scaleWeight} ${unitPref} | 7d Trend ${pt.trendWeight} ${unitPref}</title>
+                </circle>
+              `).join('')}
+            </svg>
+          `;
+        }
+
+        // Progress Photos sorting & Before/After selection
+        const photos = Array.isArray(state.progressPhotos)
+          ? state.progressPhotos.slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
+          : [];
+        const defaultBeforeId = photos.length > 0 ? photos[0].id : '';
+        const defaultAfterId = photos.length > 1 ? photos[photos.length - 1].id : defaultBeforeId;
+        const selectedBeforeId = state.compareBeforePhotoId && photos.some(x => x.id === state.compareBeforePhotoId) ? state.compareBeforePhotoId : defaultBeforeId;
+        const selectedAfterId = state.compareAfterPhotoId && photos.some(x => x.id === state.compareAfterPhotoId) ? state.compareAfterPhotoId : defaultAfterId;
+        const beforePhoto = photos.find(x => x.id === selectedBeforeId) || photos[0] || null;
+        const afterPhoto = photos.find(x => x.id === selectedAfterId) || photos[photos.length - 1] || beforePhoto;
+
+        profBodyPhotosWrap.innerHTML = `
+          <div class="space-y-3.5 text-xs">
+            <!-- 1. Biometric Profile Card -->
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">Biometric Athlete Profile</span>
+                  <div class="text-xs font-extrabold text-white mt-0.5">${p.name || 'François'} • ${formatHeightDisplayLocal(heightCm, heightUnit)}</div>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button type="button" id="bio-height-unit-toggle-btn" class="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[10px] font-extrabold text-sky-300 transition">
+                    ${heightUnit === 'ft_in' ? 'FT/IN' : 'CM'}
+                  </button>
+                  <button type="button" id="bio-weight-unit-toggle-btn" class="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[10px] font-extrabold text-emerald-300 transition">
+                    ${unitPref.toUpperCase()}
+                  </button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-1.5">
+                <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2">
+                  <label for="bio-start-weight-inp" class="block text-[9px] font-bold uppercase text-slate-400">Start (${unitPref})</label>
+                  <input id="bio-start-weight-inp" type="number" step="0.1" value="${startW}" class="w-full bg-transparent text-xs font-black text-white focus:outline-none mt-0.5" />
+                </div>
+                <div class="bg-slate-900/90 border border-emerald-500/35 rounded-lg p-2">
+                  <label for="bio-current-weight-inp" class="block text-[9px] font-bold uppercase text-emerald-300">Current (${unitPref})</label>
+                  <input id="bio-current-weight-inp" type="number" step="0.1" value="${currentScale}" class="w-full bg-transparent text-xs font-black text-emerald-300 focus:outline-none mt-0.5" />
+                </div>
+                <div class="bg-slate-900/90 border border-sky-500/35 rounded-lg p-2">
+                  <label for="bio-target-weight-inp" class="block text-[9px] font-bold uppercase text-sky-300">Target (${unitPref})</label>
+                  <input id="bio-target-weight-inp" type="number" step="0.1" value="${targetW}" class="w-full bg-transparent text-xs font-black text-sky-300 focus:outline-none mt-0.5" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-1.5">
+                <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2">
+                  <label for="bio-height-cm-inp" class="block text-[9px] font-bold uppercase text-slate-400">Height (CM)</label>
+                  <input id="bio-height-cm-inp" type="number" step="1" min="120" max="230" value="${heightCm}" class="w-full bg-transparent text-xs font-extrabold text-white focus:outline-none mt-0.5" />
+                </div>
+                <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2">
+                  <label for="bio-goal-type-select" class="block text-[9px] font-bold uppercase text-slate-400">Goal Phase</label>
+                  <select id="bio-goal-type-select" class="w-full bg-slate-900 text-xs font-extrabold text-white focus:outline-none mt-0.5">
+                    <option value="Recomp / Lean Mass" ${goalType === 'Recomp / Lean Mass' ? 'selected' : ''}>Recomp / Lean Mass</option>
+                    <option value="Cut / Fat Loss" ${goalType === 'Cut / Fat Loss' ? 'selected' : ''}>Cut / Fat Loss</option>
+                    <option value="Lean Bulk" ${goalType === 'Lean Bulk' ? 'selected' : ''}>Lean Bulk</option>
+                  </select>
+                </div>
+              </div>
+              <button type="button" id="bio-save-profile-btn" class="w-full py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-extrabold text-[11px] transition">
+                ✓ Save Biometric Targets
+              </button>
+            </div>
+
+            <!-- 2. MacroFactor Scale Weight vs. 7-Day EMA Trend Weight Logger -->
+            <div class="bg-slate-950 border border-emerald-500/35 rounded-xl p-3 space-y-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Scale Weight vs. 7-Day Trend Weight</span>
+                  <div class="text-xs font-extrabold text-white mt-0.5">MacroFactor Exponential Moving Average</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-[11px] font-black text-sky-300">● Scale: ${currentScale} ${unitPref}</div>
+                  <div class="text-[11px] font-black text-emerald-300">━ 7d Trend: ${currentTrend} ${unitPref}</div>
+                </div>
+              </div>
+
+              ${svgChartHtml}
+
+              <div class="grid grid-cols-12 gap-1.5 items-end pt-1">
+                <div class="col-span-4">
+                  <label for="weight-log-date-inp" class="block text-[9px] font-bold uppercase text-slate-400 mb-0.5">Date</label>
+                  <input id="weight-log-date-inp" type="date" value="${todayIso}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] font-bold text-white" />
+                </div>
+                <div class="col-span-3">
+                  <label for="weight-log-val-inp" class="block text-[9px] font-bold uppercase text-slate-400 mb-0.5">Weight (${unitPref})</label>
+                  <input id="weight-log-val-inp" type="number" step="0.1" value="${currentScale}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] font-extrabold text-white" />
+                </div>
+                <div class="col-span-5">
+                  <button type="button" id="weight-log-add-btn" class="w-full py-1.5 px-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-[11px] transition">
+                    + Log Weigh-In
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Dated Progress Photo Tracker & Side-by-Side Before vs. After Viewer -->
+            <div class="bg-slate-950 border border-sky-500/35 rounded-xl p-3 space-y-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">Progress Photos • Before vs. Now</span>
+                  <div class="text-xs font-extrabold text-white mt-0.5">Side-by-Side Dated Comparison (${photos.length} Saved)</div>
+                </div>
+                <label for="progress-photo-file-inp" class="px-2.5 py-1.5 rounded-lg bg-sky-400 hover:bg-sky-300 text-slate-950 font-extrabold text-[11px] cursor-pointer transition shrink-0">
+                  📸 + Add Photo
+                </label>
+                <input id="progress-photo-file-inp" type="file" accept="image/*" class="hidden" />
+              </div>
+
+              <!-- Metadata inputs for next uploaded photo -->
+              <div class="grid grid-cols-3 gap-1.5 bg-slate-900/80 border border-slate-800 rounded-lg p-2">
+                <div>
+                  <label for="progress-photo-date-inp" class="block text-[9px] font-bold uppercase text-slate-400">Photo Date</label>
+                  <input id="progress-photo-date-inp" type="date" value="${todayIso}" class="w-full bg-transparent text-[11px] font-bold text-white focus:outline-none mt-0.5" />
+                </div>
+                <div>
+                  <label for="progress-photo-weight-inp" class="block text-[9px] font-bold uppercase text-slate-400">Weight (${unitPref})</label>
+                  <input id="progress-photo-weight-inp" type="number" step="0.1" value="${currentScale}" class="w-full bg-transparent text-[11px] font-bold text-emerald-300 focus:outline-none mt-0.5" />
+                </div>
+                <div>
+                  <label for="progress-photo-pose-select" class="block text-[9px] font-bold uppercase text-slate-400">Pose Tag</label>
+                  <select id="progress-photo-pose-select" class="w-full bg-slate-900 text-[11px] font-bold text-sky-300 focus:outline-none mt-0.5">
+                    <option value="Front">Front</option>
+                    <option value="Side">Side</option>
+                    <option value="Back">Back</option>
+                    <option value="Flexed">Flexed</option>
+                  </select>
+                </div>
+              </div>
+
+              ${beforePhoto && afterPhoto ? `
+                <!-- Side-by-Side Comparison Selectors & Viewer -->
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                  <div class="space-y-1">
+                    <label for="compare-before-select" class="block text-[9px] font-extrabold uppercase text-amber-300">Before Photo</label>
+                    <select id="compare-before-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-[10px] font-bold text-white">
+                      ${photos.map(ph => `<option value="${ph.id}" ${ph.id === beforePhoto.id ? 'selected' : ''}>${ph.date} • W${ph.week || 1} (${ph.weight} ${ph.unit || 'lbs'})</option>`).join('')}
+                    </select>
+                    <div class="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-900 aspect-[3/4]">
+                      <img src="${beforePhoto.dataUrl}" alt="Before Progress Photo ${beforePhoto.date}" class="w-full h-full object-cover" />
+                      <div class="absolute inset-x-0 bottom-0 bg-slate-950/85 backdrop-blur-xs px-2 py-1.5 border-t border-slate-800">
+                        <div class="text-[10px] font-extrabold text-amber-300">BEFORE • Week ${beforePhoto.week || 1} (${beforePhoto.pose || 'Front'})</div>
+                        <div class="text-[10px] font-bold text-white">${beforePhoto.date} • ${beforePhoto.weight} ${beforePhoto.unit || 'lbs'}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="space-y-1">
+                    <label for="compare-after-select" class="block text-[9px] font-extrabold uppercase text-emerald-300">After / Latest Photo</label>
+                    <select id="compare-after-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-[10px] font-bold text-white">
+                      ${photos.map(ph => `<option value="${ph.id}" ${ph.id === afterPhoto.id ? 'selected' : ''}>${ph.date} • W${ph.week || 1} (${ph.weight} ${ph.unit || 'lbs'})</option>`).join('')}
+                    </select>
+                    <div class="relative rounded-xl overflow-hidden border border-emerald-500/40 bg-slate-900 aspect-[3/4]">
+                      <img src="${afterPhoto.dataUrl}" alt="After Progress Photo ${afterPhoto.date}" class="w-full h-full object-cover" />
+                      <div class="absolute inset-x-0 bottom-0 bg-slate-950/85 backdrop-blur-xs px-2 py-1.5 border-t border-emerald-500/30">
+                        <div class="text-[10px] font-extrabold text-emerald-300">NOW • Week ${afterPhoto.week || 2} (${afterPhoto.pose || 'Front'})</div>
+                        <div class="text-[10px] font-bold text-white">${afterPhoto.date} • ${afterPhoto.weight} ${afterPhoto.unit || 'lbs'}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+
+        // Bind events inside Body & Photos tab
+        const heightToggleBtn = document.getElementById('bio-height-unit-toggle-btn');
+        if (heightToggleBtn) {
+          heightToggleBtn.addEventListener('click', () => {
+            state.userProfile.heightUnitPreference = state.userProfile.heightUnitPreference === 'ft_in' ? 'cm' : 'ft_in';
+            saveState();
+            renderBodyAndPhotosTab();
+          });
+        }
+        const weightUnitToggleBtn = document.getElementById('bio-weight-unit-toggle-btn');
+        if (weightUnitToggleBtn) {
+          weightUnitToggleBtn.addEventListener('click', () => {
+            state.userProfile.unitPreference = state.userProfile.unitPreference === 'kg' ? 'lbs' : 'kg';
+            saveState();
+            renderBodyAndPhotosTab();
+          });
+        }
+        const saveBioBtn = document.getElementById('bio-save-profile-btn');
+        if (saveBioBtn) {
+          saveBioBtn.addEventListener('click', () => {
+            const sInp = document.getElementById('bio-start-weight-inp');
+            const cInp = document.getElementById('bio-current-weight-inp');
+            const tInp = document.getElementById('bio-target-weight-inp');
+            const hInp = document.getElementById('bio-height-cm-inp');
+            const gSel = document.getElementById('bio-goal-type-select');
+            if (sInp && Number(sInp.value) > 0) state.userProfile.startWeightLbs = Number(sInp.value);
+            if (cInp && Number(cInp.value) > 0) state.userProfile.currentWeightLbs = Number(cInp.value);
+            if (tInp && Number(tInp.value) > 0) state.userProfile.targetWeightLbs = Number(tInp.value);
+            if (hInp && Number(hInp.value) >= 100) state.userProfile.heightCm = Number(hInp.value);
+            if (gSel && gSel.value) state.userProfile.goalType = gSel.value;
+            saveState();
+            renderBodyAndPhotosTab();
+            showToast('✓ Saved Biometric Profile & Weight Targets!');
+          });
+        }
+        const addWeightBtn = document.getElementById('weight-log-add-btn');
+        if (addWeightBtn) {
+          addWeightBtn.addEventListener('click', () => {
+            const dInp = document.getElementById('weight-log-date-inp');
+            const wInp = document.getElementById('weight-log-val-inp');
+            const dateStr = (dInp && dInp.value) ? dInp.value : todayIso;
+            const wVal = wInp ? parseFloat(wInp.value) : NaN;
+            if (!Number.isFinite(wVal) || wVal <= 0) {
+              showToast('⚠️ Enter a valid body weight to log.');
+              return;
+            }
+            if (!Array.isArray(state.bodyWeightLogs)) state.bodyWeightLogs = [];
+            const existingIdx = state.bodyWeightLogs.findIndex(x => x && x.date === dateStr);
+            const entry = { date: dateStr, weight: Math.round(wVal * 10) / 10, unit: unitPref, note: 'Logged weigh-in' };
+            if (existingIdx >= 0) state.bodyWeightLogs[existingIdx] = entry;
+            else state.bodyWeightLogs.push(entry);
+            state.userProfile.currentWeightLbs = entry.weight;
+            saveState();
+            renderBodyAndPhotosTab();
+            showToast(`⚖️ Logged ${entry.weight} ${unitPref} for ${dateStr} (7-Day EMA Trend updated)!`);
+          });
+        }
+
+        const beforeSel = document.getElementById('compare-before-select');
+        if (beforeSel) {
+          beforeSel.addEventListener('change', () => {
+            state.compareBeforePhotoId = beforeSel.value;
+            renderBodyAndPhotosTab();
+          });
+        }
+        const afterSel = document.getElementById('compare-after-select');
+        if (afterSel) {
+          afterSel.addEventListener('change', () => {
+            state.compareAfterPhotoId = afterSel.value;
+            renderBodyAndPhotosTab();
+          });
+        }
+
+        const photoFileInp = document.getElementById('progress-photo-file-inp');
+        if (photoFileInp) {
+          photoFileInp.addEventListener('change', (ev) => {
+            const file = ev.target && ev.target.files && ev.target.files[0];
+            if (!file) return;
+            const dInp = document.getElementById('progress-photo-date-inp');
+            const wInp = document.getElementById('progress-photo-weight-inp');
+            const pSel = document.getElementById('progress-photo-pose-select');
+            const photoDate = (dInp && dInp.value) ? dInp.value : todayIso;
+            const photoWeight = (wInp && Number(wInp.value) > 0) ? Number(wInp.value) : currentScale;
+            const photoPose = (pSel && pSel.value) ? pSel.value : 'Front';
+
+            const reader = new FileReader();
+            reader.onload = () => {
+              const img = new Image();
+              img.onload = () => {
+                const maxDim = 600;
+                let w = img.width || 450;
+                let h = img.height || 600;
+                if (w > maxDim || h > maxDim) {
+                  if (w > h) {
+                    h = Math.round((h * maxDim) / w);
+                    w = maxDim;
+                  } else {
+                    w = Math.round((w * maxDim) / h);
+                    h = maxDim;
+                  }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx2d = canvas.getContext('2d');
+                ctx2d.drawImage(img, 0, 0, w, h);
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.78);
+                if (!Array.isArray(state.progressPhotos)) state.progressPhotos = [];
+                const newId = 'photo_' + Date.now();
+                state.progressPhotos.push({
+                  id: newId,
+                  date: photoDate,
+                  week: state.selectedWeek || state.currentWeek || 1,
+                  weight: photoWeight,
+                  unit: unitPref,
+                  pose: photoPose,
+                  note: `${photoPose} Check-in`,
+                  dataUrl: compressedDataUrl
+                });
+                state.compareAfterPhotoId = newId;
+                saveState();
+                renderBodyAndPhotosTab();
+                showToast(`📸 Saved compressed Progress Photo (${photoDate} • ${photoWeight} ${unitPref})!`);
+              };
+              img.src = String(reader.result || '');
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+      }
+
       function switchProfileModalSection(sec) {
-        const isGear = sec === 'gear';
-        if (profAccountWrap) {
-          if (isGear) profAccountWrap.classList.add('hidden');
-          else profAccountWrap.classList.remove('hidden');
+        const activeSec = (sec === 'dashboard' || sec === 'body_photos' || sec === 'gear' || sec === 'account') ? sec : 'dashboard';
+        if (profDashboardWrap) profDashboardWrap.classList.toggle('hidden', activeSec !== 'dashboard');
+        if (profBodyPhotosWrap) profBodyPhotosWrap.classList.toggle('hidden', activeSec !== 'body_photos');
+        if (profGearWrap) profGearWrap.classList.toggle('hidden', activeSec !== 'gear');
+        if (profAccountWrap) profAccountWrap.classList.toggle('hidden', activeSec !== 'account');
+
+        if (activeSec === 'dashboard') renderAthleteDashboardTab();
+        if (activeSec === 'body_photos') renderBodyAndPhotosTab();
+        if (activeSec === 'gear') renderShoeTrackerUI();
+
+        const profName = (state.userProfile && state.userProfile.name) || 'François';
+        if (smartLoginBadge && activeSec !== 'account') {
+          smartLoginBadge.textContent = '● 4-Tab Athlete Hub';
         }
-        if (profGearWrap) {
-          if (isGear) {
-            profGearWrap.classList.remove('hidden');
-            renderShoeTrackerUI();
+        if (smartLoginTitle && activeSec !== 'account') {
+          smartLoginTitle.textContent = `${profName} — Progress, Body & Gear Hub`;
+        }
+        if (smartLoginSub && activeSec !== 'account') {
+          smartLoginSub.textContent = 'Analytics Dashboard, 7-Day Trend Weight, Progress Photos & Gear.';
+        }
+
+        const btnConfigs = [
+          { el: profSecDashboardBtn, key: 'dashboard' },
+          { el: profSecBodyPhotosBtn, key: 'body_photos' },
+          { el: profSecGearBtn, key: 'gear' },
+          { el: profSecAccountBtn, key: 'account' }
+        ];
+        btnConfigs.forEach(cfg => {
+          if (!cfg.el) return;
+          if (cfg.key === activeSec) {
+            cfg.el.className = 'py-1.5 px-1.5 rounded-lg text-[11px] font-extrabold bg-sky-400 text-slate-950 flex items-center justify-center gap-1 transition';
           } else {
-            profGearWrap.classList.add('hidden');
+            cfg.el.className = 'py-1.5 px-1.5 rounded-lg text-[11px] font-bold text-slate-300 hover:text-white flex items-center justify-center gap-1 transition';
           }
-        }
-        if (profSecAccountBtn && profSecGearBtn) {
-          if (isGear) {
-            profSecGearBtn.className = 'py-1.5 rounded-lg text-xs font-extrabold bg-sky-400 text-slate-950 flex items-center justify-center gap-1 transition';
-            profSecAccountBtn.className = 'py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition';
-          } else {
-            profSecAccountBtn.className = 'py-1.5 rounded-lg text-xs font-extrabold bg-sky-400 text-slate-950 transition';
-            profSecGearBtn.className = 'py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white flex items-center justify-center gap-1 transition';
-          }
-        }
+        });
       }
 
       window.openProfileModalTab = function(sec) {
         syncSmartLoginFormUI();
-        switchProfileModalSection(sec || 'account');
+        switchProfileModalSection(sec || 'dashboard');
         if (smartLoginModal) smartLoginModal.classList.remove('hidden');
       };
 
+      if (profSecDashboardBtn) profSecDashboardBtn.addEventListener('click', () => switchProfileModalSection('dashboard'));
+      if (profSecBodyPhotosBtn) profSecBodyPhotosBtn.addEventListener('click', () => switchProfileModalSection('body_photos'));
       if (profSecAccountBtn) profSecAccountBtn.addEventListener('click', () => switchProfileModalSection('account'));
       if (profSecGearBtn) profSecGearBtn.addEventListener('click', () => switchProfileModalSection('gear'));
+
+      const gymOpenDashboardPillBtn = document.getElementById('gym-open-dashboard-pill-btn');
+      if (gymOpenDashboardPillBtn) {
+        gymOpenDashboardPillBtn.addEventListener('click', () => window.openProfileModalTab('dashboard'));
+      }
 
       const critOpenBtn = document.getElementById('shoe-critical-open-btn');
       if (critOpenBtn) {
@@ -11359,7 +12269,7 @@
 
       if (openSmartLoginBtn && smartLoginModal) {
         openSmartLoginBtn.addEventListener('click', () => {
-          window.openProfileModalTab('account');
+          window.openProfileModalTab('dashboard');
         });
       }
       if (closeSmartLoginBtn && smartLoginModal) {
@@ -11891,6 +12801,44 @@
       if (healthSyncBtn) healthSyncBtn.addEventListener('click', syncWithAppleGoogleHealth);
       if (exportHealthCsvBtn) exportHealthCsvBtn.addEventListener('click', exportWorkoutNutritionHealthCsv);
 
+      const hrAlertToggleBtn = document.getElementById('watch-modal-hr-alert-toggle-btn');
+      const hrTargetSelect = document.getElementById('watch-modal-hr-target-select');
+      const testHrReadinessBtn = document.getElementById('watch-modal-test-hr-readiness-btn');
+      if (hrAlertToggleBtn) {
+        hrAlertToggleBtn.addEventListener('click', () => {
+          if (!state.watchSettings) state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25 };
+          state.watchSettings.hrRecoveryAlert = !state.watchSettings.hrRecoveryAlert;
+          updateWatchAndHeartRateUI();
+          saveState();
+          showToast(state.watchSettings.hrRecoveryAlert ? '💚 Rest-Interval HR Recovery Readiness Alert ON' : '🔕 HR Recovery Readiness Alert OFF');
+        });
+      }
+      if (hrTargetSelect) {
+        hrTargetSelect.addEventListener('change', () => {
+          if (!state.watchSettings) state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25 };
+          state.watchSettings.targetRecoveryBpm = Number(hrTargetSelect.value) || 120;
+          updateWatchAndHeartRateUI();
+          saveState();
+          showToast(`🎯 HR Recovery Readiness target set to ≤${state.watchSettings.targetRecoveryBpm} BPM`);
+        });
+      }
+      if (testHrReadinessBtn) {
+        testHrReadinessBtn.addEventListener('click', () => {
+          if (!state.watchSettings) state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25 };
+          state.watchSettings.hrRecoveryAlert = true;
+          state.bleDeviceName = state.bleDeviceName || 'Garmin / Wear OS Broadcast';
+          if (!timerRunning) {
+            startTimer(90, 'Rest: Set 1 Barbell Bench Press');
+          }
+          state.startRestBpm = 152;
+          state.liveBpm = 118;
+          state.hrRecoveryForcePreview = true;
+          state.hrRecoveryAlertFiredForCurrentRest = false;
+          updateWatchAndHeartRateUI();
+          saveState();
+        });
+      }
+
       // Initial Render
       updateAudioModeUI();
       updateTimerUI();
@@ -11953,31 +12901,43 @@
   <!-- Hidden legacy FAB ID preserved for DOM compatibility; Coach AI is accessed cleanly from the top header & HUD without blocking cards -->
   <button id="fab-gemini-ai-btn" type="button" class="hidden">✨ Coach AI</button>
 
-  <!-- App Store-Grade Profile, Authentication & My Gear/Shoes Modal (Strava & Garmin Connect IA Standard) -->
+  <!-- App Store-Grade 4-Tab Athlete Hub Modal (Dashboard • Body & Photos • Gear & Shoes • Account & Sync) -->
   <div id="smart-login-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-4 space-y-3 shadow-2xl max-h-[92vh] overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-4 space-y-3 shadow-2xl max-h-[92vh] overflow-y-auto">
       <div class="flex items-start justify-between border-b border-slate-800 pb-2.5">
         <div>
-          <span id="smart-login-badge" class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">● Profile &amp; Gear</span>
-          <h3 class="text-sm sm:text-base font-extrabold text-white mt-1" id="smart-login-modal-title">Profile &amp; My Gear</h3>
-          <p class="text-[11px] text-slate-400 mt-0.5" id="smart-login-modal-sub">Manage your account sync and track your gym shoe lifespan.</p>
+          <span id="smart-login-badge" class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">● 4-Tab Athlete Hub</span>
+          <h3 class="text-sm sm:text-base font-extrabold text-white mt-1" id="smart-login-modal-title">François — Progress, Body &amp; Gear Hub</h3>
+          <p class="text-[11px] text-slate-400 mt-0.5" id="smart-login-modal-sub">Analytics Dashboard, 7-Day Trend Weight, Progress Photos &amp; Gear.</p>
         </div>
         <button type="button" id="close-smart-login-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
       </div>
 
-      <!-- Top-Level Profile Modal Segmented Navigation: [👤 Account] | [👟 My Gear & Shoes] (Like Strava Profile > Gear) -->
-      <div class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800">
-        <button type="button" id="profile-section-account-btn" class="py-1.5 rounded-lg text-xs font-extrabold bg-sky-400 text-slate-950 transition">
-          👤 Account &amp; Sync
+      <!-- 4-Tab Athlete Hub Navigation: [1. Dashboard] | [2. Body & Photos] | [3. Gear & Shoes] | [4. Account & Sync] -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800">
+        <button type="button" id="profile-section-dashboard-btn" class="py-1.5 px-1.5 rounded-lg text-[11px] font-extrabold bg-sky-400 text-slate-950 flex items-center justify-center gap-1 transition">
+          📊 1. Dashboard
         </button>
-        <button type="button" id="profile-section-gear-btn" class="py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white flex items-center justify-center gap-1 transition">
-          <span>👟 My Gear &amp; Shoes</span>
+        <button type="button" id="profile-section-body-photos-btn" class="py-1.5 px-1.5 rounded-lg text-[11px] font-bold text-slate-300 hover:text-white flex items-center justify-center gap-1 transition">
+          📸 2. Body &amp; Photos
+        </button>
+        <button type="button" id="profile-section-gear-btn" class="py-1.5 px-1.5 rounded-lg text-[11px] font-bold text-slate-300 hover:text-white flex items-center justify-center gap-1 transition">
+          <span>👟 3. Gear</span>
           <span id="shoe-header-pill" class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-slate-800 text-sky-300">98%</span>
+        </button>
+        <button type="button" id="profile-section-account-btn" class="py-1.5 px-1.5 rounded-lg text-[11px] font-bold text-slate-300 hover:text-white flex items-center justify-center gap-1 transition">
+          👤 4. Account
         </button>
       </div>
 
-      <!-- SECTION A: ACCOUNT, LOGIN & SIGN-UP -->
-      <div id="profile-account-section-wrap" class="space-y-3">
+      <!-- TAB 1: COMPETITOR-GRADE ANALYTICS & PROGRESS DASHBOARD -->
+      <div id="profile-dashboard-section-wrap" class="space-y-3"></div>
+
+      <!-- TAB 2: BIOMETRIC PROFILE, 7-DAY TREND WEIGHT & DATED PROGRESS PHOTOS -->
+      <div id="profile-body-photos-section-wrap" class="hidden space-y-3"></div>
+
+      <!-- TAB 4: ACCOUNT, LOGIN & SIGN-UP -->
+      <div id="profile-account-section-wrap" class="hidden space-y-3">
         <!-- VIEW 1: Active Signed-In Account Card -->
         <div id="active-account-status-box" class="space-y-3">
           <div class="bg-slate-950 border border-emerald-500/35 rounded-xl p-3 flex items-center justify-between gap-2.5">
@@ -12259,33 +13219,59 @@
         <button type="button" id="close-watch-modal-btn" aria-label="Close Smartwatch Modal" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
       </div>
 
-      <!-- TIER 1: Real-Time Web Bluetooth Heart Rate Streaming (0x180D GATT Service) -->
+      <!-- TIER 1: Real-Time Web Bluetooth Heart Rate Streaming (0x180D GATT Service) + Rest-Interval HR Recovery Readiness Alert -->
       <div class="bg-slate-950/90 border border-rose-500/35 rounded-xl p-3 space-y-2.5">
         <div class="flex items-center justify-between gap-2">
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-rose-300">Tier 1 • Web Bluetooth Live HR (0x180D / 0x2A37)</span>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-rose-300">Tier 1 • Web Bluetooth Live HR &amp; Recovery Readiness</span>
           <span id="watch-modal-live-hr-pill" class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-400 text-xs font-bold">No Active HR Stream</span>
         </div>
         <p id="watch-modal-ble-status" class="text-[11px] text-slate-300 leading-snug">Ready to pair Garmin, Wear OS, Whoop, Polar, Wahoo, or Coospo (0x180D)</p>
         <div id="watch-modal-hr-recovery" class="text-[11px] font-extrabold text-sky-300 bg-sky-950/50 border border-sky-500/30 rounded-lg px-2.5 py-1.5">
           Start a rest timer while streaming BPM to track live recovery delta (e.g., 152 -> 118 BPM (-34 BPM recovery)).
         </div>
+        <div id="watch-modal-hr-readiness-badge" class="hidden text-[11px] font-extrabold text-emerald-300 bg-emerald-500/20 border border-emerald-400/50 rounded-lg px-2.5 py-1.5">
+          HR Recovered (118 BPM) — Ready for Next Set!
+        </div>
+
+        <!-- Rest-Interval HR Recovery Readiness Alert Controls -->
+        <div class="bg-slate-900/90 border border-emerald-500/30 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">💚 Rest-Interval HR Recovery Readiness Alert</span>
+            <select id="watch-modal-hr-target-select" aria-label="Target Recovery Heart Rate BPM" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[10px] font-extrabold text-emerald-300">
+              <option value="115">≤115 BPM Target</option>
+              <option value="120" selected>≤120 BPM (or -25 BPM)</option>
+              <option value="125">≤125 BPM Target</option>
+              <option value="130">≤130 BPM Target</option>
+            </select>
+          </div>
+          <p class="text-[10px] text-slate-300 leading-snug">High heart rate during heavy sets is normal. During active rest timers (after ≥20s rest), alerts you with a soft chime &amp; emerald badge as soon as your HR drops to your recovery target.</p>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" id="watch-modal-hr-alert-toggle-btn" aria-pressed="true" class="flex-1 py-2 px-3 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 font-extrabold text-xs transition">
+              ✓ HR Recovery Alert: ON (≤120 BPM or -25 BPM)
+            </button>
+            <button type="button" id="watch-modal-test-hr-readiness-btn" class="py-2 px-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-emerald-500/40 text-emerald-300 font-extrabold text-[11px] transition">
+              ⚡ Test 118 BPM Ready Alert
+            </button>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5">
           <button type="button" id="watch-modal-ble-connect-btn" class="py-2 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 font-extrabold text-xs transition">
             ❤️ Pair BLE Watch / Strap
           </button>
           <button type="button" id="watch-modal-demo-hr-btn" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-rose-400/40 text-rose-200 font-extrabold text-xs transition">
-            ▶ Simulate Live Watch HR (138 BPM • Zone 3)
+            ▶ Simulate Live Watch HR (138 -> 118 BPM Recovery)
           </button>
         </div>
       </div>
 
-      <!-- TIER 2: Smartwatch Wrist Haptic Notifications When Timer Finishes -->
+      <!-- TIER 2: Smartwatch Wrist Haptic Notifications & MediaSession Controls -->
       <div class="bg-slate-950/90 border border-emerald-500/35 rounded-xl p-3 space-y-2">
         <div class="flex items-center justify-between gap-2">
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Tier 2 • Wrist Haptic Timer Alerts</span>
-          <span class="text-[10px] font-mono text-slate-400">vibrate: [200, 100, 200]</span>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Tier 2 • Watch MediaSession &amp; Wrist Haptics</span>
+          <span class="text-[10px] font-mono text-slate-400">WakeLock + MediaSession</span>
         </div>
-        <p class="text-[11px] text-slate-300 leading-snug">When your Rest Timer or 3-Stage Rice Timer hits <code class="text-emerald-300 font-bold">00:00</code>, fires an OS notification with your exact next set (e.g., <em>"Rest Complete! Up Next: Set 2 Barbell Bench Press (135 lbs x 8)"</em>) so Apple Watch, Garmin, Wear OS, and Fitbit vibrate on your wrist.</p>
+        <p class="text-[11px] text-slate-300 leading-snug">Streams active exercise, set number, target weight/reps &amp; live timer to your watch's <strong>Now Playing</strong> screen (<code class="text-sky-300">+15s</code> / <code class="text-emerald-300">Skip Rest</code> buttons on wrist) and vibrates at <code class="text-emerald-300 font-bold">00:00</code>.</p>
         <div class="flex flex-col sm:flex-row gap-1.5 pt-0.5">
           <button type="button" id="watch-modal-wrist-toggle-btn" aria-pressed="false" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-extrabold text-xs transition">
             Enable Watch Wrist Alerts
@@ -12293,6 +13279,25 @@
           <button type="button" id="watch-modal-test-wrist-btn" class="py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-emerald-500/40 text-emerald-300 font-extrabold text-xs whitespace-nowrap transition">
             🔔 Test Wrist Alert
           </button>
+        </div>
+      </div>
+
+      <!-- 3-STEP VISUAL CONNECTION GUIDE (GARMIN / WEAR OS / WHOOP / POLAR & APPLE WATCH / FITBIT) -->
+      <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3 space-y-2.5 text-[11px]">
+        <div class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">3-Step Visual Watch Connection Guide</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div class="bg-slate-900/90 border border-rose-500/30 rounded-lg p-2.5 space-y-1">
+            <div class="font-extrabold text-rose-300">Garmin • Wear OS • Whoop • Polar</div>
+            <p class="text-slate-300 text-[10px]"><strong>Step 1:</strong> Open Watch Settings → Sensors / Heart Rate → Turn ON <em>"Broadcast Heart Rate"</em> (BLE 0x180D).</p>
+            <p class="text-slate-300 text-[10px]"><strong>Step 2:</strong> Tap <strong>Pair BLE Watch / Strap</strong> above to stream live BPM.</p>
+            <p class="text-slate-300 text-[10px]"><strong>Step 3:</strong> Start any set rest timer — get an emerald readiness alert when HR drops ≤120 BPM.</p>
+          </div>
+          <div class="bg-slate-900/90 border border-emerald-500/30 rounded-lg p-2.5 space-y-1">
+            <div class="font-extrabold text-emerald-300">Apple Watch • Fitbit • Galaxy Watch</div>
+            <p class="text-slate-300 text-[10px]"><strong>Step 1:</strong> Tap <strong>Enable Watch Wrist Alerts</strong> above and allow notifications.</p>
+            <p class="text-slate-300 text-[10px]"><strong>Step 2:</strong> Use your watch's <em>Now Playing</em> face to view current set targets or tap Next/Seek for <strong>Skip / +15s</strong>.</p>
+            <p class="text-slate-300 text-[10px]"><strong>Step 3:</strong> Lock phone screen between sets to mirror <code class="text-emerald-300">00:00</code> wrist haptics.</p>
+          </div>
         </div>
       </div>
 
@@ -12311,14 +13316,6 @@
           <button type="button" id="watch-modal-export-csv-btn" class="w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-sky-500/40 text-sky-200 font-extrabold text-xs transition">
             📥 Export Workout &amp; Nutrition Health CSV
           </button>
-        </div>
-
-        <!-- Compatibility Guide for Apple Watch, Garmin/Polar/Whoop, and Wear OS/Galaxy/Pixel Watch -->
-        <div class="pt-2 border-t border-slate-800/80 space-y-1.5 text-[11px] text-slate-300">
-          <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Wearable Compatibility Guide</div>
-          <p>• <strong class="text-white">Apple Watch:</strong> Enable <em>Watch Wrist Alerts</em> for instant wrist haptics at <code class="text-emerald-300">00:00</code>, or sync sets &amp; macros (1,300 kcal • 138g P) via the Capacitor Apple HealthKit bridge.</p>
-          <p>• <strong class="text-white">Garmin / Polar / Whoop:</strong> Turn on <em>Broadcast Heart Rate</em> (BLE <code class="text-rose-300">0x180D</code>) in your watch settings and tap <strong>Pair BLE Watch / Strap</strong> for live BPM &amp; recovery delta.</p>
-          <p>• <strong class="text-white">Wear OS / Galaxy / Pixel Watch:</strong> Pair via Web Bluetooth or sync workouts &amp; daily macros directly to Google Health Connect.</p>
         </div>
       </div>
     </div>

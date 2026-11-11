@@ -3009,5 +3009,371 @@ export function cascadeLoggedSetToSubsequentUnloggedSets(
   return nextLogs;
 }
 
+// ============================================================================
+// UPGRADES 1–4:
+// 1. Smart Heart Rate Recovery Readiness Alert & Watch MediaSession / WakeLock Sync
+// 2. Biometric Profile & Scale Weight vs. 7-Day Trend Weight Logger
+// 3. Dated Progress Photo Gallery with Side-by-Side Before/After Comparison
+// 4. Competitor-Grade Progress & Analytics Dashboard (Tonnage & Epley 1RM)
+// ============================================================================
+
+export interface WatchSettingsConfig {
+  hrRecoveryAlert: boolean;
+  targetRecoveryBpm: number;
+  targetDropBpm: number;
+}
+
+export const DEFAULT_WATCH_SETTINGS: WatchSettingsConfig = {
+  hrRecoveryAlert: true,
+  targetRecoveryBpm: 120,
+  targetDropBpm: 25
+};
+
+export function evaluateHrRecoveryReadiness(params: {
+  timerRunning: boolean;
+  elapsedRestSec: number;
+  liveBpm: number;
+  startRestBpm?: number;
+  alreadyAlertedThisRest?: boolean;
+  settings?: Partial<WatchSettingsConfig>;
+}): {
+  isRecovered: boolean;
+  shouldTriggerAlert: boolean;
+  badgeText: string;
+  reason: 'below_target_bpm' | 'drop_from_peak' | 'not_recovered' | 'waiting_min_rest' | 'disabled';
+} {
+  const cfg: WatchSettingsConfig = {
+    ...DEFAULT_WATCH_SETTINGS,
+    ...(params.settings || {})
+  };
+  const bpm = Math.round(Number(params.liveBpm) || 0);
+  const startBpm = Math.round(Number(params.startRestBpm) || 0);
+  const elapsed = Number(params.elapsedRestSec) || 0;
+
+  if (!cfg.hrRecoveryAlert) {
+    return { isRecovered: false, shouldTriggerAlert: false, badgeText: '', reason: 'disabled' };
+  }
+  if (!params.timerRunning || bpm <= 0) {
+    return { isRecovered: false, shouldTriggerAlert: false, badgeText: '', reason: 'not_recovered' };
+  }
+  if (elapsed < 20) {
+    return { isRecovered: false, shouldTriggerAlert: false, badgeText: '', reason: 'waiting_min_rest' };
+  }
+
+  const hitTargetBpm = bpm <= cfg.targetRecoveryBpm;
+  const hitDropTarget = startBpm > 0 && startBpm - bpm >= cfg.targetDropBpm;
+
+  if (hitTargetBpm || hitDropTarget) {
+    const badgeText = `HR Recovered (${bpm} BPM) — Ready for Next Set!`;
+    return {
+      isRecovered: true,
+      shouldTriggerAlert: !params.alreadyAlertedThisRest,
+      badgeText,
+      reason: hitTargetBpm ? 'below_target_bpm' : 'drop_from_peak'
+    };
+  }
+
+  return { isRecovered: false, shouldTriggerAlert: false, badgeText: '', reason: 'not_recovered' };
+}
+
+export function buildWatchMediaSessionMetadataPayload(params: {
+  timerRunning: boolean;
+  timerSeconds: number;
+  contextLabel?: string;
+  nextSetSummary?: string;
+  liveBpm?: number;
+}): {
+  title: string;
+  artist: string;
+  album: string;
+} {
+  const sec = Math.max(0, Math.floor(Number(params.timerSeconds) || 0));
+  const mm = String(Math.floor(sec / 60)).padStart(2, '0');
+  const ss = String(sec % 60).padStart(2, '0');
+  const formattedTime = `${mm}:${ss}`;
+  const cleanNext = String(params.nextSetSummary || 'Set 2 Barbell Bench Press (135 lbs x 8)').trim();
+  const hrSuffix = params.liveBpm && params.liveBpm > 0 ? ` • ❤️ ${Math.round(params.liveBpm)} BPM` : '';
+
+  const title = params.timerRunning
+    ? `⏱️ ${formattedTime} • ${params.contextLabel || 'Rest Timer'}${hrSuffix}`
+    : `Ready: ${cleanNext}${hrSuffix}`;
+  const artist = `Up Next: ${cleanNext}`;
+  const album = '7AM Vegan Muscle & Training Hub';
+  return { title, artist, album };
+}
+
+export interface BodyWeightLogEntry {
+  date: string; // YYYY-MM-DD
+  weight: number;
+  unit: 'lbs' | 'kg';
+  note?: string;
+}
+
+export interface BodyWeightTrendPoint extends BodyWeightLogEntry {
+  scaleWeight: number;
+  trendWeight: number;
+  deltaFromTrend: number;
+}
+
+export function calculateBodyWeightTrendSeries(
+  logs: BodyWeightLogEntry[],
+  targetUnit: 'lbs' | 'kg' = 'lbs'
+): {
+  points: BodyWeightTrendPoint[];
+  latestScaleWeight: number;
+  latestTrendWeight: number;
+  sevenDayTrendDelta: number;
+} {
+  if (!Array.isArray(logs) || logs.length === 0) {
+    return {
+      points: [],
+      latestScaleWeight: 0,
+      latestTrendWeight: 0,
+      sevenDayTrendDelta: 0
+    };
+  }
+
+  // Normalize units and sort chronologically by date ascending
+  const normalized = logs
+    .filter(item => item && Number.isFinite(Number(item.weight)) && Number(item.weight) > 0)
+    .map(item => {
+      const rawW = Number(item.weight);
+      const itemUnit = item.unit === 'kg' ? 'kg' : 'lbs';
+      let converted = rawW;
+      if (itemUnit !== targetUnit) {
+        converted = targetUnit === 'kg' ? rawW / 2.20462 : rawW * 2.20462;
+      }
+      return {
+        date: String(item.date || '2026-11-01').slice(0, 10),
+        weight: +converted.toFixed(1),
+        unit: targetUnit,
+        note: item.note || ''
+      };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  if (normalized.length === 0) {
+    return {
+      points: [],
+      latestScaleWeight: 0,
+      latestTrendWeight: 0,
+      sevenDayTrendDelta: 0
+    };
+  }
+
+  // 7-Day Exponential Moving Average (MacroFactor standard smoothing factor alpha = 2 / (7 + 1) = 0.25)
+  const alpha = 2 / (7 + 1);
+  let ema = normalized[0].weight;
+  const points: BodyWeightTrendPoint[] = normalized.map((entry, idx) => {
+    if (idx === 0) {
+      ema = entry.weight;
+    } else {
+      ema = alpha * entry.weight + (1 - alpha) * ema;
+    }
+    const trendRounded = +ema.toFixed(1);
+    return {
+      ...entry,
+      scaleWeight: entry.weight,
+      trendWeight: trendRounded,
+      deltaFromTrend: +(entry.weight - trendRounded).toFixed(1)
+    };
+  });
+
+  const latest = points[points.length - 1];
+  const compareIdx = Math.max(0, points.length - 7);
+  const sevenDayAgoTrend = points[compareIdx].trendWeight;
+  const sevenDayTrendDelta = +(latest.trendWeight - sevenDayAgoTrend).toFixed(1);
+
+  return {
+    points,
+    latestScaleWeight: latest.scaleWeight,
+    latestTrendWeight: latest.trendWeight,
+    sevenDayTrendDelta
+  };
+}
+
+export function formatHeightDisplay(heightCm: number, mode: 'cm' | 'ft_in' = 'cm'): string {
+  const cm = Math.max(100, Math.min(240, Math.round(Number(heightCm) || 178)));
+  if (mode === 'cm') return `${cm} cm`;
+  const totalInches = Math.round(cm / 2.54);
+  const feet = Math.floor(totalInches / 12);
+  const inches = totalInches % 12;
+  return `${feet}'${inches}"`;
+}
+
+export interface ProgressPhotoItem {
+  id: string;
+  date: string;
+  week: number;
+  weight: number;
+  unit: 'lbs' | 'kg';
+  pose: 'Front' | 'Side' | 'Back' | 'Flexed';
+  note?: string;
+  dataUrl: string;
+}
+
+export function selectBeforeAfterProgressPhotos(
+  photos: ProgressPhotoItem[],
+  beforeId?: string | null,
+  afterId?: string | null
+): {
+  beforePhoto: ProgressPhotoItem | null;
+  afterPhoto: ProgressPhotoItem | null;
+  weightDelta: number;
+  weightDeltaLabel: string;
+} {
+  if (!Array.isArray(photos) || photos.length === 0) {
+    return {
+      beforePhoto: null,
+      afterPhoto: null,
+      weightDelta: 0,
+      weightDeltaLabel: '0.0 lbs'
+    };
+  }
+  const sorted = [...photos].sort((a, b) => a.date.localeCompare(b.date));
+  const beforePhoto =
+    (beforeId && sorted.find(p => p.id === beforeId)) || sorted[0];
+  const afterPhoto =
+    (afterId && sorted.find(p => p.id === afterId)) || sorted[sorted.length - 1];
+
+  const wBefore = Number(beforePhoto.weight) || 0;
+  const wAfter = Number(afterPhoto.weight) || 0;
+  const delta = +(wAfter - wBefore).toFixed(1);
+  const sign = delta > 0 ? `+${delta}` : `${delta}`;
+  const unit = afterPhoto.unit || 'lbs';
+
+  return {
+    beforePhoto,
+    afterPhoto,
+    weightDelta: delta,
+    weightDeltaLabel: `${sign} ${unit}`
+  };
+}
+
+export function calculateEpleyOneRepMax(weight: number, reps: number): number {
+  const w = Number(weight) || 0;
+  const r = Math.max(0, Math.round(Number(reps) || 0));
+  if (w <= 0 || r <= 0) return 0;
+  if (r === 1) return Math.round(w);
+  return Math.round(w * (1 + r / 30));
+}
+
+export function calculateWeeklyTonnageByWeek(
+  workoutLogs: Record<string, SetLog>,
+  maxWeek = 2
+): Array<{ week: number; totalVolumeLbs: number; loggedSetsCount: number }> {
+  const results: Array<{ week: number; totalVolumeLbs: number; loggedSetsCount: number }> = [];
+  const highestW = Math.max(1, Math.min(12, Math.round(Number(maxWeek) || 2)));
+
+  for (let w = 1; w <= highestW; w++) {
+    let totalVolumeLbs = 0;
+    let loggedSetsCount = 0;
+    const prefix = `w${w}_`;
+
+    for (const [key, entry] of Object.entries(workoutLogs || {})) {
+      if (!key.startsWith(prefix) || !entry || !entry.done) continue;
+      loggedSetsCount++;
+      const rawWeight = parseFloat(String(entry.weight || '0'));
+      const rawReps = parseInt(String(entry.reps || '0'), 10);
+      if (Number.isFinite(rawWeight) && rawWeight > 0 && Number.isFinite(rawReps) && rawReps > 0) {
+        const weightInLbs = entry.unit === 'kg' ? rawWeight * 2.20462 : rawWeight;
+        totalVolumeLbs += weightInLbs * rawReps;
+      }
+    }
+
+    results.push({
+      week: w,
+      totalVolumeLbs: Math.round(totalVolumeLbs),
+      loggedSetsCount
+    });
+  }
+
+  return results;
+}
+
+export const KEY_COMPOUND_LIFTS_SPEC = [
+  { id: 'mon_bench', label: 'Barbell Bench Press', defaultWeightLbs: 135 },
+  { id: 'tue_squat', label: 'Barbell Back Squat', defaultWeightLbs: 155 },
+  { id: 'mon_ohp', label: 'Standing Overhead Press', defaultWeightLbs: 85 },
+  { id: 'sat_deadlift', label: 'Barbell Deadlift', defaultWeightLbs: 185 }
+] as const;
+
+export function calculateKeyLiftAndPullupPrs(
+  workoutLogs: Record<string, SetLog>,
+  activeWeek = 1
+): {
+  highestSingleSetPullupReps: number;
+  weeklyPullupVolumeReps: number;
+  keyLifts: Array<{
+    id: string;
+    label: string;
+    bestWeightLbs: number;
+    bestReps: number;
+    estimated1RmLbs: number;
+  }>;
+} {
+  let highestSingleSetPullupReps = 0;
+  let weeklyPullupVolumeReps = 0;
+  const pullupExIds = new Set([
+    'day1_pullups',
+    'day2_pullups',
+    'day3_pullups',
+    'fri_pullups',
+    'day5_pullups'
+  ]);
+
+  const bestByLift: Record<
+    string,
+    { bestWeightLbs: number; bestReps: number; estimated1RmLbs: number }
+  > = {};
+  for (const lift of KEY_COMPOUND_LIFTS_SPEC) {
+    bestByLift[lift.id] = { bestWeightLbs: 0, bestReps: 0, estimated1RmLbs: 0 };
+  }
+
+  for (const [key, entry] of Object.entries(workoutLogs || {})) {
+    if (!entry || !entry.done) continue;
+    const match = key.match(/^w(\d+)_(\d+)_(.+)_(\d+)$/);
+    if (!match) continue;
+    const wk = parseInt(match[1], 10);
+    const exId = match[3];
+    const reps = parseInt(String(entry.reps || '0'), 10) || 0;
+    const rawW = parseFloat(String(entry.weight || '0')) || 0;
+    const weightLbs = entry.unit === 'kg' ? +(rawW * 2.20462).toFixed(1) : rawW;
+
+    if (pullupExIds.has(exId) && reps > 0) {
+      if (reps > highestSingleSetPullupReps) {
+        highestSingleSetPullupReps = reps;
+      }
+      if (wk === activeWeek) {
+        weeklyPullupVolumeReps += reps;
+      }
+    }
+
+    if (bestByLift[exId] && weightLbs > 0 && reps > 0) {
+      const est1Rm = calculateEpleyOneRepMax(weightLbs, reps);
+      if (est1Rm > bestByLift[exId].estimated1RmLbs) {
+        bestByLift[exId] = {
+          bestWeightLbs: Math.round(weightLbs * 10) / 10,
+          bestReps: reps,
+          estimated1RmLbs: est1Rm
+        };
+      }
+    }
+  }
+
+  const keyLifts = KEY_COMPOUND_LIFTS_SPEC.map(spec => ({
+    id: spec.id,
+    label: spec.label,
+    ...bestByLift[spec.id]
+  }));
+
+  return {
+    highestSingleSetPullupReps,
+    weeklyPullupVolumeReps,
+    keyLifts
+  };
+}
+
+
 
 

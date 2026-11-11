@@ -758,5 +758,129 @@ test('Technical & UX Upgrades 1-5: Day 3 Grip Dividers, Overhead Rope Extensions
   }
 });
 
+test('Upgrades 1-4: HR Recovery Readiness Alert, Watch MediaSession, 7-Day Trend Weight, Progress Photos & Analytics Dashboard', async () => {
+  const mod = await import('./workoutLogic.ts');
+
+  // 1. Heart Rate Recovery Readiness Alert & Watch MediaSession Metadata
+  const earlyCheck = mod.evaluateHrRecoveryReadiness({
+    timerRunning: true,
+    elapsedRestSec: 12, // < 20s minimum rest
+    liveBpm: 118,
+    startRestBpm: 152
+  });
+  assert.equal(earlyCheck.isRecovered, false);
+  assert.equal(earlyCheck.reason, 'waiting_min_rest');
+
+  const readyCheck = mod.evaluateHrRecoveryReadiness({
+    timerRunning: true,
+    elapsedRestSec: 25,
+    liveBpm: 118,
+    startRestBpm: 152,
+    alreadyAlertedThisRest: false
+  });
+  assert.equal(readyCheck.isRecovered, true);
+  assert.equal(readyCheck.shouldTriggerAlert, true);
+  assert.equal(readyCheck.badgeText, 'HR Recovered (118 BPM) — Ready for Next Set!');
+
+  const dropOnlyCheck = mod.evaluateHrRecoveryReadiness({
+    timerRunning: true,
+    elapsedRestSec: 28,
+    liveBpm: 125, // above 120, but 155 - 125 = 30 >= 25 drop
+    startRestBpm: 155,
+    alreadyAlertedThisRest: true
+  });
+  assert.equal(dropOnlyCheck.isRecovered, true);
+  assert.equal(dropOnlyCheck.shouldTriggerAlert, false); // already alerted once this rest
+  assert.equal(dropOnlyCheck.reason, 'drop_from_peak');
+
+  const mediaMeta = mod.buildWatchMediaSessionMetadataPayload({
+    timerRunning: true,
+    timerSeconds: 75,
+    contextLabel: 'Rest: Barbell Bench Press',
+    nextSetSummary: 'Set 2 Barbell Bench Press (135 lbs x 8)',
+    liveBpm: 128
+  });
+  assert.equal(mediaMeta.title, '⏱️ 01:15 • Rest: Barbell Bench Press • ❤️ 128 BPM');
+  assert.equal(mediaMeta.artist, 'Up Next: Set 2 Barbell Bench Press (135 lbs x 8)');
+  assert.equal(mediaMeta.album, '7AM Vegan Muscle & Training Hub');
+
+  // 2. Biometric Profile & 7-Day Exponential Moving Average Trend Weight
+  assert.equal(mod.formatHeightDisplay(178, 'cm'), '178 cm');
+  assert.equal(mod.formatHeightDisplay(178, 'ft_in'), '5\'10"');
+
+  const sampleWeighIns: mod.BodyWeightLogEntry[] = [
+    { date: '2026-11-05', weight: 172.0, unit: 'lbs' },
+    { date: '2026-11-06', weight: 171.4, unit: 'lbs' },
+    { date: '2026-11-07', weight: 171.8, unit: 'lbs' },
+    { date: '2026-11-08', weight: 170.6, unit: 'lbs' },
+    { date: '2026-11-09', weight: 169.8, unit: 'lbs' },
+    { date: '2026-11-10', weight: 169.2, unit: 'lbs' },
+    { date: '2026-11-11', weight: 168.5, unit: 'lbs' }
+  ];
+  const trendResult = mod.calculateBodyWeightTrendSeries(sampleWeighIns, 'lbs');
+  assert.equal(trendResult.points.length, 7);
+  assert.equal(trendResult.latestScaleWeight, 168.5);
+  assert.equal(trendResult.latestTrendWeight > 168.5 && trendResult.latestTrendWeight < 171.5, true);
+  assert.equal(trendResult.sevenDayTrendDelta < 0, true);
+
+  // 3. Side-by-Side Progress Photo Comparison (Before vs. After)
+  const samplePhotos: mod.ProgressPhotoItem[] = [
+    {
+      id: 'p_wk1',
+      date: '2026-11-01',
+      week: 1,
+      weight: 172.0,
+      unit: 'lbs',
+      pose: 'Front',
+      note: 'Week 1 Baseline',
+      dataUrl: 'data:image/svg+xml;utf8,<svg></svg>'
+    },
+    {
+      id: 'p_wk2',
+      date: '2026-11-11',
+      week: 2,
+      weight: 168.5,
+      unit: 'lbs',
+      pose: 'Front',
+      note: 'End of Week 2',
+      dataUrl: 'data:image/svg+xml;utf8,<svg></svg>'
+    }
+  ];
+  const comp = mod.selectBeforeAfterProgressPhotos(samplePhotos);
+  assert.equal(comp.beforePhoto?.id, 'p_wk1');
+  assert.equal(comp.afterPhoto?.id, 'p_wk2');
+  assert.equal(comp.weightDelta, -3.5);
+  assert.equal(comp.weightDeltaLabel, '-3.5 lbs');
+
+  // 4. Competitor Analytics Dashboard: Epley 1RM, Weekly Tonnage & Pull-Up PRs
+  assert.equal(mod.calculateEpleyOneRepMax(135, 10), 180); // 135 * (1 + 10/30) = 180
+  assert.equal(mod.calculateEpleyOneRepMax(225, 1), 225);
+
+  const mockLogs: Record<string, SetLog> = {
+    w1_0_day1_pullups_1: { weight: '0', reps: '6', done: true, unit: 'lbs' },
+    w1_0_day1_pullups_2: { weight: '0', reps: '5', done: true, unit: 'lbs' },
+    w1_0_mon_bench_1: { weight: '135', reps: '10', done: true, unit: 'lbs' },
+    w1_0_mon_ohp_1: { weight: '85', reps: '8', done: true, unit: 'lbs' },
+    w1_1_tue_squat_1: { weight: '185', reps: '8', done: true, unit: 'lbs' },
+    w1_4_sat_deadlift_1: { weight: '225', reps: '6', done: true, unit: 'lbs' },
+    w2_0_mon_bench_1: { weight: '140', reps: '10', done: true, unit: 'lbs' }
+  };
+
+  const weeklyTonnage = mod.calculateWeeklyTonnageByWeek(mockLogs, 2);
+  // Week 1: 135*10 (1350) + 85*8 (680) + 185*8 (1480) + 225*6 (1350) = 4860 lbs
+  assert.equal(weeklyTonnage[0].week, 1);
+  assert.equal(weeklyTonnage[0].totalVolumeLbs, 4860);
+  assert.equal(weeklyTonnage[1].week, 2);
+  assert.equal(weeklyTonnage[1].totalVolumeLbs, 1400);
+
+  const prStats = mod.calculateKeyLiftAndPullupPrs(mockLogs, 1);
+  assert.equal(prStats.highestSingleSetPullupReps, 6);
+  assert.equal(prStats.weeklyPullupVolumeReps, 11);
+  const benchPr = prStats.keyLifts.find(l => l.id === 'mon_bench');
+  assert.equal(benchPr?.bestWeightLbs, 140);
+  assert.equal(benchPr?.estimated1RmLbs, mod.calculateEpleyOneRepMax(140, 10));
+});
+
+
 
 
