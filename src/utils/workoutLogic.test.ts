@@ -943,6 +943,46 @@ test('Watch Modal Refactor: Zero acceptAllDevices, Automatic OS Watch Sync, 5s L
   assert.equal(healthStatus.actionButtonLabel, 'Sync Now / Export Health Data');
 });
 
+test('Android Chrome PWA Installability, 1-Tap Watch Auto-Connect & Continuous MediaSession (Zero Emojis)', async () => {
+  const mod = await import('./workoutLogic');
+
+  // 1. Instant Channel Registration Ping payload
+  const initPing = mod.buildWatchInitConfirmationNotificationPayload();
+  assert.equal(initPing.title, 'Budget Gym Connected');
+  assert.equal(initPing.options.body, 'Rest & cooking timers will now vibrate on your watch.');
+  assert.deepEqual(initPing.options.vibrate, [200, 100, 200]);
+  assert.equal(initPing.options.tag, 'gym-watch-init');
+  assert.equal(initPing.options.renotify, true);
+
+  // 2. 1-Tap Watch Button & Blocked Permission UI states
+  const defaultPermUi = mod.getWatchPermissionUiState('default', false, true);
+  assert.equal(defaultPermUi.primaryButtonLabel, '1-Tap Connect Watch Alerts (Allow Notifications)');
+  assert.equal(defaultPermUi.isDenied, false);
+  assert.equal(defaultPermUi.showInstallPwaButton, true);
+  assert.equal(defaultPermUi.installPwaButtonLabel, 'Install App to Phone');
+
+  const deniedPermUi = mod.getWatchPermissionUiState('denied', false, false);
+  assert.equal(deniedPermUi.isDenied, true);
+  assert.equal(
+    deniedPermUi.deniedGuideText,
+    'Notifications are blocked by Chrome. Tap the 3-dot menu (top right) -> Site controls -> Permissions -> Allow Notifications.'
+  );
+
+  // 3. Continuous Workout MediaSession state
+  const mediaRunning = mod.buildContinuousMediaSessionState({
+    isTimerRunning: true,
+    timerSeconds: 75,
+    contextLabel: 'Rest: Barbell Bench Press',
+    nextSetSummary: 'Set 2 Barbell Bench Press (135 lbs x 8)',
+    liveBpm: null,
+    currentWeek: 1,
+    selectedDayIndex: 0
+  });
+  assert.equal(mediaRunning.playbackState, 'playing');
+  assert.equal(mediaRunning.title, '01:15 Rest • Rest: Barbell Bench Press');
+  assert.equal(mediaRunning.artist, 'Set 2 Barbell Bench Press (135 lbs x 8)');
+});
+
 
 
 

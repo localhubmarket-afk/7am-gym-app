@@ -4,9 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#020617" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="7AM Gym" />
+  <meta name="apple-mobile-web-app-title" content="BudgetGym" />
+  <link rel="manifest" href="/manifest.json" />
+  <link id="pwa-icon-192" rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+  <link id="pwa-icon-512" rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+  <link id="pwa-apple-touch-icon" rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
   <title>7AM Vegan Muscle & Training Hub</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3426,6 +3431,92 @@
       return String(m).padStart(2, '0') + ':' + String(rem).padStart(2, '0');
     }
 
+    function renderGymPwaIconDataUrl(size) {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return '/icon-192.png';
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(0, 0, size, size);
+        const pad = Math.round(size * 0.08);
+        const inner = size - pad * 2;
+        const radius = Math.round(size * 0.18);
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.moveTo(pad + radius, pad);
+        ctx.lineTo(pad + inner - radius, pad);
+        ctx.quadraticCurveTo(pad + inner, pad, pad + inner, pad + radius);
+        ctx.lineTo(pad + inner, pad + inner - radius);
+        ctx.quadraticCurveTo(pad + inner, pad + inner, pad + inner - radius, pad + inner);
+        ctx.lineTo(pad + radius, pad + inner);
+        ctx.quadraticCurveTo(pad, pad + inner, pad, pad + inner - radius);
+        ctx.lineTo(pad, pad + radius);
+        ctx.quadraticCurveTo(pad, pad, pad + radius, pad);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#020617';
+        ctx.font = `900 ${Math.round(size * 0.28)}px Inter, Arial, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('GYM', size / 2, size / 2 + Math.round(size * 0.02));
+        return canvas.toDataURL('image/png');
+      } catch (e) {
+        return '/icon-192.png';
+      }
+    }
+
+    function ensureInstallablePwaAssets() {
+      try {
+        const icon192DataUrl = renderGymPwaIconDataUrl(192);
+        const icon512DataUrl = renderGymPwaIconDataUrl(512);
+        window.__gymPwaIcon192 = icon192DataUrl;
+        window.__gymPwaIcon512 = icon512DataUrl;
+
+        let linkIcon192 = document.querySelector('link[rel="icon"][sizes="192x192"]');
+        if (!linkIcon192) {
+          linkIcon192 = document.createElement('link');
+          linkIcon192.rel = 'icon';
+          linkIcon192.type = 'image/png';
+          linkIcon192.setAttribute('sizes', '192x192');
+          document.head.appendChild(linkIcon192);
+        }
+        linkIcon192.href = icon192DataUrl;
+
+        let linkApple192 = document.querySelector('link[rel="apple-touch-icon"]');
+        if (!linkApple192) {
+          linkApple192 = document.createElement('link');
+          linkApple192.rel = 'apple-touch-icon';
+          linkApple192.setAttribute('sizes', '192x192');
+          document.head.appendChild(linkApple192);
+        }
+        linkApple192.href = icon192DataUrl;
+
+        if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+        }
+      } catch (e) {}
+    }
+
+    window.deferredPwaPrompt = window.deferredPwaPrompt || null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      window.deferredPwaPrompt = e;
+      if (typeof updateWatchAndHeartRateUI === 'function') {
+        updateWatchAndHeartRateUI();
+      }
+    });
+    window.addEventListener('appinstalled', () => {
+      window.deferredPwaPrompt = null;
+      if (typeof updateWatchAndHeartRateUI === 'function') {
+        updateWatchAndHeartRateUI();
+      }
+      showToast('App installed to your phone home screen.');
+    });
+
+    ensureInstallablePwaAssets();
+
     function syncWatchMediaSessionMetadata() {
       if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
       try {
@@ -3435,10 +3526,10 @@
         const ss = String(remSec % 60).padStart(2, '0');
         const ctxLabel = String(state.timerContextLabel || '').trim();
         const title = timerRunning
-          ? `⏱️ ${mm}:${ss} Rest • ${ctxLabel || nextSetStr}`
+          ? `${mm}:${ss} Rest • ${ctxLabel || nextSetStr}`
           : (ctxLabel || `Up Next: ${nextSetStr}`);
-        const artist = `${state.liveBpm > 0 ? `❤️ ${state.liveBpm} BPM • ` : ''}${nextSetStr}`;
-        const album = `Week ${state.currentWeek || 1} • Day ${(state.selectedDayIndex || 0) + 1} • 7AM Gym Hub`;
+        const artist = `${state.liveBpm > 0 ? `${state.liveBpm} BPM • ` : ''}${nextSetStr}`;
+        const album = `Week ${state.currentWeek || 1} • Day ${(state.selectedDayIndex || 0) + 1} • Budget Gym`;
         if (typeof MediaMetadata !== 'undefined') {
           navigator.mediaSession.metadata = new MediaMetadata({
             title,
@@ -3462,7 +3553,7 @@
           if (timerRunning && state.timerEndTime) state.timerEndTime += 15000;
           updateTimerUI();
           saveState();
-          showToast('⌚ Watch Media Control: +15s Added to Rest Timer');
+          showToast('Watch Media Control: +15s Added to Rest Timer');
         });
         safeSetHandler('previoustrack', () => {
           state.timerSeconds = (state.timerSeconds || 0) + 15;
@@ -3470,11 +3561,11 @@
           if (timerRunning && state.timerEndTime) state.timerEndTime += 15000;
           updateTimerUI();
           saveState();
-          showToast('⌚ Watch Media Control: +15s Added to Rest Timer');
+          showToast('Watch Media Control: +15s Added to Rest Timer');
         });
         safeSetHandler('nexttrack', () => {
           resetTimer();
-          showToast('⌚ Watch Media Control: Skipped Rest — Ready for Next Set!');
+          showToast('Watch Media Control: Skipped Rest — Ready for Next Set!');
         });
       } catch (e) {}
     }
@@ -3785,6 +3876,9 @@
     }
 
     function startTimer(customSeconds, contextLabel) {
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        requestAndConnectWatchNotifications(true);
+      }
       if (typeof customSeconds === 'number') {
         state.timerSeconds = customSeconds;
         state.timerTotalSeconds = customSeconds;
@@ -4004,11 +4098,11 @@
         ? `Rice Timer Complete! ${riceBanner}`
         : `Time to lift! Up Next: ${cleanSummary}`;
       return {
-        title: isRiceStage ? '🍚 7AM Kitchen Timer Alert' : '⏱️ Rest Complete! Start Next Set',
+        title: isRiceStage ? '7AM Kitchen Timer Alert' : 'Rest Complete! Start Next Set',
         options: {
           body,
-          icon: './icon-192.png',
-          badge: './icon-192.png',
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
           vibrate: [300, 150, 300, 150, 400],
           tag: 'gym-rest-timer',
           renotify: true,
@@ -4017,10 +4111,78 @@
       };
     }
 
+    async function fireWatchInitConfirmationNotification() {
+      const title = 'Budget Gym Connected';
+      const options = {
+        body: 'Rest & cooking timers will now vibrate on your watch.',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        vibrate: [200, 100, 200],
+        tag: 'gym-watch-init',
+        renotify: true
+      };
+      if (navigator && typeof navigator.vibrate === 'function') {
+        try { navigator.vibrate([200, 100, 200]); } catch (e) {}
+      }
+      if (typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') {
+        return false;
+      }
+      try {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+          const reg = await navigator.serviceWorker.ready;
+          if (reg && typeof reg.showNotification === 'function') {
+            await reg.showNotification(title, options);
+            return true;
+          }
+        }
+      } catch (e) {}
+      try {
+        new Notification(title, options);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function requestAndConnectWatchNotifications(silentIfDenied = false) {
+      if (!state.watchSettings || typeof state.watchSettings !== 'object') {
+        state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: false, healthAutoSync: true };
+      }
+      if (typeof window === 'undefined' || !('Notification' in window)) {
+        state.watchNotificationsEnabled = true;
+        state.watchSettings.wristAlertsEnabled = true;
+        updateWatchAndHeartRateUI();
+        saveState();
+        return true;
+      }
+      let perm = Notification.permission;
+      if (perm === 'default') {
+        try {
+          perm = await Notification.requestPermission();
+        } catch (e) {}
+      }
+      if (perm === 'granted') {
+        state.watchNotificationsEnabled = true;
+        state.watchSettings.wristAlertsEnabled = true;
+        updateWatchAndHeartRateUI();
+        saveState();
+        await fireWatchInitConfirmationNotification();
+        showToast('Budget Gym Connected: Rest and cooking timers will now vibrate on your watch.');
+        return true;
+      }
+      updateWatchAndHeartRateUI();
+      saveState();
+      if (!silentIfDenied && perm === 'denied') {
+        showToast('Notifications are blocked by Chrome. Tap the 3-dot menu (top right) -> Site controls -> Permissions -> Allow Notifications.');
+      }
+      return false;
+    }
+
     async function triggerWatchWristTimerNotification(completedRiceStage, customNextSetSummary) {
       const wristOn = Boolean(
         state.watchNotificationsEnabled ||
-        (state.watchSettings && state.watchSettings.wristAlertsEnabled)
+        (state.watchSettings && state.watchSettings.wristAlertsEnabled) ||
+        (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted')
       );
       if (!wristOn) return false;
       if (navigator && typeof navigator.vibrate === 'function') {
@@ -4029,7 +4191,14 @@
       if (typeof window === 'undefined' || !('Notification' in window)) return false;
 
       if (Notification.permission === 'default') {
-        try { await Notification.requestPermission(); } catch (e) {}
+        try {
+          const perm = await Notification.requestPermission();
+          if (perm === 'granted') {
+            state.watchNotificationsEnabled = true;
+            if (state.watchSettings) state.watchSettings.wristAlertsEnabled = true;
+            saveState();
+          }
+        } catch (e) {}
       }
       if (Notification.permission !== 'granted') return false;
 
@@ -4065,8 +4234,8 @@
       const title = 'Rest Complete (00:00)';
       const options = {
         body: 'Next Set: 135 lbs x 8 reps',
-        icon: './icon-192.png',
-        badge: './icon-192.png',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
         vibrate: [300, 150, 300, 150, 400],
         tag: 'watch-test',
         renotify: true,
@@ -4102,19 +4271,20 @@
         state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: true, healthAutoSync: true };
       }
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-        try { await Notification.requestPermission(); } catch (e) {}
+        await requestAndConnectWatchNotifications(false);
+      } else {
+        state.watchNotificationsEnabled = true;
+        state.watchSettings.wristAlertsEnabled = true;
+        updateWatchAndHeartRateUI();
+        saveState();
       }
-      state.watchNotificationsEnabled = true;
-      state.watchSettings.wristAlertsEnabled = true;
-      updateWatchAndHeartRateUI();
-      saveState();
 
       const btn = document.getElementById('watch-modal-delayed-test-wrist-btn');
       const countdownBanner = document.getElementById('watch-modal-5s-countdown-banner');
       let remaining = 5;
       if (btn) {
         btn.disabled = true;
-        btn.textContent = `⏱️ ${remaining}s... Lock your phone screen now!`;
+        btn.textContent = `${remaining}s... Lock your phone screen now!`;
       }
       if (countdownBanner) {
         countdownBanner.classList.remove('hidden');
@@ -4125,7 +4295,7 @@
       const intervalId = setInterval(() => {
         remaining -= 1;
         if (remaining > 0) {
-          if (btn) btn.textContent = `⏱️ ${remaining}s... Lock your phone screen now!`;
+          if (btn) btn.textContent = `${remaining}s... Lock your phone screen now!`;
           if (countdownBanner) {
             countdownBanner.textContent = `${remaining}s... Lock your phone screen now so your watch receives the vibration!`;
           }
@@ -4133,13 +4303,13 @@
           clearInterval(intervalId);
           if (btn) {
             btn.disabled = false;
-            btn.textContent = '📳 Test Watch Vibration (5-Second Lock-Screen Test)';
+            btn.textContent = 'Test Watch Vibration (5-Second Lock-Screen Test)';
           }
           if (countdownBanner) {
-            countdownBanner.textContent = '✓ Watch vibration sent: Rest Complete (00:00) • Next Set: 135 lbs x 8 reps';
+            countdownBanner.textContent = 'Watch vibration sent: Rest Complete (00:00) • Next Set: 135 lbs x 8 reps';
           }
           fireFiveSecondLockScreenWatchTestNotification();
-          showToast('📳 Watch Vibration Sent: Rest Complete (00:00) — Next Set: 135 lbs x 8 reps');
+          showToast('Watch Vibration Sent: Rest Complete (00:00) — Next Set: 135 lbs x 8 reps');
         }
       }, 1000);
     }
@@ -4182,7 +4352,7 @@
       if (readiness.isReady && !state.hrRecoveryAlertFiredForCurrentRest) {
         state.hrRecoveryAlertFiredForCurrentRest = true;
         playTimerChime('gentle_tap');
-        showToast(`💚 ${readiness.badgeText}`);
+        showToast(readiness.badgeText);
       }
 
       const pinnedHrRowContainer = document.getElementById('pinned-hr-row-container');
@@ -4259,14 +4429,15 @@
         }
       }
 
+      const notifPerm = (typeof window !== 'undefined' && 'Notification' in window) ? Notification.permission : 'default';
       const wristEnabled = Boolean(
-        state.watchNotificationsEnabled ||
-        (state.watchSettings && state.watchSettings.wristAlertsEnabled)
+        notifPerm === 'granted' &&
+        (state.watchNotificationsEnabled || (state.watchSettings && state.watchSettings.wristAlertsEnabled))
       );
 
       const wristQuickBtn = document.getElementById('timer-wrist-alert-quick-btn');
       if (wristQuickBtn) {
-        wristQuickBtn.textContent = wristEnabled ? '📳 Wrist Alerts: ON' : '📳 Wrist Alerts: OFF';
+        wristQuickBtn.textContent = wristEnabled ? 'Wrist Alerts: ON' : 'Wrist Alerts: OFF';
         wristQuickBtn.className = wristEnabled
           ? 'px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold transition'
           : 'px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[11px] font-bold transition';
@@ -4293,22 +4464,37 @@
       const modalDemoBtn = document.getElementById('watch-modal-demo-hr-btn');
       const modalWristToggleBtn = document.getElementById('watch-modal-wrist-toggle-btn');
       const modalOsSyncBanner = document.getElementById('watch-modal-os-sync-status-banner');
+      const modalDeniedGuide = document.getElementById('watch-modal-permission-denied-guide');
+      const modalInstallPwaBtn = document.getElementById('watch-modal-install-pwa-btn');
       const modalHealthBridgeBadge = document.getElementById('watch-modal-health-bridge-badge');
       const modalHealthSyncStatus = document.getElementById('watch-modal-health-sync-status');
       const modalHealthAutoToggleBtn = document.getElementById('watch-modal-health-auto-sync-toggle-btn');
       const modalHrAlertToggleBtn = document.getElementById('watch-modal-hr-alert-toggle-btn');
       const modalHrTargetSelect = document.getElementById('watch-modal-hr-target-select');
 
-      const notifPerm = (typeof window !== 'undefined' && 'Notification' in window) ? Notification.permission : 'default';
-      const osSyncReady = Boolean(notifPerm === 'granted' || wristEnabled);
+      const osSyncReady = Boolean(notifPerm === 'granted');
 
       if (modalOsSyncBanner) {
-        modalOsSyncBanner.textContent = osSyncReady
-          ? 'Connected via Phone OS (Samsung Galaxy Watch / Apple Watch / Garmin)'
-          : 'Connected via Phone OS (Samsung Galaxy Watch / Apple Watch / Garmin)';
+        modalOsSyncBanner.textContent = 'Connected via Phone OS (Samsung Galaxy Watch / Apple Watch / Garmin)';
         modalOsSyncBanner.className = osSyncReady
           ? 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold'
           : 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-emerald-500/35 text-emerald-300 text-[11px] font-extrabold';
+      }
+
+      if (modalDeniedGuide) {
+        if (notifPerm === 'denied') {
+          modalDeniedGuide.classList.remove('hidden');
+        } else {
+          modalDeniedGuide.classList.add('hidden');
+        }
+      }
+
+      if (modalInstallPwaBtn) {
+        if (window.deferredPwaPrompt) {
+          modalInstallPwaBtn.classList.remove('hidden');
+        } else {
+          modalInstallPwaBtn.classList.add('hidden');
+        }
       }
 
       if (modalHrPill) {
@@ -4335,7 +4521,7 @@
         const alertOn = Boolean(ws.hrRecoveryAlert);
         modalHrAlertToggleBtn.setAttribute('aria-pressed', alertOn ? 'true' : 'false');
         modalHrAlertToggleBtn.textContent = alertOn
-          ? `✓ HR Recovery Alert: ON (≤${ws.targetRecoveryBpm} BPM or -${ws.targetDropBpm} BPM)`
+          ? `HR Recovery Alert: ON (≤${ws.targetRecoveryBpm} BPM or -${ws.targetDropBpm} BPM)`
           : 'HR Recovery Readiness Alert: OFF';
         modalHrAlertToggleBtn.className = alertOn
           ? 'flex-1 py-2 px-3 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 font-extrabold text-xs transition'
@@ -4351,15 +4537,15 @@
       }
       if (modalDemoBtn) {
         modalDemoBtn.textContent = simulatedHrInterval
-          ? '⏹ Stop Demo HR Simulator'
-          : '▶ Preview Demo HR Simulator (Optional)';
+          ? 'Stop Demo HR Simulator'
+          : 'Preview Demo HR Simulator (Optional)';
       }
       if (modalWristToggleBtn) {
-        modalWristToggleBtn.setAttribute('aria-pressed', wristEnabled ? 'true' : 'false');
-        modalWristToggleBtn.textContent = wristEnabled
-          ? '✓ Enable Watch Wrist Alerts (Active)'
-          : 'Enable Watch Wrist Alerts';
-        modalWristToggleBtn.className = wristEnabled
+        modalWristToggleBtn.setAttribute('aria-pressed', osSyncReady && wristEnabled ? 'true' : 'false');
+        modalWristToggleBtn.textContent = (osSyncReady && wristEnabled)
+          ? 'Watch Wrist Alerts Connected (Tap to Test)'
+          : '1-Tap Connect Watch Alerts (Allow Notifications)';
+        modalWristToggleBtn.className = (osSyncReady && wristEnabled)
           ? 'w-full py-2.5 px-3 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-xs shadow-md shadow-emerald-500/20 transition'
           : 'w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs shadow-md shadow-emerald-500/20 transition';
       }
@@ -4370,7 +4556,7 @@
       if (modalHealthAutoToggleBtn) {
         modalHealthAutoToggleBtn.setAttribute('aria-pressed', healthAutoSyncOn ? 'true' : 'false');
         modalHealthAutoToggleBtn.textContent = healthAutoSyncOn
-          ? '✓ Sync Workouts & Nutrition with Android Health Connect / Samsung Health & Apple Health'
+          ? 'Sync Workouts & Nutrition with Android Health Connect / Samsung Health & Apple Health'
           : 'Sync Workouts & Nutrition with Android Health Connect / Samsung Health & Apple Health';
         modalHealthAutoToggleBtn.className = healthAutoSyncOn
           ? 'w-full py-2 px-3 rounded-xl bg-sky-500/20 border border-sky-400/50 text-sky-200 font-extrabold text-[11px] text-left transition'
@@ -4389,7 +4575,7 @@
 
     async function connectLiveBleHeartRate() {
       if (!navigator.bluetooth || typeof navigator.bluetooth.requestDevice !== 'function') {
-        showToast('⚠️ Web Bluetooth requires Chrome on Android or Desktop over HTTPS.');
+        showToast('Web Bluetooth requires Chrome on Android or Desktop over HTTPS.');
         return;
       }
       try {
@@ -4406,7 +4592,7 @@
           state.restStartBpm = null;
           state.startRestBpm = null;
           updateWatchAndHeartRateUI();
-          showToast('⌚ BLE Heart Rate Strap disconnected.');
+          showToast('BLE Heart Rate Strap disconnected.');
         });
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService('heart_rate');
@@ -4433,13 +4619,13 @@
         });
         updateWatchAndHeartRateUI();
         saveState();
-        showToast(`❤️ Connected to ${state.bleDeviceName}! Live BPM streaming active.`);
+        showToast(`Connected to ${state.bleDeviceName}! Live BPM streaming active.`);
       } catch (err) {
         state.bleConnected = false;
         state.liveBpm = null;
         updateWatchAndHeartRateUI();
         if (err && err.name !== 'NotFoundError') {
-          showToast('⌚ Ensure your BLE chest strap (Polar / Garmin / Wahoo) is awake and broadcasting 0x180D.');
+          showToast('Ensure your BLE chest strap (Polar / Garmin / Wahoo) is awake and broadcasting 0x180D.');
         }
       }
     }
@@ -4456,7 +4642,7 @@
         state.hrRecoveryForcePreview = false;
         updateWatchAndHeartRateUI();
         saveState();
-        showToast('⏹ Stopped Demo Watch HR Simulator.');
+        showToast('Stopped Demo Watch HR Simulator.');
         return;
       }
       if (simulatedHrInterval) clearInterval(simulatedHrInterval);
@@ -4474,32 +4660,11 @@
         state.liveBpm = demoSequence[idx];
         updateWatchAndHeartRateUI();
       }, 3500);
-      showToast('❤️ Demo Watch HR Simulator Active (tap button again to stop)');
+      showToast('Demo Watch HR Simulator Active (tap button again to stop)');
     }
 
     async function toggleWatchWristAlerts() {
-      if (!state.watchSettings || typeof state.watchSettings !== 'object') {
-        state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: false };
-      }
-      const nextState = !Boolean(state.watchNotificationsEnabled || state.watchSettings.wristAlertsEnabled);
-      if (nextState && typeof window !== 'undefined' && 'Notification' in window) {
-        if (Notification.permission === 'default') {
-          try {
-            await Notification.requestPermission();
-          } catch (e) {}
-        }
-      }
-      state.watchNotificationsEnabled = nextState;
-      state.watchSettings.wristAlertsEnabled = nextState;
-      updateWatchAndHeartRateUI();
-      saveState();
-      if (nextState) {
-        const nextSetStr = getNextIncompleteSetSummaryForWristAlert();
-        triggerWatchWristTimerNotification(null, nextSetStr);
-        showToast(`📳 Galaxy Watch / Wear OS Wrist Alerts ON! Test sent: "${nextSetStr}"`);
-      } else {
-        showToast('🔕 Watch Wrist Alerts turned OFF.');
-      }
+      await requestAndConnectWatchNotifications(false);
     }
 
     async function syncWithAppleGoogleHealth() {
@@ -12777,9 +12942,10 @@
         });
       }
 
-      // Register PWA Offline Service Worker when hosted over HTTPS
+      // Register PWA Offline Service Worker at root scope
+      ensureInstallablePwaAssets();
       if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
       }
 
       const openDbBtn = document.getElementById('open-db-modal-btn');
@@ -12997,11 +13163,15 @@
       const wristToggleBtn = document.getElementById('watch-modal-wrist-toggle-btn');
       const timerWristQuickBtn = document.getElementById('timer-wrist-alert-quick-btn');
       const delayedTestWristBtn = document.getElementById('watch-modal-delayed-test-wrist-btn');
+      const installPwaBtn = document.getElementById('watch-modal-install-pwa-btn');
       const healthAutoSyncToggleBtn = document.getElementById('watch-modal-health-auto-sync-toggle-btn');
       const healthSyncBtn = document.getElementById('watch-modal-health-sync-btn');
       const exportHealthCsvBtn = document.getElementById('watch-modal-export-csv-btn');
 
       function openSmartwatchModal() {
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+          requestAndConnectWatchNotifications(true);
+        }
         updateWatchAndHeartRateUI();
         if (watchModal) watchModal.classList.remove('hidden');
       }
@@ -13021,6 +13191,19 @@
       if (delayedTestWristBtn) {
         delayedTestWristBtn.addEventListener('click', triggerDelayedLockScreenWatchTest);
       }
+      if (installPwaBtn) {
+        installPwaBtn.addEventListener('click', async () => {
+          if (!window.deferredPwaPrompt) return;
+          try {
+            await window.deferredPwaPrompt.prompt();
+            const choice = await window.deferredPwaPrompt.userChoice;
+            if (choice && choice.outcome === 'accepted') {
+              window.deferredPwaPrompt = null;
+              updateWatchAndHeartRateUI();
+            }
+          } catch (e) {}
+        });
+      }
       if (healthAutoSyncToggleBtn) {
         healthAutoSyncToggleBtn.addEventListener('click', () => {
           if (!state.watchSettings || typeof state.watchSettings !== 'object') {
@@ -13032,7 +13215,7 @@
           saveState();
           showToast(
             state.watchSettings.healthAutoSync
-              ? '✓ Health Connect / Samsung Health & Apple Health Sync Enabled'
+              ? 'Health Connect / Samsung Health & Apple Health Sync Enabled'
               : 'Health Connect / Apple Health Auto-Sync Paused'
           );
         });
@@ -13453,12 +13636,16 @@
     <div class="bg-slate-900 border border-emerald-500/40 rounded-2xl max-w-md w-full p-4 space-y-3.5 shadow-2xl max-h-[92vh] overflow-y-auto">
       <div class="flex items-start justify-between border-b border-slate-800 pb-2.5">
         <div>
-          <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">⌚ Automatic OS Watch &amp; Health Sync</span>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">Automatic OS Watch &amp; Health Sync</span>
           <h3 id="smartwatch-modal-title" class="text-sm sm:text-base font-extrabold text-white mt-1">Smartwatch &amp; Health Integration</h3>
           <p class="text-[11px] text-slate-400 mt-0.5">Samsung Galaxy Watch • Apple Watch • Garmin • Health Connect</p>
         </div>
-        <button type="button" id="close-watch-modal-btn" aria-label="Close Smartwatch Modal" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
+        <button type="button" id="close-watch-modal-btn" aria-label="Close Smartwatch Modal" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">Close</button>
       </div>
+
+      <button type="button" id="watch-modal-install-pwa-btn" class="hidden w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-400 to-sky-400 hover:from-emerald-300 hover:to-sky-300 text-slate-950 font-extrabold text-xs shadow-lg transition">
+        Install App to Phone
+      </button>
 
       <!-- 1. PRIMARY TOP SECTION: AUTOMATIC OS WATCH SYNC (ZERO BLUETOOTH PAIRING NEEDED) -->
       <div class="bg-slate-950/90 border border-emerald-500/40 rounded-xl p-3 space-y-2.5">
@@ -13472,9 +13659,13 @@
           Your watch is already paired to your phone. Enable Wrist Timer Alerts below so rest and cooking timers vibrate directly on your watch.
         </p>
 
+        <div id="watch-modal-permission-denied-guide" class="hidden rounded-lg px-2.5 py-2 bg-rose-950/60 border border-rose-400/50 text-rose-200 text-[11px] font-bold leading-snug">
+          Notifications are blocked by Chrome. Tap the 3-dot menu (top right) -&gt; Site controls -&gt; Permissions -&gt; Allow Notifications.
+        </div>
+
         <div class="space-y-2 pt-0.5">
           <button type="button" id="watch-modal-wrist-toggle-btn" aria-pressed="false" class="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs shadow-md shadow-emerald-500/20 transition">
-            Enable Watch Wrist Alerts
+            1-Tap Connect Watch Alerts (Allow Notifications)
           </button>
           <button type="button" id="watch-modal-delayed-test-wrist-btn" class="w-full py-2.5 px-3 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 font-extrabold text-xs transition">
             Test Watch Vibration (5-Second Lock-Screen Test)
@@ -13495,7 +13686,7 @@
 
         <div class="space-y-2">
           <button type="button" id="watch-modal-health-auto-sync-toggle-btn" aria-pressed="true" class="w-full py-2 px-3 rounded-xl bg-sky-500/20 border border-sky-400/50 text-sky-200 font-extrabold text-[11px] text-left transition">
-            ✓ Sync Workouts &amp; Nutrition with Android Health Connect / Samsung Health &amp; Apple Health
+            Sync Workouts &amp; Nutrition with Android Health Connect / Samsung Health &amp; Apple Health
           </button>
           <button type="button" id="watch-modal-health-sync-btn" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 hover:from-sky-300 hover:to-emerald-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-sky-500/20 transition">
             Sync Now / Export Health Data
@@ -13507,7 +13698,7 @@
       <details id="watch-modal-ble-chest-strap-accordion" class="group bg-slate-950/90 border border-slate-800 rounded-xl overflow-hidden">
         <summary class="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between gap-2 text-xs font-extrabold text-slate-300 hover:text-white select-none">
           <span>Optional: Connect External BLE Chest Strap (Polar / Garmin / Wahoo)</span>
-          <span class="text-[10px] text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+          <span class="text-[10px] text-slate-400 group-open:rotate-180 transition-transform">v</span>
         </summary>
         <div class="px-3 pb-3 pt-1 border-t border-slate-800/80 space-y-2.5">
           <p id="watch-modal-ble-status" class="text-[11px] text-slate-300 leading-snug">
@@ -13518,7 +13709,7 @@
             <span id="watch-modal-live-hr-pill" class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-400 text-xs font-bold">No Active HR Stream</span>
           </div>
           <button type="button" id="watch-modal-ble-connect-btn" class="w-full py-2 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 font-extrabold text-xs transition">
-            ❤️ Pair BLE Heart Rate Strap (0x180D)
+            Pair BLE Heart Rate Strap (0x180D)
           </button>
           <div id="watch-modal-hr-recovery" class="text-[11px] font-extrabold text-sky-300 bg-sky-950/50 border border-sky-500/30 rounded-lg px-2.5 py-1.5">
             Pair an optional BLE chest strap (Polar / Garmin / Wahoo) to track live BPM recovery.
@@ -13530,7 +13721,7 @@
           <!-- Rest-Interval HR Recovery Readiness Alert Controls -->
           <div class="bg-slate-900/90 border border-emerald-500/30 rounded-xl p-2.5 space-y-2">
             <div class="flex items-center justify-between gap-2">
-              <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">💚 HR Recovery Readiness Alert</span>
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">HR Recovery Readiness Alert</span>
               <select id="watch-modal-hr-target-select" aria-label="Target Recovery Heart Rate BPM" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[10px] font-extrabold text-emerald-300">
                 <option value="115">≤115 BPM Target</option>
                 <option value="120" selected>≤120 BPM (or -25 BPM)</option>
@@ -13540,16 +13731,16 @@
             </div>
             <div class="flex flex-wrap gap-1.5">
               <button type="button" id="watch-modal-hr-alert-toggle-btn" aria-pressed="true" class="flex-1 py-2 px-3 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 font-extrabold text-xs transition">
-                ✓ HR Recovery Alert: ON (≤120 BPM or -25 BPM)
+                HR Recovery Alert: ON (≤120 BPM or -25 BPM)
               </button>
               <button type="button" id="watch-modal-test-hr-readiness-btn" class="py-2 px-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-emerald-500/40 text-emerald-300 font-extrabold text-[11px] transition">
-                ⚡ Test 118 BPM
+                Test 118 BPM
               </button>
             </div>
           </div>
 
           <button type="button" id="watch-modal-demo-hr-btn" class="w-full py-1.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold text-[11px] transition">
-            ▶ Preview Demo HR Simulator (Optional)
+            Preview Demo HR Simulator (Optional)
           </button>
         </div>
       </details>

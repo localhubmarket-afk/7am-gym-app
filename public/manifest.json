@@ -1,0 +1,38 @@
+{
+  "id": "/",
+  "name": "Budget Fuel & Full-Body Gym Tracker",
+  "short_name": "BudgetGym",
+  "description": "Low-Budget Healthy High-Protein Meal Planner (~$5.55/day for 138g protein) & 5-Day Full-Body Workout, Barbell Calculator & Pull-Up Tracker.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "categories": [
+    "health",
+    "fitness",
+    "food",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

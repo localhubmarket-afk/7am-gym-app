@@ -3500,6 +3500,92 @@ export function getHealthBridgePlatformStatus(
   };
 }
 
+// ============================================================================
+// ANDROID CHROME PWA INSTALLABILITY, 1-TAP WATCH AUTO-CONNECT & CONTINUOUS
+// MEDIASESSION HELPERS (ZERO EMOJIS)
+// ============================================================================
+export function buildWatchInitConfirmationNotificationPayload(): {
+  title: string;
+  options: {
+    body: string;
+    vibrate: number[];
+    tag: string;
+    renotify: boolean;
+  };
+} {
+  return {
+    title: 'Budget Gym Connected',
+    options: {
+      body: 'Rest & cooking timers will now vibrate on your watch.',
+      vibrate: [200, 100, 200],
+      tag: 'gym-watch-init',
+      renotify: true
+    }
+  };
+}
+
+export function getWatchPermissionUiState(
+  notificationPermission: string | undefined,
+  wristAlertsEnabled?: boolean,
+  hasDeferredPwaPrompt?: boolean
+): {
+  isGranted: boolean;
+  isDenied: boolean;
+  primaryButtonLabel: string;
+  deniedGuideText: string;
+  showInstallPwaButton: boolean;
+  installPwaButtonLabel: string;
+} {
+  const isGranted = notificationPermission === 'granted' && Boolean(wristAlertsEnabled !== false);
+  const isDenied = notificationPermission === 'denied';
+  return {
+    isGranted,
+    isDenied,
+    primaryButtonLabel:
+      notificationPermission === 'granted' && wristAlertsEnabled
+        ? 'Watch Wrist Alerts Connected'
+        : '1-Tap Connect Watch Alerts (Allow Notifications)',
+    deniedGuideText:
+      'Notifications are blocked by Chrome. Tap the 3-dot menu (top right) -> Site controls -> Permissions -> Allow Notifications.',
+    showInstallPwaButton: Boolean(hasDeferredPwaPrompt),
+    installPwaButtonLabel: 'Install App to Phone'
+  };
+}
+
+export function buildContinuousMediaSessionState(params: {
+  isTimerRunning: boolean;
+  timerSeconds: number;
+  contextLabel?: string;
+  nextSetSummary?: string;
+  liveBpm?: number | null;
+  currentWeek?: number;
+  selectedDayIndex?: number;
+}): {
+  title: string;
+  artist: string;
+  album: string;
+  playbackState: 'playing' | 'paused';
+} {
+  const remSec = Math.max(0, Math.round(Number(params.timerSeconds) || 0));
+  const mm = String(Math.floor(remSec / 60)).padStart(2, '0');
+  const ss = String(remSec % 60).padStart(2, '0');
+  const cleanNextSet = String(params.nextSetSummary || '').trim() || 'Set 1 Barbell Bench Press (135 lbs x 8)';
+  const cleanCtx = String(params.contextLabel || '').trim();
+  const title = params.isTimerRunning
+    ? `${mm}:${ss} Rest • ${cleanCtx || cleanNextSet}`
+    : cleanCtx || `Up Next: ${cleanNextSet}`;
+  const bpmPart =
+    typeof params.liveBpm === 'number' && params.liveBpm > 0 ? `${params.liveBpm} BPM • ` : '';
+  const artist = `${bpmPart}${cleanNextSet}`;
+  const album = `Week ${params.currentWeek || 1} • Day ${(params.selectedDayIndex || 0) + 1} • Budget Gym`;
+  return {
+    title,
+    artist,
+    album,
+    playbackState: params.isTimerRunning ? 'playing' : 'paused'
+  };
+}
+
 
 
 

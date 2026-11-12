@@ -1,5 +1,5 @@
-const CACHE_NAME = '7am-vegan-gym-v2';
-const ASSETS = ['./', './index.html', './manifest.json'];
+const CACHE_NAME = '7am-vegan-gym-v3';
+const ASSETS = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -33,12 +33,12 @@ self.addEventListener('fetch', event => {
 self.addEventListener('message', event => {
   const data = event.data || {};
   if (data && data.type === 'SHOW_WRIST_TIMER_NOTIFICATION') {
-    const title = data.title || '⏱️ Rest Complete! Start Next Set';
+    const title = data.title || 'Rest Complete! Start Next Set';
     const options = Object.assign(
       {
         body: data.body || 'Time to lift! Check your target weight & reps.',
-        icon: './icon-192.png',
-        badge: './icon-192.png',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
         vibrate: [300, 150, 300, 150, 400],
         tag: 'gym-rest-timer',
         renotify: true,
