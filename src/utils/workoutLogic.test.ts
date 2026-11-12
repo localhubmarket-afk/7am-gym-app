@@ -323,9 +323,9 @@ test('Architectural Upgrades & UI Cleanups: Fuel Collapse, Batch Prep, Silent-Pa
   assert.equal(typeof chimeUrl === 'string' && chimeUrl.length > 0, true);
 
   // 4. Clean 3-mode labels (Sound & Vibe | Vibrate Only | Silent, no "(BT Safe)" text)
-  assert.equal(mod.getTimerAudioModeBehavior('sound_vibe').label, '🔔 Sound & Vibe');
-  assert.equal(mod.getTimerAudioModeBehavior('vibe_only').label, '📳 Vibrate Only');
-  assert.equal(mod.getTimerAudioModeBehavior('silent').label, '🔕 Silent');
+  assert.equal(mod.getTimerAudioModeBehavior('sound_vibe').label, ' Sound & Vibe');
+  assert.equal(mod.getTimerAudioModeBehavior('vibe_only').label, ' Vibrate Only');
+  assert.equal(mod.getTimerAudioModeBehavior('silent').label, ' Silent');
 
   // 5. Pyramid Rest Helper collapsed unless selectedDayIndex === 1 (Day 2)
   assert.equal(mod.shouldExpandPyramidHelperByDefault(0), false);
@@ -800,7 +800,7 @@ test('Upgrades 1-4: HR Recovery Readiness Alert, Watch MediaSession, 7-Day Trend
     nextSetSummary: 'Set 2 Barbell Bench Press (135 lbs x 8)',
     liveBpm: 128
   });
-  assert.equal(mediaMeta.title, '⏱️ 01:15 • Rest: Barbell Bench Press • ❤️ 128 BPM');
+  assert.equal(mediaMeta.title, ' 01:15 • Rest: Barbell Bench Press • 128 BPM');
   assert.equal(mediaMeta.artist, 'Up Next: Set 2 Barbell Bench Press (135 lbs x 8)');
   assert.equal(mediaMeta.album, '7AM Vegan Muscle & Training Hub');
 
@@ -892,12 +892,12 @@ test('Mobile Chrome Layout & Samsung Galaxy Watch (Wear OS) Fixes: No Fake BPM b
 
   // Wear OS / Samsung Galaxy Watch notification payload
   const wristPayload = mod.buildWearOsWristNotificationPayload({
-    title: '⏱️ Rest Complete! Start Next Set',
+    title: 'Rest Complete! Start Next Set',
     nextSetSummary: 'Set 2 Barbell Bench Press (135 lbs x 8)',
     liveBpm: null,
     bleConnected: false
   });
-  assert.equal(wristPayload.title, '⏱️ Rest Complete! Start Next Set');
+  assert.equal(wristPayload.title, 'Rest Complete! Start Next Set');
   assert.equal(wristPayload.options.body, 'Up Next: Set 2 Barbell Bench Press (135 lbs x 8)');
   assert.deepEqual(wristPayload.options.vibrate, [300, 150, 300, 150, 400]);
   assert.equal(wristPayload.options.tag, 'gym-rest-timer');
@@ -1081,6 +1081,76 @@ test('Sticky Timer Green Progress Bar, Negative Overtime, Final-Set Stop, 5-Min 
   assert.equal(after5Min.notificationTitle, 'Did you finish your last set?');
   assert.equal(after5Min.notificationOptions.tag, 'unfinished-workout-reminder');
 });
+
+test('Synchronized 7-Day Pull-Up Selector, Customizable Rest Day Scheduler & Non-Destructive Slot Mapping', async () => {
+  const mod = await import('./workoutLogic');
+
+  // 1. Default Rest Days (Days 6 & 7 -> indices [5, 6]): Days 1-5 map to slots 0..4, Days 6-7 map to slots 5..6
+  const defRest = mod.getWeekRestDays(undefined, 1);
+  assert.deepEqual(defRest, [5, 6]);
+  assert.equal(mod.formatRestDaysBadgeLabel(defRest), 'Schedule: Rest Days 6 & 7 (Change)');
+
+  const d1Def = mod.getDayAssignment(1, 0, { weeklyRestDays: { 1: [5, 6] } });
+  assert.equal(d1Def.templateSlotIndex, 0);
+  assert.equal(d1Def.daySub, 'Upper 1');
+  assert.equal(d1Def.pullupSessionNum, 1);
+  assert.equal(d1Def.isRestDay, false);
+  assert.equal(d1Def.waterTargetMl, 3000);
+  assert.equal(d1Def.showPreGymFuelCheck, true);
+
+  const d6Def = mod.getDayAssignment(1, 5, { weeklyRestDays: { 1: [5, 6] } });
+  assert.equal(d6Def.templateSlotIndex, 5);
+  assert.equal(d6Def.daySub, 'Rest 1');
+  assert.equal(d6Def.pullupSessionNum, null);
+  assert.equal(d6Def.isRestDay, true);
+  assert.equal(d6Def.waterTargetMl, 2500);
+  assert.equal(d6Def.showPreGymFuelCheck, false);
+
+  // 2. BWS Recommended Recovery Split (Rest on Days 3 & 7 -> indices [2, 6]):
+  // Day 1 -> Upper 1 (0), Day 2 -> Lower 1 (1), Day 3 -> Rest 1 (5), Day 4 -> Push (2), Day 5 -> Pull (3), Day 6 -> Lower 2 (4), Day 7 -> Rest 2 (6)
+  const bwsState = { weeklyRestDays: { 1: [2, 6] } };
+  const bwsSlots = [0, 1, 2, 3, 4, 5, 6].map(calIdx => mod.getDayAssignment(1, calIdx, bwsState));
+  assert.deepEqual(
+    bwsSlots.map(s => s.templateSlotIndex),
+    [0, 1, 5, 2, 3, 4, 6]
+  );
+  assert.deepEqual(
+    bwsSlots.map(s => s.daySub),
+    ['Upper 1', 'Lower 1', 'Rest 1', 'Push', 'Pull', 'Lower 2', 'Rest 2']
+  );
+  assert.deepEqual(
+    bwsSlots.map(s => s.pullupSessionNum),
+    [1, 2, null, 3, 4, 5, null]
+  );
+  // Day 3 (calIdx 2) is now a Rest Day (2500 ml, no pre-gym fuel check), while Day 6 (calIdx 5) is now Lower 2 Lift Day (3000 ml, pre-gym fuel check)
+  assert.equal(bwsSlots[2].waterTargetMl, 2500);
+  assert.equal(bwsSlots[2].showPreGymFuelCheck, false);
+  assert.equal(bwsSlots[5].waterTargetMl, 3000);
+  assert.equal(bwsSlots[5].showPreGymFuelCheck, true);
+
+  // Reverse lookup: Push (slot 2) is on calendar Day 4 (calIdx 3)
+  assert.equal(mod.getCalendarDayForTemplateSlot(1, 2, bwsState), 3);
+
+  // 3. 1-Tap "Swap Today to Rest Day" on Day 3 (calIdx 2) from default [5, 6] shifts Push/Pull/Lower 2 forward
+  const swappedToRest = mod.swapTodayToRestDay([5, 6], 2);
+  assert.deepEqual(swappedToRest, [2, 6]);
+
+  // 4. 1-Tap "Train Today Instead (Swap with Next Workout)" on Day 3 (calIdx 2) pulls Push back into Day 3 and moves Rest to Day 4 (calIdx 3)
+  const swappedToTrain = mod.swapRestDayWithNextWorkout([2, 6], 2);
+  assert.deepEqual(swappedToTrain, [3, 6]);
+  const d3AfterSwap = mod.getDayAssignment(1, 2, swappedToTrain);
+  assert.equal(d3AfterSwap.isRestDay, false);
+  assert.equal(d3AfterSwap.templateSlotIndex, 2);
+  assert.equal(d3AfterSwap.daySub, 'Push');
+
+  // 5. Next Pull-Up Training Day helper from Rest Day 3 (calIdx 2) jumps to Day 4 (calIdx 3, Pull-Up Session 3)
+  const nextPullup = mod.getNextPullupTrainingCalendarDay(1, 2, bwsState);
+  assert.equal(nextPullup.calendarDayIdx, 3);
+  assert.equal(nextPullup.dayNumber, 4);
+  assert.equal(nextPullup.pullupSessionNum, 3);
+  assert.equal(nextPullup.daySub, 'Push');
+});
+
 
 
 

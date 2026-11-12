@@ -407,7 +407,7 @@ export function getTimerAudioModeBehavior(mode: TimerAudioMode): {
       shouldCreateAudioContext: false,
       shouldVibrate: true,
       closeDelayMs: 0,
-      label: '📳 Vibrate Only'
+      label: ' Vibrate Only'
     };
   }
   if (mode === 'silent') {
@@ -415,14 +415,14 @@ export function getTimerAudioModeBehavior(mode: TimerAudioMode): {
       shouldCreateAudioContext: false,
       shouldVibrate: false,
       closeDelayMs: 0,
-      label: '🔕 Silent'
+      label: ' Silent'
     };
   }
   return {
     shouldCreateAudioContext: true,
     shouldVibrate: true,
     closeDelayMs: 320,
-    label: '🔔 Sound & Vibe'
+    label: ' Sound & Vibe'
   };
 }
 
@@ -748,11 +748,11 @@ export function generatePreRenderedChimeWavBytes(
   writeStr(8, 'WAVE');
   writeStr(12, 'fmt ');
   view.setUint32(16, 16, true); // PCM chunk size
-  view.setUint16(20, 1, true);  // AudioFormat = 1 (PCM)
-  view.setUint16(22, 1, true);  // NumChannels = 1 (Mono)
+  view.setUint16(20, 1, true); // AudioFormat = 1 (PCM)
+  view.setUint16(22, 1, true); // NumChannels = 1 (Mono)
   view.setUint32(24, sampleRate, true);
   view.setUint32(28, sampleRate * 2, true); // ByteRate
-  view.setUint16(32, 2, true);  // BlockAlign
+  view.setUint16(32, 2, true); // BlockAlign
   view.setUint16(34, 16, true); // BitsPerSample
   writeStr(36, 'data');
   view.setUint32(40, dataBytes, true);
@@ -2323,7 +2323,7 @@ export function buildCoachAiFuelMutationReply(
     return {
       matched: true,
       replyText:
-        `**🥛 Coach AI Live Plan Switch — Original Silk Protein Plan (1,400 kcal • 138g P):**\n` +
+        `** Coach AI Live Plan Switch — Original Silk Protein Plan (1,400 kcal • 138g P):**\n` +
         `• **Exact Math:** Restores **900 ml Unsweetened Silk Protein Milk** (` +
         `360 ml in Fuel 1 + 180 ml in Fuel 2 Oats + 360 ml in Fuel 4) and reduces Pea Protein Isolate to **75g/day** (` +
         `30g in Fuel 1 + 45g in Fuel 4, removing the 10g powder from your Oats jar).\n` +
@@ -2352,7 +2352,7 @@ export function buildCoachAiFuelMutationReply(
     return {
       matched: true,
       replyText:
-        `**🥛 Coach AI Live Plan Switch — Option B Almond/Cashew + 105g Pea Plan (1,300 kcal • 138g P):**\n` +
+        `** Coach AI Live Plan Switch — Option B Almond/Cashew + 105g Pea Plan (1,300 kcal • 138g P):**\n` +
         `• **Exact Math:** Uses **900 ml Unsweetened Almond/Cashew Milk** across Fuel 1, 2 & 4 and adds **+30g Pea Protein Isolate** (` +
         `40g in Fuel 1, 10g whisked into Fuel 2 Oats, 55g in Fuel 4 = **105g/day**) to lock in **138g protein** at **1,295 kcal**.\n` +
         `• **Updated Scale Weights:** Fuel 1 = **400g** • Fuel 2 = **279g** • Fuel 3 = **419g** • Fuel 4 = **431g**.`,
@@ -2379,7 +2379,7 @@ export function buildCoachAiFuelMutationReply(
     return {
       matched: true,
       replyText:
-        `**🥛 Coach AI Live Plan Switch — Option A Unsweetened Soy Milk + 75g Pea Plan (1,400 kcal • 138g P):**\n` +
+        `** Coach AI Live Plan Switch — Option A Unsweetened Soy Milk + 75g Pea Plan (1,400 kcal • 138g P):**\n` +
         `• **Exact Math:** 1:1 macro match for Silk Protein Milk (**8g protein per 250 ml cup**). Uses **900 ml Unsweetened Fortified Soy Milk** + **75g Pea Protein Isolate**.\n` +
         `• **Scale Weights:** Fuel 1 = **390g** • Fuel 2 = **269g** • Fuel 3 = **419g** • Fuel 4 = **421g**.`,
       actions: [
@@ -2409,7 +2409,7 @@ export function buildCoachAiFuelMutationReply(
     return {
       matched: true,
       replyText:
-        `**🔄 Coach AI Iso-Protein Smart Ingredient Swaps (Fuel 3 Bowl):**\n` +
+        `** Coach AI Iso-Protein Smart Ingredient Swaps (Fuel 3 Bowl):**\n` +
         `• **Protein Swap (21g P target):** Swap **175g Extra-Firm Tofu** for **115g Tempeh** (21g P • 220 kcal), **200g Shelled Edamame** (22g P • 240 kcal), or **240g Cooked Lentils** (21g P • 275 kcal).\n` +
         `• **Carb & Veggie Swaps:** Swap **150g Cooked Jasmine Rice** for **165g Cooked Quinoa** or **230g Boiled Potato**; swap **75g Broccoli** for **85g Spinach** or **90g Green Beans**.\n` +
         `• Tap any button below to update your live Fuel 3 scale weights without altering past logged days:`,
@@ -3057,8 +3057,8 @@ export function buildWearOsWristNotificationPayload(params: {
 } {
   const cleanNext = String(params.nextSetSummary || 'Time to lift! Check your target weight & reps.').trim();
   const hasLiveHr = Boolean(params.bleConnected && typeof params.liveBpm === 'number' && params.liveBpm > 0);
-  const hrSuffix = hasLiveHr ? ` • ❤️ ${Math.round(Number(params.liveBpm))} BPM` : '';
-  const finalTitle = String(params.title || '⏱️ Rest Complete! Start Next Set').trim();
+  const hrSuffix = hasLiveHr ? ` • ${Math.round(Number(params.liveBpm))} BPM` : '';
+  const finalTitle = String(params.title || ' Rest Complete! Start Next Set').trim();
   const finalBody = cleanNext.startsWith('Up Next:') || cleanNext.startsWith('Time to lift')
     ? `${cleanNext}${hrSuffix}`
     : `Up Next: ${cleanNext}${hrSuffix}`;
@@ -3140,10 +3140,10 @@ export function buildWatchMediaSessionMetadataPayload(params: {
   const ss = String(sec % 60).padStart(2, '0');
   const formattedTime = `${mm}:${ss}`;
   const cleanNext = String(params.nextSetSummary || 'Set 2 Barbell Bench Press (135 lbs x 8)').trim();
-  const hrSuffix = params.liveBpm && params.liveBpm > 0 ? ` • ❤️ ${Math.round(params.liveBpm)} BPM` : '';
+  const hrSuffix = params.liveBpm && params.liveBpm > 0 ? ` • ${Math.round(params.liveBpm)} BPM` : '';
 
   const title = params.timerRunning
-    ? `⏱️ ${formattedTime} • ${params.contextLabel || 'Rest Timer'}${hrSuffix}`
+    ? ` ${formattedTime} • ${params.contextLabel || 'Rest Timer'}${hrSuffix}`
     : `Ready: ${cleanNext}${hrSuffix}`;
   const artist = `Up Next: ${cleanNext}`;
   const album = '7AM Vegan Muscle & Training Hub';
@@ -3772,6 +3772,291 @@ export function evaluateForgottenLastSetReminder(params: {
     }
   };
 }
+
+export const TEMPLATE_SLOT_SUBLABELS: readonly string[] = [
+  'Upper 1',
+  'Lower 1',
+  'Push',
+  'Pull',
+  'Lower 2',
+  'Rest 1',
+  'Rest 2'
+] as const;
+
+export const REST_DAY_PRESETS: Record<
+  'default_6_7' | 'recommended_3_7' | 'midweek_4_7',
+  { id: string; label: string; shortBadge: string; restDays: [number, number] }
+> = {
+  default_6_7: {
+    id: 'default_6_7',
+    label: 'Default: Days 6 & 7 Rest (5 Days Straight)',
+    shortBadge: 'Days 6 & 7',
+    restDays: [5, 6]
+  },
+  recommended_3_7: {
+    id: 'recommended_3_7',
+    label: 'Recommended Recovery: Days 3 & 7 Rest (After Lower Body)',
+    shortBadge: 'Days 3 & 7',
+    restDays: [2, 6]
+  },
+  midweek_4_7: {
+    id: 'midweek_4_7',
+    label: 'Mid-Week Split: Days 4 & 7 Rest',
+    shortBadge: 'Days 4 & 7',
+    restDays: [3, 6]
+  }
+};
+
+export function normalizeRestDaysTuple(rawRestDays?: unknown): [number, number] {
+  if (!Array.isArray(rawRestDays)) return [5, 6];
+  const valid: number[] = [];
+  for (const item of rawRestDays) {
+    const n = Math.floor(Number(item));
+    if (Number.isFinite(n) && n >= 0 && n <= 6 && !valid.includes(n)) {
+      valid.push(n);
+    }
+    if (valid.length === 2) break;
+  }
+  if (valid.length < 2) {
+    for (const fallback of [5, 6, 2, 3, 4, 1, 0]) {
+      if (!valid.includes(fallback)) valid.push(fallback);
+      if (valid.length === 2) break;
+    }
+  }
+  valid.sort((a, b) => a - b);
+  return [valid[0], valid[1]];
+}
+
+export function getWeekRestDays(weeklyRestDaysOrState?: unknown, week = 1): [number, number] {
+  const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+  if (!weeklyRestDaysOrState) return [5, 6];
+  if (Array.isArray(weeklyRestDaysOrState)) {
+    return normalizeRestDaysTuple(weeklyRestDaysOrState);
+  }
+  if (typeof weeklyRestDaysOrState === 'object') {
+    const obj = weeklyRestDaysOrState as Record<string, unknown>;
+    const mapCandidate =
+      obj.weeklyRestDays !== undefined
+        ? obj.weeklyRestDays
+        : obj;
+    if (Array.isArray(mapCandidate)) {
+      return normalizeRestDaysTuple(mapCandidate);
+    }
+    if (mapCandidate && typeof mapCandidate === 'object') {
+      const rec = mapCandidate as Record<string, unknown>;
+      if (Array.isArray(rec[String(safeWeek)])) {
+        return normalizeRestDaysTuple(rec[String(safeWeek)]);
+      }
+      if (Array.isArray(rec.default)) {
+        return normalizeRestDaysTuple(rec.default);
+      }
+    }
+  }
+  return [5, 6];
+}
+
+export function formatRestDaysBadgeLabel(restDays: [number, number]): string {
+  const [r1, r2] = normalizeRestDaysTuple(restDays);
+  return `Schedule: Rest Days ${r1 + 1} & ${r2 + 1} (Change)`;
+}
+
+export interface DayScheduleAssignment {
+  week: number;
+  calendarDayIdx: number;
+  dayNumber: number;
+  templateSlotIndex: number;
+  isRestDay: boolean;
+  liftSessionNum: number | null;
+  pullupSessionNum: number | null;
+  restNumber: 1 | 2 | null;
+  dayShort: string;
+  daySub: string;
+  waterTargetMl: number;
+  waterDayTypeLabel: 'Lift Day' | 'Rest Day';
+  showPreGymFuelCheck: boolean;
+}
+
+export function getDayAssignment(
+  week: number,
+  calendarDayIdx: number,
+  weeklyRestDaysOrState?: unknown
+): DayScheduleAssignment {
+  const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+  const safeCalIdx = Math.max(0, Math.min(6, Math.floor(Number(calendarDayIdx) || 0)));
+  const [r1, r2] = getWeekRestDays(weeklyRestDaysOrState, safeWeek);
+
+  if (safeCalIdx === r1 || safeCalIdx === r2) {
+    const restNumber: 1 | 2 = safeCalIdx === r1 ? 1 : 2;
+    const templateSlotIndex = restNumber === 1 ? 5 : 6;
+    return {
+      week: safeWeek,
+      calendarDayIdx: safeCalIdx,
+      dayNumber: safeCalIdx + 1,
+      templateSlotIndex,
+      isRestDay: true,
+      liftSessionNum: null,
+      pullupSessionNum: null,
+      restNumber,
+      dayShort: `Day ${safeCalIdx + 1}`,
+      daySub: TEMPLATE_SLOT_SUBLABELS[templateSlotIndex],
+      waterTargetMl: 2500,
+      waterDayTypeLabel: 'Rest Day',
+      showPreGymFuelCheck: false
+    };
+  }
+
+  let liftOrderIdx = 0;
+  for (let d = 0; d < safeCalIdx; d++) {
+    if (d !== r1 && d !== r2) {
+      liftOrderIdx++;
+    }
+  }
+  const templateSlotIndex = Math.max(0, Math.min(4, liftOrderIdx));
+  const sessionNum = templateSlotIndex + 1;
+
+  return {
+    week: safeWeek,
+    calendarDayIdx: safeCalIdx,
+    dayNumber: safeCalIdx + 1,
+    templateSlotIndex,
+    isRestDay: false,
+    liftSessionNum: sessionNum,
+    pullupSessionNum: sessionNum,
+    restNumber: null,
+    dayShort: `Day ${safeCalIdx + 1}`,
+    daySub: TEMPLATE_SLOT_SUBLABELS[templateSlotIndex],
+    waterTargetMl: 3000,
+    waterDayTypeLabel: 'Lift Day',
+    showPreGymFuelCheck: true
+  };
+}
+
+export function getCalendarDayForTemplateSlot(
+  week: number,
+  templateSlotIndex: number,
+  weeklyRestDaysOrState?: unknown
+): number {
+  const safeSlot = Math.max(0, Math.min(6, Math.floor(Number(templateSlotIndex) || 0)));
+  for (let calIdx = 0; calIdx < 7; calIdx++) {
+    const assign = getDayAssignment(week, calIdx, weeklyRestDaysOrState);
+    if (assign.templateSlotIndex === safeSlot) {
+      return calIdx;
+    }
+  }
+  return safeSlot;
+}
+
+export function toggleRestDayInSchedule(
+  currentRestDays: [number, number],
+  tappedDayIdx: number,
+  lastPickedDayIdx?: number | null
+): { restDays: [number, number]; nextLastPickedDayIdx: number } {
+  const [r1, r2] = normalizeRestDaysTuple(currentRestDays);
+  const tapped = Math.max(0, Math.min(6, Math.floor(Number(tappedDayIdx) || 0)));
+
+  if (tapped === r1 || tapped === r2) {
+    const kept = tapped === r1 ? r2 : r1;
+    let replacement = 5;
+    for (const candidate of [5, 6, 2, 3, 4, 1, 0]) {
+      if (candidate !== kept && candidate !== tapped) {
+        replacement = candidate;
+        break;
+      }
+    }
+    return {
+      restDays: normalizeRestDaysTuple([kept, replacement]),
+      nextLastPickedDayIdx: kept
+    };
+  }
+
+  let kept = r2;
+  if (typeof lastPickedDayIdx === 'number' && (lastPickedDayIdx === r1 || lastPickedDayIdx === r2)) {
+    kept = lastPickedDayIdx;
+  } else {
+    kept = tapped < r2 ? r2 : r1;
+  }
+
+  return {
+    restDays: normalizeRestDaysTuple([kept, tapped]),
+    nextLastPickedDayIdx: tapped
+  };
+}
+
+export function swapTodayToRestDay(
+  currentRestDays: [number, number],
+  calendarDayIdx: number
+): [number, number] {
+  const [r1, r2] = normalizeRestDaysTuple(currentRestDays);
+  const cal = Math.max(0, Math.min(6, Math.floor(Number(calendarDayIdx) || 0)));
+  if (cal === r1 || cal === r2) {
+    return [r1, r2];
+  }
+  const upcomingRest = [r1, r2].find(r => r > cal);
+  const targetToReplace = upcomingRest !== undefined ? upcomingRest : r1;
+  const kept = targetToReplace === r1 ? r2 : r1;
+  return normalizeRestDaysTuple([kept, cal]);
+}
+
+export function swapRestDayWithNextWorkout(
+  currentRestDays: [number, number],
+  calendarDayIdx: number
+): [number, number] {
+  const [r1, r2] = normalizeRestDaysTuple(currentRestDays);
+  const cal = Math.max(0, Math.min(6, Math.floor(Number(calendarDayIdx) || 0)));
+  if (cal !== r1 && cal !== r2) {
+    return [r1, r2];
+  }
+  const kept = cal === r1 ? r2 : r1;
+  let nextLiftDay: number | undefined;
+  for (let d = cal + 1; d < 7; d++) {
+    if (d !== r1 && d !== r2) {
+      nextLiftDay = d;
+      break;
+    }
+  }
+  if (nextLiftDay === undefined) {
+    for (let d = cal - 1; d >= 0; d--) {
+      if (d !== r1 && d !== r2) {
+        nextLiftDay = d;
+        break;
+      }
+    }
+  }
+  const replacement = nextLiftDay !== undefined ? nextLiftDay : (kept === 6 ? 5 : 6);
+  return normalizeRestDaysTuple([kept, replacement]);
+}
+
+export function getNextPullupTrainingCalendarDay(
+  week: number,
+  fromCalendarDayIdx: number,
+  weeklyRestDaysOrState?: unknown
+): {
+  calendarDayIdx: number;
+  dayNumber: number;
+  pullupSessionNum: number;
+  daySub: string;
+} {
+  const start = Math.max(0, Math.min(6, Math.floor(Number(fromCalendarDayIdx) || 0)));
+  for (let offset = 1; offset <= 7; offset++) {
+    const candidate = (start + offset) % 7;
+    const assign = getDayAssignment(week, candidate, weeklyRestDaysOrState);
+    if (!assign.isRestDay && assign.pullupSessionNum !== null) {
+      return {
+        calendarDayIdx: candidate,
+        dayNumber: candidate + 1,
+        pullupSessionNum: assign.pullupSessionNum,
+        daySub: assign.daySub
+      };
+    }
+  }
+  return {
+    calendarDayIdx: 0,
+    dayNumber: 1,
+    pullupSessionNum: 1,
+    daySub: 'Upper 1'
+  };
+}
+
 
 
 
