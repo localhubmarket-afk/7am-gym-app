@@ -1151,9 +1151,79 @@ test('Synchronized 7-Day Pull-Up Selector, Customizable Rest Day Scheduler & Non
   assert.equal(nextPullup.daySub, 'Push');
 });
 
+test('Vector SVG Pictograms, Rest Day Recovery Card & 2-Phase Jasmine Rice Timer (1.5m Mix Interval)', async () => {
+  const mod = await import('./workoutLogic');
 
+  // 1. Vector SVG ICONS dictionary covers all 5 bottom tabs and header/card badges with zero emojis
+  const requiredIcons = [
+    'workout',
+    'pullups',
+    'timer',
+    'vegan',
+    'shopping',
+    'ai',
+    'watch',
+    'user',
+    'share',
+    'water',
+    'warmup',
+    'preGymFuel'
+  ];
+  for (const key of requiredIcons) {
+    assert.ok(mod.ICONS[key], `Missing SVG icon for ${key}`);
+    assert.ok(mod.ICONS[key].startsWith('<svg'), `Icon ${key} must be an inline <svg>`);
+    assert.ok(mod.ICONS[key].includes('stroke="currentColor"'), `Icon ${key} must use stroke="currentColor"`);
+  }
 
+  // 2. Idle Rice Timer badge never displays static 01:30 gym rest timer
+  assert.equal(mod.getIdleOrRunningRiceTimerBadge(null, 90, 12, 1), '12:00 Cook');
+  assert.equal(mod.getIdleOrRunningRiceTimerBadge(null, 90, 10, 1), '10:00 Cook');
+  assert.equal(mod.getIdleOrRunningRiceTimerBadge(null, 90, 12, 2), '10:00 Cool-Down');
+  assert.equal(mod.getIdleOrRunningRiceTimerBadge(1, 630, 12, 1), '10:30 Cook');
+  assert.equal(mod.getIdleOrRunningRiceTimerBadge(2, 480, 12, 2), '08:00 Cool-Down');
 
+  // 3. 2-Phase Rice Timer specs & 90s (1.5m) mix interval alerts
+  const stages12 = mod.getTwoPhaseRiceTimerStages(12);
+  assert.equal(stages12.length, 2);
+  assert.equal(stages12[0].seconds, 720);
+  assert.equal(stages12[0].buttonLabel, '1. Cook Rice (10–12m • Mix Every 1.5m)');
+  assert.equal(
+    stages12[0].completionBanner,
+    'COOKING DONE! Remove from heat & tap Stage 2: 10-Min Cool-Down'
+  );
+  assert.equal(stages12[1].seconds, 600);
+  assert.equal(stages12[1].buttonLabel, '2. Cool-Down & Steam Rest (10m)');
+  assert.equal(
+    stages12[1].completionBanner,
+    'RICE READY! Portion into 4 x 150g bowls (600g total)'
+  );
 
+  // At 10:30 remaining out of 12:00 (90s elapsed), mix alert triggers
+  const mixAt1030 = mod.computeRiceMixIntervalState(720, 630, true, null);
+  assert.equal(mixAt1030.elapsedSec, 90);
+  assert.equal(mixAt1030.shouldTriggerMixAlert, true);
+  assert.equal(mixAt1030.mixAlertBannerText, 'MIX / STIR RICE NOW! (1.5m interval — prevents sticking)');
 
+  // At 10:00 remaining (120s elapsed), 60s left until next mix at 09:00
+  const mixAt1000 = mod.computeRiceMixIntervalState(720, 600, true, 90);
+  assert.equal(mixAt1000.shouldTriggerMixAlert, false);
+  assert.equal(mixAt1000.secondsUntilNextMix, 60);
+  assert.equal(mixAt1000.nextMixFormatted, '01:00');
 
+  // 4. Rest & Muscle Recovery Card Spec
+  const restSpec = mod.getRestDayRecoveryCardSpec({
+    loggedWaterMl: 1000,
+    loggedMealsCount: 2,
+    walkChecked: false,
+    optionalItemsCount: 2
+  });
+  assert.equal(restSpec.title, 'Rest & Muscle Recovery Day');
+  assert.equal(
+    restSpec.statusBanner,
+    'Active Recovery & Supercompensation Day — 48h muscle protein synthesis & tendon recovery.'
+  );
+  assert.equal(restSpec.waterPillText, 'Water Target: 1,000 / 2,500 ml (+500 ml)');
+  assert.equal(restSpec.fuelPillText, 'Muscle Fuel: 2 / 4 Meals (1,300 kcal • 138g P)');
+  assert.equal(restSpec.walkPillText, 'Light Recovery Walk: 8,000–10,000 Steps (Check Off)');
+  assert.equal(restSpec.mobilityDrawerSummary, 'Optional Rest-Day Mobility & Core (2 items) — Tap to Open');
+});

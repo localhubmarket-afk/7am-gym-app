@@ -4057,6 +4057,151 @@ export function getNextPullupTrainingCalendarDay(
   };
 }
 
+// ============================================================================
+// UPGRADE 1–4: VECTOR SVG ICONS, REST DAY RECOVERY CARD & 2-PHASE RICE TIMER
+// ============================================================================
+export const ICONS: Record<string, string> = {
+  workout: '<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5 17.5 17.5"/><path d="M3 10l7-7"/><path d="M14 21l7-7"/><path d="m2 6 4-4"/><path d="m18 22 4-4"/></svg>',
+  pullups: '<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18"/><path d="M6 5v4a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V5"/><circle cx="12" cy="8" r="2"/><path d="M10 12v8"/><path d="M14 12v8"/></svg>',
+  timer: '<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/><path d="M12 2v3"/></svg>',
+  vegan: '<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+  shopping: '<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
+  ai: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>',
+  watch: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="6"/><polyline points="12 10 12 12 13.5 13.5"/><path d="m16.51 17.35-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"/></svg>',
+  user: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  share: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>',
+  water: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>',
+  warmup: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+  preGymFuel: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>'
+};
+
+export interface TwoPhaseRiceTimerStageSpec {
+  stage: 1 | 2;
+  seconds: number;
+  buttonLabel: string;
+  contextLabel: string;
+  completionBanner: string;
+  stickyAlertLabel: string;
+}
+
+export function getTwoPhaseRiceTimerStages(cookMinutes: 10 | 12 = 12): readonly TwoPhaseRiceTimerStageSpec[] {
+  const safeCookMins = cookMinutes === 10 ? 10 : 12;
+  const cookSeconds = safeCookMins * 60;
+  return [
+    {
+      stage: 1,
+      seconds: cookSeconds,
+      buttonLabel: '1. Cook Rice (10–12m • Mix Every 1.5m)',
+      contextLabel: `Rice Stage 1: Cook Rice (${safeCookMins}m • Mix Every 1.5m)`,
+      completionBanner: 'COOKING DONE! Remove from heat & tap Stage 2: 10-Min Cool-Down',
+      stickyAlertLabel: 'COOKING DONE! Tap Stage 2: 10-Min Cool-Down'
+    },
+    {
+      stage: 2,
+      seconds: 600,
+      buttonLabel: '2. Cool-Down & Steam Rest (10m)',
+      contextLabel: 'Rice Stage 2: Cool-Down & Steam Rest (10m)',
+      completionBanner: 'RICE READY! Portion into 4 x 150g bowls (600g total)',
+      stickyAlertLabel: 'RICE READY! Portion into 4 x 150g bowls (600g total)'
+    }
+  ] as const;
+}
+
+export function getIdleOrRunningRiceTimerBadge(
+  activeRiceTimerStage: number | null | undefined,
+  timerSeconds: number,
+  riceCookMinutes: 10 | 12 = 12,
+  lastSelectedStage: 1 | 2 = 1
+): string {
+  const safeMins = riceCookMinutes === 10 ? 10 : 12;
+  if (activeRiceTimerStage === 1 || activeRiceTimerStage === 2) {
+    const abs = Math.max(0, Math.floor(Number(timerSeconds) || 0));
+    const mm = String(Math.floor(abs / 60)).padStart(2, '0');
+    const ss = String(abs % 60).padStart(2, '0');
+    return activeRiceTimerStage === 1 ? `${mm}:${ss} Cook` : `${mm}:${ss} Cool-Down`;
+  }
+  if (lastSelectedStage === 2) {
+    return '10:00 Cool-Down';
+  }
+  return `${safeMins}:00 Cook`;
+}
+
+export interface RiceMixIntervalStatus {
+  elapsedSec: number;
+  secondsUntilNextMix: number;
+  nextMixFormatted: string;
+  shouldTriggerMixAlert: boolean;
+  mixAlertBannerText: string;
+}
+
+export function computeRiceMixIntervalState(
+  totalCookSec: number,
+  remainingSec: number,
+  mixAlertEnabled = true,
+  lastAlertElapsedSec: number | null = null
+): RiceMixIntervalStatus {
+  const safeTotal = Math.max(60, Math.floor(Number(totalCookSec) || 720));
+  const safeRem = Math.max(0, Math.min(safeTotal, Math.floor(Number(remainingSec) || 0)));
+  const elapsedSec = safeTotal - safeRem;
+  const mod90 = elapsedSec % 90;
+  const secondsUntilNextMix = safeRem === 0 ? 0 : (mod90 === 0 && elapsedSec > 0 ? 90 : 90 - mod90);
+  const mm = String(Math.floor(secondsUntilNextMix / 60)).padStart(2, '0');
+  const ss = String(secondsUntilNextMix % 60).padStart(2, '0');
+  const isExactInterval = elapsedSec > 0 && elapsedSec < safeTotal && mod90 === 0;
+  const shouldTriggerMixAlert = Boolean(
+    mixAlertEnabled && isExactInterval && lastAlertElapsedSec !== elapsedSec
+  );
+
+  return {
+    elapsedSec,
+    secondsUntilNextMix,
+    nextMixFormatted: `${mm}:${ss}`,
+    shouldTriggerMixAlert,
+    mixAlertBannerText: 'MIX / STIR RICE NOW! (1.5m interval — prevents sticking)'
+  };
+}
+
+export interface RestDayRecoveryCardSpec {
+  title: string;
+  statusBanner: string;
+  swapButtonLabel: string;
+  waterPillText: string;
+  fuelPillText: string;
+  walkPillText: string;
+  walkChecked: boolean;
+  mobilityDrawerSummary: string;
+}
+
+export function getRestDayRecoveryCardSpec(params: {
+  loggedWaterMl: number;
+  loggedMealsCount: number;
+  walkChecked: boolean;
+  optionalItemsCount?: number;
+  dailyKcal?: number;
+  dailyProteinG?: number;
+}): RestDayRecoveryCardSpec {
+  const waterMl = Math.max(0, Math.floor(Number(params.loggedWaterMl) || 0));
+  const meals = Math.max(0, Math.min(4, Math.floor(Number(params.loggedMealsCount) || 0)));
+  const walkDone = Boolean(params.walkChecked);
+  const itemsCount = Math.max(1, Math.floor(Number(params.optionalItemsCount) || 2));
+  const kcal = Number(params.dailyKcal) || 1300;
+  const protein = Number(params.dailyProteinG) || 138;
+
+  return {
+    title: 'Rest & Muscle Recovery Day',
+    statusBanner: 'Active Recovery & Supercompensation Day — 48h muscle protein synthesis & tendon recovery.',
+    swapButtonLabel: 'Train Today Instead (Swap Workout)',
+    waterPillText: `Water Target: ${waterMl.toLocaleString()} / 2,500 ml (+500 ml)`,
+    fuelPillText: `Muscle Fuel: ${meals} / 4 Meals (${kcal.toLocaleString()} kcal • ${protein}g P)`,
+    walkPillText: walkDone
+      ? 'Light Recovery Walk: 8,000–10,000 Steps (✓ Checked Off)'
+      : 'Light Recovery Walk: 8,000–10,000 Steps (Check Off)',
+    walkChecked: walkDone,
+    mobilityDrawerSummary: `Optional Rest-Day Mobility & Core (${itemsCount} items) — Tap to Open`
+  };
+}
+
+
 
 
 

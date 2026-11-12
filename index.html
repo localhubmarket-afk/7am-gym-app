@@ -95,17 +95,21 @@
         </div>
 
         <div class="flex items-center gap-1 shrink-0">
-          <button id="open-gemini-ai-btn" type="button" class="flex items-center gap-0.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 px-1.5 sm:px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold whitespace-nowrap transition" title="Open Coach AI">
+          <button id="open-gemini-ai-btn" type="button" class="flex items-center gap-1 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 px-1.5 sm:px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold whitespace-nowrap transition" title="Open Coach AI">
+            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
             <span class="hidden sm:inline">Coach </span><span>AI</span>
           </button>
           <button id="open-watch-modal-btn" type="button" class="flex items-center gap-1 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/40 text-rose-200 px-1.5 sm:px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold whitespace-nowrap transition" title="Smartwatch, Live BLE Heart Rate &amp; Health Sync">
+            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="6"/><polyline points="12 10 12 12 13.5 13.5"/><path d="m16.51 17.35-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"/></svg>
             <span id="watch-header-live-dot" class="hidden w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
             <span id="watch-header-btn-label">Watch</span>
           </button>
           <button id="open-smart-login-btn" type="button" class="flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 px-1.5 sm:px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold whitespace-nowrap transition" title="Smart Login &amp; User Profile">
+            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             <span id="header-login-label">Profile</span>
           </button>
           <button id="open-share-store-btn" type="button" class="flex items-center gap-1 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 px-1.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition" title="Share App &amp; Fresh Start Reset">
+            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
             <span>Share</span>
           </button>
           <button id="open-db-modal-btn" type="button" class="hidden" title="Database &amp; Cloud Sync">
@@ -296,11 +300,13 @@
         <!-- Populated by JS -->
       </div>
 
-      <!-- Collapsible Warm-Up Routine Card (Sits Directly Above Exercise #1/9) -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+      <!-- Collapsible Warm-Up Routine Card (Sits Directly Above Exercise #1/9, Hidden on Rest Days) -->
+      <div id="warmup-card-container" class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
         <button type="button" id="toggle-warmup-btn" class="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-slate-800/50 transition">
           <div class="flex items-center gap-2">
-            <span class="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-[10px] font-extrabold">WU</span>
+            <span class="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+            </span>
             <div>
               <h2 class="text-[11px] font-bold text-white uppercase tracking-wider" id="warmup-title">Dynamic Warm-Up (~10 Min)</h2>
               <p class="hidden sm:block text-[10px] text-slate-400" id="warmup-subtitle">Tap to view mobility drills &amp; warm-up sets</p>
@@ -431,12 +437,12 @@
           Ready for next set
         </div>
 
-        <!-- Live Smartwatch BLE Heart Rate, Rest-Interval Recovery & HR Readiness Alert HUD on Rest Timer Tab -->
-        <div id="timer-view-watch-hud" class="bg-slate-950/90 border border-slate-800 rounded-xl px-3 py-2.5 flex flex-wrap items-center justify-between gap-2 text-left">
+        <!-- Live Smartwatch BLE Heart Rate, Rest-Interval Recovery & HR Readiness Alert HUD on Rest Timer Tab (Hidden when BLE HR is not actively connected) -->
+        <div id="timer-view-watch-hud" class="hidden bg-slate-950/90 border border-slate-800 rounded-xl px-3 py-2.5 flex flex-wrap items-center justify-between gap-2 text-left">
           <div class="flex flex-wrap items-center gap-2">
             <span id="timer-view-hr-pill" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/85 border border-rose-400/50 text-rose-200 text-xs font-extrabold">
               <span id="timer-view-hr-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
-              <span id="timer-view-hr-text"> BLE HR Standby (Tap Watch to Connect)</span>
+              <span id="timer-view-hr-text">BLE HR Live</span>
             </span>
             <span id="timer-view-hr-recovery" class="hidden px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold">
               152 -&gt; 118 BPM (-34 BPM recovery)
@@ -446,7 +452,7 @@
             </span>
           </div>
           <button type="button" id="timer-wrist-alert-quick-btn" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-slate-300 transition">
-             Wrist Alerts: OFF
+            Wrist Alerts: OFF
           </button>
         </div>
 
@@ -567,10 +573,10 @@
           </div>
         </details>
 
-        <!-- Collapsible Rice Cooking Timer (3-Stage Jasmine Rice Stovetop Timer with Mix/Stir Alarms) -->
+        <!-- Collapsible Rice Cooking Timer (2-Phase Jasmine Rice Stovetop Timer with 1.5m Mix/Stir Alerts) -->
         <details id="timer-rice-cooking-details" class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-left">
           <summary class="cursor-pointer flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-sky-400 hover:text-sky-300 select-none">
-            <span> Rice Cooking Timer (3-Stage Jasmine Rice • Mix/Stir Alarms)</span>
+            <span>Rice Cooking Timer (10–12m Cook + 10m Cool-Down)</span>
             <span class="text-[10px] text-slate-400">▾</span>
           </summary>
           <div id="timer-rice-stage-container" class="pt-2.5 space-y-2">
@@ -790,28 +796,28 @@
 
   </main>
 
-  <!-- Fixed Bottom Mobile Navigation Bar (5 Tabs with Weekly Shop on Bottom Right) -->
+  <!-- Fixed Bottom Mobile Navigation Bar (5 Tabs with Crisp 20x20 SVG Vector Pictograms) -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 px-1.5 py-1.5">
     <div class="max-w-xl mx-auto grid grid-cols-5 gap-1">
-      <button type="button" data-nav="workout" class="nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-emerald-400 bg-emerald-500/10 font-bold text-[11px] sm:text-xs transition">
-        <span class="text-base leading-none mb-1"></span>
-        <span class="w-full text-center truncate">Gym</span>
+      <button type="button" data-nav="workout" class="nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl text-emerald-400 bg-emerald-500/10 font-bold text-[10px] sm:text-xs transition">
+        <span class="leading-none mb-1 flex items-center justify-center"><svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5 17.5 17.5"/><path d="M3 10l7-7"/><path d="M14 21l7-7"/><path d="m2 6 4-4"/><path d="m18 22 4-4"/></svg></span>
+        <span class="w-full text-center whitespace-nowrap">Gym</span>
       </button>
-      <button type="button" data-nav="pullups" class="nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[11px] sm:text-xs transition">
-        <span class="text-base leading-none mb-1"></span>
-        <span class="w-full text-center truncate">Pull-Ups</span>
+      <button type="button" data-nav="pullups" class="nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[10px] sm:text-xs transition">
+        <span class="leading-none mb-1 flex items-center justify-center"><svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18"/><path d="M6 5v4a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V5"/><circle cx="12" cy="8" r="2"/><path d="M10 12v8"/><path d="M14 12v8"/></svg></span>
+        <span class="w-full text-center whitespace-nowrap">Pull-Ups</span>
       </button>
-      <button type="button" data-nav="timer" class="nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[11px] sm:text-xs transition">
-        <span class="text-base leading-none mb-1"></span>
-        <span class="w-full text-center truncate">Rest Timer</span>
+      <button type="button" data-nav="timer" class="nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[10px] sm:text-xs transition">
+        <span class="leading-none mb-1 flex items-center justify-center"><svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/><path d="M12 2v3"/></svg></span>
+        <span class="w-full text-center whitespace-nowrap">Rest Timer</span>
       </button>
-      <button type="button" data-nav="vegan" class="nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[11px] sm:text-xs transition">
-        <span class="text-base leading-none mb-1"></span>
-        <span class="w-full text-center truncate">Muscle Fuel</span>
+      <button type="button" data-nav="vegan" class="nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[10px] sm:text-xs transition">
+        <span class="leading-none mb-1 flex items-center justify-center"><svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+        <span class="w-full text-center whitespace-nowrap">Muscle Fuel</span>
       </button>
-      <button type="button" data-nav="shopping" class="nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[11px] sm:text-xs transition">
-        <span class="text-base leading-none mb-1"></span>
-        <span class="w-full text-center truncate">Shop List</span>
+      <button type="button" data-nav="shopping" class="nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[10px] sm:text-xs transition">
+        <span class="leading-none mb-1 flex items-center justify-center"><svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>
+        <span class="w-full text-center whitespace-nowrap">Shop List</span>
       </button>
     </div>
   </nav>
@@ -1952,22 +1958,35 @@
         dayShort: 'Day 6',
         daySub: 'Rest 1',
         dayFull: 'Day 6',
-        time: '7:00 AM',
-        title: 'Active Recovery Day 1 + Daily Abs',
+        time: 'Recovery',
+        title: 'Rest & Muscle Recovery Day',
         warmupType: 'lower',
         pullupDay: null,
-        pullupSummary: 'Pull-Up & Heavy Lifting Recovery Day (Take after Lower Body 1 or on Day 6)',
+        pullupSummary: 'Active Recovery & Supercompensation Day — 48h muscle protein synthesis & tendon recovery.',
         exercises: [
           {
             id: 'wed_dead_bug',
             name: 'Dynamic Hip/Shoulder Mobility & Dead Bugs',
-            badge: 'Recovery & Mobility',
+            isBodyweightRepsOnly: true,
+            badge: 'Optional Mobility • Bodyweight',
             sets: 2,
             reps: '5-8 / side',
             restSec: 60,
             restLabel: '1 min',
             videoUrl: 'https://youtu.be/WHE90NWlCKI',
-            notes: 'Light mobility + 30s deep squat ankle rocks before logging your Daily Cable Abdominal Crunch below.'
+            notes: 'Bodyweight only (no weight plate needed). Perform light hip/shoulder mobility + 30s deep squat ankle rocks and slow contralateral dead bugs.'
+          },
+          {
+            id: 'sun_cardio',
+            name: 'Optional Core / Stretching',
+            isBodyweightRepsOnly: true,
+            badge: 'Optional Recovery',
+            sets: 1,
+            reps: '10-15 min',
+            restSec: 60,
+            restLabel: 'Easy Pace',
+            videoUrl: 'https://youtu.be/WHE90NWlCKI',
+            notes: 'Optional light full-body stretching, foam rolling, or easy recovery mobility.'
           }
         ]
       },
@@ -1975,22 +1994,35 @@
         dayShort: 'Day 7',
         daySub: 'Rest 2',
         dayFull: 'Day 7',
-        time: '7:00 AM',
-        title: 'Active Recovery Day 2 + Daily Abs',
+        time: 'Recovery',
+        title: 'Rest & Muscle Recovery Day',
         warmupType: 'lower',
         pullupDay: null,
-        pullupSummary: 'Pull-Up & Heavy Lifting Recovery Day (Take after Lower Body 2 or on Day 7)',
+        pullupSummary: 'Active Recovery & Supercompensation Day — 48h muscle protein synthesis & tendon recovery.',
         exercises: [
           {
+            id: 'wed_dead_bug',
+            name: 'Dynamic Hip/Shoulder Mobility & Dead Bugs',
+            isBodyweightRepsOnly: true,
+            badge: 'Optional Mobility • Bodyweight',
+            sets: 2,
+            reps: '5-8 / side',
+            restSec: 60,
+            restLabel: '1 min',
+            videoUrl: 'https://youtu.be/WHE90NWlCKI',
+            notes: 'Bodyweight only (no weight plate needed). Perform light hip/shoulder mobility + 30s deep squat ankle rocks and slow contralateral dead bugs.'
+          },
+          {
             id: 'sun_cardio',
-            name: 'Low-Intensity Incline Walk or Cycling',
-            badge: 'Active Recovery',
+            name: 'Optional Core / Stretching',
+            isBodyweightRepsOnly: true,
+            badge: 'Optional Recovery',
             sets: 1,
-            reps: '15-20 min',
+            reps: '10-15 min',
             restSec: 60,
             restLabel: 'Easy Pace',
             videoUrl: 'https://youtu.be/WHE90NWlCKI',
-            notes: 'Keep your 7:00 AM daily gym habit alive with light blood flow, mobility, and your Daily Cable Abdominal Crunch.'
+            notes: 'Optional light full-body stretching, foam rolling, or easy recovery mobility.'
           }
         ]
       }
@@ -3862,34 +3894,88 @@
           ? 'live-pullup-timer-dot w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block'
           : 'live-pullup-timer-dot w-2 h-2 rounded-full bg-sky-400 inline-block';
       });
-      document.querySelectorAll('.live-rice-timer-readout').forEach(el => {
-        el.textContent = formatted;
-      });
+      updateRiceTimerLiveReadouts();
     }
 
-    const JASMINE_RICE_TIMER_STAGES = [
-      {
-        stage: 1,
-        buttonLabel: '1. Boil & Stir (3m)',
-        seconds: 180,
-        actionText: 'Bring 220g rinsed rice + 330 ml water to a rolling boil.',
-        completionBanner: 'ALARM: Stir / Mix Rice Once, Cover Tightly & Turn Heat to Low! Tap Stage 2 (12m Simmer)'
-      },
-      {
-        stage: 2,
-        buttonLabel: '2. Low Simmer (12m)',
-        seconds: 720,
-        actionText: 'Simmer covered on lowest heat setting (#1 or Low).',
-        completionBanner: 'ALARM: Turn Off Heat! Keep Lid Closed (Do Not Lift) & Tap Stage 3 (10m Steam)'
-      },
-      {
-        stage: 3,
-        buttonLabel: '3. Off-Heat Steam (10m)',
-        seconds: 600,
-        actionText: 'Rest off the burner with lid sealed.',
-        completionBanner: 'DONE: Open Lid & Mix / Fluff Rice With Fork! Portion 4 x 150g Containers'
+    const ICONS = {
+      workout: '<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5 17.5 17.5"/><path d="M3 10l7-7"/><path d="M14 21l7-7"/><path d="m2 6 4-4"/><path d="m18 22 4-4"/></svg>',
+      pullups: '<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18"/><path d="M6 5v4a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V5"/><circle cx="12" cy="8" r="2"/><path d="M10 12v8"/><path d="M14 12v8"/></svg>',
+      timer: '<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/><path d="M12 2v3"/></svg>',
+      vegan: '<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+      shopping: '<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
+      ai: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>',
+      watch: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="6"/><polyline points="12 10 12 12 13.5 13.5"/><path d="m16.51 17.35-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"/></svg>',
+      user: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+      share: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>',
+      water: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>',
+      warmup: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+      preGymFuel: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>'
+    };
+
+    function getRiceCookMinutes() {
+      return Number(state.riceCookMinutes) === 10 ? 10 : 12;
+    }
+
+    function isRiceMixAlertEnabled() {
+      return state.riceMixAlertEnabled !== false;
+    }
+
+    function getTwoPhaseRiceTimerStages() {
+      const cookMins = getRiceCookMinutes();
+      return [
+        {
+          stage: 1,
+          buttonLabel: '1. Cook Rice (10–12m • Mix Every 1.5m)',
+          seconds: cookMins * 60,
+          actionText: `Cook ${cookMins}m (220g rice + 330 ml water) • Stir every 1.5m (90s) to prevent sticking.`,
+          completionBanner: 'COOKING DONE! Remove from heat & tap Stage 2: 10-Min Cool-Down'
+        },
+        {
+          stage: 2,
+          buttonLabel: '2. Cool-Down & Steam Rest (10m)',
+          seconds: 600,
+          actionText: 'Rest & cool down off the burner for 10m before portioning.',
+          completionBanner: 'RICE READY! Portion into 4 x 150g bowls (600g total)'
+        }
+      ];
+    }
+
+    function getIdleOrRunningRiceTimerBadgeText() {
+      const activeStage = state.activeRiceTimerStage ? Number(state.activeRiceTimerStage) : null;
+      const cookMins = getRiceCookMinutes();
+      if (activeStage === 1 || activeStage === 2) {
+        const abs = Math.max(0, Math.floor(Number(state.timerSeconds) || 0));
+        return `${formatTime(abs)} ${activeStage === 1 ? 'Cook' : 'Cool-Down'}`;
       }
-    ];
+      if (Number(state.lastSelectedRiceStage) === 2) {
+        return '10:00 Cool-Down';
+      }
+      return `${cookMins}:00 Cook`;
+    }
+
+    function computeRiceMixCountdownText() {
+      const activeStage = state.activeRiceTimerStage ? Number(state.activeRiceTimerStage) : null;
+      const totalCookSec = getRiceCookMinutes() * 60;
+      if (activeStage !== 1 || !timerRunning) {
+        return '01:30';
+      }
+      const rem = Math.max(0, Math.min(totalCookSec, Math.floor(Number(state.timerSeconds) || 0)));
+      const elapsed = totalCookSec - rem;
+      const mod90 = elapsed % 90;
+      const untilNext = rem === 0 ? 0 : (mod90 === 0 && elapsed > 0 ? 90 : 90 - mod90);
+      return formatTime(untilNext);
+    }
+
+    function updateRiceTimerLiveReadouts() {
+      const badgeText = getIdleOrRunningRiceTimerBadgeText();
+      document.querySelectorAll('.live-rice-timer-readout').forEach(el => {
+        el.textContent = badgeText;
+      });
+      const nextMixStr = computeRiceMixCountdownText();
+      document.querySelectorAll('.live-rice-next-mix-readout').forEach(el => {
+        el.textContent = `Next Mix/Stir in: ${nextMixStr}`;
+      });
+    }
 
     function syncStickyHeaderVisibility() {
       const activeNavBtn = document.querySelector('.nav-tab-btn.text-emerald-400');
@@ -3913,21 +3999,27 @@
     }
 
     function startRiceTimerStage(stageNum) {
-      const stageSpec = JASMINE_RICE_TIMER_STAGES.find(s => s.stage === Number(stageNum));
+      const stages = getTwoPhaseRiceTimerStages();
+      const stageSpec = stages.find(s => s.stage === Number(stageNum));
       if (!stageSpec) return;
       state.activeRiceTimerStage = stageSpec.stage;
+      state.lastSelectedRiceStage = stageSpec.stage;
+      state.lastRiceMixAlertElapsedSec = null;
       state.riceTimerAlertBanner = '';
-      startTimer(stageSpec.seconds, `Rice Stage ${stageSpec.stage}/3: ${stageSpec.buttonLabel} • MIX / STIR RICE`);
+      startTimer(stageSpec.seconds, `Rice Stage ${stageSpec.stage}/2: ${stageSpec.buttonLabel}`);
       syncStickyHeaderVisibility();
       renderRiceCookingTimerWidgets();
       showToast(`Started ${stageSpec.buttonLabel} (${formatTime(stageSpec.seconds)})`);
     }
 
     function triggerRiceTimerStageComplete(stageNum) {
-      const stageSpec = JASMINE_RICE_TIMER_STAGES.find(s => s.stage === Number(stageNum));
+      const stages = getTwoPhaseRiceTimerStages();
+      const stageSpec = stages.find(s => s.stage === Number(stageNum));
       if (!stageSpec) return;
       state.riceTimerAlertBanner = stageSpec.completionBanner;
-      state.timerContextLabel = `MIX / STIR RICE • ${stageSpec.completionBanner}`;
+      state.activeRiceTimerStage = null;
+      state.lastSelectedRiceStage = stageSpec.stage === 1 ? 2 : 1;
+      state.timerContextLabel = stageSpec.completionBanner;
       const lbl = document.getElementById('timer-context-label');
       if (lbl) lbl.textContent = state.timerContextLabel;
       updateTimerUI();
@@ -3939,7 +4031,9 @@
 
     function dismissRiceTimerAlert() {
       state.riceTimerAlertBanner = '';
-      state.activeRiceTimerStage = null;
+      if (!timerRunning) {
+        state.activeRiceTimerStage = null;
+      }
       updateTimerUI();
       syncStickyHeaderVisibility();
       renderRiceCookingTimerWidgets();
@@ -3947,19 +4041,23 @@
     }
 
     function buildRiceCookingTimerCardHtml(contextPrefix) {
+      const stages = getTwoPhaseRiceTimerStages();
       const activeStage = state.activeRiceTimerStage ? Number(state.activeRiceTimerStage) : null;
       const alertBanner = state.riceTimerAlertBanner || '';
-      const activeSpec = JASMINE_RICE_TIMER_STAGES.find(s => s.stage === activeStage) || null;
-      const formattedTime = formatTime(state.timerSeconds || 0);
+      const activeSpec = stages.find(s => s.stage === activeStage) || null;
+      const cookMins = getRiceCookMinutes();
+      const mixEnabled = isRiceMixAlertEnabled();
+      const badgeTimeText = getIdleOrRunningRiceTimerBadgeText();
+      const nextMixStr = computeRiceMixCountdownText();
 
-      const buttonsHtml = JASMINE_RICE_TIMER_STAGES.map(st => {
+      const buttonsHtml = stages.map(st => {
         const isCurrentRunning = (activeStage === st.stage && timerRunning);
         const isCurrentSelected = (activeStage === st.stage);
         return `
           <button
             type="button"
             data-rice-stage="${st.stage}"
-            class="rice-stage-btn px-2.5 py-2 rounded-xl text-xs font-extrabold border transition flex flex-col items-start gap-0.5 text-left ${
+            class="rice-stage-btn px-3 py-2 rounded-xl text-xs font-extrabold border transition flex flex-col items-start gap-0.5 text-left ${
               isCurrentRunning
                 ? 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-md shadow-emerald-500/20'
                 : (isCurrentSelected
@@ -3977,28 +4075,60 @@
         <div class="bg-slate-950/90 border border-sky-500/40 rounded-xl p-3 space-y-2.5" data-rice-widget="${contextPrefix}">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <div class="flex items-center gap-1.5">
-                <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40">3-Stage Jasmine Rice Stovetop Timer</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Mix / Stir Alarms</span>
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40">2-Phase Jasmine Rice Timer</span>
+                <span class="live-rice-next-mix-readout text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Next Mix/Stir in: ${nextMixStr}</span>
               </div>
               <p class="text-[11px] text-slate-400 mt-1">220g rinsed dry rice + 330 ml water • Syncs live with top sticky timer bar</p>
             </div>
             <div class="flex items-center gap-1.5">
-              <span class="live-rice-timer-readout font-mono text-sm font-extrabold px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400">${formattedTime}</span>
+              <span class="live-rice-timer-readout font-mono text-xs sm:text-sm font-extrabold px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400 whitespace-nowrap">${badgeTimeText}</span>
               ${(activeStage || alertBanner) ? `
                 <button type="button" class="rice-timer-clear-btn px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-300 border border-slate-700">Reset</button>
               ` : ''}
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+          <!-- Cook Duration Selector (12 Min Default vs 10 Min) + 1.5m Mix Alert Toggle -->
+          <div class="flex flex-wrap items-center justify-between gap-1.5 pt-0.5">
+            <div class="inline-flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
+              <button
+                type="button"
+                data-rice-cook-mins="12"
+                class="rice-cook-mins-btn px-2 py-1 rounded-md text-[10px] font-extrabold transition ${
+                  cookMins === 12
+                    ? 'bg-sky-400 text-slate-950 shadow-sm'
+                    : 'text-slate-300 hover:text-white'
+                }"
+              >12 Min Cook (Default)</button>
+              <button
+                type="button"
+                data-rice-cook-mins="10"
+                class="rice-cook-mins-btn px-2 py-1 rounded-md text-[10px] font-extrabold transition ${
+                  cookMins === 10
+                    ? 'bg-sky-400 text-slate-950 shadow-sm'
+                    : 'text-slate-300 hover:text-white'
+                }"
+              >10 Min Cook</button>
+            </div>
+            <button
+              type="button"
+              class="rice-mix-alert-toggle-btn px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition ${
+                mixEnabled
+                  ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
+                  : 'bg-slate-900 border-slate-700 text-slate-400'
+              }"
+            >Mix Alert Every 1.5m: ${mixEnabled ? 'ON' : 'OFF'}</button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             ${buttonsHtml}
           </div>
 
           ${activeSpec && !alertBanner ? `
-            <div class="rounded-lg px-3 py-2 bg-sky-950/60 border border-sky-400/40 text-sky-200 text-[11px] font-bold flex items-center justify-between gap-2">
-              <span>Active Stage ${activeSpec.stage}/3 (${activeSpec.buttonLabel}): ${activeSpec.actionText}</span>
-              <span class="font-mono text-xs text-emerald-300 shrink-0 live-rice-timer-readout">${formattedTime}</span>
+            <div class="rounded-lg px-3 py-2 bg-sky-950/60 border border-sky-400/40 text-sky-200 text-[11px] font-bold flex flex-wrap items-center justify-between gap-2">
+              <span>Active Stage ${activeSpec.stage}/2 (${activeSpec.buttonLabel})</span>
+              <span class="font-mono text-xs text-emerald-300 shrink-0 live-rice-timer-readout">${badgeTimeText}</span>
             </div>
           ` : ''}
 
@@ -4019,6 +4149,26 @@
           e.stopPropagation();
           const stNum = parseInt(btn.getAttribute('data-rice-stage') || '1', 10);
           startRiceTimerStage(stNum);
+        });
+      });
+      rootEl.querySelectorAll('.rice-cook-mins-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const mins = parseInt(btn.getAttribute('data-rice-cook-mins') || '12', 10) === 10 ? 10 : 12;
+          state.riceCookMinutes = mins;
+          state.lastSelectedRiceStage = 1;
+          saveState();
+          renderRiceCookingTimerWidgets();
+          showToast(`Jasmine Rice Cook Duration set to ${mins} minutes`);
+        });
+      });
+      rootEl.querySelectorAll('.rice-mix-alert-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          state.riceMixAlertEnabled = !isRiceMixAlertEnabled();
+          saveState();
+          renderRiceCookingTimerWidgets();
+          showToast(`1.5-Minute Rice Mix/Stir Alert: ${isRiceMixAlertEnabled() ? 'ON' : 'OFF'}`);
         });
       });
       rootEl.querySelectorAll('.rice-timer-clear-btn').forEach(btn => {
@@ -4049,6 +4199,25 @@
         const nextSec = Math.max(0, Math.ceil(remainingMs / 1000));
         if (nextSec !== state.timerSeconds) {
           state.timerSeconds = nextSec;
+          // Automatic 1.5-Minute (90s) Mix/Stir Alert during Stage 1 Rice Cooking
+          if (Number(state.activeRiceTimerStage) === 1 && isRiceMixAlertEnabled()) {
+            const totalCookSec = getRiceCookMinutes() * 60;
+            const elapsedSec = totalCookSec - nextSec;
+            if (
+              elapsedSec > 0 &&
+              elapsedSec < totalCookSec &&
+              elapsedSec % 90 === 0 &&
+              state.lastRiceMixAlertElapsedSec !== elapsedSec
+            ) {
+              state.lastRiceMixAlertElapsedSec = elapsedSec;
+              state.riceTimerAlertBanner = 'MIX / STIR RICE NOW! (1.5m interval — prevents sticking)';
+              playTimerChime();
+              triggerWatchWristTimerNotification(1);
+              syncStickyHeaderVisibility();
+              renderRiceCookingTimerWidgets();
+              showToast('MIX / STIR RICE NOW! (1.5m interval — prevents sticking)');
+            }
+          }
           updateTimerUI();
           updateWatchAndHeartRateUI();
         }
@@ -4799,10 +4968,19 @@
         }
       }
 
+      const timerWatchHud = document.getElementById('timer-view-watch-hud');
       const timerHrPill = document.getElementById('timer-view-hr-pill');
       const timerHrText = document.getElementById('timer-view-hr-text');
       const timerRecEl = document.getElementById('timer-view-hr-recovery');
       const timerReadinessEl = document.getElementById('timer-view-hr-readiness-badge');
+
+      if (timerWatchHud) {
+        if (hasLiveHr || readiness.isReady) {
+          timerWatchHud.classList.remove('hidden');
+        } else {
+          timerWatchHud.classList.add('hidden');
+        }
+      }
 
       if (timerHrPill && timerHrText) {
         if (hasLiveHr && zoneInfo) {
@@ -5253,8 +5431,8 @@
       },
       wed_dead_bug: {
         equipType: 'floor_mat',
-        equipLabel: 'Floor Mat + Weight Plate',
-        defaultWeightLbs: 10,
+        equipLabel: 'Floor Mat (Bodyweight Only)',
+        defaultWeightLbs: 0,
         step1Cue: 'Flatten lower back into mat with arms & knees raised at 90°',
         step2Cue: 'Extend opposite arm and leg slowly without letting lower back arch'
       },
@@ -7438,13 +7616,21 @@
       const dayObj = getScheduledDayObject(week, dayIdx);
       renderRestDaySchedulerDrawers();
       renderWarmupCard(dayObj);
+      const warmupCardContainerEl = document.getElementById('warmup-card-container');
+      if (warmupCardContainerEl) {
+        if (dayAssignment.isRestDay) {
+          warmupCardContainerEl.classList.add('hidden');
+        } else {
+          warmupCardContainerEl.classList.remove('hidden');
+        }
+      }
 
       const hasCrunchToday = state.crunchDays.includes(dayIdx);
       const exercisesToday = [...dayObj.exercises].map(ex => ({
         ...ex,
         name: String(ex.name || '').replace(/^[A-Z]\d+[\.\:\-\)]\s*/i, '').trim()
       }));
-      if (hasCrunchToday) {
+      if (hasCrunchToday && !dayAssignment.isRestDay) {
         exercisesToday.push(CABLE_CRUNCH_EXERCISE);
       }
 
@@ -7476,7 +7662,7 @@
           preFuelBanner.innerHTML = `
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div class="flex items-start sm:items-center gap-2 min-w-0">
-                <span class="text-[10px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40 shrink-0">FUEL 1</span>
+                <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40 shrink-0">${ICONS.preGymFuel}<span>FUEL 1</span></span>
                 <p class="text-xs font-extrabold text-amber-200 leading-snug">
                   Pre-Gym Fuel Check: Did you drink your Pre-Workout Shake (36g P)?
                 </p>
@@ -7707,84 +7893,172 @@
         }
       }
 
-      // Render Day Summary Banner (With Editable Gym Time & Auto-Meal Sync Status!)
+      // Render Day Summary Banner (Full-Width Non-Truncated Title + Dedicated Rest & Muscle Recovery Card on Rest Days)
       const dayGymSched = getDayGymSchedule(week, dayIdx);
       const gymStart12 = formatMinutesTo12Hr(parseHHMMToMinutes(dayGymSched.startTime));
       const adaptiveMealPreview = getAdaptiveMealScheduleForDay(week, dayIdx);
       const banner = document.getElementById('day-banner');
       if (banner) {
-        banner.className = 'bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3 space-y-2';
-        banner.innerHTML = `
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
+        if (!state.restDayWalkLogs || typeof state.restDayWalkLogs !== 'object') {
+          state.restDayWalkLogs = {};
+        }
+        const walkLogKey = `w${week}_d${dayIdx}`;
+        const isWalkChecked = Boolean(state.restDayWalkLogs[walkLogKey]);
+        const loggedWaterTodayMl = getDailyWaterLoggedMl(week, dayIdx);
+        const targetWaterTodayMl = getDailyWaterTargetMl(dayIdx, week);
+        const dayFuelPlanObj = getEffectiveDayFuelPlan(state, week, dayIdx);
+        const dailyKcalTarget = (dayFuelPlanObj && dayFuelPlanObj.dailyKcal) || 1300;
+        const dailyProteinTarget = (dayFuelPlanObj && dayFuelPlanObj.dailyProtein) || 138;
+        let loggedMealsCountToday = 0;
+        ['pre_shake', 'post_oats', 'lunch', 'dinner'].forEach(slotKey => {
+          if (isMealCheckedForDay(week, dayIdx, slotKey)) loggedMealsCountToday++;
+        });
+
+        banner.className = 'bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5';
+
+        if (dayAssignment.isRestDay) {
+          banner.innerHTML = `
+            <div id="rest-day-recovery-card" class="space-y-2.5">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Wk ${week} • ${dayObj.dayFull}</span>
+                <span class="text-[9px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full">REST DAY (${dayAssignment.daySub.toUpperCase()})</span>
+              </div>
+
+              <!-- Full-Width Non-Truncated Title Line -->
+              <h2 class="w-full text-base sm:text-lg font-bold text-white leading-snug">Rest &amp; Muscle Recovery Day</h2>
+
+              <!-- Separate Action Row Below Title -->
+              <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+                <button type="button" id="banner-train-today-instead-btn" class="text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 border border-emerald-300 transition whitespace-nowrap" title="Pull your next scheduled workout into today in 1 tap">
+                  Train Today Instead (Swap Workout)
+                </button>
+                <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border transition ${
+                  hasCrunchToday
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    : 'bg-slate-800 text-slate-300 border-slate-700'
+                }">
+                  ${hasCrunchToday ? '✓ Abs On' : '+ Optional Abs'}
+                </button>
+              </div>
+
+              <!-- 1. Recovery Status Banner -->
+              <div class="rounded-xl bg-emerald-950/40 border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-200 leading-relaxed">
+                Active Recovery &amp; Supercompensation Day — 48h muscle protein synthesis &amp; tendon recovery.
+              </div>
+
+              <!-- 2. 3 Daily Recovery Targets (1-Tap Interactive Pills) -->
+              <div class="grid grid-cols-1 gap-1.5 pt-0.5">
+                <button type="button" id="banner-water-add-btn" class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/35 text-xs font-extrabold text-sky-200 text-left transition">
+                  <span class="inline-flex items-center gap-1.5">${ICONS.water}<span>Water Target: ${loggedWaterTodayMl.toLocaleString()} / 2,500 ml (+500 ml)</span></span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-500/25 text-sky-200 shrink-0">+500 ml</span>
+                </button>
+
+                <button type="button" id="banner-open-vegan-fuel-btn" class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-xs font-extrabold text-amber-200 text-left transition">
+                  <span class="inline-flex items-center gap-1.5">${ICONS.vegan}<span>Muscle Fuel: ${loggedMealsCountToday} / 4 Meals (${dailyKcalTarget.toLocaleString()} kcal • ${dailyProteinTarget}g P)</span></span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/25 text-amber-200 shrink-0">Open →</span>
+                </button>
+
+                <button type="button" id="rest-card-walk-pill-btn" class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-xs font-extrabold text-left transition ${
+                  isWalkChecked
+                    ? 'bg-emerald-500/25 border-emerald-400/50 text-emerald-200'
+                    : 'bg-slate-950/90 hover:bg-slate-900 border-slate-800 text-slate-200'
+                }">
+                  <span>Light Recovery Walk: 8,000–10,000 Steps (${isWalkChecked ? '✓ Checked Off' : 'Check Off'})</span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isWalkChecked ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300'} shrink-0">${isWalkChecked ? '✓ Done' : 'Check Off'}</span>
+                </button>
+              </div>
+
+              <!-- Hidden quick preset buttons preserved for DOM/handler compatibility -->
+              <div class="hidden">
+                <button type="button" id="banner-pullup-timer-btn" data-pullup-sec="90"></button>
+                <button type="button" data-gym-preset="07:00" class="banner-gym-preset-btn"></button>
+              </div>
+            </div>
+          `;
+        } else {
+          banner.innerHTML = `
+            <div class="space-y-2">
               <div class="flex flex-wrap items-center gap-1.5">
                 <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Wk ${week} • ${dayObj.dayFull} • ${gymStart12}</span>
-                ${dayAssignment.isRestDay ? '<span class="text-[9px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full">REST DAY</span>' : '<span class="text-[9px] font-extrabold bg-sky-500/15 text-sky-300 border border-sky-400/30 px-2 py-0.5 rounded-full">LIFT DAY</span>'}
+                <span class="text-[9px] font-extrabold bg-sky-500/15 text-sky-300 border border-sky-400/30 px-2 py-0.5 rounded-full">LIFT DAY</span>
                 ${isDayAllDone ? '<span class="text-[9px] font-bold bg-rose-500/15 text-rose-300 border border-rose-400/30 px-2 py-0.5 rounded-full">✓ Complete</span>' : ''}
                 ${isDayPartial ? `<span class="text-[9px] font-bold bg-amber-400/15 text-amber-200 border border-amber-300/30 px-2 py-0.5 rounded-full">${todayDoneSets}/${todayTotalSets}</span>` : ''}
               </div>
-              <h2 class="text-sm sm:text-base font-extrabold text-white mt-0.5 leading-snug truncate">${dayObj.title}</h2>
-            </div>
-            <div class="flex items-center gap-1.5 shrink-0">
-              ${!dayAssignment.isRestDay && !isDayAllDone ? `
-                <button type="button" id="banner-swap-to-rest-btn" class="text-[10px] font-extrabold px-2 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-500/35 transition whitespace-nowrap" title="Make today a Rest Day and shift remaining lifting workouts forward without losing logged data">
-                  Swap Today to Rest Day
-                </button>
-              ` : ''}
-              ${dayAssignment.isRestDay ? `
-                <button type="button" id="banner-train-today-instead-btn" class="text-[10px] font-extrabold px-2 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 border border-emerald-300 transition whitespace-nowrap" title="Pull your next scheduled workout into today in 1 tap">
-                  Train Today Instead (Swap with Next Workout)
-                </button>
-              ` : ''}
-              <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-[10px] font-bold px-2 py-1 rounded-lg border transition ${
-                hasCrunchToday
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                  : 'bg-slate-800 text-slate-300 border-slate-700'
-              }">
-                ${hasCrunchToday ? '✓ Abs On' : '+ Abs'}
-              </button>
-            </div>
-          </div>
 
-          <!-- Compact Progress Bar -->
-          <div class="space-y-1">
-            <div class="flex items-center justify-between text-[10px]">
-              <span class="font-semibold text-slate-300">Progress: <strong class="text-white">${todayDoneSets}/${todayTotalSets} sets</strong></span>
-              <span class="font-mono font-bold text-emerald-400">${dayPct}%</span>
-            </div>
-            <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
-              <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-300" style="width: ${dayPct}%"></div>
-            </div>
-          </div>
+              <!-- Full-Width Non-Truncated Title Line -->
+              <h2 class="w-full text-base sm:text-lg font-bold text-white leading-snug">${dayObj.title}</h2>
 
-          <!-- Compact 1-Line Gym Time & Meal Sync Bar -->
-          <div class="flex flex-wrap items-center justify-between gap-1.5 pt-0.5 text-[10px]">
-            <div class="inline-flex items-center bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
-              <span class="px-1.5 py-1 font-extrabold text-emerald-400">TIME</span>
-              <button type="button" data-banner-step-mins="-15" class="banner-gym-step-btn px-1.5 py-1 font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition">−15m</button>
-              <select id="banner-gym-time-input" aria-label="Select gym time in 15-minute increments" class="bg-slate-950 text-white px-1 py-1 text-[10px] font-extrabold focus:outline-none">
-                ${build15MinGymTimeOptionsHtml(dayGymSched.startTime)}
-              </select>
-              <button type="button" data-banner-step-mins="15" class="banner-gym-step-btn px-1.5 py-1 font-extrabold text-emerald-400 hover:bg-slate-800 transition">+15m</button>
+              <!-- Separate Action Row Below Title -->
+              <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+                ${!isDayAllDone ? `
+                  <button type="button" id="banner-swap-to-rest-btn" class="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-500/35 transition whitespace-nowrap" title="Make today a Rest Day and shift remaining lifting workouts forward without losing logged data">
+                    Swap Today to Rest Day
+                  </button>
+                ` : ''}
+                <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition ${
+                  hasCrunchToday
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    : 'bg-slate-800 text-slate-300 border-slate-700'
+                }">
+                  ${hasCrunchToday ? '✓ Abs On' : '+ Abs'}
+                </button>
+              </div>
             </div>
-            <div class="flex flex-wrap items-center gap-1">
-              <button type="button" id="banner-water-add-btn" class="font-extrabold bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/35 px-2 py-1 rounded-lg transition" title="Tap to log +500 ml of water (1 bottle)">
-                Water: <strong>${getDailyWaterLoggedMl(week, dayIdx).toLocaleString()} / ${getDailyWaterTargetMl(dayIdx, week).toLocaleString()} ml</strong> <span class="text-sky-400">+500</span>
-              </button>
-              <button type="button" id="banner-open-vegan-fuel-btn" class="font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded-lg transition">
-                Fuel: <strong>${adaptiveMealPreview.nextPostWorkoutTime12}</strong> →
-              </button>
-              <button type="button" id="banner-open-shoe-gear-btn" class="font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2 py-1 rounded-lg transition" title="Open My Gear & Gym Shoe Lifespan Tracker (Inside Profile)">
-                Gear <span id="banner-shoe-health-readout">${calculateShoeWearFromWorkoutRecord().healthPct}%</span>
-              </button>
+
+            <!-- Compact Progress Bar -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between text-[10px]">
+                <span class="font-semibold text-slate-300">Progress: <strong class="text-white">${todayDoneSets}/${todayTotalSets} sets</strong></span>
+                <span class="font-mono font-bold text-emerald-400">${dayPct}%</span>
+              </div>
+              <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
+                <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-300" style="width: ${dayPct}%"></div>
+              </div>
             </div>
-          </div>
-          <!-- Hidden quick preset buttons preserved for DOM/handler compatibility -->
-          <div class="hidden">
-            <button type="button" id="banner-pullup-timer-btn" data-pullup-sec="90"></button>
-            <button type="button" data-gym-preset="07:00" class="banner-gym-preset-btn"></button>
-          </div>
-        `;
+
+            <!-- Compact 1-Line Gym Time & Meal Sync Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-1.5 pt-0.5 text-[10px]">
+              <div class="inline-flex items-center bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
+                <span class="px-1.5 py-1 font-extrabold text-emerald-400">TIME</span>
+                <button type="button" data-banner-step-mins="-15" class="banner-gym-step-btn px-1.5 py-1 font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition">−15m</button>
+                <select id="banner-gym-time-input" aria-label="Select gym time in 15-minute increments" class="bg-slate-950 text-white px-1 py-1 text-[10px] font-extrabold focus:outline-none">
+                  ${build15MinGymTimeOptionsHtml(dayGymSched.startTime)}
+                </select>
+                <button type="button" data-banner-step-mins="15" class="banner-gym-step-btn px-1.5 py-1 font-extrabold text-emerald-400 hover:bg-slate-800 transition">+15m</button>
+              </div>
+              <div class="flex flex-wrap items-center gap-1">
+                <button type="button" id="banner-water-add-btn" class="inline-flex items-center gap-1 font-extrabold bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/35 px-2 py-1 rounded-lg transition" title="Tap to log +500 ml of water (1 bottle)">
+                  ${ICONS.water}<span>Water: <strong>${loggedWaterTodayMl.toLocaleString()} / ${targetWaterTodayMl.toLocaleString()} ml</strong> <span class="text-sky-400">+500</span></span>
+                </button>
+                <button type="button" id="banner-open-vegan-fuel-btn" class="font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded-lg transition">
+                  Fuel: <strong>${adaptiveMealPreview.nextPostWorkoutTime12}</strong> →
+                </button>
+                <button type="button" id="banner-open-shoe-gear-btn" class="font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2 py-1 rounded-lg transition" title="Open My Gear & Gym Shoe Lifespan Tracker (Inside Profile)">
+                  Gear <span id="banner-shoe-health-readout">${calculateShoeWearFromWorkoutRecord().healthPct}%</span>
+                </button>
+              </div>
+            </div>
+            <!-- Hidden quick preset buttons preserved for DOM/handler compatibility -->
+            <div class="hidden">
+              <button type="button" id="banner-pullup-timer-btn" data-pullup-sec="90"></button>
+              <button type="button" data-gym-preset="07:00" class="banner-gym-preset-btn"></button>
+            </div>
+          `;
+        }
+
+        const restWalkBtn = document.getElementById('rest-card-walk-pill-btn');
+        if (restWalkBtn) {
+          restWalkBtn.addEventListener('click', () => {
+            if (!state.restDayWalkLogs || typeof state.restDayWalkLogs !== 'object') {
+              state.restDayWalkLogs = {};
+            }
+            const nextDone = !state.restDayWalkLogs[walkLogKey];
+            state.restDayWalkLogs[walkLogKey] = nextDone;
+            saveState();
+            renderWorkoutView();
+            showToast(nextDone ? 'Light Recovery Walk (8,000–10,000 Steps) checked off!' : 'Light Recovery Walk unchecked');
+          });
+        }
 
         const swapToRestBtn = document.getElementById('banner-swap-to-rest-btn');
         if (swapToRestBtn) {
@@ -7918,7 +8192,7 @@
 
       const totalExercisesToday = exercisesToday.length;
 
-      listEl.innerHTML = exercisesToday.map((ex, exOrder) => {
+      const exerciseCardsHtml = exercisesToday.map((ex, exOrder) => {
         const meta = EXERCISE_META[ex.id] || {
           equipType: 'dumbbells',
           equipLabel: 'Gym Equipment',
@@ -8620,6 +8894,29 @@
           </article>
         `;
       }).join('');
+
+      if (dayAssignment.isRestDay) {
+        const isRestDrawerOpen = Boolean(state.openRestMobilityDrawer);
+        listEl.innerHTML = `
+          <details id="rest-day-mobility-drawer" ${isRestDrawerOpen ? 'open' : ''} class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5">
+            <summary class="cursor-pointer flex items-center justify-between gap-2 text-xs font-extrabold text-emerald-300 select-none">
+              <span>Optional Rest-Day Mobility &amp; Core (${exercisesToday.length} items) — Tap to Open</span>
+              <span class="text-[10px] font-bold text-slate-400">▾</span>
+            </summary>
+            <div class="pt-3 space-y-3">
+              ${exerciseCardsHtml}
+            </div>
+          </details>
+        `;
+        const restMobilityDrawerEl = document.getElementById('rest-day-mobility-drawer');
+        if (restMobilityDrawerEl) {
+          restMobilityDrawerEl.addEventListener('toggle', () => {
+            state.openRestMobilityDrawer = restMobilityDrawerEl.open;
+          });
+        }
+      } else {
+        listEl.innerHTML = exerciseCardsHtml;
+      }
 
       // UPGRADE 2 Listeners: Side Plank Duration Preset Pills & Inline Isometric Countdown Timer
       listEl.querySelectorAll('.timed-hold-preset-btn').forEach(btn => {
@@ -10877,8 +11174,8 @@
               },
               {
                 id: 'rice_step_3',
-                title: 'Simmer 12 Mins & Steam 10 Mins',
-                detail: 'Boil, cover on low heat 12m, rest off heat 10m',
+                title: 'Cook 10–12 Mins (Mix Every 1.5m) & Cool-Down 10 Mins',
+                detail: 'Cook 10–12m stirring every 1.5m (90s) to prevent sticking, then cool-down 10m off heat',
                 weightBadge: '600g Yield'
               },
               {
@@ -10944,29 +11241,30 @@
                 : (isRecipeDone
                     ? 'border border-emerald-500/40 bg-slate-900/75'
                     : 'border border-slate-800 bg-slate-900/85')
-            } rounded-2xl p-3.5 sm:p-4 space-y-2 transition-all">
-              <!-- Top Row: Batch 1/2 + 4 Jars in Fridge on Left, Sky-Blue Weight Badge on Right -->
-              <div data-toggle-recipe-card="${recipe.id}" class="recipe-card-toggle-btn cursor-pointer select-none space-y-1.5">
-                <div class="flex items-center justify-between gap-2">
-                  <div class="flex flex-wrap items-center gap-1.5 min-w-0">
-                    <span class="recipe-prep-badge whitespace-nowrap px-2 py-0.5 text-[11px] font-bold font-mono rounded-md ${
-                      !isCollapsed ? 'bg-sky-400 text-slate-950' : (isRecipeDone ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300')
-                    }">${recipe.badge}</span>
-                    <span class="text-[11px] font-semibold text-sky-200 bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 rounded-md whitespace-nowrap"> ${recipe.yieldPill}</span>
-                    ${headerPrepNotePillHtml}
-                  </div>
-                  <span data-batch-scale-badge="${recipe.id}" class="shrink-0 text-[11px] px-2.5 py-0.5 rounded-md bg-sky-950/75 border border-sky-400/50 text-sky-200 font-extrabold whitespace-nowrap">${batchScaleBadgeText}</span>
+            } rounded-2xl p-3 sm:p-3.5 space-y-2 transition-all">
+              <!-- Row 1: Left: Batch 1/2 badge + Title. Right: 4/4 Ready / 4 Jars in Fridge badge -->
+              <div data-toggle-recipe-card="${recipe.id}" class="recipe-card-toggle-btn cursor-pointer select-none flex items-center justify-between gap-2">
+                <div class="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
+                  <span class="recipe-prep-badge whitespace-nowrap px-2 py-0.5 text-[10px] font-bold font-mono rounded-md shrink-0 ${
+                    !isCollapsed ? 'bg-sky-400 text-slate-950' : (isRecipeDone ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300')
+                  }">${recipe.badge}</span>
+                  <h3 class="text-xs sm:text-sm font-extrabold text-white leading-snug">${recipe.title}</h3>
                 </div>
-                <!-- Middle Row: Clean Title -->
-                <h3 class="text-sm sm:text-base font-extrabold text-white leading-snug break-words">${recipe.title}</h3>
+                <span class="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-md border whitespace-nowrap ${
+                  isRecipeDone
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    : 'bg-sky-500/15 text-sky-200 border-sky-500/30'
+                }">${isRecipeDone ? `${doneSteps}/${totalSteps} Ready` : recipe.yieldPill}</span>
               </div>
 
-              <button type="button" data-toggle-recipe-card="${recipe.id}" class="recipe-card-toggle-btn w-full flex items-center justify-between bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-slate-300 rounded-xl px-3 py-2 text-xs transition">
-                <span class="font-bold text-left">
-                  ${isRecipeDone ? `<span class="text-emerald-400 font-extrabold">✓ All ${totalSteps} scale steps complete</span>` : `${isCollapsed ? `Show Kitchen Scale Checklist (${totalSteps} steps)` : `Hide Kitchen Scale Checklist (${doneSteps}/${totalSteps} checked)`}`}
-                </span>
-                <span class="${!isCollapsed ? 'text-sky-300' : 'text-slate-400'} font-extrabold text-[11px] shrink-0">
-                  ${isCollapsed ? 'Open ▾' : 'Collapse ▴'}
+              <!-- Row 2: Left: Sky-Blue scale weight badge. Right: Checklist & Timer (4 steps) ▾ -->
+              <button type="button" data-toggle-recipe-card="${recipe.id}" class="recipe-card-toggle-btn w-full flex flex-wrap items-center justify-between gap-1.5 bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 rounded-xl px-2.5 py-1.5 text-[11px] transition">
+                <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+                  <span data-batch-scale-badge="${recipe.id}" class="px-2 py-0.5 rounded-md bg-sky-950/75 border border-sky-400/50 text-sky-200 font-extrabold whitespace-nowrap">${batchScaleBadgeText}</span>
+                  ${headerPrepNotePillHtml}
+                </div>
+                <span class="${!isCollapsed ? 'text-sky-300' : 'text-slate-300'} font-extrabold whitespace-nowrap shrink-0">
+                  ${isCollapsed ? `Checklist & Timer (${totalSteps} steps) ▾` : `Hide Checklist (${doneSteps}/${totalSteps}) ▴`}
                 </span>
               </button>
 
@@ -11101,6 +11399,7 @@
         const waterLoggedMl = getDailyWaterLoggedMl(week, dayIdx);
         const waterPct = Math.min(100, Math.round((waterLoggedMl / waterTargetMl) * 100));
         const isLiftDayHydration = !getDayAssignment(week, dayIdx).isRestDay;
+        const isWaterSchedOpen = Boolean(state.openWaterScheduleDrawer);
         const bottleSlots = isLiftDayHydration
           ? [
               { ml: 500, label: '500 ml • Wake / Pre-Gym' },
@@ -11120,17 +11419,16 @@
 
         waterCardEl.innerHTML = `
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs font-extrabold text-sky-300">Daily Water Need (${isLiftDayHydration ? 'Lift Day' : 'Rest Day'})</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">${waterLoggedMl.toLocaleString()} / ${waterTargetMl.toLocaleString()} ml</span>
-              </div>
-              <p class="text-[10px] text-slate-400 mt-0.5">+ 900 ml ${dayPlan.milkName} in shakes/oats = <strong>${(waterTargetMl + 900).toLocaleString()} ml (${((waterTargetMl + 900) / 1000).toFixed(1)} L)</strong> total hydration</p>
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="text-sky-400 shrink-0">${ICONS.water}</span>
+              <span class="text-xs font-extrabold text-sky-300">Daily Water (${isLiftDayHydration ? 'Lift Day' : 'Rest Day'}):</span>
+              <span class="text-xs font-extrabold text-white">${waterLoggedMl.toLocaleString()} / ${waterTargetMl.toLocaleString()} ml</span>
             </div>
-            <div class="flex items-center gap-1">
+            <div class="flex flex-wrap items-center gap-1">
               <button type="button" data-water-delta="250" class="water-step-btn px-2 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-200 text-[10px] font-extrabold transition">+250 ml</button>
               <button type="button" data-water-delta="500" class="water-step-btn px-2 py-1 rounded-lg bg-sky-500 text-slate-950 hover:bg-sky-400 text-[10px] font-extrabold transition">+500 ml</button>
-              <button type="button" id="water-reset-btn" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[10px] font-bold transition" title="Reset today's water">↺</button>
+              <button type="button" id="water-reset-btn" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[10px] font-bold transition" title="Reset today's water">Reset</button>
+              <button type="button" id="toggle-water-schedule-btn" aria-expanded="${isWaterSchedOpen ? 'true' : 'false'}" class="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-sky-300 text-[10px] font-extrabold transition">${bottleSlots.length}x 500ml Schedule ${isWaterSchedOpen ? '▴' : '▾'}</button>
             </div>
           </div>
 
@@ -11138,21 +11436,33 @@
             <div id="macro-water-bar" class="bg-gradient-to-r from-sky-400 to-cyan-300 h-full transition-all duration-300" style="width: ${waterPct}%"></div>
           </div>
 
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-0.5">
-            ${bottleSlots.map(b => {
-              const reached = waterLoggedMl >= b.ml;
-              return `
-                <button type="button" data-water-set="${b.ml}" class="water-bottle-btn py-1.5 px-2 rounded-lg border text-left text-[10px] font-bold flex items-center justify-between transition ${
-                  reached
-                    ? 'bg-sky-500/20 border-sky-400 text-sky-200 font-extrabold'
-                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                }">
-                  <span class="truncate">${reached ? '✓ ' : ' '}${b.label}</span>
-                </button>
-              `;
-            }).join('')}
+          <!-- Collapsed-by-Default 500ml Schedule & Hydration Note Drawer -->
+          <div id="water-schedule-drawer" class="${isWaterSchedOpen ? 'space-y-2 pt-1' : 'hidden'}">
+            <p class="text-[10px] text-slate-400">+ 900 ml ${dayPlan.milkName} in shakes/oats = <strong>${(waterTargetMl + 900).toLocaleString()} ml (${((waterTargetMl + 900) / 1000).toFixed(1)} L)</strong> total hydration</p>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              ${bottleSlots.map(b => {
+                const reached = waterLoggedMl >= b.ml;
+                return `
+                  <button type="button" data-water-set="${b.ml}" class="water-bottle-btn py-1.5 px-2 rounded-lg border text-left text-[10px] font-bold flex items-center justify-between transition ${
+                    reached
+                      ? 'bg-sky-500/20 border-sky-400 text-sky-200 font-extrabold'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }">
+                    <span class="truncate">${reached ? '✓ ' : ''}${b.label}</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
           </div>
         `;
+
+        const toggleWaterSchedBtn = document.getElementById('toggle-water-schedule-btn');
+        if (toggleWaterSchedBtn) {
+          toggleWaterSchedBtn.addEventListener('click', () => {
+            state.openWaterScheduleDrawer = !state.openWaterScheduleDrawer;
+            renderVeganView();
+          });
+        }
 
         waterCardEl.querySelectorAll('.water-step-btn').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -11162,7 +11472,7 @@
             saveState();
             renderVeganView();
             renderWorkoutView();
-            showToast(` +${delta} ml logged! (${nextVal.toLocaleString()} / ${waterTargetMl.toLocaleString()} ml)`);
+            showToast(`+${delta} ml logged (${nextVal.toLocaleString()} / ${waterTargetMl.toLocaleString()} ml)`);
           });
         });
 
@@ -11175,7 +11485,7 @@
             saveState();
             renderVeganView();
             renderWorkoutView();
-            showToast(` Water updated: ${nextVal.toLocaleString()} / ${waterTargetMl.toLocaleString()} ml`);
+            showToast(`Water updated: ${nextVal.toLocaleString()} / ${waterTargetMl.toLocaleString()} ml`);
           });
         });
 
@@ -11186,7 +11496,7 @@
             saveState();
             renderVeganView();
             renderWorkoutView();
-            showToast('↺ Reset today\'s water to 0 ml');
+            showToast('Reset today\'s water to 0 ml');
           });
         }
       }
@@ -11268,14 +11578,12 @@
           const escapedNoteText = String(noteObj.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
           return `
-            <article data-fuel-card-slot="${slot.slotId}" class="bg-slate-900 border ${isDone ? 'border-emerald-500/50 bg-slate-900/80' : (slotSched.isPostWorkoutTarget ? 'border-emerald-400/70 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/40' : 'border-slate-800')} rounded-2xl p-3.5 sm:p-4 space-y-2.5 transition-all">
-              <!-- Top Row: Fuel Badge + Scheduled Time, Warm Amber Energy/Protein Badge, Sky-Blue Scale Weight Badge, and 1-Tap + Log Fuel / Done Button -->
+            <article data-fuel-card-slot="${slot.slotId}" class="bg-slate-900 border ${isDone ? 'border-emerald-500/50 bg-slate-900/80' : (slotSched.isPostWorkoutTarget ? 'border-emerald-400/70 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/40' : 'border-slate-800')} rounded-2xl p-3 sm:p-3.5 space-y-2 transition-all">
+              <!-- Row 1: Left: Time badge (FUEL 1 • 6:35 AM) + Meal Title. Right: 1-tap + Log Fuel (or ✓ Done) button -->
               <div class="flex items-center justify-between gap-2">
-                <div class="flex flex-wrap items-center gap-1.5 min-w-0">
-                  <span class="text-[11px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">${topFuelBadgeText}</span>
-                  <span data-fuel-kcal-badge="${slot.slotId}" class="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-amber-950/60 border border-amber-500/40 text-amber-300 whitespace-nowrap">${mealObj.kcal} kcal • ${mealObj.protein}g P</span>
-                  <span data-fuel-scale-badge="${slot.slotId}" class="text-[11px] px-2 py-0.5 rounded-md bg-sky-950/70 border border-sky-400/50 text-sky-200 font-bold whitespace-nowrap">${scaleWeightBadgeText}</span>
-                  ${fuelPrepNotePillHtml}
+                <div data-toggle-fuel-card="${slot.slotId}" class="fuel-card-toggle-btn cursor-pointer select-none flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
+                  <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 whitespace-nowrap shrink-0">${topFuelBadgeText}</span>
+                  <h4 class="text-xs sm:text-sm font-extrabold text-white leading-snug">${mealObj.title || slot.title}</h4>
                 </div>
                 <button type="button" data-meal-slot="${slot.slotId}" class="meal-check-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition ${
                   isDone
@@ -11288,18 +11596,15 @@
                 </button>
               </div>
 
-              <!-- Middle Row: Clean Card Title -->
-              <div data-toggle-fuel-card="${slot.slotId}" class="fuel-card-toggle-btn cursor-pointer select-none">
-                <h4 class="text-sm sm:text-base font-extrabold text-white leading-snug break-words">${mealObj.title || slot.title}</h4>
-              </div>
-
-              <!-- Bottom Toggle Bar: Show/Hide Ingredients & Prep (N items) -->
-              <button type="button" data-toggle-fuel-card="${slot.slotId}" aria-expanded="${isCardExpanded ? 'true' : 'false'}" class="fuel-card-toggle-btn w-full flex items-center justify-between bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-slate-300 rounded-xl px-3 py-2 text-xs transition">
-                <span class="font-bold text-left ${isDone ? 'text-emerald-300' : 'text-slate-300'}">
-                  ${isCardExpanded ? `Hide Ingredients & Prep (${itemsList.length} items)` : `Show Ingredients & Prep (${itemsList.length} items)`}
-                </span>
-                <span class="${isCardExpanded ? 'text-emerald-400' : 'text-slate-400'} font-extrabold text-[11px] shrink-0">
-                  ${isCardExpanded ? 'Collapse ▴' : 'Open ▾'}
+              <!-- Row 2 (Single Inline Flex Row): Left: Amber badge (kcal • P) + Sky-Blue badge (Scale: g). Right: compact N Ingredients & Prep ▾ toggle link -->
+              <button type="button" data-toggle-fuel-card="${slot.slotId}" aria-expanded="${isCardExpanded ? 'true' : 'false'}" class="fuel-card-toggle-btn w-full flex flex-wrap items-center justify-between gap-1.5 bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-slate-300 rounded-xl px-2.5 py-1.5 text-[11px] transition">
+                <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+                  <span data-fuel-kcal-badge="${slot.slotId}" class="px-2 py-0.5 rounded-md bg-amber-950/60 border border-amber-500/40 text-amber-300 font-extrabold whitespace-nowrap">${mealObj.kcal} kcal • ${mealObj.protein}g P</span>
+                  <span data-fuel-scale-badge="${slot.slotId}" class="px-2 py-0.5 rounded-md bg-sky-950/70 border border-sky-400/50 text-sky-200 font-bold whitespace-nowrap">${scaleWeightBadgeText}</span>
+                  ${fuelPrepNotePillHtml}
+                </div>
+                <span class="${isCardExpanded ? 'text-emerald-400' : 'text-slate-300'} font-extrabold whitespace-nowrap shrink-0">
+                  ${itemsList.length} Ingredients &amp; Prep ${isCardExpanded ? '▴' : '▾'}
                 </span>
               </button>
 
@@ -11622,9 +11927,9 @@
       document.querySelectorAll('.nav-tab-btn').forEach(btn => {
         const target = btn.getAttribute('data-nav');
         if (target === tabName) {
-          btn.className = 'nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-emerald-400 bg-emerald-500/10 font-bold text-[11px] sm:text-xs transition';
+          btn.className = 'nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl text-emerald-400 bg-emerald-500/10 font-bold text-[10px] sm:text-xs transition';
         } else {
-          btn.className = 'nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[11px] sm:text-xs transition';
+          btn.className = 'nav-tab-btn min-w-0 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl text-slate-400 hover:text-slate-200 font-semibold text-[10px] sm:text-xs transition';
         }
       });
 
