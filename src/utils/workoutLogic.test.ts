@@ -905,6 +905,44 @@ test('Mobile Chrome Layout & Samsung Galaxy Watch (Wear OS) Fixes: No Fake BPM b
   assert.equal(wristPayload.options.requireInteraction, true);
 });
 
+test('Watch Modal Refactor: Zero acceptAllDevices, Automatic OS Watch Sync, 5s Lock-Screen Test & Health Connect Bridge', async () => {
+  const mod = await import('./workoutLogic');
+
+  // 1. BLE Chest Strap options never include acceptAllDevices and strictly filter on ['heart_rate']
+  const bleOpts = mod.getBleChestStrapRequestOptions() as Record<string, unknown>;
+  assert.equal('acceptAllDevices' in bleOpts, false);
+  assert.deepEqual(bleOpts.filters, [{ services: ['heart_rate'] }]);
+
+  // 2. Automatic OS Watch Sync status banner
+  const osSyncGranted = mod.getOsWatchSyncStatusBanner('granted', true);
+  assert.equal(osSyncGranted.connected, true);
+  assert.equal(
+    osSyncGranted.bannerText,
+    'Connected via Phone OS (Samsung Galaxy Watch / Apple Watch / Garmin)'
+  );
+  assert.equal(
+    osSyncGranted.howItWorksText,
+    'Your watch is already paired to your phone. Enable Wrist Timer Alerts below so rest and cooking timers vibrate directly on your watch.'
+  );
+
+  // 3. 5-Second Lock-Screen Watch Test exact payload
+  const fiveSecPayload = mod.buildFiveSecondWatchTestNotificationPayload();
+  assert.equal(fiveSecPayload.title, 'Rest Complete (00:00)');
+  assert.equal(fiveSecPayload.options.body, 'Next Set: 135 lbs x 8 reps');
+  assert.deepEqual(fiveSecPayload.options.vibrate, [300, 150, 300, 150, 400]);
+  assert.equal(fiveSecPayload.options.tag, 'watch-test');
+  assert.equal(fiveSecPayload.options.renotify, true);
+  assert.equal(fiveSecPayload.options.requireInteraction, true);
+
+  // 4. Health Connect / Samsung Health & Apple Health bridge status
+  const healthStatus = mod.getHealthBridgePlatformStatus(false, true);
+  assert.equal(
+    healthStatus.toggleLabel,
+    'Sync Workouts & Nutrition with Android Health Connect / Samsung Health & Apple Health'
+  );
+  assert.equal(healthStatus.actionButtonLabel, 'Sync Now / Export Health Data');
+});
+
 
 
 

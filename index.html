@@ -4061,40 +4061,85 @@
       }
     }
 
-    function triggerDelayedLockScreenWatchTest() {
+    async function fireFiveSecondLockScreenWatchTestNotification() {
+      const title = 'Rest Complete (00:00)';
+      const options = {
+        body: 'Next Set: 135 lbs x 8 reps',
+        icon: './icon-192.png',
+        badge: './icon-192.png',
+        vibrate: [300, 150, 300, 150, 400],
+        tag: 'watch-test',
+        renotify: true,
+        requireInteraction: true
+      };
+      if (navigator && typeof navigator.vibrate === 'function') {
+        try { navigator.vibrate([300, 150, 300, 150, 400]); } catch (e) {}
+      }
+      if (typeof window === 'undefined' || !('Notification' in window)) return false;
+      if (Notification.permission === 'default') {
+        try { await Notification.requestPermission(); } catch (e) {}
+      }
+      if (Notification.permission !== 'granted') return false;
+      try {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+          const reg = await navigator.serviceWorker.ready;
+          if (reg && typeof reg.showNotification === 'function') {
+            await reg.showNotification(title, options);
+            return true;
+          }
+        }
+      } catch (e) {}
+      try {
+        new Notification(title, options);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function triggerDelayedLockScreenWatchTest() {
       if (!state.watchSettings || typeof state.watchSettings !== 'object') {
-        state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: true };
+        state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: true, healthAutoSync: true };
+      }
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        try { await Notification.requestPermission(); } catch (e) {}
       }
       state.watchNotificationsEnabled = true;
       state.watchSettings.wristAlertsEnabled = true;
       updateWatchAndHeartRateUI();
       saveState();
 
-      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission().catch(() => {});
-      }
-
       const btn = document.getElementById('watch-modal-delayed-test-wrist-btn');
+      const countdownBanner = document.getElementById('watch-modal-5s-countdown-banner');
       let remaining = 5;
       if (btn) {
         btn.disabled = true;
-        btn.textContent = `🔒 Lock Phone Now! Firing in ${remaining}s...`;
+        btn.textContent = `⏱️ ${remaining}s... Lock your phone screen now!`;
       }
-      showToast('🔒 Lock your phone screen now! Wrist alert will vibrate your Galaxy Watch in 5 seconds...');
+      if (countdownBanner) {
+        countdownBanner.classList.remove('hidden');
+        countdownBanner.textContent = `${remaining}s... Lock your phone screen now so your watch receives the vibration!`;
+      }
+      showToast('Lock your phone screen now so your watch receives the vibration!');
 
       const intervalId = setInterval(() => {
         remaining -= 1;
         if (remaining > 0) {
-          if (btn) btn.textContent = `🔒 Lock Phone Now! Firing in ${remaining}s...`;
+          if (btn) btn.textContent = `⏱️ ${remaining}s... Lock your phone screen now!`;
+          if (countdownBanner) {
+            countdownBanner.textContent = `${remaining}s... Lock your phone screen now so your watch receives the vibration!`;
+          }
         } else {
           clearInterval(intervalId);
           if (btn) {
             btn.disabled = false;
-            btn.textContent = '🔒 Test Wrist Alert in 5s (Lock Phone Now)';
+            btn.textContent = '📳 Test Watch Vibration (5-Second Lock-Screen Test)';
           }
-          const nextSetStr = getNextIncompleteSetSummaryForWristAlert();
-          triggerWatchWristTimerNotification(null, nextSetStr);
-          showToast(`📳 5s Lock-Screen Wrist Alert Fired: "${nextSetStr}"`);
+          if (countdownBanner) {
+            countdownBanner.textContent = '✓ Watch vibration sent: Rest Complete (00:00) • Next Set: 135 lbs x 8 reps';
+          }
+          fireFiveSecondLockScreenWatchTestNotification();
+          showToast('📳 Watch Vibration Sent: Rest Complete (00:00) — Next Set: 135 lbs x 8 reps');
         }
       }, 1000);
     }
@@ -4247,10 +4292,24 @@
       const modalDeviceStatus = document.getElementById('watch-modal-ble-status');
       const modalDemoBtn = document.getElementById('watch-modal-demo-hr-btn');
       const modalWristToggleBtn = document.getElementById('watch-modal-wrist-toggle-btn');
+      const modalOsSyncBanner = document.getElementById('watch-modal-os-sync-status-banner');
       const modalHealthBridgeBadge = document.getElementById('watch-modal-health-bridge-badge');
       const modalHealthSyncStatus = document.getElementById('watch-modal-health-sync-status');
+      const modalHealthAutoToggleBtn = document.getElementById('watch-modal-health-auto-sync-toggle-btn');
       const modalHrAlertToggleBtn = document.getElementById('watch-modal-hr-alert-toggle-btn');
       const modalHrTargetSelect = document.getElementById('watch-modal-hr-target-select');
+
+      const notifPerm = (typeof window !== 'undefined' && 'Notification' in window) ? Notification.permission : 'default';
+      const osSyncReady = Boolean(notifPerm === 'granted' || wristEnabled);
+
+      if (modalOsSyncBanner) {
+        modalOsSyncBanner.textContent = osSyncReady
+          ? 'Connected via Phone OS (Samsung Galaxy Watch / Apple Watch / Garmin)'
+          : 'Connected via Phone OS (Samsung Galaxy Watch / Apple Watch / Garmin)';
+        modalOsSyncBanner.className = osSyncReady
+          ? 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold'
+          : 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-emerald-500/35 text-emerald-300 text-[11px] font-extrabold';
+      }
 
       if (modalHrPill) {
         modalHrPill.textContent = hasLiveHr && zoneInfo ? zoneInfo.pillText : 'No Active HR Stream';
@@ -4261,7 +4320,7 @@
       if (modalHrRec) {
         modalHrRec.textContent = (hasLiveHr && recoveryText)
           ? recoveryText
-          : 'Pair a BLE Heart Rate strap/watch and start a rest timer to track live BPM recovery.';
+          : 'Pair an optional BLE chest strap (Polar / Garmin / Wahoo) to track live BPM recovery.';
       }
       if (modalReadinessBadge) {
         if (readiness.isReady) {
@@ -4288,7 +4347,7 @@
       if (modalDeviceStatus) {
         modalDeviceStatus.textContent = (hasLiveHr && state.bleDeviceName)
           ? `Connected: ${state.bleDeviceName} (0x180D / 0x2A37)`
-          : 'Disconnected • Pair Garmin/Polar/Coospo or Wear OS (with "Heart Rate to Web" / "HR2VP" broadcast app)';
+          : 'Apple Watch and Samsung Galaxy Watch use Automatic OS Sync above rather than chest-strap Bluetooth pairing.';
       }
       if (modalDemoBtn) {
         modalDemoBtn.textContent = simulatedHrInterval
@@ -4298,18 +4357,29 @@
       if (modalWristToggleBtn) {
         modalWristToggleBtn.setAttribute('aria-pressed', wristEnabled ? 'true' : 'false');
         modalWristToggleBtn.textContent = wristEnabled
-          ? '✓ Watch Wrist Alerts Enabled (Service Worker Vibrate)'
-          : '⌚ Enable Watch Wrist Alerts';
+          ? '✓ Enable Watch Wrist Alerts (Active)'
+          : 'Enable Watch Wrist Alerts';
         modalWristToggleBtn.className = wristEnabled
-          ? 'flex-1 py-2.5 px-3 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-xs shadow-md shadow-emerald-500/20 transition'
-          : 'flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-extrabold text-xs transition';
+          ? 'w-full py-2.5 px-3 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-xs shadow-md shadow-emerald-500/20 transition'
+          : 'w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs shadow-md shadow-emerald-500/20 transition';
+      }
+      const isNativeCap = Boolean(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+      const healthAutoSyncOn = state.watchSettings && state.watchSettings.healthAutoSync !== undefined
+        ? Boolean(state.watchSettings.healthAutoSync)
+        : true;
+      if (modalHealthAutoToggleBtn) {
+        modalHealthAutoToggleBtn.setAttribute('aria-pressed', healthAutoSyncOn ? 'true' : 'false');
+        modalHealthAutoToggleBtn.textContent = healthAutoSyncOn
+          ? '✓ Sync Workouts & Nutrition with Android Health Connect / Samsung Health & Apple Health'
+          : 'Sync Workouts & Nutrition with Android Health Connect / Samsung Health & Apple Health';
+        modalHealthAutoToggleBtn.className = healthAutoSyncOn
+          ? 'w-full py-2 px-3 rounded-xl bg-sky-500/20 border border-sky-400/50 text-sky-200 font-extrabold text-[11px] text-left transition'
+          : 'w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 font-bold text-[11px] text-left transition';
       }
       if (modalHealthBridgeBadge) {
-        const capPlugins = (window.Capacitor && window.Capacitor.Plugins) || {};
-        const hasNativeBridge = Boolean(capPlugins.Health || capPlugins.HealthFitness);
-        modalHealthBridgeBadge.textContent = hasNativeBridge
-          ? 'Native HealthKit / Health Connect Active'
-          : 'Capacitor Ready • Web Health Sync & CSV Bridge';
+        modalHealthBridgeBadge.textContent = isNativeCap
+          ? 'Native Health Connect / Apple Health Active'
+          : 'Health Connect • Samsung Health • Apple Health';
       }
       if (modalHealthSyncStatus && state.lastHealthSyncAt) {
         modalHealthSyncStatus.textContent = `Last synced: ${state.lastHealthSyncAt}`;
@@ -4317,31 +4387,26 @@
       syncWatchMediaSessionMetadata();
     }
 
-    async function connectLiveBleHeartRate(useAcceptAllDevices = false) {
+    async function connectLiveBleHeartRate() {
       if (!navigator.bluetooth || typeof navigator.bluetooth.requestDevice !== 'function') {
         showToast('⚠️ Web Bluetooth requires Chrome on Android or Desktop over HTTPS.');
         return;
       }
       try {
-        const reqOpts = useAcceptAllDevices
-          ? {
-              acceptAllDevices: true,
-              optionalServices: [0x180d, 'heart_rate', 'battery_service', 0x180f]
-            }
-          : {
-              filters: [{ services: ['heart_rate'] }, { services: [0x180d] }],
-              optionalServices: [0x180d, 'heart_rate', 'battery_service', 0x180f]
-            };
+        const reqOpts = {
+          filters: [{ services: ['heart_rate'] }],
+          optionalServices: [0x180d, 'heart_rate', 'battery_service', 0x180f]
+        };
         const device = await navigator.bluetooth.requestDevice(reqOpts);
         activeBleDevice = device;
-        state.bleDeviceName = device.name || 'Galaxy Watch / BLE HR';
+        state.bleDeviceName = device.name || 'BLE Chest Strap (0x180D)';
         device.addEventListener('gattserverdisconnected', () => {
           state.bleConnected = false;
           state.liveBpm = null;
           state.restStartBpm = null;
           state.startRestBpm = null;
           updateWatchAndHeartRateUI();
-          showToast('⌚ Watch / BLE Heart Rate disconnected.');
+          showToast('⌚ BLE Heart Rate Strap disconnected.');
         });
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService('heart_rate');
@@ -4374,7 +4439,7 @@
         state.liveBpm = null;
         updateWatchAndHeartRateUI();
         if (err && err.name !== 'NotFoundError') {
-          showToast('⌚ Ensure Heart Rate Broadcast ("Heart Rate to Web" / "HR2VP") is running on your Galaxy Watch.');
+          showToast('⌚ Ensure your BLE chest strap (Polar / Garmin / Wahoo) is awake and broadcasting 0x180D.');
         }
       }
     }
@@ -4451,9 +4516,10 @@
       });
       const activeCalories = Math.max(180, completedSets * 22);
 
+      const isNativeCap = Boolean(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
       const capPlugins = (window.Capacitor && window.Capacitor.Plugins) || {};
       const healthPlugin = capPlugins.Health || capPlugins.HealthFitness || null;
-      if (healthPlugin) {
+      if (isNativeCap && healthPlugin) {
         try {
           if (typeof healthPlugin.requestAuthorization === 'function') {
             await healthPlugin.requestAuthorization({
@@ -4471,13 +4537,15 @@
             });
           }
         } catch (e) {}
+      } else {
+        exportWorkoutNutritionHealthCsv();
       }
 
       const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       state.lastHealthSyncAt = `${nowStr} • ${completedSets} sets (${activeCalories} active kcal) + ${dailyKcal.toLocaleString()} kcal / ${dailyProtein}g P`;
       updateWatchAndHeartRateUI();
       saveState();
-      showToast(`❤️ Synced ${completedSets} sets (${activeCalories} kcal) & ${dailyKcal.toLocaleString()} kcal • ${dailyProtein}g P to Health Bridge!`);
+      showToast(`❤️ Synced ${completedSets} sets (${activeCalories} kcal) & ${dailyKcal.toLocaleString()} kcal • ${dailyProtein}g P with Health Connect / Apple Health!`);
     }
 
     function exportWorkoutNutritionHealthCsv() {
@@ -12919,18 +12987,17 @@
         });
       }
 
-      // 3-Tier Smartwatch & Live Heart Rate Modal Controls
+      // Automatic OS Watch Sync, Health Connect Bridge & Optional BLE Chest Strap Controls
       const watchModal = document.getElementById('smartwatch-health-modal');
       const openWatchBtn = document.getElementById('open-watch-modal-btn');
       const timerOpenWatchBtn = document.getElementById('timer-open-watch-btn');
       const closeWatchModalBtn = document.getElementById('close-watch-modal-btn');
       const bleConnectBtn = document.getElementById('watch-modal-ble-connect-btn');
-      const bleAcceptAllBtn = document.getElementById('watch-modal-ble-accept-all-btn');
       const demoHrBtn = document.getElementById('watch-modal-demo-hr-btn');
       const wristToggleBtn = document.getElementById('watch-modal-wrist-toggle-btn');
       const timerWristQuickBtn = document.getElementById('timer-wrist-alert-quick-btn');
-      const testWristAlertBtn = document.getElementById('watch-modal-test-wrist-btn');
       const delayedTestWristBtn = document.getElementById('watch-modal-delayed-test-wrist-btn');
+      const healthAutoSyncToggleBtn = document.getElementById('watch-modal-health-auto-sync-toggle-btn');
       const healthSyncBtn = document.getElementById('watch-modal-health-sync-btn');
       const exportHealthCsvBtn = document.getElementById('watch-modal-export-csv-btn');
 
@@ -12947,27 +13014,28 @@
           ensureVerticalScrollUnlocked();
         });
       }
-      if (bleConnectBtn) bleConnectBtn.addEventListener('click', () => connectLiveBleHeartRate(false));
-      if (bleAcceptAllBtn) bleAcceptAllBtn.addEventListener('click', () => connectLiveBleHeartRate(true));
+      if (bleConnectBtn) bleConnectBtn.addEventListener('click', () => connectLiveBleHeartRate());
       if (demoHrBtn) demoHrBtn.addEventListener('click', () => toggleSimulatedHeartRateStream());
       if (wristToggleBtn) wristToggleBtn.addEventListener('click', toggleWatchWristAlerts);
       if (timerWristQuickBtn) timerWristQuickBtn.addEventListener('click', toggleWatchWristAlerts);
-      if (testWristAlertBtn) {
-        testWristAlertBtn.addEventListener('click', () => {
-          if (!state.watchSettings || typeof state.watchSettings !== 'object') {
-            state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: true };
-          }
-          state.watchNotificationsEnabled = true;
-          state.watchSettings.wristAlertsEnabled = true;
-          updateWatchAndHeartRateUI();
-          saveState();
-          const nextSetStr = getNextIncompleteSetSummaryForWristAlert();
-          triggerWatchWristTimerNotification(null, nextSetStr);
-          showToast(`📳 Wrist Alert Fired: "Rest Complete! Up Next: ${nextSetStr}"`);
-        });
-      }
       if (delayedTestWristBtn) {
         delayedTestWristBtn.addEventListener('click', triggerDelayedLockScreenWatchTest);
+      }
+      if (healthAutoSyncToggleBtn) {
+        healthAutoSyncToggleBtn.addEventListener('click', () => {
+          if (!state.watchSettings || typeof state.watchSettings !== 'object') {
+            state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: false, healthAutoSync: true };
+          }
+          const currentVal = state.watchSettings.healthAutoSync !== undefined ? Boolean(state.watchSettings.healthAutoSync) : true;
+          state.watchSettings.healthAutoSync = !currentVal;
+          updateWatchAndHeartRateUI();
+          saveState();
+          showToast(
+            state.watchSettings.healthAutoSync
+              ? '✓ Health Connect / Samsung Health & Apple Health Sync Enabled'
+              : 'Health Connect / Apple Health Auto-Sync Paused'
+          );
+        });
       }
       if (healthSyncBtn) healthSyncBtn.addEventListener('click', syncWithAppleGoogleHealth);
       if (exportHealthCsvBtn) exportHealthCsvBtn.addEventListener('click', exportWorkoutNutritionHealthCsv);
@@ -13380,125 +13448,111 @@
     </div>
   </div>
 
-  <!-- 3-Tier Smartwatch, Live BLE Heart Rate & Apple Health / Google Health Connect Modal -->
+  <!-- Automatic OS Smartwatch Sync, Health Connect / Apple Health Bridge & Optional BLE Chest Strap Modal -->
   <div id="smartwatch-health-modal" role="dialog" aria-modal="true" aria-labelledby="smartwatch-modal-title" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-rose-500/40 rounded-2xl max-w-md w-full p-4 space-y-3.5 shadow-2xl max-h-[92vh] overflow-y-auto">
+    <div class="bg-slate-900 border border-emerald-500/40 rounded-2xl max-w-md w-full p-4 space-y-3.5 shadow-2xl max-h-[92vh] overflow-y-auto">
       <div class="flex items-start justify-between border-b border-slate-800 pb-2.5">
         <div>
-          <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-400/40">⌚ 3-Tier Wearable &amp; Health Hub</span>
-          <h3 id="smartwatch-modal-title" class="text-sm sm:text-base font-extrabold text-white mt-1">Smartwatch &amp; Live Heart Rate Sync</h3>
-          <p class="text-[11px] text-slate-400 mt-0.5">BLE Heart Rate (0x180D) • Wrist Timer Haptics • HealthKit &amp; Health Connect</p>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">⌚ Automatic OS Watch &amp; Health Sync</span>
+          <h3 id="smartwatch-modal-title" class="text-sm sm:text-base font-extrabold text-white mt-1">Smartwatch &amp; Health Integration</h3>
+          <p class="text-[11px] text-slate-400 mt-0.5">Samsung Galaxy Watch • Apple Watch • Garmin • Health Connect</p>
         </div>
         <button type="button" id="close-watch-modal-btn" aria-label="Close Smartwatch Modal" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
       </div>
 
-      <!-- TIER 1: Real-Time Web Bluetooth Heart Rate Streaming (0x180D GATT Service) + Rest-Interval HR Recovery Readiness Alert -->
-      <div class="bg-slate-950/90 border border-rose-500/35 rounded-xl p-3 space-y-2.5">
+      <!-- 1. PRIMARY TOP SECTION: AUTOMATIC OS WATCH SYNC (ZERO BLUETOOTH PAIRING NEEDED) -->
+      <div class="bg-slate-950/90 border border-emerald-500/40 rounded-xl p-3 space-y-2.5">
         <div class="flex items-center justify-between gap-2">
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-rose-300">Tier 1 • Web Bluetooth Live HR &amp; Recovery Readiness</span>
-          <span id="watch-modal-live-hr-pill" class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-400 text-xs font-bold">No Active HR Stream</span>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Automatic Smartwatch Sync (No Bluetooth Pairing Needed)</span>
         </div>
-        <p id="watch-modal-ble-status" class="text-[11px] text-slate-300 leading-snug">Ready to pair Garmin, Wear OS, Whoop, Polar, Wahoo, or Coospo (0x180D)</p>
-        <div id="watch-modal-hr-recovery" class="text-[11px] font-extrabold text-sky-300 bg-sky-950/50 border border-sky-500/30 rounded-lg px-2.5 py-1.5">
-          Start a rest timer while streaming BPM to track live recovery delta (e.g., 152 -> 118 BPM (-34 BPM recovery)).
+        <div id="watch-modal-os-sync-status-banner" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold">
+          Connected via Phone OS (Samsung Galaxy Watch / Apple Watch / Garmin)
         </div>
-        <div id="watch-modal-hr-readiness-badge" class="hidden text-[11px] font-extrabold text-emerald-300 bg-emerald-500/20 border border-emerald-400/50 rounded-lg px-2.5 py-1.5">
-          HR Recovered (118 BPM) — Ready for Next Set!
-        </div>
+        <p class="text-[11px] text-slate-300 leading-snug">
+          Your watch is already paired to your phone. Enable Wrist Timer Alerts below so rest and cooking timers vibrate directly on your watch.
+        </p>
 
-        <!-- Rest-Interval HR Recovery Readiness Alert Controls -->
-        <div class="bg-slate-900/90 border border-emerald-500/30 rounded-xl p-2.5 space-y-2">
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">💚 Rest-Interval HR Recovery Readiness Alert</span>
-            <select id="watch-modal-hr-target-select" aria-label="Target Recovery Heart Rate BPM" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[10px] font-extrabold text-emerald-300">
-              <option value="115">≤115 BPM Target</option>
-              <option value="120" selected>≤120 BPM (or -25 BPM)</option>
-              <option value="125">≤125 BPM Target</option>
-              <option value="130">≤130 BPM Target</option>
-            </select>
-          </div>
-          <p class="text-[10px] text-slate-300 leading-snug">High heart rate during heavy sets is normal. During active rest timers (after ≥20s rest), alerts you with a soft chime &amp; emerald badge as soon as your HR drops to your recovery target.</p>
-          <div class="flex flex-wrap gap-1.5">
-            <button type="button" id="watch-modal-hr-alert-toggle-btn" aria-pressed="true" class="flex-1 py-2 px-3 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 font-extrabold text-xs transition">
-              ✓ HR Recovery Alert: ON (≤120 BPM or -25 BPM)
-            </button>
-            <button type="button" id="watch-modal-test-hr-readiness-btn" class="py-2 px-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-emerald-500/40 text-emerald-300 font-extrabold text-[11px] transition">
-              ⚡ Test 118 BPM Ready Alert
-            </button>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5">
-          <button type="button" id="watch-modal-ble-connect-btn" class="py-2 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 font-extrabold text-xs transition">
-            ❤️ Pair BLE Watch / Strap
+        <div class="space-y-2 pt-0.5">
+          <button type="button" id="watch-modal-wrist-toggle-btn" aria-pressed="false" class="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs shadow-md shadow-emerald-500/20 transition">
+            Enable Watch Wrist Alerts
           </button>
-          <button type="button" id="watch-modal-ble-accept-all-btn" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-rose-400/40 text-rose-200 font-extrabold text-xs transition">
-            ⌚ Scan All Watch Devices
+          <button type="button" id="watch-modal-delayed-test-wrist-btn" class="w-full py-2.5 px-3 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 font-extrabold text-xs transition">
+            Test Watch Vibration (5-Second Lock-Screen Test)
           </button>
-        </div>
-        <button type="button" id="watch-modal-demo-hr-btn" class="w-full py-1.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold text-[11px] transition">
-          ▶ Preview Demo HR Simulator (Optional)
-        </button>
-      </div>
-
-      <!-- TIER 2: Samsung Galaxy Watch (Wear OS) & Apple Watch Wrist Haptic Notifications -->
-      <div class="bg-slate-950/90 border border-emerald-500/35 rounded-xl p-3 space-y-2">
-        <div class="flex items-center justify-between gap-2">
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Tier 2 • Samsung Galaxy Watch / Wear OS Wrist Haptics</span>
-          <span class="text-[10px] font-mono text-slate-400">Service Worker + MediaSession</span>
-        </div>
-        <div class="text-[11px] text-slate-300 space-y-1 leading-snug">
-          <p>• Fires a native Android Service Worker notification (<code class="text-emerald-300">vibrate: [300, 150, 300, 150, 400]</code>) with your next set's weight &amp; reps when the Rest or Rice timer hits <code class="text-emerald-300 font-bold">00:00</code>.</p>
-          <p class="text-amber-200/95">• <strong>Samsung Galaxy Wearable Tip:</strong> Open the <strong>Galaxy Wearable</strong> app on your phone → <strong>Watch settings → Notifications</strong> → enable <strong>Chrome</strong> AND turn ON <em>"Show while using phone"</em> (otherwise Samsung suppresses watch vibration while your phone screen is unlocked!).</p>
-        </div>
-        <div class="flex flex-col sm:flex-row gap-1.5 pt-0.5">
-          <button type="button" id="watch-modal-wrist-toggle-btn" aria-pressed="false" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-extrabold text-xs transition">
-            ⌚ Enable Watch Wrist Alerts
-          </button>
-          <button type="button" id="watch-modal-test-wrist-btn" class="py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-emerald-500/40 text-emerald-300 font-extrabold text-xs whitespace-nowrap transition">
-            🔔 Instant Test Alert
-          </button>
-        </div>
-        <button type="button" id="watch-modal-delayed-test-wrist-btn" class="w-full py-2 px-3 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 font-extrabold text-xs transition">
-          🔒 Test Wrist Alert in 5s (Lock Phone Now)
-        </button>
-      </div>
-
-      <!-- 3-STEP VISUAL CONNECTION GUIDE (SAMSUNG GALAXY WATCH / WEAR OS / GARMIN / POLAR) -->
-      <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3 space-y-2.5 text-[11px]">
-        <div class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">Samsung Galaxy Watch (Wear OS) &amp; Garmin Setup Guide</div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div class="bg-slate-900/90 border border-rose-500/30 rounded-lg p-2.5 space-y-1">
-            <div class="font-extrabold text-rose-300">Live BLE Heart Rate (0x180D)</div>
-            <p class="text-slate-300 text-[10px]"><strong>Galaxy Watch (Wear OS):</strong> Install a free Wear OS broadcast app like <em>"Heart Rate to Web"</em> or <em>"HR2VP"</em> on your watch, then tap <strong>Pair BLE Watch / Strap</strong>.</p>
-            <p class="text-slate-300 text-[10px]"><strong>Garmin / Polar / Coospo:</strong> Turn ON <em>"Broadcast Heart Rate"</em> in watch settings and tap Pair above.</p>
-          </div>
-          <div class="bg-slate-900/90 border border-emerald-500/30 rounded-lg p-2.5 space-y-1">
-            <div class="font-extrabold text-emerald-300">Galaxy Watch 00:00 Wrist Buzz</div>
-            <p class="text-slate-300 text-[10px]"><strong>Step 1:</strong> Tap <strong>Enable Watch Wrist Alerts</strong> above and allow Chrome notifications.</p>
-            <p class="text-slate-300 text-[10px]"><strong>Step 2:</strong> In <strong>Galaxy Wearable → Notifications</strong>, enable <strong>Chrome</strong> &amp; <em>"Show while using phone"</em>.</p>
-            <p class="text-slate-300 text-[10px]"><strong>Step 3:</strong> Tap <strong>Test Wrist Alert in 5s</strong> and lock your phone to verify wrist vibration.</p>
+          <div id="watch-modal-5s-countdown-banner" class="hidden text-[11px] font-extrabold text-amber-200 bg-amber-500/15 border border-amber-400/40 rounded-lg px-2.5 py-1.5">
+            5s... Lock your phone screen now so your watch receives the vibration!
           </div>
         </div>
       </div>
 
-      <!-- TIER 3: Apple HealthKit & Google Health Connect Bridge (Capacitor Ready) -->
+      <!-- 2. 1-TAP SAMSUNG HEALTH / HEALTH CONNECT & APPLE HEALTH BRIDGE CARD -->
       <div class="bg-slate-950/90 border border-sky-500/35 rounded-xl p-3 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-1.5">
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Tier 3 • Apple HealthKit &amp; Health Connect</span>
-          <span id="watch-modal-health-bridge-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-500/15 text-sky-200 border border-sky-500/30">Capacitor Ready • Web Health Sync &amp; CSV Bridge</span>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Health Connect &amp; Apple Health Sync</span>
+          <span id="watch-modal-health-bridge-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-500/15 text-sky-200 border border-sky-500/30">Health Connect • Samsung Health • Apple Health</span>
         </div>
         <p id="watch-modal-health-sync-status" class="text-[11px] text-slate-300 leading-snug">Syncs completed workouts, active calories, and daily macros (1,300 kcal • 138g P).</p>
 
-        <div class="grid grid-cols-1 gap-1.5">
-          <button type="button" id="watch-modal-health-sync-btn" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 hover:from-sky-300 hover:to-emerald-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-sky-500/20 transition">
-            🔄 Sync with Apple Health / Google Health Connect
+        <div class="space-y-2">
+          <button type="button" id="watch-modal-health-auto-sync-toggle-btn" aria-pressed="true" class="w-full py-2 px-3 rounded-xl bg-sky-500/20 border border-sky-400/50 text-sky-200 font-extrabold text-[11px] text-left transition">
+            ✓ Sync Workouts &amp; Nutrition with Android Health Connect / Samsung Health &amp; Apple Health
           </button>
-          <button type="button" id="watch-modal-export-csv-btn" class="w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-sky-500/40 text-sky-200 font-extrabold text-xs transition">
-            📥 Export Workout &amp; Nutrition Health CSV
+          <button type="button" id="watch-modal-health-sync-btn" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 hover:from-sky-300 hover:to-emerald-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-sky-500/20 transition">
+            Sync Now / Export Health Data
           </button>
         </div>
       </div>
+
+      <!-- 3. OPTIONAL COLLAPSED BOTTOM ACCORDION: EXTERNAL BLE CHEST STRAPS (0x180D) -->
+      <details id="watch-modal-ble-chest-strap-accordion" class="group bg-slate-950/90 border border-slate-800 rounded-xl overflow-hidden">
+        <summary class="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between gap-2 text-xs font-extrabold text-slate-300 hover:text-white select-none">
+          <span>Optional: Connect External BLE Chest Strap (Polar / Garmin / Wahoo)</span>
+          <span class="text-[10px] text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+        </summary>
+        <div class="px-3 pb-3 pt-1 border-t border-slate-800/80 space-y-2.5">
+          <p id="watch-modal-ble-status" class="text-[11px] text-slate-300 leading-snug">
+            Apple Watch and Samsung Galaxy Watch use Automatic OS Sync above rather than chest-strap Bluetooth pairing.
+          </p>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-rose-300">BLE Chest Strap (0x180D)</span>
+            <span id="watch-modal-live-hr-pill" class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-400 text-xs font-bold">No Active HR Stream</span>
+          </div>
+          <button type="button" id="watch-modal-ble-connect-btn" class="w-full py-2 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 font-extrabold text-xs transition">
+            ❤️ Pair BLE Heart Rate Strap (0x180D)
+          </button>
+          <div id="watch-modal-hr-recovery" class="text-[11px] font-extrabold text-sky-300 bg-sky-950/50 border border-sky-500/30 rounded-lg px-2.5 py-1.5">
+            Pair an optional BLE chest strap (Polar / Garmin / Wahoo) to track live BPM recovery.
+          </div>
+          <div id="watch-modal-hr-readiness-badge" class="hidden text-[11px] font-extrabold text-emerald-300 bg-emerald-500/20 border border-emerald-400/50 rounded-lg px-2.5 py-1.5">
+            HR Recovered (118 BPM) — Ready for Next Set!
+          </div>
+
+          <!-- Rest-Interval HR Recovery Readiness Alert Controls -->
+          <div class="bg-slate-900/90 border border-emerald-500/30 rounded-xl p-2.5 space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">💚 HR Recovery Readiness Alert</span>
+              <select id="watch-modal-hr-target-select" aria-label="Target Recovery Heart Rate BPM" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[10px] font-extrabold text-emerald-300">
+                <option value="115">≤115 BPM Target</option>
+                <option value="120" selected>≤120 BPM (or -25 BPM)</option>
+                <option value="125">≤125 BPM Target</option>
+                <option value="130">≤130 BPM Target</option>
+              </select>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" id="watch-modal-hr-alert-toggle-btn" aria-pressed="true" class="flex-1 py-2 px-3 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 font-extrabold text-xs transition">
+                ✓ HR Recovery Alert: ON (≤120 BPM or -25 BPM)
+              </button>
+              <button type="button" id="watch-modal-test-hr-readiness-btn" class="py-2 px-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-emerald-500/40 text-emerald-300 font-extrabold text-[11px] transition">
+                ⚡ Test 118 BPM
+              </button>
+            </div>
+          </div>
+
+          <button type="button" id="watch-modal-demo-hr-btn" class="w-full py-1.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold text-[11px] transition">
+            ▶ Preview Demo HR Simulator (Optional)
+          </button>
+        </div>
+      </details>
     </div>
   </div>
 

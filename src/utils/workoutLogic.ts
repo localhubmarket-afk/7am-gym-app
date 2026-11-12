@@ -3422,6 +3422,84 @@ export function calculateKeyLiftAndPullupPrs(
   };
 }
 
+// ============================================================================
+// AUTOMATIC OS WATCH SYNC (ZERO BLUETOOTH PAIRING), HEALTH CONNECT BRIDGE &
+// OPTIONAL BLE CHEST STRAP ACCORDION HELPERS
+// ============================================================================
+export function getBleChestStrapRequestOptions(): {
+  filters: Array<{ services: Array<string | number> }>;
+  optionalServices: Array<string | number>;
+} {
+  return {
+    filters: [{ services: ['heart_rate'] }],
+    optionalServices: [0x180d, 'heart_rate', 'battery_service', 0x180f]
+  };
+}
+
+export function getOsWatchSyncStatusBanner(
+  notificationPermission: string | undefined,
+  wristAlertsEnabled?: boolean
+): {
+  connected: boolean;
+  bannerText: string;
+  howItWorksText: string;
+} {
+  const isPermitted =
+    notificationPermission === 'granted' || Boolean(wristAlertsEnabled && notificationPermission !== 'denied');
+  return {
+    connected: isPermitted,
+    bannerText: isPermitted
+      ? 'Connected via Phone OS (Samsung Galaxy Watch / Apple Watch / Garmin)'
+      : 'Ready to Connect via Phone OS (Samsung Galaxy Watch / Apple Watch / Garmin)',
+    howItWorksText:
+      'Your watch is already paired to your phone. Enable Wrist Timer Alerts below so rest and cooking timers vibrate directly on your watch.'
+  };
+}
+
+export function buildFiveSecondWatchTestNotificationPayload(): {
+  title: string;
+  options: {
+    body: string;
+    vibrate: number[];
+    tag: string;
+    renotify: boolean;
+    requireInteraction: boolean;
+  };
+} {
+  return {
+    title: 'Rest Complete (00:00)',
+    options: {
+      body: 'Next Set: 135 lbs x 8 reps',
+      vibrate: [300, 150, 300, 150, 400],
+      tag: 'watch-test',
+      renotify: true,
+      requireInteraction: true
+    }
+  };
+}
+
+export function getHealthBridgePlatformStatus(
+  isNativeCapacitor: boolean,
+  healthAutoSyncEnabled = true
+): {
+  isNative: boolean;
+  autoSyncEnabled: boolean;
+  toggleLabel: string;
+  actionButtonLabel: string;
+  platformBadge: string;
+} {
+  return {
+    isNative: Boolean(isNativeCapacitor),
+    autoSyncEnabled: Boolean(healthAutoSyncEnabled),
+    toggleLabel:
+      'Sync Workouts & Nutrition with Android Health Connect / Samsung Health & Apple Health',
+    actionButtonLabel: 'Sync Now / Export Health Data',
+    platformBadge: isNativeCapacitor
+      ? 'Native Capacitor Health Bridge Active'
+      : 'Web & Native Health Bridge Ready'
+  };
+}
+
 
 
 
