@@ -39,7 +39,12 @@
     html, body {
       font-family: 'Inter', sans-serif;
       -webkit-tap-highlight-color: transparent;
-      overflow-x: clip;
+      overflow-x: hidden;
+      overflow-y: auto;
+      height: auto;
+      min-height: 100dvh;
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
       max-width: 100vw;
       width: 100%;
     }
@@ -70,33 +75,33 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-28 overflow-x-hidden w-full max-w-full selection:bg-emerald-500 selection:text-slate-950">
 
-  <!-- Fixed Top App Header & Always-Visible Pinned Rest Timer HUD -->
-  <header class="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/90 shadow-xl shadow-slate-950/80">
-    <div class="max-w-xl mx-auto px-3.5 pt-2.5 pb-2 space-y-2">
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2 min-w-0">
-          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-extrabold text-xs shrink-0 shadow-md shadow-emerald-500/20">
+  <!-- Sticky Top App Header & Always-Visible Pinned Rest Timer HUD -->
+  <header id="main-sticky-header" class="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/90 shadow-xl shadow-slate-950/80">
+    <div class="max-w-xl mx-auto px-2.5 sm:px-3.5 pt-2 pb-1.5 space-y-1.5">
+      <div class="flex items-center justify-between gap-1.5">
+        <div class="flex items-center gap-1.5 min-w-0 flex-1">
+          <div class="w-7 h-7 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-extrabold text-[10px] shrink-0 shadow-md shadow-emerald-500/20">
             GYM
           </div>
-          <div class="min-w-0">
-            <h1 class="text-xs sm:text-sm font-extrabold tracking-tight text-white leading-tight">Budget Gym</h1>
-            <p class="text-[9px] sm:text-[10px] text-emerald-400 font-semibold leading-tight" id="header-subtitle">Full-Body • $5.55/d</p>
+          <div class="min-w-0 flex-1">
+            <h1 class="text-xs sm:text-sm font-extrabold tracking-tight text-white leading-tight whitespace-nowrap truncate">Budget Gym</h1>
+            <p class="text-[9px] sm:text-[10px] text-emerald-400 font-semibold leading-tight whitespace-nowrap truncate" id="header-subtitle">Full-Body • $5.55/d</p>
           </div>
         </div>
 
         <div class="flex items-center gap-1 shrink-0">
-          <button id="open-gemini-ai-btn" type="button" class="flex items-center gap-1 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition" title="Open Coach AI">
-            <span>✨ Coach AI</span>
+          <button id="open-gemini-ai-btn" type="button" class="flex items-center gap-0.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 px-1.5 sm:px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold whitespace-nowrap transition" title="Open Coach AI">
+            <span>✨</span><span class="hidden sm:inline">Coach </span><span>AI</span>
           </button>
-          <button id="open-watch-modal-btn" type="button" class="flex items-center gap-1 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/40 text-rose-200 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition" title="Smartwatch, Live BLE Heart Rate & Health Sync">
+          <button id="open-watch-modal-btn" type="button" class="flex items-center gap-1 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/40 text-rose-200 px-1.5 sm:px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold whitespace-nowrap transition" title="Smartwatch, Live BLE Heart Rate & Health Sync">
             <span id="watch-header-live-dot" class="hidden w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
             <span>⌚</span>
             <span id="watch-header-btn-label">Watch</span>
           </button>
-          <button id="open-smart-login-btn" type="button" class="flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition" title="Smart Login & User Profile">
+          <button id="open-smart-login-btn" type="button" class="flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 px-1.5 sm:px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold whitespace-nowrap transition" title="Smart Login & User Profile">
             <span id="header-login-label">👤 Profile</span>
           </button>
-          <button id="open-share-store-btn" type="button" class="flex items-center gap-1 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition" title="Share App & Fresh Start Reset">
+          <button id="open-share-store-btn" type="button" class="flex items-center gap-1 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 px-1.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition" title="Share App & Fresh Start Reset">
             <span>📲</span>
           </button>
           <button id="open-db-modal-btn" type="button" class="hidden" title="Database & Cloud Sync">
@@ -109,15 +114,15 @@
         </div>
       </div>
 
-      <!-- Always-Pinned Interactive Rest Timer Bar (Visible on Gym & Pull-Ups Tabs, or Any Tab When Rice Timer/Alert Is Active) -->
+      <!-- Always-Pinned Interactive Rest Timer Bar (Single Compact Row when no BLE HR is connected) -->
       <div id="pinned-rest-timer-row" class="bg-slate-900/95 border border-slate-800 rounded-xl px-2 py-1.5 space-y-1">
-        <div class="flex items-center justify-between gap-1">
-          <div class="flex items-center gap-1 min-w-0">
+        <div class="flex items-center justify-between gap-1.5">
+          <div class="flex items-center gap-1 min-w-0 flex-1">
             <button id="header-timer-toggle" type="button" class="flex items-center gap-1 px-1.5 py-1 rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500/50 transition shrink-0" title="Tap to Start or Pause Rest Timer">
               <span id="header-timer-dot" class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
               <span id="header-timer-display" class="font-mono text-xs sm:text-sm font-extrabold text-emerald-400 tracking-tight">01:30</span>
             </button>
-            <button id="pinned-audio-mode-btn" type="button" class="px-1.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[10px] font-extrabold text-emerald-300 transition shrink-0 whitespace-nowrap" title="Cycle Audio Mode: Sound &amp; Vibe | Vibrate Only | Silent">
+            <button id="pinned-audio-mode-btn" type="button" class="px-1.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[10px] font-extrabold text-emerald-300 transition truncate max-w-[108px] sm:max-w-none" title="Cycle Audio Mode: Sound &amp; Vibe | Vibrate Only | Silent">
               🔔 Sound &amp; Vibe
             </button>
             <span id="pinned-rice-alert-badge" class="hidden sm:inline-block px-2 py-0.5 rounded-md bg-amber-500/25 border border-amber-400/60 text-amber-200 text-[10px] font-extrabold tracking-wide whitespace-nowrap">🍚 MIX / STIR RICE</span>
@@ -125,25 +130,21 @@
           </div>
 
           <div class="flex items-center gap-1 shrink-0">
-            <button id="pinned-jump-next-btn" type="button" aria-label="Jump to next incomplete set" class="px-1.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[10px] font-extrabold transition" title="Jump to next incomplete set">▶<span class="hidden sm:inline"> Next</span></button>
+            <button id="pinned-jump-next-btn" type="button" aria-label="Jump to next incomplete set" class="hidden sm:inline-flex px-1.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[10px] font-extrabold transition" title="Jump to next incomplete set">▶<span class="hidden sm:inline"> Next</span></button>
             <button id="pinned-timer-minus" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 transition" title="Subtract 15 seconds">-15s</button>
             <button id="pinned-timer-play" type="button" class="px-2 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-extrabold transition">Start</button>
             <button id="pinned-timer-plus" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 transition" title="Add 15 seconds">+15s</button>
             <button id="pinned-timer-reset" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-400 hover:text-white transition" title="Reset timer">↺</button>
           </div>
         </div>
-        <!-- Live Smartwatch BLE Heart Rate Pill, Rest-Interval Recovery Delta & HR Readiness Alert Row -->
-        <div class="flex flex-wrap items-center gap-1.5">
+        <!-- Live Smartwatch BLE Heart Rate Pill, Rest-Interval Recovery Delta & HR Readiness Alert Row (Hidden unless state.bleConnected && state.liveBpm > 0) -->
+        <div id="pinned-hr-row-container" class="hidden flex flex-wrap items-center gap-1.5">
           <span id="pinned-hr-live-pill" class="hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/50 text-rose-200 text-[10px] font-extrabold whitespace-nowrap">
             <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
-            <span id="pinned-hr-live-text">138 BPM • Zone 3</span>
+            <span id="pinned-hr-live-text">-- BPM</span>
           </span>
-          <span id="pinned-hr-recovery-badge" class="hidden px-2 py-0.5 rounded-md bg-emerald-950/80 border border-emerald-400/40 text-emerald-300 text-[10px] font-extrabold whitespace-nowrap">
-            152 -&gt; 118 BPM (-34 BPM recovery)
-          </span>
-          <span id="pinned-hr-readiness-badge" class="hidden px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-extrabold whitespace-nowrap shadow-sm">
-            HR Recovered (118 BPM) — Ready for Next Set!
-          </span>
+          <span id="pinned-hr-recovery-badge" class="hidden px-2 py-0.5 rounded-md bg-emerald-950/80 border border-emerald-400/40 text-emerald-300 text-[10px] font-extrabold whitespace-nowrap"></span>
+          <span id="pinned-hr-readiness-badge" class="hidden px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-extrabold whitespace-nowrap shadow-sm"></span>
         </div>
         <div id="pinned-rice-alert-banner" class="hidden rounded-lg px-2.5 py-1.5 bg-gradient-to-r from-amber-950/90 via-amber-900/60 to-emerald-950/90 border border-amber-400/60 text-amber-200 text-[11px] font-extrabold flex items-center justify-between gap-2">
           <span id="pinned-rice-alert-text" class="leading-snug">🍚 MIX / STIR RICE</span>
@@ -164,8 +165,8 @@
     </div>
   </div>
 
-  <!-- Main Content Container (Padded for Fixed Top Header + Timer Bar) -->
-  <main id="main-content-container" class="max-w-xl w-full mx-auto px-3 sm:px-4 pt-28 space-y-2.5 overflow-x-hidden">
+  <!-- Main Content Container (Sits cleanly below sticky top header with zero overlap) -->
+  <main id="main-content-container" class="max-w-xl w-full mx-auto px-3 sm:px-4 pt-3 space-y-2.5 overflow-x-hidden">
 
     <!-- ==================== VIEW 1: WORKOUT & WEIGHT TRACKER ==================== -->
     <section id="view-workout" class="space-y-2.5">
@@ -176,9 +177,9 @@
 
       <!-- Streamlined 7-Day Cycle & Progressive Week Selector Card -->
       <div id="gym-week-day-selector-card" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
-        <div class="flex items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex flex-wrap items-center gap-1.5 min-w-0">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400">📅 Week:</span>
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400 whitespace-nowrap">📅 Week:</span>
             <div id="progressive-week-pills" class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Progressive Training Weeks">
               <!-- Populated dynamically by JS (3-Week Rolling Visibility) -->
             </div>
@@ -188,7 +189,7 @@
               <option value="2">Week 2</option>
             </select>
           </div>
-          <div class="flex items-center gap-1.5 shrink-0">
+          <div class="flex flex-wrap items-center gap-1.5">
             <button type="button" id="gym-open-dashboard-pill-btn" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-300 text-[10px] font-extrabold whitespace-nowrap transition" title="Open Progress &amp; Analytics Dashboard">
               📊 Stats / Dashboard
             </button>
@@ -290,14 +291,14 @@
     <section id="view-pullups" class="hidden space-y-4">
       <!-- Synced Progressive Week Selector Bar (Matches Gym & Muscle Fuel Tabs) -->
       <div id="pullups-top-week-selector-card" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3">
-        <div class="flex items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex flex-wrap items-center gap-1.5 min-w-0">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400">📅 Week:</span>
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400 whitespace-nowrap">📅 Week:</span>
             <div id="pullups-progressive-week-pills" class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Progressive Training Weeks">
               <!-- Populated dynamically by JS -->
             </div>
           </div>
-          <span id="pullups-active-week-badge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-emerald-300 shrink-0">Week 1 • Days 1–5</span>
+          <span id="pullups-active-week-badge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-emerald-300 whitespace-nowrap">Week 1 • Days 1–5</span>
         </div>
       </div>
 
@@ -505,16 +506,16 @@
     <section id="view-vegan" class="hidden space-y-4">
       <!-- Synced 7-Day Cycle & Progressive Week Selector Card (Matches Gym Tab) -->
       <div id="vegan-top-day-selector-container" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
-        <div class="flex items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex flex-wrap items-center gap-1.5 min-w-0">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400">📅 Week:</span>
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400 whitespace-nowrap">📅 Week:</span>
             <div id="vegan-progressive-week-pills" class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Progressive Training Weeks">
               <!-- Populated dynamically by JS -->
             </div>
           </div>
-          <div class="flex items-center gap-1.5 shrink-0">
+          <div class="flex items-center gap-1.5">
             <span id="vegan-week-day-title" class="hidden sm:inline text-[11px] font-bold text-slate-300">⚡ Week 1 • Day 1</span>
-            <span id="vegan-day-status-pill" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300">0/4 Fuel Today</span>
+            <span id="vegan-day-status-pill" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 whitespace-nowrap">0/4 Fuel Today</span>
           </div>
         </div>
         <div class="grid grid-cols-7 gap-1.5" id="vegan-day-selector-grid">
@@ -878,10 +879,17 @@
       audioMode: 'sound_vibe', // 'sound_vibe' | 'vibe_only' | 'silent'
       timerTone: 'warm_marimba', // 'warm_marimba' | 'soft_bell' | 'gentle_tap'
       timerVolume: 0.55, // 55% default calibrated volume
+      watchNotificationsEnabled: false,
+      bleConnected: false,
+      bleDeviceName: '',
+      liveBpm: null,
+      restStartBpm: null,
+      startRestBpm: null,
       watchSettings: {
         hrRecoveryAlert: true,
         targetRecoveryBpm: 120,
-        targetDropBpm: 25
+        targetDropBpm: 25,
+        wristAlertsEnabled: false
       },
       bodyWeightLogs: JSON.parse(JSON.stringify(FRANCOIS_SEED_WEIGHT_LOGS)),
       progressPhotos: JSON.parse(JSON.stringify(FRANCOIS_SEED_PROGRESS_PHOTOS)),
@@ -1189,12 +1197,22 @@
       if (!merged.fuelCustomizations || typeof merged.fuelCustomizations !== 'object') merged.fuelCustomizations = {};
       if (!merged.fuelLogs || typeof merged.fuelLogs !== 'object') merged.fuelLogs = {};
       if (!merged.watchSettings || typeof merged.watchSettings !== 'object') {
-        merged.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25 };
+        merged.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: Boolean(merged.watchNotificationsEnabled) };
       } else {
         if (typeof merged.watchSettings.hrRecoveryAlert !== 'boolean') merged.watchSettings.hrRecoveryAlert = true;
         if (!merged.watchSettings.targetRecoveryBpm) merged.watchSettings.targetRecoveryBpm = 120;
         if (!merged.watchSettings.targetDropBpm) merged.watchSettings.targetDropBpm = 25;
+        if (merged.watchSettings.wristAlertsEnabled === undefined) {
+          merged.watchSettings.wristAlertsEnabled = Boolean(merged.watchNotificationsEnabled);
+        }
       }
+      // Never show fake or stale BPM on startup when no Bluetooth GATT device is connected
+      merged.bleConnected = false;
+      merged.liveBpm = null;
+      merged.restStartBpm = null;
+      merged.startRestBpm = null;
+      merged.bleDeviceName = '';
+      merged.hrRecoveryForcePreview = false;
       if (!merged.userProfile || typeof merged.userProfile !== 'object') {
         merged.userProfile = JSON.parse(JSON.stringify(FRANCOIS_DEFAULT_PROFILE));
       } else {
@@ -3594,11 +3612,10 @@
       }
       if (mainContainer) {
         mainContainer.classList.remove('pt-16', 'pt-28', 'pt-40');
-        if (showStickyTimer) {
-          mainContainer.classList.add(hasRiceActivity ? 'pt-40' : 'pt-28');
-        } else {
-          mainContainer.classList.add('pt-16');
-        }
+        mainContainer.classList.add('pt-3');
+      }
+      if (typeof ensureVerticalScrollUnlocked === 'function') {
+        ensureVerticalScrollUnlocked();
       }
     }
 
@@ -3945,25 +3962,75 @@
       }
     }
 
+    function ensureVerticalScrollUnlocked() {
+      const modalIds = [
+        'smart-login-modal',
+        'smartwatch-health-modal',
+        'gemini-ai-modal',
+        'share-store-modal',
+        'db-sync-modal',
+        'workout-complete-modal'
+      ];
+      const anyModalOpen = modalIds.some(id => {
+        const el = document.getElementById(id);
+        return el && !el.classList.contains('hidden');
+      });
+      if (!anyModalOpen) {
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
+    }
+
+    function closeAllModals() {
+      const modalIds = [
+        'smart-login-modal',
+        'smartwatch-health-modal',
+        'gemini-ai-modal',
+        'share-store-modal',
+        'db-sync-modal',
+        'workout-complete-modal'
+      ];
+      modalIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+
     function buildWristNotificationPayload(nextSetSummary, isRiceStage, riceBanner) {
       const cleanSummary = String(nextSetSummary || '').trim() || 'Set 2 Barbell Bench Press (135 lbs x 8)';
       const body = isRiceStage && riceBanner
         ? `Rice Timer Complete! ${riceBanner}`
-        : `Rest Complete! Up Next: ${cleanSummary}`;
+        : `Time to lift! Up Next: ${cleanSummary}`;
       return {
-        title: isRiceStage ? '7AM Kitchen Timer Alert' : '7AM Gym Rest Timer Complete',
+        title: isRiceStage ? '🍚 7AM Kitchen Timer Alert' : '⏱️ Rest Complete! Start Next Set',
         options: {
           body,
-          tag: '7am-timer-alert',
+          icon: './icon-192.png',
+          badge: './icon-192.png',
+          vibrate: [300, 150, 300, 150, 400],
+          tag: 'gym-rest-timer',
           renotify: true,
-          vibrate: [200, 100, 200]
+          requireInteraction: true
         }
       };
     }
 
     async function triggerWatchWristTimerNotification(completedRiceStage, customNextSetSummary) {
-      if (!state.watchNotificationsEnabled) return false;
+      const wristOn = Boolean(
+        state.watchNotificationsEnabled ||
+        (state.watchSettings && state.watchSettings.wristAlertsEnabled)
+      );
+      if (!wristOn) return false;
+      if (navigator && typeof navigator.vibrate === 'function') {
+        try { navigator.vibrate([300, 150, 300, 150, 400]); } catch (e) {}
+      }
       if (typeof window === 'undefined' || !('Notification' in window)) return false;
+
+      if (Notification.permission === 'default') {
+        try { await Notification.requestPermission(); } catch (e) {}
+      }
       if (Notification.permission !== 'granted') return false;
 
       const stageSpec = completedRiceStage
@@ -3977,8 +4044,8 @@
       );
 
       try {
-        if ('serviceWorker' in navigator) {
-          const reg = await navigator.serviceWorker.getRegistration();
+        if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+          const reg = await navigator.serviceWorker.ready;
           if (reg && typeof reg.showNotification === 'function') {
             await reg.showNotification(payload.title, payload.options);
             return true;
@@ -3994,9 +4061,48 @@
       }
     }
 
+    function triggerDelayedLockScreenWatchTest() {
+      if (!state.watchSettings || typeof state.watchSettings !== 'object') {
+        state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: true };
+      }
+      state.watchNotificationsEnabled = true;
+      state.watchSettings.wristAlertsEnabled = true;
+      updateWatchAndHeartRateUI();
+      saveState();
+
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+      }
+
+      const btn = document.getElementById('watch-modal-delayed-test-wrist-btn');
+      let remaining = 5;
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = `🔒 Lock Phone Now! Firing in ${remaining}s...`;
+      }
+      showToast('🔒 Lock your phone screen now! Wrist alert will vibrate your Galaxy Watch in 5 seconds...');
+
+      const intervalId = setInterval(() => {
+        remaining -= 1;
+        if (remaining > 0) {
+          if (btn) btn.textContent = `🔒 Lock Phone Now! Firing in ${remaining}s...`;
+        } else {
+          clearInterval(intervalId);
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🔒 Test Wrist Alert in 5s (Lock Phone Now)';
+          }
+          const nextSetStr = getNextIncompleteSetSummaryForWristAlert();
+          triggerWatchWristTimerNotification(null, nextSetStr);
+          showToast(`📳 5s Lock-Screen Wrist Alert Fired: "${nextSetStr}"`);
+        }
+      }, 1000);
+    }
+
     function evaluateHrRecoveryReadinessState() {
       const ws = Object.assign({ hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25 }, state.watchSettings || {});
-      const bpm = Math.round(Number(state.liveBpm) || 0);
+      const isConnected = Boolean(state.bleConnected && typeof state.liveBpm === 'number' && state.liveBpm > 0);
+      const bpm = isConnected || state.hrRecoveryForcePreview ? Math.round(Number(state.liveBpm) || 0) : 0;
       const startBpm = Math.round(Number(state.startRestBpm) || 0);
       const totalSec = Math.max(0, Number(state.timerTotalSeconds) || 90);
       const remSec = Math.max(0, Number(state.timerSeconds) || 0);
@@ -4021,9 +4127,9 @@
     }
 
     function updateWatchAndHeartRateUI() {
-      const bpm = Math.round(Number(state.liveBpm) || 0);
-      const startBpm = Math.round(Number(state.startRestBpm) || 0);
-      const hasLiveHr = bpm > 0;
+      const hasLiveHr = Boolean(state.bleConnected === true && typeof state.liveBpm === 'number' && state.liveBpm > 0);
+      const bpm = hasLiveHr ? Math.round(Number(state.liveBpm)) : 0;
+      const startBpm = hasLiveHr ? Math.round(Number(state.startRestBpm) || 0) : 0;
       const zoneInfo = hasLiveHr ? getHeartRateZoneInfo(bpm, 190) : null;
       const recoveryText = hasLiveHr && startBpm > 0 ? formatRestHeartRateRecovery(startBpm, bpm) : '';
       const readiness = evaluateHrRecoveryReadinessState();
@@ -4034,10 +4140,19 @@
         showToast(`💚 ${readiness.badgeText}`);
       }
 
+      const pinnedHrRowContainer = document.getElementById('pinned-hr-row-container');
       const pinnedHrPill = document.getElementById('pinned-hr-live-pill');
       const pinnedHrText = document.getElementById('pinned-hr-live-text');
       const pinnedRecBadge = document.getElementById('pinned-hr-recovery-badge');
       const pinnedReadinessBadge = document.getElementById('pinned-hr-readiness-badge');
+
+      if (pinnedHrRowContainer) {
+        if (hasLiveHr || readiness.isReady) {
+          pinnedHrRowContainer.classList.remove('hidden');
+        } else {
+          pinnedHrRowContainer.classList.add('hidden');
+        }
+      }
 
       if (pinnedHrPill && pinnedHrText) {
         if (hasLiveHr && zoneInfo) {
@@ -4049,7 +4164,7 @@
       }
 
       if (pinnedRecBadge) {
-        if (recoveryText && !readiness.isReady) {
+        if (hasLiveHr && recoveryText && !readiness.isReady) {
           pinnedRecBadge.textContent = recoveryText;
           pinnedRecBadge.classList.remove('hidden');
         } else {
@@ -4082,7 +4197,7 @@
       }
 
       if (timerRecEl) {
-        if (recoveryText) {
+        if (hasLiveHr && recoveryText) {
           timerRecEl.textContent = recoveryText;
           timerRecEl.classList.remove('hidden');
         } else {
@@ -4099,11 +4214,15 @@
         }
       }
 
+      const wristEnabled = Boolean(
+        state.watchNotificationsEnabled ||
+        (state.watchSettings && state.watchSettings.wristAlertsEnabled)
+      );
+
       const wristQuickBtn = document.getElementById('timer-wrist-alert-quick-btn');
       if (wristQuickBtn) {
-        const enabled = Boolean(state.watchNotificationsEnabled);
-        wristQuickBtn.textContent = enabled ? '📳 Wrist Alerts: ON' : '📳 Wrist Alerts: OFF';
-        wristQuickBtn.className = enabled
+        wristQuickBtn.textContent = wristEnabled ? '📳 Wrist Alerts: ON' : '📳 Wrist Alerts: OFF';
+        wristQuickBtn.className = wristEnabled
           ? 'px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold transition'
           : 'px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[11px] font-bold transition';
       }
@@ -4111,7 +4230,7 @@
       const watchHeaderDot = document.getElementById('watch-header-live-dot');
       const watchHeaderLabel = document.getElementById('watch-header-btn-label');
       if (watchHeaderDot) {
-        if (hasLiveHr || state.watchNotificationsEnabled) {
+        if (hasLiveHr || wristEnabled) {
           watchHeaderDot.classList.remove('hidden');
         } else {
           watchHeaderDot.classList.add('hidden');
@@ -4140,7 +4259,9 @@
           : 'px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-400 text-xs font-bold';
       }
       if (modalHrRec) {
-        modalHrRec.textContent = recoveryText || 'Start a rest timer while streaming BPM to track live recovery delta (e.g., 152 -> 118 BPM (-34 BPM recovery)).';
+        modalHrRec.textContent = (hasLiveHr && recoveryText)
+          ? recoveryText
+          : 'Pair a BLE Heart Rate strap/watch and start a rest timer to track live BPM recovery.';
       }
       if (modalReadinessBadge) {
         if (readiness.isReady) {
@@ -4165,24 +4286,23 @@
         modalHrTargetSelect.value = String(state.watchSettings.targetRecoveryBpm || 120);
       }
       if (modalDeviceStatus) {
-        modalDeviceStatus.textContent = state.bleDeviceName
+        modalDeviceStatus.textContent = (hasLiveHr && state.bleDeviceName)
           ? `Connected: ${state.bleDeviceName} (0x180D / 0x2A37)`
-          : 'Ready to pair Garmin, Wear OS, Whoop, Polar, Wahoo, or Coospo (0x180D)';
+          : 'Disconnected • Pair Garmin/Polar/Coospo or Wear OS (with "Heart Rate to Web" / "HR2VP" broadcast app)';
       }
       if (modalDemoBtn) {
         modalDemoBtn.textContent = simulatedHrInterval
-          ? '⏹ Stop Demo HR Stream'
-          : '▶ Simulate Live Watch HR (138 -> 118 BPM Recovery)';
+          ? '⏹ Stop Demo HR Simulator'
+          : '▶ Preview Demo HR Simulator (Optional)';
       }
       if (modalWristToggleBtn) {
-        const on = Boolean(state.watchNotificationsEnabled);
-        modalWristToggleBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-        modalWristToggleBtn.textContent = on
-          ? '✓ Watch Wrist Alerts Enabled (Vibrate [200, 100, 200])'
-          : 'Enable Watch Wrist Alerts';
-        modalWristToggleBtn.className = on
-          ? 'w-full py-2.5 px-3 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-xs shadow-md shadow-emerald-500/20 transition'
-          : 'w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-extrabold text-xs transition';
+        modalWristToggleBtn.setAttribute('aria-pressed', wristEnabled ? 'true' : 'false');
+        modalWristToggleBtn.textContent = wristEnabled
+          ? '✓ Watch Wrist Alerts Enabled (Service Worker Vibrate)'
+          : '⌚ Enable Watch Wrist Alerts';
+        modalWristToggleBtn.className = wristEnabled
+          ? 'flex-1 py-2.5 px-3 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-xs shadow-md shadow-emerald-500/20 transition'
+          : 'flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-extrabold text-xs transition';
       }
       if (modalHealthBridgeBadge) {
         const capPlugins = (window.Capacitor && window.Capacitor.Plugins) || {};
@@ -4197,21 +4317,29 @@
       syncWatchMediaSessionMetadata();
     }
 
-    async function connectLiveBleHeartRate() {
+    async function connectLiveBleHeartRate(useAcceptAllDevices = false) {
       if (!navigator.bluetooth || typeof navigator.bluetooth.requestDevice !== 'function') {
-        showToast('⌚ Web Bluetooth not supported in this browser — starting live Demo Watch HR stream!');
-        toggleSimulatedHeartRateStream(true);
+        showToast('⚠️ Web Bluetooth requires Chrome on Android or Desktop over HTTPS.');
         return;
       }
       try {
-        const device = await navigator.bluetooth.requestDevice({
-          filters: [{ services: ['heart_rate'] }],
-          optionalServices: [0x180d, 'heart_rate']
-        });
+        const reqOpts = useAcceptAllDevices
+          ? {
+              acceptAllDevices: true,
+              optionalServices: [0x180d, 'heart_rate', 'battery_service', 0x180f]
+            }
+          : {
+              filters: [{ services: ['heart_rate'] }, { services: [0x180d] }],
+              optionalServices: [0x180d, 'heart_rate', 'battery_service', 0x180f]
+            };
+        const device = await navigator.bluetooth.requestDevice(reqOpts);
         activeBleDevice = device;
-        state.bleDeviceName = device.name || 'BLE Heart Rate Strap/Watch';
+        state.bleDeviceName = device.name || 'Galaxy Watch / BLE HR';
         device.addEventListener('gattserverdisconnected', () => {
-          state.liveBpm = 0;
+          state.bleConnected = false;
+          state.liveBpm = null;
+          state.restStartBpm = null;
+          state.startRestBpm = null;
           updateWatchAndHeartRateUI();
           showToast('⌚ Watch / BLE Heart Rate disconnected.');
         });
@@ -4220,6 +4348,7 @@
         const characteristic = await service.getCharacteristic('heart_rate_measurement');
         activeBleCharacteristic = characteristic;
         await characteristic.startNotifications();
+        state.bleConnected = true;
         characteristic.addEventListener('characteristicvaluechanged', (event) => {
           const val = event.target && event.target.value;
           const parsed = parseBleHeartRateMeasurement(val);
@@ -4228,9 +4357,11 @@
               clearInterval(simulatedHrInterval);
               simulatedHrInterval = null;
             }
+            state.bleConnected = true;
             state.liveBpm = parsed.bpm;
             if (!state.startRestBpm && timerRunning) {
               state.startRestBpm = parsed.bpm;
+              state.restStartBpm = parsed.bpm;
             }
             updateWatchAndHeartRateUI();
           }
@@ -4239,7 +4370,12 @@
         saveState();
         showToast(`❤️ Connected to ${state.bleDeviceName}! Live BPM streaming active.`);
       } catch (err) {
-        showToast('⌚ Bluetooth pairing canceled or unavailable. Tap "Simulate Live Watch HR" to preview.');
+        state.bleConnected = false;
+        state.liveBpm = null;
+        updateWatchAndHeartRateUI();
+        if (err && err.name !== 'NotFoundError') {
+          showToast('⌚ Ensure Heart Rate Broadcast ("Heart Rate to Web" / "HR2VP") is running on your Galaxy Watch.');
+        }
       }
     }
 
@@ -4247,32 +4383,40 @@
       if (simulatedHrInterval && !forceStart) {
         clearInterval(simulatedHrInterval);
         simulatedHrInterval = null;
-        state.liveBpm = 0;
-        state.startRestBpm = 0;
+        state.bleConnected = false;
+        state.liveBpm = null;
+        state.restStartBpm = null;
+        state.startRestBpm = null;
         state.bleDeviceName = '';
+        state.hrRecoveryForcePreview = false;
         updateWatchAndHeartRateUI();
         saveState();
-        showToast('⏹ Stopped simulated Watch HR stream.');
+        showToast('⏹ Stopped Demo Watch HR Simulator.');
         return;
       }
       if (simulatedHrInterval) clearInterval(simulatedHrInterval);
-      state.bleDeviceName = 'Garmin / Wear OS Broadcast (Demo)';
+      state.bleConnected = true;
+      state.bleDeviceName = 'Watch HR Simulator (Demo)';
       state.startRestBpm = 152;
-      state.liveBpm = 138;
+      state.restStartBpm = 152;
+      state.liveBpm = 134;
       updateWatchAndHeartRateUI();
       saveState();
-      const demoSequence = [138, 134, 128, 122, 118, 138];
+      const demoSequence = [134, 128, 122, 118, 130];
       let idx = 0;
       simulatedHrInterval = setInterval(() => {
         idx = (idx + 1) % demoSequence.length;
         state.liveBpm = demoSequence[idx];
         updateWatchAndHeartRateUI();
       }, 3500);
-      showToast('❤️ Live Watch HR Active: 138 BPM • Zone 3 (Recovery: 152 -> 138 BPM)');
+      showToast('❤️ Demo Watch HR Simulator Active (tap button again to stop)');
     }
 
     async function toggleWatchWristAlerts() {
-      const nextState = !state.watchNotificationsEnabled;
+      if (!state.watchSettings || typeof state.watchSettings !== 'object') {
+        state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: false };
+      }
+      const nextState = !Boolean(state.watchNotificationsEnabled || state.watchSettings.wristAlertsEnabled);
       if (nextState && typeof window !== 'undefined' && 'Notification' in window) {
         if (Notification.permission === 'default') {
           try {
@@ -4281,12 +4425,13 @@
         }
       }
       state.watchNotificationsEnabled = nextState;
+      state.watchSettings.wristAlertsEnabled = nextState;
       updateWatchAndHeartRateUI();
       saveState();
       if (nextState) {
         const nextSetStr = getNextIncompleteSetSummaryForWristAlert();
         triggerWatchWristTimerNotification(null, nextSetStr);
-        showToast(`📳 Watch Wrist Alerts ON! Next alert: "${nextSetStr}"`);
+        showToast(`📳 Galaxy Watch / Wear OS Wrist Alerts ON! Test sent: "${nextSetStr}"`);
       } else {
         showToast('🔕 Watch Wrist Alerts turned OFF.');
       }
@@ -8305,6 +8450,10 @@
           showToast(`⏱️ Started ${sec}s rest timer for ${name}`);
         });
       });
+
+      if (typeof ensureVerticalScrollUnlocked === 'function') {
+        ensureVerticalScrollUnlocked();
+      }
     }
 
     // =========================================================================
@@ -8563,6 +8712,10 @@
           showToast(`⏱️ Started ${sec}s pull-up rest timer`);
         });
       });
+
+      if (typeof ensureVerticalScrollUnlocked === 'function') {
+        ensureVerticalScrollUnlocked();
+      }
     }
 
     // =========================================================================
@@ -10058,6 +10211,10 @@
           });
         });
       }
+
+      if (typeof ensureVerticalScrollUnlocked === 'function') {
+        ensureVerticalScrollUnlocked();
+      }
     }
 
     // =========================================================================
@@ -10154,6 +10311,10 @@
           renderShoppingView();
         });
       });
+
+      if (typeof ensureVerticalScrollUnlocked === 'function') {
+        ensureVerticalScrollUnlocked();
+      }
     }
 
     function switchTab(tabName) {
@@ -10182,11 +10343,7 @@
       }
       if (mainContainer) {
         mainContainer.classList.remove('pt-16', 'pt-28', 'pt-40');
-        if (showStickyTimer) {
-          mainContainer.classList.add(hasRiceActivity ? 'pt-40' : 'pt-28');
-        } else {
-          mainContainer.classList.add('pt-16');
-        }
+        mainContainer.classList.add('pt-3');
       }
       renderRiceCookingTimerWidgets();
 
@@ -10199,6 +10356,9 @@
         }
       });
 
+      if (typeof ensureVerticalScrollUnlocked === 'function') {
+        ensureVerticalScrollUnlocked();
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -12765,10 +12925,12 @@
       const timerOpenWatchBtn = document.getElementById('timer-open-watch-btn');
       const closeWatchModalBtn = document.getElementById('close-watch-modal-btn');
       const bleConnectBtn = document.getElementById('watch-modal-ble-connect-btn');
+      const bleAcceptAllBtn = document.getElementById('watch-modal-ble-accept-all-btn');
       const demoHrBtn = document.getElementById('watch-modal-demo-hr-btn');
       const wristToggleBtn = document.getElementById('watch-modal-wrist-toggle-btn');
       const timerWristQuickBtn = document.getElementById('timer-wrist-alert-quick-btn');
       const testWristAlertBtn = document.getElementById('watch-modal-test-wrist-btn');
+      const delayedTestWristBtn = document.getElementById('watch-modal-delayed-test-wrist-btn');
       const healthSyncBtn = document.getElementById('watch-modal-health-sync-btn');
       const exportHealthCsvBtn = document.getElementById('watch-modal-export-csv-btn');
 
@@ -12782,21 +12944,30 @@
       if (closeWatchModalBtn) {
         closeWatchModalBtn.addEventListener('click', () => {
           if (watchModal) watchModal.classList.add('hidden');
+          ensureVerticalScrollUnlocked();
         });
       }
-      if (bleConnectBtn) bleConnectBtn.addEventListener('click', connectLiveBleHeartRate);
+      if (bleConnectBtn) bleConnectBtn.addEventListener('click', () => connectLiveBleHeartRate(false));
+      if (bleAcceptAllBtn) bleAcceptAllBtn.addEventListener('click', () => connectLiveBleHeartRate(true));
       if (demoHrBtn) demoHrBtn.addEventListener('click', () => toggleSimulatedHeartRateStream());
       if (wristToggleBtn) wristToggleBtn.addEventListener('click', toggleWatchWristAlerts);
       if (timerWristQuickBtn) timerWristQuickBtn.addEventListener('click', toggleWatchWristAlerts);
       if (testWristAlertBtn) {
         testWristAlertBtn.addEventListener('click', () => {
+          if (!state.watchSettings || typeof state.watchSettings !== 'object') {
+            state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: true };
+          }
           state.watchNotificationsEnabled = true;
+          state.watchSettings.wristAlertsEnabled = true;
           updateWatchAndHeartRateUI();
           saveState();
           const nextSetStr = getNextIncompleteSetSummaryForWristAlert();
           triggerWatchWristTimerNotification(null, nextSetStr);
           showToast(`📳 Wrist Alert Fired: "Rest Complete! Up Next: ${nextSetStr}"`);
         });
+      }
+      if (delayedTestWristBtn) {
+        delayedTestWristBtn.addEventListener('click', triggerDelayedLockScreenWatchTest);
       }
       if (healthSyncBtn) healthSyncBtn.addEventListener('click', syncWithAppleGoogleHealth);
       if (exportHealthCsvBtn) exportHealthCsvBtn.addEventListener('click', exportWorkoutNutritionHealthCsv);
@@ -12806,7 +12977,7 @@
       const testHrReadinessBtn = document.getElementById('watch-modal-test-hr-readiness-btn');
       if (hrAlertToggleBtn) {
         hrAlertToggleBtn.addEventListener('click', () => {
-          if (!state.watchSettings) state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25 };
+          if (!state.watchSettings) state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: false };
           state.watchSettings.hrRecoveryAlert = !state.watchSettings.hrRecoveryAlert;
           updateWatchAndHeartRateUI();
           saveState();
@@ -12815,7 +12986,7 @@
       }
       if (hrTargetSelect) {
         hrTargetSelect.addEventListener('change', () => {
-          if (!state.watchSettings) state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25 };
+          if (!state.watchSettings) state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: false };
           state.watchSettings.targetRecoveryBpm = Number(hrTargetSelect.value) || 120;
           updateWatchAndHeartRateUI();
           saveState();
@@ -12824,13 +12995,15 @@
       }
       if (testHrReadinessBtn) {
         testHrReadinessBtn.addEventListener('click', () => {
-          if (!state.watchSettings) state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25 };
+          if (!state.watchSettings) state.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: false };
           state.watchSettings.hrRecoveryAlert = true;
-          state.bleDeviceName = state.bleDeviceName || 'Garmin / Wear OS Broadcast';
+          state.bleConnected = true;
+          state.bleDeviceName = state.bleDeviceName || 'Galaxy Watch / Wear OS Broadcast';
           if (!timerRunning) {
             startTimer(90, 'Rest: Set 1 Barbell Bench Press');
           }
           state.startRestBpm = 152;
+          state.restStartBpm = 152;
           state.liveBpm = 118;
           state.hrRecoveryForcePreview = true;
           state.hrRecoveryAlertFiredForCurrentRest = false;
@@ -13259,44 +13432,52 @@
           <button type="button" id="watch-modal-ble-connect-btn" class="py-2 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 font-extrabold text-xs transition">
             ❤️ Pair BLE Watch / Strap
           </button>
-          <button type="button" id="watch-modal-demo-hr-btn" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-rose-400/40 text-rose-200 font-extrabold text-xs transition">
-            ▶ Simulate Live Watch HR (138 -> 118 BPM Recovery)
+          <button type="button" id="watch-modal-ble-accept-all-btn" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-rose-400/40 text-rose-200 font-extrabold text-xs transition">
+            ⌚ Scan All Watch Devices
           </button>
         </div>
+        <button type="button" id="watch-modal-demo-hr-btn" class="w-full py-1.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold text-[11px] transition">
+          ▶ Preview Demo HR Simulator (Optional)
+        </button>
       </div>
 
-      <!-- TIER 2: Smartwatch Wrist Haptic Notifications & MediaSession Controls -->
+      <!-- TIER 2: Samsung Galaxy Watch (Wear OS) & Apple Watch Wrist Haptic Notifications -->
       <div class="bg-slate-950/90 border border-emerald-500/35 rounded-xl p-3 space-y-2">
         <div class="flex items-center justify-between gap-2">
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Tier 2 • Watch MediaSession &amp; Wrist Haptics</span>
-          <span class="text-[10px] font-mono text-slate-400">WakeLock + MediaSession</span>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Tier 2 • Samsung Galaxy Watch / Wear OS Wrist Haptics</span>
+          <span class="text-[10px] font-mono text-slate-400">Service Worker + MediaSession</span>
         </div>
-        <p class="text-[11px] text-slate-300 leading-snug">Streams active exercise, set number, target weight/reps &amp; live timer to your watch's <strong>Now Playing</strong> screen (<code class="text-sky-300">+15s</code> / <code class="text-emerald-300">Skip Rest</code> buttons on wrist) and vibrates at <code class="text-emerald-300 font-bold">00:00</code>.</p>
+        <div class="text-[11px] text-slate-300 space-y-1 leading-snug">
+          <p>• Fires a native Android Service Worker notification (<code class="text-emerald-300">vibrate: [300, 150, 300, 150, 400]</code>) with your next set's weight &amp; reps when the Rest or Rice timer hits <code class="text-emerald-300 font-bold">00:00</code>.</p>
+          <p class="text-amber-200/95">• <strong>Samsung Galaxy Wearable Tip:</strong> Open the <strong>Galaxy Wearable</strong> app on your phone → <strong>Watch settings → Notifications</strong> → enable <strong>Chrome</strong> AND turn ON <em>"Show while using phone"</em> (otherwise Samsung suppresses watch vibration while your phone screen is unlocked!).</p>
+        </div>
         <div class="flex flex-col sm:flex-row gap-1.5 pt-0.5">
           <button type="button" id="watch-modal-wrist-toggle-btn" aria-pressed="false" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-extrabold text-xs transition">
-            Enable Watch Wrist Alerts
+            ⌚ Enable Watch Wrist Alerts
           </button>
           <button type="button" id="watch-modal-test-wrist-btn" class="py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-emerald-500/40 text-emerald-300 font-extrabold text-xs whitespace-nowrap transition">
-            🔔 Test Wrist Alert
+            🔔 Instant Test Alert
           </button>
         </div>
+        <button type="button" id="watch-modal-delayed-test-wrist-btn" class="w-full py-2 px-3 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 font-extrabold text-xs transition">
+          🔒 Test Wrist Alert in 5s (Lock Phone Now)
+        </button>
       </div>
 
-      <!-- 3-STEP VISUAL CONNECTION GUIDE (GARMIN / WEAR OS / WHOOP / POLAR & APPLE WATCH / FITBIT) -->
+      <!-- 3-STEP VISUAL CONNECTION GUIDE (SAMSUNG GALAXY WATCH / WEAR OS / GARMIN / POLAR) -->
       <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3 space-y-2.5 text-[11px]">
-        <div class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">3-Step Visual Watch Connection Guide</div>
+        <div class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">Samsung Galaxy Watch (Wear OS) &amp; Garmin Setup Guide</div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div class="bg-slate-900/90 border border-rose-500/30 rounded-lg p-2.5 space-y-1">
-            <div class="font-extrabold text-rose-300">Garmin • Wear OS • Whoop • Polar</div>
-            <p class="text-slate-300 text-[10px]"><strong>Step 1:</strong> Open Watch Settings → Sensors / Heart Rate → Turn ON <em>"Broadcast Heart Rate"</em> (BLE 0x180D).</p>
-            <p class="text-slate-300 text-[10px]"><strong>Step 2:</strong> Tap <strong>Pair BLE Watch / Strap</strong> above to stream live BPM.</p>
-            <p class="text-slate-300 text-[10px]"><strong>Step 3:</strong> Start any set rest timer — get an emerald readiness alert when HR drops ≤120 BPM.</p>
+            <div class="font-extrabold text-rose-300">Live BLE Heart Rate (0x180D)</div>
+            <p class="text-slate-300 text-[10px]"><strong>Galaxy Watch (Wear OS):</strong> Install a free Wear OS broadcast app like <em>"Heart Rate to Web"</em> or <em>"HR2VP"</em> on your watch, then tap <strong>Pair BLE Watch / Strap</strong>.</p>
+            <p class="text-slate-300 text-[10px]"><strong>Garmin / Polar / Coospo:</strong> Turn ON <em>"Broadcast Heart Rate"</em> in watch settings and tap Pair above.</p>
           </div>
           <div class="bg-slate-900/90 border border-emerald-500/30 rounded-lg p-2.5 space-y-1">
-            <div class="font-extrabold text-emerald-300">Apple Watch • Fitbit • Galaxy Watch</div>
-            <p class="text-slate-300 text-[10px]"><strong>Step 1:</strong> Tap <strong>Enable Watch Wrist Alerts</strong> above and allow notifications.</p>
-            <p class="text-slate-300 text-[10px]"><strong>Step 2:</strong> Use your watch's <em>Now Playing</em> face to view current set targets or tap Next/Seek for <strong>Skip / +15s</strong>.</p>
-            <p class="text-slate-300 text-[10px]"><strong>Step 3:</strong> Lock phone screen between sets to mirror <code class="text-emerald-300">00:00</code> wrist haptics.</p>
+            <div class="font-extrabold text-emerald-300">Galaxy Watch 00:00 Wrist Buzz</div>
+            <p class="text-slate-300 text-[10px]"><strong>Step 1:</strong> Tap <strong>Enable Watch Wrist Alerts</strong> above and allow Chrome notifications.</p>
+            <p class="text-slate-300 text-[10px]"><strong>Step 2:</strong> In <strong>Galaxy Wearable → Notifications</strong>, enable <strong>Chrome</strong> &amp; <em>"Show while using phone"</em>.</p>
+            <p class="text-slate-300 text-[10px]"><strong>Step 3:</strong> Tap <strong>Test Wrist Alert in 5s</strong> and lock your phone to verify wrist vibration.</p>
           </div>
         </div>
       </div>

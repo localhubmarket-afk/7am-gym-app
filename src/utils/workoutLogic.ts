@@ -3021,13 +3021,61 @@ export interface WatchSettingsConfig {
   hrRecoveryAlert: boolean;
   targetRecoveryBpm: number;
   targetDropBpm: number;
+  wristAlertsEnabled?: boolean;
 }
 
 export const DEFAULT_WATCH_SETTINGS: WatchSettingsConfig = {
   hrRecoveryAlert: true,
   targetRecoveryBpm: 120,
-  targetDropBpm: 25
+  targetDropBpm: 25,
+  wristAlertsEnabled: false
 };
+
+export function shouldShowLiveHeartRateUi(state: {
+  bleConnected?: boolean;
+  liveBpm?: number | null;
+}): boolean {
+  return Boolean(state && state.bleConnected === true && typeof state.liveBpm === 'number' && state.liveBpm > 0);
+}
+
+export function buildWearOsWristNotificationPayload(params: {
+  title?: string | null;
+  nextSetSummary?: string | null;
+  liveBpm?: number | null;
+  bleConnected?: boolean;
+}): {
+  title: string;
+  options: {
+    body: string;
+    icon: string;
+    badge: string;
+    vibrate: number[];
+    tag: string;
+    renotify: boolean;
+    requireInteraction: boolean;
+  };
+} {
+  const cleanNext = String(params.nextSetSummary || 'Time to lift! Check your target weight & reps.').trim();
+  const hasLiveHr = Boolean(params.bleConnected && typeof params.liveBpm === 'number' && params.liveBpm > 0);
+  const hrSuffix = hasLiveHr ? ` • ❤️ ${Math.round(Number(params.liveBpm))} BPM` : '';
+  const finalTitle = String(params.title || '⏱️ Rest Complete! Start Next Set').trim();
+  const finalBody = cleanNext.startsWith('Up Next:') || cleanNext.startsWith('Time to lift')
+    ? `${cleanNext}${hrSuffix}`
+    : `Up Next: ${cleanNext}${hrSuffix}`;
+
+  return {
+    title: finalTitle,
+    options: {
+      body: finalBody,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      vibrate: [300, 150, 300, 150, 400],
+      tag: 'gym-rest-timer',
+      renotify: true,
+      requireInteraction: true
+    }
+  };
+}
 
 export function evaluateHrRecoveryReadiness(params: {
   timerRunning: boolean;
@@ -3373,6 +3421,7 @@ export function calculateKeyLiftAndPullupPrs(
     keyLifts
   };
 }
+
 
 
 

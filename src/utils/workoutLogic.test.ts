@@ -881,6 +881,31 @@ test('Upgrades 1-4: HR Recovery Readiness Alert, Watch MediaSession, 7-Day Trend
   assert.equal(benchPr?.estimated1RmLbs, mod.calculateEpleyOneRepMax(140, 10));
 });
 
+test('Mobile Chrome Layout & Samsung Galaxy Watch (Wear OS) Fixes: No Fake BPM by Default + ServiceWorker Notification Payload', async () => {
+  const mod = await import('./workoutLogic');
+
+  // Never show live BPM when disconnected or when liveBpm is null/0
+  assert.equal(mod.shouldShowLiveHeartRateUi({ bleConnected: false, liveBpm: null }), false);
+  assert.equal(mod.shouldShowLiveHeartRateUi({ bleConnected: false, liveBpm: 138 }), false);
+  assert.equal(mod.shouldShowLiveHeartRateUi({ bleConnected: true, liveBpm: null }), false);
+  assert.equal(mod.shouldShowLiveHeartRateUi({ bleConnected: true, liveBpm: 124 }), true);
+
+  // Wear OS / Samsung Galaxy Watch notification payload
+  const wristPayload = mod.buildWearOsWristNotificationPayload({
+    title: '⏱️ Rest Complete! Start Next Set',
+    nextSetSummary: 'Set 2 Barbell Bench Press (135 lbs x 8)',
+    liveBpm: null,
+    bleConnected: false
+  });
+  assert.equal(wristPayload.title, '⏱️ Rest Complete! Start Next Set');
+  assert.equal(wristPayload.options.body, 'Up Next: Set 2 Barbell Bench Press (135 lbs x 8)');
+  assert.deepEqual(wristPayload.options.vibrate, [300, 150, 300, 150, 400]);
+  assert.equal(wristPayload.options.tag, 'gym-rest-timer');
+  assert.equal(wristPayload.options.renotify, true);
+  assert.equal(wristPayload.options.requireInteraction, true);
+});
+
+
 
 
 
