@@ -983,6 +983,106 @@ test('Android Chrome PWA Installability, 1-Tap Watch Auto-Connect & Continuous M
   assert.equal(mediaRunning.artist, 'Set 2 Barbell Bench Press (135 lbs x 8)');
 });
 
+test('Sticky Timer Green Progress Bar, Negative Overtime, Final-Set Stop, 5-Min Reminder & Pull-Up Badges', async () => {
+  const mod = await import('./workoutLogic');
+
+  // 1. Default to last-used timer duration & negative overtime formatting
+  const idle90 = mod.formatRestTimerReadout(90, 90, false);
+  assert.equal(idle90.clockText, '01:30');
+  assert.equal(idle90.pinnedBadgeText, '01:30 (1.5m)');
+  assert.equal(idle90.isOvertime, false);
+
+  const overtime10 = mod.formatRestTimerReadout(-10, 90, true);
+  assert.equal(overtime10.clockText, '-00:10');
+  assert.equal(overtime10.pinnedBadgeText, '1.5m • -00:10 Overtime');
+  assert.equal(overtime10.isOvertime, true);
+
+  // 2. Green progress bar states (idle 100%, counting down proportional, overtime 100% pulsing amber)
+  const barIdle = mod.computeTimerProgressBarState(90, 90, false);
+  assert.equal(barIdle.widthPct, 100);
+  assert.equal(barIdle.isOvertime, false);
+
+  const barHalf = mod.computeTimerProgressBarState(45, 90, true);
+  assert.equal(barHalf.widthPct, 50);
+  assert.equal(barHalf.isOvertime, false);
+
+  const barOvertime = mod.computeTimerProgressBarState(-5, 90, true);
+  assert.equal(barOvertime.widthPct, 100);
+  assert.equal(barOvertime.isOvertime, true);
+
+  // 3. Final set of workout or final set of last exercise stops timer immediately
+  assert.equal(
+    mod.shouldStopTimerOnFinalSetLogged({
+      doneSetsToday: 24,
+      totalSetsToday: 24,
+      isLastExerciseOfDay: false,
+      isFinalSetOfExercise: true
+    }),
+    true
+  );
+  assert.equal(
+    mod.shouldStopTimerOnFinalSetLogged({
+      doneSetsToday: 18,
+      totalSetsToday: 24,
+      isLastExerciseOfDay: true,
+      isFinalSetOfExercise: true
+    }),
+    true
+  );
+  assert.equal(
+    mod.shouldStopTimerOnFinalSetLogged({
+      doneSetsToday: 10,
+      totalSetsToday: 24,
+      isLastExerciseOfDay: false,
+      isFinalSetOfExercise: false
+    }),
+    false
+  );
+
+  // 4. Pull-Ups tab idle vs running rest timer badges
+  assert.equal(mod.formatPullupDayTimerBadge(1, 90, false, '01:30'), 'Rest: 90s (1.5m)');
+  assert.equal(mod.formatPullupDayTimerBadge(2, 30, false, '01:30'), 'Rest: 30s (10s x Reps)');
+  assert.equal(mod.formatPullupDayTimerBadge(3, 60, false, '01:30'), 'Rest: 60s (1m)');
+  assert.equal(mod.formatPullupDayTimerBadge(4, 60, false, '01:30'), 'Rest: 60s (1m)');
+  assert.equal(mod.formatPullupDayTimerBadge(5, 90, false, '01:30'), 'Rest: 90s (1.5m)');
+  assert.equal(mod.formatPullupDayTimerBadge(2, 30, true, '00:22'), '00:22 (30s)');
+
+  // 5. 5-Minute Forgotten Last Set Reminder evaluation
+  const baseTs = 1700000000000;
+  const notYet5Min = mod.evaluateForgottenLastSetReminder({
+    doneSetsToday: 23,
+    totalSetsToday: 24,
+    lastWorkoutActivityAt: baseTs,
+    nowMs: baseTs + 120000,
+    nextExerciseName: 'Daily Cable Abdominal Crunch',
+    nextSetNum: 3,
+    nextWeightLbs: 57.5,
+    nextReps: 12
+  });
+  assert.equal(notYet5Min.shouldRemind, false);
+
+  const after5Min = mod.evaluateForgottenLastSetReminder({
+    doneSetsToday: 23,
+    totalSetsToday: 24,
+    lastWorkoutActivityAt: baseTs,
+    nowMs: baseTs + 305000,
+    nextExerciseName: 'Daily Cable Abdominal Crunch',
+    nextSetNum: 3,
+    nextWeightLbs: 57.5,
+    nextReps: 12
+  });
+  assert.equal(after5Min.shouldRemind, true);
+  assert.equal(after5Min.remainingSets, 1);
+  assert.equal(after5Min.bannerTitle, 'Did you finish your workout? (5+ min since last set)');
+  assert.equal(
+    after5Min.bannerSubtitle,
+    'You have 1 unlogged set(s) left today — Next: Daily Cable Abdominal Crunch (Set 3: 57.5 lbs x 12).'
+  );
+  assert.equal(after5Min.notificationTitle, 'Did you finish your last set?');
+  assert.equal(after5Min.notificationOptions.tag, 'unfinished-workout-reminder');
+});
+
+
 
 
 

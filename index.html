@@ -81,7 +81,7 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-28 overflow-x-hidden w-full max-w-full selection:bg-emerald-500 selection:text-slate-950">
 
   <!-- Sticky Top App Header & Always-Visible Pinned Rest Timer HUD -->
-  <header id="main-sticky-header" class="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/90 shadow-xl shadow-slate-950/80">
+  <header id="main-sticky-header" class="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/90 shadow-xl shadow-slate-950/80" style="position: fixed; top: 0; left: 0; right: 0; z-index: 50;">
     <div class="max-w-xl mx-auto px-2.5 sm:px-3.5 pt-2 pb-1.5 space-y-1.5">
       <div class="flex items-center justify-between gap-1.5">
         <div class="flex items-center gap-1.5 min-w-0 flex-1">
@@ -96,22 +96,21 @@
 
         <div class="flex items-center gap-1 shrink-0">
           <button id="open-gemini-ai-btn" type="button" class="flex items-center gap-0.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 px-1.5 sm:px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold whitespace-nowrap transition" title="Open Coach AI">
-            <span>✨</span><span class="hidden sm:inline">Coach </span><span>AI</span>
+            <span class="hidden sm:inline">Coach </span><span>AI</span>
           </button>
-          <button id="open-watch-modal-btn" type="button" class="flex items-center gap-1 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/40 text-rose-200 px-1.5 sm:px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold whitespace-nowrap transition" title="Smartwatch, Live BLE Heart Rate & Health Sync">
+          <button id="open-watch-modal-btn" type="button" class="flex items-center gap-1 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/40 text-rose-200 px-1.5 sm:px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold whitespace-nowrap transition" title="Smartwatch, Live BLE Heart Rate &amp; Health Sync">
             <span id="watch-header-live-dot" class="hidden w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
-            <span>⌚</span>
             <span id="watch-header-btn-label">Watch</span>
           </button>
-          <button id="open-smart-login-btn" type="button" class="flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 px-1.5 sm:px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold whitespace-nowrap transition" title="Smart Login & User Profile">
-            <span id="header-login-label">👤 Profile</span>
+          <button id="open-smart-login-btn" type="button" class="flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 px-1.5 sm:px-2 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold whitespace-nowrap transition" title="Smart Login &amp; User Profile">
+            <span id="header-login-label">Profile</span>
           </button>
-          <button id="open-share-store-btn" type="button" class="flex items-center gap-1 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 px-1.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition" title="Share App & Fresh Start Reset">
-            <span>📲</span>
+          <button id="open-share-store-btn" type="button" class="flex items-center gap-1 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 px-1.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition" title="Share App &amp; Fresh Start Reset">
+            <span>Share</span>
           </button>
-          <button id="open-db-modal-btn" type="button" class="hidden" title="Database & Cloud Sync">
+          <button id="open-db-modal-btn" type="button" class="hidden" title="Database &amp; Cloud Sync">
             <span id="db-status-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            <span>💾</span>
+            <span>DB</span>
           </button>
           <button id="header-timer-open" type="button" class="hidden sm:inline-flex text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-1 rounded-xl font-semibold transition">
             Timer
@@ -122,24 +121,24 @@
       <!-- Always-Pinned Interactive Rest Timer Bar (Single Compact Row when no BLE HR is connected) -->
       <div id="pinned-rest-timer-row" class="bg-slate-900/95 border border-slate-800 rounded-xl px-2 py-1.5 space-y-1">
         <div class="flex items-center justify-between gap-1.5">
-          <div class="flex items-center gap-1 min-w-0 flex-1">
+          <div class="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
             <button id="header-timer-toggle" type="button" class="flex items-center gap-1 px-1.5 py-1 rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500/50 transition shrink-0" title="Tap to Start or Pause Rest Timer">
-              <span id="header-timer-dot" class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
-              <span id="header-timer-display" class="font-mono text-xs sm:text-sm font-extrabold text-emerald-400 tracking-tight">01:30</span>
+              <span id="header-timer-dot" class="w-1.5 h-1.5 rounded-full bg-slate-500 shrink-0"></span>
+              <span id="header-timer-display" class="font-mono text-[11px] sm:text-xs font-extrabold text-emerald-400 tracking-tight whitespace-nowrap">01:30 (1.5m)</span>
             </button>
-            <button id="pinned-audio-mode-btn" type="button" class="px-1.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[10px] font-extrabold text-emerald-300 transition truncate max-w-[108px] sm:max-w-none" title="Cycle Audio Mode: Sound &amp; Vibe | Vibrate Only | Silent">
-              🔔 Sound &amp; Vibe
+            <button id="pinned-audio-mode-btn" type="button" class="px-1.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[10px] font-extrabold text-emerald-300 transition truncate min-w-0" title="Cycle Audio Mode: Sound &amp; Vibe | Vibrate Only | Silent">
+              Sound &amp; Vibe
             </button>
-            <span id="pinned-rice-alert-badge" class="hidden sm:inline-block px-2 py-0.5 rounded-md bg-amber-500/25 border border-amber-400/60 text-amber-200 text-[10px] font-extrabold tracking-wide whitespace-nowrap">🍚 MIX / STIR RICE</span>
+            <span id="pinned-rice-alert-badge" class="hidden sm:inline-block px-2 py-0.5 rounded-md bg-amber-500/25 border border-amber-400/60 text-amber-200 text-[10px] font-extrabold tracking-wide whitespace-nowrap">MIX / STIR RICE</span>
             <span id="pinned-timer-context" class="hidden md:inline text-[11px] font-semibold text-slate-300 truncate">Ready • Tap any set</span>
           </div>
 
           <div class="flex items-center gap-1 shrink-0">
-            <button id="pinned-jump-next-btn" type="button" aria-label="Jump to next incomplete set" class="hidden sm:inline-flex px-1.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[10px] font-extrabold transition" title="Jump to next incomplete set">▶<span class="hidden sm:inline"> Next</span></button>
+            <button id="pinned-jump-next-btn" type="button" aria-label="Jump to next incomplete set" class="hidden sm:inline-flex px-1.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-[10px] font-extrabold transition" title="Jump to next incomplete set">Next</button>
             <button id="pinned-timer-minus" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 transition" title="Subtract 15 seconds">-15s</button>
             <button id="pinned-timer-play" type="button" class="px-2 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-extrabold transition">Start</button>
             <button id="pinned-timer-plus" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 transition" title="Add 15 seconds">+15s</button>
-            <button id="pinned-timer-reset" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-400 hover:text-white transition" title="Reset timer">↺</button>
+            <button id="pinned-timer-reset" type="button" class="px-1.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-300 hover:text-white transition" title="Reset timer">Reset</button>
           </div>
         </div>
         <!-- Live Smartwatch BLE Heart Rate Pill, Rest-Interval Recovery Delta & HR Readiness Alert Row (Hidden unless state.bleConnected && state.liveBpm > 0) -->
@@ -152,13 +151,17 @@
           <span id="pinned-hr-readiness-badge" class="hidden px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-extrabold whitespace-nowrap shadow-sm"></span>
         </div>
         <div id="pinned-rice-alert-banner" class="hidden rounded-lg px-2.5 py-1.5 bg-gradient-to-r from-amber-950/90 via-amber-900/60 to-emerald-950/90 border border-amber-400/60 text-amber-200 text-[11px] font-extrabold flex items-center justify-between gap-2">
-          <span id="pinned-rice-alert-text" class="leading-snug">🍚 MIX / STIR RICE</span>
+          <span id="pinned-rice-alert-text" class="leading-snug">MIX / STIR RICE</span>
           <button id="pinned-rice-alert-dismiss" type="button" class="px-2 py-0.5 rounded bg-slate-900/90 hover:bg-slate-800 text-slate-200 text-[10px] font-bold shrink-0">Dismiss</button>
+        </div>
+        <!-- High-Contrast Green Timer Progress Bar directly along the bottom of the sticky top timer bar -->
+        <div id="pinned-timer-progress-track" class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1.5">
+          <div id="pinned-timer-progress-fill" class="h-full bg-emerald-500 transition-all duration-300" style="width: 100%"></div>
         </div>
       </div>
     </div>
-    <!-- Live Pinned Top Countdown Progress Strip -->
-    <div id="pinned-rest-timer-strip" class="w-full bg-slate-900 h-1 overflow-hidden">
+    <!-- Hidden legacy strip (kept for backwards-compatible DOM ref) -->
+    <div id="pinned-rest-timer-strip" class="hidden w-full bg-slate-900 h-1 overflow-hidden">
       <div id="header-timer-progress" class="bg-emerald-500 h-full transition-all duration-300" style="width: 100%"></div>
     </div>
   </header>
@@ -170,8 +173,30 @@
     </div>
   </div>
 
-  <!-- Main Content Container (Sits cleanly below sticky top header with zero overlap) -->
-  <main id="main-content-container" class="max-w-xl w-full mx-auto px-3 sm:px-4 pt-3 space-y-2.5 overflow-x-hidden">
+  <!-- Main Content Container (Sits cleanly below fixed top header with dynamic ResizeObserver spacer) -->
+  <main id="main-content-container" class="max-w-xl w-full mx-auto px-3 sm:px-4 pt-24 space-y-2.5 overflow-x-hidden">
+
+    <!-- 5-Minute Forgotten Last Set Reminder Banner ("Did you finish your workout?") -->
+    <div id="forgotten-set-reminder-banner" role="region" aria-label="Unfinished Workout Reminder" class="hidden bg-amber-950/90 border-2 border-amber-400/80 rounded-2xl p-3.5 space-y-2.5 shadow-xl">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-400/40">Workout Inactivity Check</span>
+          <h3 id="forgotten-set-reminder-title" class="text-xs sm:text-sm font-extrabold text-white mt-1">Did you finish your workout? (5+ min since last set)</h3>
+          <p id="forgotten-set-reminder-subtitle" class="text-[11px] font-semibold text-amber-200 mt-0.5 leading-snug">You have 1 unlogged set(s) left today.</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+        <button type="button" id="forgotten-set-log-finish-btn" class="flex-1 min-w-[140px] py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-md transition">
+          Yes, Log Set &amp; Finish
+        </button>
+        <button type="button" id="forgotten-set-snooze-btn" class="py-2 px-2.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 text-xs font-extrabold transition">
+          Still Lifting (+5m Snooze)
+        </button>
+        <button type="button" id="forgotten-set-dismiss-btn" class="py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold transition">
+          Dismiss
+        </button>
+      </div>
+    </div>
 
     <!-- ==================== VIEW 1: WORKOUT & WEIGHT TRACKER ==================== -->
     <section id="view-workout" class="space-y-2.5">
@@ -379,8 +404,8 @@
 
         <!-- Giant Countdown Display -->
         <div class="py-4">
-          <div id="main-timer-display" class="font-mono text-6xl font-extrabold tracking-tight text-white">
-            01:30
+          <div id="main-timer-display" class="font-mono text-5xl sm:text-6xl font-extrabold tracking-tight text-white">
+            01:30 (1.5m)
           </div>
           <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-4">
             <div id="main-timer-progress" class="bg-emerald-500 h-full transition-all duration-300" style="width: 100%"></div>
@@ -411,10 +436,10 @@
               30s <span class="block text-[10px] font-normal text-slate-400">Side/Arm</span>
             </button>
             <button type="button" data-timer-sec="60" class="timer-preset-btn py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700">
-              60s <span class="block text-[10px] font-normal text-slate-400">Superset/Pull</span>
+              60s (1m) <span class="block text-[10px] font-normal text-slate-400">Superset/Pull</span>
             </button>
-            <button type="button" data-timer-sec="90" class="timer-preset-btn py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700">
-              90s <span class="block text-[10px] font-normal text-slate-400">Cables/Abs</span>
+            <button type="button" data-timer-sec="90" class="timer-preset-btn py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-emerald-500/40">
+              90s (1.5m) <span class="block text-[10px] font-normal text-emerald-300">Default Rest</span>
             </button>
             <button type="button" data-timer-sec="120" class="timer-preset-btn py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700">
               2m <span class="block text-[10px] font-normal text-slate-400">Rows/Lunges</span>
@@ -904,8 +929,13 @@
       exerciseNotes: {},
       openNotePanels: {},
       dismissedPreFuelPrompt: {},
+      lastUsedTimerSeconds: 90,
       timerSeconds: 90,
       timerTotalSeconds: 90,
+      timerInOvertime: false,
+      timerZeroChimeFired: false,
+      lastWorkoutActivityAt: null,
+      dismissedForgottenSetActivityAt: null,
       mealMode: 'recomp_6pack',
       oatsBatchDays: 4,
       oatsProteinBoost: true,
@@ -1190,6 +1220,13 @@
       }
       if (typeof merged.timerVolume !== 'number' || isNaN(merged.timerVolume) || merged.timerVolume < 0.05 || merged.timerVolume > 1.0) {
         merged.timerVolume = 0.55;
+      }
+      merged.lastUsedTimerSeconds = Math.max(5, parseInt(merged.lastUsedTimerSeconds, 10) || 90);
+      if (!merged.timerRunning) {
+        merged.timerSeconds = merged.lastUsedTimerSeconds;
+        merged.timerTotalSeconds = merged.lastUsedTimerSeconds;
+        merged.timerInOvertime = false;
+        merged.timerZeroChimeFired = false;
       }
       if (!merged.activeFuelPreset || !['almond_cashew_pea', 'classic_silk_protein', 'unsweetened_soy'].includes(merged.activeFuelPreset)) {
         merged.activeFuelPreset = 'almond_cashew_pea';
@@ -3125,24 +3162,24 @@
       state.soundEnabled = mode === 'sound_vibe';
 
       const labels = {
-        sound_vibe: '🔔 Sound & Vibe',
-        vibe_only: '📳 Vibrate Only',
-        silent: '🔕 Silent'
+        sound_vibe: 'Sound & Vibe',
+        vibe_only: 'Vibrate Only',
+        silent: 'Silent'
       };
       const shortLabels = {
-        sound_vibe: '🔔 Sound & Vibe',
-        vibe_only: '📳 Vibrate Only',
-        silent: '🔕 Silent'
+        sound_vibe: 'Sound & Vibe',
+        vibe_only: 'Vibrate Only',
+        silent: 'Silent'
       };
 
       const pinnedBtn = document.getElementById('pinned-audio-mode-btn');
       if (pinnedBtn) {
         pinnedBtn.textContent = shortLabels[mode];
         pinnedBtn.className = mode === 'sound_vibe'
-          ? 'px-1.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-emerald-500/40 text-[10px] font-extrabold text-emerald-300 transition shrink-0 whitespace-nowrap'
+          ? 'px-1.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-emerald-500/40 text-[10px] font-extrabold text-emerald-300 transition truncate min-w-0'
           : (mode === 'vibe_only'
-              ? 'px-1.5 py-1 rounded-lg bg-sky-950/60 hover:bg-sky-900/60 border border-sky-400/50 text-[10px] font-extrabold text-sky-300 transition shrink-0 whitespace-nowrap'
-              : 'px-1.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 text-[10px] font-bold text-slate-400 transition shrink-0 whitespace-nowrap');
+              ? 'px-1.5 py-1 rounded-lg bg-sky-950/60 hover:bg-sky-900/60 border border-sky-400/50 text-[10px] font-extrabold text-sky-300 transition truncate min-w-0'
+              : 'px-1.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 text-[10px] font-bold text-slate-400 transition truncate min-w-0');
       }
 
       const mainToggle = document.getElementById('timer-sound-toggle');
@@ -3424,11 +3461,57 @@
       timerWorker = null;
     }
 
+    function formatDurationLabelShort(seconds) {
+      const sec = Math.max(1, Math.round(Number(seconds) || 90));
+      if (sec < 60) return `${sec}s`;
+      const mins = sec / 60;
+      if (Number.isInteger(mins)) return `${mins}m`;
+      return `${+mins.toFixed(1)}m`;
+    }
+
     function formatTime(sec) {
-      const s = Math.max(0, Math.floor(sec));
-      const m = Math.floor(s / 60);
-      const rem = s % 60;
-      return String(m).padStart(2, '0') + ':' + String(rem).padStart(2, '0');
+      const n = Math.round(Number(sec) || 0);
+      const isNeg = n < 0;
+      const absSec = Math.abs(n);
+      const m = Math.floor(absSec / 60);
+      const rem = absSec % 60;
+      const str = String(m).padStart(2, '0') + ':' + String(rem).padStart(2, '0');
+      return isNeg ? ('-' + str) : str;
+    }
+
+    function getPullupIdleTimerBadgeText(dayNum, restSec) {
+      const d = Number(dayNum) || 1;
+      const sec = Number(restSec) || 60;
+      if (d === 1) return 'Rest: 90s (1.5m)';
+      if (d === 2) return 'Rest: 30s (10s x Reps)';
+      if (d === 3) return 'Rest: 60s (1m)';
+      if (d === 4) return 'Rest: 60s (1m)';
+      if (d === 5) return 'Rest: 90s (1.5m)';
+      return `Rest: ${sec}s (${formatDurationLabelShort(sec)})`;
+    }
+
+    function syncFixedHeaderSpacer() {
+      const headerEl = document.getElementById('main-sticky-header');
+      const mainContainer = document.getElementById('main-content-container');
+      if (!headerEl || !mainContainer) return;
+      const h = headerEl.offsetHeight;
+      if (h > 0) {
+        mainContainer.style.paddingTop = (h + 10) + 'px';
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', syncFixedHeaderSpacer);
+      if (typeof ResizeObserver !== 'undefined') {
+        window.addEventListener('DOMContentLoaded', () => {
+          const headerEl = document.getElementById('main-sticky-header');
+          if (headerEl) {
+            const ro = new ResizeObserver(() => syncFixedHeaderSpacer());
+            ro.observe(headerEl);
+          }
+          syncFixedHeaderSpacer();
+        });
+      }
     }
 
     function renderGymPwaIconDataUrl(size) {
@@ -3521,12 +3604,10 @@
       if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
       try {
         const nextSetStr = getNextIncompleteSetSummaryForWristAlert();
-        const remSec = Math.max(0, Math.round(Number(state.timerSeconds) || 0));
-        const mm = String(Math.floor(remSec / 60)).padStart(2, '0');
-        const ss = String(remSec % 60).padStart(2, '0');
+        const formattedClock = formatTime(state.timerSeconds || 0);
         const ctxLabel = String(state.timerContextLabel || '').trim();
         const title = timerRunning
-          ? `${mm}:${ss} Rest • ${ctxLabel || nextSetStr}`
+          ? `${formattedClock} Rest • ${ctxLabel || nextSetStr}`
           : (ctxLabel || `Up Next: ${nextSetStr}`);
         const artist = `${state.liveBpm > 0 ? `${state.liveBpm} BPM • ` : ''}${nextSetStr}`;
         const album = `Week ${state.currentWeek || 1} • Day ${(state.selectedDayIndex || 0) + 1} • Budget Gym`;
@@ -3571,33 +3652,69 @@
     }
 
     function updateTimerUI() {
-      const formatted = formatTime(state.timerSeconds);
+      const lastUsedSec = Math.max(5, Math.round(Number(state.lastUsedTimerSeconds) || 90));
+      const shortPresetLabel = formatDurationLabelShort(lastUsedSec);
+      const sec = Math.round(Number(state.timerSeconds) || 0);
+      const isOvertime = sec < 0;
+      const formatted = formatTime(sec);
+
       const headerDisp = document.getElementById('header-timer-display');
       const mainDisp = document.getElementById('main-timer-display');
       const dot = document.getElementById('header-timer-dot');
       const btn = document.getElementById('timer-start-pause');
       const prog = document.getElementById('main-timer-progress');
       const headerProg = document.getElementById('header-timer-progress');
+      const pinnedProgFill = document.getElementById('pinned-timer-progress-fill');
       const pinnedPlay = document.getElementById('pinned-timer-play');
       const pinnedCtx = document.getElementById('pinned-timer-context');
 
-      if (headerDisp) headerDisp.textContent = formatted;
-      if (mainDisp) mainDisp.textContent = formatted;
+      if (headerDisp) {
+        if (isOvertime) {
+          headerDisp.textContent = `${shortPresetLabel} • ${formatted} Overtime`;
+          headerDisp.className = 'font-mono text-xs sm:text-sm font-extrabold text-amber-400 tracking-tight';
+        } else if (!timerRunning && sec === lastUsedSec) {
+          headerDisp.textContent = `${formatted} (${shortPresetLabel})`;
+          headerDisp.className = 'font-mono text-xs sm:text-sm font-extrabold text-emerald-400 tracking-tight';
+        } else {
+          headerDisp.textContent = formatted;
+          headerDisp.className = 'font-mono text-xs sm:text-sm font-extrabold text-emerald-400 tracking-tight';
+        }
+      }
+
+      if (mainDisp) {
+        if (isOvertime) {
+          mainDisp.textContent = formatted;
+          mainDisp.className = 'font-mono text-5xl sm:text-6xl font-extrabold tracking-tight text-amber-400';
+        } else if (!timerRunning && sec === lastUsedSec) {
+          mainDisp.textContent = `${formatted} (${shortPresetLabel})`;
+          mainDisp.className = 'font-mono text-5xl sm:text-6xl font-extrabold tracking-tight text-white';
+        } else {
+          mainDisp.textContent = formatted;
+          mainDisp.className = 'font-mono text-5xl sm:text-6xl font-extrabold tracking-tight text-white';
+        }
+      }
+
       document.title = timerRunning ? `(${formatted}) Gym` : 'Gym & Vegan Muscle Hub';
 
       if (pinnedCtx) {
-        pinnedCtx.textContent = timerRunning
-          ? (state.timerContextLabel || 'Rest Timer Running')
-          : (state.timerContextLabel ? `Paused: ${state.timerContextLabel}` : 'Ready • Tap any set');
-        pinnedCtx.className = timerRunning
-          ? 'hidden md:inline text-[11px] font-bold text-emerald-300 truncate'
-          : 'hidden md:inline text-[11px] font-semibold text-slate-400 truncate';
+        pinnedCtx.textContent = isOvertime
+          ? `Overtime (${shortPresetLabel} target) • Log next set`
+          : (timerRunning
+              ? (state.timerContextLabel || 'Rest Timer Running')
+              : (state.timerContextLabel ? `Paused: ${state.timerContextLabel}` : 'Ready • Tap any set'));
+        pinnedCtx.className = isOvertime
+          ? 'hidden md:inline text-[11px] font-extrabold text-amber-300 truncate'
+          : (timerRunning
+              ? 'hidden md:inline text-[11px] font-bold text-emerald-300 truncate'
+              : 'hidden md:inline text-[11px] font-semibold text-slate-400 truncate');
       }
 
       if (dot) {
-        dot.className = timerRunning
-          ? 'w-2 h-2 rounded-full bg-emerald-400 animate-ping'
-          : 'w-2 h-2 rounded-full bg-slate-500';
+        dot.className = isOvertime
+          ? 'w-2 h-2 rounded-full bg-amber-400 animate-ping'
+          : (timerRunning
+              ? 'w-2 h-2 rounded-full bg-emerald-400 animate-ping'
+              : 'w-2 h-2 rounded-full bg-emerald-500');
       }
       if (btn) {
         btn.textContent = timerRunning ? 'Pause Timer' : 'Start Timer';
@@ -3611,16 +3728,34 @@
           ? 'px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-extrabold transition'
           : 'px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-extrabold transition';
       }
-      const pct = state.timerTotalSeconds > 0
-        ? Math.min(100, Math.max(0, (state.timerSeconds / state.timerTotalSeconds) * 100))
-        : 0;
-      if (prog) prog.style.width = pct + '%';
-      if (headerProg) {
-        headerProg.style.width = pct + '%';
-        headerProg.className = timerRunning
-          ? 'bg-emerald-400 h-full transition-all duration-300'
-          : 'bg-slate-700 h-full transition-all duration-300';
+
+      const totalSec = Math.max(1, Number(state.timerTotalSeconds) || lastUsedSec);
+      let barPct = 100;
+      let fillColorClass = 'bg-emerald-500 h-full transition-all duration-300';
+      if (isOvertime) {
+        barPct = 100;
+        fillColorClass = 'bg-amber-500 h-full transition-all duration-300 animate-pulse';
+      } else if (!timerRunning && sec >= totalSec) {
+        barPct = 100;
+        fillColorClass = 'bg-emerald-500 h-full transition-all duration-300';
+      } else {
+        barPct = Math.min(100, Math.max(0, (sec / totalSec) * 100));
+        fillColorClass = 'bg-emerald-500 h-full transition-all duration-300';
       }
+
+      if (prog) {
+        prog.style.width = barPct + '%';
+        prog.className = fillColorClass;
+      }
+      if (pinnedProgFill) {
+        pinnedProgFill.style.width = barPct + '%';
+        pinnedProgFill.className = fillColorClass;
+      }
+      if (headerProg) {
+        headerProg.style.width = barPct + '%';
+        headerProg.className = fillColorClass;
+      }
+
       syncWatchMediaSessionMetadata();
       const RiceAlertBadge = document.getElementById('pinned-rice-alert-badge');
       const RiceAlertBanner = document.getElementById('pinned-rice-alert-banner');
@@ -3630,8 +3765,8 @@
         if (hasRiceActivity) {
           RiceAlertBadge.className = 'hidden sm:inline-block px-2 py-0.5 rounded-md bg-amber-500/25 border border-amber-400/60 text-amber-200 text-[10px] font-extrabold tracking-wide whitespace-nowrap';
           RiceAlertBadge.textContent = state.riceTimerAlertBanner
-            ? '🍚 MIX / STIR RICE!'
-            : `🍚 Rice Stage ${state.activeRiceTimerStage}/3 • MIX / STIR RICE`;
+            ? 'MIX / STIR RICE!'
+            : `Rice Stage ${state.activeRiceTimerStage}/3 • MIX / STIR RICE`;
         } else {
           RiceAlertBadge.className = 'hidden';
         }
@@ -3641,15 +3776,22 @@
           RiceAlertBanner.classList.remove('hidden');
           RiceAlertText.textContent = state.riceTimerAlertBanner
             ? state.riceTimerAlertBanner
-            : `🍚 Rice Stage ${state.activeRiceTimerStage}/3 Running (${formatted}) • MIX / STIR RICE`;
+            : `Rice Stage ${state.activeRiceTimerStage}/3 Running (${formatted}) • MIX / STIR RICE`;
         } else {
           RiceAlertBanner.classList.add('hidden');
         }
       }
 
-      // Also update all inline Daily Pull-Up Timer displays across Workout Banner, Exercise #1 Card, and Pull-Ups Window
-      document.querySelectorAll('.live-pullup-timer-readout').forEach(el => {
-        el.textContent = formatted;
+      // Update Pull-Ups tab timer buttons: show live countdown ONLY when timerRunning is true; when idle show exact rest target for that day
+      document.querySelectorAll('.pullup-quick-timer').forEach(btnEl => {
+        const dNum = parseInt(btnEl.getAttribute('data-pullup-day-num') || '1', 10);
+        const rSec = parseInt(btnEl.getAttribute('data-rest-sec') || '60', 10);
+        const readoutSpan = btnEl.querySelector('.live-pullup-timer-readout');
+        if (readoutSpan) {
+          readoutSpan.textContent = timerRunning
+            ? `${formatted} (${rSec}s)`
+            : getPullupIdleTimerBadgeText(dNum, rSec);
+        }
       });
       document.querySelectorAll('.live-pullup-timer-dot').forEach(el => {
         el.className = timerRunning
@@ -3692,7 +3834,6 @@
       const showStickyTimer = (currentTab === 'workout' || currentTab === 'pullups' || hasRiceActivity);
       const pinnedTimerRow = document.getElementById('pinned-rest-timer-row');
       const pinnedTimerStrip = document.getElementById('pinned-rest-timer-strip');
-      const mainContainer = document.getElementById('main-content-container');
       if (pinnedTimerRow) {
         if (showStickyTimer) pinnedTimerRow.classList.remove('hidden');
         else pinnedTimerRow.classList.add('hidden');
@@ -3701,10 +3842,7 @@
         if (showStickyTimer) pinnedTimerStrip.classList.remove('hidden');
         else pinnedTimerStrip.classList.add('hidden');
       }
-      if (mainContainer) {
-        mainContainer.classList.remove('pt-16', 'pt-28', 'pt-40');
-        mainContainer.classList.add('pt-3');
-      }
+      syncFixedHeaderSpacer();
       if (typeof ensureVerticalScrollUnlocked === 'function') {
         ensureVerticalScrollUnlocked();
       }
@@ -3715,24 +3853,24 @@
       if (!stageSpec) return;
       state.activeRiceTimerStage = stageSpec.stage;
       state.riceTimerAlertBanner = '';
-      startTimer(stageSpec.seconds, `🍚 Rice Stage ${stageSpec.stage}/3: ${stageSpec.buttonLabel} • MIX / STIR RICE`);
+      startTimer(stageSpec.seconds, `Rice Stage ${stageSpec.stage}/3: ${stageSpec.buttonLabel} • MIX / STIR RICE`);
       syncStickyHeaderVisibility();
       renderRiceCookingTimerWidgets();
-      showToast(`🍚 Started ${stageSpec.buttonLabel} (${formatTime(stageSpec.seconds)})`);
+      showToast(`Started ${stageSpec.buttonLabel} (${formatTime(stageSpec.seconds)})`);
     }
 
     function triggerRiceTimerStageComplete(stageNum) {
       const stageSpec = JASMINE_RICE_TIMER_STAGES.find(s => s.stage === Number(stageNum));
       if (!stageSpec) return;
       state.riceTimerAlertBanner = stageSpec.completionBanner;
-      state.timerContextLabel = `🍚 MIX / STIR RICE • ${stageSpec.completionBanner}`;
+      state.timerContextLabel = `MIX / STIR RICE • ${stageSpec.completionBanner}`;
       const lbl = document.getElementById('timer-context-label');
       if (lbl) lbl.textContent = state.timerContextLabel;
       updateTimerUI();
       syncStickyHeaderVisibility();
       renderRiceCookingTimerWidgets();
       saveState();
-      showToast(`🍚 ${stageSpec.completionBanner}`);
+      showToast(stageSpec.completionBanner);
     }
 
     function dismissRiceTimerAlert() {
@@ -3776,7 +3914,7 @@
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
               <div class="flex items-center gap-1.5">
-                <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40">🍚 3-Stage Jasmine Rice Stovetop Timer</span>
+                <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40">3-Stage Jasmine Rice Stovetop Timer</span>
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Mix / Stir Alarms</span>
               </div>
               <p class="text-[11px] text-slate-400 mt-1">220g rinsed dry rice + 330 ml water • Syncs live with top sticky timer bar</p>
@@ -3795,14 +3933,14 @@
 
           ${activeSpec && !alertBanner ? `
             <div class="rounded-lg px-3 py-2 bg-sky-950/60 border border-sky-400/40 text-sky-200 text-[11px] font-bold flex items-center justify-between gap-2">
-              <span>⏱️ Active Stage ${activeSpec.stage}/3 (${activeSpec.buttonLabel}): ${activeSpec.actionText}</span>
+              <span>Active Stage ${activeSpec.stage}/3 (${activeSpec.buttonLabel}): ${activeSpec.actionText}</span>
               <span class="font-mono text-xs text-emerald-300 shrink-0 live-rice-timer-readout">${formattedTime}</span>
             </div>
           ` : ''}
 
           ${alertBanner ? `
             <div role="alert" class="rice-stage-alert-banner rounded-xl px-3 py-2.5 bg-gradient-to-r from-amber-950/95 via-amber-900/70 to-emerald-950/90 border-2 border-amber-400 text-amber-200 text-xs font-extrabold flex items-center justify-between gap-2 shadow-lg">
-              <span>🔔 ${alertBanner}</span>
+              <span>${alertBanner}</span>
               <button type="button" class="rice-timer-clear-btn px-2.5 py-1 rounded-lg bg-slate-950/90 hover:bg-slate-900 text-amber-200 border border-amber-400/50 text-[10px] font-extrabold shrink-0">Dismiss</button>
             </div>
           ` : ''}
@@ -3851,26 +3989,41 @@
           updateWatchAndHeartRateUI();
         }
       } else {
-        if (timerInterval) clearInterval(timerInterval);
-        timerInterval = null;
-        if (timerWorker) {
-          try { timerWorker.postMessage('stop'); } catch (e) {}
-        }
         const completedRiceStage = state.activeRiceTimerStage ? Number(state.activeRiceTimerStage) : null;
-        timerRunning = false;
-        state.timerRunning = false;
-        state.timerEndTime = null;
-        state.timerSeconds = 0;
-        releaseWakeLock();
-        updateTimerUI();
-        updateWatchAndHeartRateUI();
-        saveState();
-        playTimerChime();
-        triggerWatchWristTimerNotification(completedRiceStage);
         if (completedRiceStage) {
+          if (timerInterval) clearInterval(timerInterval);
+          timerInterval = null;
+          if (timerWorker) {
+            try { timerWorker.postMessage('stop'); } catch (e) {}
+          }
+          timerRunning = false;
+          state.timerRunning = false;
+          state.timerEndTime = null;
+          state.timerSeconds = 0;
+          releaseWakeLock();
+          updateTimerUI();
+          updateWatchAndHeartRateUI();
+          saveState();
+          playTimerChime();
+          triggerWatchWristTimerNotification(completedRiceStage);
           triggerRiceTimerStageComplete(completedRiceStage);
-        } else {
-          showToast('⏱️ Rest Complete! Time for your next set.');
+          return;
+        }
+
+        // Continuous Negative Overtime Counter for Rest Timers (-00:01, -00:02 ... -00:10...)
+        if (!state.timerZeroChimeFired) {
+          state.timerZeroChimeFired = true;
+          state.timerInOvertime = true;
+          playTimerChime();
+          triggerWatchWristTimerNotification(null);
+          showToast('Rest Complete (00:00) — Time for your next set.');
+        }
+        const overtimeSec = Math.floor(remainingMs / 1000);
+        if (overtimeSec !== state.timerSeconds) {
+          state.timerSeconds = overtimeSec;
+          state.timerInOvertime = overtimeSec < 0;
+          updateTimerUI();
+          updateWatchAndHeartRateUI();
         }
       }
     }
@@ -3879,15 +4032,23 @@
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
         requestAndConnectWatchNotifications(true);
       }
-      if (typeof customSeconds === 'number') {
+      const isRiceContext = Boolean(contextLabel && String(contextLabel).includes('Rice Stage'));
+      if (typeof customSeconds === 'number' && customSeconds > 0) {
         state.timerSeconds = customSeconds;
         state.timerTotalSeconds = customSeconds;
+        if (!isRiceContext) {
+          state.lastUsedTimerSeconds = customSeconds;
+        }
+      } else if (state.timerSeconds <= 0) {
+        const fallbackSec = Math.max(5, Number(state.lastUsedTimerSeconds) || Number(state.timerTotalSeconds) || 90);
+        state.timerSeconds = fallbackSec;
+        state.timerTotalSeconds = fallbackSec;
       }
       if (contextLabel) {
         state.timerContextLabel = contextLabel;
         const lbl = document.getElementById('timer-context-label');
         if (lbl) lbl.textContent = contextLabel;
-        if (!String(contextLabel).includes('Rice Stage')) {
+        if (!isRiceContext) {
           state.activeRiceTimerStage = null;
         }
       }
@@ -3897,6 +4058,8 @@
       if (timerInterval) clearInterval(timerInterval);
       timerRunning = true;
       state.timerRunning = true;
+      state.timerZeroChimeFired = false;
+      state.timerInOvertime = false;
       state.timerStartTime = Date.now();
       state.hrRecoveryAlertFiredForCurrentRest = false;
       state.hrRecoveryForcePreview = false;
@@ -3929,7 +4092,9 @@
         saveState();
       } else {
         if (state.timerSeconds <= 0) {
-          state.timerSeconds = state.timerTotalSeconds || 90;
+          const fallbackSec = Math.max(5, Number(state.lastUsedTimerSeconds) || Number(state.timerTotalSeconds) || 90);
+          state.timerSeconds = fallbackSec;
+          state.timerTotalSeconds = fallbackSec;
         }
         startTimer();
       }
@@ -3945,23 +4110,186 @@
       state.timerRunning = false;
       state.timerEndTime = null;
       state.timerStartTime = null;
+      state.timerZeroChimeFired = false;
+      state.timerInOvertime = false;
       state.hrRecoveryAlertFiredForCurrentRest = false;
       state.hrRecoveryForcePreview = false;
-      state.timerSeconds = state.timerTotalSeconds || 90;
+      const idleSec = Math.max(5, Number(state.lastUsedTimerSeconds) || Number(state.timerTotalSeconds) || 90);
+      state.timerSeconds = idleSec;
+      state.timerTotalSeconds = idleSec;
       releaseWakeLock();
       updateTimerUI();
       updateWatchAndHeartRateUI();
       saveState();
     }
 
-    // Immediately sync timer whenever phone switches back to browser tab, unlocks screen, or focuses window
+    function getUnloggedWorkoutSummaryForToday() {
+      const week = state.selectedWeek || state.currentWeek || 1;
+      const dayIdx = state.selectedDayIndex || 0;
+      const dayObj = DAYS_SCHEDULE[dayIdx] || DAYS_SCHEDULE[0];
+      const exercisesToday = [...dayObj.exercises];
+      if (state.crunchDays && state.crunchDays.includes(dayIdx)) {
+        exercisesToday.push(CABLE_CRUNCH_EXERCISE);
+      }
+      let doneSetsToday = 0;
+      let totalSetsToday = 0;
+      let nextUnlogged = null;
+
+      exercisesToday.forEach(ex => {
+        const meta = EXERCISE_META[ex.id] || { defaultWeightLbs: 45 };
+        const pDay = PULLUP_EX_ID_TO_DAY[ex.id] || 0;
+        for (let s = 1; s <= ex.sets; s++) {
+          totalSetsToday++;
+          const e = getLogEntry(week, dayIdx, ex.id, s);
+          if (e && e.done) {
+            doneSetsToday++;
+          } else if (!nextUnlogged) {
+            const wVal = (e && e.weight !== undefined && e.weight !== '')
+              ? e.weight
+              : (meta.defaultWeightLbs || 0);
+            const rVal = (e && e.reps !== undefined && e.reps !== '')
+              ? e.reps
+              : parseTargetRepsNumber(ex.reps, pDay, s);
+            nextUnlogged = {
+              exId: ex.id,
+              exName: ex.name,
+              setNum: s,
+              weight: wVal,
+              reps: rVal
+            };
+          }
+        }
+      });
+
+      return {
+        week,
+        dayIdx,
+        exercisesToday,
+        doneSetsToday,
+        totalSetsToday,
+        remainingSets: Math.max(0, totalSetsToday - doneSetsToday),
+        nextUnlogged
+      };
+    }
+
+    function checkAndRenderForgottenSetReminder(allowSystemNotification = true) {
+      const bannerEl = document.getElementById('forgotten-set-reminder-banner');
+      const titleEl = document.getElementById('forgotten-set-reminder-title');
+      const subEl = document.getElementById('forgotten-set-reminder-subtitle');
+      if (!bannerEl) return;
+
+      const summary = getUnloggedWorkoutSummaryForToday();
+      const lastAt = Number(state.lastWorkoutActivityAt) || 0;
+      const nowMs = Date.now();
+      const elapsedMs = lastAt > 0 ? (nowMs - lastAt) : 0;
+      const isPartiallyLogged = summary.doneSetsToday > 0 && summary.doneSetsToday < summary.totalSetsToday;
+      const isDismissed = Boolean(state.dismissedForgottenSetActivityAt && state.dismissedForgottenSetActivityAt === lastAt);
+      const shouldShow = isPartiallyLogged && lastAt > 0 && elapsedMs >= 300000 && !isDismissed && Boolean(summary.nextUnlogged);
+
+      if (!shouldShow) {
+        bannerEl.classList.add('hidden');
+        syncFixedHeaderSpacer();
+        return;
+      }
+
+      const nxt = summary.nextUnlogged;
+      if (titleEl) {
+        titleEl.textContent = 'Did you finish your workout? (5+ min since last set)';
+      }
+      if (subEl && nxt) {
+        subEl.textContent = `You have ${summary.remainingSets} unlogged set(s) left today — Next: ${nxt.exName} (Set ${nxt.setNum}: ${nxt.weight} lbs x ${nxt.reps}).`;
+      }
+      bannerEl.classList.remove('hidden');
+      syncFixedHeaderSpacer();
+
+      if (allowSystemNotification && state.notifiedForgottenSetActivityAt !== lastAt && nxt) {
+        state.notifiedForgottenSetActivityAt = lastAt;
+        saveState();
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          const notifTitle = 'Did you finish your last set?';
+          const notifOptions = {
+            body: `You have unlogged sets remaining on ${nxt.exName}. Tap to log and finish.`,
+            icon: window.__gymPwaIcon192 || '/icon-192.png',
+            badge: window.__gymPwaIcon192 || '/icon-192.png',
+            vibrate: [200, 100, 200],
+            tag: 'unfinished-workout-reminder',
+            renotify: true
+          };
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistration().then(reg => {
+              if (reg && typeof reg.showNotification === 'function') {
+                reg.showNotification(notifTitle, notifOptions).catch(() => {});
+              } else {
+                try { new Notification(notifTitle, notifOptions); } catch (e) {}
+              }
+            }).catch(() => {});
+          } else {
+            try { new Notification(notifTitle, notifOptions); } catch (e) {}
+          }
+        }
+      }
+    }
+
+    function logRemainingSetsAndFinishFromReminder() {
+      const summary = getUnloggedWorkoutSummaryForToday();
+      const { week, dayIdx, exercisesToday, totalSetsToday } = summary;
+      exercisesToday.forEach(ex => {
+        const exUnit = getExerciseUnit(ex.id);
+        const meta = EXERCISE_META[ex.id] || { defaultWeightLbs: 45 };
+        const pDay = PULLUP_EX_ID_TO_DAY[ex.id] || 0;
+        for (let s = 1; s <= ex.sets; s++) {
+          const key = `w${week}_${dayIdx}_${ex.id}_${s}`;
+          const cur = getLogEntry(week, dayIdx, ex.id, s);
+          if (!cur || !cur.done) {
+            const wVal = (cur && cur.weight !== undefined && cur.weight !== '')
+              ? String(cur.weight)
+              : String(meta.defaultWeightLbs || 0);
+            const rVal = (cur && cur.reps !== undefined && cur.reps !== '')
+              ? String(cur.reps)
+              : String(parseTargetRepsNumber(ex.reps, pDay, s));
+            state.workoutLogs[key] = {
+              weight: wVal,
+              reps: rVal,
+              done: true,
+              unit: exUnit
+            };
+            if (week === 1) {
+              state.workoutLogs[`${dayIdx}_${ex.id}_${s}`] = Object.assign({}, state.workoutLogs[key]);
+            }
+            if (pDay) {
+              syncPullupStateBothWays(week, pDay, s, state.workoutLogs[key]);
+            }
+          }
+        }
+      });
+      state.lastWorkoutActivityAt = Date.now();
+      state.dismissedForgottenSetActivityAt = state.lastWorkoutActivityAt;
+      resetTimer();
+      saveState();
+      checkAndRenderForgottenSetReminder(false);
+      renderWorkoutView();
+      renderPullupView();
+      renderVeganView();
+      openWorkoutCompletionModal(week, dayIdx, totalSetsToday, exercisesToday);
+      showToast('All remaining sets logged and workout marked complete.');
+    }
+
+    setInterval(() => {
+      checkAndRenderForgottenSetReminder(true);
+    }, 15000);
+
+    // Immediately sync timer and check forgotten set reminder whenever phone switches back to browser tab, unlocks screen, or focuses window
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         syncWallClockTimer();
+        checkAndRenderForgottenSetReminder(true);
         if (timerRunning) requestWakeLock();
       }
     });
-    window.addEventListener('focus', syncWallClockTimer);
+    window.addEventListener('focus', () => {
+      syncWallClockTimer();
+      checkAndRenderForgottenSetReminder(true);
+    });
     window.addEventListener('pageshow', syncWallClockTimer);
 
     // =========================================================================
@@ -4073,6 +4401,7 @@
         document.body.style.overflow = '';
         document.documentElement.style.overflow = '';
       }
+      syncFixedHeaderSpacer();
     }
 
     function closeAllModals() {
@@ -8510,6 +8839,16 @@
 
           const allSetsDoneToday = doneSetsCountNow === todayTotalSets && todayTotalSets > 0;
           const isFinalSetToday = state.workoutLogs[key].done && allSetsDoneToday;
+          const curExPosForFinalCheck = exercisesToday.findIndex(e => e.id === exId);
+          const isLastExOfDay = curExPosForFinalCheck === exercisesToday.length - 1;
+          const isFinalSetOfLastEx = Boolean(isLastExOfDay && exObjForSet && setIdx === exObjForSet.sets);
+          const shouldStopTimerOnFinalSet = allSetsDoneToday || isFinalSetOfLastEx;
+
+          if (state.workoutLogs[key].done) {
+            state.lastWorkoutActivityAt = Date.now();
+            state.dismissedForgottenSetActivityAt = null;
+            state.notifiedForgottenSetActivityAt = null;
+          }
 
           let syncedMealSched = null;
           if (isFirstSetToday || isFinalSetToday) {
@@ -8517,6 +8856,7 @@
           }
 
           saveState();
+          checkAndRenderForgottenSetReminder(false);
           renderWorkoutView();
           renderVeganView();
 
@@ -8527,18 +8867,22 @@
             }, 280);
           }
           if (state.workoutLogs[key].done) {
-            if (allSetsDoneToday) {
+            if (shouldStopTimerOnFinalSet) {
               resetTimer();
-              openWorkoutCompletionModal(week, dayIdx, todayTotalSets, exercisesToday);
-              const nextMealTime = syncedMealSched ? syncedMealSched.nextPostWorkoutTime12 : '8:15 AM';
-              showToast(`🎉 Workout Complete! Hydrate +500 ml & review your ${nextMealTime} Post-Workout Meal.`);
+              if (allSetsDoneToday) {
+                openWorkoutCompletionModal(week, dayIdx, todayTotalSets, exercisesToday);
+                const nextMealTime = syncedMealSched ? syncedMealSched.nextPostWorkoutTime12 : '8:15 AM';
+                showToast(`Workout Complete! Hydrate +500 ml & review your ${nextMealTime} Post-Workout Meal.`);
+              } else {
+                showToast(`Final exercise set logged — Rest timer stopped.`);
+              }
             } else {
               const exObj = exercisesToday.find(e => e.id === exId);
               if (exObj && exObj.supersetPair) {
                 const pairEx = exercisesToday.find(e => e.id === exObj.supersetPair);
                 const pairName = pairEx ? pairEx.name : 'Superset Partner';
-                startTimer(restSec, `Superset Rest → Next: ${pairName}`);
-                showToast(`✓ Logged! 60s Superset rest → Go to ${pairName}`);
+                startTimer(restSec, `Superset Rest -> Next: ${pairName}`);
+                showToast(`Logged! 60s Superset rest -> Go to ${pairName}`);
                 setTimeout(() => {
                   const pairCard = document.getElementById(`ex-card-${exObj.supersetPair}`);
                   if (pairCard) pairCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -8549,18 +8893,18 @@
                   : restSec;
                 startTimer(effectiveRest, `Rest: ${exName}`);
                 const fuelReminderSuffix = (isFirstSetToday && isLiftDayForFuelPrompt && !isFuel1DoneNow)
-                  ? ' • ⚡ Did you drink Fuel 1 (36g P)? Tap Yes at top!'
+                  ? ' • Did you drink Fuel 1 (36g P)? Tap Yes at top!'
                   : '';
                 showToast((pullupDayNum
-                  ? `✓ Synced Pull-Up Set ${setIdx} (${state.workoutLogs[key].reps || 'Max'} reps)! ${effectiveRest}s rest started.`
+                  ? `Synced Pull-Up Set ${setIdx} (${state.workoutLogs[key].reps || 'Max'} reps)! ${effectiveRest}s rest started.`
                   : (isTimedHoldSet
-                      ? `✓ Logged Side Plank Set ${setIdx} (${state.workoutLogs[key].reps})! ${effectiveRest}s rest started.`
-                      : `✓ Logged Set ${setIdx}: ${state.workoutLogs[key].weight} ${exUnit} × ${state.workoutLogs[key].reps}! ${effectiveRest}s rest started.`)) + fuelReminderSuffix);
+                      ? `Logged Side Plank Set ${setIdx} (${state.workoutLogs[key].reps})! ${effectiveRest}s rest started.`
+                      : `Logged Set ${setIdx}: ${state.workoutLogs[key].weight} ${exUnit} x ${state.workoutLogs[key].reps}! ${effectiveRest}s rest started.`)) + fuelReminderSuffix);
               }
             }
           } else {
             resetTimer();
-            showToast('↩️ Set unchecked & rest timer stopped');
+            showToast('Set unchecked & rest timer stopped');
           }
         });
       });
@@ -8824,23 +9168,23 @@
                 <h3 class="${isPullupActive ? 'text-base font-extrabold text-white mt-1' : 'text-sm font-bold text-slate-100 mt-0.5'} transition-colors">${d.title}</h3>
                 ${isPullupActive ? `<p class="text-[11px] text-slate-300 mt-0.5 leading-snug">${d.desc}</p>` : ''}
               </div>
-              <button type="button" data-rest-sec="${d.restSec}" data-ex-name="${d.title}" class="pullup-quick-timer shrink-0 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/35 text-xs font-extrabold px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition">
+              <button type="button" data-pullup-day-num="${d.dayNum}" data-rest-sec="${d.restSec}" data-ex-name="${d.title}" class="pullup-quick-timer shrink-0 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/35 text-xs font-extrabold px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition">
                 <span class="live-pullup-timer-dot w-2 h-2 rounded-full ${timerRunning ? 'bg-emerald-400 animate-ping' : 'bg-sky-400'} inline-block"></span>
-                <span>⏱️ <span class="live-pullup-timer-readout font-mono">${formatTime(state.timerSeconds)}</span> (${d.restSec}s)</span>
+                <span class="live-pullup-timer-readout font-mono">${timerRunning ? `${formatTime(state.timerSeconds)} (${d.restSec}s)` : getPullupIdleTimerBadgeText(d.dayNum, d.restSec)}</span>
               </button>
             </div>
 
             <div class="flex items-center justify-between bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-1.5 text-xs">
-              <span class="text-slate-300 font-medium">${isCardDone ? `✓ All ${d.setsCount} sets logged` : `${doneSetsCount} of ${d.setsCount} sets logged`}</span>
+              <span class="text-slate-300 font-medium">${isCardDone ? `All ${d.setsCount} sets logged` : `${doneSetsCount} of ${d.setsCount} sets logged`}</span>
               <button type="button" data-pullup-collapse="${exIdForDay}" data-day-idx="${dayIdxForPullup}" data-is-complete="${isCardDone ? '1' : '0'}" class="pullup-collapse-btn text-emerald-400 hover:text-emerald-300 font-bold text-[11px]">
-                ${isCardCollapsed ? '▼ Show / Edit Sets' : '▲ Hide Sets'}
+                ${isCardCollapsed ? 'Show / Edit Sets' : 'Hide Sets'}
               </button>
             </div>
 
             <div class="${isCardCollapsed ? 'hidden' : 'space-y-3'}" style="display: ${isCardCollapsed ? 'none' : 'block'};">
               <button type="button" data-pullup-toggle-img="${exIdForDay}" data-day-idx="${dayIdxForPullup}" class="pullup-toggle-img-btn w-full bg-slate-950 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-between transition">
-                <span>📸 ${isPullupImgOpen ? 'Hide Setup & Image' : 'Show Setup & Image'}</span>
-                <span class="text-[10px] text-emerald-400 font-extrabold">${isPullupImgOpen ? '▲ Hide' : '▼ View'}</span>
+                <span>${isPullupImgOpen ? 'Hide Setup & Image' : 'Show Setup & Image'}</span>
+                <span class="text-[10px] text-emerald-400 font-extrabold">${isPullupImgOpen ? 'Hide' : 'View'}</span>
               </button>
               <div class="${isPullupImgOpen ? 'block' : 'hidden'}" style="display: ${isPullupImgOpen ? 'block' : 'none'};">
                 ${getStepVisualDiagramHtml({ id: exIdForDay, notes: d.desc }, metaForDay, dayIdxForPullup)}
@@ -8887,14 +9231,31 @@
               }
             }
           }
+          if (nextDone) {
+            state.lastWorkoutActivityAt = Date.now();
+            state.dismissedForgottenSetActivityAt = null;
+            state.notifiedForgottenSetActivityAt = null;
+          }
           saveState();
+          checkAndRenderForgottenSetReminder(false);
           renderPullupView();
           renderWorkoutView();
 
           if (nextDone) {
-            const restSec = getPullupSetRestSec(dayNum, setIdx, finalReps, parseInt(btn.getAttribute('data-rest-sec'), 10) || 60);
-            startTimer(restSec, `Rest: ${label}`);
-            showToast(`✓ Synced ${label} (${finalReps || 'Max'} reps)! ${restSec}s rest started.`);
+            const targetDayIdx = mapInfo ? mapInfo.dayIdx : (state.selectedDayIndex || 0);
+            const dayComp = typeof getDayCompletionStatus === 'function'
+              ? getDayCompletionStatus(week, targetDayIdx)
+              : { status: 'partial' };
+            if (dayComp.status === 'complete') {
+              resetTimer();
+              showToast(`All sets for Day ${dayNum} complete — Rest timer stopped.`);
+            } else {
+              const restSec = getPullupSetRestSec(dayNum, setIdx, finalReps, parseInt(btn.getAttribute('data-rest-sec'), 10) || 60);
+              startTimer(restSec, `Rest: ${label}`);
+              showToast(`Synced ${label} (${finalReps || 'Max'} reps)! ${restSec}s rest started.`);
+            }
+          } else {
+            resetTimer();
           }
         });
       });
@@ -8942,7 +9303,7 @@
           const sec = parseInt(btn.getAttribute('data-rest-sec'), 10) || 60;
           const name = btn.getAttribute('data-ex-name');
           startTimer(sec, `Rest: ${name}`);
-          showToast(`⏱️ Started ${sec}s pull-up rest timer`);
+          showToast(`Started ${sec}s pull-up rest timer`);
         });
       });
 
@@ -10574,10 +10935,7 @@
         if (showStickyTimer) pinnedTimerStrip.classList.remove('hidden');
         else pinnedTimerStrip.classList.add('hidden');
       }
-      if (mainContainer) {
-        mainContainer.classList.remove('pt-16', 'pt-28', 'pt-40');
-        mainContainer.classList.add('pt-3');
-      }
+      syncFixedHeaderSpacer();
       renderRiceCookingTimerWidgets();
 
       document.querySelectorAll('.nav-tab-btn').forEach(btn => {
@@ -11413,11 +11771,42 @@
         pinnedRiceAlertDismissBtn.addEventListener('click', dismissRiceTimerAlert);
       }
       renderRiceCookingTimerWidgets();
+      const forgottenLogFinishBtn = document.getElementById('forgotten-set-log-finish-btn');
+      const forgottenSnoozeBtn = document.getElementById('forgotten-set-snooze-btn');
+      const forgottenDismissBtn = document.getElementById('forgotten-set-dismiss-btn');
+      if (forgottenLogFinishBtn) {
+        forgottenLogFinishBtn.addEventListener('click', () => {
+          logRemainingSetsAndFinishFromReminder();
+        });
+      }
+      if (forgottenSnoozeBtn) {
+        forgottenSnoozeBtn.addEventListener('click', () => {
+          state.lastWorkoutActivityAt = Date.now();
+          state.dismissedForgottenSetActivityAt = null;
+          state.notifiedForgottenSetActivityAt = null;
+          saveState();
+          checkAndRenderForgottenSetReminder(false);
+          showToast('Snoozed workout completion check for 5 minutes.');
+        });
+      }
+      if (forgottenDismissBtn) {
+        forgottenDismissBtn.addEventListener('click', () => {
+          state.dismissedForgottenSetActivityAt = state.lastWorkoutActivityAt || Date.now();
+          saveState();
+          checkAndRenderForgottenSetReminder(false);
+        });
+      }
+
       if (pinnedMinusBtn) {
         pinnedMinusBtn.addEventListener('click', () => {
           syncWallClockTimer();
-          state.timerSeconds = Math.max(0, state.timerSeconds - 15);
-          if (timerRunning) state.timerEndTime = Date.now() + (state.timerSeconds * 1000);
+          state.timerSeconds = state.timerSeconds - 15;
+          if (!timerRunning && state.timerSeconds < 5) state.timerSeconds = 5;
+          if (!timerRunning) {
+            state.lastUsedTimerSeconds = state.timerSeconds;
+            state.timerTotalSeconds = state.timerSeconds;
+          }
+          if (timerRunning && state.timerEndTime) state.timerEndTime -= 15000;
           updateTimerUI();
           saveState();
         });
@@ -11427,16 +11816,24 @@
           syncWallClockTimer();
           state.timerSeconds += 15;
           state.timerTotalSeconds = Math.max(state.timerTotalSeconds || 90, state.timerSeconds);
-          if (timerRunning) state.timerEndTime = Date.now() + (state.timerSeconds * 1000);
+          if (!timerRunning && state.timerSeconds > 0) {
+            state.lastUsedTimerSeconds = state.timerSeconds;
+          }
+          if (timerRunning && state.timerEndTime) state.timerEndTime += 15000;
           updateTimerUI();
           saveState();
         });
       }
       document.getElementById('timer-minus-15').addEventListener('click', () => {
         syncWallClockTimer();
-        state.timerSeconds = Math.max(0, state.timerSeconds - 15);
-        if (timerRunning) {
-          state.timerEndTime = Date.now() + (state.timerSeconds * 1000);
+        state.timerSeconds = state.timerSeconds - 15;
+        if (!timerRunning && state.timerSeconds < 5) state.timerSeconds = 5;
+        if (!timerRunning) {
+          state.lastUsedTimerSeconds = state.timerSeconds;
+          state.timerTotalSeconds = state.timerSeconds;
+        }
+        if (timerRunning && state.timerEndTime) {
+          state.timerEndTime -= 15000;
         }
         updateTimerUI();
         saveState();
@@ -11445,8 +11842,11 @@
         syncWallClockTimer();
         state.timerSeconds += 15;
         state.timerTotalSeconds = Math.max(state.timerTotalSeconds || 90, state.timerSeconds);
-        if (timerRunning) {
-          state.timerEndTime = Date.now() + (state.timerSeconds * 1000);
+        if (!timerRunning && state.timerSeconds > 0) {
+          state.lastUsedTimerSeconds = state.timerSeconds;
+        }
+        if (timerRunning && state.timerEndTime) {
+          state.timerEndTime += 15000;
         }
         updateTimerUI();
         saveState();
@@ -11471,9 +11871,9 @@
           updateAudioModeUI();
           saveState();
           const labelMap = {
-            sound_vibe: '🔔 Audio Mode: Sound + Vibe (320ms Bluetooth-Safe Chime)',
-            vibe_only: '📳 Audio Mode: Vibe Only (100% Bluetooth Safe — Zero AudioContext)',
-            silent: '🔕 Audio Mode: Silent'
+            sound_vibe: 'Audio Mode: Sound + Vibe (320ms Bluetooth-Safe Chime)',
+            vibe_only: 'Audio Mode: Vibe Only (100% Bluetooth Safe — Zero AudioContext)',
+            silent: 'Audio Mode: Silent'
           };
           showToast(labelMap[mode] || 'Audio mode updated');
         });
@@ -11481,9 +11881,10 @@
 
       document.querySelectorAll('.timer-preset-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          const sec = parseInt(btn.getAttribute('data-timer-sec'), 10) || 60;
-          startTimer(sec, `Preset: ${sec}s Rest`);
-          showToast(`⏱️ Timer started for ${sec}s`);
+          const sec = parseInt(btn.getAttribute('data-timer-sec'), 10) || 90;
+          state.lastUsedTimerSeconds = sec;
+          startTimer(sec, `Preset: ${formatDurationLabelShort(sec)} Rest`);
+          showToast(`Timer started for ${sec}s (${formatDurationLabelShort(sec)})`);
         });
       });
 

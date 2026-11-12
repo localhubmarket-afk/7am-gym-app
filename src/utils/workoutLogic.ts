@@ -3586,6 +3586,194 @@ export function buildContinuousMediaSessionState(params: {
   };
 }
 
+// ============================================================================
+// STICKY TIMER GREEN PROGRESS BAR, NEGATIVE OVERTIME, FINAL-SET AUTO-STOP,
+// 5-MINUTE FORGOTTEN LAST SET REMINDER & PULL-UP IDLE BADGES (ZERO EMOJIS)
+// ============================================================================
+export function formatDurationLabelShort(seconds: number): string {
+  const sec = Math.max(1, Math.round(Number(seconds) || 90));
+  if (sec < 60) return `${sec}s`;
+  const mins = sec / 60;
+  if (Number.isInteger(mins)) return `${mins}m`;
+  return `${+mins.toFixed(1)}m`;
+}
+
+export function formatSignedTimerClock(seconds: number): string {
+  const sec = Math.round(Number(seconds) || 0);
+  const isNeg = sec < 0;
+  const absSec = Math.abs(sec);
+  const mm = String(Math.floor(absSec / 60)).padStart(2, '0');
+  const ss = String(absSec % 60).padStart(2, '0');
+  return isNeg ? `-${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+export function formatRestTimerReadout(
+  timerSeconds: number,
+  lastUsedTimerSeconds = 90,
+  isRunning = false
+): {
+  clockText: string;
+  pinnedBadgeText: string;
+  isOvertime: boolean;
+  presetShortLabel: string;
+} {
+  const safeLastUsed = Math.max(5, Math.round(Number(lastUsedTimerSeconds) || 90));
+  const presetShortLabel = formatDurationLabelShort(safeLastUsed);
+  const sec = Math.round(Number(timerSeconds) || 0);
+
+  if (sec < 0) {
+    const negClock = formatSignedTimerClock(sec);
+    return {
+      clockText: negClock,
+      pinnedBadgeText: `${presetShortLabel} • ${negClock} Overtime`,
+      isOvertime: true,
+      presetShortLabel
+    };
+  }
+
+  const posClock = formatSignedTimerClock(sec);
+  if (!isRunning && sec === safeLastUsed) {
+    return {
+      clockText: posClock,
+      pinnedBadgeText: `${posClock} (${presetShortLabel})`,
+      isOvertime: false,
+      presetShortLabel
+    };
+  }
+
+  return {
+    clockText: posClock,
+    pinnedBadgeText: posClock,
+    isOvertime: false,
+    presetShortLabel
+  };
+}
+
+export function computeTimerProgressBarState(
+  timerSeconds: number,
+  timerTotalSeconds = 90,
+  isRunning = false
+): {
+  widthPct: number;
+  isOvertime: boolean;
+  fillClass: string;
+} {
+  const total = Math.max(1, Math.round(Number(timerTotalSeconds) || 90));
+  const sec = Number(timerSeconds);
+
+  if (sec < 0) {
+    return {
+      widthPct: 100,
+      isOvertime: true,
+      fillClass: 'bg-amber-500 transition-all duration-300 animate-pulse'
+    };
+  }
+
+  if (!isRunning && sec >= total) {
+    return {
+      widthPct: 100,
+      isOvertime: false,
+      fillClass: 'bg-emerald-500 transition-all duration-300'
+    };
+  }
+
+  const pct = Math.max(0, Math.min(100, +((sec / total) * 100).toFixed(2)));
+  return {
+    widthPct: pct,
+    isOvertime: false,
+    fillClass: 'bg-emerald-500 transition-all duration-300'
+  };
+}
+
+export function shouldStopTimerOnFinalSetLogged(params: {
+  doneSetsToday: number;
+  totalSetsToday: number;
+  isLastExerciseOfDay: boolean;
+  isFinalSetOfExercise: boolean;
+}): boolean {
+  if (params.totalSetsToday > 0 && params.doneSetsToday >= params.totalSetsToday) {
+    return true;
+  }
+  if (params.isLastExerciseOfDay && params.isFinalSetOfExercise) {
+    return true;
+  }
+  return false;
+}
+
+export function formatPullupDayTimerBadge(
+  dayNum: number,
+  restSec: number,
+  isTimerRunning: boolean,
+  formattedTimer: string
+): string {
+  if (isTimerRunning) {
+    return `${formattedTimer} (${restSec}s)`;
+  }
+  if (dayNum === 1) return 'Rest: 90s (1.5m)';
+  if (dayNum === 2) return 'Rest: 30s (10s x Reps)';
+  if (dayNum === 3) return 'Rest: 60s (1m)';
+  if (dayNum === 4) return 'Rest: 60s (1m)';
+  if (dayNum === 5) return 'Rest: 90s (1.5m)';
+  return `Rest: ${restSec}s (${formatDurationLabelShort(restSec)})`;
+}
+
+export function evaluateForgottenLastSetReminder(params: {
+  doneSetsToday: number;
+  totalSetsToday: number;
+  lastWorkoutActivityAt: number | null;
+  nowMs: number;
+  dismissedForActivityTimestamp?: number | null;
+  nextExerciseName?: string;
+  nextSetNum?: number;
+  nextWeightLbs?: number | string;
+  nextReps?: number | string;
+}): {
+  shouldRemind: boolean;
+  remainingSets: number;
+  bannerTitle: string;
+  bannerSubtitle: string;
+  notificationTitle: string;
+  notificationOptions: {
+    body: string;
+    vibrate: number[];
+    tag: string;
+    renotify: boolean;
+  };
+} {
+  const done = Math.max(0, Math.round(Number(params.doneSetsToday) || 0));
+  const total = Math.max(0, Math.round(Number(params.totalSetsToday) || 0));
+  const remainingSets = Math.max(0, total - done);
+  const lastAt = Number(params.lastWorkoutActivityAt) || 0;
+  const nowMs = Number(params.nowMs) || Date.now();
+  const elapsedMs = lastAt > 0 ? nowMs - lastAt : 0;
+
+  const isPartiallyLogged = done > 0 && done < total;
+  const isDismissed =
+    Boolean(params.dismissedForActivityTimestamp) &&
+    params.dismissedForActivityTimestamp === lastAt;
+  const shouldRemind = isPartiallyLogged && lastAt > 0 && elapsedMs >= 300000 && !isDismissed;
+
+  const exName = String(params.nextExerciseName || 'Final Exercise').trim();
+  const setNum = Math.max(1, Math.round(Number(params.nextSetNum) || 1));
+  const wVal = params.nextWeightLbs !== undefined && params.nextWeightLbs !== '' ? params.nextWeightLbs : 0;
+  const rVal = params.nextReps !== undefined && params.nextReps !== '' ? params.nextReps : 10;
+
+  return {
+    shouldRemind,
+    remainingSets,
+    bannerTitle: 'Did you finish your workout? (5+ min since last set)',
+    bannerSubtitle: `You have ${remainingSets} unlogged set(s) left today — Next: ${exName} (Set ${setNum}: ${wVal} lbs x ${rVal}).`,
+    notificationTitle: 'Did you finish your last set?',
+    notificationOptions: {
+      body: `You have unlogged sets remaining on ${exName}. Tap to log and finish.`,
+      vibrate: [200, 100, 200],
+      tag: 'unfinished-workout-reminder',
+      renotify: true
+    }
+  };
+}
+
+
 
 
 
