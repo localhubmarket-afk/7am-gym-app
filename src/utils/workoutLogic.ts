@@ -4253,10 +4253,757 @@ export function getWatchMasterSwitchSpec(
   };
 }
 
+// ============================================================================
+// 7 UPGRADES: SINGLE STICKY TIMER BAR, PULL-UP PYRAMID & DAY 5 HARDEST-DAY
+// SELECTOR, DECOUPLED OATS/RICE INVENTORY, RICE TIMER RECIPE/VIDEO SYNC,
+// CAMERA/GALLERY DUAL INPUTS, AND AI MACHINE PHOTO CHECK & EXERCISE SWAP
+// ============================================================================
 
+export function shouldShowStickyTopTimerBarAcrossAllTabs(tabName: string): boolean {
+  const validTabs = ['workout', 'pullups', 'timer', 'vegan', 'shopping'];
+  return validTabs.includes(String(tabName || '').trim());
+}
 
+export interface PyramidNextSetSuggestion {
+  nextSetIndex: number | null;
+  suggestedRepsBySetIndex: Record<number, number>;
+  restTimerSeconds: number;
+  restTimerLabel: string;
+}
 
+export function computePyramidNextSetSuggestions(
+  loggedSetIdxZeroBased: number,
+  loggedReps: number,
+  previousBestMax = 4
+): PyramidNextSetSuggestion {
+  const cleanReps = Math.max(1, Math.floor(Number(loggedReps) || 1));
+  const safeMax = Math.max(4, Math.floor(Number(previousBestMax) || 4));
+  const suggestedRepsBySetIndex: Record<number, number> = {
+    0: 1,
+    1: 2,
+    2: 3,
+    3: 4,
+    4: safeMax
+  };
 
+  if (loggedSetIdxZeroBased >= 0 && loggedSetIdxZeroBased <= 2) {
+    let nextTarget = cleanReps + 1;
+    for (let idx = loggedSetIdxZeroBased + 1; idx <= 3; idx++) {
+      suggestedRepsBySetIndex[idx] = nextTarget;
+      nextTarget += 1;
+    }
+  }
+  suggestedRepsBySetIndex[4] = Math.max(4, safeMax, cleanReps);
 
+  const restTimerSeconds = loggedSetIdxZeroBased >= 0 && loggedSetIdxZeroBased <= 3
+    ? Math.max(10, cleanReps * 10)
+    : 60;
 
+  return {
+    nextSetIndex: loggedSetIdxZeroBased < 4 ? loggedSetIdxZeroBased + 1 : null,
+    suggestedRepsBySetIndex,
+    restTimerSeconds,
+    restTimerLabel: `${restTimerSeconds}s`
+  };
+}
 
+export type Day5HardestOptionId = 'option_a' | 'option_b' | 'option_c' | 'option_d';
+
+export interface Day5HardestDayOptionSpec {
+  id: Day5HardestOptionId;
+  sourceSessionNum: 1 | 2 | 3 | 4;
+  shortCode: 'A' | 'B' | 'C' | 'D';
+  label: string;
+  exerciseTitle: string;
+  setsCount: number;
+  restSec: number;
+  restLabel: string;
+  repsLabel: string;
+  isPyramid: boolean;
+  isThreeGrips: boolean;
+  notes: string;
+}
+
+export const DAY5_HARDEST_DAY_OPTIONS: Record<Day5HardestOptionId, Day5HardestDayOptionSpec> = {
+  option_a: {
+    id: 'option_a',
+    sourceSessionNum: 1,
+    shortCode: 'A',
+    label: 'Option A: Session 1 — 5 Max Effort Sets (90s rest)',
+    exerciseTitle: 'Overhand Pull-Ups (Repeat Session 1: 5 Max Effort Sets)',
+    setsCount: 5,
+    restSec: 90,
+    restLabel: '90 sec',
+    repsLabel: 'Max Reps',
+    isPyramid: false,
+    isThreeGrips: false,
+    notes: 'Repeating Session 1: Perform 5 maximum effort sets of strict overhand pull-ups with 90s rest between sets.'
+  },
+  option_b: {
+    id: 'option_b',
+    sourceSessionNum: 2,
+    shortCode: 'B',
+    label: 'Option B: Session 2 — Pyramid Day + 1 Max Set (10s x reps rest)',
+    exerciseTitle: 'Overhand Pull-Ups (Repeat Session 2: Pyramid + 1 Max Set)',
+    setsCount: 5,
+    restSec: 30,
+    restLabel: '10s x reps',
+    repsLabel: 'Pyramid 1->Max',
+    isPyramid: true,
+    isThreeGrips: false,
+    notes: 'Repeating Session 2: Start at 1 rep on Set 1, add +1 rep each set (rest 10s x reps), and finish with 1 max-effort set.'
+  },
+  option_c: {
+    id: 'option_c',
+    sourceSessionNum: 3,
+    shortCode: 'C',
+    label: 'Option C: Session 3 — 9 Training Sets • 3 Grips (60s rest)',
+    exerciseTitle: 'Pull-Ups (Repeat Session 3: 9 Training Sets • 3 Grips)',
+    setsCount: 9,
+    restSec: 60,
+    restLabel: '60 sec',
+    repsLabel: 'Training Set',
+    isPyramid: false,
+    isThreeGrips: true,
+    notes: 'Repeating Session 3: 3 sets Normal Overhand, 3 sets Close Underhand (pinkies touching), and 3 sets Wide Overhand with 60s rest.'
+  },
+  option_d: {
+    id: 'option_d',
+    sourceSessionNum: 4,
+    shortCode: 'D',
+    label: 'Option D: Session 4 — Max Training Sets (60s rest)',
+    exerciseTitle: 'Overhand Pull-Ups (Repeat Session 4: Max Training Sets)',
+    setsCount: 5,
+    restSec: 60,
+    restLabel: '60 sec',
+    repsLabel: 'Training Set',
+    isPyramid: false,
+    isThreeGrips: false,
+    notes: 'Repeating Session 4: Perform strict Training Sets with 60s rest until fatigue.'
+  }
+};
+
+export function recommendHardestPullupSession(
+  sessionLogsByDayNum: Record<number, Array<{ reps?: string | number; done?: boolean }>>
+): {
+  recommendedOptionId: Day5HardestOptionId;
+  recommendedSessionNum: 1 | 2 | 3 | 4;
+  reasonBadge: string;
+} {
+  const optionMap: Record<1 | 2 | 3 | 4, Day5HardestOptionId> = {
+    1: 'option_a',
+    2: 'option_b',
+    3: 'option_c',
+    4: 'option_d'
+  };
+
+  let bestSession: 1 | 2 | 3 | 4 = 3;
+  let highestFatigueScore = -1;
+  let anyLogged = false;
+
+  for (const sNum of [1, 2, 3, 4] as const) {
+    const arr = Array.isArray(sessionLogsByDayNum?.[sNum]) ? sessionLogsByDayNum[sNum] : [];
+    const doneSets = arr.filter(x => x && x.done);
+    if (doneSets.length === 0) continue;
+    anyLogged = true;
+    const repsList = doneSets.map(x => Math.max(0, parseInt(String(x.reps || '0'), 10) || 0));
+    const totalReps = repsList.reduce((acc, v) => acc + v, 0);
+    const firstSet = repsList[0] || 0;
+    const lastSet = repsList[repsList.length - 1] || 0;
+    const dropOff = Math.max(0, firstSet - lastSet);
+    const score = doneSets.length * 4 + totalReps + dropOff * 3 + (sNum === 3 ? 2 : 0);
+    if (score > highestFatigueScore) {
+      highestFatigueScore = score;
+      bestSession = sNum;
+    }
+  }
+
+  if (!anyLogged) {
+    return {
+      recommendedOptionId: 'option_c',
+      recommendedSessionNum: 3,
+      reasonBadge: 'Recommended Hardest Day: Session 3 (9 Training Sets • 3 Grips)'
+    };
+  }
+
+  const chosenOpt = DAY5_HARDEST_DAY_OPTIONS[optionMap[bestSession]];
+  return {
+    recommendedOptionId: chosenOpt.id,
+    recommendedSessionNum: bestSession,
+    reasonBadge: `Recommended Hardest Day: Session ${bestSession}`
+  };
+}
+
+export function resolveDay5HardestChoiceForWeek(
+  week: number,
+  pullUpHardestChoiceByWeek?: Record<number, Day5HardestOptionId | string>,
+  lastChosenHardestPullUpDay?: Day5HardestOptionId | string | null,
+  fallbackRecommendation: Day5HardestOptionId = 'option_c'
+): Day5HardestDayOptionSpec {
+  const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+  const map = pullUpHardestChoiceByWeek || {};
+  const direct = map[safeWeek];
+  if (direct && direct in DAY5_HARDEST_DAY_OPTIONS) {
+    return DAY5_HARDEST_DAY_OPTIONS[direct as Day5HardestOptionId];
+  }
+  for (let w = safeWeek - 1; w >= 1; w--) {
+    const prev = map[w];
+    if (prev && prev in DAY5_HARDEST_DAY_OPTIONS) {
+      return DAY5_HARDEST_DAY_OPTIONS[prev as Day5HardestOptionId];
+    }
+  }
+  if (lastChosenHardestPullUpDay && lastChosenHardestPullUpDay in DAY5_HARDEST_DAY_OPTIONS) {
+    return DAY5_HARDEST_DAY_OPTIONS[lastChosenHardestPullUpDay as Day5HardestOptionId];
+  }
+  return DAY5_HARDEST_DAY_OPTIONS[fallbackRecommendation] || DAY5_HARDEST_DAY_OPTIONS.option_c;
+}
+
+export interface BatchInventoryState {
+  oatsJarsRemaining: number;
+  riceBowlsRemaining: number;
+  oatsPrepDay?: number | null;
+  ricePrepDay?: number | null;
+}
+
+export function adjustBatchInventoryForMealToggle(
+  inventory: BatchInventoryState | undefined,
+  slotId: 'pre_shake' | 'post_oats' | 'lunch' | 'dinner',
+  isNowLogged: boolean
+): BatchInventoryState {
+  const base: BatchInventoryState = {
+    oatsJarsRemaining:
+      inventory && typeof inventory.oatsJarsRemaining === 'number'
+        ? Math.max(0, Math.min(4, Math.floor(inventory.oatsJarsRemaining)))
+        : 4,
+    riceBowlsRemaining:
+      inventory && typeof inventory.riceBowlsRemaining === 'number'
+        ? Math.max(0, Math.min(4, Math.floor(inventory.riceBowlsRemaining)))
+        : 4,
+    oatsPrepDay: inventory?.oatsPrepDay ?? null,
+    ricePrepDay: inventory?.ricePrepDay ?? null
+  };
+
+  if (slotId === 'post_oats') {
+    base.oatsJarsRemaining = isNowLogged
+      ? Math.max(0, base.oatsJarsRemaining - 1)
+      : Math.min(4, base.oatsJarsRemaining + 1);
+  } else if (slotId === 'lunch') {
+    base.riceBowlsRemaining = isNowLogged
+      ? Math.max(0, base.riceBowlsRemaining - 1)
+      : Math.min(4, base.riceBowlsRemaining + 1);
+  }
+  return base;
+}
+
+export interface BatchLowInventoryPrompt {
+  batchType: 'oats' | 'rice';
+  remaining: number;
+  maxPortions: 4;
+  unitLabel: 'jars' | 'bowls';
+  bannerText: string;
+  scheduledDayIdx: number | null;
+}
+
+export function getDecoupledNextDayPrepPrompts(
+  inventory: BatchInventoryState | undefined
+): BatchLowInventoryPrompt[] {
+  const oatsRem =
+    inventory && typeof inventory.oatsJarsRemaining === 'number'
+      ? Math.max(0, Math.min(4, Math.floor(inventory.oatsJarsRemaining)))
+      : 4;
+  const riceRem =
+    inventory && typeof inventory.riceBowlsRemaining === 'number'
+      ? Math.max(0, Math.min(4, Math.floor(inventory.riceBowlsRemaining)))
+      : 4;
+
+  const prompts: BatchLowInventoryPrompt[] = [];
+  if (oatsRem <= 1) {
+    prompts.push({
+      batchType: 'oats',
+      remaining: oatsRem,
+      maxPortions: 4,
+      unitLabel: 'jars',
+      bannerText:
+        oatsRem === 0
+          ? 'Overnight Oats empty (0/4 jars) — Prep next 4 jars tomorrow?'
+          : 'Overnight Oats running low (1/4 jars left) — Schedule Oats Prep for tomorrow?',
+      scheduledDayIdx: inventory?.oatsPrepDay ?? null
+    });
+  }
+  if (riceRem <= 1) {
+    prompts.push({
+      batchType: 'rice',
+      remaining: riceRem,
+      maxPortions: 4,
+      unitLabel: 'bowls',
+      bannerText:
+        riceRem === 0
+          ? 'Jasmine Rice empty (0/4 bowls) — Schedule Rice Cooking for tomorrow?'
+          : 'Jasmine Rice running low (1/4 bowls left) — Schedule Rice Cooking for tomorrow?',
+      scheduledDayIdx: inventory?.ricePrepDay ?? null
+    });
+  }
+  return prompts;
+}
+
+export const RICE_COOKING_TIMER_RECIPE_SPEC = {
+  videoUrl: 'https://www.youtube.com/watch?v=dVKVb1NFP8s',
+  videoButtonLabel: 'Watch Stovetop Jasmine Rice Tutorial',
+  heading: 'Full Jasmine Rice Batch Recipe (4 Bowls • 600g Cooked)',
+  ingredientsText:
+    '220g dry white jasmine rice (rinsed 3x until water runs clear), 330 ml cold water (1:1.5 rice-to-water ratio), optional pinch of salt.',
+  methodSteps: [
+    '1. Combine rinsed rice + 330 ml water in pot and bring to a boil.',
+    '2. Reduce to lowest heat, cover, and simmer 10–12 min, stirring every 1.5 min when the timer chimes.',
+    '3. Turn off heat and let rest covered for 10 min cool-down/steam.',
+    '4. Weigh into 4 bowls (150g cooked rice each).'
+  ]
+} as const;
+
+export function syncRiceBatchPreppedBothWays(
+  recipePrepLogs: Record<string, boolean> | undefined,
+  inventory: BatchInventoryState | undefined
+): {
+  recipePrepLogs: Record<string, boolean>;
+  batchInventory: BatchInventoryState;
+} {
+  const nextLogs: Record<string, boolean> = {
+    ...(recipePrepLogs || {}),
+    rice_step_1: true,
+    rice_step_2: true,
+    rice_step_3: true,
+    rice_step_4: true
+  };
+  const nextInv: BatchInventoryState = {
+    oatsJarsRemaining:
+      inventory && typeof inventory.oatsJarsRemaining === 'number'
+        ? Math.max(0, Math.min(4, Math.floor(inventory.oatsJarsRemaining)))
+        : 4,
+    riceBowlsRemaining: 4,
+    oatsPrepDay: inventory?.oatsPrepDay ?? null,
+    ricePrepDay: null
+  };
+  return {
+    recipePrepLogs: nextLogs,
+    batchInventory: nextInv
+  };
+}
+
+export interface MachineExerciseSwapSpec {
+  originalExId: string;
+  replacementId: string;
+  replacementName: string;
+  primaryMuscles: string;
+  movementPattern: string;
+  biomechanicalNotes: string;
+  videoUrl: string;
+  restSec: number;
+  restLabel: string;
+  defaultWeightLbs: number;
+}
+
+export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseSwapSpec> = {
+  mon_bench: {
+    originalExId: 'mon_bench',
+    replacementId: 'swap_machine_chest_press',
+    replacementName: 'Seated Chest Press Machine',
+    primaryMuscles: 'Mid/Lower Pectoralis Major, Anterior Deltoids, Triceps',
+    movementPattern: 'Horizontal Push (Fixed-Path Converging Press)',
+    biomechanicalNotes: 'Adjust seat so handles align with mid-chest (nipple line). Keep shoulder blades retracted against pad, elbows tucked 45-60 degrees, and press to full extension.',
+    videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
+    restSec: 120,
+    restLabel: '2 min',
+    defaultWeightLbs: 110
+  },
+  mon_cs_row: {
+    originalExId: 'mon_cs_row',
+    replacementId: 'swap_machine_chest_supported_row',
+    replacementName: 'Seated Machine Row (Upper Back Focus)',
+    primaryMuscles: 'Mid/Upper Trapezius, Rhomboids, Rear Deltoids, Lats',
+    movementPattern: 'Chest-Supported Horizontal Pull',
+    biomechanicalNotes: 'Set chest pad so sternum rests firmly against cushion. Use wide overhand grip, flare elbows 45-60 degrees, and squeeze shoulder blades together for 1s.',
+    videoUrl: 'https://www.youtube.com/watch?v=GZbfZ033f74',
+    restSec: 120,
+    restLabel: '2 min',
+    defaultWeightLbs: 105
+  },
+  mon_ohp: {
+    originalExId: 'mon_ohp',
+    replacementId: 'swap_machine_shoulder_press',
+    replacementName: 'Seated Shoulder Press Machine',
+    primaryMuscles: 'Anterior & Lateral Deltoids, Triceps, Upper Chest',
+    movementPattern: 'Vertical Overhead Push',
+    biomechanicalNotes: 'Set seat so handles start at ear/chin level. Brace core against back pad and press overhead without overarching lower back.',
+    videoUrl: 'https://www.youtube.com/watch?v=WvLMauqrnK8',
+    restSec: 120,
+    restLabel: '2 min',
+    defaultWeightLbs: 75
+  },
+  mon_lat_pd: {
+    originalExId: 'mon_lat_pd',
+    replacementId: 'swap_machine_high_row_pulldown',
+    replacementName: 'Plate-Loaded Iso-Lateral High Pulldown Machine',
+    primaryMuscles: 'Latissimus Dorsi, Teres Major, Biceps',
+    movementPattern: 'Vertical Pull (Scapular Depression & Adduction)',
+    biomechanicalNotes: 'Lock thighs under pad, depress shoulders first, and drive elbows down and in toward ribs.',
+    videoUrl: 'https://youtu.be/AvYZZhEl7Xk',
+    restSec: 120,
+    restLabel: '2 min',
+    defaultWeightLbs: 115
+  },
+  mon_cable_fly: {
+    originalExId: 'mon_cable_fly',
+    replacementId: 'swap_pec_deck_machine',
+    replacementName: 'Seated Pec Deck / Machine Fly',
+    primaryMuscles: 'Pectoralis Major (Sternal & Clavicular Heads)',
+    movementPattern: 'Horizontal Shoulder Adduction',
+    biomechanicalNotes: 'Set seat so handles align with mid-chest. Keep a soft bend in elbows and bring hands together in a wide arc, pausing 1s at peak squeeze.',
+    videoUrl: 'https://www.youtube.com/watch?v=Z57CtFmRMxA',
+    restSec: 90,
+    restLabel: '1.5 min',
+    defaultWeightLbs: 85
+  },
+  mon_lat_raise: {
+    originalExId: 'mon_lat_raise',
+    replacementId: 'swap_machine_lateral_raise',
+    replacementName: 'Seated Lateral Raise Machine',
+    primaryMuscles: 'Lateral (Middle) Deltoid',
+    movementPattern: 'Scapular-Plane Shoulder Abduction',
+    biomechanicalNotes: 'Align shoulder joints with machine pivot axis. Push elbow pads outward to shoulder height and lower under strict 2s control.',
+    videoUrl: 'https://youtu.be/1muit9qEctY',
+    restSec: 90,
+    restLabel: '1.5 min',
+    defaultWeightLbs: 50
+  },
+  mon_face_pull: {
+    originalExId: 'mon_face_pull',
+    replacementId: 'swap_reverse_pec_deck',
+    replacementName: 'Reverse Pec Deck (Rear Delt Machine)',
+    primaryMuscles: 'Posterior Deltoids, Infraspinatus, Mid-Traps',
+    movementPattern: 'Horizontal Shoulder Abduction & External Rotation',
+    biomechanicalNotes: 'Face the pad with handles at shoulder height. Sweep arms straight back keeping shoulders depressed away from ears.',
+    videoUrl: 'https://youtu.be/02g7XtSRXug',
+    restSec: 60,
+    restLabel: '1 min',
+    defaultWeightLbs: 55
+  },
+  tue_squat: {
+    originalExId: 'tue_squat',
+    replacementId: 'swap_hack_squat_leg_press',
+    replacementName: '45-Degree Leg Press / Hack Squat Machine',
+    primaryMuscles: 'Quadriceps (Vastus Lateralis, Medialis, Rectus Femoris), Glutes',
+    movementPattern: 'Compound Knee & Hip Extension',
+    biomechanicalNotes: 'Place feet shoulder-width on lower-to-mid platform for quad emphasis. Lower sled until knees reach 90 degrees or deeper without lower-back rounding.',
+    videoUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ',
+    restSec: 150,
+    restLabel: '2-3 min',
+    defaultWeightLbs: 225
+  },
+  tue_rdl: {
+    originalExId: 'tue_rdl',
+    replacementId: 'swap_45deg_hip_extension_machine',
+    replacementName: 'Glute-Ham Raise / 45-Degree Back & Hip Extension',
+    primaryMuscles: 'Hamstrings, Gluteus Maximus, Erector Spinae',
+    movementPattern: 'Loaded Hip Hinge',
+    biomechanicalNotes: 'Set pad just below hip crease so pelvis can hinge freely. Keep spine neutral, hinge until full hamstring stretch, and drive hips into pad using glutes and hamstrings.',
+    videoUrl: 'https://youtu.be/Xu4DxwKWzl4',
+    restSec: 60,
+    restLabel: '1 min',
+    defaultWeightLbs: 45
+  },
+  tue_leg_ext: {
+    originalExId: 'tue_leg_ext',
+    replacementId: 'swap_single_or_iso_leg_ext',
+    replacementName: 'Iso-Lateral / Plate-Loaded Leg Extension Machine',
+    primaryMuscles: 'Quadriceps (Rectus Femoris & Vastus Medialis)',
+    movementPattern: 'Isolated Knee Extension',
+    biomechanicalNotes: 'Align knee joint with machine pivot, lock hips into seat with handles, and pause 1s at full knee lockout.',
+    videoUrl: 'https://youtu.be/nIalczfM8es',
+    restSec: 60,
+    restLabel: '1 min',
+    defaultWeightLbs: 90
+  },
+  tue_lunges: {
+    originalExId: 'tue_lunges',
+    replacementId: 'swap_smith_split_squat',
+    replacementName: 'Smith Machine Quad-Focused Split Squat',
+    primaryMuscles: 'Quadriceps, Gluteus Maximus',
+    movementPattern: 'Unilateral Knee-Dominant Split Squat',
+    biomechanicalNotes: 'Stand in split stance under Smith bar, keep torso upright, and drive front knee forward over toes to maximize quad tension.',
+    videoUrl: 'https://youtu.be/JB20RuTOaFc',
+    restSec: 120,
+    restLabel: '2 min',
+    defaultWeightLbs: 95
+  },
+  tue_calf: {
+    originalExId: 'tue_calf',
+    replacementId: 'swap_standing_calf_machine',
+    replacementName: 'Standing Calf Raise / Leg Press Calf Press Machine',
+    primaryMuscles: 'Gastrocnemius & Soleus',
+    movementPattern: 'Straight-Knee Ankle Plantarflexion',
+    biomechanicalNotes: 'Place balls of feet on platform edge, lower heels for a 2s bottom stretch, and press high onto big toes.',
+    videoUrl: 'https://youtu.be/q2Eigaa9dKU',
+    restSec: 90,
+    restLabel: '1.5 min',
+    defaultWeightLbs: 135
+  },
+  thu_inc_db: {
+    originalExId: 'thu_inc_db',
+    replacementId: 'swap_incline_chest_press_machine',
+    replacementName: 'Seated Incline Chest Press Machine',
+    primaryMuscles: 'Clavicular (Upper) Pectoralis Major, Anterior Deltoids, Triceps',
+    movementPattern: '30-Degree Incline Converging Press',
+    biomechanicalNotes: 'Set seat so handles align with upper chest / collarbone. Retract shoulder blades and press along the upward converging arc.',
+    videoUrl: 'https://youtu.be/kpzUeELReEA',
+    restSec: 120,
+    restLabel: '2 min',
+    defaultWeightLbs: 95
+  },
+  thu_mid_fly: {
+    originalExId: 'thu_mid_fly',
+    replacementId: 'swap_seated_machine_chest_fly',
+    replacementName: 'Seated Pec Deck Chest Fly Machine',
+    primaryMuscles: 'Mid/Sternal Pectoralis Major',
+    movementPattern: 'Seated Horizontal Adduction',
+    biomechanicalNotes: 'Keep chest tall against back pad, bring arms together at sternum level, and hold peak contraction for 1 full second.',
+    videoUrl: 'https://youtu.be/Y8E3dHNsSTU',
+    restSec: 90,
+    restLabel: '1.5 min',
+    defaultWeightLbs: 90
+  },
+  thu_flat_db: {
+    originalExId: 'thu_flat_db',
+    replacementId: 'swap_plate_loaded_flat_press',
+    replacementName: 'Iso-Lateral Flat Chest Press Machine',
+    primaryMuscles: 'Sternal Pectoralis Major, Triceps, Front Delts',
+    movementPattern: 'Horizontal Push',
+    biomechanicalNotes: 'Keep shoulder blades pinned back and drive handles smoothly to lockout without letting shoulders roll forward.',
+    videoUrl: 'https://youtu.be/g14dhC5KYBM',
+    restSec: 120,
+    restLabel: '2 min',
+    defaultWeightLbs: 115
+  },
+  thu_db_lat: {
+    originalExId: 'thu_db_lat',
+    replacementId: 'swap_cable_or_machine_lat_raise',
+    replacementName: 'Seated Lateral Raise Machine',
+    primaryMuscles: 'Lateral Deltoids',
+    movementPattern: 'Scapular-Plane Abduction',
+    biomechanicalNotes: 'Drive elbows outward against pads to shoulder level and control the eccentric phase.',
+    videoUrl: 'https://youtu.be/zcO3sgAeLA0',
+    restSec: 90,
+    restLabel: '1.5 min',
+    defaultWeightLbs: 50
+  },
+  thu_oh_ext: {
+    originalExId: 'thu_oh_ext',
+    replacementId: 'swap_seated_tricep_dip_ext_machine',
+    replacementName: 'Seated Overhead Triceps Extension Machine',
+    primaryMuscles: 'Triceps Brachii (Long Head Emphasis)',
+    movementPattern: 'Overhead Elbow Extension',
+    biomechanicalNotes: 'Keep upper arms firmly on angled pad and extend forearms to full lockout.',
+    videoUrl: 'https://www.youtube.com/watch?v=7yoTblFCUQM',
+    restSec: 90,
+    restLabel: '1.5 min',
+    defaultWeightLbs: 65
+  },
+  thu_pushdown: {
+    originalExId: 'thu_pushdown',
+    replacementId: 'swap_assisted_or_machine_tricep_press',
+    replacementName: 'Seated Triceps Pressdown Machine',
+    primaryMuscles: 'Triceps Brachii (Lateral & Medial Heads)',
+    movementPattern: 'Vertical Elbow Extension',
+    biomechanicalNotes: 'Keep elbows tucked tight to ribs and press handles all the way down.',
+    videoUrl: 'https://youtu.be/MlfCS_7ZLXA',
+    restSec: 90,
+    restLabel: '1.5 min',
+    defaultWeightLbs: 80
+  },
+  fri_lat_row: {
+    originalExId: 'fri_lat_row',
+    replacementId: 'swap_iso_low_lat_row_machine',
+    replacementName: 'Iso-Lateral Low Row Machine (Lat Focus)',
+    primaryMuscles: 'Lower & Mid Latissimus Dorsi',
+    movementPattern: 'Neutral-Grip Low Horizontal Pull',
+    biomechanicalNotes: 'Brace chest on pad, keep elbows tight to ribs, and pull handles down and back toward hips.',
+    videoUrl: 'https://youtu.be/ZaEnZ47cDTk',
+    restSec: 120,
+    restLabel: '2 min',
+    defaultWeightLbs: 125
+  },
+  fri_rear_row: {
+    originalExId: 'fri_rear_row',
+    replacementId: 'swap_rear_delt_wide_row_machine',
+    replacementName: 'Wide-Grip Upper Back / Rear Delt Row Machine',
+    primaryMuscles: 'Rear Deltoids, Rhomboids, Mid-Traps',
+    movementPattern: '45-Degree Elbows-Out Horizontal Pull',
+    biomechanicalNotes: 'Grip wide handles, keep elbows angled 45-60 degrees away from torso, and pull toward upper sternum.',
+    videoUrl: 'https://youtu.be/k9G7BykDD4o',
+    restSec: 90,
+    restLabel: '1.5 min',
+    defaultWeightLbs: 90
+  },
+  fri_inc_curl: {
+    originalExId: 'fri_inc_curl',
+    replacementId: 'swap_preacher_or_bayesian_curl_machine',
+    replacementName: 'Seated Preacher / Cable Biceps Curl Machine',
+    primaryMuscles: 'Biceps Brachii (Long & Short Heads)',
+    movementPattern: 'Stabilized Elbow Flexion',
+    biomechanicalNotes: 'Keep backs of upper arms flush against pad and curl smoothly through full range of motion.',
+    videoUrl: 'https://youtu.be/3D56VDVkQnM',
+    restSec: 90,
+    restLabel: '1.5 min',
+    defaultWeightLbs: 55
+  },
+  fri_hammer: {
+    originalExId: 'fri_hammer',
+    replacementId: 'swap_rope_cable_hammer_curl',
+    replacementName: 'Neutral-Grip Machine / Cable Rope Hammer Curl',
+    primaryMuscles: 'Brachialis, Brachioradialis, Biceps',
+    movementPattern: 'Neutral-Grip Elbow Flexion',
+    biomechanicalNotes: 'Keep palms facing each other (neutral grip), pin elbows at sides, and curl to shoulder height.',
+    videoUrl: 'https://youtu.be/OrGL-ymYREg',
+    restSec: 90,
+    restLabel: '1.5 min',
+    defaultWeightLbs: 60
+  },
+  fri_face_pull: {
+    originalExId: 'fri_face_pull',
+    replacementId: 'swap_fri_reverse_pec_deck',
+    replacementName: 'Reverse Pec Deck (Rear Delt Machine)',
+    primaryMuscles: 'Posterior Deltoids, External Rotators, Mid-Traps',
+    movementPattern: 'Horizontal Abduction',
+    biomechanicalNotes: 'Keep chest against pad and sweep arms back in a wide arc with shoulders down.',
+    videoUrl: 'https://youtu.be/02g7XtSRXug',
+    restSec: 60,
+    restLabel: '1 min',
+    defaultWeightLbs: 55
+  },
+  sat_deadlift: {
+    originalExId: 'sat_deadlift',
+    replacementId: 'swap_hex_bar_or_hinge_machine',
+    replacementName: 'Trap Bar / Plate-Loaded Deadlift Machine',
+    primaryMuscles: 'Glutes, Hamstrings, Erector Spinae, Quads, Traps',
+    movementPattern: 'Compound Floor Pull / Hip Hinge',
+    biomechanicalNotes: 'Grip neutral handles at sides, brace lats and core, and drive floor away keeping spine neutral.',
+    videoUrl: 'https://youtu.be/JL1tJTEmxfw',
+    restSec: 150,
+    restLabel: '2-3 min',
+    defaultWeightLbs: 205
+  },
+  sat_bss: {
+    originalExId: 'sat_bss',
+    replacementId: 'swap_single_leg_press_glute',
+    replacementName: 'Single-Leg Glute-Focused Leg Press Machine',
+    primaryMuscles: 'Gluteus Maximus, Hamstrings, Quadriceps',
+    movementPattern: 'Unilateral Hip-Dominant Leg Press',
+    biomechanicalNotes: 'Place working foot high on sled platform to emphasize hip flexion and glute stretch. Control down and drive through heel.',
+    videoUrl: 'https://youtu.be/sqadB2rroz0',
+    restSec: 60,
+    restLabel: '1 min / leg',
+    defaultWeightLbs: 115
+  },
+  sat_hip_thrust: {
+    originalExId: 'sat_hip_thrust',
+    replacementId: 'swap_glute_drive_machine',
+    replacementName: 'Belt / Plate-Loaded Glute Drive Hip Thrust Machine',
+    primaryMuscles: 'Gluteus Maximus, Hamstrings',
+    movementPattern: 'Loaded Horizontal Hip Extension',
+    biomechanicalNotes: 'Secure padded belt across hips, place feet so shins are vertical at top, and pause 1-2s at full glute lockout.',
+    videoUrl: 'https://youtu.be/_vBMijiZoxE',
+    restSec: 120,
+    restLabel: '2 min',
+    defaultWeightLbs: 165
+  },
+  sat_leg_curl: {
+    originalExId: 'sat_leg_curl',
+    replacementId: 'swap_seated_leg_curl_machine',
+    replacementName: 'Seated Leg Curl Machine',
+    primaryMuscles: 'Hamstrings (Semitendinosus, Semimembranosus, Biceps Femoris)',
+    movementPattern: 'Seated Knee Flexion (Lengthened Hip Position)',
+    biomechanicalNotes: 'Lock thigh pad snugly over knees, lean slightly forward for maximum hamstring stretch, and curl heels all the way under seat.',
+    videoUrl: 'https://youtu.be/aYy3alWRDmk',
+    restSec: 90,
+    restLabel: '1.5 min',
+    defaultWeightLbs: 105
+  },
+  sat_abduction: {
+    originalExId: 'sat_abduction',
+    replacementId: 'swap_seated_hip_abduction_machine',
+    replacementName: 'Seated Hip Abduction Machine',
+    primaryMuscles: 'Gluteus Medius & Minimus (Upper/Lateral Glutes)',
+    movementPattern: 'Seated Hip Abduction',
+    biomechanicalNotes: 'Sit tall or lean slightly forward, drive knees outward against pads, and hold 1s at peak contraction.',
+    videoUrl: 'https://youtu.be/CA0ALPgTkxw',
+    restSec: 60,
+    restLabel: '1 min',
+    defaultWeightLbs: 110
+  },
+  sat_seated_calf: {
+    originalExId: 'sat_seated_calf',
+    replacementId: 'swap_seated_calf_raise_machine',
+    replacementName: 'Plate-Loaded Seated Calf Raise Machine',
+    primaryMuscles: 'Soleus (Bent-Knee Calf)',
+    movementPattern: 'Bent-Knee Ankle Plantarflexion',
+    biomechanicalNotes: 'Place balls of feet on platform, secure knee pad, lower heels to deep stretch, and drive all the way up.',
+    videoUrl: 'https://youtu.be/2TkLMol2bCo',
+    restSec: 60,
+    restLabel: '1 min',
+    defaultWeightLbs: 90
+  },
+  cable_ab_crunch: {
+    originalExId: 'cable_ab_crunch',
+    replacementId: 'swap_seated_ab_crunch_machine',
+    replacementName: 'Seated Abdominal Crunch Machine',
+    primaryMuscles: 'Rectus Abdominis & Obliques',
+    movementPattern: 'Loaded Spinal Flexion',
+    biomechanicalNotes: 'Brace feet under rollers, curl ribcage down toward pelvis while exhaling completely, and pause 1s at peak contraction.',
+    videoUrl: 'https://www.youtube.com/watch?v=aBd6T01PBqw',
+    restSec: 90,
+    restLabel: '1.5 min',
+    defaultWeightLbs: 70
+  }
+};
+
+export function verifyAndBuildMachineExerciseSwap(
+  originalExId: string,
+  originalExName: string,
+  userCustomMachineNote?: string
+): {
+  matchConfirmed: boolean;
+  confirmationPromptText: string;
+  replacementSpec: MachineExerciseSwapSpec;
+  switchBackButtonLabel: string;
+} {
+  const baseSpec =
+    BIOMECHANICAL_MACHINE_SWAP_CATALOG[originalExId] || {
+      originalExId,
+      replacementId: `swap_machine_${originalExId}`,
+      replacementName: `${originalExName} (Selectorized Machine Equivalent)`,
+      primaryMuscles: 'Same Primary Target Muscle Group',
+      movementPattern: 'Equivalent Stabilized Machine Path',
+      biomechanicalNotes: 'Align joint pivot with machine cam, maintain controlled 2s eccentric tempo, and train to the same target rep range.',
+      videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
+      restSec: 120,
+      restLabel: '2 min',
+      defaultWeightLbs: 90
+    };
+
+  const cleanCustom = String(userCustomMachineNote || '').trim();
+  const effectiveName =
+    cleanCustom && cleanCustom.length >= 3 && cleanCustom.length <= 52
+      ? cleanCustom
+      : baseSpec.replacementName;
+
+  const replacementSpec: MachineExerciseSwapSpec = {
+    ...baseSpec,
+    replacementName: effectiveName
+  };
+
+  return {
+    matchConfirmed: true,
+    confirmationPromptText: `Biomechanical Match Confirmed: ${replacementSpec.replacementName} targets the same muscles as ${originalExName}. Replace today's exercise card?`,
+    replacementSpec,
+    switchBackButtonLabel: `Switch Back to ${originalExName}`
+  };
+}

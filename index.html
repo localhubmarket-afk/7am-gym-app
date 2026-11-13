@@ -456,13 +456,10 @@
           </button>
         </div>
 
-        <!-- Giant Countdown Display -->
+        <!-- Giant Countdown Display (Single green progress bar is pinned in fixed top header across all 5 tabs) -->
         <div class="py-4">
           <div id="main-timer-display" class="font-mono text-5xl sm:text-6xl font-extrabold tracking-tight text-white">
             01:30 (1.5m)
-          </div>
-          <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-4">
-            <div id="main-timer-progress" class="bg-emerald-500 h-full transition-all duration-300" style="width: 100%"></div>
           </div>
         </div>
 
@@ -609,13 +606,16 @@
 
       <!-- Simplified Daily Muscle Fuel Header Card (MacroFactor / Hevy Standard) -->
       <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
-        <!-- 1. Compact Title Row + [G | LB] Toggle & [Log All 4] Button -->
-        <div class="flex items-center justify-between gap-1.5">
+        <!-- 1. Compact Title Row + [Recipes & Prep] + [G | LB] Toggle & [Log All 4] Button -->
+        <div class="flex flex-wrap items-center justify-between gap-1.5">
           <div class="min-w-0 flex-1 flex flex-wrap items-center gap-1.5">
             <h2 id="vegan-main-plan-heading" class="text-xs sm:text-sm font-extrabold text-white tracking-tight leading-snug">Daily Muscle Fuel (1,300 kcal • 138g P)</h2>
             <span id="vegan-logged-with-plan-badge" class="hidden text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-950/85 text-purple-200 border border-purple-400/50"></span>
           </div>
-          <div class="flex items-center gap-1 shrink-0">
+          <div class="flex flex-wrap items-center gap-1 shrink-0">
+            <button type="button" id="toggle-all-fuel-recipes-btn" class="text-[10.5px] sm:text-[11px] font-extrabold px-2 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 transition whitespace-nowrap">
+              Recipes &amp; Prep
+            </button>
             <div class="inline-flex items-center rounded-lg bg-slate-950 border border-sky-500/40 p-0.5" role="group" aria-label="Kitchen Scale Weight Unit Toggle">
               <button type="button" id="fuel-unit-g-btn" data-fuel-unit="g" class="px-2 py-1 rounded-md text-[10px] font-extrabold bg-sky-500 text-slate-950 transition">G</button>
               <button type="button" id="fuel-unit-lb-btn" data-fuel-unit="lb" class="px-2 py-1 rounded-md text-[10px] font-extrabold text-sky-300 hover:text-white transition">LB</button>
@@ -659,6 +659,9 @@
         <!-- Redundant Plan Day Sync 6-pill summary box hidden so user goes straight from Daily Macros & Water into FUEL 1–4 -->
         <div id="vegan-gym-time-bar" class="hidden"></div>
       </div>
+
+      <!-- Decoupled Oats vs. Rice Fridge Inventory Status & Smart Next-Day Prep Prompt Banner -->
+      <div id="fuel-next-day-prep-prompt-banner" class="space-y-2"></div>
 
       <!-- Daily Fuel (1–4) Placed ABOVE 4-Day Batch Prep for Rapid Daily Logging -->
       <div class="space-y-3" id="vegan-meals-container">
@@ -1341,6 +1344,26 @@
       }
       if (!Array.isArray(merged.progressPhotos) || merged.progressPhotos.length === 0) {
         merged.progressPhotos = JSON.parse(JSON.stringify(FRANCOIS_SEED_PROGRESS_PHOTOS));
+      }
+      if (!merged.pullUpHardestChoiceByWeek || typeof merged.pullUpHardestChoiceByWeek !== 'object') {
+        merged.pullUpHardestChoiceByWeek = {};
+      }
+      if (merged.lastChosenHardestPullUpDay === undefined) {
+        merged.lastChosenHardestPullUpDay = null;
+      }
+      if (!merged.batchInventory || typeof merged.batchInventory !== 'object') {
+        merged.batchInventory = { oatsJarsRemaining: 4, riceBowlsRemaining: 4, oatsPrepDay: null, ricePrepDay: null };
+      } else {
+        if (typeof merged.batchInventory.oatsJarsRemaining !== 'number') merged.batchInventory.oatsJarsRemaining = 4;
+        if (typeof merged.batchInventory.riceBowlsRemaining !== 'number') merged.batchInventory.riceBowlsRemaining = 4;
+        if (merged.batchInventory.oatsPrepDay === undefined) merged.batchInventory.oatsPrepDay = null;
+        if (merged.batchInventory.ricePrepDay === undefined) merged.batchInventory.ricePrepDay = null;
+      }
+      if (!merged.swappedExercises || typeof merged.swappedExercises !== 'object') {
+        merged.swappedExercises = {};
+      }
+      if (!merged.pendingMachineSwapPreviews || typeof merged.pendingMachineSwapPreviews !== 'object') {
+        merged.pendingMachineSwapPreviews = {};
       }
       return merged;
     }
@@ -4012,24 +4035,32 @@
     }
 
     function syncStickyHeaderVisibility() {
-      const activeNavBtn = document.querySelector('.nav-tab-btn.text-emerald-400');
-      const currentTab = activeNavBtn ? activeNavBtn.getAttribute('data-nav') : 'workout';
-      const hasRiceActivity = Boolean(state.activeRiceTimerStage || state.riceTimerAlertBanner);
-      const showStickyTimer = (currentTab === 'workout' || currentTab === 'pullups' || hasRiceActivity);
       const pinnedTimerRow = document.getElementById('pinned-rest-timer-row');
       const pinnedTimerStrip = document.getElementById('pinned-rest-timer-strip');
       if (pinnedTimerRow) {
-        if (showStickyTimer) pinnedTimerRow.classList.remove('hidden');
-        else pinnedTimerRow.classList.add('hidden');
+        pinnedTimerRow.classList.remove('hidden');
       }
       if (pinnedTimerStrip) {
-        if (showStickyTimer) pinnedTimerStrip.classList.remove('hidden');
-        else pinnedTimerStrip.classList.add('hidden');
+        pinnedTimerStrip.classList.add('hidden');
       }
       syncFixedHeaderSpacer();
       if (typeof ensureVerticalScrollUnlocked === 'function') {
         ensureVerticalScrollUnlocked();
       }
+    }
+
+    function syncRiceBatchInventoryAndSteps(isPrepped) {
+      if (!state.recipePrepLogs || typeof state.recipePrepLogs !== 'object') state.recipePrepLogs = {};
+      if (!state.batchInventory || typeof state.batchInventory !== 'object') {
+        state.batchInventory = { oatsJarsRemaining: 4, riceBowlsRemaining: 4, oatsPrepDay: null, ricePrepDay: null };
+      }
+      const stepIds = ['rice_step_1', 'rice_step_2', 'rice_step_3', 'rice_step_4'];
+      stepIds.forEach(sid => {
+        if (isPrepped) state.recipePrepLogs[sid] = true;
+        else delete state.recipePrepLogs[sid];
+      });
+      state.batchInventory.riceBowlsRemaining = isPrepped ? 4 : 0;
+      if (isPrepped) state.batchInventory.ricePrepDay = null;
     }
 
     function startRiceTimerStage(stageNum) {
@@ -4054,11 +4085,16 @@
       state.activeRiceTimerStage = null;
       state.lastSelectedRiceStage = stageSpec.stage === 1 ? 2 : 1;
       state.timerContextLabel = stageSpec.completionBanner;
+      if (Number(stageNum) === 2) {
+        syncRiceBatchInventoryAndSteps(true);
+      }
       const lbl = document.getElementById('timer-context-label');
       if (lbl) lbl.textContent = state.timerContextLabel;
       updateTimerUI();
       syncStickyHeaderVisibility();
       renderRiceCookingTimerWidgets();
+      if (typeof renderVeganView === 'function') renderVeganView();
+      if (typeof renderWorkoutView === 'function') renderWorkoutView();
       saveState();
       showToast(stageSpec.completionBanner);
     }
@@ -4083,6 +4119,8 @@
       const mixEnabled = isRiceMixAlertEnabled();
       const badgeTimeText = getIdleOrRunningRiceTimerBadgeText();
       const nextMixStr = computeRiceMixCountdownText();
+      const riceStepsDone = ['rice_step_1', 'rice_step_2', 'rice_step_3', 'rice_step_4'].every(sid => Boolean(state.recipePrepLogs && state.recipePrepLogs[sid]));
+      const bowlsLeft = (state.batchInventory && typeof state.batchInventory.riceBowlsRemaining === 'number') ? state.batchInventory.riceBowlsRemaining : 4;
 
       const buttonsHtml = stages.map(st => {
         const isCurrentRunning = (activeStage === st.stage && timerRunning);
@@ -4112,8 +4150,9 @@
               <div class="flex flex-wrap items-center gap-1.5">
                 <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40">2-Phase Jasmine Rice Timer</span>
                 <span class="live-rice-next-mix-readout text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Next Mix/Stir in: ${nextMixStr}</span>
+                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded ${riceStepsDone ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40' : 'bg-slate-900 text-sky-300 border border-slate-700'}">${bowlsLeft}/4 Bowls in Fridge</span>
               </div>
-              <p class="text-[11px] text-slate-400 mt-1">220g rinsed dry rice + 330 ml water • Syncs live with top sticky timer bar</p>
+              <p class="text-[11px] text-slate-400 mt-1">220g rinsed dry rice + 330 ml water • Syncs live with top sticky timer bar &amp; Batch 2/2</p>
             </div>
             <div class="flex items-center gap-1.5">
               <span class="live-rice-timer-readout font-mono text-xs sm:text-sm font-extrabold px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400 whitespace-nowrap">${badgeTimeText}</span>
@@ -4157,6 +4196,46 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             ${buttonsHtml}
+          </div>
+
+          <!-- Video Tutorial Button & 1-Tap Sync with Batch 2/2 (4 Bowls in Fridge) -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+            <a
+              href="https://www.youtube.com/watch?v=dVKVb1NFP8s"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="rice-tutorial-video-link inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/50 text-rose-200 text-[11px] font-extrabold transition"
+            >
+              <span>Watch Stovetop Jasmine Rice Tutorial</span>
+            </a>
+            <button
+              type="button"
+              class="rice-timer-mark-prepped-btn px-3 py-1.5 rounded-xl text-[11px] font-extrabold border transition ${
+                riceStepsDone && bowlsLeft === 4
+                  ? 'bg-emerald-500 text-slate-950 border-emerald-300'
+                  : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border-emerald-400/50'
+              }"
+            >
+              ${riceStepsDone && bowlsLeft === 4 ? '✓ 4 Bowls Ready in Fridge' : 'Mark 4 Bowls Ready (Sync Batch 2/2)'}
+            </button>
+          </div>
+
+          <!-- Full Jasmine Rice Batch Recipe (4 Bowls • 600g Cooked) -->
+          <div class="bg-slate-900/95 border border-slate-800 rounded-xl p-2.5 space-y-1.5 text-left">
+            <div class="flex flex-wrap items-center justify-between gap-1">
+              <span class="text-[11px] font-extrabold text-sky-300">Full Jasmine Rice Batch Recipe (4 Bowls • 600g Cooked)</span>
+              <span class="text-[10px] font-bold text-emerald-300">150g cooked / bowl</span>
+            </div>
+            <p class="text-[11px] text-slate-200 leading-snug">
+              <strong class="text-amber-300">Ingredients:</strong> 220g dry white jasmine rice (rinsed 3x until water runs clear), 330 ml cold water (1:1.5 rice-to-water ratio), optional pinch of salt.
+            </p>
+            <div class="text-[11px] text-slate-300 space-y-0.5 leading-snug">
+              <div><strong class="text-sky-300">Method:</strong></div>
+              <div>1. Combine rinsed rice + 330 ml water in pot and bring to a boil.</div>
+              <div>2. Reduce to lowest heat, cover, and simmer 10–12 min, stirring every 1.5 min when the timer chimes.</div>
+              <div>3. Turn off heat and let rest covered for 10 min cool-down/steam.</div>
+              <div>4. Weigh into 4 bowls (150g cooked rice each).</div>
+            </div>
           </div>
 
           ${activeSpec && !alertBanner ? `
@@ -4203,6 +4282,17 @@
           saveState();
           renderRiceCookingTimerWidgets();
           showToast(`1.5-Minute Rice Mix/Stir Alert: ${isRiceMixAlertEnabled() ? 'ON' : 'OFF'}`);
+        });
+      });
+      rootEl.querySelectorAll('.rice-timer-mark-prepped-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          syncRiceBatchInventoryAndSteps(true);
+          saveState();
+          renderRiceCookingTimerWidgets();
+          if (typeof renderVeganView === 'function') renderVeganView();
+          if (typeof renderWorkoutView === 'function') renderWorkoutView();
+          showToast('Synced 4 Jasmine Rice bowls ready in fridge with Batch 2/2.');
         });
       });
       rootEl.querySelectorAll('.rice-timer-clear-btn').forEach(btn => {
@@ -5885,9 +5975,408 @@
       day5_pullups: 5
     };
 
-    function parseTargetRepsNumber(repsStr, pullupDayNum, setIdx) {
+    const DAY5_HARDEST_DAY_OPTIONS = [
+      {
+        id: 'option_a',
+        sessionNum: 1,
+        label: 'Option A: Session 1 — 5 Max Effort Sets (90s rest)',
+        shortTitle: 'Day 5: Repeats Session 1 (5 Max Effort Sets)',
+        setsCount: 5,
+        restSec: 90,
+        restLabel: '90s rest',
+        isPyramid: false,
+        isThreeGrips: false,
+        repsLabel: 'Max Effort'
+      },
+      {
+        id: 'option_b',
+        sessionNum: 2,
+        label: 'Option B: Session 2 — Pyramid Day + 1 Max Set (10s x reps rest)',
+        shortTitle: 'Day 5: Repeats Session 2 (Pyramid Day + 1 Max Set)',
+        setsCount: 5,
+        restSec: 10,
+        restLabel: '10s x reps rest',
+        isPyramid: true,
+        isThreeGrips: false,
+        repsLabel: '1, 2, 3, 4 + Max'
+      },
+      {
+        id: 'option_c',
+        sessionNum: 3,
+        label: 'Option C: Session 3 — 9 Training Sets • 3 Grips (60s rest)',
+        shortTitle: 'Day 5: Repeats Session 3 (9 Training Sets • 3 Grips)',
+        setsCount: 9,
+        restSec: 60,
+        restLabel: '60s rest',
+        isPyramid: false,
+        isThreeGrips: true,
+        repsLabel: 'Training Set Reps'
+      },
+      {
+        id: 'option_d',
+        sessionNum: 4,
+        label: 'Option D: Session 4 — Max Training Sets (60s rest)',
+        shortTitle: 'Day 5: Repeats Session 4 (Max Training Sets)',
+        setsCount: 5,
+        restSec: 60,
+        restLabel: '60s rest',
+        isPyramid: false,
+        isThreeGrips: false,
+        repsLabel: 'Training Set Reps'
+      }
+    ];
+
+    function getPullupPreviousBestMax() {
+      let best = 4;
+      const logs = (state && state.pullupLogs) || {};
+      Object.keys(logs).forEach(k => {
+        const entry = logs[k];
+        if (entry && entry.done) {
+          const r = parseInt(entry.reps, 10);
+          if (!isNaN(r) && r > best) best = r;
+        }
+      });
+      return Math.max(4, best);
+    }
+
+    function recommendHardestPullupSessionForWeek(week) {
+      const w = Math.max(1, parseInt(week || (state && state.selectedWeek) || 1, 10) || 1);
+      const logs = (state && state.pullupLogs) || {};
+      const trainingTarget = Math.max(1, parseInt((state && state.pullupTrainingSetReps) || 3, 10) || 3);
+      const sessionTargets = { 1: 5, 2: 5, 3: 9, 4: 5 };
+      let bestHardnessScore = -1;
+      let recommendedSessionNum = 3;
+
+      for (let sNum = 1; sNum <= 4; sNum++) {
+        const totalSets = sessionTargets[sNum];
+        let doneSets = 0;
+        let missedRepsCount = 0;
+        for (let idx = 1; idx <= totalSets; idx++) {
+          const entry = logs[`w${w}_day_${sNum}_set_${idx}`] || logs[`day_${sNum}_set_${idx}`];
+          if (entry && entry.done) {
+            doneSets++;
+            const r = parseInt(entry.reps, 10) || 0;
+            const expected = sNum === 2 ? (idx <= 4 ? idx : 4) : trainingTarget;
+            if (r < expected) missedRepsCount += (expected - r);
+          }
+        }
+        let hardness = (sNum === 3 ? 10 : 5);
+        if (doneSets > 0 && doneSets < totalSets) {
+          hardness += (totalSets - doneSets) * 6;
+        }
+        hardness += missedRepsCount * 4;
+        if (hardness > bestHardnessScore) {
+          bestHardnessScore = hardness;
+          recommendedSessionNum = sNum;
+        }
+      }
+      const opt = DAY5_HARDEST_DAY_OPTIONS.find(o => o.sessionNum === recommendedSessionNum) || DAY5_HARDEST_DAY_OPTIONS[2];
+      return {
+        recommendedSessionNum: opt.sessionNum,
+        optionId: opt.id,
+        badgeText: 'Recommended Hardest Day',
+        reason: `Session ${opt.sessionNum} (${opt.shortTitle.replace('Day 5: Repeats ', '')}) had the highest training demand this week.`
+      };
+    }
+
+    function resolveDay5HardestChoiceForWeek(week) {
+      const w = Math.max(1, parseInt(week || (state && state.selectedWeek) || 1, 10) || 1);
+      const byWeek = (state && state.pullUpHardestChoiceByWeek) || {};
+      const validIds = DAY5_HARDEST_DAY_OPTIONS.map(o => o.id);
+      if (byWeek[w] && validIds.includes(byWeek[w])) return byWeek[w];
+      for (let prevW = w - 1; prevW >= 1; prevW--) {
+        if (byWeek[prevW] && validIds.includes(byWeek[prevW])) return byWeek[prevW];
+      }
+      if (state && state.lastChosenHardestPullUpDay && validIds.includes(state.lastChosenHardestPullUpDay)) {
+        return state.lastChosenHardestPullUpDay;
+      }
+      return recommendHardestPullupSessionForWeek(w).optionId;
+    }
+
+    function setDay5HardestChoiceForWeek(week, optionId) {
+      const w = Math.max(1, parseInt(week || (state && state.selectedWeek) || 1, 10) || 1);
+      const opt = DAY5_HARDEST_DAY_OPTIONS.find(o => o.id === optionId) || DAY5_HARDEST_DAY_OPTIONS[2];
+      if (!state.pullUpHardestChoiceByWeek || typeof state.pullUpHardestChoiceByWeek !== 'object') {
+        state.pullUpHardestChoiceByWeek = {};
+      }
+      state.pullUpHardestChoiceByWeek[w] = opt.id;
+      state.lastChosenHardestPullUpDay = opt.id;
+      return opt;
+    }
+
+    function getEffectiveDay5PullupSpec(week) {
+      const w = Math.max(1, parseInt(week || (state && state.selectedWeek) || 1, 10) || 1);
+      const activeOptionId = resolveDay5HardestChoiceForWeek(w);
+      const opt = DAY5_HARDEST_DAY_OPTIONS.find(o => o.id === activeOptionId) || DAY5_HARDEST_DAY_OPTIONS[2];
+      const rec = recommendHardestPullupSessionForWeek(w);
+      return {
+        optionId: opt.id,
+        choiceId: opt.id,
+        optionSpec: opt,
+        recommendedInfo: rec,
+        setsCount: opt.setsCount,
+        restSec: opt.restSec,
+        restLabel: opt.restLabel,
+        isPyramid: opt.isPyramid,
+        isThreeGrips: opt.isThreeGrips,
+        repsLabel: opt.repsLabel,
+        shortTitle: opt.shortTitle,
+        title: opt.shortTitle,
+        desc: `${opt.label} • Repeat your hardest pull-up session of the week to drive neural and hypertrophy adaptations.`
+      };
+    }
+
+    function isPullupSessionPyramidMode(dayNum, week) {
+      if (dayNum === 2) return true;
+      if (dayNum === 5) return getEffectiveDay5PullupSpec(week).isPyramid;
+      return false;
+    }
+
+    function isPullupSessionThreeGripsMode(dayNum, week) {
+      if (dayNum === 3) return true;
+      if (dayNum === 5) return getEffectiveDay5PullupSpec(week).isThreeGrips;
+      return false;
+    }
+
+    function computePyramidCascadingSetSuggestions(completedSetIdx, loggedReps, prevBestMax) {
+      const k = Math.max(1, Math.min(5, parseInt(completedSetIdx, 10) || 1));
+      const n = Math.max(1, parseInt(loggedReps, 10) || k);
+      const maxSuggest = Math.max(4, parseInt(prevBestMax, 10) || getPullupPreviousBestMax());
+      const suggestedRepsBySet = {};
+      if (k >= 1 && k <= 3) {
+        let cur = n;
+        for (let nextSet = k + 1; nextSet <= 4; nextSet++) {
+          cur += 1;
+          suggestedRepsBySet[nextSet] = String(cur);
+        }
+        suggestedRepsBySet[5] = String(maxSuggest);
+      } else if (k === 4) {
+        suggestedRepsBySet[5] = String(maxSuggest);
+      }
+      return {
+        restSec: Math.max(10, n * 10),
+        suggestedRepsBySet
+      };
+    }
+
+    const BIOMECHANICAL_MACHINE_SWAP_CATALOG = {
+      mon_incline_db_press: {
+        machineExerciseId: 'swap_machine_incline_chest_press',
+        suggestedMachineExercise: 'Selectorized Incline Chest Press Machine',
+        targetMuscles: 'Clavicular Pectoralis Major (Upper Chest), Anterior Deltoids, Triceps Brachii',
+        definitionAndCues: 'Adjust seat so handles align with upper chest (clavicle level). Retract shoulder blades against pad, press handles forward and slightly up without locking elbows, and lower under a 2-second eccentric.',
+        videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
+        restSec: 150,
+        restLabel: '2.5 min rest',
+        sets: 3,
+        reps: '8-10'
+      },
+      mon_seated_cable_row: {
+        machineExerciseId: 'swap_machine_chest_supported_row',
+        suggestedMachineExercise: 'Chest-Supported Machine Row',
+        targetMuscles: 'Latissimus Dorsi, Rhomboids, Mid/Lower Trapezius, Rear Delts',
+        definitionAndCues: 'Set chest pad so arms extend fully at start. Drive elbows straight back past torso while squeezing shoulder blades together for 1 second.',
+        videoUrl: 'https://www.youtube.com/watch?v=H75im9fAUMc',
+        restSec: 120,
+        restLabel: '2 min rest',
+        sets: 3,
+        reps: '10-12'
+      },
+      tue_barbell_rdl: {
+        machineExerciseId: 'swap_machine_seated_leg_curl_hinge',
+        suggestedMachineExercise: 'Seated Hamstring Curl / Glute-Ham Machine',
+        targetMuscles: 'Hamstrings (Biceps Femoris, Semitendinosus), Gluteus Maximus',
+        definitionAndCues: 'Align knee joint with machine pivot dot. Lock thigh pad snugly above knees, curl heels smoothly under seat, pause 1s at peak contraction, and control the 3-second return.',
+        videoUrl: 'https://www.youtube.com/watch?v=ELOCsoDSmrg',
+        restSec: 120,
+        restLabel: '2 min rest',
+        sets: 3,
+        reps: '10-12'
+      },
+      tue_walking_lunges: {
+        machineExerciseId: 'swap_machine_leg_press',
+        suggestedMachineExercise: '45-Degree Sled Leg Press Machine',
+        targetMuscles: 'Quadriceps, Gluteus Maximus, Adductors',
+        definitionAndCues: 'Place feet shoulder-width on mid-sled platform. Lower sled until knees reach 90 degrees without lower-back rounding, then drive through mid-foot.',
+        videoUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ',
+        restSec: 120,
+        restLabel: '2 min rest',
+        sets: 3,
+        reps: '10-12'
+      },
+      wed_flat_db_press: {
+        machineExerciseId: 'swap_machine_flat_chest_press',
+        suggestedMachineExercise: 'Seated Horizontal Chest Press Machine',
+        targetMuscles: 'Sternal Pectoralis Major (Mid/Lower Chest), Anterior Deltoids, Triceps',
+        definitionAndCues: 'Set seat height so handles align with mid-chest (nipple line). Keep wrists neutral and elbows tucked at 45 degrees as you press to full pec contraction.',
+        videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
+        restSec: 150,
+        restLabel: '2.5 min rest',
+        sets: 3,
+        reps: '8-10'
+      },
+      thu_barbell_back_squat: {
+        machineExerciseId: 'swap_machine_hack_squat',
+        suggestedMachineExercise: 'Linear Hack Squat / Pendulum Squat Machine',
+        targetMuscles: 'Quadriceps (Vastus Lateralis, Rectus Femoris), Gluteus Maximus',
+        definitionAndCues: 'Brace shoulders and lower back firmly against carriage pads. Descend with knees tracking over toes to parallel or below, then drive forcefully up.',
+        videoUrl: 'https://www.youtube.com/watch?v=0tn5K9NlCfo',
+        restSec: 180,
+        restLabel: '3 min rest',
+        sets: 3,
+        reps: '6-8'
+      },
+      tue_squat: {
+        machineExerciseId: 'swap_machine_hack_squat',
+        suggestedMachineExercise: 'Linear Hack Squat / Pendulum Squat Machine',
+        targetMuscles: 'Quadriceps (Vastus Lateralis, Rectus Femoris), Gluteus Maximus',
+        definitionAndCues: 'Brace shoulders and lower back firmly against carriage pads. Descend with knees tracking over toes to parallel or below, then drive forcefully up.',
+        videoUrl: 'https://www.youtube.com/watch?v=0tn5K9NlCfo',
+        restSec: 180,
+        restLabel: '3 min rest',
+        sets: 3,
+        reps: '6-8'
+      },
+      tue_rdl: {
+        machineExerciseId: 'swap_machine_seated_leg_curl_hinge',
+        suggestedMachineExercise: 'Seated Hamstring Curl / Glute-Ham Machine',
+        targetMuscles: 'Hamstrings (Biceps Femoris, Semitendinosus), Gluteus Maximus',
+        definitionAndCues: 'Align knee joint with machine pivot dot. Lock thigh pad snugly above knees, curl heels smoothly under seat, pause 1s at peak contraction, and control the 3-second return.',
+        videoUrl: 'https://www.youtube.com/watch?v=ELOCsoDSmrg',
+        restSec: 120,
+        restLabel: '2 min rest',
+        sets: 3,
+        reps: '10-12'
+      },
+      tue_lunges: {
+        machineExerciseId: 'swap_machine_leg_press',
+        suggestedMachineExercise: '45-Degree Sled Leg Press Machine',
+        targetMuscles: 'Quadriceps, Gluteus Maximus, Adductors',
+        definitionAndCues: 'Place feet shoulder-width on mid-sled platform. Lower sled until knees reach 90 degrees without lower-back rounding, then drive through mid-foot.',
+        videoUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ',
+        restSec: 120,
+        restLabel: '2 min rest',
+        sets: 3,
+        reps: '10-12'
+      },
+      mon_bench: {
+        machineExerciseId: 'swap_machine_flat_chest_press',
+        suggestedMachineExercise: 'Seated Horizontal Chest Press Machine',
+        targetMuscles: 'Sternal Pectoralis Major (Mid/Lower Chest), Anterior Deltoids, Triceps',
+        definitionAndCues: 'Set seat height so handles align with mid-chest (nipple line). Keep wrists neutral and elbows tucked at 45 degrees as you press to full pec contraction.',
+        videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
+        restSec: 150,
+        restLabel: '2.5 min rest',
+        sets: 3,
+        reps: '8-10'
+      },
+      mon_cs_row: {
+        machineExerciseId: 'swap_machine_chest_supported_row',
+        suggestedMachineExercise: 'Chest-Supported Machine Row',
+        targetMuscles: 'Latissimus Dorsi, Rhomboids, Mid/Lower Trapezius, Rear Delts',
+        definitionAndCues: 'Set chest pad so arms extend fully at start. Drive elbows straight back past torso while squeezing shoulder blades together for 1 second.',
+        videoUrl: 'https://www.youtube.com/watch?v=H75im9fAUMc',
+        restSec: 120,
+        restLabel: '2 min rest',
+        sets: 3,
+        reps: '10-12'
+      },
+      mon_ohp: {
+        machineExerciseId: 'swap_machine_shoulder_press',
+        suggestedMachineExercise: 'Selectorized Overhead Shoulder Press Machine',
+        targetMuscles: 'Anterior & Lateral Deltoids, Upper Trapezius, Triceps Brachii',
+        definitionAndCues: 'Adjust seat so handles start at ear/jaw level. Press vertically overhead without arching low back, and lower under control.',
+        videoUrl: 'https://www.youtube.com/watch?v=Wqq43dKW1TU',
+        restSec: 150,
+        restLabel: '2.5 min rest',
+        sets: 3,
+        reps: '6-8'
+      },
+      thu_inc_db: {
+        machineExerciseId: 'swap_machine_incline_chest_press',
+        suggestedMachineExercise: 'Selectorized Incline Chest Press Machine',
+        targetMuscles: 'Clavicular Pectoralis Major (Upper Chest), Anterior Deltoids, Triceps Brachii',
+        definitionAndCues: 'Adjust seat so handles align with upper chest (clavicle level). Retract shoulder blades against pad, press handles forward and slightly up without locking elbows, and lower under a 2-second eccentric.',
+        videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
+        restSec: 150,
+        restLabel: '2.5 min rest',
+        sets: 3,
+        reps: '8-10'
+      },
+      thu_flat_db: {
+        machineExerciseId: 'swap_machine_flat_chest_press',
+        suggestedMachineExercise: 'Seated Horizontal Chest Press Machine',
+        targetMuscles: 'Sternal Pectoralis Major (Mid/Lower Chest), Anterior Deltoids, Triceps',
+        definitionAndCues: 'Set seat height so handles align with mid-chest (nipple line). Keep wrists neutral and elbows tucked at 45 degrees as you press to full pec contraction.',
+        videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
+        restSec: 150,
+        restLabel: '2.5 min rest',
+        sets: 3,
+        reps: '8-10'
+      },
+      fri_overhead_shoulder_press: {
+        machineExerciseId: 'swap_machine_shoulder_press',
+        suggestedMachineExercise: 'Selectorized Overhead Shoulder Press Machine',
+        targetMuscles: 'Anterior & Lateral Deltoids, Upper Trapezius, Triceps Brachii',
+        definitionAndCues: 'Adjust seat so handles start at ear/jaw level. Press vertically overhead without arching low back, and lower under control.',
+        videoUrl: 'https://www.youtube.com/watch?v=Wqq43dKW1TU',
+        restSec: 150,
+        restLabel: '2.5 min rest',
+        sets: 3,
+        reps: '8-10'
+      }
+    };
+
+    function verifyAndBuildMachineExerciseSwap(originalEx, customMachineNote) {
+      const exId = String((originalEx && (originalEx.originalId || originalEx.id)) || '').trim();
+      const origName = String((originalEx && (originalEx.originalName || originalEx.name)) || 'Current Exercise').trim();
+      const catalogMatch = BIOMECHANICAL_MACHINE_SWAP_CATALOG[exId];
+      const cleanedCustom = String(customMachineNote || '').trim();
+
+      if (catalogMatch) {
+        const displayMachineName = cleanedCustom.length >= 4
+          ? `${catalogMatch.suggestedMachineExercise} (${cleanedCustom})`
+          : catalogMatch.suggestedMachineExercise;
+        return {
+          isMatch: true,
+          originalExerciseId: exId,
+          originalExerciseName: origName,
+          machineExerciseId: catalogMatch.machineExerciseId,
+          suggestedMachineExercise: displayMachineName,
+          targetMuscles: catalogMatch.targetMuscles,
+          definitionAndCues: catalogMatch.definitionAndCues,
+          videoUrl: catalogMatch.videoUrl,
+          restSec: catalogMatch.restSec,
+          restLabel: catalogMatch.restLabel,
+          sets: catalogMatch.sets || (originalEx && originalEx.sets) || 3,
+          reps: catalogMatch.reps || (originalEx && originalEx.reps) || '8-12',
+          confirmationHeadline: `Biomechanical Match Confirmed: ${displayMachineName} targets the same muscles as ${origName}. Replace today's exercise card?`
+        };
+      }
+
+      const fallbackMachineName = cleanedCustom.length >= 3
+        ? `Selectorized ${cleanedCustom} Machine`
+        : `Selectorized ${origName} Machine`;
+      return {
+        isMatch: true,
+        originalExerciseId: exId,
+        originalExerciseName: origName,
+        machineExerciseId: `swap_machine_${exId || 'custom'}`,
+        suggestedMachineExercise: fallbackMachineName,
+        targetMuscles: 'Primary Target Muscle Group & Synergists (Identical Movement Plane)',
+        definitionAndCues: `Adjust machine seat and pin weight so the movement path matches ${origName}. Maintain a controlled 2-second eccentric and full range of motion.`,
+        videoUrl: (originalEx && originalEx.videoUrl) || 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
+        restSec: (originalEx && originalEx.restSec) || 90,
+        restLabel: (originalEx && originalEx.restLabel) || '90s rest',
+        sets: (originalEx && originalEx.sets) || 3,
+        reps: (originalEx && originalEx.reps) || '10-12',
+        confirmationHeadline: `Biomechanical Match Confirmed: ${fallbackMachineName} targets the same muscles as ${origName}. Replace today's exercise card?`
+      };
+    }
+
+    function parseTargetRepsNumber(repsStr, pullupDayNum, setIdx, week) {
       if (pullupDayNum) {
-        const def = getPullupDefaultReps(pullupDayNum, setIdx);
+        const def = getPullupDefaultReps(pullupDayNum, setIdx, week);
         return !isNaN(parseInt(def, 10)) ? String(parseInt(def, 10)) : String(state.pullupTrainingSetReps || 5);
       }
       const s = String(repsStr || '10');
@@ -5897,16 +6386,31 @@
       return singleMatch ? singleMatch[1] : '10';
     }
 
-    function getPullupDefaultReps(dayNum, setIdx) {
-      if (dayNum === 2) return setIdx < 5 ? String(setIdx) : 'Max';
-      if (dayNum === 3 || dayNum === 4) return String(state.pullupTrainingSetReps || 3);
+    function getPullupDefaultReps(dayNum, setIdx, week) {
+      if (isPullupSessionPyramidMode(dayNum, week)) {
+        return setIdx < 5 ? String(setIdx) : String(getPullupPreviousBestMax());
+      }
+      if (dayNum === 3 || dayNum === 4) {
+        return String(state.pullupTrainingSetReps || 3);
+      }
+      if (dayNum === 5) {
+        const spec5 = getEffectiveDay5PullupSpec(week);
+        if (spec5.optionSpec.sessionNum === 3 || spec5.optionSpec.sessionNum === 4) {
+          return String(state.pullupTrainingSetReps || 3);
+        }
+        return 'Max';
+      }
       return 'Max';
     }
 
-    function getPullupSetRestSec(dayNum, setIdx, repsVal, fallbackSec) {
-      if (dayNum === 2) {
-        const r = parseInt(repsVal, 10) || setIdx;
+    function getPullupSetRestSec(dayNum, setIdx, repsVal, fallbackSec, week) {
+      if (isPullupSessionPyramidMode(dayNum, week)) {
+        const r = parseInt(repsVal, 10) || (setIdx < 5 ? setIdx : getPullupPreviousBestMax());
         return Math.max(10, r * 10);
+      }
+      if (dayNum === 5) {
+        const spec5 = getEffectiveDay5PullupSpec(week);
+        return spec5.restSec || fallbackSec || 60;
       }
       return fallbackSec || (dayNum === 1 ? 90 : 60);
     }
@@ -5921,7 +6425,7 @@
       const uLegacyKey = `day_${dayNum}_set_${setIdx}`;
 
       const prevW = state.workoutLogs[wKey] || {};
-      const prevU = state.pullupLogs[uWeekKey] || state.pullupLogs[uLegacyKey] || {};
+      const prevU = state.pullupLogs[uWeekKey] || (w === 1 ? state.pullupLogs[uLegacyKey] : null) || {};
       const merged = {
         weight: dataObj.weight !== undefined ? dataObj.weight : (prevW.weight !== undefined && prevW.weight !== '' ? prevW.weight : '0'),
         reps: dataObj.reps !== undefined ? dataObj.reps : (prevW.reps !== undefined && prevW.reps !== '' ? prevW.reps : (prevU.reps || '')),
@@ -5932,9 +6436,9 @@
       state.workoutLogs[wKey] = Object.assign({}, prevW, merged);
       if (w === 1) {
         state.workoutLogs[`${mapInfo.dayIdx}_${mapInfo.exId}_${setIdx}`] = Object.assign({}, state.workoutLogs[wKey]);
+        state.pullupLogs[uLegacyKey] = { reps: merged.reps, done: merged.done, weight: merged.weight };
       }
       state.pullupLogs[uWeekKey] = { reps: merged.reps, done: merged.done, weight: merged.weight };
-      state.pullupLogs[uLegacyKey] = { reps: merged.reps, done: merged.done, weight: merged.weight };
     }
 
     // =========================================================================
@@ -7576,20 +8080,158 @@
       return checkedCount > 0 && checkedCount < itemsList.length;
     }
 
+    function ensureBatchInventoryState() {
+      if (!state.batchInventory || typeof state.batchInventory !== 'object') {
+        state.batchInventory = { oatsJarsRemaining: 4, riceBowlsRemaining: 4, oatsPrepDay: null, ricePrepDay: null };
+      }
+      if (typeof state.batchInventory.oatsJarsRemaining !== 'number') state.batchInventory.oatsJarsRemaining = 4;
+      if (typeof state.batchInventory.riceBowlsRemaining !== 'number') state.batchInventory.riceBowlsRemaining = 4;
+      return state.batchInventory;
+    }
+
+    function adjustBatchInventoryForSlotTransition(slotId, wasChecked, isNowChecked) {
+      if (Boolean(wasChecked) === Boolean(isNowChecked)) return;
+      const inv = ensureBatchInventoryState();
+      if (slotId === 'post_oats') {
+        inv.oatsJarsRemaining = isNowChecked
+          ? Math.max(0, inv.oatsJarsRemaining - 1)
+          : Math.min(4, inv.oatsJarsRemaining + 1);
+      } else if (slotId === 'lunch') {
+        inv.riceBowlsRemaining = isNowChecked
+          ? Math.max(0, inv.riceBowlsRemaining - 1)
+          : Math.min(4, inv.riceBowlsRemaining + 1);
+      }
+    }
+
+    function getDecoupledLowBatchPrompts() {
+      const inv = ensureBatchInventoryState();
+      const prompts = [];
+      if (inv.oatsJarsRemaining <= 1) {
+        prompts.push({
+          batchType: 'oats',
+          remaining: inv.oatsJarsRemaining,
+          scheduledDay: inv.oatsPrepDay || null,
+          bannerText: inv.oatsJarsRemaining === 0
+            ? 'Overnight Oats empty (0/4 jars) — Prep next 4 jars tomorrow?'
+            : 'Overnight Oats running low (1/4 jars left) — Prep next 4 jars tomorrow?'
+        });
+      }
+      if (inv.riceBowlsRemaining <= 1) {
+        prompts.push({
+          batchType: 'rice',
+          remaining: inv.riceBowlsRemaining,
+          scheduledDay: inv.ricePrepDay || null,
+          bannerText: inv.riceBowlsRemaining === 0
+            ? 'Jasmine Rice empty (0/4 bowls) — Schedule Rice Cooking for tomorrow?'
+            : 'Jasmine Rice running low (1/4 bowls left) — Schedule Rice Cooking for tomorrow?'
+        });
+      }
+      return prompts;
+    }
+
+    function buildDecoupledNextDayPrepBannerHtml(showStatusRow) {
+      const inv = ensureBatchInventoryState();
+      const prompts = getDecoupledLowBatchPrompts();
+      const statusHtml = showStatusRow ? `
+        <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-2 text-xs">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="font-extrabold text-sky-300 uppercase tracking-wider text-[10px]">Fridge Batch Inventory (Decoupled):</span>
+            <span data-oats-inventory-badge="1" class="px-2 py-0.5 rounded-lg font-extrabold text-[11px] border ${
+              inv.oatsJarsRemaining <= 1
+                ? 'bg-amber-500/20 text-amber-200 border-amber-400/50'
+                : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
+            }">Overnight Oats: ${inv.oatsJarsRemaining}/4 Jars${inv.oatsPrepDay ? ` (Prep: ${inv.oatsPrepDay})` : ''}</span>
+            <span data-rice-inventory-badge="1" class="px-2 py-0.5 rounded-lg font-extrabold text-[11px] border ${
+              inv.riceBowlsRemaining <= 1
+                ? 'bg-amber-500/20 text-amber-200 border-amber-400/50'
+                : 'bg-sky-500/15 text-sky-200 border-sky-500/35'
+            }">Jasmine Rice: ${inv.riceBowlsRemaining}/4 Bowls${inv.ricePrepDay ? ` (Prep: ${inv.ricePrepDay})` : ''}</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button type="button" data-refill-batch="oats" class="batch-refill-btn px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] font-bold text-emerald-300 transition">Refill 4 Oats</button>
+            <button type="button" data-refill-batch="rice" class="batch-refill-btn px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] font-bold text-sky-300 transition">Refill 4 Rice</button>
+          </div>
+        </div>
+      ` : '';
+
+      const promptCardsHtml = prompts.map(p => `
+        <div data-low-batch-prompt="${p.batchType}" class="bg-amber-950/80 border border-amber-400/60 rounded-xl px-3 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="px-2 py-0.5 rounded bg-amber-400 text-slate-950 text-[10px] font-extrabold uppercase shrink-0">${p.batchType === 'oats' ? 'Batch 1/2 Oats' : 'Batch 2/2 Rice'}</span>
+            <span class="text-xs font-extrabold text-amber-100 leading-snug">${p.bannerText}${p.scheduledDay ? ` (Scheduled: ${p.scheduledDay})` : ''}</span>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" data-schedule-prep-tomorrow="${p.batchType}" class="schedule-batch-tomorrow-btn px-2.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-extrabold whitespace-nowrap transition">
+              ${p.scheduledDay ? 'Scheduled Tomorrow' : 'Schedule Tomorrow'}
+            </button>
+            <button type="button" data-refill-batch="${p.batchType}" class="batch-refill-btn px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold whitespace-nowrap transition">
+              Mark 4 Prepped
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      return statusHtml + promptCardsHtml;
+    }
+
+    function bindDecoupledNextDayPrepBannerEvents(rootEl) {
+      if (!rootEl) return;
+      rootEl.querySelectorAll('.schedule-batch-tomorrow-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const bType = btn.getAttribute('data-schedule-prep-tomorrow');
+          const inv = ensureBatchInventoryState();
+          const nextDayNum = ((state.selectedDayIndex || 0) + 1) % 7 + 1;
+          if (bType === 'oats') {
+            inv.oatsPrepDay = `Day ${nextDayNum}`;
+            showToast(`Scheduled Overnight Oats 4-jar batch prep for Day ${nextDayNum}.`);
+          } else {
+            inv.ricePrepDay = `Day ${nextDayNum}`;
+            showToast(`Scheduled Jasmine Rice 4-bowl cooking for Day ${nextDayNum}.`);
+          }
+          saveState();
+          if (typeof renderVeganView === 'function') renderVeganView();
+          if (typeof renderWorkoutView === 'function') renderWorkoutView();
+        });
+      });
+      rootEl.querySelectorAll('.batch-refill-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const bType = btn.getAttribute('data-refill-batch');
+          const inv = ensureBatchInventoryState();
+          if (bType === 'oats') {
+            inv.oatsJarsRemaining = 4;
+            inv.oatsPrepDay = null;
+            showToast('Marked 4 Overnight Oats jars prepped in fridge.');
+          } else {
+            syncRiceBatchInventoryAndSteps(true);
+            showToast('Marked 4 Jasmine Rice bowls prepped in fridge.');
+          }
+          saveState();
+          renderRiceCookingTimerWidgets();
+          if (typeof renderVeganView === 'function') renderVeganView();
+          if (typeof renderWorkoutView === 'function') renderWorkoutView();
+        });
+      });
+    }
+
     function setMealCheckedForDay(w, d, slotId, val) {
       if (!state.checkedMeals) state.checkedMeals = {};
       if (!state.checkedMealIngredients) state.checkedMealIngredients = {};
+      const wasChecked = isMealCheckedForDay(w, d, slotId);
+      const isNowChecked = !!val;
       const k = `w${w}_d${d}_${slotId}`;
-      state.checkedMeals[k] = !!val;
-      if (w === 1 && d === 0) state.checkedMeals[slotId] = !!val;
+      state.checkedMeals[k] = isNowChecked;
+      if (w === 1 && d === 0) state.checkedMeals[slotId] = isNowChecked;
       const dayPlan = getEffectiveDayFuelPlan(state, w, d);
       const mealObj = dayPlan && dayPlan.meals ? dayPlan.meals[slotId] : null;
       if (mealObj && mealObj.items) {
         mealObj.items.forEach(it => {
-          state.checkedMealIngredients[`w${w}_d${d}_${slotId}_${it.id}`] = !!val;
+          state.checkedMealIngredients[`w${w}_d${d}_${slotId}_${it.id}`] = isNowChecked;
         });
       }
-      if (val) {
+      adjustBatchInventoryForSlotTransition(slotId, wasChecked, isNowChecked);
+      if (isNowChecked) {
         snapshotMealOnLog(state, w, d, slotId);
       } else if (state.loggedMealSnapshots) {
         const mealNum = SLOT_TO_MEAL_NUM[slotId] || 1;
@@ -7642,6 +8284,8 @@
       if (!state.exerciseNotes || typeof state.exerciseNotes !== 'object') state.exerciseNotes = {};
       if (!state.openNotePanels || typeof state.openNotePanels !== 'object') state.openNotePanels = {};
       if (!state.dismissedPreFuelPrompt || typeof state.dismissedPreFuelPrompt !== 'object') state.dismissedPreFuelPrompt = {};
+      if (!state.swappedExercises || typeof state.swappedExercises !== 'object') state.swappedExercises = {};
+      if (!state.pendingMachineSwapPreviews || typeof state.pendingMachineSwapPreviews !== 'object') state.pendingMachineSwapPreviews = {};
 
       renderDaySelector();
       const week = state.selectedWeek || state.currentWeek || 1;
@@ -7664,10 +8308,47 @@
       }
 
       const hasCrunchToday = state.crunchDays.includes(dayIdx);
-      const exercisesToday = [...dayObj.exercises].map(ex => ({
-        ...ex,
-        name: String(ex.name || '').replace(/^[A-Z]\d+[\.\:\-\)]\s*/i, '').trim()
-      }));
+      const day5Spec = getEffectiveDay5PullupSpec(week);
+      const exercisesToday = [...dayObj.exercises].map(rawEx => {
+        const cleanBaseName = String(rawEx.name || '').replace(/^[A-Z]\d+[\.\:\-\)]\s*/i, '').trim();
+        let exObj = {
+          ...rawEx,
+          originalId: rawEx.id,
+          originalName: cleanBaseName,
+          name: cleanBaseName
+        };
+        if (rawEx.id === 'day5_pullups') {
+          exObj = {
+            ...exObj,
+            name: `Daily Pull-Ups (${day5Spec.shortTitle})`,
+            sets: day5Spec.setsCount,
+            reps: day5Spec.repsLabel,
+            restSec: day5Spec.restSec,
+            restLabel: day5Spec.restLabel
+          };
+        }
+        const swapKey = `w${week}_d${dayIdx}_${rawEx.id}`;
+        const activeSwap = state.swappedExercises && state.swappedExercises[swapKey];
+        if (activeSwap && activeSwap.machineExerciseId) {
+          return {
+            ...exObj,
+            id: activeSwap.machineExerciseId,
+            originalId: rawEx.id,
+            originalName: exObj.name,
+            name: activeSwap.suggestedMachineExercise,
+            notes: activeSwap.definitionAndCues,
+            videoUrl: activeSwap.videoUrl || exObj.videoUrl,
+            restSec: activeSwap.restSec || exObj.restSec,
+            restLabel: activeSwap.restLabel || exObj.restLabel,
+            sets: activeSwap.sets || exObj.sets,
+            reps: activeSwap.reps || exObj.reps,
+            targetMuscles: activeSwap.targetMuscles || '',
+            isSwappedMachine: true,
+            swapKey
+          };
+        }
+        return exObj;
+      });
       if (hasCrunchToday && !dayAssignment.isRestDay) {
         exercisesToday.push(CABLE_CRUNCH_EXERCISE);
       }
@@ -7685,7 +8366,7 @@
 
       syncPyramidRestHelperToggle();
 
-      // UPGRADE 4: Pre-Workout Fuel Check-In Prompt on Lifting Days (slot 0..4) only when Fuel 1 is unlogged AND doneSetsToday < totalSetsToday
+      // UPGRADE 4 & UPGRADE 3: Pre-Workout Fuel Check-In Prompt + Decoupled Next-Day Prep Prompt on Gym Check-In Bar
       const preFuelBanner = document.getElementById('pre-workout-fuel-checkin-banner');
       if (preFuelBanner) {
         const isTrainingDay = !dayAssignment.isRestDay;
@@ -7694,27 +8375,36 @@
         const isDismissed = Boolean(state.dismissedPreFuelPrompt && state.dismissedPreFuelPrompt[dismissKey]);
         const doneSetsToday = todayDoneSets;
         const totalSetsToday = todayTotalSets;
+        const showPreFuelCheck = isTrainingDay && !isFuel1Logged && !isDismissed && doneSetsToday < totalSetsToday;
+        const lowBatchPrompts = getDecoupledLowBatchPrompts();
+        const prepBannerHtml = lowBatchPrompts.length > 0 ? buildDecoupledNextDayPrepBannerHtml(false) : '';
 
-        if (isTrainingDay && !isFuel1Logged && !isDismissed && doneSetsToday < totalSetsToday) {
+        if (showPreFuelCheck || prepBannerHtml) {
           preFuelBanner.classList.remove('hidden');
           preFuelBanner.innerHTML = `
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div class="flex items-start sm:items-center gap-2 min-w-0">
-                <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40 shrink-0">${ICONS.preGymFuel}<span>FUEL 1</span></span>
-                <p class="text-xs font-extrabold text-amber-200 leading-snug">
-                  Pre-Gym Fuel Check: Did you drink your Pre-Workout Shake (36g P)?
-                </p>
-              </div>
-              <div class="flex items-center gap-1.5 shrink-0">
-                <button type="button" id="pre-fuel-checkin-yes-btn" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold whitespace-nowrap shadow-sm transition">
-                  Yes, Log Fuel 1
-                </button>
-                <button type="button" id="pre-fuel-checkin-dismiss-btn" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold whitespace-nowrap transition">
-                  Dismiss
-                </button>
-              </div>
+            <div class="space-y-2">
+              ${showPreFuelCheck ? `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div class="flex items-start sm:items-center gap-2 min-w-0">
+                    <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40 shrink-0">${ICONS.preGymFuel}<span>FUEL 1</span></span>
+                    <p class="text-xs font-extrabold text-amber-200 leading-snug">
+                      Pre-Gym Fuel Check: Did you drink your Pre-Workout Shake (36g P)?
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" id="pre-fuel-checkin-yes-btn" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold whitespace-nowrap shadow-sm transition">
+                      Yes, Log Fuel 1
+                    </button>
+                    <button type="button" id="pre-fuel-checkin-dismiss-btn" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold whitespace-nowrap transition">
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              ` : ''}
+              ${prepBannerHtml}
             </div>
           `;
+          bindDecoupledNextDayPrepBannerEvents(preFuelBanner);
           const yesFuelBtn = document.getElementById('pre-fuel-checkin-yes-btn');
           if (yesFuelBtn) {
             yesFuelBtn.addEventListener('click', () => {
@@ -7730,7 +8420,7 @@
           if (dismissFuelBtn) {
             dismissFuelBtn.addEventListener('click', () => {
               state.dismissedPreFuelPrompt[dismissKey] = true;
-              preFuelBanner.classList.add('hidden');
+              renderWorkoutView();
               saveState();
             });
           }
@@ -8348,11 +9038,13 @@
           }
 
           const pullupDayNum = PULLUP_EX_ID_TO_DAY[ex.id] || 0;
-          const baseRepPlaceholder = pullupDayNum ? getPullupDefaultReps(pullupDayNum, s) : ex.reps;
-          const defaultNumericReps = parseTargetRepsNumber(ex.reps, pullupDayNum, s);
+          const isPyramidPullupEx = pullupDayNum ? isPullupSessionPyramidMode(pullupDayNum, week) : false;
+          const isThreeGripsPullupEx = pullupDayNum ? isPullupSessionThreeGripsMode(pullupDayNum, week) : false;
+          const baseRepPlaceholder = pullupDayNum ? getPullupDefaultReps(pullupDayNum, s, week) : ex.reps;
+          const defaultNumericReps = parseTargetRepsNumber(ex.reps, pullupDayNum, s, week);
 
           // Rule A & Rule B Set Suggestion State Machine:
-          // Rule B: If an earlier set is logged today and this set is unlogged, suggest that logged set's exact weight & reps.
+          // Rule B: If an earlier set is logged today and this set is unlogged, suggest that logged set's exact weight & reps (or N+1 on Pyramid Pull-Up days).
           // Rule A: Before Set 1 is logged today, if previous week data exists, pre-fill/suggest last week's weight & reps; else use default weight & target reps.
           let suggestedWeightVal = '';
           let suggestedRepsVal = '';
@@ -8365,14 +9057,18 @@
             suggestedWeightVal = rawLoggedWeight !== ''
               ? rawLoggedWeight
               : ((priorLoggedTodayEntry.weight !== undefined && priorLoggedTodayEntry.weight !== '') ? String(priorLoggedTodayEntry.weight) : String(defaultTotalPlaceholder));
-            suggestedRepsVal = (existing && existing.reps !== undefined && existing.reps !== '')
-              ? String(existing.reps)
-              : ((priorLoggedTodayEntry.reps !== undefined && priorLoggedTodayEntry.reps !== '') ? String(priorLoggedTodayEntry.reps) : String(defaultNumericReps));
+            if (existing && existing.reps !== undefined && existing.reps !== '') {
+              suggestedRepsVal = String(existing.reps);
+            } else if (isPyramidPullupEx) {
+              suggestedRepsVal = s < 5 ? String(s) : String(getPullupPreviousBestMax());
+            } else {
+              suggestedRepsVal = (priorLoggedTodayEntry.reps !== undefined && priorLoggedTodayEntry.reps !== '') ? String(priorLoggedTodayEntry.reps) : String(defaultNumericReps);
+            }
           } else if (!isSet1LoggedToday && prevSuggestion && (prevWeekCarryWeight !== '' || (prevSuggestion.reps !== undefined && prevSuggestion.reps !== ''))) {
             suggestedWeightVal = rawLoggedWeight !== '' ? rawLoggedWeight : (prevWeekCarryWeight !== '' ? prevWeekCarryWeight : String(defaultTotalPlaceholder));
             suggestedRepsVal = (existing && existing.reps !== undefined && existing.reps !== '')
               ? String(existing.reps)
-              : ((prevSuggestion.reps !== undefined && prevSuggestion.reps !== '') ? String(prevSuggestion.reps) : '');
+              : (isPyramidPullupEx ? String(defaultNumericReps) : ((prevSuggestion.reps !== undefined && prevSuggestion.reps !== '') ? String(prevSuggestion.reps) : ''));
             const prevSrc = prevSuggestion.sourceLabel || 'Prev Wk';
             const prevWPart = (!isBodyweightRepsOnly && !isTimedHold && prevWeekCarryWeight && prevWeekCarryWeight !== '0')
               ? `${prevWeekCarryWeight} ${exUnit} × `
@@ -8381,21 +9077,23 @@
             prevWeekHintHtml = `<span data-prev-week-hint="${logKey}" class="block text-[9px] font-semibold text-sky-400/90 leading-tight mt-0.5">Last (${prevSrc}): ${prevWPart}${prevRPart}</span>`;
           } else {
             suggestedWeightVal = rawLoggedWeight;
-            suggestedRepsVal = (existing && existing.reps !== undefined && existing.reps !== '') ? String(existing.reps) : '';
+            suggestedRepsVal = (existing && existing.reps !== undefined && existing.reps !== '')
+              ? String(existing.reps)
+              : (isPyramidPullupEx ? String(defaultNumericReps) : '');
           }
 
           const weightPlaceholder = prevWeekCarryWeight !== '' ? prevWeekCarryWeight : String(defaultTotalPlaceholder);
           const displayWeight = suggestedWeightVal;
           const displayReps = suggestedRepsVal;
-          const repPlaceholder = (displayReps === '' && prevSuggestion && prevSuggestion.reps !== '')
+          const repPlaceholder = (displayReps === '' && prevSuggestion && prevSuggestion.reps !== '' && !isPyramidPullupEx)
             ? prevSuggestion.reps
             : baseRepPlaceholder;
 
-          const setLabelText = (pullupDayNum === 3)
+          const setLabelText = isThreeGripsPullupEx
             ? formatDay3PullupSetRowLabel(s)
             : `Set ${s}`;
           const setRestSeconds = pullupDayNum
-            ? getPullupSetRestSec(pullupDayNum, s, displayReps || repPlaceholder, ex.restSec)
+            ? getPullupSetRestSec(pullupDayNum, s, displayReps || repPlaceholder, ex.restSec, week)
             : ex.restSec;
 
           const candidateWeightStr = displayWeight !== '' ? displayWeight : weightPlaceholder;
@@ -8417,8 +9115,8 @@
           const isCurrentTargetSet = !isDone && !firstUnloggedSetFound;
           if (isCurrentTargetSet) firstUnloggedSetFound = true;
 
-          // UPGRADE 1: Insert Visual Grip Block Header & Separator before Set 1, Set 4, and Set 7 on Day 3 Pull-Ups
-          if (pullupDayNum === 3 && (s === 1 || s === 4 || s === 7)) {
+          // Insert Visual Grip Block Header & Separator before Set 1, Set 4, and Set 7 on Day 3 Pull-Ups (or Day 5 when Option C is chosen)
+          if (isThreeGripsPullupEx && (s === 1 || s === 4 || s === 7)) {
             setsHtml += getDay3PullupGripDividerHtml(s);
           }
 
@@ -8584,6 +9282,7 @@
         const barPresets = exUnit === 'kg' ? BARBELL_PRESETS_KG : BARBELL_PRESETS_LBS;
         const calcLogKeyIndex = ex.id === 'cable_ab_crunch' ? dayIdx : slotIdx;
         const calcTargetLogKey = `w${week}_${calcLogKeyIndex}_${ex.id}_${calcTargetSet}`;
+        const pendingSwapPreview = (state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[ex.id]) || null;
 
         return `
           <article id="ex-card-${ex.id}" class="${
@@ -8593,6 +9292,18 @@
                   ? 'border border-emerald-500/35 bg-slate-900/65 opacity-85 hover:opacity-100'
                   : 'border border-slate-800 bg-slate-900/80 hover:border-slate-700')
           } rounded-2xl p-3.5 sm:p-4 space-y-2.5 scroll-mt-28 transition-all">
+            ${ex.isSwappedMachine ? `
+              <div class="flex flex-wrap items-center justify-between gap-2 bg-emerald-950/60 border border-emerald-400/50 rounded-xl px-3 py-2">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="px-2 py-0.5 rounded bg-emerald-400 text-slate-950 text-[10px] font-extrabold uppercase shrink-0">Machine Swap Active</span>
+                  <span class="text-[11px] font-bold text-emerald-200 truncate">Replaces ${ex.originalName} (History Saved)</span>
+                </div>
+                <button type="button" data-revert-machine-swap="${ex.swapKey}" data-orig-name="${ex.originalName}" class="revert-machine-swap-btn px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold whitespace-nowrap transition">
+                  Switch Back to ${ex.originalName}
+                </button>
+              </div>
+            ` : ''}
+
             <!-- Clean Exercise Header (Click Anywhere on Title/Number to Open or Collapse!) -->
             <div class="flex items-start justify-between gap-2.5">
               <div class="flex items-start gap-2.5 flex-1 min-w-0">
@@ -8695,6 +9406,47 @@
                    Video
                 </a>
               </div>
+
+              ${ex.isSwappedMachine ? `
+                <div class="bg-slate-950/90 border border-emerald-500/35 rounded-xl p-2.5 text-xs space-y-1">
+                  <div class="font-extrabold text-emerald-300">Biomechanical Definition &amp; Form Cues (${ex.name})</div>
+                  ${ex.targetMuscles ? `<div class="text-[11px] text-sky-300 font-bold">Target Muscles: ${ex.targetMuscles}</div>` : ''}
+                  <p class="text-[11px] text-slate-300 leading-snug">${ex.notes}</p>
+                </div>
+              ` : ''}
+
+              ${ex.id === 'day5_pullups' ? `
+                <div class="bg-slate-950/95 border border-sky-500/40 rounded-xl p-2.5 space-y-2" data-day5-hardest-selector="workout">
+                  <div class="flex flex-wrap items-center justify-between gap-1.5">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-300">Day 5: Repeats Hardest Day Selector (Synced)</span>
+                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40">Recommended Hardest Day: Session ${day5Spec.recommendedInfo.recommendedSessionNum}</span>
+                  </div>
+                  <div class="grid grid-cols-1 gap-1.5" role="radiogroup" aria-label="Day 5 Repeats Hardest Day Options">
+                    ${DAY5_HARDEST_DAY_OPTIONS.map(opt => {
+                      const isSelectedOpt = opt.id === day5Spec.optionId;
+                      const isRecOpt = opt.id === day5Spec.recommendedInfo.optionId;
+                      return `
+                        <button
+                          type="button"
+                          data-day5-hardest-opt="${opt.id}"
+                          aria-pressed="${isSelectedOpt ? 'true' : 'false'}"
+                          class="day5-hardest-opt-btn w-full text-left px-2.5 py-2 rounded-xl border text-xs font-extrabold flex items-center justify-between gap-2 transition ${
+                            isSelectedOpt
+                              ? 'bg-sky-500/25 border-sky-400 text-white shadow-sm'
+                              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300'
+                          }"
+                        >
+                          <span class="leading-snug">${opt.label}</span>
+                          <div class="flex items-center gap-1 shrink-0">
+                            ${isRecOpt ? `<span class="px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 text-[9px] font-extrabold uppercase">Recommended Hardest Day</span>` : ''}
+                            <span class="text-[10px] font-bold ${isSelectedOpt ? 'text-sky-300' : 'text-slate-500'}">${isSelectedOpt ? '✓ Active' : 'Select'}</span>
+                          </div>
+                        </button>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              ` : ''}
 
               <!-- Collapsible Visual Diagram Dropdown Panel -->
               <div id="img-panel-${ex.id}" data-panel-id="${panelKey}" class="${isImgOpen ? 'block' : 'hidden'}" style="display: ${isImgOpen ? 'block' : 'none'};">
@@ -8876,7 +9628,7 @@
                 ${setsHtml}
               </div>
 
-              <!-- UPGRADE 4: Collapsible Exercise Notes & Photo (Hidden by Default at Bottom of Open Card) -->
+              <!-- UPGRADE 4, 5 & 6: Collapsible Exercise Notes, Dual Camera/Gallery Photo Buttons & AI Machine Swap -->
               <div class="pt-1 border-t border-slate-800/80 space-y-2">
                 <button
                   type="button"
@@ -8910,10 +9662,24 @@
                   </div>
 
                   <div class="flex flex-wrap items-center justify-between gap-2">
-                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-extrabold text-sky-300 cursor-pointer transition">
-                      <span> Take / Upload Photo</span>
-                      <input type="file" accept="image/*" data-note-photo-ex="${ex.id}" class="ex-note-photo-input hidden" />
-                    </label>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-xs font-extrabold text-sky-200 cursor-pointer transition">
+                        <span>Open Camera</span>
+                        <input type="file" accept="image/*" capture="environment" data-note-photo-ex="${ex.id}" class="ex-note-photo-input hidden" />
+                      </label>
+                      <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-extrabold text-slate-200 cursor-pointer transition">
+                        <span>Upload Photo</span>
+                        <input type="file" accept="image/*" data-note-photo-ex="${ex.id}" class="ex-note-photo-input hidden" />
+                      </label>
+                      <button
+                        type="button"
+                        data-ai-swap-check-ex="${ex.id}"
+                        data-orig-ex-id="${ex.originalId || ex.id}"
+                        class="ai-check-swap-ex-btn px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-xs font-extrabold transition"
+                      >
+                        AI Check &amp; Swap Exercise
+                      </button>
+                    </div>
                     ${hasNotePhoto ? `
                       <button type="button" data-note-remove-photo="${ex.id}" class="ex-note-remove-photo-btn px-2.5 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/35 text-rose-300 text-xs font-bold transition">
                          Remove Photo
@@ -8924,6 +9690,31 @@
                   ${hasNotePhoto ? `
                     <div class="pt-1">
                       <img src="${exNote.photoDataUrl}" alt="${ex.name} machine setting photo" class="max-h-40 rounded-xl border border-slate-700 object-cover" />
+                    </div>
+                  ` : ''}
+
+                  ${pendingSwapPreview ? `
+                    <div data-ai-swap-preview-card="${ex.id}" class="bg-emerald-950/75 border-2 border-emerald-400/70 rounded-xl p-3 space-y-2 shadow-md">
+                      <div class="text-xs font-extrabold text-emerald-200 leading-snug">
+                        ${pendingSwapPreview.confirmationHeadline}
+                      </div>
+                      <div class="bg-slate-950/90 border border-slate-800 rounded-lg p-2.5 space-y-1 text-[11px]">
+                        <div class="font-extrabold text-white">Replacement: ${pendingSwapPreview.suggestedMachineExercise}</div>
+                        <div class="text-sky-300 font-bold">Target Muscles: ${pendingSwapPreview.targetMuscles}</div>
+                        <div class="text-slate-300 leading-snug">${pendingSwapPreview.definitionAndCues}</div>
+                        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                          <span class="font-mono font-bold text-emerald-300">Recommended Rest: ${pendingSwapPreview.restLabel} (${pendingSwapPreview.restSec}s)</span>
+                          <a href="${pendingSwapPreview.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:text-sky-200 underline font-extrabold">Watch Machine Demo Video</a>
+                        </div>
+                      </div>
+                      <div class="flex flex-wrap items-center justify-end gap-2">
+                        <button type="button" data-cancel-ai-swap="${ex.id}" class="cancel-ai-swap-btn px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold transition">
+                          Cancel
+                        </button>
+                        <button type="button" data-confirm-ai-swap="${ex.id}" data-orig-ex-id="${ex.originalId || ex.id}" class="confirm-ai-swap-btn px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-sm transition">
+                          Confirm &amp; Replace Card
+                        </button>
+                      </div>
                     </div>
                   ` : ''}
                 </div>
@@ -8955,6 +9746,77 @@
       } else {
         listEl.innerHTML = exerciseCardsHtml;
       }
+
+      // Day 5 Hardest-Day 4-Option Selector Listeners on Gym Tab (Synced with Pull-Ups Tab)
+      listEl.querySelectorAll('.day5-hardest-opt-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const optId = btn.getAttribute('data-day5-hardest-opt');
+          if (!optId) return;
+          const chosen = setDay5HardestChoiceForWeek(week, optId);
+          saveState();
+          renderWorkoutView();
+          renderPullupView();
+          showToast(`Day 5 set to ${chosen.label}`);
+        });
+      });
+
+      // AI Machine Photo Check & Smart Exercise Swap Listeners
+      listEl.querySelectorAll('.ai-check-swap-ex-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-ai-swap-check-ex');
+          const origExId = btn.getAttribute('data-orig-ex-id') || exId;
+          const exObj = exercisesToday.find(e => e.id === exId) || { id: origExId, originalId: origExId, name: origExId };
+          const noteInput = document.getElementById(`ex-note-input-${exId}`);
+          const customNote = noteInput ? noteInput.value : ((state.exerciseNotes && state.exerciseNotes[exId] && state.exerciseNotes[exId].text) || '');
+          const swapProposal = verifyAndBuildMachineExerciseSwap(exObj, customNote);
+          if (!state.pendingMachineSwapPreviews) state.pendingMachineSwapPreviews = {};
+          state.pendingMachineSwapPreviews[exId] = swapProposal;
+          state.openNotePanels[exId] = true;
+          saveState();
+          renderWorkoutView();
+          showToast(`Biomechanical match verified: ${swapProposal.suggestedMachineExercise}`);
+        });
+      });
+
+      listEl.querySelectorAll('.confirm-ai-swap-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-confirm-ai-swap');
+          const origExId = btn.getAttribute('data-orig-ex-id') || exId;
+          const preview = state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId];
+          if (!preview) return;
+          if (!state.swappedExercises) state.swappedExercises = {};
+          const swapKey = `w${week}_d${dayIdx}_${origExId}`;
+          state.swappedExercises[swapKey] = preview;
+          delete state.pendingMachineSwapPreviews[exId];
+          saveState();
+          renderWorkoutView();
+          showToast(`Replaced card with ${preview.suggestedMachineExercise} (History preserved)`);
+        });
+      });
+
+      listEl.querySelectorAll('.cancel-ai-swap-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-cancel-ai-swap');
+          if (state.pendingMachineSwapPreviews) {
+            delete state.pendingMachineSwapPreviews[exId];
+          }
+          saveState();
+          renderWorkoutView();
+        });
+      });
+
+      listEl.querySelectorAll('.revert-machine-swap-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const swapKey = btn.getAttribute('data-revert-machine-swap');
+          const origName = btn.getAttribute('data-orig-name') || 'Original Exercise';
+          if (swapKey && state.swappedExercises) {
+            delete state.swappedExercises[swapKey];
+          }
+          saveState();
+          renderWorkoutView();
+          showToast(`Switched back to ${origName}`);
+        });
+      });
 
       // UPGRADE 2 Listeners: Side Plank Duration Preset Pills & Inline Isometric Countdown Timer
       listEl.querySelectorAll('.timed-hold-preset-btn').forEach(btn => {
@@ -9539,13 +10401,13 @@
             if (repsInput && repsInput.value !== '') {
               state.workoutLogs[key].reps = repsInput.value;
             } else if (!state.workoutLogs[key].reps) {
-              state.workoutLogs[key].reps = parseTargetRepsNumber(exObjForSet ? exObjForSet.reps : '10', pDayForSet, setIdx);
+              state.workoutLogs[key].reps = parseTargetRepsNumber(exObjForSet ? exObjForSet.reps : '10', pDayForSet, setIdx, week);
             }
           }
           state.workoutLogs[key].unit = exUnit;
           state.workoutLogs[key].done = !state.workoutLogs[key].done;
 
-          // UPGRADE 4 (Rule B): When Set s is logged (done = true), automatically propagate its exact weight & reps to Set s+1 and subsequent unlogged sets
+          // UPGRADE 2 & UPGRADE 4: When Set s is logged (done = true), propagate weight & reps to unlogged sets (or cascade N+1 on Pyramid Pull-Up days)
           const pullupDayNum = PULLUP_EX_ID_TO_DAY[exId] || 0;
           if (pullupDayNum && !state.workoutLogs[key].reps && repsInput && repsInput.placeholder && !isNaN(parseInt(repsInput.placeholder, 10))) {
             state.workoutLogs[key].reps = String(parseInt(repsInput.placeholder, 10));
@@ -9554,14 +10416,23 @@
             const loggedW = state.workoutLogs[key].weight;
             const loggedR = state.workoutLogs[key].reps;
             const kIdx = exId === 'cable_ab_crunch' ? dayIdx : slotIdx;
+            const isPyramidMode = pullupDayNum ? isPullupSessionPyramidMode(pullupDayNum, week) : false;
+            const pyramidCascade = isPyramidMode
+              ? computePyramidCascadingSetSuggestions(setIdx, loggedR, getPullupPreviousBestMax())
+              : null;
+
             for (let kNext = setIdx + 1; kNext <= exObjForSet.sets; kNext++) {
               const nextKey = `w${week}_${kIdx}_${exId}_${kNext}`;
               const existingNext = getLogEntry(week, dayIdx, exId, kNext);
-              if (!existingNext || !existingNext.done) {
+              const hasPyramidSuggestion = Boolean(pyramidCascade && pyramidCascade.suggestedRepsBySet && pyramidCascade.suggestedRepsBySet[kNext] !== undefined);
+              if (!existingNext || !existingNext.done || hasPyramidSuggestion) {
+                const nextSuggestedReps = hasPyramidSuggestion
+                  ? pyramidCascade.suggestedRepsBySet[kNext]
+                  : String(loggedR);
                 state.workoutLogs[nextKey] = Object.assign({}, existingNext || {}, {
                   weight: String(loggedW),
-                  reps: String(loggedR),
-                  done: false,
+                  reps: String(nextSuggestedReps),
+                  done: hasPyramidSuggestion ? false : false,
                   unit: exUnit
                 });
                 if (week === 1) {
@@ -9713,7 +10584,7 @@
                 }, 350);
               } else {
                 const effectiveRest = pullupDayNum
-                  ? getPullupSetRestSec(pullupDayNum, setIdx, state.workoutLogs[key].reps, restSec)
+                  ? getPullupSetRestSec(pullupDayNum, setIdx, state.workoutLogs[key].reps, restSec, week)
                   : restSec;
                 startTimer(effectiveRest, `Rest: ${exName}`);
                 const fuelReminderSuffix = (isFirstSetToday && isLiftDayForFuelPrompt && !isFuel1DoneNow)
@@ -10103,22 +10974,36 @@
         }
       }
 
-      container.innerHTML = sessionsToRender.map(d => {
+      const day5EffectiveSpec = getEffectiveDay5PullupSpec(week);
+      const recommendedHardestSessionNum = (day5EffectiveSpec && day5EffectiveSpec.recommendedInfo && day5EffectiveSpec.recommendedInfo.recommendedSessionNum) || 3;
+
+      container.innerHTML = sessionsToRender.map(rawD => {
+        const d = rawD.dayNum === 5
+          ? {
+              ...rawD,
+              setsCount: day5EffectiveSpec.setsCount,
+              restSec: day5EffectiveSpec.restSec,
+              title: day5EffectiveSpec.title,
+              desc: day5EffectiveSpec.desc
+            }
+          : rawD;
         const mapInfo = PULLUP_DAY_TO_EX_ID[d.dayNum];
         const assignedCalDayIdx = sessionCalendarDayMap[d.dayNum] !== undefined ? sessionCalendarDayMap[d.dayNum] : (d.dayNum - 1);
         const assignedDayObj = getScheduledDayObject(week, assignedCalDayIdx);
+        const isThreeGripsSession = isPullupSessionThreeGripsMode(d.dayNum, week);
+        const isPyramidSession = isPullupSessionPyramidMode(d.dayNum, week);
         let doneSetsCount = 0;
         let setsRowHtml = '';
         for (let s = 1; s <= d.setsCount; s++) {
           const key = `day_${d.dayNum}_set_${s}`;
-          const defaultRepPlaceholder = getPullupDefaultReps(d.dayNum, s);
+          const defaultRepPlaceholder = getPullupDefaultReps(d.dayNum, s, week);
           const syncedEntry = mapInfo
             ? (getLogEntry(week, assignedCalDayIdx, mapInfo.exId, s) || { reps: '', done: false })
             : ((state.pullupLogs && state.pullupLogs[key]) || { reps: '', done: false });
           if (syncedEntry.done) doneSetsCount++;
-          const dynRest = getPullupSetRestSec(d.dayNum, s, syncedEntry.reps, d.restSec);
+          const dynRest = getPullupSetRestSec(d.dayNum, s, syncedEntry.reps, d.restSec, week);
 
-          if (d.dayNum === 3) {
+          if (isThreeGripsSession) {
             if (s === 1 || s === 4 || s === 7) {
               setsRowHtml += getDay3PullupGripDividerHtml(s);
             }
@@ -10139,7 +11024,7 @@
           } else {
             setsRowHtml += `
               <div class="flex flex-col items-center bg-slate-950/70 border ${syncedEntry.done ? 'border-emerald-500/50 bg-emerald-950/30' : 'border-slate-800'} rounded-xl p-2">
-                <span class="text-[10px] font-bold ${syncedEntry.done ? 'text-emerald-400' : 'text-slate-400'}">Set ${s}</span>
+                <span class="text-[10px] font-bold ${syncedEntry.done ? 'text-emerald-400' : 'text-slate-400'}">${isPyramidSession && s === 5 ? 'Set 5 (Max)' : `Set ${s}`}</span>
                 <input type="number" inputmode="numeric" placeholder="${defaultRepPlaceholder}" value="${syncedEntry.reps || ''}" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" aria-label="Pull-Up Day ${d.dayNum} Set ${s} Reps" class="pullup-rep-input w-12 bg-slate-900 border border-slate-700 rounded-lg py-1 text-center text-xs font-bold text-white my-1 focus:outline-none focus:border-emerald-500" />
                 <button type="button" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" data-rest-sec="${dynRest}" data-label="Pull-Up Day ${d.dayNum} Set ${s}" class="pullup-done-btn w-full py-1 rounded-md text-[10px] font-bold ${
                   syncedEntry.done ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
@@ -10163,6 +11048,40 @@
         const isPullupImgOpen = isExerciseImgOpen(dayIdxForPullup, exIdForDay);
 
         const isPullupActive = !isCardCollapsed;
+        const isRecommendedHardestBadge = d.dayNum >= 1 && d.dayNum <= 4 && d.dayNum === recommendedHardestSessionNum;
+        const day5MultipleChoiceHtml = d.dayNum === 5
+          ? `
+            <div class="bg-slate-950/90 border border-sky-500/35 rounded-xl p-2.5 space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-1.5">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">Day 5 Hardest-Day Protocol (Synced with Gym Tab)</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-400/40 text-amber-200">Recommended: Session ${recommendedHardestSessionNum}</span>
+              </div>
+              <p class="text-[10px] text-slate-400 leading-snug">${day5EffectiveSpec.recommendedInfo.reason} Saved as your default for Next Week.</p>
+              <div class="grid grid-cols-1 gap-1.5" role="radiogroup" aria-label="Day 5 Hardest Pull-Up Session Choice">
+                ${DAY5_HARDEST_DAY_OPTIONS.map(opt => {
+                  const isSelectedOpt = day5EffectiveSpec.choiceId === opt.id;
+                  const isRecOpt = opt.sessionNum === recommendedHardestSessionNum;
+                  return `
+                    <button
+                      type="button"
+                      data-day5-hardest-opt="${opt.id}"
+                      aria-pressed="${isSelectedOpt ? 'true' : 'false'}"
+                      class="day5-hardest-opt-btn w-full text-left px-2.5 py-2 rounded-xl border text-[11px] font-extrabold transition flex items-center justify-between gap-2 ${
+                        isSelectedOpt
+                          ? 'bg-sky-500/20 border-sky-400 text-white shadow-sm shadow-sky-950/50'
+                          : 'bg-slate-900/90 hover:bg-slate-800 border-slate-800 text-slate-300'
+                      }"
+                    >
+                      <span class="leading-snug">${isSelectedOpt ? '✓ ' : ''}${opt.label}</span>
+                      ${isRecOpt ? `<span class="shrink-0 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-400/40 text-amber-200">Recommended</span>` : ''}
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `
+          : '';
+
         return `
           <div id="pullup-session-card-${d.dayNum}" class="${isPullupActive ? 'border-2 border-sky-400 bg-slate-900 shadow-lg shadow-sky-950/50' : (isCardDone ? 'bg-slate-900/70 border border-emerald-500/40 opacity-90' : 'bg-slate-900/80 border border-slate-800 opacity-90')} rounded-2xl p-3.5 space-y-2.5 transition-all">
             <div class="flex items-start justify-between gap-2">
@@ -10170,15 +11089,18 @@
                 <div class="flex flex-wrap items-center gap-1.5">
                   <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${isPullupActive ? 'bg-sky-400 text-slate-950' : 'bg-slate-800 text-emerald-400'}">Wk ${week} • ${assignedDayObj.dayShort} (${assignedDayObj.daySub})</span>
                   <span class="pullup-sets-status-badge text-[10px] font-bold px-2 py-0.5 rounded-full border ${isCardDone ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300' : 'bg-slate-800 border-slate-700 text-slate-300'}">${doneSetsCount}/${d.setsCount} Sets</span>
+                  ${isRecommendedHardestBadge ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-200">Recommended Hardest Day</span>` : ''}
                 </div>
                 <h3 class="${isPullupActive ? 'text-base font-extrabold text-white mt-1' : 'text-sm font-bold text-slate-100 mt-0.5'} transition-colors">${d.title}</h3>
                 ${isPullupActive ? `<p class="text-[11px] text-slate-300 mt-0.5 leading-snug">${d.desc}</p>` : ''}
               </div>
               <button type="button" data-pullup-day-num="${d.dayNum}" data-rest-sec="${d.restSec}" data-ex-name="${d.title}" class="pullup-quick-timer shrink-0 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/35 text-xs font-extrabold px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition">
                 <span class="live-pullup-timer-dot w-2 h-2 rounded-full ${timerRunning ? 'bg-emerald-400 animate-ping' : 'bg-sky-400'} inline-block"></span>
-                <span class="live-pullup-timer-readout font-mono">${timerRunning ? `${formatTime(state.timerSeconds)} (${d.restSec}s)` : getPullupIdleTimerBadgeText(d.dayNum, d.restSec)}</span>
+                <span class="live-pullup-timer-readout font-mono">${timerRunning ? `${formatTime(state.timerSeconds)} (${d.restSec}s)` : getPullupIdleTimerBadgeText(d.dayNum, d.restSec, week)}</span>
               </button>
             </div>
+
+            ${day5MultipleChoiceHtml}
 
             <div class="flex items-center justify-between bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-1.5 text-xs">
               <span class="text-slate-300 font-medium">${isCardDone ? `All ${d.setsCount} sets logged` : `${doneSetsCount} of ${d.setsCount} sets logged`}</span>
@@ -10195,7 +11117,7 @@
               <div class="${isPullupImgOpen ? 'block' : 'hidden'}" style="display: ${isPullupImgOpen ? 'block' : 'none'};">
                 ${getStepVisualDiagramHtml({ id: exIdForDay, notes: d.desc }, metaForDay, dayIdxForPullup)}
               </div>
-              <div class="${d.dayNum === 3 ? 'space-y-1.5' : 'grid grid-cols-5 gap-2'}">
+              <div class="${isThreeGripsSession ? 'space-y-1.5' : 'grid grid-cols-5 gap-2'}">
                 ${setsRowHtml}
               </div>
             </div>
@@ -10203,11 +11125,55 @@
         `;
       }).join('');
 
+      container.querySelectorAll('.day5-hardest-opt-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const optId = btn.getAttribute('data-day5-hardest-opt');
+          if (!optId) return;
+          setDay5HardestChoiceForWeek(week, optId);
+          renderPullupView();
+          renderWorkoutView();
+          const chosenMeta = DAY5_HARDEST_DAY_OPTIONS.find(o => o.id === optId);
+          showToast(`Day 5 set to ${chosenMeta ? chosenMeta.shortTitle : optId} (saved as default for Next Week)`);
+        });
+      });
+
       container.querySelectorAll('.pullup-rep-input').forEach(inp => {
         inp.addEventListener('input', () => {
           const dayNum = parseInt(inp.getAttribute('data-day-num'), 10);
           const setIdx = parseInt(inp.getAttribute('data-set-idx'), 10);
           syncPullupStateBothWays(week, dayNum, setIdx, { reps: inp.value });
+          if (isPullupSessionPyramidMode(dayNum, week) && inp.value !== '') {
+            const dSpec = dayNum === 5 ? getEffectiveDay5PullupSpec(week) : PULLUP_DAYS_DATA.find(item => item.dayNum === dayNum);
+            const totalSetsForDay = dSpec ? dSpec.setsCount : 5;
+            const cascadeObj = computePyramidCascadingSetSuggestions(setIdx, inp.value, getPullupPreviousBestMax());
+            const cascadeMap = (cascadeObj && cascadeObj.suggestedRepsBySet) || {};
+            const siblingBtn = container.querySelector(`.pullup-done-btn[data-day-num="${dayNum}"][data-set-idx="${setIdx}"]`);
+            if (siblingBtn && cascadeObj && cascadeObj.restSec) {
+              siblingBtn.setAttribute('data-rest-sec', String(cascadeObj.restSec));
+              if (!siblingBtn.textContent.includes('Done')) {
+                siblingBtn.textContent = `${cascadeObj.restSec}s`;
+              }
+            }
+            for (let kNext = setIdx + 1; kNext <= totalSetsForDay; kNext++) {
+              if (cascadeMap[kNext] !== undefined) {
+                const nextSuggested = cascadeMap[kNext];
+                syncPullupStateBothWays(week, dayNum, kNext, { reps: nextSuggested });
+                const nextInp = container.querySelector(`.pullup-rep-input[data-day-num="${dayNum}"][data-set-idx="${kNext}"]`);
+                if (nextInp && document.activeElement !== nextInp) {
+                  nextInp.value = nextSuggested;
+                }
+                const nextBtn = container.querySelector(`.pullup-done-btn[data-day-num="${dayNum}"][data-set-idx="${kNext}"]`);
+                const nextRest = Math.max(10, (parseInt(nextSuggested, 10) || kNext) * 10);
+                if (nextBtn) {
+                  nextBtn.setAttribute('data-rest-sec', String(nextRest));
+                  if (!nextBtn.textContent.includes('Done')) {
+                    nextBtn.textContent = `${nextRest}s`;
+                  }
+                }
+              }
+            }
+          }
           saveState();
           renderWorkoutView();
         });
@@ -10221,20 +11187,36 @@
           const mapInfo = PULLUP_DAY_TO_EX_ID[dayNum];
           const assignedCalIdx = sessionCalendarDayMap[dayNum] !== undefined ? sessionCalendarDayMap[dayNum] : (dayNum - 1);
           const cur = mapInfo ? (getLogEntry(week, assignedCalIdx, mapInfo.exId, setIdx) || { reps: '', done: false }) : { reps: '', done: false };
-          const defaultReps = getPullupDefaultReps(dayNum, setIdx);
+          const defaultReps = getPullupDefaultReps(dayNum, setIdx, week);
           const nextDone = !cur.done;
+          const isPyramidSession = isPullupSessionPyramidMode(dayNum, week);
+          const fallbackDefaultNum = !isNaN(parseInt(defaultReps, 10))
+            ? String(parseInt(defaultReps, 10))
+            : (isPyramidSession ? String(Math.min(4, setIdx)) : String(state.pullupTrainingSetReps || 5));
           const finalReps = (cur.reps !== undefined && cur.reps !== '')
             ? cur.reps
-            : (!isNaN(parseInt(defaultReps, 10)) ? String(parseInt(defaultReps, 10)) : String(state.pullupTrainingSetReps || 5));
+            : fallbackDefaultNum;
 
           syncPullupStateBothWays(week, dayNum, setIdx, { reps: finalReps, done: nextDone });
           if (nextDone && mapInfo) {
-            const dSpec = PULLUP_DAYS_DATA.find(item => item.dayNum === dayNum);
+            const dSpec = dayNum === 5 ? getEffectiveDay5PullupSpec(week) : PULLUP_DAYS_DATA.find(item => item.dayNum === dayNum);
             const totalSetsForDay = dSpec ? dSpec.setsCount : 5;
-            for (let kNext = setIdx + 1; kNext <= totalSetsForDay; kNext++) {
-              const existingNext = getLogEntry(week, assignedCalIdx, mapInfo.exId, kNext);
-              if (!existingNext || !existingNext.done) {
-                syncPullupStateBothWays(week, dayNum, kNext, { reps: finalReps, done: false });
+            if (isPyramidSession) {
+              const cascadeObj = computePyramidCascadingSetSuggestions(setIdx, finalReps, getPullupPreviousBestMax());
+              const cascadeMap = (cascadeObj && cascadeObj.suggestedRepsBySet) || {};
+              for (let kNext = setIdx + 1; kNext <= totalSetsForDay; kNext++) {
+                const existingNext = getLogEntry(week, assignedCalIdx, mapInfo.exId, kNext);
+                if (!existingNext || !existingNext.done || cascadeMap[kNext] !== undefined) {
+                  const suggestedNextReps = cascadeMap[kNext] !== undefined ? cascadeMap[kNext] : String(Math.min(4, kNext));
+                  syncPullupStateBothWays(week, dayNum, kNext, { reps: suggestedNextReps, done: existingNext ? !!existingNext.done : false });
+                }
+              }
+            } else {
+              for (let kNext = setIdx + 1; kNext <= totalSetsForDay; kNext++) {
+                const existingNext = getLogEntry(week, assignedCalIdx, mapInfo.exId, kNext);
+                if (!existingNext || !existingNext.done) {
+                  syncPullupStateBothWays(week, dayNum, kNext, { reps: finalReps, done: false });
+                }
               }
             }
           }
@@ -10257,7 +11239,7 @@
               resetTimer();
               showToast(`All sets for Day ${targetDayIdx + 1} complete — Rest timer stopped.`);
             } else {
-              const restSec = getPullupSetRestSec(dayNum, setIdx, finalReps, parseInt(btn.getAttribute('data-rest-sec'), 10) || 60);
+              const restSec = getPullupSetRestSec(dayNum, setIdx, finalReps, parseInt(btn.getAttribute('data-rest-sec'), 10) || 60, week);
               startTimer(restSec, `Rest: ${label}`);
               showToast(`Synced ${label} (${finalReps || 'Max'} reps). ${restSec}s rest started.`);
             }
@@ -11065,9 +12047,13 @@
               ` : ''}
 
               <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-                <div class="flex items-center gap-1.5">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <label class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold cursor-pointer transition">
+                    Open Camera
+                    <input type="file" accept="image/*" capture="environment" data-prep-photo-input="${cardId}" class="prep-note-photo-input hidden" />
+                  </label>
                   <label class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-300 text-[11px] font-extrabold cursor-pointer transition">
-                     Snap / Upload Photo
+                    Upload Photo
                     <input type="file" accept="image/*" data-prep-photo-input="${cardId}" class="prep-note-photo-input hidden" />
                   </label>
                   ${isPopulated ? `
@@ -11118,7 +12104,7 @@
             }
             saveState();
             renderVeganView();
-            showToast(' Saved kitchen prep note!');
+            showToast('Saved kitchen prep note!');
           });
         });
 
@@ -11130,7 +12116,7 @@
             delete state.prepNotes[cardId];
             saveState();
             renderVeganView();
-            showToast(' Cleared kitchen prep note.');
+            showToast('Cleared kitchen prep note.');
           });
         });
 
@@ -11145,7 +12131,7 @@
             }
             saveState();
             renderVeganView();
-            showToast(' Removed kitchen photo.');
+            showToast('Removed kitchen photo.');
           });
         });
 
@@ -11166,13 +12152,21 @@
               state.openPrepNoteCards[cardId] = true;
               saveState();
               renderVeganView();
-              showToast(' Saved compressed kitchen photo (max 400px JPEG)!');
+              showToast('Saved compressed kitchen photo (max 400px JPEG)!');
             });
           });
         });
       }
 
+      // Render Decoupled Oats vs. Rice Fridge Inventory Status & Next-Day Prep Prompt Banner
+      const fuelPrepBannerEl = document.getElementById('fuel-next-day-prep-prompt-banner');
+      if (fuelPrepBannerEl) {
+        fuelPrepBannerEl.innerHTML = buildDecoupledNextDayPrepBannerHtml(true);
+        bindDecoupledNextDayPrepBannerEvents(fuelPrepBannerEl);
+      }
+
       // UPGRADE 3: Decluttered 4-Day Batch Prep Card Headers (Prep Video & Reset Batch moved inside Checklist Drawer)
+      const batchInvForCards = ensureBatchInventoryState();
       const recipeCardsContainer = document.getElementById('batch-recipe-cards-container');
       if (recipeCardsContainer) {
         if (!state.recipePrepLogs || typeof state.recipePrepLogs !== 'object') state.recipePrepLogs = {};
@@ -11182,7 +12176,7 @@
           {
             id: 'recipe_oats_batch',
             badge: 'Batch 1/2',
-            yieldPill: '4 Jars in Fridge',
+            yieldPill: `${batchInvForCards.oatsJarsRemaining}/4 Jars in Fridge`,
             title: '4-Day Overnight Protein Oats Batch',
             subtitle: dayPlan.batchOats.subtitle,
             videoUrl: 'https://www.youtube.com/watch?v=_wgQBioExZA',
@@ -11192,11 +12186,11 @@
           {
             id: 'recipe_rice_batch',
             badge: 'Batch 2/2',
-            yieldPill: '4 Bowls in Fridge',
+            yieldPill: `${batchInvForCards.riceBowlsRemaining}/4 Bowls in Fridge`,
             title: '4-Day Jasmine Rice Batch Prep',
             subtitle: 'Prep time: 20 mins • Yields 4 × 150g cooked rice portions (55g dry/day)',
-            videoUrl: 'https://www.youtube.com/watch?v=zWTc8eLEeyY',
-            videoTitle: 'How to Cook Jasmine Rice — Absorption Method',
+            videoUrl: 'https://www.youtube.com/watch?v=dVKVb1NFP8s',
+            videoTitle: 'How to Cook Jasmine Rice — Stovetop Tutorial',
             steps: [
               {
                 id: 'rice_step_1',
@@ -11292,7 +12286,7 @@
                   isRecipeDone
                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                     : 'bg-sky-500/15 text-sky-200 border-sky-500/30'
-                }">${isRecipeDone ? `${doneSteps}/${totalSteps} Ready` : recipe.yieldPill}</span>
+                }">${recipe.yieldPill}</span>
               </div>
 
               <!-- Row 2: Left: Sky-Blue scale weight badge. Right: Checklist & Timer (4 steps) ▾ -->
@@ -11318,7 +12312,7 @@
                       title="${recipe.videoTitle}"
                       class="batch-prep-video-link px-2.5 py-1 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/50 text-rose-200 text-[10px] font-extrabold whitespace-nowrap transition flex items-center gap-1"
                     >
-                       Prep Video
+                      Prep Video
                     </a>
                     <button type="button" data-reset-recipe="${recipe.id}" class="reset-recipe-steps-btn shrink-0 px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-extrabold whitespace-nowrap transition">
                       ↺ Reset Batch
@@ -11356,8 +12350,28 @@
             const stepId = btn.getAttribute('data-recipe-step-id');
             if (!stepId) return;
             state.recipePrepLogs[stepId] = !state.recipePrepLogs[stepId];
+            const inv = ensureBatchInventoryState();
+            const oatsRecipe = BATCH_PREP_RECIPES_DATA.find(r => r.id === 'recipe_oats_batch');
+            const riceRecipe = BATCH_PREP_RECIPES_DATA.find(r => r.id === 'recipe_rice_batch');
+            if (oatsRecipe && oatsRecipe.steps.some(st => st.id === stepId)) {
+              const allOatsDone = oatsRecipe.steps.every(st => Boolean(state.recipePrepLogs[st.id]));
+              if (allOatsDone) {
+                inv.oatsJarsRemaining = 4;
+                inv.oatsPrepDay = null;
+                showToast('Batch 1/2 complete: 4 Overnight Oats Jars ready in fridge!');
+              }
+            }
+            if (riceRecipe && riceRecipe.steps.some(st => st.id === stepId)) {
+              const allRiceDone = riceRecipe.steps.every(st => Boolean(state.recipePrepLogs[st.id]));
+              if (allRiceDone) {
+                inv.riceBowlsRemaining = 4;
+                inv.ricePrepDay = null;
+                showToast('Batch 2/2 complete: 4 Jasmine Rice Bowls ready in fridge!');
+              }
+            }
             saveState();
             renderVeganView();
+            renderWorkoutView();
           });
         });
 
@@ -11405,7 +12419,7 @@
 
       const veganTitleEl = document.getElementById('vegan-week-day-title');
       if (veganTitleEl) {
-        veganTitleEl.textContent = ` Week ${week} • ${dayObj.dayFull} (${dayObj.daySub || 'Fuel'})`;
+        veganTitleEl.textContent = `Week ${week} • ${dayObj.dayFull} (${dayObj.daySub || 'Fuel'})`;
       }
       const veganPillEl = document.getElementById('vegan-day-status-pill');
       if (veganPillEl) {
@@ -11555,9 +12569,34 @@
         }).join('');
       }
 
-      // UPGRADE 2: Streamline FUEL 1-4 Cards (Compact 2-Column Nutrition Label Rows & Timing/Prep Tip Hidden by Default)
+      // UPGRADE 2 & 3: Streamline FUEL 1-4 Cards + 1-Tap Recipes & Prep Visibility
       if (!state.openFuelCards || typeof state.openFuelCards !== 'object') state.openFuelCards = {};
       if (!state.openFuelTips || typeof state.openFuelTips !== 'object') state.openFuelTips = {};
+
+      const toggleAllRecipesBtn = document.getElementById('toggle-all-fuel-recipes-btn');
+      if (toggleAllRecipesBtn) {
+        const allFuelOpen = VEGAN_MEALS.every(s => Boolean(state.openFuelCards && state.openFuelCards[s.slotId]));
+        const allBatchOpen = state.collapsedRecipeCards && state.collapsedRecipeCards.recipe_oats_batch === false && state.collapsedRecipeCards.recipe_rice_batch === false;
+        const isEverythingExpanded = allFuelOpen && allBatchOpen;
+        toggleAllRecipesBtn.textContent = isEverythingExpanded ? 'Hide Recipes' : 'Recipes & Prep';
+        toggleAllRecipesBtn.setAttribute('aria-expanded', isEverythingExpanded ? 'true' : 'false');
+        toggleAllRecipesBtn.onclick = () => {
+          const nextExpand = !isEverythingExpanded;
+          VEGAN_MEALS.forEach(s => {
+            state.openFuelCards[s.slotId] = nextExpand;
+            state.openFuelTips[s.slotId] = nextExpand;
+          });
+          if (!state.collapsedRecipeCards || typeof state.collapsedRecipeCards !== 'object') {
+            state.collapsedRecipeCards = {};
+          }
+          state.collapsedRecipeCards.recipe_oats_batch = !nextExpand;
+          state.collapsedRecipeCards.recipe_rice_batch = !nextExpand;
+          saveState();
+          renderVeganView();
+          showToast(nextExpand ? 'Expanded all 4 meal recipes and 4-day batch prep steps.' : 'Collapsed meal recipes and batch prep cards.');
+        };
+      }
+
       const mealsEl = document.getElementById('vegan-meals-container');
       if (mealsEl) {
         const defaultTimesBySlot = {
@@ -11612,8 +12651,14 @@
           const hasNotePhoto = Boolean(String(noteObj.photoDataUrl || '').trim());
           const isNotePopulated = Boolean(cleanNoteText || hasNotePhoto);
           const isNoteOpen = Boolean(state.openPrepNoteCards && state.openPrepNoteCards[slot.slotId]);
-          const noteBtnLabel = isNotePopulated ? ' Kitchen Note' : '+ Kitchen Note / Photo';
+          const noteBtnLabel = isNotePopulated ? 'Kitchen Note' : '+ Kitchen Note / Photo';
           const escapedNoteText = String(noteObj.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+          const fridgePortionsBadgeHtml = slot.slotId === 'post_oats'
+            ? `<span class="px-2 py-0.5 rounded-md ${batchInvForCards.oatsJarsRemaining <= 1 ? 'bg-amber-500/20 border border-amber-400/50 text-amber-200' : 'bg-emerald-950/70 border border-emerald-500/40 text-emerald-300'} font-bold whitespace-nowrap">${batchInvForCards.oatsJarsRemaining}/4 Jars</span>`
+            : (slot.slotId === 'lunch'
+                ? `<span class="px-2 py-0.5 rounded-md ${batchInvForCards.riceBowlsRemaining <= 1 ? 'bg-amber-500/20 border border-amber-400/50 text-amber-200' : 'bg-emerald-950/70 border border-emerald-500/40 text-emerald-300'} font-bold whitespace-nowrap">${batchInvForCards.riceBowlsRemaining}/4 Bowls</span>`
+                : '');
 
           return `
             <article data-fuel-card-slot="${slot.slotId}" class="bg-slate-900 border ${isDone ? 'border-emerald-500/50 bg-slate-900/80' : (slotSched.isPostWorkoutTarget ? 'border-emerald-400/70 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/40' : 'border-slate-800')} rounded-2xl p-3 sm:p-3.5 space-y-2 transition-all">
@@ -11634,15 +12679,16 @@
                 </button>
               </div>
 
-              <!-- Row 2 (Single Inline Flex Row): Left: Amber badge (kcal • P) + Sky-Blue badge (Scale: g). Right: compact N Ingredients & Prep ▾ toggle link -->
+              <!-- Row 2 (Single Inline Flex Row): Left: Amber badge (kcal • P) + Sky-Blue badge (Scale: g). Right: Clear View Recipe & Steps button -->
               <button type="button" data-toggle-fuel-card="${slot.slotId}" aria-expanded="${isCardExpanded ? 'true' : 'false'}" class="fuel-card-toggle-btn w-full flex flex-wrap items-center justify-between gap-1.5 bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-slate-300 rounded-xl px-2.5 py-1.5 text-[11px] transition">
                 <div class="flex flex-wrap items-center gap-1.5 min-w-0">
                   <span data-fuel-kcal-badge="${slot.slotId}" class="px-2 py-0.5 rounded-md bg-amber-950/60 border border-amber-500/40 text-amber-300 font-extrabold whitespace-nowrap">${mealObj.kcal} kcal • ${mealObj.protein}g P</span>
                   <span data-fuel-scale-badge="${slot.slotId}" class="px-2 py-0.5 rounded-md bg-sky-950/70 border border-sky-400/50 text-sky-200 font-bold whitespace-nowrap">${scaleWeightBadgeText}</span>
+                  ${fridgePortionsBadgeHtml}
                   ${fuelPrepNotePillHtml}
                 </div>
-                <span class="${isCardExpanded ? 'text-emerald-400' : 'text-slate-300'} font-extrabold whitespace-nowrap shrink-0">
-                  ${itemsList.length} Ingredients &amp; Prep ${isCardExpanded ? '▴' : '▾'}
+                <span class="px-2 py-0.5 rounded-md border ${isCardExpanded ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300' : 'bg-slate-900 border-slate-700 text-sky-300'} font-extrabold whitespace-nowrap shrink-0">
+                  ${isCardExpanded ? 'Hide Recipe & Steps ▴' : 'View Recipe & Steps ▾'}
                 </span>
               </button>
 
@@ -11665,7 +12711,7 @@
                           : 'bg-slate-950/80 hover:bg-slate-900 border-slate-800 text-amber-300/90'
                       }"
                     >
-                      <span> Timing &amp; Prep Tip</span>
+                      <span>Timing &amp; Prep Tip</span>
                       <span class="text-[10px]">${isTipExpanded ? '▴' : '▾'}</span>
                     </button>
                     <button
@@ -11681,12 +12727,12 @@
                       <span class="text-[10px] text-slate-400">${isNoteOpen ? '▴' : '▾'}</span>
                     </button>
                   </div>
-                  ${hasNotePhoto ? `<span class="text-[10px] font-bold text-sky-300"> Photo Saved</span>` : ''}
+                  ${hasNotePhoto ? `<span class="text-[10px] font-bold text-sky-300">Photo Saved</span>` : ''}
                 </div>
 
                 <!-- Hidden-by-Default Timing & Prep Tip Box -->
                 <div data-fuel-tip-box="${slot.slotId}" class="${isTipExpanded ? 'bg-slate-950/80 border border-amber-500/35 rounded-xl px-3 py-2 text-[11px] text-amber-300/95 leading-snug' : 'hidden'}" style="display: ${isTipExpanded ? 'block' : 'none'};">
-                   <strong>Timing &amp; Prep Tip:</strong> ${mealObj.tip || slotSched.contextTip || slot.tip} ${slotSched.batchTip || ''}
+                  <strong>Timing &amp; Prep Tip:</strong> ${mealObj.tip || slotSched.contextTip || slot.tip} ${slotSched.batchTip || ''}
                 </div>
 
                 <!-- Hidden-by-Default Kitchen Note / Photo Panel -->
@@ -11713,9 +12759,13 @@
                   ` : ''}
 
                   <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-                    <div class="flex items-center gap-1.5">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <label class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold cursor-pointer transition">
+                        Open Camera
+                        <input type="file" accept="image/*" capture="environment" data-prep-photo-input="${slot.slotId}" class="prep-note-photo-input hidden" />
+                      </label>
                       <label class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-300 text-[11px] font-extrabold cursor-pointer transition">
-                         Snap / Upload Photo
+                        Upload Photo
                         <input type="file" accept="image/*" data-prep-photo-input="${slot.slotId}" class="prep-note-photo-input hidden" />
                       </label>
                       ${isNotePopulated ? `
@@ -11755,7 +12805,7 @@
           renderWorkoutView();
           if (!curVal) {
             const mealObj = dayPlan && dayPlan.meals && dayPlan.meals[slotId];
-            showToast(` Logged ${mealObj ? mealObj.title : slotId.toUpperCase()} (${dayObj.dayFull})!`);
+            showToast(`Logged ${mealObj ? mealObj.title : slotId.toUpperCase()} (${dayObj.dayFull})!`);
           }
         }
 
@@ -11781,6 +12831,7 @@
           btn.addEventListener('click', () => {
             const slotId = btn.getAttribute('data-meal-slot');
             const ingId = btn.getAttribute('data-ing-id');
+            const wasMealChecked = isMealCheckedForDay(week, dayIdx, slotId);
             const cur = isIngredientChecked(week, dayIdx, slotId, ingId);
             const nextVal = !cur;
             state.checkedMealIngredients[`w${week}_d${dayIdx}_${slotId}_${ingId}`] = nextVal;
@@ -11789,6 +12840,7 @@
               const allChecked = mealObj.items.every(it => isIngredientChecked(week, dayIdx, slotId, it.id));
               state.checkedMeals[`w${week}_d${dayIdx}_${slotId}`] = allChecked;
               if (week === 1 && dayIdx === 0) state.checkedMeals[slotId] = allChecked;
+              adjustBatchInventoryForSlotTransition(slotId, wasMealChecked, allChecked);
               if (allChecked) {
                 snapshotMealOnLog(state, week, dayIdx, slotId);
               }
@@ -11945,21 +12997,8 @@
         }
       });
 
-      // Contextual Visibility Across Tabs: Show Sticky Timer Bar on Workout/Pull-Ups OR Any Tab When Rice Cooking Timer / Alert Is Active
-      const hasRiceActivity = Boolean(state.activeRiceTimerStage || state.riceTimerAlertBanner);
-      const showStickyTimer = (tabName === 'workout' || tabName === 'pullups' || hasRiceActivity);
-      const pinnedTimerRow = document.getElementById('pinned-rest-timer-row');
-      const pinnedTimerStrip = document.getElementById('pinned-rest-timer-strip');
-      const mainContainer = document.getElementById('main-content-container');
-      if (pinnedTimerRow) {
-        if (showStickyTimer) pinnedTimerRow.classList.remove('hidden');
-        else pinnedTimerRow.classList.add('hidden');
-      }
-      if (pinnedTimerStrip) {
-        if (showStickyTimer) pinnedTimerStrip.classList.remove('hidden');
-        else pinnedTimerStrip.classList.add('hidden');
-      }
-      syncFixedHeaderSpacer();
+      // Keep strictly ONE green timer progress bar in the fixed top bar across all 5 tabs
+      syncStickyHeaderVisibility();
       renderRiceCookingTimerWidgets();
 
       document.querySelectorAll('.nav-tab-btn').forEach(btn => {
@@ -13865,15 +14904,21 @@
 
             <!-- 3. Dated Progress Photo Tracker & Side-by-Side Before vs. After Viewer -->
             <div class="bg-slate-950 border border-sky-500/35 rounded-xl p-3 space-y-2.5">
-              <div class="flex items-center justify-between gap-2">
+              <div class="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">Progress Photos • Before vs. Now</span>
                   <div class="text-xs font-extrabold text-white mt-0.5">Side-by-Side Dated Comparison (${photos.length} Saved)</div>
                 </div>
-                <label for="progress-photo-file-inp" class="px-2.5 py-1.5 rounded-lg bg-sky-400 hover:bg-sky-300 text-slate-950 font-extrabold text-[11px] cursor-pointer transition shrink-0">
-                   + Add Photo
-                </label>
-                <input id="progress-photo-file-inp" type="file" accept="image/*" class="hidden" />
+                <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+                  <label for="progress-photo-camera-inp" class="px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-[11px] cursor-pointer transition">
+                    Open Camera
+                  </label>
+                  <input id="progress-photo-camera-inp" type="file" accept="image/*" capture="environment" class="progress-photo-file-input hidden" />
+                  <label for="progress-photo-file-inp" class="px-2.5 py-1.5 rounded-lg bg-sky-400 hover:bg-sky-300 text-slate-950 font-extrabold text-[11px] cursor-pointer transition">
+                    Upload Photo
+                  </label>
+                  <input id="progress-photo-file-inp" type="file" accept="image/*" class="progress-photo-file-input hidden" />
+                </div>
               </div>
 
               <!-- Metadata inputs for next uploaded photo -->
@@ -13976,7 +15021,7 @@
             const dateStr = (dInp && dInp.value) ? dInp.value : todayIso;
             const wVal = wInp ? parseFloat(wInp.value) : NaN;
             if (!Number.isFinite(wVal) || wVal <= 0) {
-              showToast(' Enter a valid body weight to log.');
+              showToast('Enter a valid body weight to log.');
               return;
             }
             if (!Array.isArray(state.bodyWeightLogs)) state.bodyWeightLogs = [];
@@ -13987,7 +15032,7 @@
             state.userProfile.currentWeightLbs = entry.weight;
             saveState();
             renderBodyAndPhotosTab();
-            showToast(` Logged ${entry.weight} ${unitPref} for ${dateStr} (7-Day EMA Trend updated)!`);
+            showToast(`Logged ${entry.weight} ${unitPref} for ${dateStr} (7-Day EMA Trend updated)!`);
           });
         }
 
@@ -14006,8 +15051,7 @@
           });
         }
 
-        const photoFileInp = document.getElementById('progress-photo-file-inp');
-        if (photoFileInp) {
+        profBodyPhotosWrap.querySelectorAll('.progress-photo-file-input').forEach(photoFileInp => {
           photoFileInp.addEventListener('change', (ev) => {
             const file = ev.target && ev.target.files && ev.target.files[0];
             if (!file) return;
@@ -14055,13 +15099,13 @@
                 state.compareAfterPhotoId = newId;
                 saveState();
                 renderBodyAndPhotosTab();
-                showToast(` Saved compressed Progress Photo (${photoDate} • ${photoWeight} ${unitPref})!`);
+                showToast(`Saved compressed Progress Photo (${photoDate} • ${photoWeight} ${unitPref})!`);
               };
               img.src = String(reader.result || '');
             };
             reader.readAsDataURL(file);
           });
-        }
+        });
       }
 
       function switchProfileModalSection(sec) {

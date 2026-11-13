@@ -1253,3 +1253,86 @@ test('PWA Vector-Path GYM Icon (Zero <text> Tags) & 1-Tap Watch Master Switch Sp
   assert.equal(activeSpec.headerDotClass.includes('bg-emerald-400'), true);
   assert.equal(activeSpec.checklistBullets.length, 3);
 });
+
+test('7 Upgrades Suite: Single Timer Bar, Pull-Up Pyramid + Day 5 Selector, Decoupled Oats/Rice Inventory, Rice Timer Recipe Sync & AI Machine Swap', async () => {
+  const mod = await import('./workoutLogic');
+
+  // 1. Single sticky top timer bar across all 5 tabs
+  for (const tab of ['workout', 'pullups', 'timer', 'vegan', 'shopping']) {
+    assert.equal(mod.shouldShowStickyTopTimerBarAcrossAllTabs(tab), true);
+  }
+
+  // 2A. Pull-Up Pyramid Auto-Increment (1 -> 2 -> 3 -> 4 + Max Set) & 10s * N rest timer
+  const set1Logged = mod.computePyramidNextSetSuggestions(0, 1, 5);
+  assert.equal(set1Logged.nextSetIndex, 1);
+  assert.equal(set1Logged.suggestedRepsBySetIndex[1], 2);
+  assert.equal(set1Logged.suggestedRepsBySetIndex[2], 3);
+  assert.equal(set1Logged.suggestedRepsBySetIndex[3], 4);
+  assert.equal(set1Logged.suggestedRepsBySetIndex[4], 5);
+  assert.equal(set1Logged.restTimerSeconds, 10);
+
+  const set2Logged = mod.computePyramidNextSetSuggestions(1, 2, 5);
+  assert.equal(set2Logged.nextSetIndex, 2);
+  assert.equal(set2Logged.suggestedRepsBySetIndex[2], 3);
+  assert.equal(set2Logged.restTimerSeconds, 20);
+
+  const set3Logged = mod.computePyramidNextSetSuggestions(2, 3, 4);
+  assert.equal(set3Logged.nextSetIndex, 3);
+  assert.equal(set3Logged.suggestedRepsBySetIndex[3], 4);
+  assert.equal(set3Logged.restTimerSeconds, 30);
+
+  // 2B. Day 5 Hardest-Day Recommendation & Next-Week Persistence
+  const defaultRec = mod.recommendHardestPullupSession({});
+  assert.equal(defaultRec.recommendedOptionId, 'option_c');
+  assert.equal(defaultRec.recommendedSessionNum, 3);
+
+  const loggedRec = mod.recommendHardestPullupSession({
+    1: [{ reps: 6, done: true }, { reps: 5, done: true }, { reps: 3, done: true }, { reps: 2, done: true }, { reps: 2, done: true }],
+    2: [{ reps: 1, done: true }, { reps: 2, done: true }]
+  });
+  assert.equal(loggedRec.recommendedOptionId, 'option_a');
+
+  // Week 2 inherits Week 1's chosen Option B automatically
+  const week2Resolved = mod.resolveDay5HardestChoiceForWeek(2, { 1: 'option_b' }, 'option_b');
+  assert.equal(week2Resolved.id, 'option_b');
+  assert.equal(week2Resolved.isPyramid, true);
+  assert.equal(week2Resolved.setsCount, 5);
+
+  const week3OptionC = mod.resolveDay5HardestChoiceForWeek(3, { 3: 'option_c' }, 'option_b');
+  assert.equal(week3OptionC.id, 'option_c');
+  assert.equal(week3OptionC.setsCount, 9);
+  assert.equal(week3OptionC.isThreeGrips, true);
+
+  // 3. Decoupled Oats vs. Rice Inventory & Next-Day Prep Prompts
+  let inv: mod.BatchInventoryState = { oatsJarsRemaining: 2, riceBowlsRemaining: 2 };
+  inv = mod.adjustBatchInventoryForMealToggle(inv, 'lunch', true); // 1 rice bowl left
+  assert.equal(inv.riceBowlsRemaining, 1);
+  assert.equal(inv.oatsJarsRemaining, 2);
+
+  const lowPrompts = mod.getDecoupledNextDayPrepPrompts(inv);
+  assert.equal(lowPrompts.length, 1);
+  assert.equal(lowPrompts[0].batchType, 'rice');
+  assert.equal(
+    lowPrompts[0].bannerText,
+    'Jasmine Rice running low (1/4 bowls left) — Schedule Rice Cooking for tomorrow?'
+  );
+
+  // 4. Rice Cooking Timer Video Link & Full Recipe + Two-Way Sync with Meal Prep
+  assert.equal(mod.RICE_COOKING_TIMER_RECIPE_SPEC.videoUrl, 'https://www.youtube.com/watch?v=dVKVb1NFP8s');
+  assert.equal(mod.RICE_COOKING_TIMER_RECIPE_SPEC.methodSteps.length, 4);
+  const syncedRice = mod.syncRiceBatchPreppedBothWays({}, inv);
+  assert.equal(syncedRice.batchInventory.riceBowlsRemaining, 4);
+  assert.equal(syncedRice.recipePrepLogs.rice_step_1, true);
+  assert.equal(syncedRice.recipePrepLogs.rice_step_4, true);
+
+  // 6. AI Machine Photo Check & Smart Exercise Swap
+  const benchSwap = mod.verifyAndBuildMachineExerciseSwap('mon_bench', 'Barbell Bench Press');
+  assert.equal(benchSwap.matchConfirmed, true);
+  assert.equal(benchSwap.replacementSpec.replacementName, 'Seated Chest Press Machine');
+  assert.equal(
+    benchSwap.confirmationPromptText,
+    "Biomechanical Match Confirmed: Seated Chest Press Machine targets the same muscles as Barbell Bench Press. Replace today's exercise card?"
+  );
+  assert.equal(benchSwap.switchBackButtonLabel, 'Switch Back to Barbell Bench Press');
+});
+
