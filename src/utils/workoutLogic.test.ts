@@ -1227,3 +1227,29 @@ test('Vector SVG Pictograms, Rest Day Recovery Card & 2-Phase Jasmine Rice Timer
   assert.equal(restSpec.walkPillText, 'Light Recovery Walk: 8,000–10,000 Steps (Check Off)');
   assert.equal(restSpec.mobilityDrawerSummary, 'Optional Rest-Day Mobility & Core (2 items) — Tap to Open');
 });
+
+test('PWA Vector-Path GYM Icon (Zero <text> Tags) & 1-Tap Watch Master Switch Spec', async () => {
+  const mod = await import('./workoutLogic');
+
+  const svg192 = mod.buildGymVectorPathSvg(192);
+  const svg512 = mod.buildGymVectorPathSvg(512);
+  assert.equal(svg192.includes('<text'), false, 'SVG icon must not use <text> tags that Android WebAPK strips');
+  assert.equal(svg512.includes('<text'), false, 'SVG icon must not use <text> tags that Android WebAPK strips');
+  assert.equal(svg512.includes('fill="#10b981"'), true, 'SVG icon must have #10b981 emerald badge background');
+  assert.equal(svg512.includes('fill="#020617"'), true, 'SVG icon must have #020617 dark slate GYM vector paths');
+  assert.equal(svg512.includes(mod.GYM_VECTOR_LETTER_PATHS.G), true);
+  assert.equal(svg512.includes(mod.GYM_VECTOR_LETTER_PATHS.Y), true);
+  assert.equal(svg512.includes(mod.GYM_VECTOR_LETTER_PATHS.M), true);
+
+  const offSpec = mod.getWatchMasterSwitchSpec('default', false, false);
+  assert.equal(offSpec.isActive, false);
+  assert.equal(offSpec.buttonLabel, 'Turn ON Watch Alerts (1-Tap Connect)');
+  assert.equal(offSpec.headerDotVisible, false);
+
+  const activeSpec = mod.getWatchMasterSwitchSpec('granted', true, false);
+  assert.equal(activeSpec.isActive, true);
+  assert.equal(activeSpec.buttonLabel, 'Watch Alerts: ACTIVE (Tap to Test Wrist Vibration in 5s)');
+  assert.equal(activeSpec.headerDotVisible, true);
+  assert.equal(activeSpec.headerDotClass.includes('bg-emerald-400'), true);
+  assert.equal(activeSpec.checklistBullets.length, 3);
+});

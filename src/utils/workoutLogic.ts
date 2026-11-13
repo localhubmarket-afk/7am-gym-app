@@ -4201,6 +4201,58 @@ export function getRestDayRecoveryCardSpec(params: {
   };
 }
 
+// ============================================================================
+// PWA VECTOR-PATH "GYM" ICON & 1-TAP WATCH MASTER SWITCH HELPERS
+// ============================================================================
+export const GYM_VECTOR_LETTER_PATHS = {
+  G: 'M188 196H120C106 196 96 206 96 220V292C96 306 106 316 120 316H188V248H142V270H164V292H120V220H188Z',
+  Y: 'M204 196H231L248 238L265 196H292L260 262V316H236V262Z',
+  M: 'M304 316V196H330L360 254L390 196H416V316H392V244L368 288H352L328 244V316Z'
+} as const;
+
+export function buildGymVectorPathSvg(size: 192 | 512 = 512): string {
+  const safeSize = size === 192 ? 192 : 512;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${safeSize}" height="${safeSize}" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#10b981"/><path fill="#020617" d="${GYM_VECTOR_LETTER_PATHS.G}"/><path fill="#020617" d="${GYM_VECTOR_LETTER_PATHS.Y}"/><path fill="#020617" d="${GYM_VECTOR_LETTER_PATHS.M}"/></svg>`;
+}
+
+export function buildGymVectorPathSvgDataUrl(size: 192 | 512 = 512): string {
+  return `data:image/svg+xml,${encodeURIComponent(buildGymVectorPathSvg(size))}`;
+}
+
+export interface WatchMasterSwitchSpec {
+  isActive: boolean;
+  buttonLabel: string;
+  headerDotVisible: boolean;
+  headerDotClass: string;
+  checklistBullets: readonly [string, string, string];
+}
+
+export const SAMSUNG_WATCH_CHECKLIST_BULLETS: readonly [string, string, string] = [
+  '1. Galaxy Wearable app on phone -> Watch settings -> Notifications -> App notifications -> Turn ON BudgetGym & Chrome.',
+  '2. Galaxy Wearable -> Notifications -> Show phone notifications on watch -> Select "Show alerts even while using phone".',
+  '3. If you reinstalled the app to update the GYM icon, toggle BudgetGym ON in Galaxy Wearable.'
+] as const;
+
+export function getWatchMasterSwitchSpec(
+  notificationPermission: 'granted' | 'denied' | 'default' | string,
+  wristAlertsEnabled: boolean,
+  hasLiveBleHr = false
+): WatchMasterSwitchSpec {
+  const isActive = Boolean(notificationPermission === 'granted' && wristAlertsEnabled);
+  const headerDotVisible = Boolean(isActive || hasLiveBleHr);
+  return {
+    isActive,
+    buttonLabel: isActive
+      ? 'Watch Alerts: ACTIVE (Tap to Test Wrist Vibration in 5s)'
+      : 'Turn ON Watch Alerts (1-Tap Connect)',
+    headerDotVisible,
+    headerDotClass: isActive
+      ? 'w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping'
+      : 'w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping',
+    checklistBullets: SAMSUNG_WATCH_CHECKLIST_BULLETS
+  };
+}
+
 
 
 
