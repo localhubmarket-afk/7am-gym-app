@@ -238,6 +238,9 @@
           </div>
         </div>
 
+        <!-- Cross-Week Continuity Banner & 1-Tap Controls (Visible in Week 2+) -->
+        <div id="cross-week-continuity-banner" class="hidden"></div>
+
         <!-- Inline Rest Day Scheduler Drawer (Gym Tab) -->
         <div id="rest-day-scheduler-drawer" class="hidden bg-slate-950/95 border border-amber-400/50 rounded-xl p-3 space-y-2.5">
           <!-- Populated dynamically by JS -->
@@ -352,6 +355,9 @@
             <span id="pullups-active-week-badge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-emerald-300 whitespace-nowrap">Week 1 • Day 1</span>
           </div>
         </div>
+
+        <!-- Cross-Week Continuity Banner & 1-Tap Controls (Pull-Ups Tab, Visible in Week 2+) -->
+        <div id="pullups-cross-week-continuity-banner" class="hidden"></div>
 
         <!-- Inline Rest Day Scheduler Drawer (Pull-Ups Tab) -->
         <div id="pullups-rest-day-scheduler-drawer" class="hidden bg-slate-950/95 border border-amber-400/50 rounded-xl p-3 space-y-2.5">
@@ -1019,6 +1025,7 @@
       completedWeeks: { 1: true },
       weeklyRestDays: { default: [5, 6] },
       customDayScheduleByWeek: {},
+      manualScheduleOverrideByWeek: {},
       openRestDayDrawer: false,
       openDayWorkoutPicker: false,
       showRestDayMobility: false,
@@ -1282,6 +1289,9 @@
       }
       if (!merged.customDayScheduleByWeek || typeof merged.customDayScheduleByWeek !== 'object') {
         merged.customDayScheduleByWeek = {};
+      }
+      if (!merged.manualScheduleOverrideByWeek || typeof merged.manualScheduleOverrideByWeek !== 'object') {
+        merged.manualScheduleOverrideByWeek = {};
       }
       if (merged.pullupViewMode !== 'selected' && merged.pullupViewMode !== 'all') {
         merged.pullupViewMode = 'selected';
@@ -7472,12 +7482,33 @@
     }
 
     function getWeekRestDays(week) {
-      const wKey = String(Math.max(1, Math.floor(Number(week) || 1)));
+      const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+      const wKey = String(safeWeek);
+      if (
+        state &&
+        state.customDayScheduleByWeek &&
+        Array.isArray(state.customDayScheduleByWeek[wKey]) &&
+        state.customDayScheduleByWeek[wKey].length === 7
+      ) {
+        const restIdxs = [];
+        state.customDayScheduleByWeek[wKey].forEach((sl, idx) => {
+          if (sl === 5 || sl === 6) restIdxs.push(idx);
+        });
+        if (restIdxs.length >= 2) {
+          return normalizeRestDaysTuple([restIdxs[0], restIdxs[1]]);
+        }
+      }
       const map = (state && state.weeklyRestDays && typeof state.weeklyRestDays === 'object')
         ? state.weeklyRestDays
         : {};
       if (Array.isArray(map[wKey])) {
         return normalizeRestDaysTuple(map[wKey]);
+      }
+      if (safeWeek >= 2) {
+        const smart = buildSmartScheduleFromPreviousWeek(safeWeek);
+        if (smart && Array.isArray(smart.restDays)) {
+          return normalizeRestDaysTuple(smart.restDays);
+        }
       }
       if (Array.isArray(map.default)) {
         return normalizeRestDaysTuple(map.default);
@@ -7492,11 +7523,24 @@
       if (!state.customDayScheduleByWeek || typeof state.customDayScheduleByWeek !== 'object') {
         state.customDayScheduleByWeek = {};
       }
+      if (!state.manualScheduleOverrideByWeek || typeof state.manualScheduleOverrideByWeek !== 'object') {
+        state.manualScheduleOverrideByWeek = {};
+      }
+      const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
       const norm = normalizeRestDaysTuple(restDaysPair);
-      const wKey = String(Math.max(1, Math.floor(Number(week) || 1)));
+      const wKey = String(safeWeek);
+
+      // Preserve current week's 5-workout lifting sequence when moving Rest Days
+      const curSched = getCustomDayScheduleForWeek(safeWeek);
+      const curLiftSlots = curSched.filter(s => s >= 0 && s <= 4);
+      const liftQueue = curLiftSlots.length === 5
+        ? curLiftSlots
+        : (safeWeek >= 2 ? buildSmartScheduleFromPreviousWeek(safeWeek).orderedLiftQueue : [0, 1, 2, 3, 4]);
+
       state.weeklyRestDays[wKey] = norm;
-      state.weeklyRestDays.default = norm;
-      // Rebuild 7-day slot array for this week to match the chosen 2 rest days
+      if (safeWeek === 1) {
+        state.weeklyRestDays.default = norm;
+      }
       const [r1, r2] = norm;
       const nextSched = [];
       let liftCounter = 0;
@@ -7506,16 +7550,19 @@
           nextSched.push(Math.min(6, 5 + restCounter));
           restCounter++;
         } else {
-          nextSched.push(Math.min(4, liftCounter));
+          nextSched.push(liftQueue[liftCounter] !== undefined ? liftQueue[liftCounter] : Math.min(4, liftCounter));
           liftCounter++;
         }
       }
       state.customDayScheduleByWeek[wKey] = nextSched;
+      state.manualScheduleOverrideByWeek[wKey] = true;
+      syncSubsequentWeeksFromWeek(safeWeek);
       return norm;
     }
 
     function getCustomDayScheduleForWeek(week) {
-      const wKey = String(Math.max(1, Math.floor(Number(week) || 1)));
+      const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+      const wKey = String(safeWeek);
       if (
         state &&
         state.customDayScheduleByWeek &&
@@ -7525,7 +7572,16 @@
       ) {
         return state.customDayScheduleByWeek[wKey].map(v => Math.max(0, Math.min(6, Math.floor(Number(v) || 0))));
       }
-      const [r1, r2] = getWeekRestDays(week);
+      const hasExplicitWeekRest = Boolean(
+        state &&
+        state.weeklyRestDays &&
+        typeof state.weeklyRestDays === 'object' &&
+        Array.isArray(state.weeklyRestDays[wKey])
+      );
+      if (safeWeek >= 2 && !hasExplicitWeekRest) {
+        return buildSmartScheduleFromPreviousWeek(safeWeek).schedule;
+      }
+      const [r1, r2] = getWeekRestDays(safeWeek);
       const derived = [];
       let liftCounter = 0;
       let restCounter = 0;
@@ -7539,6 +7595,190 @@
         }
       }
       return derived;
+    }
+
+    function getWeekSchedule(week) {
+      return getCustomDayScheduleForWeek(week);
+    }
+
+    function buildSmartScheduleFromPreviousWeek(targetWeek) {
+      const safeTargetWeek = Math.max(1, Math.floor(Number(targetWeek) || 1));
+      if (safeTargetWeek < 2) {
+        const base0 = DAYS_SCHEDULE[0] || { daySub: 'Upper 1', title: 'Upper Body 1 • Push & Pull' };
+        return {
+          targetWeek: 1,
+          prevWeek: 1,
+          lastLiftSlot: 4,
+          lastLiftDayIdx: 4,
+          lastLiftDayNumber: 5,
+          nextStartLiftSlot: 0,
+          startLiftDaySub: base0.daySub,
+          startLiftTitle: base0.title,
+          orderedLiftQueue: [0, 1, 2, 3, 4],
+          trailingLiftStreak: 0,
+          restDays: [5, 6],
+          schedule: [0, 1, 2, 3, 4, 5, 6],
+          startsWithRestDay: false,
+          statusBannerText: 'Week 1 Standard Schedule: Starts with Upper 1 • Rest Days 6 & 7'
+        };
+      }
+
+      const prevWeek = safeTargetWeek - 1;
+      const prevSchedule = getWeekSchedule(prevWeek);
+
+      // 1. Inspect Previous Week's Final Lifting Workout (lastLiftSlot) from DAY 7 (idx 6) down to DAY 1 (idx 0)
+      let lastLiftSlot = null;
+      let lastLiftDayIdx = null;
+      for (let i = 6; i >= 0; i--) {
+        const slot = prevSchedule[i];
+        if (slot >= 0 && slot <= 4) {
+          lastLiftSlot = slot;
+          lastLiftDayIdx = i;
+          break;
+        }
+      }
+
+      const nextStartLiftSlot = (lastLiftSlot !== null) ? ((lastLiftSlot + 1) % 5) : 0;
+      const orderedLiftQueue = [0, 1, 2, 3, 4].map(i => (nextStartLiftSlot + i) % 5);
+
+      // 2. Inspect Previous Week's Trailing Lifting Streak (trailingLiftStreak) counting backwards from DAY 7 (idx 6)
+      let trailingLiftStreak = 0;
+      for (let i = 6; i >= 0; i--) {
+        const slot = prevSchedule[i];
+        if (slot >= 0 && slot <= 4) {
+          trailingLiftStreak++;
+        } else {
+          break;
+        }
+      }
+
+      let restDays = [5, 6];
+      if (trailingLiftStreak >= 5) {
+        // Case A (5+ consecutive lift days ending on DAY 7): Rest on DAY 1 & DAY 2 ([0, 1]), lift on DAY 3..7
+        restDays = [0, 1];
+      } else if (trailingLiftStreak === 4) {
+        // Case A (4 consecutive lift days ending on DAY 7): Rest on DAY 1 & DAY 7 ([0, 6]), lift on DAY 2..6
+        restDays = [0, 6];
+      } else if (trailingLiftStreak >= 1 && trailingLiftStreak <= 3) {
+        // Case B (1..3 consecutive lift days at end of prevWeek): lift for (5 - trailingLiftStreak) days, then Rest 1, and Rest 2 on DAY 7
+        const firstRestIdx = 5 - trailingLiftStreak;
+        restDays = [firstRestIdx, 6];
+      } else {
+        // Case C (trailingLiftStreak === 0, ended with Rest Day on DAY 7): fresh on DAY 1, Rest Days on Days 6 & 7 ([5, 6])
+        restDays = [5, 6];
+      }
+
+      const [r1, r2] = restDays;
+      const schedule = [];
+      let liftPtr = 0;
+      let restPtr = 0;
+      for (let d = 0; d < 7; d++) {
+        if (d === r1 || d === r2) {
+          schedule.push(restPtr === 0 ? 5 : 6);
+          restPtr++;
+        } else {
+          schedule.push(orderedLiftQueue[liftPtr]);
+          liftPtr++;
+        }
+      }
+
+      const baseStart = DAYS_SCHEDULE[nextStartLiftSlot] || DAYS_SCHEDULE[0];
+      const startLiftDaySub = baseStart.daySub || 'Upper 1';
+      const startLiftTitle = baseStart.title || 'Upper Body 1 • Push & Pull';
+      const lastLiftDayNumber = (lastLiftDayIdx !== null) ? (lastLiftDayIdx + 1) : 5;
+      const startsWithRestDay = (schedule[0] === 5 || schedule[0] === 6);
+
+      const statusBannerText = startsWithRestDay
+        ? `Synced from Week ${prevWeek}: Starts with Rest Day + ${startLiftDaySub} (follows Week ${prevWeek} Day ${lastLiftDayNumber})`
+        : `Synced from Week ${prevWeek}: Starts with ${startLiftDaySub} • Rest Days ${r1 + 1} & ${r2 + 1} (follows Week ${prevWeek} Day ${lastLiftDayNumber})`;
+
+      return {
+        targetWeek: safeTargetWeek,
+        prevWeek,
+        lastLiftSlot,
+        lastLiftDayIdx,
+        lastLiftDayNumber,
+        nextStartLiftSlot,
+        startLiftDaySub,
+        startLiftTitle,
+        orderedLiftQueue,
+        trailingLiftStreak,
+        restDays,
+        schedule,
+        startsWithRestDay,
+        statusBannerText
+      };
+    }
+
+    function hasWeekAnyLoggedSets(week) {
+      const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+      const logs = (state && state.workoutLogs && typeof state.workoutLogs === 'object') ? state.workoutLogs : {};
+      const prefix = `w${safeWeek}_`;
+      for (const [k, entry] of Object.entries(logs)) {
+        if (k.startsWith(prefix) && entry && entry.done) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function applySmartScheduleFromPreviousWeek(targetWeek, clearManualOverride = true) {
+      const safeTargetWeek = Math.max(1, Math.floor(Number(targetWeek) || 1));
+      if (!state.customDayScheduleByWeek || typeof state.customDayScheduleByWeek !== 'object') {
+        state.customDayScheduleByWeek = {};
+      }
+      if (!state.weeklyRestDays || typeof state.weeklyRestDays !== 'object') {
+        state.weeklyRestDays = { default: [5, 6] };
+      }
+      if (!state.manualScheduleOverrideByWeek || typeof state.manualScheduleOverrideByWeek !== 'object') {
+        state.manualScheduleOverrideByWeek = {};
+      }
+      const res = buildSmartScheduleFromPreviousWeek(safeTargetWeek);
+      if (safeTargetWeek >= 2) {
+        const wKey = String(safeTargetWeek);
+        state.customDayScheduleByWeek[wKey] = [...res.schedule];
+        state.weeklyRestDays[wKey] = [...res.restDays];
+        if (clearManualOverride) {
+          state.manualScheduleOverrideByWeek[wKey] = false;
+        }
+      }
+      return res;
+    }
+
+    function resetWeekScheduleToStandard(targetWeek) {
+      const safeTargetWeek = Math.max(1, Math.floor(Number(targetWeek) || 1));
+      if (!state.customDayScheduleByWeek || typeof state.customDayScheduleByWeek !== 'object') {
+        state.customDayScheduleByWeek = {};
+      }
+      if (!state.weeklyRestDays || typeof state.weeklyRestDays !== 'object') {
+        state.weeklyRestDays = { default: [5, 6] };
+      }
+      if (!state.manualScheduleOverrideByWeek || typeof state.manualScheduleOverrideByWeek !== 'object') {
+        state.manualScheduleOverrideByWeek = {};
+      }
+      const wKey = String(safeTargetWeek);
+      const standardSched = [0, 1, 2, 3, 4, 5, 6];
+      const standardRest = [5, 6];
+      state.customDayScheduleByWeek[wKey] = [...standardSched];
+      state.weeklyRestDays[wKey] = [...standardRest];
+      state.manualScheduleOverrideByWeek[wKey] = true;
+      syncSubsequentWeeksFromWeek(safeTargetWeek);
+      return { schedule: standardSched, restDays: standardRest };
+    }
+
+    function syncSubsequentWeeksFromWeek(editedWeek) {
+      const safeEdited = Math.max(1, Math.floor(Number(editedWeek) || 1));
+      const maxW = Math.min(12, Math.max(safeEdited + 1, Number(state && state.maxUnlockedWeek) || 2));
+      for (let nextW = safeEdited + 1; nextW <= maxW; nextW++) {
+        const isManuallyOverridden = Boolean(
+          state &&
+          state.manualScheduleOverrideByWeek &&
+          state.manualScheduleOverrideByWeek[String(nextW)]
+        );
+        if (!hasWeekAnyLoggedSets(nextW) && !isManuallyOverridden) {
+          applySmartScheduleFromPreviousWeek(nextW, true);
+        }
+      }
     }
 
     function formatRestDaysBadgeLabel(restDaysPair, weekOverride) {
@@ -7725,20 +7965,23 @@
       }
 
       // Case C: No workouts completed yet (completedCount === 0)
-      const base0 = DAYS_SCHEDULE[0];
+      const startSlot = safeWeek >= 2 ? buildSmartScheduleFromPreviousWeek(safeWeek).nextStartLiftSlot : 0;
+      const baseStart = DAYS_SCHEDULE[startSlot] || DAYS_SCHEDULE[0];
       return {
         week: safeWeek,
         currentDayIdx: safeDayIdx,
-        recommendedSlot: 0,
-        daySub: base0.daySub,
-        workoutTitle: base0.title,
-        fullWorkoutLabel: `Day 1: ${base0.title}`,
+        recommendedSlot: startSlot,
+        daySub: baseStart.daySub,
+        workoutTitle: baseStart.title,
+        fullWorkoutLabel: `Day ${startSlot + 1}: ${baseStart.title}`,
         completedSlots: [],
         completedCount: 0,
         allFiveCompleted: false,
-        reasonBadge: 'Recommended Start: Day 1 • Upper Body 1',
-        headline: `Suggested Next Workout: Day 1 — ${base0.title} (0/5 workouts finished)`,
-        startButtonLabel: `Start Suggested: Day 1: ${base0.title}`,
+        reasonBadge: startSlot === 0
+          ? 'Recommended Start: Day 1 • Upper Body 1'
+          : `Recommended Start: ${baseStart.title} (Follows Week ${safeWeek - 1})`,
+        headline: `Suggested Next Workout: Day ${startSlot + 1} — ${baseStart.title} (0/5 workouts finished)`,
+        startButtonLabel: `Start Suggested: Day ${startSlot + 1}: ${baseStart.title}`,
         advanceNextWeekLabel: null
       };
     }
@@ -7751,6 +7994,9 @@
       }
       if (!state.weeklyRestDays || typeof state.weeklyRestDays !== 'object') {
         state.weeklyRestDays = { default: [5, 6] };
+      }
+      if (!state.manualScheduleOverrideByWeek || typeof state.manualScheduleOverrideByWeek !== 'object') {
+        state.manualScheduleOverrideByWeek = {};
       }
 
       const sched = [...getCustomDayScheduleForWeek(safeWeek)];
@@ -7828,6 +8074,9 @@
         state.weeklyRestDays[wKey] = normalizeRestDaysTuple([rOnly, rOnly === 6 ? 5 : 6]);
       }
 
+      state.manualScheduleOverrideByWeek[wKey] = true;
+      syncSubsequentWeeksFromWeek(safeWeek);
+
       return {
         schedule: sched,
         assignment: getDayAssignment(safeWeek, safeDayIdx),
@@ -7860,6 +8109,15 @@
       state.completedWeeks[cur] = true;
       const nextW = Math.min(12, cur + 1);
       state.maxUnlockedWeek = Math.min(12, Math.max((state.maxUnlockedWeek || 1) + 1, nextW));
+      const isNextOverridden = Boolean(
+        state.manualScheduleOverrideByWeek && state.manualScheduleOverrideByWeek[String(nextW)]
+      );
+      let smartNext = null;
+      if (!hasWeekAnyLoggedSets(nextW) && !isNextOverridden) {
+        smartNext = applySmartScheduleFromPreviousWeek(nextW, true);
+      } else {
+        smartNext = buildSmartScheduleFromPreviousWeek(nextW);
+      }
       state.selectedWeek = nextW;
       state.currentWeek = nextW;
       state.selectedDayIndex = 0;
@@ -7870,7 +8128,11 @@
       renderWorkoutView();
       renderPullupView();
       renderVeganView();
-      showToast(`Advanced to Week ${nextW} • Day 1: Upper Body 1 • Push & Pull (Week ${cur} weights pre-filled)`);
+      const day1Assign = getDayAssignment(nextW, 0);
+      const day1Label = day1Assign.isRestDay
+        ? `Rest & Muscle Recovery Day (followed by ${smartNext.startLiftDaySub})`
+        : (DAYS_SCHEDULE[day1Assign.templateSlotIndex] || DAYS_SCHEDULE[0]).title;
+      showToast(`Advanced to Week ${nextW} • Day 1: ${day1Label} (synced from Week ${cur})`);
     }
 
     function buildDayWorkoutPickerHtml(week, dayIdx) {
@@ -8934,10 +9196,109 @@
       };
     }
 
+    function getCrossWeekContinuityStatusText(week) {
+      const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+      if (safeWeek < 2) return '';
+      const smartInfo = buildSmartScheduleFromPreviousWeek(safeWeek);
+      const curSched = getCustomDayScheduleForWeek(safeWeek);
+      const isSyncedMatch = curSched.join(',') === smartInfo.schedule.join(',');
+      const isStandardMatch = curSched.join(',') === '0,1,2,3,4,5,6';
+      if (isSyncedMatch) {
+        return smartInfo.statusBannerText;
+      }
+      if (isStandardMatch) {
+        return `Standard Schedule Active: Starts with Upper 1 • Rest Days 6 & 7 (${smartInfo.statusBannerText})`;
+      }
+      return smartInfo.statusBannerText;
+    }
+
+    function renderCrossWeekContinuityBanners() {
+      const week = state.selectedWeek || state.currentWeek || 1;
+      const bannerConfigs = [
+        { containerId: 'cross-week-continuity-banner', isPrimaryGym: true },
+        { containerId: 'pullups-cross-week-continuity-banner', isPrimaryGym: false }
+      ];
+
+      bannerConfigs.forEach(cfg => {
+        const el = document.getElementById(cfg.containerId);
+        if (!el) return;
+        if (week < 2) {
+          el.classList.add('hidden');
+          el.innerHTML = '';
+          return;
+        }
+        const prevWeek = week - 1;
+        const statusText = getCrossWeekContinuityStatusText(week);
+        const curSched = getCustomDayScheduleForWeek(week);
+        const smartInfo = buildSmartScheduleFromPreviousWeek(week);
+        const isSyncedMatch = curSched.join(',') === smartInfo.schedule.join(',');
+        const isStandardMatch = curSched.join(',') === '0,1,2,3,4,5,6';
+
+        el.className = 'rounded-xl bg-slate-950/90 border border-sky-500/35 px-3 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+        el.innerHTML = `
+          <div class="min-w-0 flex items-center gap-1.5">
+            <span class="shrink-0 w-2 h-2 rounded-full ${isSyncedMatch ? 'bg-emerald-400' : 'bg-sky-400'}"></span>
+            <p ${cfg.isPrimaryGym ? 'id="cross-week-continuity-status"' : ''} class="text-[11px] font-bold text-slate-200 leading-snug">
+              ${statusText}
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              ${cfg.isPrimaryGym ? 'id="cross-week-resync-btn"' : ''}
+              class="cross-week-resync-btn px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition whitespace-nowrap ${
+                isSyncedMatch
+                  ? 'bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-400/50 text-emerald-200'
+                  : 'bg-sky-500/20 hover:bg-sky-500/30 border-sky-400/50 text-sky-200'
+              }"
+            >
+              Re-Sync from Week ${prevWeek}
+            </button>
+            <button
+              type="button"
+              ${cfg.isPrimaryGym ? 'id="cross-week-reset-standard-btn"' : ''}
+              class="cross-week-reset-standard-btn px-2.5 py-1 rounded-lg text-[10px] font-bold border transition whitespace-nowrap ${
+                isStandardMatch && !isSyncedMatch
+                  ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
+                  : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300'
+              }"
+            >
+              Reset to Standard (Upper 1 • Rest 6 &amp; 7)
+            </button>
+          </div>
+        `;
+
+        el.querySelectorAll('.cross-week-resync-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const res = applySmartScheduleFromPreviousWeek(week, true);
+            syncSubsequentWeeksFromWeek(week);
+            saveState();
+            renderWorkoutView();
+            renderPullupView();
+            renderVeganView();
+            showToast(res.statusBannerText);
+          });
+        });
+
+        el.querySelectorAll('.cross-week-reset-standard-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            resetWeekScheduleToStandard(week);
+            saveState();
+            renderWorkoutView();
+            renderPullupView();
+            renderVeganView();
+            showToast(`Week ${week} reset to Standard Schedule (Starts with Upper 1 • Rest Days 6 & 7)`);
+          });
+        });
+      });
+    }
+
     function renderRestDaySchedulerDrawers() {
       const week = state.selectedWeek || state.currentWeek || 1;
       const curRestDays = getWeekRestDays(week);
       const badgeLabel = formatRestDaysBadgeLabel(curRestDays);
+
+      renderCrossWeekContinuityBanners();
 
       ['gym-open-rest-scheduler-btn', 'settings-open-rest-scheduler-btn', 'pullups-open-rest-scheduler-btn'].forEach(btnId => {
         const b = document.getElementById(btnId);
@@ -10126,8 +10487,15 @@
         weekPillsContainer.querySelectorAll('.progressive-week-pill-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const targetW = parseInt(btn.getAttribute('data-prog-week'), 10) || 1;
+            const prevW = state.selectedWeek || state.currentWeek || 1;
             state.selectedWeek = targetW;
             state.currentWeek = targetW;
+            if (targetW >= 2 && !hasWeekAnyLoggedSets(targetW) && !(state.manualScheduleOverrideByWeek && state.manualScheduleOverrideByWeek[targetW])) {
+              applySmartScheduleFromPreviousWeek(targetW, false);
+            }
+            if (targetW !== prevW) {
+              state.selectedDayIndex = 0;
+            }
             saveState();
             renderWorkoutView();
             renderPullupView();
@@ -13027,8 +13395,15 @@
         pullupWeekPillsContainer.querySelectorAll('.pullup-progressive-week-pill-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const targetW = parseInt(btn.getAttribute('data-pullup-prog-week'), 10) || 1;
+            const prevW = state.selectedWeek || state.currentWeek || 1;
             state.selectedWeek = targetW;
             state.currentWeek = targetW;
+            if (targetW >= 2 && !hasWeekAnyLoggedSets(targetW) && !(state.manualScheduleOverrideByWeek && state.manualScheduleOverrideByWeek[targetW])) {
+              applySmartScheduleFromPreviousWeek(targetW, false);
+            }
+            if (targetW !== prevW) {
+              state.selectedDayIndex = 0;
+            }
             saveState();
             renderWorkoutView();
             renderPullupView();
@@ -13037,6 +13412,8 @@
           });
         });
       }
+
+      renderCrossWeekContinuityBanners(week);
 
       const container = document.getElementById('pullup-days-container');
       if (!container) return;
@@ -13071,7 +13448,7 @@
                 Jump to Day ${nextPullupInfo.calendarDayIdx + 1}: ${nextSessionData.title}
               </button>
               <button type="button" id="pullup-rest-train-today-btn" class="py-2.5 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-xs font-extrabold transition text-center">
-                Train Today Instead (Swap with Next Workout)
+                Train Today Instead (Choose Workout)
               </button>
             </div>
           </article>
@@ -13091,7 +13468,8 @@
         const trainTodayBtn = document.getElementById('pullup-rest-train-today-btn');
         if (trainTodayBtn) {
           trainTodayBtn.addEventListener('click', () => {
-            swapRestDayToLift(week, dayIdx);
+            state.showPullupRestDayScheduler = true;
+            renderRestDaySchedulerDrawers();
           });
         }
         if (typeof ensureVerticalScrollUnlocked === 'function') {
@@ -13742,8 +14120,15 @@
         veganWeekPillsContainer.querySelectorAll('.vegan-progressive-week-pill-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const targetW = parseInt(btn.getAttribute('data-vegan-prog-week'), 10) || 1;
+            const prevW = state.selectedWeek || state.currentWeek || 1;
             state.selectedWeek = targetW;
             state.currentWeek = targetW;
+            if (targetW >= 2 && !hasWeekAnyLoggedSets(targetW) && !(state.manualScheduleOverrideByWeek && state.manualScheduleOverrideByWeek[targetW])) {
+              applySmartScheduleFromPreviousWeek(targetW, false);
+            }
+            if (targetW !== prevW) {
+              state.selectedDayIndex = 0;
+            }
             saveState();
             renderWorkoutView();
             renderPullupView();
@@ -15555,6 +15940,7 @@
         watchSettings: JSON.parse(JSON.stringify(state.watchSettings || { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25 })),
         weeklyRestDays: JSON.parse(JSON.stringify(state.weeklyRestDays || { default: [5, 6] })),
         customDayScheduleByWeek: JSON.parse(JSON.stringify(state.customDayScheduleByWeek || {})),
+        manualScheduleOverrideByWeek: JSON.parse(JSON.stringify(state.manualScheduleOverrideByWeek || {})),
         pullupViewMode: state.pullupViewMode === 'all' ? 'all' : 'selected'
       };
     }
@@ -15603,6 +15989,9 @@
       }
       if (s.customDayScheduleByWeek && typeof s.customDayScheduleByWeek === 'object') {
         state.customDayScheduleByWeek = JSON.parse(JSON.stringify(s.customDayScheduleByWeek));
+      }
+      if (s.manualScheduleOverrideByWeek && typeof s.manualScheduleOverrideByWeek === 'object') {
+        state.manualScheduleOverrideByWeek = JSON.parse(JSON.stringify(s.manualScheduleOverrideByWeek));
       }
       if (s.pullupViewMode === 'selected' || s.pullupViewMode === 'all') {
         state.pullupViewMode = s.pullupViewMode;
@@ -15739,10 +16128,17 @@
         weekSelect.value = String(state.selectedWeek || state.currentWeek || 1);
         weekSelect.addEventListener('change', () => {
           const nextSelected = parseInt(weekSelect.value, 10) || 1;
+          const prevW = state.selectedWeek || state.currentWeek || 1;
           state.selectedWeek = nextSelected;
           state.currentWeek = nextSelected;
           if (!state.maxUnlockedWeek || nextSelected > state.maxUnlockedWeek) {
             state.maxUnlockedWeek = nextSelected;
+          }
+          if (nextSelected >= 2 && !hasWeekAnyLoggedSets(nextSelected) && !(state.manualScheduleOverrideByWeek && state.manualScheduleOverrideByWeek[nextSelected])) {
+            applySmartScheduleFromPreviousWeek(nextSelected, false);
+          }
+          if (nextSelected !== prevW) {
+            state.selectedDayIndex = 0;
           }
           saveState();
           renderWorkoutView();
@@ -15757,17 +16153,7 @@
         finishWeekBtn.addEventListener('click', () => {
           syncProgressiveWeekState(state);
           const cur = state.selectedWeek || state.currentWeek || 1;
-          if (!state.completedWeeks) state.completedWeeks = {};
-          state.completedWeeks[cur] = true;
-          const nextW = Math.min(12, cur + 1);
-          state.maxUnlockedWeek = Math.min(12, Math.max((state.maxUnlockedWeek || 1) + 1, nextW));
-          state.selectedWeek = nextW;
-          state.currentWeek = nextW;
-          saveState();
-          renderWorkoutView();
-          renderPullupView();
-          renderVeganView();
-          showToast(`Week ${cur} Complete. Unlocked Week ${nextW} with your previous weights pre-filled.`);
+          advanceToNextWeekDay1Now(cur);
         });
       }
 
@@ -16552,19 +16938,7 @@
         quickNextWeekBtn.addEventListener('click', () => {
           syncProgressiveWeekState(state);
           const cur = state.selectedWeek || state.currentWeek || 1;
-          if (!state.completedWeeks) state.completedWeeks = {};
-          state.completedWeeks[cur] = true;
-          const nextW = Math.min(12, cur + 1);
-          state.maxUnlockedWeek = Math.min(12, Math.max((state.maxUnlockedWeek || 1) + 1, nextW));
-          state.selectedWeek = nextW;
-          state.currentWeek = nextW;
-          const weekSel = document.getElementById('week-select');
-          if (weekSel) weekSel.value = String(nextW);
-          saveState();
-          renderWorkoutView();
-          renderPullupView();
-          renderVeganView();
-          showToast(` Week ${cur} Complete! Unlocked Week ${nextW} (your Week ${cur} weights are pre-filled on every set).`);
+          advanceToNextWeekDay1Now(cur);
         });
       }
 

@@ -102,6 +102,16 @@ export default async function handler(req, res) {
               }
             });
           }
+          if (d.manualScheduleOverrideByWeek && typeof d.manualScheduleOverrideByWeek === 'object') {
+            if (!baseData.manualScheduleOverrideByWeek || typeof baseData.manualScheduleOverrideByWeek !== 'object') {
+              baseData.manualScheduleOverrideByWeek = {};
+            }
+            Object.keys(d.manualScheduleOverrideByWeek).forEach(k => {
+              if (baseData.manualScheduleOverrideByWeek[k] === undefined) {
+                baseData.manualScheduleOverrideByWeek[k] = d.manualScheduleOverrideByWeek[k];
+              }
+            });
+          }
         });
       }
 

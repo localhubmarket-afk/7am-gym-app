@@ -1500,5 +1500,105 @@ test('Subtest 27: Flexible 7-Day Schedule & Smart Next-Workout Recommendation En
   assert.equal(midSwapRes.swappedWithDayIdx, 3);
 });
 
+test('Subtest 28: Cross-Week Continuity Engine (buildSmartScheduleFromPreviousWeek & Live Reactive Sync)', async () => {
+  const mod = (await import('./workoutLogic.ts')) as Record<string, any>;
+  assert.equal(typeof mod.buildSmartScheduleFromPreviousWeek, 'function');
+  assert.equal(typeof mod.applySmartScheduleFromPreviousWeek, 'function');
+  assert.equal(typeof mod.resetWeekScheduleToStandard, 'function');
+  assert.equal(typeof mod.syncSubsequentWeeksFromWeek, 'function');
+
+  // Case A (5-day trailing streak): Week 2 had Rest on Days 1 & 2, lifted Days 3..7 ending with Upper 1 (slot 0) on Day 7
+  const stateStreak5: Record<string, any> = {
+    maxUnlockedWeek: 3,
+    customDayScheduleByWeek: {
+      '2': [5, 6, 1, 2, 3, 4, 0]
+    },
+    weeklyRestDays: { default: [5, 6] }
+  };
+  const smartW3From5 = mod.buildSmartScheduleFromPreviousWeek(3, stateStreak5);
+  assert.equal(smartW3From5.lastLiftSlot, 0);
+  assert.equal(smartW3From5.lastLiftDayIdx, 6);
+  assert.equal(smartW3From5.lastLiftDayNumber, 7);
+  assert.equal(smartW3From5.nextStartLiftSlot, 1); // Lower 1
+  assert.deepEqual(smartW3From5.orderedLiftQueue, [1, 2, 3, 4, 0]);
+  assert.equal(smartW3From5.trailingLiftStreak, 5);
+  assert.deepEqual(smartW3From5.restDays, [0, 1]);
+  assert.deepEqual(smartW3From5.schedule, [5, 6, 1, 2, 3, 4, 0]);
+  assert.equal(smartW3From5.startsWithRestDay, true);
+  assert.equal(
+    smartW3From5.statusBannerText,
+    'Synced from Week 2: Starts with Rest Day + Lower 1 (follows Week 2 Day 7)'
+  );
+
+  // Verify getDayAssignment for Week 3 reads the adapted schedule automatically
+  const w3Day1 = mod.getDayAssignment(3, 0, stateStreak5);
+  const w3Day2 = mod.getDayAssignment(3, 1, stateStreak5);
+  const w3Day3 = mod.getDayAssignment(3, 2, stateStreak5);
+  const w3Day7 = mod.getDayAssignment(3, 6, stateStreak5);
+  assert.equal(w3Day1.isRestDay, true);
+  assert.equal(w3Day1.daySub, 'Rest 1');
+  assert.equal(w3Day1.waterTargetMl, 2500);
+  assert.equal(w3Day2.isRestDay, true);
+  assert.equal(w3Day2.daySub, 'Rest 2');
+  assert.equal(w3Day3.isRestDay, false);
+  assert.equal(w3Day3.daySub, 'Lower 1');
+  assert.equal(w3Day3.waterTargetMl, 3000);
+  assert.equal(w3Day7.daySub, 'Upper 1');
+
+  // Case A (4-day trailing streak): Week 2 lifted Days 4..7 ending with Lower 1 (slot 1) on Day 7
+  const smartW3From4 = mod.buildSmartScheduleFromPreviousWeek(3, [0, 5, 6, 2, 3, 4, 1]);
+  assert.equal(smartW3From4.lastLiftSlot, 1);
+  assert.equal(smartW3From4.nextStartLiftSlot, 2); // Push
+  assert.deepEqual(smartW3From4.orderedLiftQueue, [2, 3, 4, 0, 1]);
+  assert.equal(smartW3From4.trailingLiftStreak, 4);
+  assert.deepEqual(smartW3From4.restDays, [0, 6]); // Day 1 = Rest 1, Day 7 = Rest 2
+  assert.deepEqual(smartW3From4.schedule, [5, 2, 3, 4, 0, 1, 6]);
+
+  // Case B (2-day trailing streak): Rest on Day 5, lifted Days 6 & 7 ending with Upper 1 (slot 0)
+  const smartW3From2 = mod.buildSmartScheduleFromPreviousWeek(3, [1, 2, 3, 5, 6, 4, 0]);
+  assert.equal(smartW3From2.trailingLiftStreak, 2);
+  assert.equal(smartW3From2.nextStartLiftSlot, 1); // Lower 1
+  // Can lift 5 - 2 = 3 days at start of Week 3 (Days 1..3), then Rest 1 on Day 4 (idx 3), Rest 2 on Day 7 (idx 6)
+  assert.deepEqual(smartW3From2.restDays, [3, 6]);
+  assert.deepEqual(smartW3From2.schedule, [1, 2, 3, 5, 4, 0, 6]);
+
+  // Case C (0-day trailing streak, ended on Rest Day): Week 2 ended on Rest Day 7, last lift was Upper 1 (slot 0) on Day 6
+  const smartW3From0 = mod.buildSmartScheduleFromPreviousWeek(3, [1, 2, 3, 4, 5, 0, 6]);
+  assert.equal(smartW3From0.trailingLiftStreak, 0);
+  assert.equal(smartW3From0.nextStartLiftSlot, 1); // Lower 1
+  assert.deepEqual(smartW3From0.restDays, [5, 6]);
+  assert.deepEqual(smartW3From0.schedule, [1, 2, 3, 4, 0, 5, 6]);
+  assert.equal(
+    smartW3From0.statusBannerText,
+    'Synced from Week 2: Starts with Lower 1 • Rest Days 6 & 7 (follows Week 2 Day 6)'
+  );
+
+  // Live reactive update: Modifying Week 2 automatically updates Week 3 if Week 3 has no logged sets
+  const liveState: Record<string, any> = {
+    maxUnlockedWeek: 3,
+    completedSlotsByWeek: { 2: [0, 1, 2, 3, 4] },
+    customDayScheduleByWeek: {
+      '2': [5, 6, 0, 1, 2, 3, 4]
+    },
+    weeklyRestDays: { default: [5, 6] },
+    workoutLogs: {}
+  };
+  // Now user swaps Day 7 (index 6) of Week 2 to repeat Upper 1 (slot 0)
+  mod.assignWorkoutOrRestSlotToDay(2, 6, 0, liveState);
+  // Week 3 should automatically be synced to [5, 6, 1, 2, 3, 4, 0]
+  assert.deepEqual(liveState.customDayScheduleByWeek['3'], [5, 6, 1, 2, 3, 4, 0]);
+
+  // Reset to Standard on Week 3 reverts to [0, 1, 2, 3, 4, 5, 6]
+  const resetRes = mod.resetWeekScheduleToStandard(3, liveState);
+  assert.deepEqual(resetRes.schedule, [0, 1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(liveState.customDayScheduleByWeek['3'], [0, 1, 2, 3, 4, 5, 6]);
+
+  // Re-Sync from Week 2 restores the smart adapted schedule
+  const resyncRes = mod.applySmartScheduleFromPreviousWeek(3, liveState, true);
+  assert.deepEqual(resyncRes.schedule, [5, 6, 1, 2, 3, 4, 0]);
+  assert.deepEqual(liveState.customDayScheduleByWeek['3'], [5, 6, 1, 2, 3, 4, 0]);
+});
+
+
 
 

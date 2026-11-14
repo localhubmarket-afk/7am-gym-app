@@ -3959,6 +3959,17 @@ export function getCustomDayScheduleForWeek(
       if (Array.isArray(candidate) && candidate.length === 7) {
         return candidate.map(v => Math.max(0, Math.min(6, Math.floor(Number(v) || 0))));
       }
+      // If safeWeek >= 2 has no explicit custom schedule yet, check if a prior week in customDayScheduleByWeek exists
+      // and no explicit week-specific rest-days override was set for safeWeek
+      const restMap = obj.weeklyRestDays && typeof obj.weeklyRestDays === 'object' ? obj.weeklyRestDays : null;
+      const hasExplicitWeekRest = Boolean(restMap && (Array.isArray(restMap[String(safeWeek)]) || Array.isArray(restMap[safeWeek])));
+      const hasAnyPriorCustomWeek = Object.keys(customMap).some(k => {
+        const num = parseInt(k, 10);
+        return !isNaN(num) && num >= 1 && num < safeWeek && Array.isArray(customMap[k]) && customMap[k].length === 7;
+      });
+      if (safeWeek >= 2 && hasAnyPriorCustomWeek && !hasExplicitWeekRest) {
+        return buildSmartScheduleFromPreviousWeek(safeWeek, obj).schedule;
+      }
     }
   }
   const [r1, r2] = getWeekRestDays(weeklyRestDaysOrState, safeWeek);
@@ -3975,6 +3986,13 @@ export function getCustomDayScheduleForWeek(
     }
   }
   return derived;
+}
+
+export function getWeekSchedule(
+  week: number,
+  weeklyRestDaysOrState?: unknown
+): number[] {
+  return getCustomDayScheduleForWeek(week, weeklyRestDaysOrState);
 }
 
 export function getDayAssignment(
@@ -6335,12 +6353,243 @@ export function assignWorkoutOrRestSlotToDay(
     stateObj.weeklyRestDays[String(safeWeek)] = normalizeRestDaysTuple([rOnly, rOnly === 6 ? 5 : 6]);
   }
 
+  if (!stateObj.manualScheduleOverrideByWeek || typeof stateObj.manualScheduleOverrideByWeek !== 'object') {
+    stateObj.manualScheduleOverrideByWeek = {};
+  }
+  stateObj.manualScheduleOverrideByWeek[String(safeWeek)] = true;
+  syncSubsequentWeeksFromWeek(safeWeek, stateObj);
+
   return {
     schedule: sched,
     assignment: getDayAssignment(safeWeek, safeDayIdx, stateObj),
     swappedWithDayIdx
   };
 }
+
+// ============================================================================
+// CROSS-WEEK CONTINUITY ENGINE (buildSmartScheduleFromPreviousWeek)
+// ============================================================================
+export interface SmartScheduleFromPrevWeekResult {
+  targetWeek: number;
+  prevWeek: number;
+  lastLiftSlot: number | null;
+  lastLiftDayIdx: number | null;
+  lastLiftDayNumber: number;
+  nextStartLiftSlot: number;
+  startLiftDaySub: string;
+  startLiftTitle: string;
+  orderedLiftQueue: number[];
+  trailingLiftStreak: number;
+  restDays: [number, number];
+  schedule: number[];
+  startsWithRestDay: boolean;
+  statusBannerText: string;
+}
+
+export function buildSmartScheduleFromPreviousWeek(
+  targetWeek: number,
+  stateOrPrevSchedule?: unknown
+): SmartScheduleFromPrevWeekResult {
+  const safeTargetWeek = Math.max(1, Math.floor(Number(targetWeek) || 1));
+  if (safeTargetWeek < 2) {
+    const slot0 = WORKOUT_SLOT_CATALOG[0];
+    return {
+      targetWeek: 1,
+      prevWeek: 1,
+      lastLiftSlot: 4,
+      lastLiftDayIdx: 4,
+      lastLiftDayNumber: 5,
+      nextStartLiftSlot: 0,
+      startLiftDaySub: slot0.daySub,
+      startLiftTitle: slot0.title,
+      orderedLiftQueue: [0, 1, 2, 3, 4],
+      trailingLiftStreak: 0,
+      restDays: [5, 6],
+      schedule: [0, 1, 2, 3, 4, 5, 6],
+      startsWithRestDay: false,
+      statusBannerText: 'Week 1 Standard Schedule: Starts with Upper 1 • Rest Days 6 & 7'
+    };
+  }
+
+  const prevWeek = safeTargetWeek - 1;
+  const prevSchedule =
+    Array.isArray(stateOrPrevSchedule) && stateOrPrevSchedule.length === 7
+      ? stateOrPrevSchedule.map(v => Math.max(0, Math.min(6, Math.floor(Number(v) || 0))))
+      : getWeekSchedule(prevWeek, stateOrPrevSchedule);
+
+  // 1. Inspect Previous Week's Final Lifting Workout (lastLiftSlot) from DAY 7 (idx 6) down to DAY 1 (idx 0)
+  let lastLiftSlot: number | null = null;
+  let lastLiftDayIdx: number | null = null;
+  for (let i = 6; i >= 0; i--) {
+    const slot = prevSchedule[i];
+    if (slot >= 0 && slot <= 4) {
+      lastLiftSlot = slot;
+      lastLiftDayIdx = i;
+      break;
+    }
+  }
+
+  const nextStartLiftSlot = lastLiftSlot !== null ? (lastLiftSlot + 1) % 5 : 0;
+  const orderedLiftQueue = [0, 1, 2, 3, 4].map(i => (nextStartLiftSlot + i) % 5);
+
+  // 2. Inspect Previous Week's Trailing Lifting Streak (trailingLiftStreak) counting backwards from DAY 7 (idx 6)
+  let trailingLiftStreak = 0;
+  for (let i = 6; i >= 0; i--) {
+    const slot = prevSchedule[i];
+    if (slot >= 0 && slot <= 4) {
+      trailingLiftStreak++;
+    } else {
+      break;
+    }
+  }
+
+  let restDays: [number, number] = [5, 6];
+  if (trailingLiftStreak >= 5) {
+    // Case A (5+ consecutive lift days ending on DAY 7): Rest on DAY 1 & DAY 2 ([0, 1]), lift on DAY 3..7
+    restDays = [0, 1];
+  } else if (trailingLiftStreak === 4) {
+    // Case A (4 consecutive lift days ending on DAY 7): Rest on DAY 1 & DAY 7 ([0, 6]), lift on DAY 2..6
+    restDays = [0, 6];
+  } else if (trailingLiftStreak >= 1 && trailingLiftStreak <= 3) {
+    // Case B (1..3 consecutive lift days at end of prevWeek): lift for (5 - trailingLiftStreak) days, then Rest 1, and Rest 2 on DAY 7
+    const firstRestIdx = 5 - trailingLiftStreak;
+    restDays = [firstRestIdx, 6];
+  } else {
+    // Case C (trailingLiftStreak === 0, ended with Rest Day on DAY 7): fresh on DAY 1, Rest Days on Days 6 & 7 ([5, 6])
+    restDays = [5, 6];
+  }
+
+  const [r1, r2] = restDays;
+  const schedule: number[] = [];
+  let liftPtr = 0;
+  let restPtr = 0;
+  for (let d = 0; d < 7; d++) {
+    if (d === r1 || d === r2) {
+      schedule.push(restPtr === 0 ? 5 : 6);
+      restPtr++;
+    } else {
+      schedule.push(orderedLiftQueue[liftPtr]);
+      liftPtr++;
+    }
+  }
+
+  const slotMeta = WORKOUT_SLOT_CATALOG[nextStartLiftSlot] || WORKOUT_SLOT_CATALOG[0];
+  const startLiftDaySub = slotMeta.daySub;
+  const startLiftTitle = slotMeta.title;
+  const lastLiftDayNumber = lastLiftDayIdx !== null ? lastLiftDayIdx + 1 : 5;
+  const startsWithRestDay = schedule[0] === 5 || schedule[0] === 6;
+
+  const statusBannerText = startsWithRestDay
+    ? `Synced from Week ${prevWeek}: Starts with Rest Day + ${startLiftDaySub} (follows Week ${prevWeek} Day ${lastLiftDayNumber})`
+    : `Synced from Week ${prevWeek}: Starts with ${startLiftDaySub} • Rest Days ${r1 + 1} & ${r2 + 1} (follows Week ${prevWeek} Day ${lastLiftDayNumber})`;
+
+  return {
+    targetWeek: safeTargetWeek,
+    prevWeek,
+    lastLiftSlot,
+    lastLiftDayIdx,
+    lastLiftDayNumber,
+    nextStartLiftSlot,
+    startLiftDaySub,
+    startLiftTitle,
+    orderedLiftQueue,
+    trailingLiftStreak,
+    restDays,
+    schedule,
+    startsWithRestDay,
+    statusBannerText
+  };
+}
+
+export function hasWeekAnyLoggedSets(
+  week: number,
+  stateObj?: Record<string, any> | null
+): boolean {
+  if (!stateObj || typeof stateObj !== 'object') return false;
+  const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+  const logs = stateObj.workoutLogs;
+  if (!logs || typeof logs !== 'object') return false;
+  const prefix = `w${safeWeek}_`;
+  for (const [k, entry] of Object.entries(logs)) {
+    if (k.startsWith(prefix) && entry && (entry as SetLog).done) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function applySmartScheduleFromPreviousWeek(
+  targetWeek: number,
+  stateObj: Record<string, any>,
+  clearManualOverride = true
+): SmartScheduleFromPrevWeekResult {
+  const safeTargetWeek = Math.max(1, Math.floor(Number(targetWeek) || 1));
+  if (!stateObj.customDayScheduleByWeek || typeof stateObj.customDayScheduleByWeek !== 'object') {
+    stateObj.customDayScheduleByWeek = {};
+  }
+  if (!stateObj.weeklyRestDays || typeof stateObj.weeklyRestDays !== 'object') {
+    stateObj.weeklyRestDays = { default: [5, 6] };
+  }
+  if (!stateObj.manualScheduleOverrideByWeek || typeof stateObj.manualScheduleOverrideByWeek !== 'object') {
+    stateObj.manualScheduleOverrideByWeek = {};
+  }
+
+  const res = buildSmartScheduleFromPreviousWeek(safeTargetWeek, stateObj);
+  if (safeTargetWeek >= 2) {
+    stateObj.customDayScheduleByWeek[String(safeTargetWeek)] = [...res.schedule];
+    stateObj.weeklyRestDays[String(safeTargetWeek)] = [...res.restDays];
+    if (clearManualOverride) {
+      stateObj.manualScheduleOverrideByWeek[String(safeTargetWeek)] = false;
+    }
+  }
+  return res;
+}
+
+export function resetWeekScheduleToStandard(
+  targetWeek: number,
+  stateObj: Record<string, any>
+): { schedule: number[]; restDays: [number, number] } {
+  const safeTargetWeek = Math.max(1, Math.floor(Number(targetWeek) || 1));
+  if (!stateObj.customDayScheduleByWeek || typeof stateObj.customDayScheduleByWeek !== 'object') {
+    stateObj.customDayScheduleByWeek = {};
+  }
+  if (!stateObj.weeklyRestDays || typeof stateObj.weeklyRestDays !== 'object') {
+    stateObj.weeklyRestDays = { default: [5, 6] };
+  }
+  if (!stateObj.manualScheduleOverrideByWeek || typeof stateObj.manualScheduleOverrideByWeek !== 'object') {
+    stateObj.manualScheduleOverrideByWeek = {};
+  }
+
+  const standardSchedule = [0, 1, 2, 3, 4, 5, 6];
+  const standardRestDays: [number, number] = [5, 6];
+  stateObj.customDayScheduleByWeek[String(safeTargetWeek)] = [...standardSchedule];
+  stateObj.weeklyRestDays[String(safeTargetWeek)] = [...standardRestDays];
+  stateObj.manualScheduleOverrideByWeek[String(safeTargetWeek)] = true;
+  syncSubsequentWeeksFromWeek(safeTargetWeek, stateObj);
+
+  return {
+    schedule: standardSchedule,
+    restDays: standardRestDays
+  };
+}
+
+export function syncSubsequentWeeksFromWeek(
+  editedWeek: number,
+  stateObj: Record<string, any>
+): void {
+  if (!stateObj || typeof stateObj !== 'object') return;
+  const safeEdited = Math.max(1, Math.floor(Number(editedWeek) || 1));
+  const maxW = Math.min(12, Math.max(safeEdited + 1, Number(stateObj.maxUnlockedWeek) || 2));
+  for (let nextW = safeEdited + 1; nextW <= maxW; nextW++) {
+    const isManuallyOverridden = Boolean(
+      stateObj.manualScheduleOverrideByWeek && stateObj.manualScheduleOverrideByWeek[String(nextW)]
+    );
+    if (!hasWeekAnyLoggedSets(nextW, stateObj) && !isManuallyOverridden) {
+      applySmartScheduleFromPreviousWeek(nextW, stateObj, true);
+    }
+  }
+}
+
 
 
 
