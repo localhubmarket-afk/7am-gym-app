@@ -1331,16 +1331,25 @@ test('7 Upgrades Suite: Single Timer Bar, Pull-Up Pyramid + Day 5 Selector, Deco
   assert.equal(benchSwap.replacementSpec.replacementName, 'Seated Chest Press Machine');
   assert.equal(
     benchSwap.confirmationPromptText,
-    "Biomechanical Match Confirmed: Seated Chest Press Machine targets the same muscles as Barbell Bench Press. Replace today's exercise card?"
+    "Machine Match Confirmed: Seated Chest Press Machine targets the same muscles as Barbell Bench Press. Replace today's exercise card?"
   );
   assert.equal(benchSwap.switchBackButtonLabel, 'Switch Back to Barbell Bench Press');
 });
 
-test('Universal 22-Exercise Machine Database, Auto-Migration, getEffectiveExercise & 3-Step AI Vision Pipeline', async () => {
+test('Universal 22-Exercise Machine Database, Plain English, 0-lb Bar Math, Strip Barbell From Machine Sets & Shared Machine Database', async () => {
   const mod = await import('./workoutLogic');
   assert.equal(mod.UNIVERSAL_MACHINE_SWAPS.length, 22);
 
-  // Check multi-option categories
+  // Verify zero occurrences of "biomechanical" or Latin jargon in UNIVERSAL_MACHINE_SWAPS
+  for (const cat of mod.UNIVERSAL_MACHINE_SWAPS) {
+    assert.equal(/biomechanical|biomedical|soleus|gastrocnemius|plantarflexion|dorsiflexion|scapulae|posterior chain/i.test(cat.label), false);
+    for (const opt of cat.options) {
+      assert.equal(/biomechanical|biomedical|soleus|gastrocnemius|plantarflexion|dorsiflexion|scapulae|posterior chain/i.test(opt.targetMuscle), false, `Jargon in ${opt.optionId} targetMuscle`);
+      assert.equal(/biomechanical|biomedical|soleus|gastrocnemius|plantarflexion|dorsiflexion|scapulae|posterior chain/i.test(opt.formSetup), false, `Jargon in ${opt.optionId} formSetup`);
+    }
+  }
+
+  // Check multi-option categories including 3 Calf Raise subtypes
   const squatCat = mod.matchExerciseToUniversalMachineSwaps({ id: 'tue_squat', name: 'Barbell Back Squat' });
   assert.equal(squatCat.options.length, 2);
   assert.equal(squatCat.options[0].name, 'Seated Leg Press Machine');
@@ -1348,28 +1357,28 @@ test('Universal 22-Exercise Machine Database, Auto-Migration, getEffectiveExerci
   assert.equal(squatCat.options[1].name, 'Angled Hack Squat Machine');
   assert.equal(squatCat.options[1].primaryVideoUrl, 'https://www.youtube.com/watch?v=g9i05umL5vc');
 
-  const pullupCat = mod.matchExerciseToUniversalMachineSwaps({ id: 'day1_pullups', name: 'Overhand Pull-Ups' });
-  assert.equal(pullupCat.options.length, 2);
-  assert.equal(pullupCat.options[0].primaryVideoUrl, 'https://www.youtube.com/watch?v=CdO5BvP6Ti8');
-  assert.equal(pullupCat.options[1].primaryVideoUrl, 'https://www.youtube.com/watch?v=CAwf7n6Luuc');
-
-  const rdlCat = mod.matchExerciseToUniversalMachineSwaps({ id: 'tue_rdl', name: 'Dumbbell Romanian Deadlift' });
-  assert.equal(rdlCat.options.length, 2);
-  assert.equal(rdlCat.options[0].primaryVideoUrl, 'https://www.youtube.com/watch?v=xdbEG3xGLI8');
-  assert.equal(rdlCat.options[1].primaryVideoUrl, 'https://www.youtube.com/watch?v=H8Swl1N-uis');
+  const calfCat = mod.matchExerciseToUniversalMachineSwaps({ id: 'sat_seated_calf', name: 'Seated Weighted Calf Raise' });
+  assert.equal(calfCat.options.length, 3);
+  assert.equal(calfCat.options[0].name, 'Seated Calf Press / Extension Machine');
+  assert.equal(calfCat.options[0].primaryVideoUrl, 'https://www.youtube.com/watch?v=ZmDiJvXx344');
+  assert.equal(calfCat.options[0].altVideoUrl, 'https://www.youtube.com/watch?v=z0FtV_s_GVA');
+  assert.equal(calfCat.options[0].altVideoUrl2, 'https://www.youtube.com/watch?v=1cvpm--Y-4I');
+  assert.equal(calfCat.options[1].primaryVideoUrl, 'https://www.youtube.com/watch?v=z1N8ZRsb4bg');
+  assert.equal(calfCat.options[2].primaryVideoUrl, 'https://www.youtube.com/watch?v=_OewEscCsbo');
 
   // Auto-migration from saved exerciseNotes containing "machine" or photo
   const mockState: Record<string, any> = {
     exerciseNotes: {
-      sat_seated_calf: { text: 'Using the seated calf machine pin #6', photoDataUrl: '' },
+      sat_seated_calf: { text: 'Machine 90lb / sixe', photoDataUrl: '' },
       mon_bench: { text: 'Pin #8', photoDataUrl: 'data:image/jpeg;base64,abc123' }
     },
     exerciseSwaps: {},
-    revertedMachineSwaps: {}
+    revertedMachineSwaps: {},
+    sharedMachineDatabase: {}
   };
   mod.autoMigrateExerciseNotesToMachineSwaps(mockState);
-  assert.equal(mockState.exerciseSwaps.sat_seated_calf.name, 'Seated Calf Raise Machine');
-  assert.equal(mockState.exerciseSwaps.sat_seated_calf.videoUrl, 'https://www.youtube.com/watch?v=z1N8ZRsb4bg');
+  assert.equal(mockState.exerciseSwaps.sat_seated_calf.name, 'Seated Calf Press / Extension Machine');
+  assert.equal(mockState.exerciseSwaps.sat_seated_calf.videoUrl, 'https://www.youtube.com/watch?v=ZmDiJvXx344');
   assert.equal(mockState.exerciseSwaps.mon_bench.name, 'Seated Chest Press Machine');
   assert.equal(mockState.exerciseSwaps.mon_bench.videoUrl, 'https://www.youtube.com/watch?v=YXjhMV7uz4c');
 
@@ -1381,17 +1390,58 @@ test('Universal 22-Exercise Machine Database, Auto-Migration, getEffectiveExerci
     restSec: 60,
     notes: 'Original calf setup'
   });
+  assert.equal(effCalf.isSwapped, true);
   assert.equal(effCalf.isSwappedMachine, true);
-  assert.equal(effCalf.name, 'Seated Calf Raise Machine');
-  assert.equal(effCalf.videoUrl, 'https://www.youtube.com/watch?v=z1N8ZRsb4bg');
-  assert.equal(effCalf.altVideoUrl, 'https://www.youtube.com/watch?v=FsqE-g1C5fk');
-  assert.equal(effCalf.machineBadge, 'Machine Active • Swapped from Seated Weighted Calf Raise');
+  assert.equal(effCalf.name, 'Seated Calf Press / Extension Machine');
+  assert.equal(effCalf.videoUrl, 'https://www.youtube.com/watch?v=ZmDiJvXx344');
+  assert.equal(effCalf.altVideoUrl, 'https://www.youtube.com/watch?v=z0FtV_s_GVA');
+  assert.equal(effCalf.altVideoUrl2, 'https://www.youtube.com/watch?v=1cvpm--Y-4I');
+  assert.equal(effCalf.barWeight, 0);
+  assert.equal(effCalf.loadMode, 'plate_2sides');
 
-  // 3-step AI Vision pipeline
+  // 2-Option Machine Loading Math (Plate-Loaded 2 Sides vs Pin Stack, 0 lb bar)
+  const plateMath = mod.computeMachineWeightMath(90, 'lbs', 'plate_2sides');
+  assert.equal(plateMath.bar, 0);
+  assert.equal(plateMath.perSide, 45);
+  assert.equal(plateMath.bothSides, 90);
+  assert.equal(plateMath.total, 90);
+  assert.equal(plateMath.summaryBadgeText, 'Machine Plates: 45 lbs/side = 90 lbs total');
+
+  const pinMath = mod.computeMachineWeightMath(90, 'lbs', 'pin_stack');
+  assert.equal(pinMath.bar, 0);
+  assert.equal(pinMath.total, 90);
+  assert.equal(pinMath.summaryBadgeText, 'Machine Pin Weight: 90 lbs');
+
+  // Strip 45 lb barbell from sets when switching Barbell Hip Thrust (135 lbs) to Glute Drive Machine (90 lbs = 45 lbs/side)
+  const workoutLogs: Record<string, any> = {
+    w1_4_sat_hip_thrust_1: { weight: '135', reps: '10', done: true, unit: 'lbs' },
+    w1_4_sat_hip_thrust_2: { weight: '135', reps: '10', done: true, unit: 'lbs' },
+    w1_4_sat_hip_thrust_3: { weight: '135', reps: '10', done: false, unit: 'lbs' }
+  };
+  const updatedCount = mod.stripBarbellWeightFromMachineSets(workoutLogs, 'sat_hip_thrust', 45);
+  assert.equal(updatedCount, 3);
+  assert.equal(workoutLogs.w1_4_sat_hip_thrust_1.weight, '90');
+  assert.equal(workoutLogs.w1_4_sat_hip_thrust_2.weight, '90');
+  assert.equal(workoutLogs.w1_4_sat_hip_thrust_3.weight, '90');
+
+  // Shared Machine Database persistence
+  const savedShared = mod.upsertSharedMachineDatabaseEntry(mockState, {
+    originalExKey: 'sat_seated_calf',
+    machineName: 'Seated Calf Press / Extension Machine',
+    machineSubtype: 'Seated Calf Press / Extension Machine (Footplate Push)',
+    loadMode: 'plate_2sides',
+    simpleSteps: calfCat.options[0].formSetup,
+    targetMuscles: 'Calves',
+    videoUrl: 'https://www.youtube.com/watch?v=ZmDiJvXx344'
+  });
+  assert.equal(savedShared.verifiedByUser, true);
+  assert.equal(mockState.sharedMachineDatabase.sat_seated_calf.videoUrl, 'https://www.youtube.com/watch?v=ZmDiJvXx344');
+
+  // Plain-English 3-step AI Vision pipeline
   const steps = mod.getAiVisionPipelineSteps('Barbell Back Squat');
   assert.equal(steps.length, 3);
-  assert.equal(steps[0], '1. Scanning machine geometry...');
-  assert.equal(steps[1], '2. Verifying biomechanical equivalence with Barbell Back Squat...');
+  assert.equal(steps[0], '1. Scanning machine photo and seat setup...');
+  assert.equal(steps[1], '2. Checking machine type and finding matching video for Barbell Back Squat...');
   assert.equal(steps[2], '3. Attaching verified machine form video & setup cues...');
 });
 

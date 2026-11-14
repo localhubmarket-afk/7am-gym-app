@@ -1371,9 +1371,14 @@
       if (!merged.revertedMachineSwaps || typeof merged.revertedMachineSwaps !== 'object') {
         merged.revertedMachineSwaps = {};
       }
-      if (!merged.pendingMachineSwapPreviews || typeof merged.pendingMachineSwapPreviews !== 'object') {
-        merged.pendingMachineSwapPreviews = {};
+      if (!merged.sharedMachineDatabase || typeof merged.sharedMachineDatabase !== 'object') {
+        merged.sharedMachineDatabase = {};
       }
+      if (!merged.machineBarStripped || typeof merged.machineBarStripped !== 'object') {
+        merged.machineBarStripped = {};
+      }
+      // Always clear stale pending verification boxes on startup
+      merged.pendingMachineSwapPreviews = {};
       if (merged.riceBannerDismissed === undefined) {
         merged.riceBannerDismissed = false;
       }
@@ -1449,10 +1454,16 @@
               : null;
             const localWorkoutLogs = JSON.parse(JSON.stringify(state.workoutLogs || {}));
             const localPullupLogs = JSON.parse(JSON.stringify(state.pullupLogs || state[LEGACY_PULLUP_LOGS_KEY] || {}));
+            const localExerciseSwaps = JSON.parse(JSON.stringify(state.exerciseSwaps || {}));
+            const localSwappedExercises = JSON.parse(JSON.stringify(state.swappedExercises || {}));
+            const localRevertedSwaps = JSON.parse(JSON.stringify(state.revertedMachineSwaps || {}));
+            const localSharedMachineDb = JSON.parse(JSON.stringify(state.sharedMachineDatabase || {}));
+            const localExerciseNotes = JSON.parse(JSON.stringify(state.exerciseNotes || {}));
 
             state = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), remote, {
               cloudDbUrl: keepUrl,
-              openImagePanels: currentOpenPanels
+              openImagePanels: currentOpenPanels,
+              pendingMachineSwapPreviews: {}
             });
 
             // Preserve signed-in local userProfile so cloud sync NEVER wipes out your login name!
@@ -1465,10 +1476,16 @@
             if (localAccounts) {
               state.accountsByEmail = Object.assign({}, state.accountsByEmail || {}, localAccounts);
             }
+            state.exerciseNotes = Object.assign({}, remote.exerciseNotes || {}, localExerciseNotes);
+            state.sharedMachineDatabase = Object.assign({}, remote.sharedMachineDatabase || {}, localSharedMachineDb);
+            state.exerciseSwaps = Object.assign({}, remote.exerciseSwaps || {}, localExerciseSwaps);
+            state.swappedExercises = Object.assign({}, remote.swappedExercises || {}, localSwappedExercises);
+            state.revertedMachineSwaps = Object.assign({}, remote.revertedMachineSwaps || {}, localRevertedSwaps);
             // Merge local sets and remote sets so neither is ever lost
             mergeWorkoutSnapshotsIntoCurrentState({ workoutLogs: localWorkoutLogs, pullupLogs: localPullupLogs });
             ensureFrancoisWeek1Data(state, false);
             syncProgressiveWeekState(state);
+            autoMigrateExerciseNotesToMachineSwaps();
 
             saveState(true);
             renderWorkoutView();
@@ -5891,17 +5908,19 @@
 
     function getStepVisualDiagramHtml(ex, meta, dayIdx = state.selectedDayIndex) {
       const panelKey = getExercisePanelKey(dayIdx, ex.id);
-      const isMachineActive = Boolean(ex && ex.isSwappedMachine);
+      const isMachineActive = Boolean(ex && (ex.isSwappedMachine || ex.isSwapped));
       const primaryVid = (ex && (ex.primaryVideoUrl || ex.videoUrl)) || 'https://www.youtube.com/watch?v=YXjhMV7uz4c';
       const altVid = (ex && ex.altVideoUrl) || primaryVid;
+      const altVid2 = (ex && ex.altVideoUrl2) || '';
       const searchUrl = (ex && ex.youtubeSearchUrl) || `https://www.youtube.com/results?search_query=${encodeURIComponent(((ex && ex.name) || 'gym machine') + ' proper form tutorial')}`;
       const formSetupText = (ex && (ex.formSetup || ex.notes)) || '';
+      const targetMuscleLabel = (ex && (ex.targetMuscles || ex.targetMuscle)) || '';
 
       return `
         <div class="bg-slate-950 border border-emerald-500/30 rounded-xl p-3 space-y-2.5">
           <div class="flex items-center justify-between border-b border-slate-800 pb-2">
             <div class="flex items-center gap-2">
-              <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Visual Setup &amp; Execution</span>
+              <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">${isMachineActive ? 'How to Use This Machine' : 'Visual Setup &amp; Execution'}</span>
               <span class="text-xs font-bold text-white">${isMachineActive ? ex.name : (meta && meta.equipLabel ? meta.equipLabel : 'Equipment')}</span>
             </div>
             <button type="button" data-hide-img="${ex.id}" data-day-idx="${dayIdx}" data-panel-key="${panelKey}" class="hide-img-btn px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-[11px] font-extrabold transition">
@@ -5915,7 +5934,7 @@
                 ${getEquipmentSvg(isMachineActive ? 'machine' : (meta ? meta.equipType : 'machine'))}
               </div>
               <div>
-                <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">STEP 1: SETUP &amp; MACHINE</span>
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">${isMachineActive ? 'HOW TO USE THIS MACHINE' : 'STEP 1: SETUP &amp; MACHINE'}</span>
                 <p class="text-[11px] text-slate-200 mt-1 leading-snug">${isMachineActive ? formSetupText : (meta ? meta.step1Cue : formSetupText)}</p>
               </div>
             </div>
@@ -5927,13 +5946,13 @@
                 </svg>
               </div>
               <div>
-                <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">STEP 2: EXECUTION CUES</span>
-                <p class="text-[11px] text-slate-200 mt-1 leading-snug">${isMachineActive && ex.targetMuscle ? `Target Muscles: ${ex.targetMuscle}. Maintain controlled 2-3s eccentric and full range of motion.` : (meta ? meta.step2Cue : formSetupText)}</p>
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">TARGET MUSCLES &amp; TEMPO</span>
+                <p class="text-[11px] text-slate-200 mt-1 leading-snug">${isMachineActive && targetMuscleLabel ? `Target Muscles: ${targetMuscleLabel}. Lower the weight slowly over 2 to 3 seconds on every rep.` : (meta ? meta.step2Cue : formSetupText)}</p>
               </div>
             </div>
           </div>
           <p class="text-[11px] text-slate-300 leading-relaxed pt-0.5">
-            <strong class="text-emerald-300">Form &amp; Setup Cues:</strong> ${formSetupText}
+            <strong class="text-emerald-300">How to Use This Machine:</strong> ${formSetupText}
           </p>
           <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-800/80">
             <a href="${primaryVid}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold transition">
@@ -5942,6 +5961,11 @@
             <a href="${altVid}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 text-[11px] font-extrabold transition">
               Alt Machine Video
             </a>
+            ${altVid2 ? `
+              <a href="${altVid2}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-[11px] font-extrabold transition">
+                Alt Machine Video 2
+              </a>
+            ` : ''}
             <a href="${searchUrl}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[11px] font-bold transition">
               Search YouTube for Exact Machine
             </a>
@@ -6247,7 +6271,7 @@
     }
 
     // =========================================================================
-    // COMPLETE 22-EXERCISE BIOMECHANICAL MACHINE & VERIFIED VIDEO DATABASE
+    // COMPLETE 22-EXERCISE MACHINE & VERIFIED VIDEO DATABASE (PLAIN ENGLISH)
     // =========================================================================
     const UNIVERSAL_MACHINE_SWAPS = [
       {
@@ -6259,20 +6283,24 @@
           {
             optionId: 'assisted_pull_up_machine',
             name: 'Assisted Pull-Up Machine (Knee/Foot Platform)',
+            subtypeLabel: 'Assisted Pull-Up Machine (Counterweight Pad)',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=CdO5BvP6Ti8',
             altVideoUrl: 'https://www.youtube.com/watch?v=gx0RWT7WbmA',
             restSeconds: 90,
-            targetMuscle: 'Latissimus Dorsi, Biceps & Mid-Back',
-            formSetup: '1. Select counterweight pin (note: more weight = more assistance). 2. Kneel or stand on the platform and take a slightly wider than shoulder-width overhand grip. 3. Depress your scapulae, pull chest to the bar driving elbows down to hips, and lower into a controlled 2-3s dead-hang stretch.'
+            targetMuscle: 'Upper Back, Lats & Biceps',
+            formSetup: '1. Pick your assistance pin weight (more weight gives you more help). 2. Kneel or stand on the pad and grip the top handles slightly wider than your shoulders. 3. Pull your chest up to the bar, then lower yourself slowly over 2 to 3 seconds.'
           },
           {
             optionId: 'lat_pulldown_machine_for_pullups',
             name: 'Lat Pulldown Machine',
+            subtypeLabel: 'Seated Lat Pulldown Machine',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
             altVideoUrl: 'https://www.youtube.com/watch?v=owMowIRkyvQ',
             restSeconds: 90,
-            targetMuscle: 'Latissimus Dorsi, Teres Major & Biceps',
-            formSetup: '1. Lock thighs snugly under the knee pad. 2. Take a slightly wider than shoulder-width overhand grip. 3. Depress shoulder blades and pull the bar down to your upper chest while keeping torso tall, then control the 2-3s eccentric stretch.'
+            targetMuscle: 'Upper Back, Lats & Biceps',
+            formSetup: '1. Sit down and lock your thighs snugly under the leg pad. 2. Grip the bar slightly wider than shoulder width. 3. Pull the bar down to your upper chest while keeping your chest tall, then let the bar rise slowly.'
           }
         ]
       },
@@ -6285,11 +6313,13 @@
           {
             optionId: 'seated_chest_press_machine',
             name: 'Seated Chest Press Machine',
+            subtypeLabel: 'Seated Chest Press Machine',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=YXjhMV7uz4c',
             altVideoUrl: 'https://www.youtube.com/watch?v=Qu7-ceCvq7w',
             restSeconds: 120,
-            targetMuscle: 'Mid/Lower Pectoralis Major, Anterior Delts & Triceps',
-            formSetup: '1. Adjust seat height so handles align with your mid-to-lower chest line. 2. Retract and depress shoulder blades firmly into the backrest. 3. Press handles to full extension without rounding shoulders forward, then lower over 2-3s to a deep pec stretch.'
+            targetMuscle: 'Chest, Front Shoulders & Triceps',
+            formSetup: '1. Adjust the seat so the handles line up with your mid-chest. 2. Sit with your back and shoulders pressed flat against the pad. 3. Push the handles forward until your arms are straight, then lower the weight slowly.'
           }
         ]
       },
@@ -6302,11 +6332,13 @@
           {
             optionId: 'incline_chest_press_machine',
             name: 'Incline Chest Press Machine',
+            subtypeLabel: 'Incline Chest Press Machine',
+            loadMode: 'plate_2sides',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=WxrKIPbeQP8',
             altVideoUrl: 'https://www.youtube.com/watch?v=i3e4CG5tnfs',
             restSeconds: 120,
-            targetMuscle: 'Clavicular (Upper) Pectoralis Major & Anterior Deltoids',
-            formSetup: '1. Set seat height so handles start at upper-chest / collarbone level. 2. Keep upper back arched slightly against the pad with scapulae retracted. 3. Press upward on the converging 30-45 degree path, pause briefly, and lower slowly.'
+            targetMuscle: 'Upper Chest & Front Shoulders',
+            formSetup: '1. Set the seat height so the handles start near your upper chest. 2. Keep your upper back pressed firmly against the backrest. 3. Press the handles up and forward, pause briefly, and lower them under control.'
           }
         ]
       },
@@ -6319,11 +6351,13 @@
           {
             optionId: 'pec_deck_machine_fly',
             name: 'Pec Deck / Seated Machine Chest Fly',
+            subtypeLabel: 'Pec Deck / Seated Chest Fly Machine',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=g3T7LsEeDWQ',
             altVideoUrl: 'https://www.youtube.com/watch?v=a9vQ_hwIksU',
             restSeconds: 90,
-            targetMuscle: 'Pectoralis Major (Sternal & Costal Fibers)',
-            formSetup: '1. Adjust seat so handles align with mid-chest when arms are abducted. 2. Keep a soft 10-degree bend in elbows with shoulders pinned down and back. 3. Bring hands together in a wide hug arc, squeeze pecs for 1-2s, and return slowly.'
+            targetMuscle: 'Chest & Inner Chest',
+            formSetup: '1. Adjust the seat so the handles are level with your mid-chest. 2. Keep a slight bend in your elbows with your back flat on the pad. 3. Bring the handles together in front of your chest, squeeze for 1 second, and open slowly.'
           }
         ]
       },
@@ -6336,11 +6370,13 @@
           {
             optionId: 'seated_chest_supported_row_machine',
             name: 'Seated Chest-Supported Machine / Cable Row',
+            subtypeLabel: 'Seated Chest-Supported Row Machine',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=GZbfZ033f74',
             altVideoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
             restSeconds: 120,
-            targetMuscle: 'Mid-Back (Rhomboids, Traps) & Latissimus Dorsi',
-            formSetup: '1. Adjust chest pad and seat height so your sternum braces comfortably against the pad. 2. Grip handles and drive elbows back past your torso while retracting shoulder blades. 3. Control the eccentric return until your lats and upper back protract fully.'
+            targetMuscle: 'Mid-Back & Lats',
+            formSetup: '1. Adjust the seat and chest pad so your chest rests comfortably against the cushion. 2. Hold the handles and pull your elbows straight back past your sides. 3. Squeeze your shoulder blades together for 1 second, then let your arms stretch forward slowly.'
           }
         ]
       },
@@ -6353,11 +6389,13 @@
           {
             optionId: 'converging_lat_pulldown_machine',
             name: 'Converging / Cable Lat Pulldown Machine',
+            subtypeLabel: 'Converging / Cable Lat Pulldown Machine',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
             altVideoUrl: 'https://www.youtube.com/watch?v=owMowIRkyvQ',
             restSeconds: 120,
-            targetMuscle: 'Latissimus Dorsi & Teres Major',
-            formSetup: '1. Lock thighs snugly under the knee pad. 2. Grip slightly wider than shoulder-width. 3. Pull elbows down and in toward your ribs while keeping chest tall, bringing the handles/bar to your upper chest.'
+            targetMuscle: 'Upper Back & Lats',
+            formSetup: '1. Sit down and secure your knees under the support pad. 2. Grip the handles or bar slightly wider than your shoulders. 3. Pull your elbows down toward your sides until the handles reach your upper chest, then return slowly.'
           }
         ]
       },
@@ -6370,45 +6408,51 @@
           {
             optionId: 'seated_shoulder_press_machine',
             name: 'Seated Shoulder Press Machine',
+            subtypeLabel: 'Seated Shoulder Press Machine',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=6v4nrRVySj0',
             altVideoUrl: 'https://www.youtube.com/watch?v=Gkk-6q7Rq-s',
             restSeconds: 120,
-            targetMuscle: 'Anterior & Lateral Deltoids, Triceps',
-            formSetup: '1. Set seat height so handles rest at ear/jaw level at the bottom. 2. Brace core and keep lower back flat against the pad. 3. Press vertically to lockout without shrugging traps, then lower over 2-3s.'
+            targetMuscle: 'Front & Side Shoulders, Triceps',
+            formSetup: '1. Adjust the seat so the handles start at ear or jaw level. 2. Keep your back flat against the pad and brace your core. 3. Press the handles overhead until your arms are straight, then lower them slowly.'
           }
         ]
       },
       {
         categoryId: 'lateral_deltoid_isolation',
-        label: 'Lateral Deltoid Isolation',
+        label: 'Side Shoulder Raise',
         keywords: ['lateral raise', 'side raise'],
         exactIds: ['mon_lat_raise', 'thu_db_lat'],
         options: [
           {
             optionId: 'seated_lateral_raise_machine',
             name: 'Seated Lateral Raise Machine',
+            subtypeLabel: 'Seated Lateral Raise Machine',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=NNAs8jx_zJI',
             altVideoUrl: 'https://www.youtube.com/watch?v=EL_xr3NVUbc',
             restSeconds: 60,
-            targetMuscle: 'Lateral (Medial) Deltoid',
-            formSetup: '1. Adjust seat so your shoulder joint aligns directly with the machine pivot axis. 2. Place elbows/forearms against the pads. 3. Lead with your elbows to raise arms to shoulder height (90 degrees), pause 1s, and lower under control.'
+            targetMuscle: 'Side Shoulders',
+            formSetup: '1. Adjust the seat so your shoulders line up with the machine pivot point. 2. Rest your elbows and forearms against the side pads. 3. Push your elbows out and up to shoulder height, pause 1 second, and lower slowly.'
           }
         ]
       },
       {
         categoryId: 'posterior_deltoid_upper_back',
-        label: 'Posterior Deltoid / Upper Back',
+        label: 'Rear Shoulders & Upper Back',
         keywords: ['face pull', 'rear delt', 'reverse fly'],
         exactIds: ['mon_face_pull', 'fri_rear_row', 'fri_face_pull'],
         options: [
           {
             optionId: 'reverse_pec_deck_machine',
             name: 'Reverse Pec Deck (Rear Delt Machine)',
+            subtypeLabel: 'Reverse Pec Deck (Rear Delt Machine)',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=O2J8Qs7Wl3U',
             altVideoUrl: 'https://www.youtube.com/watch?v=7tgx6QHB0-A',
             restSeconds: 60,
-            targetMuscle: 'Posterior Deltoids, Infraspinatus & Mid-Traps',
-            formSetup: '1. Set machine arms to the front-most notches and sit facing the chest pad at shoulder height. 2. Push the handles outward and back in a wide arc using the backs of your shoulders without pinching your upper traps.'
+            targetMuscle: 'Rear Shoulders & Upper Back',
+            formSetup: '1. Set the machine arms to the front position and sit facing the chest pad. 2. Hold the handles at shoulder height with your arms nearly straight. 3. Sweep your arms back in a wide arc, squeeze your rear shoulders, and return slowly.'
           }
         ]
       },
@@ -6421,11 +6465,13 @@
           {
             optionId: 'seated_tricep_extension_machine',
             name: 'Seated Tricep Extension Machine',
+            subtypeLabel: 'Seated Tricep Extension Machine',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=NNyuuN2sJb0',
             altVideoUrl: 'https://www.youtube.com/watch?v=1AFJTda1btg',
             restSeconds: 60,
-            targetMuscle: 'Triceps Brachii (Long & Lateral Heads)',
-            formSetup: '1. Adjust seat so your triceps rest flat on the angled pad with elbows aligned to the cam pivot. 2. Extend forearms to full lockout, contract triceps hard for 1s, and allow a full elbow-flexion stretch on the eccentric.'
+            targetMuscle: 'Triceps (Back of Arms)',
+            formSetup: '1. Adjust the seat so the backs of your upper arms rest flat on the pad. 2. Hold the handles with your elbows lined up with the machine hinge. 3. Straighten your arms completely, squeeze your triceps for 1 second, and bend back slowly.'
           }
         ]
       },
@@ -6438,28 +6484,32 @@
           {
             optionId: 'seated_tricep_dip_pushdown_machine',
             name: 'Seated Tricep Dip / Pushdown Machine',
+            subtypeLabel: 'Seated Tricep Dip / Pushdown Machine',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=8CvOC9Db3Yw',
             altVideoUrl: 'https://www.youtube.com/watch?v=2NOglxsG1wE',
             restSeconds: 60,
-            targetMuscle: 'Triceps Brachii (Lateral & Medial Heads)',
-            formSetup: '1. Sit tall with back against pad and grip handles with elbows tucked close to your sides. 2. Press handles downward to full elbow extension while keeping shoulders depressed, then bend elbows back to 90 degrees.'
+            targetMuscle: 'Triceps (Back of Arms)',
+            formSetup: '1. Sit tall with your back against the pad and grip the side handles. 2. Keep your elbows tucked close to your ribs. 3. Press the handles straight down until your arms lock out, then let them come back up slowly.'
           }
         ]
       },
       {
         categoryId: 'bicep_brachialis_curls',
-        label: 'Bicep & Brachialis Curls',
+        label: 'Bicep Curls',
         keywords: ['incline dumbbell curl', 'hammer curl', 'bicep curl', 'barbell curl', 'preacher curl'],
         exactIds: ['fri_inc_curl', 'fri_hammer'],
         options: [
           {
             optionId: 'seated_machine_preacher_bicep_curl',
             name: 'Seated Machine Preacher / Bicep Curl',
+            subtypeLabel: 'Seated Machine Preacher / Bicep Curl',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=eYrAV7rnol0',
             altVideoUrl: 'https://www.youtube.com/watch?v=Htw-s61mOw0',
             restSeconds: 60,
-            targetMuscle: 'Biceps Brachii & Brachialis',
-            formSetup: '1. Set seat height so armpits sit flush on top of the arm pad and elbows align with the pivot point. 2. Curl handles smoothly to peak contraction, hold 1s, and lower over 2-3s to full extension.'
+            targetMuscle: 'Biceps & Forearms',
+            formSetup: '1. Adjust the seat so the backs of your upper arms rest snugly on the angled pad. 2. Grip the handles and line your elbows up with the machine pivot. 3. Curl the handles up toward your shoulders, squeeze for 1 second, and lower slowly.'
           }
         ]
       },
@@ -6472,191 +6522,252 @@
           {
             optionId: 'standing_seated_leverage_shrug_machine',
             name: 'Standing / Seated Leverage Shrug Machine',
+            subtypeLabel: 'Standing / Seated Shrug Machine',
+            loadMode: 'plate_2sides',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=rFsSeClGnNA',
             altVideoUrl: 'https://www.youtube.com/watch?v=NJ8U95vMtZg',
             restSeconds: 60,
-            targetMuscle: 'Upper Trapezius & Levator Scapulae',
-            formSetup: '1. Grip the parallel machine handles with arms straight. 2. Elevate shoulders up and slightly inward toward your ears, hold peak contraction for 2 full seconds, and lower into a deep stretch.'
+            targetMuscle: 'Upper Traps & Neck Support',
+            formSetup: '1. Stand or sit tall and grip the side handles with straight arms. 2. Lift your shoulders straight up toward your ears and hold for 2 seconds. 3. Lower the handles slowly to feel a gentle stretch at the bottom.'
           }
         ]
       },
       {
         categoryId: 'bilateral_squat_pattern',
-        label: 'Bilateral Squat Pattern',
+        label: 'Two-Leg Squat / Leg Press',
         keywords: ['back squat', 'front squat', 'goblet squat', 'squat'],
         exactIds: ['tue_squat', 'thu_barbell_back_squat'],
         options: [
           {
             optionId: 'seated_leg_press_machine',
             name: 'Seated Leg Press Machine',
+            subtypeLabel: 'Seated Leg Press Machine',
+            loadMode: 'plate_2sides',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=nDh_BlnLCGc',
             altVideoUrl: 'https://www.youtube.com/watch?v=EotSw18oR9w',
             restSeconds: 150,
-            targetMuscle: 'Quadriceps, Gluteus Maximus & Adductors',
-            formSetup: '1. Sit with lower back and glutes wedged firmly against the pad. 2. Place feet hip-to-shoulder width apart on the platform. 3. Unlock safeties and lower sled until knees reach 90+ degrees without lumbar rounding, then drive through mid-foot.'
+            targetMuscle: 'Front Thighs (Quads) & Glutes',
+            formSetup: '1. Sit back with your hips and lower back pressed flat against the seat pad. 2. Place your feet shoulder-width apart on the footplate. 3. Lower the sled until your knees bend to 90 degrees, then push through your whole foot.'
           },
           {
             optionId: 'angled_hack_squat_machine',
             name: 'Angled Hack Squat Machine',
+            subtypeLabel: 'Angled Hack Squat Machine',
+            loadMode: 'plate_2sides',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=g9i05umL5vc',
             altVideoUrl: 'https://www.youtube.com/watch?v=0tn5K9NlCfo',
             restSeconds: 150,
-            targetMuscle: 'Quadriceps (Vasti) & Glutes',
-            formSetup: '1. Brace shoulders under pads and press entire back flat against the sled. 2. Place feet shoulder-width apart on the lower-to-mid platform. 3. Release handles, descend to full knee flexion, and drive up.'
+            targetMuscle: 'Front Thighs (Quads) & Glutes',
+            formSetup: '1. Rest your shoulders under the top pads and press your back flat against the sled. 2. Place your feet shoulder-width apart on the middle of the platform. 3. Release the safety handles, lower slowly to a 90-degree knee bend, and drive back up.'
           }
         ]
       },
       {
         categoryId: 'unilateral_leg_pattern',
-        label: 'Unilateral Leg Pattern',
+        label: 'Single-Leg Squat / Lunge',
         keywords: ['split squat', 'bulgarian', 'lunge', 'step up'],
         exactIds: ['tue_lunges', 'sat_bss', 'tue_walking_lunges'],
         options: [
           {
             optionId: 'single_leg_press_machine',
             name: 'Single-Leg Press Machine',
+            subtypeLabel: 'Single-Leg Press Machine',
+            loadMode: 'plate_2sides',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=LbKwZIbVYZI',
             altVideoUrl: 'https://www.youtube.com/watch?v=x4vaHXRfKrg',
             restSeconds: 120,
-            targetMuscle: 'Unilateral Quadriceps & Gluteus Maximus',
-            formSetup: '1. Place working foot centered on the sled platform and keep non-working leg planted safely on the floor. 2. Lower sled slowly until full knee and hip flexion on the working leg, then press to extension without locking the knee.'
+            targetMuscle: 'Front Thighs (Quads) & Glutes (One Leg at a Time)',
+            formSetup: '1. Sit with your back flat on the pad and place one foot in the center of the footplate. 2. Keep your other foot safely on the floor out of the way. 3. Lower the footplate until your working knee bends to 90 degrees, then push smoothly back up.'
           }
         ]
       },
       {
         categoryId: 'hip_hinge_posterior_chain',
-        label: 'Hip Hinge / Posterior Chain',
+        label: 'Hamstrings & Glutes Hinge',
         keywords: ['romanian deadlift', 'rdl', 'deadlift', 'good morning'],
         exactIds: ['tue_rdl', 'sat_deadlift', 'tue_barbell_rdl'],
         options: [
           {
             optionId: 'seated_hamstring_leg_curl_machine',
             name: 'Seated Hamstring Leg Curl Machine',
+            subtypeLabel: 'Seated Hamstring Leg Curl Machine',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=xdbEG3xGLI8',
             altVideoUrl: 'https://www.youtube.com/watch?v=_lgE0gPvbik',
             restSeconds: 90,
-            targetMuscle: 'Hamstrings (Biceps Femoris, Semitendinosus, Semimembranosus)',
-            formSetup: '1. Align knee joint with machine pivot and set lower pad just above the Achilles tendon. 2. Lock thigh pad tightly over quads and lean torso slightly forward to pre-stretch hamstrings. 3. Curl all the way down and hold 1s.'
+            targetMuscle: 'Back of Thighs (Hamstrings)',
+            formSetup: '1. Adjust the backrest so your knees line up with the machine hinge and the ankle pad sits just above your heels. 2. Lock the lap pad snugly over your thighs. 3. Curl your heels all the way down under the seat, pause 1 second, and return slowly.'
           },
           {
             optionId: 'back_hip_extension_45_machine',
             name: '45-Degree Back / Hip Extension Machine',
+            subtypeLabel: '45-Degree Back / Hip Extension Bench',
+            loadMode: 'plate_2sides',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=H8Swl1N-uis',
             altVideoUrl: 'https://www.youtube.com/watch?v=S1_eZIIZlIc',
             restSeconds: 90,
-            targetMuscle: 'Gluteus Maximus, Hamstrings & Erector Spinae',
-            formSetup: '1. Set pad height just below your hip crease so your pelvis can hinge freely. 2. Keep chin tucked and upper back slightly rounded to bias glutes/hamstrings, hinging down 90 degrees and driving hips into the pad at the top.'
+            targetMuscle: 'Glutes, Back of Thighs & Lower Back',
+            formSetup: '1. Set the hip pad just below your waistline so you can bend forward freely at the hips. 2. Cross your arms or hold a weight plate against your chest. 3. Lower your torso under control, then squeeze your glutes to come back up to a straight line.'
           }
         ]
       },
       {
         categoryId: 'knee_flexion',
-        label: 'Knee Flexion',
+        label: 'Leg Curls',
         keywords: ['leg curl', 'hamstring curl'],
         exactIds: ['sat_leg_curl'],
         options: [
           {
             optionId: 'seated_lying_leg_curl_machine',
             name: 'Seated / Lying Leg Curl Machine',
+            subtypeLabel: 'Seated / Lying Leg Curl Machine',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=xdbEG3xGLI8',
             altVideoUrl: 'https://www.youtube.com/watch?v=_lgE0gPvbik',
             restSeconds: 90,
-            targetMuscle: 'Hamstrings (Biceps Femoris, Semitendinosus & Semimembranosus)',
-            formSetup: '1. Align knee joint with machine pivot and position ankle roller just above heels. 2. Secure thigh pad or hold handles firmly, curl through full knee flexion, pause 1s, and lower over 2-3s.'
+            targetMuscle: 'Back of Thighs (Hamstrings)',
+            formSetup: '1. Line your knees up with the machine pivot and set the roller pad just above your heels. 2. Hold the side handles and lock the thigh pad down. 3. Bend your knees to pull the pad all the way back, hold 1 second, and release slowly.'
           }
         ]
       },
       {
         categoryId: 'knee_extension',
-        label: 'Knee Extension',
+        label: 'Leg Extensions',
         keywords: ['leg extension', 'quad extension'],
         exactIds: ['tue_leg_ext'],
         options: [
           {
             optionId: 'seated_leg_extension_machine',
             name: 'Seated Leg Extension Machine',
+            subtypeLabel: 'Seated Leg Extension Machine',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=iQ92TuvBqRo',
             altVideoUrl: 'https://www.youtube.com/watch?v=uM86QE59Tgc',
             restSeconds: 90,
-            targetMuscle: 'Quadriceps (Rectus Femoris & Vasti)',
-            formSetup: '1. Adjust backrest so knees align directly with the machine pivot axis and set shin pad above ankles. 2. Grip side handles, extend knees to full quad contraction for 1s, and lower under a 2-3s eccentric.'
+            targetMuscle: 'Front Thighs (Quads)',
+            formSetup: '1. Adjust the backrest so the backs of your knees sit flush against the seat edge. 2. Place the lower shin pad comfortably just above your ankles. 3. Straighten your legs all the way up, hold 1 second at the top, and lower slowly.'
           }
         ]
       },
       {
         categoryId: 'bent_knee_calf_raise',
-        label: 'Bent-Knee Calf Raise',
-        keywords: ['seated weighted calf raise', 'seated calf'],
+        label: 'Calf Raise / Calf Press',
+        keywords: ['seated weighted calf raise', 'seated calf', 'calf press'],
         exactIds: ['sat_seated_calf'],
         options: [
           {
-            optionId: 'seated_calf_raise_machine',
-            name: 'Seated Calf Raise Machine',
+            optionId: 'seated_calf_press_extension_machine',
+            name: 'Seated Calf Press / Extension Machine',
+            subtypeLabel: 'Seated Calf Press / Extension Machine (Footplate Push)',
+            loadMode: 'plate_2sides',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=ZmDiJvXx344',
+            altVideoUrl: 'https://www.youtube.com/watch?v=z0FtV_s_GVA',
+            altVideoUrl2: 'https://www.youtube.com/watch?v=1cvpm--Y-4I',
+            restSeconds: 60,
+            targetMuscle: 'Calves',
+            formSetup: '1. Sit back flat in the seat and adjust the seat position (e.g., setting #6) so your knees are slightly bent. 2. Place the balls of your feet on the bottom edge of the footplate. 3. Push the footplate forward with your toes, pause 1 second, and let your heels come back slowly for a full stretch.'
+          },
+          {
+            optionId: 'bent_knee_lever_calf_machine',
+            name: 'Bent-Knee Lever Calf Machine (Pads Over Knees)',
+            subtypeLabel: 'Bent-Knee Lever Calf Machine (Pads Over Knees)',
+            loadMode: 'plate_2sides',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=z1N8ZRsb4bg',
             altVideoUrl: 'https://www.youtube.com/watch?v=FsqE-g1C5fk',
             restSeconds: 60,
-            targetMuscle: 'Soleus & Gastrocnemius (Bent-Knee Plantarflexion)',
-            formSetup: '1. Adjust thigh pad height (e.g., setting #6) snugly over lower thighs with balls of feet on the step. 2. Disengage safety bar and lower heels for 2-3s into a deep soleus stretch. 3. Drive to full tiptoe contraction and pause 1-2s.'
+            targetMuscle: 'Calves',
+            formSetup: '1. Sit on the bench and place the balls of your feet on the step. 2. Lock the pad snugly over your lower thighs just above your knees. 3. Push up onto your tiptoes, hold 1 second, and lower your heels slowly.'
+          },
+          {
+            optionId: 'standing_calf_raise_machine_opt',
+            name: 'Standing Calf Raise Machine (Pads on Shoulders)',
+            subtypeLabel: 'Standing Calf Raise Machine (Pads on Shoulders)',
+            loadMode: 'pin_stack',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=_OewEscCsbo',
+            altVideoUrl: 'https://www.youtube.com/watch?v=yQZDGjL-xT4',
+            restSeconds: 60,
+            targetMuscle: 'Calves',
+            formSetup: '1. Stand with the balls of your feet on the step and your shoulders under the pads. 2. Keep your knees straight and let your heels drop for a 2-second stretch. 3. Press up high onto your toes, pause 1 second, and lower under control.'
           }
         ]
       },
       {
         categoryId: 'straight_leg_calf_raise',
-        label: 'Straight-Leg Calf Raise',
-        keywords: ['standing calf', 'calf press'],
+        label: 'Standing / Leg Press Calf Raise',
+        keywords: ['standing calf'],
         exactIds: ['tue_calf'],
         options: [
           {
             optionId: 'standing_leg_press_calf_raise_machine',
             name: 'Standing / Leg Press Calf Raise Machine',
+            subtypeLabel: 'Standing / Leg Press Calf Raise Machine',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=_OewEscCsbo',
             altVideoUrl: 'https://www.youtube.com/watch?v=yQZDGjL-xT4',
             restSeconds: 60,
-            targetMuscle: 'Gastrocnemius & Soleus (Straight-Knee Plantarflexion)',
-            formSetup: '1. Place shoulders under pads (or balls of feet on bottom edge of leg press sled) with knees straight but not hyperextended. 2. Lower heels into maximum ankle dorsiflexion for 2s, then press high onto toes and hold 1-2s.'
+            targetMuscle: 'Calves',
+            formSetup: '1. Place your shoulders under the pads (or place the balls of your feet on the bottom of the leg press footplate). 2. Keep your knees straight and lower your heels for a 2-second stretch. 3. Push up high onto your toes, hold 1 second, and lower slowly.'
+          },
+          {
+            optionId: 'seated_calf_press_for_standing_calf',
+            name: 'Seated Calf Press / Extension Machine',
+            subtypeLabel: 'Seated Calf Press / Extension Machine (Footplate Push)',
+            loadMode: 'plate_2sides',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=ZmDiJvXx344',
+            altVideoUrl: 'https://www.youtube.com/watch?v=z0FtV_s_GVA',
+            altVideoUrl2: 'https://www.youtube.com/watch?v=1cvpm--Y-4I',
+            restSeconds: 60,
+            targetMuscle: 'Calves',
+            formSetup: '1. Sit back flat in the seat and adjust the seat position (e.g., setting #6) so your knees are slightly bent. 2. Place the balls of your feet on the bottom edge of the footplate. 3. Push the footplate forward with your toes, pause 1 second, and let your heels come back slowly for a full stretch.'
           }
         ]
       },
       {
         categoryId: 'glute_abduction_hip_thrust',
-        label: 'Glute Abduction / Hip Thrust',
+        label: 'Glutes & Hips Machine',
         keywords: ['hip abduction', 'abductor', 'hip thrust', 'glute bridge'],
         exactIds: ['sat_abduction', 'sat_hip_thrust'],
         options: [
           {
             optionId: 'seated_hip_abduction_machine',
             name: 'Seated Hip Abduction Machine',
+            subtypeLabel: 'Seated Hip Abduction Machine',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=tu4o4quPv2k',
             altVideoUrl: 'https://www.youtube.com/watch?v=01HilwRf8m8',
             restSeconds: 60,
-            targetMuscle: 'Gluteus Medius, Gluteus Minimus & Upper Glutes',
-            formSetup: '1. Sit with outer knees against the pads and adjust starting width to a comfortable stretch. 2. Drive knees outward in a controlled arc, hold peak abduction for 1-2s, and return slowly.'
+            targetMuscle: 'Outer Glutes & Hips',
+            formSetup: '1. Sit in the seat with the outsides of your knees resting against the pads. 2. Push your knees outward as wide as comfortable and hold for 1 second. 3. Bring your knees back in slowly without letting the weight stack slam.'
           },
           {
             optionId: 'hip_thrust_glute_drive_machine',
             name: 'Hip Thrust / Glute Drive Machine',
+            subtypeLabel: 'Hip Thrust / Glute Drive Machine (Plate-Loaded)',
+            loadMode: 'plate_2sides',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=V74XWj9FXAc',
             altVideoUrl: 'https://www.youtube.com/watch?v=tztHvSLdXLA',
             restSeconds: 120,
-            targetMuscle: 'Gluteus Maximus & Posterior Chain',
-            formSetup: '1. Rest upper back against the angled pad and secure the padded hip belt across your pelvis. 2. Plant feet so shins are vertical at top lockout, drive through heels to full hip extension, and squeeze glutes for 1-2s.'
+            targetMuscle: 'Glutes & Hips',
+            formSetup: '1. Rest your upper back on the back pad and buckle the padded belt snugly across your hips. 2. Place your feet flat on the footplate so your shins are vertical at the top. 3. Push through your heels to lift your hips, squeeze your glutes for 1 to 2 seconds, and lower slowly.'
           }
         ]
       },
       {
         categoryId: 'core_flexion',
-        label: 'Core Flexion',
+        label: 'Abdominal Crunch Machine',
         keywords: ['cable abdominal crunch', 'abdominal crunch', 'ab crunch', 'core', 'side plank', 'dead bug'],
         exactIds: ['cable_ab_crunch', 'tue_side_plank', 'wed_dead_bug', 'sun_cardio'],
         options: [
           {
             optionId: 'seated_abdominal_crunch_machine',
             name: 'Seated Abdominal Crunch Machine',
+            subtypeLabel: 'Seated Abdominal Crunch Machine',
+            loadMode: 'pin_stack',
             primaryVideoUrl: 'https://www.youtube.com/watch?v=mnRhbUB3Fjs',
             altVideoUrl: 'https://www.youtube.com/watch?v=3zJxX6PvwCc',
             restSeconds: 60,
-            targetMuscle: 'Rectus Abdominis & Obliques (Spinal Flexion)',
-            formSetup: '1. Adjust seat height so the upper pad/handles rest comfortably at upper chest/shoulder level. 2. Exhale and curl your ribcage down toward your pelvis (rounding your spine rather than hinging at the hips), hold 1s, and return slowly.'
+            targetMuscle: 'Abs & Core',
+            formSetup: '1. Sit in the machine and hold the top handles or rest your chest against the upper pad. 2. Breathe out and curl your ribs down toward your hips. 3. Pause 1 second at the bottom squeeze, then sit back up slowly.'
           }
         ]
       }
@@ -6708,12 +6819,110 @@
       return map;
     }
 
+    function upsertSharedMachineDatabase(entry) {
+      if (!state || typeof state !== 'object') return null;
+      if (!state.sharedMachineDatabase || typeof state.sharedMachineDatabase !== 'object') {
+        state.sharedMachineDatabase = {};
+      }
+      const key = String((entry && (entry.originalExKey || entry.canonicalId || entry.machineId)) || '').trim();
+      if (!key) return null;
+      const record = {
+        machineId: entry.machineId || key,
+        originalExKey: key,
+        machineName: entry.machineName || entry.name || 'Gym Machine',
+        machineSubtype: entry.machineSubtype || entry.machineName || entry.name || 'Gym Machine',
+        loadMode: entry.loadMode === 'pin_stack' ? 'pin_stack' : 'plate_2sides',
+        simpleSteps: entry.simpleSteps || entry.formSetup || '',
+        targetMuscles: entry.targetMuscles || entry.targetMuscle || 'Target Muscles',
+        videoUrl: entry.videoUrl || entry.primaryVideoUrl || 'https://www.youtube.com/watch?v=ZmDiJvXx344',
+        altVideoUrl: entry.altVideoUrl || entry.videoUrl || entry.primaryVideoUrl || '',
+        altVideoUrl2: entry.altVideoUrl2 || '',
+        verifiedByUser: true,
+        updatedAt: new Date().toISOString()
+      };
+      state.sharedMachineDatabase[key] = record;
+      return record;
+    }
+
+    function stripBarbellWeightFromMachineSets(exId, barWeightToStripLbs = 45) {
+      if (!state || !state.workoutLogs || !exId) return 0;
+      const escapedId = String(exId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const keyRegex = new RegExp(`^(?:w\\d+_)?\\d+_${escapedId}_\\d+$`);
+      let count = 0;
+      Object.keys(state.workoutLogs).forEach(k => {
+        if (!keyRegex.test(k)) return;
+        const entry = state.workoutLogs[k];
+        if (!entry || typeof entry !== 'object') return;
+        const unit = entry.unit === 'kg' ? 'kg' : 'lbs';
+        const barVal = unit === 'kg' ? 20 : barWeightToStripLbs;
+        const w = parseFloat(String(entry.weight || ''));
+        if (!isNaN(w) && w > barVal) {
+          entry.weight = String(+(w - barVal).toFixed(2));
+          count++;
+        }
+      });
+      if (state.barbellConfig && state.barbellConfig[exId]) {
+        state.barbellConfig[exId].barWeightLbs = 0;
+        state.barbellConfig[exId].barWeightKg = 0;
+      }
+      return count;
+    }
+
     function autoMigrateExerciseNotesToMachineSwaps() {
-      if (!state || typeof state !== 'object') return;
+      if (!state || typeof state !== 'object') return false;
       if (!state.exerciseSwaps || typeof state.exerciseSwaps !== 'object') state.exerciseSwaps = {};
       if (!state.revertedMachineSwaps || typeof state.revertedMachineSwaps !== 'object') state.revertedMachineSwaps = {};
+      if (!state.sharedMachineDatabase || typeof state.sharedMachineDatabase !== 'object') state.sharedMachineDatabase = {};
+      if (!state.machineBarStripped || typeof state.machineBarStripped !== 'object') state.machineBarStripped = {};
+      if (!state.pendingMachineSwapPreviews || typeof state.pendingMachineSwapPreviews !== 'object') {
+        state.pendingMachineSwapPreviews = {};
+      }
+
       const notesMap = (state.exerciseNotes && typeof state.exerciseNotes === 'object') ? state.exerciseNotes : {};
       const catalogById = getAllKnownExercisesByIdMap();
+      let didChange = false;
+
+      // Upgrade any existing sat_seated_calf swap that used the old knee-lever video (z1N8ZRsb4bg) to Seated Calf Press / Extension Machine (ZmDiJvXx344)
+      const existingCalf = state.exerciseSwaps.sat_seated_calf;
+      if (
+        existingCalf &&
+        (existingCalf.videoUrl === 'https://www.youtube.com/watch?v=z1N8ZRsb4bg' ||
+          existingCalf.name === 'Seated Calf Raise Machine')
+      ) {
+        const calfCat = UNIVERSAL_MACHINE_SWAPS.find(c => c.categoryId === 'bent_knee_calf_raise');
+        const calfOpt0 = calfCat && calfCat.options[0];
+        if (calfOpt0) {
+          state.exerciseSwaps.sat_seated_calf = Object.assign({}, existingCalf, {
+            canonicalId: 'sat_seated_calf',
+            categoryId: calfCat.categoryId,
+            optionIndex: 0,
+            optionId: calfOpt0.optionId,
+            name: calfOpt0.name,
+            loadMode: calfOpt0.loadMode,
+            primaryVideoUrl: calfOpt0.primaryVideoUrl,
+            altVideoUrl: calfOpt0.altVideoUrl,
+            altVideoUrl2: calfOpt0.altVideoUrl2 || '',
+            videoUrl: calfOpt0.primaryVideoUrl,
+            restSeconds: calfOpt0.restSeconds,
+            targetMuscle: calfOpt0.targetMuscle,
+            formSetup: calfOpt0.formSetup,
+            scope: 'all'
+          });
+          upsertSharedMachineDatabase({
+            originalExKey: 'sat_seated_calf',
+            machineId: calfOpt0.optionId,
+            machineName: calfOpt0.name,
+            machineSubtype: calfOpt0.subtypeLabel || calfOpt0.name,
+            loadMode: calfOpt0.loadMode,
+            simpleSteps: calfOpt0.formSetup,
+            targetMuscles: calfOpt0.targetMuscle,
+            videoUrl: calfOpt0.primaryVideoUrl,
+            altVideoUrl: calfOpt0.altVideoUrl,
+            altVideoUrl2: calfOpt0.altVideoUrl2 || ''
+          });
+          didChange = true;
+        }
+      }
 
       Object.keys(notesMap).forEach(noteKey => {
         const noteEntry = notesMap[noteKey];
@@ -6724,36 +6933,78 @@
         const hasMachinePhoto = photoVal.length > 0;
         if (!mentionsMachine && !hasMachinePhoto) return;
         if (state.revertedMachineSwaps[noteKey]) return;
-        if (state.exerciseSwaps[noteKey]) return;
 
         const exStub = catalogById[noteKey] || { id: noteKey, name: noteKey };
         const matchedCat = matchExerciseToUniversalMachineSwaps(exStub);
-        const optIdx = getDefaultUniversalOptionIndexForExercise(exStub, matchedCat);
+        let optIdx = getDefaultUniversalOptionIndexForExercise(exStub, matchedCat);
+        if (noteKey === 'sat_seated_calf' && /lever|knee\s*pad/i.test(textVal)) {
+          optIdx = 1;
+        }
         const chosenOpt = matchedCat.options[optIdx] || matchedCat.options[0];
         if (!chosenOpt) return;
 
-        state.exerciseSwaps[noteKey] = {
-          canonicalId: noteKey,
-          categoryId: matchedCat.categoryId,
-          optionIndex: optIdx,
-          optionId: chosenOpt.optionId,
-          name: chosenOpt.name,
-          primaryVideoUrl: chosenOpt.primaryVideoUrl,
-          altVideoUrl: chosenOpt.altVideoUrl,
-          videoUrl: chosenOpt.primaryVideoUrl,
-          restSeconds: chosenOpt.restSeconds,
-          targetMuscle: chosenOpt.targetMuscle,
-          formSetup: chosenOpt.formSetup,
-          scope: 'all',
-          autoMigrated: true
-        };
+        if (!state.exerciseSwaps[noteKey]) {
+          state.exerciseSwaps[noteKey] = {
+            canonicalId: noteKey,
+            categoryId: matchedCat.categoryId,
+            optionIndex: optIdx,
+            optionId: chosenOpt.optionId,
+            name: chosenOpt.name,
+            loadMode: chosenOpt.loadMode || 'plate_2sides',
+            primaryVideoUrl: chosenOpt.primaryVideoUrl,
+            altVideoUrl: chosenOpt.altVideoUrl,
+            altVideoUrl2: chosenOpt.altVideoUrl2 || '',
+            videoUrl: chosenOpt.primaryVideoUrl,
+            restSeconds: chosenOpt.restSeconds,
+            targetMuscle: chosenOpt.targetMuscle,
+            formSetup: chosenOpt.formSetup,
+            scope: 'all',
+            autoMigrated: true
+          };
+          didChange = true;
+        }
+
+        const activeSw = state.exerciseSwaps[noteKey];
+        upsertSharedMachineDatabase({
+          originalExKey: noteKey,
+          machineId: activeSw.optionId || chosenOpt.optionId,
+          machineName: activeSw.name || chosenOpt.name,
+          machineSubtype: chosenOpt.subtypeLabel || chosenOpt.name,
+          loadMode: activeSw.loadMode || chosenOpt.loadMode || 'plate_2sides',
+          simpleSteps: activeSw.formSetup || chosenOpt.formSetup,
+          targetMuscles: activeSw.targetMuscle || chosenOpt.targetMuscle,
+          videoUrl: activeSw.videoUrl || chosenOpt.primaryVideoUrl,
+          altVideoUrl: activeSw.altVideoUrl || chosenOpt.altVideoUrl,
+          altVideoUrl2: activeSw.altVideoUrl2 || chosenOpt.altVideoUrl2 || ''
+        });
       });
+
+      // Automatically strip 45 lb barbell from sets of any exercise swapped to a Machine
+      Object.keys(state.exerciseSwaps).forEach(swapKey => {
+        const sw = state.exerciseSwaps[swapKey];
+        if (!sw || sw.disabled) return;
+        const cid = sw.canonicalId || swapKey;
+        if (typeof BARBELL_EX_IDS !== 'undefined' && Array.isArray(BARBELL_EX_IDS) && BARBELL_EX_IDS.includes(cid)) {
+          if (!state.machineBarStripped[cid]) {
+            stripBarbellWeightFromMachineSets(cid, 45);
+            state.machineBarStripped[cid] = true;
+            didChange = true;
+          }
+        }
+        if (state.barbellConfig && state.barbellConfig[cid]) {
+          state.barbellConfig[cid].barWeightLbs = 0;
+          state.barbellConfig[cid].barWeightKg = 0;
+        }
+      });
+
+      return didChange;
     }
 
     function getEffectiveExercise(week, dayIdx, exIdx, rawEx) {
       if (!rawEx || typeof rawEx !== 'object') return rawEx;
       if (!state.exerciseSwaps || typeof state.exerciseSwaps !== 'object') state.exerciseSwaps = {};
       if (!state.revertedMachineSwaps || typeof state.revertedMachineSwaps !== 'object') state.revertedMachineSwaps = {};
+      if (!state.sharedMachineDatabase || typeof state.sharedMachineDatabase !== 'object') state.sharedMachineDatabase = {};
 
       const canonicalId = String(rawEx.originalId || rawEx.id || '').trim();
       const cleanOriginalName = String(rawEx.originalName || rawEx.name || '').replace(/^[A-Z]\d+[\.\:\-\)]\s*/i, '').trim();
@@ -6784,8 +7035,10 @@
               optionIndex: optIdx,
               optionId: chosenOpt.optionId,
               name: chosenOpt.name,
+              loadMode: chosenOpt.loadMode || 'plate_2sides',
               primaryVideoUrl: chosenOpt.primaryVideoUrl,
               altVideoUrl: chosenOpt.altVideoUrl,
+              altVideoUrl2: chosenOpt.altVideoUrl2 || '',
               videoUrl: chosenOpt.primaryVideoUrl,
               restSeconds: chosenOpt.restSeconds,
               targetMuscle: chosenOpt.targetMuscle,
@@ -6799,23 +7052,54 @@
 
       const matchedCat = matchExerciseToUniversalMachineSwaps({ id: canonicalId, name: cleanOriginalName });
       const defaultOptIdx = getDefaultUniversalOptionIndexForExercise({ id: canonicalId, name: cleanOriginalName }, matchedCat);
+      const sharedDbEntry = state.sharedMachineDatabase[canonicalId] || null;
 
       const activeSwap =
         state.exerciseSwaps[slotKey] ||
         state.exerciseSwaps[altSlotKey] ||
         state.exerciseSwaps[canonicalId] ||
         (state.swappedExercises && (state.swappedExercises[slotKey] || state.swappedExercises[altSlotKey])) ||
+        (!state.revertedMachineSwaps[canonicalId] && !state.revertedMachineSwaps[slotKey] ? sharedDbEntry : null) ||
         null;
 
       if (activeSwap && !activeSwap.disabled) {
         const optIdx = typeof activeSwap.optionIndex === 'number' ? activeSwap.optionIndex : defaultOptIdx;
         const catOption = matchedCat.options[optIdx] || matchedCat.options[0];
-        const machineName = activeSwap.name || activeSwap.suggestedMachineExercise || (catOption ? catOption.name : cleanOriginalName);
-        const primaryVid = activeSwap.primaryVideoUrl || activeSwap.videoUrl || (catOption ? catOption.primaryVideoUrl : rawEx.videoUrl);
-        const altVid = activeSwap.altVideoUrl || (catOption ? catOption.altVideoUrl : primaryVid);
+        const machineName =
+          activeSwap.name ||
+          activeSwap.machineName ||
+          activeSwap.suggestedMachineExercise ||
+          (sharedDbEntry && sharedDbEntry.machineName) ||
+          (catOption ? catOption.name : cleanOriginalName);
+        const primaryVid =
+          activeSwap.primaryVideoUrl ||
+          activeSwap.videoUrl ||
+          (sharedDbEntry && sharedDbEntry.videoUrl) ||
+          (catOption ? catOption.primaryVideoUrl : rawEx.videoUrl);
+        const altVid =
+          activeSwap.altVideoUrl ||
+          (sharedDbEntry && sharedDbEntry.altVideoUrl) ||
+          (catOption ? catOption.altVideoUrl : primaryVid);
+        const altVid2 =
+          activeSwap.altVideoUrl2 ||
+          (sharedDbEntry && sharedDbEntry.altVideoUrl2) ||
+          (catOption && catOption.altVideoUrl2 ? catOption.altVideoUrl2 : '');
+        const cfgLoadMode = state.barbellConfig && state.barbellConfig[canonicalId] && state.barbellConfig[canonicalId].machineLoadMode;
+        const loadMode = (cfgLoadMode || activeSwap.loadMode || (sharedDbEntry && sharedDbEntry.loadMode) || (catOption ? catOption.loadMode : 'plate_2sides')) === 'pin_stack'
+          ? 'pin_stack'
+          : 'plate_2sides';
         const restSecVal = Number(activeSwap.restSeconds || activeSwap.restSec || (catOption ? catOption.restSeconds : rawEx.restSec)) || 90;
-        const formSetupStr = activeSwap.formSetup || activeSwap.definitionAndCues || (catOption ? catOption.formSetup : rawEx.notes);
-        const targetMuscleStr = activeSwap.targetMuscle || activeSwap.targetMuscles || (catOption ? catOption.targetMuscle : '');
+        const formSetupStr =
+          activeSwap.formSetup ||
+          activeSwap.simpleSteps ||
+          activeSwap.definitionAndCues ||
+          (sharedDbEntry && sharedDbEntry.simpleSteps) ||
+          (catOption ? catOption.formSetup : rawEx.notes);
+        const targetMuscleStr =
+          activeSwap.targetMuscle ||
+          activeSwap.targetMuscles ||
+          (sharedDbEntry && sharedDbEntry.targetMuscles) ||
+          (catOption ? catOption.targetMuscle : '');
         const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(machineName + ' proper form tutorial')}`;
         const resolvedSwapKey = state.exerciseSwaps[slotKey]
           ? slotKey
@@ -6829,12 +7113,16 @@
           originalVideoUrl: rawEx.videoUrl || rawEx.video || '',
           originalNotes: rawEx.notes || rawEx.setup || '',
           name: machineName,
+          isSwapped: true,
           isSwappedMachine: true,
+          loadMode,
+          barWeight: 0,
           machineBadge: `Machine Active • Swapped from ${cleanOriginalName}`,
           videoUrl: primaryVid,
           video: primaryVid,
           primaryVideoUrl: primaryVid,
           altVideoUrl: altVid,
+          altVideoUrl2: altVid2,
           youtubeSearchUrl: searchUrl,
           formSetup: formSetupStr,
           notes: formSetupStr,
@@ -6858,6 +7146,7 @@
         originalId: canonicalId,
         originalName: cleanOriginalName,
         name: cleanOriginalName,
+        isSwapped: false,
         isSwappedMachine: false,
         availableMachineOptions: matchedCat.options,
         selectedOptionIdx: defaultOptIdx,
@@ -6866,18 +7155,31 @@
       };
     }
 
-    function verifyAndBuildMachineExerciseSwap(originalEx, customMachineNote, explicitOptionIdx, explicitScope) {
+    function verifyAndBuildMachineExerciseSwap(originalEx, customMachineNote, explicitOptionIdx, explicitScope, explicitLoadMode, customVideoOverride) {
       const exId = String((originalEx && (originalEx.originalId || originalEx.id)) || '').trim();
       const origName = String((originalEx && (originalEx.originalName || originalEx.name)) || 'Current Exercise').trim();
       const matchedCat = matchExerciseToUniversalMachineSwaps({ id: exId, name: origName });
       const defaultOptIdx = getDefaultUniversalOptionIndexForExercise({ id: exId, name: origName }, matchedCat);
-      const optIdx = typeof explicitOptionIdx === 'number'
+      let optIdx = typeof explicitOptionIdx === 'number'
         ? Math.max(0, Math.min(matchedCat.options.length - 1, explicitOptionIdx))
         : defaultOptIdx;
+      const noteText = String(customMachineNote || '').trim();
+      if (explicitOptionIdx === undefined && exId === 'sat_seated_calf' && /lever|knee\s*pad/i.test(noteText)) {
+        optIdx = 1;
+      }
       const chosenOpt = matchedCat.options[optIdx] || matchedCat.options[0];
       const scopeVal = explicitScope === 'today' ? 'today' : 'all';
+      const loadMode = explicitLoadMode === 'pin_stack' || explicitLoadMode === 'plate_2sides'
+        ? explicitLoadMode
+        : (chosenOpt.loadMode || 'plate_2sides');
       const displayMachineName = chosenOpt.name;
+      const primaryVideo = (customVideoOverride && customVideoOverride.trim()) ? customVideoOverride.trim() : chosenOpt.primaryVideoUrl;
       const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(displayMachineName + ' proper form tutorial')}`;
+      const defaultCandidateVideos = [
+        { title: `${chosenOpt.name} — Primary Form Tutorial`, url: chosenOpt.primaryVideoUrl },
+        ...(chosenOpt.altVideoUrl ? [{ title: `${chosenOpt.name} — Alt Angle Form Guide`, url: chosenOpt.altVideoUrl }] : []),
+        ...(chosenOpt.altVideoUrl2 ? [{ title: `${chosenOpt.name} — Quick Setup Guide`, url: chosenOpt.altVideoUrl2 }] : [])
+      ];
 
       return {
         isMatch: true,
@@ -6889,41 +7191,156 @@
         optionId: chosenOpt.optionId,
         availableOptions: matchedCat.options,
         scope: scopeVal,
+        loadMode,
         machineExerciseId: chosenOpt.optionId,
         name: displayMachineName,
+        machineSubtype: chosenOpt.subtypeLabel || displayMachineName,
         suggestedMachineExercise: displayMachineName,
         targetMuscle: chosenOpt.targetMuscle,
         targetMuscles: chosenOpt.targetMuscle,
         formSetup: chosenOpt.formSetup,
+        simpleSteps: chosenOpt.formSetup,
         definitionAndCues: chosenOpt.formSetup,
-        primaryVideoUrl: chosenOpt.primaryVideoUrl,
+        primaryVideoUrl: primaryVideo,
         altVideoUrl: chosenOpt.altVideoUrl,
-        videoUrl: chosenOpt.primaryVideoUrl,
+        altVideoUrl2: chosenOpt.altVideoUrl2 || '',
+        videoUrl: primaryVideo,
         youtubeSearchUrl: searchUrl,
+        liveVideoResults: defaultCandidateVideos,
         restSeconds: chosenOpt.restSeconds,
         restSec: chosenOpt.restSeconds,
         restLabel: `${chosenOpt.restSeconds}s rest`,
         sets: (originalEx && originalEx.sets) || 3,
         reps: (originalEx && originalEx.reps) || '8-12',
         pipelineStep: 3,
-        pipelineText: `1. Scanning machine geometry... -> 2. Verifying biomechanical equivalence with ${origName}... -> 3. Attaching verified machine form video & setup cues...`,
-        confirmationHeadline: `Biomechanical Match Confirmed: ${displayMachineName} targets the same muscles as ${origName}. Replace today's exercise card?`
+        pipelineText: `1. Scanning machine photo and seat setup... -> 2. Checking machine type and finding matching video for ${origName}... -> 3. Attaching verified machine form video & setup cues...`,
+        confirmationHeadline: `Machine Match Confirmed: ${displayMachineName} targets the same muscles as ${origName}. Replace today's exercise card?`
       };
+    }
+
+    async function analyzeMachinePhotoAndSearchVideosLive(exObj, customNote, photoDataUrl, currentPreview) {
+      const exId = String((exObj && (exObj.originalId || exObj.id)) || '').trim();
+      const origName = String((exObj && (exObj.originalName || exObj.name)) || 'Current Exercise').trim();
+      const matchedCat = matchExerciseToUniversalMachineSwaps({ id: exId, name: origName });
+      let updatedPreview = currentPreview || verifyAndBuildMachineExerciseSwap(exObj, customNote, undefined, 'all');
+
+      // 1. Live YouTube Search via Piped public API (with instant fallback to curated subtype videos)
+      const searchQuery = `${updatedPreview.suggestedMachineExercise} how to use gym machine form tutorial`;
+      try {
+        const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timer = ctrl ? setTimeout(() => ctrl.abort(), 3200) : null;
+        const ytRes = await fetch(
+          `https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(searchQuery)}&filter=videos`,
+          ctrl ? { signal: ctrl.signal } : {}
+        );
+        if (timer) clearTimeout(timer);
+        if (ytRes && ytRes.ok) {
+          const ytJson = await ytRes.json();
+          const items = Array.isArray(ytJson && ytJson.items) ? ytJson.items : [];
+          const liveVids = items
+            .filter(it => it && typeof it.url === 'string' && it.url.includes('watch?v='))
+            .slice(0, 3)
+            .map(it => ({
+              title: String(it.title || updatedPreview.suggestedMachineExercise).slice(0, 68),
+              url: it.url.startsWith('http') ? it.url : `https://www.youtube.com${it.url}`
+            }));
+          if (liveVids.length > 0) {
+            const merged = [... updatedPreview.liveVideoResults];
+            liveVids.forEach(lv => {
+              if (!merged.some(m => m.url === lv.url)) merged.push(lv);
+            });
+            updatedPreview.liveVideoResults = merged.slice(0, 5);
+          }
+        }
+      } catch (e) {
+        // Fallback to pre-verified subtype tutorials
+      }
+
+      // 2. If a machine photo is attached, inspect exact machine subtype (footplate press vs knee pad lever, plate-loaded vs pin stack) via Gemini 3.8 Flash
+      if (photoDataUrl && photoDataUrl.startsWith('data:image/')) {
+        try {
+          const base64Part = photoDataUrl.split(',')[1] || '';
+          const mimeMatch = photoDataUrl.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/);
+          const mimeType = (mimeMatch && mimeMatch[1]) || 'image/jpeg';
+          const optionsSummary = matchedCat.options
+            .map((o, idx) => `Option ${idx}: ${o.name} (${o.subtypeLabel || o.name}, loadMode=${o.loadMode})`)
+            .join('; ');
+          const promptText =
+            `Analyze this gym machine photo for replacing "${origName}". ` +
+            `Look closely at the seat, footplate, knee pads, handles, and whether it uses weight plates on horns (plate_2sides) or a selectorized pin stack (pin_stack). ` +
+            `Available options: ${optionsSummary}. ` +
+            `Return ONLY valid JSON: {"optionIndex": number, "loadMode": "plate_2sides" | "pin_stack", "detectedSubtype": string}.`;
+          const contentsPayload = [
+            {
+              role: 'user',
+              parts: [
+                { text: promptText },
+                { inlineData: { mimeType, data: base64Part } }
+              ]
+            }
+          ];
+          let rawTxt = '';
+          const aiResp = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'gemini-3.8-flash',
+              enableGoogleSearch: true,
+              tools: [{ googleSearch: {} }],
+              imageBase64: photoDataUrl,
+              mimeType,
+              prompt: promptText,
+              contents: contentsPayload
+            })
+          });
+          if (aiResp && aiResp.ok) {
+            const aiData = await aiResp.json();
+            rawTxt = String((aiData && (aiData.text || aiData.reply)) || '');
+          }
+          if (!rawTxt && state.geminiApiKeyLocal) {
+            const directUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(state.geminiApiKeyLocal)}`;
+            const directResp = await fetch(directUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: contentsPayload,
+                tools: [{ googleSearch: {} }]
+              })
+            });
+            if (directResp && directResp.ok) {
+              const directData = await directResp.json();
+              rawTxt = String(directData?.candidates?.[0]?.content?.parts?.[0]?.text || '');
+            }
+          }
+          const jsonMatch = rawTxt.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (typeof parsed.optionIndex === 'number' && parsed.optionIndex >= 0 && parsed.optionIndex < matchedCat.options.length) {
+              const nextLoad = parsed.loadMode === 'pin_stack' || parsed.loadMode === 'plate_2sides' ? parsed.loadMode : undefined;
+              updatedPreview = verifyAndBuildMachineExerciseSwap(exObj, customNote, parsed.optionIndex, updatedPreview.scope, nextLoad);
+            }
+          }
+        } catch (err) {
+          // Graceful fallback to local subtype matcher
+        }
+      }
+
+      return updatedPreview;
     }
 
     function runDeliberateAiVisionPipeline(exId, origName, onComplete) {
       const steps = [
-        { step: 1, pct: 33, text: '1. Scanning machine geometry...' },
-        { step: 2, pct: 67, text: `2. Verifying biomechanical equivalence with ${origName}...` },
+        { step: 1, pct: 33, text: '1. Scanning machine photo and seat setup...' },
+        { step: 2, pct: 67, text: `2. Checking machine type and finding matching video for ${origName}...` },
         { step: 3, pct: 100, text: '3. Attaching verified machine form video & setup cues...' }
       ];
-      const statusBox = document.querySelector(`[data-ai-vision-pipeline="${exId}"]`);
-      const statusTextEl = document.querySelector(`[data-ai-vision-step-text="${exId}"]`);
-      const statusFillEl = document.querySelector(`[data-ai-vision-step-fill="${exId}"]`);
-      if (statusBox) statusBox.classList.remove('hidden');
-
       steps.forEach((st, idx) => {
         setTimeout(() => {
+          if (!state.pendingMachineSwapPreviews || !state.pendingMachineSwapPreviews[exId]) return;
+          const statusBox = document.querySelector(`[data-ai-vision-pipeline="${exId}"]`);
+          const statusTextEl = document.querySelector(`[data-ai-vision-step-text="${exId}"]`);
+          const statusFillEl = document.querySelector(`[data-ai-vision-step-fill="${exId}"]`);
+          if (statusBox) statusBox.classList.remove('hidden');
           if (statusTextEl) statusTextEl.textContent = st.text;
           if (statusFillEl) statusFillEl.style.width = `${st.pct}%`;
           if (idx === steps.length - 1 && typeof onComplete === 'function') {
@@ -7389,24 +7806,92 @@
       }
     }
 
+    function isExerciseInMachineMode(exId, week = state.currentWeek || 1, dayIdx = state.selectedDayIndex || 0) {
+      if (!exId || !state) return false;
+      const cid = String(exId).trim();
+      const altSlotKey = `w${week}_d${dayIdx}_${cid}`;
+      if (state.revertedMachineSwaps && (state.revertedMachineSwaps[cid] || state.revertedMachineSwaps[altSlotKey])) {
+        return false;
+      }
+      if (state.exerciseSwaps) {
+        if (state.exerciseSwaps[altSlotKey] && !state.exerciseSwaps[altSlotKey].disabled) return true;
+        if (state.exerciseSwaps[cid] && !state.exerciseSwaps[cid].disabled) return true;
+        const foundSlotSwap = Object.keys(state.exerciseSwaps).some(k => {
+          const sw = state.exerciseSwaps[k];
+          return sw && !sw.disabled && sw.canonicalId === cid && k.startsWith(`w${week}_d${dayIdx}_`);
+        });
+        if (foundSlotSwap) return true;
+      }
+      if (state.swappedExercises && state.swappedExercises[altSlotKey] && !state.swappedExercises[altSlotKey].disabled) {
+        return true;
+      }
+      if (state.sharedMachineDatabase && state.sharedMachineDatabase[cid]) {
+        return true;
+      }
+      return false;
+    }
+
+    function getMachineLoadMode(exId, week = state.currentWeek || 1, dayIdx = state.selectedDayIndex || 0) {
+      const cid = String(exId || '').trim();
+      if (state.barbellConfig && state.barbellConfig[cid] && (state.barbellConfig[cid].machineLoadMode === 'pin_stack' || state.barbellConfig[cid].machineLoadMode === 'plate_2sides')) {
+        return state.barbellConfig[cid].machineLoadMode;
+      }
+      const altSlotKey = `w${week}_d${dayIdx}_${cid}`;
+      const sw = (state.exerciseSwaps && (state.exerciseSwaps[altSlotKey] || state.exerciseSwaps[cid])) ||
+                 (state.sharedMachineDatabase && state.sharedMachineDatabase[cid]) ||
+                 null;
+      if (sw && (sw.loadMode === 'pin_stack' || sw.loadMode === 'plate_2sides')) {
+        return sw.loadMode;
+      }
+      const matchedCat = matchExerciseToUniversalMachineSwaps({ id: cid, name: cid });
+      const optIdx = getDefaultUniversalOptionIndexForExercise({ id: cid, name: cid }, matchedCat);
+      const opt = matchedCat && matchedCat.options && (matchedCat.options[optIdx] || matchedCat.options[0]);
+      return (opt && opt.loadMode === 'pin_stack') ? 'pin_stack' : 'plate_2sides';
+    }
+
+    function setMachineLoadMode(exId, mode) {
+      const cid = String(exId || '').trim();
+      if (!cid) return;
+      const cleanMode = mode === 'pin_stack' ? 'pin_stack' : 'plate_2sides';
+      const cfg = getBarbellConfig(cid);
+      cfg.machineLoadMode = cleanMode;
+      cfg.barWeightLbs = 0;
+      cfg.barWeightKg = 0;
+      if (state.exerciseSwaps && state.exerciseSwaps[cid]) {
+        state.exerciseSwaps[cid].loadMode = cleanMode;
+      }
+      if (state.sharedMachineDatabase && state.sharedMachineDatabase[cid]) {
+        state.sharedMachineDatabase[cid].loadMode = cleanMode;
+      }
+    }
+
     function getBarbellConfig(exId) {
       if (!state.barbellConfig) state.barbellConfig = {};
+      const inMachineMode = isExerciseInMachineMode(exId);
       if (!state.barbellConfig[exId]) {
         state.barbellConfig[exId] = {
           inputMode: 'total', // 'total' (Full Bar) or 'side' (Weight on Each Side)
-          barWeightLbs: 45,
-          barWeightKg: 20,
+          barWeightLbs: inMachineMode ? 0 : 45,
+          barWeightKg: inMachineMode ? 0 : 20,
+          machineLoadMode: inMachineMode ? getMachineLoadMode(exId) : undefined,
           warmupOpen: false
         };
       }
       const cfg = state.barbellConfig[exId];
       if (!cfg.inputMode) cfg.inputMode = 'total';
-      if (cfg.barWeightLbs === undefined || cfg.barWeightLbs === null || isNaN(parseFloat(cfg.barWeightLbs))) cfg.barWeightLbs = 45;
-      if (cfg.barWeightKg === undefined || cfg.barWeightKg === null || isNaN(parseFloat(cfg.barWeightKg))) cfg.barWeightKg = 20;
+      if (inMachineMode) {
+        cfg.barWeightLbs = 0;
+        cfg.barWeightKg = 0;
+        if (!cfg.machineLoadMode) cfg.machineLoadMode = getMachineLoadMode(exId);
+      } else {
+        if (cfg.barWeightLbs === undefined || cfg.barWeightLbs === null || isNaN(parseFloat(cfg.barWeightLbs))) cfg.barWeightLbs = 45;
+        if (cfg.barWeightKg === undefined || cfg.barWeightKg === null || isNaN(parseFloat(cfg.barWeightKg))) cfg.barWeightKg = 20;
+      }
       return cfg;
     }
 
     function getBarbellBarWeight(exId, unit) {
+      if (isExerciseInMachineMode(exId)) return 0;
       const cfg = getBarbellConfig(exId);
       const u = unit || getExerciseUnit(exId);
       return u === 'kg' ? parseFloat(cfg.barWeightKg) : parseFloat(cfg.barWeightLbs);
@@ -7414,6 +7899,11 @@
 
     function setBarbellBarWeight(exId, unit, newBarVal) {
       const cfg = getBarbellConfig(exId);
+      if (isExerciseInMachineMode(exId)) {
+        cfg.barWeightLbs = 0;
+        cfg.barWeightKg = 0;
+        return 0;
+      }
       const clean = Math.max(0, +(parseFloat(newBarVal) || 0).toFixed(1));
       if (unit === 'kg') {
         cfg.barWeightKg = clean;
@@ -7427,6 +7917,11 @@
 
     function getBarbellPlateBreakdown(totalWeight, unit, exId) {
       const w = parseFloat(totalWeight);
+      const isMachine = isExerciseInMachineMode(exId);
+      const loadMode = isMachine ? getMachineLoadMode(exId) : 'plate_2sides';
+      if (isMachine && loadMode === 'pin_stack') {
+        return !isNaN(w) && w > 0 ? `Pin Stack: ${w} ${unit}` : null;
+      }
       const bar = exId ? getBarbellBarWeight(exId, unit) : (unit === 'kg' ? 20 : 45);
       if (isNaN(w) || w <= bar) return null;
       let perSide = +((w - bar) / 2).toFixed(2);
@@ -7446,9 +7941,15 @@
 
     function getBarbellPlateChipsHtml(totalWeight, unit, exId) {
       const w = parseFloat(totalWeight);
+      const isMachine = isExerciseInMachineMode(exId);
+      const loadMode = isMachine ? getMachineLoadMode(exId) : 'plate_2sides';
+      if (isMachine && loadMode === 'pin_stack') {
+        const cleanW = !isNaN(w) && w >= 0 ? w : 0;
+        return `<span class="inline-flex items-center px-1.5 py-0.5 rounded border border-emerald-400/50 bg-emerald-500/20 text-emerald-200 text-[10px] font-extrabold">Pin Weight: ${cleanW} ${unit}</span>`;
+      }
       const bar = exId ? getBarbellBarWeight(exId, unit) : (unit === 'kg' ? 20 : 45);
       if (isNaN(w) || w <= bar) {
-        return `<span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] font-bold">Empty Bar (0 ${unit}/side)</span>`;
+        return `<span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] font-bold">${isMachine ? `0 ${unit}/side` : `Empty Bar (0 ${unit}/side)`}</span>`;
       }
       let perSide = +((w - bar) / 2).toFixed(2);
       const plates = unit === 'kg' ? [25, 20, 15, 10, 5, 2.5, 1.25, 0.5] : [45, 35, 25, 10, 5, 2.5, 1.25];
@@ -7488,27 +7989,36 @@
 
     function computeBarbellMath(totalWeightVal, exId, unit) {
       const u = unit || getExerciseUnit(exId);
-      const bar = getBarbellBarWeight(exId, u);
+      const isMachine = isExerciseInMachineMode(exId);
+      const loadMode = isMachine ? getMachineLoadMode(exId) : 'plate_2sides';
+      const bar = isMachine ? 0 : getBarbellBarWeight(exId, u);
       const parsedTotal = parseFloat(totalWeightVal);
       const total = (!isNaN(parsedTotal) && parsedTotal >= 0) ? +parsedTotal.toFixed(2) : bar;
       const effectiveTotal = Math.max(bar, total);
       const bothSides = Math.max(0, +(effectiveTotal - bar).toFixed(2));
-      const perSide = Math.max(0, +(bothSides / 2).toFixed(2));
+      const perSide = (isMachine && loadMode === 'pin_stack') ? effectiveTotal : Math.max(0, +(bothSides / 2).toFixed(2));
       const otherUnit = u === 'kg' ? 'lbs' : 'kg';
       const totalOther = +(u === 'kg' ? effectiveTotal * 2.20462 : effectiveTotal / 2.20462).toFixed(1);
-      const barOther = mapBarWeightBetweenUnits(bar, u, otherUnit);
+      const barOther = isMachine ? 0 : mapBarWeightBetweenUnits(bar, u, otherUnit);
       const perSideOther = +(u === 'kg' ? perSide * 2.20462 : perSide / 2.20462).toFixed(1);
       const bothSidesOther = +(u === 'kg' ? bothSides * 2.20462 : bothSides / 2.20462).toFixed(1);
       const platesStr = getBarbellPlateBreakdown(effectiveTotal, u, exId);
       const plateChipsHtml = getBarbellPlateChipsHtml(effectiveTotal, u, exId);
       const stdPlateStep = u === 'kg' ? 1.25 : 2.5;
       const remainder = Math.abs((perSide / stdPlateStep) - Math.round(perSide / stdPlateStep));
-      const needsMicroPlate = perSide > 0 && remainder > 0.02;
+      const needsMicroPlate = (!isMachine || loadMode === 'plate_2sides') && perSide > 0 && remainder > 0.02;
       const nearestStandardSide = +(Math.round(perSide / stdPlateStep) * stdPlateStep).toFixed(2);
       const nearestStandardTotal = +(bar + nearestStandardSide * 2).toFixed(2);
+      const summaryBadgeText = isMachine
+        ? (loadMode === 'pin_stack'
+            ? `Machine Pin Weight: ${effectiveTotal} ${u}`
+            : `Machine Plates: ${perSide} ${u}/side = ${effectiveTotal} ${u} total`)
+        : `${bar} ${u} Bar + ${perSide} ${u}/side = ${effectiveTotal} ${u}`;
       return {
         unit: u,
         otherUnit,
+        isMachine,
+        loadMode,
         bar,
         perSide,
         bothSides,
@@ -7522,12 +8032,48 @@
         needsMicroPlate,
         nearestStandardSide,
         nearestStandardTotal,
-        equationText: `${bar} ${u} Bar + (${perSide} ${u} × 2 sides) = ${effectiveTotal} ${u} Total`,
-        dualText: `≈ ${totalOther} ${otherUnit} total (${barOther} ${otherUnit} bar + ${bothSidesOther} ${otherUnit} both sides / ${perSideOther} ${otherUnit} per side)`
+        summaryBadgeText,
+        equationText: isMachine
+          ? summaryBadgeText
+          : `${bar} ${u} Bar + (${perSide} ${u} × 2 sides) = ${effectiveTotal} ${u} Total`,
+        dualText: isMachine
+          ? `≈ ${totalOther} ${otherUnit} total`
+          : `≈ ${totalOther} ${otherUnit} total (${barOther} ${otherUnit} bar + ${bothSidesOther} ${otherUnit} both sides / ${perSideOther} ${otherUnit} per side)`
       };
     }
 
     function renderBarbellSetEquationInnerHtml(mathObj, logKey, exId) {
+      if (mathObj && mathObj.isMachine) {
+        if (mathObj.loadMode === 'pin_stack') {
+          return `
+            <div class="flex flex-wrap items-center justify-between gap-1.5">
+              <span class="text-[11px] font-bold text-slate-200">
+                Machine Pin Weight: <span class="text-emerald-300 font-extrabold">${mathObj.total} ${mathObj.unit}</span> <span class="text-slate-400 font-normal">(≈ ${mathObj.totalOther} ${mathObj.otherUnit})</span>
+              </span>
+              <div class="flex flex-wrap items-center gap-1">
+                ${mathObj.plateChipsHtml}
+              </div>
+            </div>
+          `;
+        }
+        return `
+          <div class="flex flex-wrap items-center justify-between gap-1.5">
+            <span class="text-[11px] font-bold text-slate-200">
+              Machine Plates: <span class="text-emerald-300 font-extrabold">${mathObj.perSide} ${mathObj.unit}/side</span> = <span class="text-white font-extrabold">${mathObj.total} ${mathObj.unit} total</span> <span class="text-slate-400 font-normal">(≈ ${mathObj.totalOther} ${mathObj.otherUnit})</span>
+            </span>
+            <div class="flex flex-wrap items-center gap-1">
+              <span class="text-[10px] text-slate-400 font-semibold">/side:</span>
+              ${mathObj.plateChipsHtml}
+            </div>
+          </div>
+          ${mathObj.needsMicroPlate && logKey && exId ? `
+          <div class="pt-1">
+            <button type="button" data-round-std-key="${logKey}" data-round-std-ex="${exId}" data-round-std-side="${mathObj.nearestStandardSide}" class="bar-round-std-btn w-full text-center px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 text-[10px] font-extrabold transition">
+               Round ${mathObj.perSide} ${mathObj.unit}/side → ${mathObj.nearestStandardSide} ${mathObj.unit}/side (${mathObj.nearestStandardTotal} ${mathObj.unit} Total)
+            </button>
+          </div>` : ''}
+        `;
+      }
       return `
         <div class="flex flex-wrap items-center justify-between gap-1.5">
           <span class="text-[11px] font-bold text-slate-200">
@@ -8231,7 +8777,7 @@
         maxSessions: 300,
         maxHeavyLowerSets: 1000,
         baseMonths: 22,
-        biomechanicsNote: 'Rigid TPU/wood heel wedge increases ankle dorsiflexion for deep Barbell Back Squats (Day 2).'
+        biomechanicsNote: 'Rigid TPU/wood heel wedge improves ankle bend and stability for deep Barbell Back Squats (Day 2).'
       }
     };
 
@@ -8509,7 +9055,9 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              model: 'gemini-2.5-flash',
+              model: 'gemini-3.8-flash',
+              enableGoogleSearch: true,
+              tools: [{ googleSearch: {} }],
               imageBase64: dataUrl,
               mimeType: 'image/jpeg',
               prompt: 'Identify the athletic/gym shoe in this image. Reply ONLY with a valid JSON object (no markdown fences) with keys: {"brand": "Brand Name (e.g. Nike, Reebok, Adidas, Converse, ASICS, New Balance, NOBULL)", "model": "Model Name (e.g. Metcon 9, Nano X4, Dropset 3, Chuck Taylor, Pegasus)", "category": "cross_trainer" | "flat_lifter" | "running_cushioned" | "weightlifting_heel", "note": "1-sentence gym stability & lifespan summary"}'
@@ -9513,9 +10061,11 @@
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;');
 
-        const isBarbellEx = !isTimedHold && !isBodyweightRepsOnly && BARBELL_EX_IDS.includes(ex.id);
+        const isMachineEx = Boolean(ex.isSwappedMachine || ex.isSwapped || isExerciseInMachineMode(ex.id, week, dayIdx));
+        const isBarbellEx = !isTimedHold && !isBodyweightRepsOnly && (BARBELL_EX_IDS.includes(ex.id) || isMachineEx);
         const barCfg = isBarbellEx ? getBarbellConfig(ex.id) : null;
         const barWeight = isBarbellEx ? getBarbellBarWeight(ex.id, exUnit) : 0;
+        const machineLoadMode = isMachineEx ? getMachineLoadMode(ex.id, ex) : 'plate_2sides';
         if (isBarbellEx && !barCfg.openCustomSets) barCfg.openCustomSets = {};
 
         // CRITICAL GUARDRAIL: Declare topSideStep and topBothStep strictly BEFORE the for (let s = 1; s <= ex.sets; s++) loop
@@ -9552,9 +10102,12 @@
         let exDoneSets = 0;
         let firstUnloggedSetFound = false;
         let setsHtml = '';
+        const baseDefaultLbs = isMachineEx && BARBELL_EX_IDS.includes(ex.id) && meta.defaultWeightLbs > 45
+          ? Math.max(20, meta.defaultWeightLbs - 45)
+          : meta.defaultWeightLbs;
         let set1EffectiveTotal = exUnit === 'kg'
-          ? (meta.defaultWeightLbs > 0 ? Math.max(1.25, Math.round((meta.defaultWeightLbs / 2.20462) / 1.25) * 1.25) : 0)
-          : (meta.defaultWeightLbs > 0 ? Math.max(2.5, meta.defaultWeightLbs) : 0);
+          ? (baseDefaultLbs > 0 ? Math.max(1.25, Math.round((baseDefaultLbs / 2.20462) / 1.25) * 1.25) : 0)
+          : (baseDefaultLbs > 0 ? Math.max(2.5, baseDefaultLbs) : 0);
         const setEffectiveTotals = {};
         const setBarMaths = {};
         const set1TodayEntry = getLogEntry(week, dayIdx, ex.id, 1);
@@ -9578,8 +10131,8 @@
           }
 
           const defaultTotalPlaceholder = exUnit === 'kg'
-            ? (meta.defaultWeightLbs > 0 ? Math.max(1.25, Math.round((meta.defaultWeightLbs / 2.20462) / 1.25) * 1.25) : 0)
-            : (meta.defaultWeightLbs > 0 ? Math.max(2.5, meta.defaultWeightLbs) : 0);
+            ? (baseDefaultLbs > 0 ? Math.max(1.25, Math.round((baseDefaultLbs / 2.20462) / 1.25) * 1.25) : 0)
+            : (baseDefaultLbs > 0 ? Math.max(2.5, baseDefaultLbs) : 0);
 
           const rawLoggedWeight = (existing && existing.weight !== undefined && existing.weight !== '') ? String(existing.weight) : '';
           let prevWeekCarryWeight = '';
@@ -9661,7 +10214,7 @@
             set1EffectiveTotal = effectiveTotalWeight;
           }
 
-          const barMath = isBarbellEx ? computeBarbellMath(effectiveTotalWeight, ex.id, exUnit) : null;
+          const barMath = isBarbellEx ? computeBarbellMath(effectiveTotalWeight, ex.id, exUnit, ex) : null;
           setBarMaths[s] = barMath;
           const isCustomSetOpen = !!(isBarbellEx && barCfg && barCfg.openCustomSets && barCfg.openCustomSets[s]);
           const isSelectedInCalc = isBarbellEx && calcTargetSet === s;
@@ -9758,8 +10311,8 @@
                     <span class="text-xs font-extrabold whitespace-nowrap ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
                     ${prevWeekHintHtml}
                     ${isBarbellEx ? `
-                      <button type="button" data-select-calc-ex="${ex.id}" data-set-idx="${s}" class="select-calc-set-btn block text-[9px] font-bold whitespace-nowrap ${isSelectedInCalc ? 'text-amber-300' : 'text-slate-400 hover:text-sky-300'} mt-0.5 transition" title="Select Set ${s} in Plate Calculator">
-                        ${isSelectedInCalc ? ' Active' : ' Plates'}
+                      <button type="button" data-select-calc-ex="${ex.id}" data-set-idx="${s}" class="select-calc-set-btn block text-[9px] font-bold whitespace-nowrap ${isSelectedInCalc ? 'text-amber-300' : 'text-slate-400 hover:text-sky-300'} mt-0.5 transition" title="Select Set ${s} in Calculator">
+                        ${isSelectedInCalc ? ' Active' : (isMachineEx && machineLoadMode === 'pin_stack' ? ' Pin' : ' Plates')}
                       </button>
                     ` : ''}
                   </div>
@@ -9791,10 +10344,14 @@
                 </div>
 
                 ${isBarbellEx && barMath ? `
-                <!-- Inline Per-Set Barbell Plate Breakdown: (totalWeight - barWeight) / 2 -->
+                <!-- Inline Per-Set Breakdown: Machine (0 lbs bar) vs Barbell -->
                 <div data-barbell-ro-total="${logKey}" class="mt-1.5 pt-1.5 border-t border-slate-800/75 flex flex-wrap items-center justify-between gap-1.5 text-[10px]">
                   <span class="font-bold text-slate-300">
-                     <strong class="text-amber-300">${barMath.bar} ${exUnit}</strong> Bar + <strong class="text-emerald-300">${barMath.perSide} ${exUnit}/side</strong> = <strong class="text-white">${barMath.total} ${exUnit}</strong>
+                    ${barMath.isMachine
+                      ? (barMath.loadMode === 'pin_stack'
+                          ? `<strong class="text-emerald-300">Machine Pin Weight:</strong> <strong class="text-white">${barMath.total} ${exUnit}</strong>`
+                          : `<strong class="text-emerald-300">Machine Plates: ${barMath.perSide} ${exUnit}/side</strong> = <strong class="text-white">${barMath.total} ${exUnit} total</strong>`)
+                      : `<strong class="text-amber-300">${barMath.bar} ${exUnit}</strong> Bar + <strong class="text-emerald-300">${barMath.perSide} ${exUnit}/side</strong> = <strong class="text-white">${barMath.total} ${exUnit}</strong>`}
                   </span>
                   <div class="flex flex-wrap items-center gap-1">
                     ${barMath.plateChipsHtml}
@@ -9832,8 +10389,8 @@
         const isCollapsedDone = isExerciseSetsCollapsed(dayIdx, ex.id, isExComplete);
         const isActiveCard = (!isCollapsedDone) || (state.activeFocusedExId ? ex.id === state.activeFocusedExId : (isUpNext && !isExComplete));
         const activeCalcEffectiveTotal = setEffectiveTotals[calcTargetSet] !== undefined ? setEffectiveTotals[calcTargetSet] : set1EffectiveTotal;
-        const activeCalcBarMath = isBarbellEx ? (setBarMaths[calcTargetSet] || computeBarbellMath(activeCalcEffectiveTotal, ex.id, exUnit)) : null;
-        const s1BarMath = isBarbellEx ? (setBarMaths[1] || computeBarbellMath(set1EffectiveTotal, ex.id, exUnit)) : null;
+        const activeCalcBarMath = isBarbellEx ? (setBarMaths[calcTargetSet] || computeBarbellMath(activeCalcEffectiveTotal, ex.id, exUnit, ex)) : null;
+        const s1BarMath = isBarbellEx ? (setBarMaths[1] || computeBarbellMath(set1EffectiveTotal, ex.id, exUnit, ex)) : null;
         const barPresets = exUnit === 'kg' ? BARBELL_PRESETS_KG : BARBELL_PRESETS_LBS;
         const calcLogKeyIndex = ex.id === 'cable_ab_crunch' ? dayIdx : slotIdx;
         const calcTargetLogKey = `w${week}_${calcLogKeyIndex}_${ex.id}_${calcTargetSet}`;
@@ -9853,9 +10410,14 @@
                   <span class="px-2 py-0.5 rounded bg-emerald-400 text-slate-950 text-[10px] font-extrabold uppercase shrink-0">Machine Active</span>
                   <span class="text-[11px] font-bold text-emerald-200 truncate">${ex.machineBadge || `Machine Active • Swapped from ${ex.originalName}`}</span>
                 </div>
-                <button type="button" data-revert-machine-swap="${ex.swapKey || ex.id}" data-canonical-id="${ex.originalId || ex.id}" data-slot-key="${ex.slotKey || ''}" data-alt-slot-key="${ex.altSlotKey || ''}" data-orig-name="${ex.originalName}" class="revert-machine-swap-btn px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold whitespace-nowrap transition">
-                  Switch Back to Original (${ex.originalName})
-                </button>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <button type="button" data-ai-swap-check-ex="${ex.id}" data-orig-ex-id="${ex.originalId || ex.id}" data-slot-key="${ex.slotKey || ''}" class="ai-check-swap-ex-btn px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-sky-400/50 text-sky-200 text-[11px] font-extrabold whitespace-nowrap transition">
+                    Change Machine Type
+                  </button>
+                  <button type="button" data-revert-machine-swap="${ex.swapKey || ex.id}" data-canonical-id="${ex.originalId || ex.id}" data-slot-key="${ex.slotKey || ''}" data-alt-slot-key="${ex.altSlotKey || ''}" data-orig-name="${ex.originalName}" class="revert-machine-swap-btn px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold whitespace-nowrap transition">
+                    Switch Back to Original (${ex.originalName})
+                  </button>
+                </div>
               </div>
             ` : ''}
 
@@ -9871,6 +10433,7 @@
                       <span class="exercise-progress-badge whitespace-nowrap px-2 py-0.5 text-xs font-bold font-mono rounded-md transition-colors ${
                         isActiveCard ? 'bg-sky-400 text-slate-950' : (isExComplete ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300 group-hover:text-sky-300')
                       }">#${exOrder + 1}/${totalExercisesToday}</span>
+                      ${ex.isSwappedMachine ? `<span class="text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-md whitespace-nowrap">Machine</span>` : ''}
                       <span class="text-[11px] font-semibold text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded-md whitespace-nowrap">${isTimedHold ? `${ex.sets} Sets × ${targetHoldSec}s / side` : `${ex.sets} Sets × ${ex.reps}`}</span>
                       ${isExComplete ? `<span class="text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">✓ Done</span>` : ''}
                     </div>
@@ -9892,11 +10455,15 @@
                   <div class="${isImgOpen || (isBarbellEx && activeCalcBarMath && !(isExComplete && isCollapsedDone)) ? 'flex flex-wrap items-center gap-1.5 mt-1' : 'hidden'}">
                     <div id="hdr-setup-${panelKey}" class="${isImgOpen ? 'inline-flex' : 'hidden'} items-center gap-1 text-[11px] font-semibold text-sky-300 bg-sky-500/10 border border-sky-500/25 px-2 py-0.5 rounded-lg" style="display: ${isImgOpen ? 'inline-flex' : 'none'};">
                       <span></span>
-                      <span class="text-white font-bold">${meta.equipLabel}</span>
+                      <span class="text-white font-bold">${ex.isSwappedMachine ? (activeCalcBarMath && activeCalcBarMath.loadMode === 'pin_stack' ? 'Pin / Cable Stack Machine' : 'Plate-Loaded Machine') : meta.equipLabel}</span>
                     </div>
                     ${isBarbellEx && activeCalcBarMath && !(isExComplete && isCollapsedDone) ? `
                     <span data-plate-badge="${ex.id}" class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-300 bg-slate-950 border border-slate-800 px-2 py-0.5 rounded-lg">
-                       Set ${calcTargetSet}: ${activeCalcBarMath.bar} ${exUnit} Bar + ${activeCalcBarMath.perSide}/side = <strong class="text-white">${activeCalcBarMath.total} ${exUnit}</strong>
+                       Set ${calcTargetSet}: ${activeCalcBarMath.isMachine
+                         ? (activeCalcBarMath.loadMode === 'pin_stack'
+                             ? `Machine Pin Weight: <strong class="text-white">${activeCalcBarMath.total} ${exUnit}</strong>`
+                             : `Machine Plates: ${activeCalcBarMath.perSide} ${exUnit}/side = <strong class="text-white">${activeCalcBarMath.total} ${exUnit} total</strong>`)
+                         : `${activeCalcBarMath.bar} ${exUnit} Bar + ${activeCalcBarMath.perSide}/side = <strong class="text-white">${activeCalcBarMath.total} ${exUnit}</strong>`}
                     </span>
                     ` : ''}
                   </div>
@@ -9962,14 +10529,6 @@
                 </a>
               </div>
 
-              ${ex.isSwappedMachine ? `
-                <div class="bg-slate-950/90 border border-emerald-500/35 rounded-xl p-2.5 text-xs space-y-1">
-                  <div class="font-extrabold text-emerald-300">Biomechanical Definition &amp; Form Cues (${ex.name})</div>
-                  ${ex.targetMuscles ? `<div class="text-[11px] text-sky-300 font-bold">Target Muscles: ${ex.targetMuscles}</div>` : ''}
-                  <p class="text-[11px] text-slate-300 leading-snug">${ex.notes}</p>
-                </div>
-              ` : ''}
-
               ${ex.id === 'day5_pullups' ? `
                 <div class="bg-slate-950/95 border border-sky-500/40 rounded-xl p-2.5 space-y-2" data-day5-hardest-selector="workout">
                   <div class="flex flex-wrap items-center justify-between gap-1.5">
@@ -10003,7 +10562,7 @@
                 </div>
               ` : ''}
 
-              <!-- Collapsible Visual Diagram Dropdown Panel -->
+              <!-- Collapsible Visual Diagram & Machine Setup Dropdown Panel (Strictly Hidden When Closed) -->
               <div id="img-panel-${ex.id}" data-panel-id="${panelKey}" class="${isImgOpen ? 'block' : 'hidden'}" style="display: ${isImgOpen ? 'block' : 'none'};">
                 ${getStepVisualDiagramHtml(ex, meta, dayIdx)}
               </div>
@@ -10036,36 +10595,73 @@
               ` : ''}
 
               ${isBarbellEx && activeCalcBarMath ? `
-              <!-- STEP 1: PER-SET BARBELL & PLATE CALCULATOR -->
-              <div class="bg-slate-950/90 border border-amber-500/30 rounded-xl p-2.5 space-y-2">
-                <!-- Barbell Selector Row -->
-                <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-800/80">
-                  <div class="flex flex-wrap items-center gap-1.5">
-                    <span class="text-[11px] font-extrabold text-amber-300"> Barbell:</span>
-                    <div class="inline-flex items-center bg-slate-900 border border-amber-500/40 rounded-lg overflow-hidden">
-                      <button type="button" data-bar3-step="barWeight" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-delta="-${exUnit === 'kg' ? 2.5 : 5}" class="bar3-step-btn px-2 py-0.5 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Decrease barbell weight">−</button>
-                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${activeCalcBarMath.bar}" data-bar3-inp="barWeight" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" aria-label="${ex.name} Barbell Weight" class="bar3-input w-12 bg-transparent py-0.5 text-center text-xs font-extrabold text-amber-300 focus:outline-none" />
-                      <button type="button" data-bar3-step="barWeight" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-delta="${exUnit === 'kg' ? 2.5 : 5}" class="bar3-step-btn px-2 py-0.5 text-xs font-extrabold text-amber-400 hover:bg-slate-800 transition" title="Increase barbell weight">+</button>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-1">
-                      ${barPresets.map(p => `
-                        <button type="button" data-bar-preset-ex="${ex.id}" data-bar-val="${p.weight}" class="bar-preset-btn px-1.5 py-0.5 rounded text-[10px] font-extrabold border transition ${
-                          Math.abs(barWeight - p.weight) < 0.1
-                            ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-sm'
-                            : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'
-                        }">${p.weight} ${exUnit}</button>
-                      `).join('')}
+              <!-- STEP 1: PER-SET PLATE / PIN CALCULATOR (Machine 0 lbs Bar vs Free-Weight Barbell) -->
+              <div class="bg-slate-950/90 border ${activeCalcBarMath.isMachine ? 'border-emerald-500/35' : 'border-amber-500/30'} rounded-xl p-2.5 space-y-2">
+                ${activeCalcBarMath.isMachine ? `
+                  <!-- 2-Option Machine Loading Toggle (Zero Barbell Weight) -->
+                  <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-800/80">
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-1.5 w-full">
+                      <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300 shrink-0">Machine Loading:</span>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 flex-1">
+                        <button
+                          type="button"
+                          data-machine-load-ex="${ex.id}"
+                          data-machine-load-mode="plate_2sides"
+                          aria-pressed="${activeCalcBarMath.loadMode !== 'pin_stack' ? 'true' : 'false'}"
+                          class="machine-load-mode-btn px-2.5 py-1.5 rounded-lg text-[10px] font-extrabold border text-left transition ${
+                            activeCalcBarMath.loadMode !== 'pin_stack'
+                              ? 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-sm'
+                              : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'
+                          }"
+                        >
+                          ${activeCalcBarMath.loadMode !== 'pin_stack' ? '✓ ' : ''}Plate-Loaded Machine (2 Sides • No Bar)
+                        </button>
+                        <button
+                          type="button"
+                          data-machine-load-ex="${ex.id}"
+                          data-machine-load-mode="pin_stack"
+                          aria-pressed="${activeCalcBarMath.loadMode === 'pin_stack' ? 'true' : 'false'}"
+                          class="machine-load-mode-btn px-2.5 py-1.5 rounded-lg text-[10px] font-extrabold border text-left transition ${
+                            activeCalcBarMath.loadMode === 'pin_stack'
+                              ? 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-sm'
+                              : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'
+                          }"
+                        >
+                          ${activeCalcBarMath.loadMode === 'pin_stack' ? '✓ ' : ''}Pin / Cable Stack Machine (Total Weight Only)
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <button type="button" data-bar-warmup-ex="${ex.id}" class="bar-warmup-toggle-btn text-[10px] font-extrabold text-amber-300 hover:text-amber-200 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-lg transition">
-                     ${barCfg.warmupOpen ? '▲ Hide Warm-Up' : '▼ Warm-Up'}
-                  </button>
-                </div>
+                ` : `
+                  <!-- Free-Weight Barbell Selector Row -->
+                  <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-800/80">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <span class="text-[11px] font-extrabold text-amber-300"> Barbell:</span>
+                      <div class="inline-flex items-center bg-slate-900 border border-amber-500/40 rounded-lg overflow-hidden">
+                        <button type="button" data-bar3-step="barWeight" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-delta="-${exUnit === 'kg' ? 2.5 : 5}" class="bar3-step-btn px-2 py-0.5 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Decrease barbell weight">−</button>
+                        <input type="number" step="0.5" min="0" inputmode="decimal" value="${activeCalcBarMath.bar}" data-bar3-inp="barWeight" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" aria-label="${ex.name} Barbell Weight" class="bar3-input w-12 bg-transparent py-0.5 text-center text-xs font-extrabold text-amber-300 focus:outline-none" />
+                        <button type="button" data-bar3-step="barWeight" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-delta="${exUnit === 'kg' ? 2.5 : 5}" class="bar3-step-btn px-2 py-0.5 text-xs font-extrabold text-amber-400 hover:bg-slate-800 transition" title="Increase barbell weight">+</button>
+                      </div>
+                      <div class="flex flex-wrap items-center gap-1">
+                        ${barPresets.map(p => `
+                          <button type="button" data-bar-preset-ex="${ex.id}" data-bar-val="${p.weight}" class="bar-preset-btn px-1.5 py-0.5 rounded text-[10px] font-extrabold border transition ${
+                            Math.abs(barWeight - p.weight) < 0.1
+                              ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-sm'
+                              : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'
+                          }">${p.weight} ${exUnit}</button>
+                        `).join('')}
+                      </div>
+                    </div>
+                    <button type="button" data-bar-warmup-ex="${ex.id}" class="bar-warmup-toggle-btn text-[10px] font-extrabold text-amber-300 hover:text-amber-200 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-lg transition">
+                       ${barCfg.warmupOpen ? '▲ Hide Warm-Up' : '▼ Warm-Up'}
+                    </button>
+                  </div>
+                `}
 
                 <!-- Target Set Selector & Optional Apply to Remaining Unlogged Sets Action -->
                 <div class="flex flex-wrap items-center justify-between gap-1.5 pb-1 border-b border-slate-800/70">
                   <div class="flex flex-wrap items-center gap-1">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-0.5">Plate Calc Target:</span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-0.5">${activeCalcBarMath.isMachine && activeCalcBarMath.loadMode === 'pin_stack' ? 'Pin Calc Target:' : 'Plate Calc Target:'}</span>
                     ${Array.from({ length: ex.sets }, (_, i) => i + 1).map(sNum => {
                       const sEntry = getLogEntry(week, dayIdx, ex.id, sNum);
                       const sDone = Boolean(sEntry && sEntry.done);
@@ -10100,6 +10696,20 @@
                   </button>
                 </div>
 
+                ${activeCalcBarMath.isMachine && activeCalcBarMath.loadMode === 'pin_stack' ? `
+                <!-- Single Pin / Cable Stack Weight Box -->
+                <div class="bg-slate-900/95 border border-emerald-500/35 rounded-xl p-2 space-y-1">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Set ${calcTargetSet} • Machine Pin / Stack Weight (${exUnit})</span>
+                    <span class="text-[9px] text-slate-400 font-semibold">Total Stack Weight (No Bar)</span>
+                  </div>
+                  <div class="flex items-center bg-slate-950 border border-slate-700 rounded-lg overflow-hidden w-full">
+                    <button type="button" data-bar3-step="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="-${topBothStep}" class="bar3-step-btn px-3 py-1.5 text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Decrease Set ${calcTargetSet} pin weight by ${topBothStep}">−</button>
+                    <input type="number" step="0.5" min="0" inputmode="decimal" value="${activeCalcBarMath.total}" data-bar3-inp="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" aria-label="${ex.name} Set ${calcTargetSet} Pin Stack Weight" class="bar3-input w-full min-w-0 bg-transparent py-1.5 text-center text-sm font-extrabold text-emerald-300 focus:outline-none" />
+                    <button type="button" data-bar3-step="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="${topBothStep}" class="bar3-step-btn px-3 py-1.5 text-sm font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Increase Set ${calcTargetSet} pin weight by ${topBothStep}">+</button>
+                  </div>
+                </div>
+                ` : `
                 <!-- 2 Linked Plate Boxes for Selected Set Only -->
                 <div class="grid grid-cols-2 gap-2">
                   <div class="bg-slate-900/95 border border-emerald-500/35 rounded-xl p-2 space-y-1">
@@ -10126,13 +10736,14 @@
                     </div>
                   </div>
                 </div>
+                `}
 
                 <!-- Formula & Plate Chips Bar for Selected Set -->
                 <div data-barbell-eq="${calcTargetLogKey}" class="bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[10px]">
                   ${renderBarbellSetEquationInnerHtml(activeCalcBarMath, calcTargetLogKey, ex.id)}
                 </div>
 
-                ${barCfg.warmupOpen ? (() => {
+                ${!activeCalcBarMath.isMachine && barCfg.warmupOpen ? (() => {
                   const pctList = [
                     { pct: 0.50, label: '50% × 8' },
                     { pct: 0.70, label: '70% × 3–4' },
@@ -10144,7 +10755,7 @@
                       ${pctList.map(item => {
                         const rawTarget = Math.max(s1BarMath.bar, s1BarMath.total * item.pct);
                         const roundedTotal = Math.max(s1BarMath.bar, Math.round(rawTarget / stepInc) * stepInc);
-                        const wm = computeBarbellMath(roundedTotal, ex.id, exUnit);
+                        const wm = computeBarbellMath(roundedTotal, ex.id, exUnit, ex);
                         return `
                           <div class="flex flex-wrap items-center justify-between gap-1 py-0.5 border-t first:border-t-0 border-slate-800/70">
                             <span class="font-bold text-slate-300">${item.label}:</span>
@@ -10175,7 +10786,7 @@
                 ` : `
                 <div class="grid grid-cols-12 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   <div class="col-span-2">Set</div>
-                  <div class="col-span-4 text-center ${isBarbellEx ? 'text-amber-300' : ''}">Weight (${exUnit.toUpperCase()})</div>
+                  <div class="col-span-4 text-center ${isBarbellEx ? (isMachineEx ? 'text-emerald-300' : 'text-amber-300') : ''}">Weight (${exUnit.toUpperCase()})</div>
                   <div class="col-span-3 text-center">Reps</div>
                   <div class="col-span-3 text-right">1-Tap Log</div>
                 </div>
@@ -10201,16 +10812,29 @@
                     </span>
                     <span class="text-[10px] font-bold shrink-0 ${hasAnyNote ? 'text-amber-300' : 'text-slate-400'}">${isNotePanelOpen ? '▴ Hide' : '▾ Open'}</span>
                   </button>
-                  <button
-                    type="button"
-                    data-ai-swap-check-ex="${ex.id}"
-                    data-orig-ex-id="${ex.originalId || ex.id}"
-                    data-slot-key="${ex.slotKey || ''}"
-                    class="ai-check-swap-ex-btn shrink-0 py-2 px-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold whitespace-nowrap transition"
-                    title="Verify biomechanical machine match and switch to machine form & video"
-                  >
-                    Switch to Machine Form &amp; Video
-                  </button>
+                  ${ex.isSwappedMachine ? `
+                    <button
+                      type="button"
+                      data-ai-swap-check-ex="${ex.id}"
+                      data-orig-ex-id="${ex.originalId || ex.id}"
+                      data-slot-key="${ex.slotKey || ''}"
+                      class="ai-check-swap-ex-btn shrink-0 py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-sky-400/40 text-sky-300 text-xs font-extrabold whitespace-nowrap transition"
+                      title="Change machine subtype or select a different machine video"
+                    >
+                      Change Machine Type
+                    </button>
+                  ` : `
+                    <button
+                      type="button"
+                      data-ai-swap-check-ex="${ex.id}"
+                      data-orig-ex-id="${ex.originalId || ex.id}"
+                      data-slot-key="${ex.slotKey || ''}"
+                      class="ai-check-swap-ex-btn shrink-0 py-2 px-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold whitespace-nowrap transition"
+                      title="Check machine match and switch to machine form & video"
+                    >
+                      Switch to Machine Form &amp; Video
+                    </button>
+                  `}
                 </div>
 
                 <div id="ex-note-panel-${ex.id}" class="${isNotePanelOpen ? 'bg-slate-950/90 border border-slate-800 rounded-xl p-3 space-y-2.5' : 'hidden'}">
@@ -10261,18 +10885,17 @@
                     </div>
                   ` : ''}
 
-                  <!-- 3-Step AI Vision Progress Bar -->
-                  <div data-ai-vision-pipeline="${ex.id}" class="${pendingSwapPreview ? 'bg-slate-900 border border-sky-500/40 rounded-xl p-2.5 space-y-1.5' : 'hidden'}">
-                    <div class="flex items-center justify-between gap-2 text-[10px] font-extrabold text-sky-300">
-                      <span data-ai-vision-step-text="${ex.id}">1. Scanning machine geometry... -&gt; 2. Verifying biomechanical equivalence with ${ex.originalName || ex.name}... -&gt; 3. Attaching verified machine form video &amp; setup cues...</span>
-                      <span class="text-emerald-300 shrink-0">3/3 Verified</span>
-                    </div>
-                    <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                      <div data-ai-vision-step-fill="${ex.id}" class="h-full bg-gradient-to-r from-sky-400 to-emerald-400 transition-all duration-200" style="width: 100%"></div>
-                    </div>
-                  </div>
-
                   ${pendingSwapPreview ? `
+                    <!-- 3-Step AI Vision Progress Bar (Auto-Closes When Confirmed or Cancelled) -->
+                    <div data-ai-vision-pipeline="${ex.id}" class="bg-slate-900 border border-sky-500/40 rounded-xl p-2.5 space-y-1.5">
+                      <div class="flex items-center justify-between gap-2 text-[10px] font-extrabold text-sky-300">
+                        <span data-ai-vision-step-text="${ex.id}">1. Scanning machine photo and seat setup... -&gt; 2. Checking machine type and finding matching video... -&gt; 3. Attaching verified machine form video &amp; setup cues...</span>
+                        <span class="text-emerald-300 shrink-0">3/3 Verified</span>
+                      </div>
+                      <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div data-ai-vision-step-fill="${ex.id}" class="h-full bg-gradient-to-r from-sky-400 to-emerald-400 transition-all duration-200" style="width: 100%"></div>
+                      </div>
+                    </div>
                     <div data-ai-swap-preview-card="${ex.id}" class="bg-emerald-950/75 border-2 border-emerald-400/70 rounded-xl p-3 space-y-2.5 shadow-md">
                       <div class="text-xs font-extrabold text-emerald-200 leading-snug">
                         ${pendingSwapPreview.confirmationHeadline}
@@ -10280,8 +10903,8 @@
 
                       ${pendingSwapPreview.availableOptions && pendingSwapPreview.availableOptions.length > 1 ? `
                         <div class="space-y-1">
-                          <div class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Select Your Gym Machine (${pendingSwapPreview.availableOptions.length} Verified Options):</div>
-                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          <div class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Select Your Gym Machine Subtype (${pendingSwapPreview.availableOptions.length} Verified Options):</div>
+                          <div class="grid grid-cols-1 gap-1.5">
                             ${pendingSwapPreview.availableOptions.map((mOpt, mIdx) => {
                               const isSelOpt = mIdx === (pendingSwapPreview.optionIndex || 0);
                               return `
@@ -10296,13 +10919,45 @@
                                       : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-700'
                                   }"
                                 >
-                                  ${isSelOpt ? '✓ ' : ''}Option ${mIdx + 1}: ${mOpt.name}
+                                  ${isSelOpt ? '✓ ' : ''}Subtype ${String.fromCharCode(65 + mIdx)}: ${mOpt.name}
                                 </button>
                               `;
                             }).join('')}
                           </div>
                         </div>
                       ` : ''}
+
+                      <div class="space-y-1">
+                        <div class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Machine Weight Loading Mode (0 lbs Bar):</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          <button
+                            type="button"
+                            data-preview-load-ex="${ex.id}"
+                            data-preview-load-val="plate_2sides"
+                            aria-pressed="${pendingSwapPreview.loadMode !== 'pin_stack' ? 'true' : 'false'}"
+                            class="select-preview-load-btn px-2.5 py-1.5 rounded-xl border text-[11px] font-extrabold text-left transition ${
+                              pendingSwapPreview.loadMode !== 'pin_stack'
+                                ? 'bg-emerald-400 text-slate-950 border-emerald-300 shadow-sm'
+                                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                            }"
+                          >
+                            ${pendingSwapPreview.loadMode !== 'pin_stack' ? '✓ ' : ''}Plate-Loaded Machine (2 Sides • No Bar)
+                          </button>
+                          <button
+                            type="button"
+                            data-preview-load-ex="${ex.id}"
+                            data-preview-load-val="pin_stack"
+                            aria-pressed="${pendingSwapPreview.loadMode === 'pin_stack' ? 'true' : 'false'}"
+                            class="select-preview-load-btn px-2.5 py-1.5 rounded-xl border text-[11px] font-extrabold text-left transition ${
+                              pendingSwapPreview.loadMode === 'pin_stack'
+                                ? 'bg-emerald-400 text-slate-950 border-emerald-300 shadow-sm'
+                                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                            }"
+                          >
+                            ${pendingSwapPreview.loadMode === 'pin_stack' ? '✓ ' : ''}Pin / Cable Stack Machine (Total Weight Only)
+                          </button>
+                        </div>
+                      </div>
 
                       <div class="space-y-1">
                         <div class="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">Swap Scope:</div>
@@ -10337,20 +10992,66 @@
                       </div>
 
                       <div class="bg-slate-950/90 border border-slate-800 rounded-lg p-2.5 space-y-1.5 text-[11px]">
-                        <div class="font-extrabold text-white">Replacement: ${pendingSwapPreview.suggestedMachineExercise}</div>
+                        <div class="font-extrabold text-white">How to Use This Machine: ${pendingSwapPreview.suggestedMachineExercise}</div>
                         <div class="text-sky-300 font-bold">Target Muscles: ${pendingSwapPreview.targetMuscles}</div>
-                        <div class="text-slate-300 leading-snug">${pendingSwapPreview.definitionAndCues}</div>
+                        <div class="text-slate-300 leading-snug">${pendingSwapPreview.simpleSteps || pendingSwapPreview.definitionAndCues}</div>
                         <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
                           <span class="font-mono font-bold text-emerald-300">Recommended Rest: ${pendingSwapPreview.restLabel} (${pendingSwapPreview.restSec}s)</span>
                           <div class="flex flex-wrap items-center gap-2">
                             <a href="${pendingSwapPreview.primaryVideoUrl || pendingSwapPreview.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-emerald-300 hover:text-emerald-200 underline font-extrabold">Primary Machine Video</a>
                             <a href="${pendingSwapPreview.altVideoUrl || pendingSwapPreview.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:text-sky-200 underline font-extrabold">Alt Machine Video</a>
+                            ${pendingSwapPreview.altVideoUrl2 ? `<a href="${pendingSwapPreview.altVideoUrl2}" target="_blank" rel="noopener noreferrer" class="text-amber-300 hover:text-amber-200 underline font-extrabold">Alt Video 2</a>` : ''}
                           </div>
                         </div>
                       </div>
+
+                      <!-- Live YouTube Search Results & Custom Video URL Selector -->
+                      <div class="bg-slate-950/90 border border-sky-500/35 rounded-lg p-2.5 space-y-2 text-[11px]">
+                        <div class="flex flex-wrap items-center justify-between gap-1.5">
+                          <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Live YouTube Video Results / Custom URL</span>
+                          <button type="button" data-live-yt-search-ex="${ex.id}" class="live-yt-search-btn px-2 py-0.5 rounded bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 text-[10px] font-extrabold transition">
+                            Search YouTube Live
+                          </button>
+                        </div>
+                        ${pendingSwapPreview.liveVideoResults && pendingSwapPreview.liveVideoResults.length ? `
+                          <div class="space-y-1">
+                            ${pendingSwapPreview.liveVideoResults.map((vid, vIdx) => {
+                              const isChosenVid = (pendingSwapPreview.videoUrl || pendingSwapPreview.primaryVideoUrl) === vid.url;
+                              return `
+                                <button
+                                  type="button"
+                                  data-pick-live-vid-ex="${ex.id}"
+                                  data-pick-live-vid-url="${vid.url}"
+                                  class="pick-live-vid-btn w-full text-left px-2 py-1.5 rounded-lg border text-[10px] font-bold flex items-center justify-between gap-2 transition ${
+                                    isChosenVid
+                                      ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200'
+                                      : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300'
+                                  }"
+                                >
+                                  <span class="truncate">${isChosenVid ? '✓ ' : ''}${vid.title} (${vid.channel})</span>
+                                  <span class="text-sky-300 shrink-0">${vid.source || 'Use Video'}</span>
+                                </button>
+                              `;
+                            }).join('')}
+                          </div>
+                        ` : ''}
+                        <div class="flex items-center gap-1.5">
+                          <input
+                            type="url"
+                            data-custom-video-url-ex="${ex.id}"
+                            value="${pendingSwapPreview.customVideoUrl || ''}"
+                            placeholder="Or paste exact YouTube machine tutorial URL..."
+                            class="custom-machine-video-input flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400"
+                          />
+                        </div>
+                      </div>
+
                       <div class="flex flex-wrap items-center justify-end gap-2">
                         <button type="button" data-cancel-ai-swap="${ex.id}" class="cancel-ai-swap-btn px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold transition">
                           Cancel
+                        </button>
+                        <button type="button" data-save-shared-machine="${ex.id}" data-orig-ex-id="${ex.originalId || ex.id}" data-slot-key="${ex.slotKey || ''}" data-alt-slot-key="${ex.altSlotKey || ''}" class="save-shared-machine-btn px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-extrabold shadow-sm transition">
+                          Save to Shared Machine Database &amp; Replace Card
                         </button>
                         <button type="button" data-confirm-ai-swap="${ex.id}" data-orig-ex-id="${ex.originalId || ex.id}" data-slot-key="${ex.slotKey || ''}" data-alt-slot-key="${ex.altSlotKey || ''}" class="confirm-ai-swap-btn px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-sm transition">
                           Confirm &amp; Replace Card
@@ -10401,6 +11102,18 @@
         });
       });
 
+      // 2-Option Machine Loading Toggle Listeners (Plate-Loaded 2 Sides vs Pin/Cable Stack)
+      listEl.querySelectorAll('.machine-load-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-machine-load-ex');
+          const modeVal = btn.getAttribute('data-machine-load-mode') === 'pin_stack' ? 'pin_stack' : 'plate_2sides';
+          if (!exId) return;
+          setMachineLoadMode(exId, modeVal);
+          renderWorkoutView();
+          showToast(modeVal === 'pin_stack' ? 'Switched to Pin / Cable Stack Machine (Total Weight Only)' : 'Switched to Plate-Loaded Machine (2 Sides • No Bar)');
+        });
+      });
+
       // AI Machine Photo Check & Smart Exercise Swap Listeners (Deliberate 3-Step AI Vision + Multi-Option + All Days / Today Scope)
       listEl.querySelectorAll('.ai-check-swap-ex-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -10409,6 +11122,7 @@
           const exObj = exercisesToday.find(e => e.id === exId) || { id: origExId, originalId: origExId, name: origExId };
           const noteInput = document.getElementById(`ex-note-input-${exId}`);
           const customNote = noteInput ? noteInput.value : ((state.exerciseNotes && state.exerciseNotes[exId] && state.exerciseNotes[exId].text) || '');
+          const photoDataUrl = (state.exerciseNotes && state.exerciseNotes[exId] && state.exerciseNotes[exId].photoDataUrl) || '';
           const prevPending = state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId];
           const swapProposal = verifyAndBuildMachineExerciseSwap(
             exObj,
@@ -10422,7 +11136,15 @@
           saveState();
           renderWorkoutView();
           runDeliberateAiVisionPipeline(exId, swapProposal.originalExerciseName);
-          showToast(`Biomechanical match verified: ${swapProposal.suggestedMachineExercise}`);
+          showToast(`Machine match verified: ${swapProposal.suggestedMachineExercise}`);
+          if (photoDataUrl || customNote) {
+            const liveProposal = await analyzeMachinePhotoAndSearchVideosLive(exObj, customNote, photoDataUrl, swapProposal);
+            if (state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId]) {
+              state.pendingMachineSwapPreviews[exId] = liveProposal;
+              saveState();
+              renderWorkoutView();
+            }
+          }
         });
       });
 
@@ -10440,6 +11162,19 @@
         });
       });
 
+      listEl.querySelectorAll('.select-preview-load-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-preview-load-ex');
+          const loadVal = btn.getAttribute('data-preview-load-val') === 'pin_stack' ? 'pin_stack' : 'plate_2sides';
+          const curPreview = state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId];
+          if (!curPreview) return;
+          curPreview.loadMode = loadVal;
+          setMachineLoadMode(exId, loadVal);
+          saveState();
+          renderWorkoutView();
+        });
+      });
+
       listEl.querySelectorAll('.select-swap-scope-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const exId = btn.getAttribute('data-swap-scope-ex');
@@ -10448,11 +11183,123 @@
           const curPreview = state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId];
           if (!exObj || !curPreview) return;
           const updatedPreview = verifyAndBuildMachineExerciseSwap(exObj, '', curPreview.optionIndex, scopeVal);
+          updatedPreview.loadMode = curPreview.loadMode || updatedPreview.loadMode;
+          updatedPreview.liveVideoResults = curPreview.liveVideoResults || [];
+          updatedPreview.customVideoUrl = curPreview.customVideoUrl || '';
           state.pendingMachineSwapPreviews[exId] = updatedPreview;
           saveState();
           renderWorkoutView();
         });
       });
+
+      listEl.querySelectorAll('.live-yt-search-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const exId = btn.getAttribute('data-live-yt-search-ex');
+          const exObj = exercisesToday.find(e => e.id === exId);
+          const curPreview = state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId];
+          if (!exObj || !curPreview) return;
+          btn.textContent = 'Searching...';
+          const photoDataUrl = (state.exerciseNotes && state.exerciseNotes[exId] && state.exerciseNotes[exId].photoDataUrl) || '';
+          const customNote = (state.exerciseNotes && state.exerciseNotes[exId] && state.exerciseNotes[exId].text) || curPreview.suggestedMachineExercise || '';
+          const liveProposal = await analyzeMachinePhotoAndSearchVideosLive(exObj, customNote, photoDataUrl, curPreview);
+          liveProposal.optionIndex = curPreview.optionIndex;
+          liveProposal.scope = curPreview.scope;
+          liveProposal.loadMode = curPreview.loadMode || liveProposal.loadMode;
+          if (state.pendingMachineSwapPreviews) {
+            state.pendingMachineSwapPreviews[exId] = liveProposal;
+          }
+          saveState();
+          renderWorkoutView();
+          showToast(`Found ${(liveProposal.liveVideoResults || []).length} machine video matches`);
+        });
+      });
+
+      listEl.querySelectorAll('.pick-live-vid-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-pick-live-vid-ex');
+          const url = btn.getAttribute('data-pick-live-vid-url');
+          const curPreview = state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId];
+          if (!curPreview || !url) return;
+          curPreview.videoUrl = url;
+          curPreview.primaryVideoUrl = url;
+          curPreview.customVideoUrl = url;
+          saveState();
+          renderWorkoutView();
+          showToast('Selected machine video URL');
+        });
+      });
+
+      listEl.querySelectorAll('.custom-machine-video-input').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const exId = inp.getAttribute('data-custom-video-url-ex');
+          const curPreview = state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId];
+          if (!curPreview) return;
+          const val = String(inp.value || '').trim();
+          curPreview.customVideoUrl = val;
+          if (/^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//i.test(val)) {
+            curPreview.videoUrl = val;
+            curPreview.primaryVideoUrl = val;
+          }
+          saveState();
+        });
+      });
+
+      function finalizeAndCommitMachineSwap(exId, origExId, slotKey, altSlotKey, saveToSharedDb) {
+        const preview = state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId];
+        if (!preview) return;
+        const customUrlInp = listEl.querySelector(`input[data-custom-video-url-ex="${exId}"]`);
+        if (customUrlInp && /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//i.test(String(customUrlInp.value || '').trim())) {
+          const cleanCustomUrl = String(customUrlInp.value || '').trim();
+          preview.videoUrl = cleanCustomUrl;
+          preview.primaryVideoUrl = cleanCustomUrl;
+        }
+        if (!state.exerciseSwaps) state.exerciseSwaps = {};
+        if (!state.swappedExercises) state.swappedExercises = {};
+        if (!state.revertedMachineSwaps) state.revertedMachineSwaps = {};
+
+        delete state.revertedMachineSwaps[origExId];
+        delete state.revertedMachineSwaps[slotKey];
+        delete state.revertedMachineSwaps[altSlotKey];
+
+        setMachineLoadMode(origExId, preview.loadMode || 'plate_2sides');
+
+        // Always persist verified machine choice into Shared Machine Database so all future sessions inherit it
+        upsertSharedMachineDatabase({
+          originalExKey: origExId,
+          machineName: preview.suggestedMachineExercise,
+          machineSubtype: preview.machineSubtype || preview.suggestedMachineExercise,
+          loadMode: preview.loadMode || 'plate_2sides',
+          simpleSteps: preview.simpleSteps || preview.definitionAndCues,
+          targetMuscles: preview.targetMuscles,
+          videoUrl: preview.primaryVideoUrl || preview.videoUrl,
+          altVideoUrl: preview.altVideoUrl || preview.videoUrl,
+          altVideoUrl2: preview.altVideoUrl2 || ''
+        });
+
+        // Strip 45 lbs barbell weight from existing set rows when converting from a barbell lift to a plate-loaded machine
+        if (BARBELL_EX_IDS.includes(origExId)) {
+          stripBarbellWeightFromMachineSets(origExId, 45);
+        }
+
+        if (preview.scope === 'today') {
+          state.exerciseSwaps[slotKey] = preview;
+          state.exerciseSwaps[altSlotKey] = preview;
+          state.swappedExercises[altSlotKey] = preview;
+        } else {
+          state.exerciseSwaps[origExId] = preview;
+          state.swappedExercises[altSlotKey] = preview;
+        }
+        delete state.pendingMachineSwapPreviews[exId];
+        if (state.openNotePanels) {
+          state.openNotePanels[exId] = false;
+        }
+        saveState();
+        renderWorkoutView();
+        if (PULLUP_EX_ID_TO_DAY[origExId]) renderPullupView();
+        showToast(saveToSharedDb
+          ? `Saved ${preview.suggestedMachineExercise} to Shared Machine Database`
+          : `Activated ${preview.suggestedMachineExercise} (${preview.scope === 'today' ? 'Today Only' : 'All Days'})`);
+      }
 
       listEl.querySelectorAll('.confirm-ai-swap-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -10460,29 +11307,17 @@
           const origExId = btn.getAttribute('data-orig-ex-id') || exId;
           const slotKey = btn.getAttribute('data-slot-key') || `w${week}_d${dayIdx}_${origExId}`;
           const altSlotKey = btn.getAttribute('data-alt-slot-key') || `w${week}_d${dayIdx}_${origExId}`;
-          const preview = state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId];
-          if (!preview) return;
-          if (!state.exerciseSwaps) state.exerciseSwaps = {};
-          if (!state.swappedExercises) state.swappedExercises = {};
-          if (!state.revertedMachineSwaps) state.revertedMachineSwaps = {};
+          finalizeAndCommitMachineSwap(exId, origExId, slotKey, altSlotKey, false);
+        });
+      });
 
-          delete state.revertedMachineSwaps[origExId];
-          delete state.revertedMachineSwaps[slotKey];
-          delete state.revertedMachineSwaps[altSlotKey];
-
-          if (preview.scope === 'today') {
-            state.exerciseSwaps[slotKey] = preview;
-            state.exerciseSwaps[altSlotKey] = preview;
-            state.swappedExercises[altSlotKey] = preview;
-          } else {
-            state.exerciseSwaps[origExId] = preview;
-            state.swappedExercises[altSlotKey] = preview;
-          }
-          delete state.pendingMachineSwapPreviews[exId];
-          saveState();
-          renderWorkoutView();
-          if (PULLUP_EX_ID_TO_DAY[origExId]) renderPullupView();
-          showToast(`Activated ${preview.suggestedMachineExercise} (${preview.scope === 'today' ? 'Today Only' : 'All Days'})`);
+      listEl.querySelectorAll('.save-shared-machine-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-save-shared-machine');
+          const origExId = btn.getAttribute('data-orig-ex-id') || exId;
+          const slotKey = btn.getAttribute('data-slot-key') || `w${week}_d${dayIdx}_${origExId}`;
+          const altSlotKey = btn.getAttribute('data-alt-slot-key') || `w${week}_d${dayIdx}_${origExId}`;
+          finalizeAndCommitMachineSwap(exId, origExId, slotKey, altSlotKey, true);
         });
       });
 
@@ -10519,6 +11354,9 @@
             if (canonicalId) delete state.swappedExercises[canonicalId];
             if (slotKey) delete state.swappedExercises[slotKey];
             if (altSlotKey) delete state.swappedExercises[altSlotKey];
+          }
+          if (state.sharedMachineDatabase && canonicalId) {
+            delete state.sharedMachineDatabase[canonicalId];
           }
           saveState();
           renderWorkoutView();
@@ -10654,7 +11492,7 @@
           const exId = fileInp.getAttribute('data-note-photo-ex');
           const file = e.target.files && e.target.files[0];
           if (!file || !exId) return;
-          compressExercisePhotoFileToDataUrl(file, (dataUrl) => {
+          compressExercisePhotoFileToDataUrl(file, async (dataUrl) => {
             if (!state.exerciseNotes) state.exerciseNotes = {};
             const prev = state.exerciseNotes[exId] || { text: '', photoDataUrl: '' };
             state.exerciseNotes[exId] = {
@@ -10671,7 +11509,13 @@
             saveState();
             renderWorkoutView();
             runDeliberateAiVisionPipeline(exId, swapProposal.originalExerciseName);
-            showToast('Machine photo analyzed — Review AI Machine Match Verdict below.');
+            showToast('Machine photo analyzed — Checking machine subtype & live video...');
+            const liveProposal = await analyzeMachinePhotoAndSearchVideosLive(exObj, prev.text || '', dataUrl, swapProposal);
+            if (state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId]) {
+              state.pendingMachineSwapPreviews[exId] = liveProposal;
+              saveState();
+              renderWorkoutView();
+            }
           });
         });
       });
@@ -10687,14 +11531,14 @@
         });
       });
 
-      // Helper to apply a new canonical total weight to a SINGLE Barbell Set Row (or explicitly to remaining unlogged sets when requested)
+      // Helper to apply a new canonical total weight to a SINGLE Barbell or Machine Set Row (or explicitly to remaining unlogged sets when requested)
       function applyBarbellSetMathAndSyncDOM(key, exId, setIdx, newTotalVal, syncAllUnloggedSets) {
         const exUnit = getExerciseUnit(exId);
-        const mathNow = computeBarbellMath(newTotalVal, exId, exUnit);
+        const exObj = exercisesToday.find(e => e.id === exId);
+        const mathNow = computeBarbellMath(newTotalVal, exId, exUnit, exObj);
         if (!state.exerciseUnitPrefs[exId]) {
           state.exerciseUnitPrefs[exId] = exUnit;
         }
-        const exObj = exercisesToday.find(e => e.id === exId);
         const targetSets = (syncAllUnloggedSets && exObj)
           ? Array.from({ length: exObj.sets }, (_, i) => i + 1).filter(sNum => {
               if (sNum === setIdx) return true;
@@ -10724,14 +11568,18 @@
           const inpBoth = listEl.querySelector(`input[data-bar3-inp="bothSides"][data-log-key="${k}"]`);
           const inpBar = listEl.querySelector(`input[data-bar3-inp="barWeight"][data-log-key="${k}"]`);
           if (inpSide && document.activeElement !== inpSide) inpSide.value = String(mathNow.perSide);
-          if (inpBoth && document.activeElement !== inpBoth) inpBoth.value = String(mathNow.bothSides);
+          if (inpBoth && document.activeElement !== inpBoth) inpBoth.value = String(mathNow.isMachine && mathNow.loadMode === 'pin_stack' ? mathNow.total : mathNow.bothSides);
           if (inpBar && document.activeElement !== inpBar) inpBar.value = String(mathNow.bar);
 
           const roTotalEl = listEl.querySelector(`[data-barbell-ro-total="${k}"]`);
           if (roTotalEl) {
             roTotalEl.innerHTML = `
               <span class="font-bold text-slate-300">
-                <strong class="text-amber-300">${mathNow.bar} ${exUnit}</strong> Bar + <strong class="text-emerald-300">${mathNow.perSide} ${exUnit}/side</strong> = <strong class="text-white">${mathNow.total} ${exUnit}</strong>
+                ${mathNow.isMachine
+                  ? (mathNow.loadMode === 'pin_stack'
+                      ? `<strong class="text-emerald-300">Machine Pin Weight:</strong> <strong class="text-white">${mathNow.total} ${exUnit}</strong>`
+                      : `<strong class="text-emerald-300">Machine Plates: ${mathNow.perSide} ${exUnit}/side</strong> = <strong class="text-white">${mathNow.total} ${exUnit} total</strong>`)
+                  : `<strong class="text-amber-300">${mathNow.bar} ${exUnit}</strong> Bar + <strong class="text-emerald-300">${mathNow.perSide} ${exUnit}/side</strong> = <strong class="text-white">${mathNow.total} ${exUnit}</strong>`}
               </span>
               <div class="flex flex-wrap items-center gap-1">
                 ${mathNow.plateChipsHtml}
@@ -10748,7 +11596,11 @@
 
         const plateEl = listEl.querySelector(`[data-plate-badge="${exId}"]`);
         if (plateEl) {
-          plateEl.innerHTML = `Set ${setIdx}: ${mathNow.bar} ${exUnit} Bar + ${mathNow.perSide}/side = <strong class="text-white">${mathNow.total} ${exUnit}</strong>`;
+          plateEl.innerHTML = `Set ${setIdx}: ${mathNow.isMachine
+            ? (mathNow.loadMode === 'pin_stack'
+                ? `Machine Pin Weight: <strong class="text-white">${mathNow.total} ${exUnit}</strong>`
+                : `Machine Plates: ${mathNow.perSide} ${exUnit}/side = <strong class="text-white">${mathNow.total} ${exUnit} total</strong>`)
+            : `${mathNow.bar} ${exUnit} Bar + ${mathNow.perSide}/side = <strong class="text-white">${mathNow.total} ${exUnit}</strong>`}`;
         }
         saveState();
         return mathNow;
@@ -10830,7 +11682,8 @@
           const prevSug = getPreviousWeekSuggestion(week, dayIdx, exId, setIdx);
           const fallbackW = (prevSug && prevSug.weight !== '') ? parseFloat(prevSug.weight) : defTotal;
           const curTotal = (curEntry && curEntry.weight !== undefined && curEntry.weight !== '') ? parseFloat(curEntry.weight) : fallbackW;
-          const curMath = computeBarbellMath(curTotal, exId, exUnit);
+          const exObj = exercisesToday.find(e => e.id === exId);
+          const curMath = computeBarbellMath(curTotal, exId, exUnit, exObj);
 
           if (boxType === 'perSide') {
             const nextSide = Math.max(0, +(curMath.perSide + delta).toFixed(2));
@@ -10838,7 +11691,8 @@
             applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal, false);
             renderWorkoutView();
           } else if (boxType === 'bothSides') {
-            const nextBoth = Math.max(0, +(curMath.bothSides + delta).toFixed(2));
+            const baseVal = curMath.isMachine && curMath.loadMode === 'pin_stack' ? curMath.total : curMath.bothSides;
+            const nextBoth = Math.max(0, +(baseVal + delta).toFixed(2));
             const nextTotal = +(curMath.bar + nextBoth).toFixed(2);
             applyBarbellSetMathAndSyncDOM(key, exId, setIdx, nextTotal, false);
             renderWorkoutView();
@@ -10909,15 +11763,21 @@
             const legacyKey = `${kIdx}_${exId}_${setIdx}`;
             state.workoutLogs[legacyKey] = Object.assign({}, state.workoutLogs[key]);
           }
-          if (field === 'weight' && BARBELL_EX_IDS.includes(exId)) {
+          const exObjForInp = exercisesToday.find(e => e.id === exId);
+          const isMacInp = Boolean((exObjForInp && (exObjForInp.isSwappedMachine || exObjForInp.isSwapped)) || isExerciseInMachineMode(exId, week, dayIdx));
+          if (field === 'weight' && (BARBELL_EX_IDS.includes(exId) || isMacInp)) {
             const numericW = inp.value !== '' ? parseFloat(inp.value) : (inp.placeholder ? parseFloat(inp.placeholder) : defaultTotalPlaceholder);
             if (!isNaN(numericW)) {
-              const mathNow = computeBarbellMath(numericW, exId, exUnit);
+              const mathNow = computeBarbellMath(numericW, exId, exUnit, exObjForInp);
               const roTotalEl = listEl.querySelector(`[data-barbell-ro-total="${key}"]`);
               if (roTotalEl) {
                 roTotalEl.innerHTML = `
                   <span class="font-bold text-slate-300">
-                    <strong class="text-amber-300">${mathNow.bar} ${exUnit}</strong> Bar + <strong class="text-emerald-300">${mathNow.perSide} ${exUnit}/side</strong> = <strong class="text-white">${mathNow.total} ${exUnit}</strong>
+                    ${mathNow.isMachine
+                      ? (mathNow.loadMode === 'pin_stack'
+                          ? `<strong class="text-emerald-300">Machine Pin Weight:</strong> <strong class="text-white">${mathNow.total} ${exUnit}</strong>`
+                          : `<strong class="text-emerald-300">Machine Plates: ${mathNow.perSide} ${exUnit}/side</strong> = <strong class="text-white">${mathNow.total} ${exUnit} total</strong>`)
+                      : `<strong class="text-amber-300">${mathNow.bar} ${exUnit}</strong> Bar + <strong class="text-emerald-300">${mathNow.perSide} ${exUnit}/side</strong> = <strong class="text-white">${mathNow.total} ${exUnit}</strong>`}
                   </span>
                   <div class="flex flex-wrap items-center gap-1">
                     ${mathNow.plateChipsHtml}
@@ -10927,11 +11787,19 @@
               const inpSide = listEl.querySelector(`input[data-bar3-inp="perSide"][data-log-key="${key}"]`);
               const inpBoth = listEl.querySelector(`input[data-bar3-inp="bothSides"][data-log-key="${key}"]`);
               if (inpSide && document.activeElement !== inpSide) inpSide.value = String(mathNow.perSide);
-              if (inpBoth && document.activeElement !== inpBoth) inpBoth.value = String(mathNow.bothSides);
+              if (inpBoth && document.activeElement !== inpBoth) inpBoth.value = String(mathNow.isMachine && mathNow.loadMode === 'pin_stack' ? mathNow.total : mathNow.bothSides);
               const eqEl = listEl.querySelector(`[data-barbell-eq="${key}"]`);
               if (eqEl) {
                 eqEl.innerHTML = renderBarbellSetEquationInnerHtml(mathNow, key, exId);
                 attachRoundStandardListeners();
+              }
+              const plateEl = listEl.querySelector(`[data-plate-badge="${exId}"]`);
+              if (plateEl) {
+                plateEl.innerHTML = `Set ${setIdx}: ${mathNow.isMachine
+                  ? (mathNow.loadMode === 'pin_stack'
+                      ? `Machine Pin Weight: <strong class="text-white">${mathNow.total} ${exUnit}</strong>`
+                      : `Machine Plates: ${mathNow.perSide} ${exUnit}/side = <strong class="text-white">${mathNow.total} ${exUnit} total</strong>`)
+                  : `${mathNow.bar} ${exUnit} Bar + ${mathNow.perSide}/side = <strong class="text-white">${mathNow.total} ${exUnit}</strong>`}`;
               }
             }
           }
@@ -13924,7 +14792,8 @@
         return;
       }
 
-      const modelName = state.geminiModel || 'gemini-3.8-flash';
+      const modelName = 'gemini-3.8-flash';
+      state.geminiModel = modelName;
       const systemInstruction = `You are a Senior Strength & Conditioning Coach, Heuristic UX Advisor, and Low-Budget High-Protein Nutritionist powered by Google ${modelName}. Keep answers concise (3-4 bullet points max), practical, and tailored to this athlete's live state: ${JSON.stringify(ctx)}. Never mention PDF, exercise alternatives, or espresso.`;
 
       let replyText = '';
@@ -13935,6 +14804,8 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: modelName,
+            enableGoogleSearch: true,
+            tools: [{ googleSearch: {} }],
             prompt: cleanPrompt,
             context: ctx,
             systemInstruction
@@ -13946,16 +14817,17 @@
         }
       } catch (e) {}
 
-      // 2. If local API key is provided in Developer Settings, call Google AI Studio REST API directly
+      // 2. If local API key is provided in Developer Settings, call Google AI Studio REST API (gemini-3.8-flash with googleSearch) directly
       if (!replyText && state.geminiApiKeyLocal) {
         try {
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(state.geminiApiKeyLocal)}`;
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(state.geminiApiKeyLocal)}`;
           const res = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               systemInstruction: { parts: [{ text: systemInstruction }] },
-              contents: [{ role: 'user', parts: [{ text: cleanPrompt }] }]
+              contents: [{ role: 'user', parts: [{ text: cleanPrompt }] }],
+              tools: [{ googleSearch: {} }]
             })
           });
           if (res.ok) {
@@ -14109,6 +14981,10 @@
         barbellConfig: JSON.parse(JSON.stringify(state.barbellConfig || {})),
         exerciseUnitPrefs: JSON.parse(JSON.stringify(state.exerciseUnitPrefs || {})),
         exerciseNotes: JSON.parse(JSON.stringify(state.exerciseNotes || {})),
+        exerciseSwaps: JSON.parse(JSON.stringify(state.exerciseSwaps || {})),
+        swappedExercises: JSON.parse(JSON.stringify(state.swappedExercises || {})),
+        revertedMachineSwaps: JSON.parse(JSON.stringify(state.revertedMachineSwaps || {})),
+        sharedMachineDatabase: JSON.parse(JSON.stringify(state.sharedMachineDatabase || {})),
         prepNotes: JSON.parse(JSON.stringify(state.prepNotes || {})),
         fuelWeightUnit: state.fuelWeightUnit || 'g',
         activeFuelPreset: state.activeFuelPreset || 'almond_cashew_pea',
@@ -14146,6 +15022,10 @@
       state.barbellConfig = s.barbellConfig ? JSON.parse(JSON.stringify(s.barbellConfig)) : {};
       state.exerciseUnitPrefs = s.exerciseUnitPrefs ? JSON.parse(JSON.stringify(s.exerciseUnitPrefs)) : {};
       state.exerciseNotes = s.exerciseNotes ? JSON.parse(JSON.stringify(s.exerciseNotes)) : {};
+      state.exerciseSwaps = s.exerciseSwaps ? JSON.parse(JSON.stringify(s.exerciseSwaps)) : (state.exerciseSwaps || {});
+      state.swappedExercises = s.swappedExercises ? JSON.parse(JSON.stringify(s.swappedExercises)) : (state.swappedExercises || {});
+      state.revertedMachineSwaps = s.revertedMachineSwaps ? JSON.parse(JSON.stringify(s.revertedMachineSwaps)) : (state.revertedMachineSwaps || {});
+      state.sharedMachineDatabase = s.sharedMachineDatabase ? JSON.parse(JSON.stringify(s.sharedMachineDatabase)) : (state.sharedMachineDatabase || {});
       state.prepNotes = s.prepNotes ? JSON.parse(JSON.stringify(s.prepNotes)) : {};
       if (s.fuelWeightUnit === 'g' || s.fuelWeightUnit === 'lb') state.fuelWeightUnit = s.fuelWeightUnit;
       if (s.activeFuelPreset && FUEL_PLAN_PRESETS[s.activeFuelPreset]) state.activeFuelPreset = s.activeFuelPreset;

@@ -66,6 +66,32 @@ export default async function handler(req, res) {
               }
             });
           }
+          if (d.sharedMachineDatabase && typeof d.sharedMachineDatabase === 'object') {
+            if (!baseData.sharedMachineDatabase || typeof baseData.sharedMachineDatabase !== 'object') {
+              baseData.sharedMachineDatabase = {};
+            }
+            Object.assign(baseData.sharedMachineDatabase, d.sharedMachineDatabase);
+          }
+          if (d.exerciseSwaps && typeof d.exerciseSwaps === 'object') {
+            if (!baseData.exerciseSwaps || typeof baseData.exerciseSwaps !== 'object') {
+              baseData.exerciseSwaps = {};
+            }
+            Object.keys(d.exerciseSwaps).forEach(k => {
+              if (!baseData.exerciseSwaps[k]) {
+                baseData.exerciseSwaps[k] = d.exerciseSwaps[k];
+              }
+            });
+          }
+          if (d.exerciseNotes && typeof d.exerciseNotes === 'object') {
+            if (!baseData.exerciseNotes || typeof baseData.exerciseNotes !== 'object') {
+              baseData.exerciseNotes = {};
+            }
+            Object.keys(d.exerciseNotes).forEach(k => {
+              if (!baseData.exerciseNotes[k] || (!baseData.exerciseNotes[k].text && d.exerciseNotes[k].text)) {
+                baseData.exerciseNotes[k] = d.exerciseNotes[k];
+              }
+            });
+          }
         });
       }
 

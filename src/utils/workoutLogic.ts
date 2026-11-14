@@ -4739,8 +4739,8 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     originalExId: 'tue_calf',
     replacementId: 'swap_standing_calf_machine',
     replacementName: 'Standing Calf Raise / Leg Press Calf Press Machine',
-    primaryMuscles: 'Gastrocnemius & Soleus',
-    movementPattern: 'Straight-Knee Ankle Plantarflexion',
+    primaryMuscles: 'Calves (Upper & Lower)',
+    movementPattern: 'Straight-Leg Calf Raise',
     biomechanicalNotes: 'Place balls of feet on platform edge, lower heels for a 2s bottom stretch, and press high onto big toes.',
     videoUrl: 'https://youtu.be/q2Eigaa9dKU',
     restSec: 90,
@@ -4942,11 +4942,11 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
   sat_seated_calf: {
     originalExId: 'sat_seated_calf',
     replacementId: 'swap_seated_calf_raise_machine',
-    replacementName: 'Plate-Loaded Seated Calf Raise Machine',
-    primaryMuscles: 'Soleus (Bent-Knee Calf)',
-    movementPattern: 'Bent-Knee Ankle Plantarflexion',
-    biomechanicalNotes: 'Place balls of feet on platform, secure knee pad, lower heels to deep stretch, and drive all the way up.',
-    videoUrl: 'https://youtu.be/2TkLMol2bCo',
+    replacementName: 'Seated Calf Press / Extension Machine',
+    primaryMuscles: 'Calves',
+    movementPattern: 'Seated Calf Press',
+    biomechanicalNotes: 'Sit back flat in the seat, place the balls of your feet on the footplate, and push forward with your toes.',
+    videoUrl: 'https://www.youtube.com/watch?v=ZmDiJvXx344',
     restSec: 60,
     restLabel: '1 min',
     defaultWeightLbs: 90
@@ -5002,21 +5002,26 @@ export function verifyAndBuildMachineExerciseSwap(
 
   return {
     matchConfirmed: true,
-    confirmationPromptText: `Biomechanical Match Confirmed: ${replacementSpec.replacementName} targets the same muscles as ${originalExName}. Replace today's exercise card?`,
+    confirmationPromptText: `Machine Match Confirmed: ${replacementSpec.replacementName} targets the same muscles as ${originalExName}. Replace today's exercise card?`,
     replacementSpec,
     switchBackButtonLabel: `Switch Back to ${originalExName}`
   };
 }
 
 // ============================================================================
-// UNIVERSAL 22-EXERCISE BIOMECHANICAL MACHINE & VERIFIED VIDEO DATABASE
+// UNIVERSAL 22-EXERCISE MACHINE & VERIFIED VIDEO DATABASE (PLAIN ENGLISH)
 // ============================================================================
+
+export type MachineLoadMode = 'plate_2sides' | 'pin_stack';
 
 export interface UniversalMachineOption {
   optionId: string;
   name: string;
+  subtypeLabel?: string;
+  loadMode: MachineLoadMode;
   primaryVideoUrl: string;
   altVideoUrl: string;
+  altVideoUrl2?: string;
   restSeconds: number;
   targetMuscle: string;
   formSetup: string;
@@ -5030,6 +5035,21 @@ export interface UniversalMachineCategory {
   options: UniversalMachineOption[];
 }
 
+export interface SharedMachineDatabaseEntry {
+  machineId: string;
+  originalExKey: string;
+  machineName: string;
+  machineSubtype: string;
+  loadMode: MachineLoadMode;
+  simpleSteps: string;
+  targetMuscles: string;
+  videoUrl: string;
+  altVideoUrl: string;
+  altVideoUrl2?: string;
+  verifiedByUser: boolean;
+  updatedAt: string;
+}
+
 export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
   {
     categoryId: 'pull_ups',
@@ -5040,20 +5060,22 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'assisted_pull_up_machine',
         name: 'Assisted Pull-Up Machine (Knee/Foot Platform)',
+        loadMode: 'pin_stack',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=CdO5BvP6Ti8',
         altVideoUrl: 'https://www.youtube.com/watch?v=gx0RWT7WbmA',
         restSeconds: 90,
-        targetMuscle: 'Latissimus Dorsi, Biceps & Mid-Back',
-        formSetup: '1. Select counterweight pin (note: more weight = more assistance). 2. Kneel or stand on the platform and take a slightly wider than shoulder-width overhand grip. 3. Depress your scapulae, pull chest to the bar driving elbows down to hips, and lower into a controlled 2-3s dead-hang stretch.'
+        targetMuscle: 'Upper Back, Lats & Biceps',
+        formSetup: '1. Set the counterweight pin on the weight stack (more weight gives you more help). 2. Kneel or stand on the pad and grip the overhead bar slightly wider than your shoulders. 3. Pull your chest up to the bar and lower yourself slowly for 2 to 3 seconds.'
       },
       {
         optionId: 'lat_pulldown_machine_for_pullups',
         name: 'Lat Pulldown Machine',
+        loadMode: 'pin_stack',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
         altVideoUrl: 'https://www.youtube.com/watch?v=owMowIRkyvQ',
         restSeconds: 90,
-        targetMuscle: 'Latissimus Dorsi, Teres Major & Biceps',
-        formSetup: '1. Lock thighs snugly under the knee pad. 2. Take a slightly wider than shoulder-width overhand grip. 3. Depress shoulder blades and pull the bar down to your upper chest while keeping torso tall, then control the 2-3s eccentric stretch.'
+        targetMuscle: 'Upper Back, Lats & Biceps',
+        formSetup: '1. Sit down and lock your thighs snugly under the knee pad. 2. Grip the bar slightly wider than your shoulders with your palms facing forward. 3. Pull the bar down to your upper chest and let it rise slowly with control.'
       }
     ]
   },
@@ -5066,11 +5088,12 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'seated_chest_press_machine',
         name: 'Seated Chest Press Machine',
+        loadMode: 'plate_2sides',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=YXjhMV7uz4c',
         altVideoUrl: 'https://www.youtube.com/watch?v=Qu7-ceCvq7w',
         restSeconds: 120,
-        targetMuscle: 'Mid/Lower Pectoralis Major, Anterior Delts & Triceps',
-        formSetup: '1. Adjust seat height so handles align with your mid-to-lower chest line. 2. Retract and depress shoulder blades firmly into the backrest. 3. Press handles to full extension without rounding shoulders forward, then lower over 2-3s to a deep pec stretch.'
+        targetMuscle: 'Chest, Front Shoulders & Triceps',
+        formSetup: '1. Adjust the seat height so the handles line up with the middle of your chest. 2. Sit tall and press your upper back flat against the back pad. 3. Push the handles forward until your arms are straight and lower the weight slowly.'
       }
     ]
   },
@@ -5083,11 +5106,12 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'incline_chest_press_machine',
         name: 'Incline Chest Press Machine',
+        loadMode: 'plate_2sides',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=WxrKIPbeQP8',
         altVideoUrl: 'https://www.youtube.com/watch?v=i3e4CG5tnfs',
         restSeconds: 120,
-        targetMuscle: 'Clavicular (Upper) Pectoralis Major & Anterior Deltoids',
-        formSetup: '1. Set seat height so handles start at upper-chest / collarbone level. 2. Keep upper back arched slightly against the pad with scapulae retracted. 3. Press upward on the converging 30-45 degree path, pause briefly, and lower slowly.'
+        targetMuscle: 'Upper Chest & Front Shoulders',
+        formSetup: '1. Set the seat height so the handles start near your upper chest and collarbone. 2. Keep your upper back pressed firmly against the angled back pad. 3. Press the handles up and forward, pause briefly, and lower them slowly.'
       }
     ]
   },
@@ -5100,11 +5124,12 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'pec_deck_machine_fly',
         name: 'Pec Deck / Seated Machine Chest Fly',
+        loadMode: 'pin_stack',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=g3T7LsEeDWQ',
         altVideoUrl: 'https://www.youtube.com/watch?v=a9vQ_hwIksU',
         restSeconds: 90,
-        targetMuscle: 'Pectoralis Major (Sternal & Costal Fibers)',
-        formSetup: '1. Adjust seat so handles align with mid-chest when arms are abducted. 2. Keep a soft 10-degree bend in elbows with shoulders pinned down and back. 3. Bring hands together in a wide hug arc, squeeze pecs for 1-2s, and return slowly.'
+        targetMuscle: 'Chest',
+        formSetup: '1. Adjust the seat so the handles are level with the middle of your chest. 2. Keep your elbows slightly bent and your shoulders relaxed down. 3. Bring the handles together in front of your chest, squeeze for 1 second, and open your arms slowly.'
       }
     ]
   },
@@ -5117,11 +5142,12 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'seated_chest_supported_row_machine',
         name: 'Seated Chest-Supported Machine / Cable Row',
+        loadMode: 'plate_2sides',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=GZbfZ033f74',
         altVideoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
         restSeconds: 120,
-        targetMuscle: 'Mid-Back (Rhomboids, Traps) & Latissimus Dorsi',
-        formSetup: '1. Adjust chest pad and seat height so your sternum braces comfortably against the pad. 2. Grip handles and drive elbows back past your torso while retracting shoulder blades. 3. Control the eccentric return until your lats and upper back protract fully.'
+        targetMuscle: 'Upper Back & Lats',
+        formSetup: '1. Adjust the seat height so your chest rests comfortably against the front pad. 2. Hold the handles and pull your elbows straight back past your ribs. 3. Squeeze your shoulder blades together for 1 second and let your arms stretch forward slowly.'
       }
     ]
   },
@@ -5134,11 +5160,12 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'converging_lat_pulldown_machine',
         name: 'Converging / Cable Lat Pulldown Machine',
+        loadMode: 'pin_stack',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
         altVideoUrl: 'https://www.youtube.com/watch?v=owMowIRkyvQ',
         restSeconds: 120,
-        targetMuscle: 'Latissimus Dorsi & Teres Major',
-        formSetup: '1. Lock thighs snugly under the knee pad. 2. Grip slightly wider than shoulder-width. 3. Pull elbows down and in toward your ribs while keeping chest tall, bringing the handles/bar to your upper chest.'
+        targetMuscle: 'Lats & Upper Back',
+        formSetup: '1. Sit down and adjust the knee pad so it holds your legs firmly in place. 2. Grip the handles or bar slightly wider than shoulder width. 3. Pull your elbows down toward your sides until the handles reach your upper chest, then return slowly.'
       }
     ]
   },
@@ -5151,11 +5178,12 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'seated_shoulder_press_machine',
         name: 'Seated Shoulder Press Machine',
+        loadMode: 'plate_2sides',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=6v4nrRVySj0',
         altVideoUrl: 'https://www.youtube.com/watch?v=Gkk-6q7Rq-s',
         restSeconds: 120,
-        targetMuscle: 'Anterior & Lateral Deltoids, Triceps',
-        formSetup: '1. Set seat height so handles rest at ear/jaw level at the bottom. 2. Brace core and keep lower back flat against the pad. 3. Press vertically to lockout without shrugging traps, then lower over 2-3s.'
+        targetMuscle: 'Shoulders & Triceps',
+        formSetup: '1. Adjust the seat so the handles start at ear or shoulder height. 2. Sit upright with your back flat against the pad and your core tight. 3. Press the handles overhead until your arms are straight and lower them slowly to shoulder level.'
       }
     ]
   },
@@ -5168,11 +5196,12 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'seated_lateral_raise_machine',
         name: 'Seated Lateral Raise Machine',
+        loadMode: 'pin_stack',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=NNAs8jx_zJI',
         altVideoUrl: 'https://www.youtube.com/watch?v=EL_xr3NVUbc',
         restSeconds: 60,
-        targetMuscle: 'Lateral (Medial) Deltoid',
-        formSetup: '1. Adjust seat so your shoulder joint aligns directly with the machine pivot axis. 2. Place elbows/forearms against the pads. 3. Lead with your elbows to raise arms to shoulder height (90 degrees), pause 1s, and lower under control.'
+        targetMuscle: 'Side Shoulders',
+        formSetup: '1. Adjust the seat height so your shoulders line up with the machine pivot point. 2. Rest your elbows and forearms against the side pads. 3. Lift your elbows out to shoulder height, pause 1 second, and lower your arms slowly.'
       }
     ]
   },
@@ -5185,11 +5214,12 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'reverse_pec_deck_machine',
         name: 'Reverse Pec Deck (Rear Delt Machine)',
+        loadMode: 'pin_stack',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=O2J8Qs7Wl3U',
         altVideoUrl: 'https://www.youtube.com/watch?v=7tgx6QHB0-A',
         restSeconds: 60,
-        targetMuscle: 'Posterior Deltoids, Infraspinatus & Mid-Traps',
-        formSetup: '1. Set machine arms to the front-most notches and sit facing the chest pad at shoulder height. 2. Push the handles outward and back in a wide arc using the backs of your shoulders without pinching your upper traps.'
+        targetMuscle: 'Rear Shoulders & Upper Back',
+        formSetup: '1. Set the machine arms to the front position and sit facing the chest pad. 2. Hold the handles at shoulder height with your arms nearly straight. 3. Sweep your arms out and back using your rear shoulders, then return slowly.'
       }
     ]
   },
@@ -5202,11 +5232,12 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'seated_tricep_extension_machine',
         name: 'Seated Tricep Extension Machine',
+        loadMode: 'pin_stack',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=NNyuuN2sJb0',
         altVideoUrl: 'https://www.youtube.com/watch?v=1AFJTda1btg',
         restSeconds: 60,
-        targetMuscle: 'Triceps Brachii (Long & Lateral Heads)',
-        formSetup: '1. Adjust seat so your triceps rest flat on the angled pad with elbows aligned to the cam pivot. 2. Extend forearms to full lockout, contract triceps hard for 1s, and allow a full elbow-flexion stretch on the eccentric.'
+        targetMuscle: 'Triceps',
+        formSetup: '1. Adjust the seat so the backs of your upper arms rest flat on the pad. 2. Hold the handles and keep your elbows in place on the pad. 3. Straighten your arms completely, squeeze your triceps for 1 second, and bend your elbows slowly.'
       }
     ]
   },
@@ -5219,11 +5250,12 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'seated_tricep_dip_pushdown_machine',
         name: 'Seated Tricep Dip / Pushdown Machine',
+        loadMode: 'pin_stack',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=8CvOC9Db3Yw',
         altVideoUrl: 'https://www.youtube.com/watch?v=2NOglxsG1wE',
         restSeconds: 60,
-        targetMuscle: 'Triceps Brachii (Lateral & Medial Heads)',
-        formSetup: '1. Sit tall with back against pad and grip handles with elbows tucked close to your sides. 2. Press handles downward to full elbow extension while keeping shoulders depressed, then bend elbows back to 90 degrees.'
+        targetMuscle: 'Triceps',
+        formSetup: '1. Sit tall with your back against the pad and hold the side handles. 2. Keep your elbows tucked close to your sides and your shoulders down. 3. Push the handles straight down until your arms lock out, then bend your elbows slowly.'
       }
     ]
   },
@@ -5236,11 +5268,12 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'seated_machine_preacher_bicep_curl',
         name: 'Seated Machine Preacher / Bicep Curl',
+        loadMode: 'pin_stack',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=eYrAV7rnol0',
         altVideoUrl: 'https://www.youtube.com/watch?v=Htw-s61mOw0',
         restSeconds: 60,
-        targetMuscle: 'Biceps Brachii & Brachialis',
-        formSetup: '1. Set seat height so armpits sit flush on top of the arm pad and elbows align with the pivot point. 2. Curl handles smoothly to peak contraction, hold 1s, and lower over 2-3s to full extension.'
+        targetMuscle: 'Biceps & Forearms',
+        formSetup: '1. Adjust the seat so the backs of your upper arms rest flat on the angled pad. 2. Grip the handles and keep your upper arms glued to the pad. 3. Curl the handles up toward your shoulders, pause 1 second, and lower them slowly.'
       }
     ]
   },
@@ -5253,11 +5286,12 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'standing_seated_leverage_shrug_machine',
         name: 'Standing / Seated Leverage Shrug Machine',
+        loadMode: 'plate_2sides',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=rFsSeClGnNA',
         altVideoUrl: 'https://www.youtube.com/watch?v=NJ8U95vMtZg',
         restSeconds: 60,
-        targetMuscle: 'Upper Trapezius & Levator Scapulae',
-        formSetup: '1. Grip the parallel machine handles with arms straight. 2. Elevate shoulders up and slightly inward toward your ears, hold peak contraction for 2 full seconds, and lower into a deep stretch.'
+        targetMuscle: 'Upper Traps & Neck',
+        formSetup: '1. Stand or sit tall and hold the side handles with your arms straight. 2. Lift your shoulders straight up toward your ears without bending your elbows. 3. Hold the top squeeze for 2 seconds and lower your shoulders slowly.'
       }
     ]
   },
@@ -5270,20 +5304,22 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'seated_leg_press_machine',
         name: 'Seated Leg Press Machine',
+        loadMode: 'plate_2sides',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=nDh_BlnLCGc',
         altVideoUrl: 'https://www.youtube.com/watch?v=EotSw18oR9w',
         restSeconds: 150,
-        targetMuscle: 'Quadriceps, Gluteus Maximus & Adductors',
-        formSetup: '1. Sit with lower back and glutes wedged firmly against the pad. 2. Place feet hip-to-shoulder width apart on the platform. 3. Unlock safeties and lower sled until knees reach 90+ degrees without lumbar rounding, then drive through mid-foot.'
+        targetMuscle: 'Front Thighs & Glutes',
+        formSetup: '1. Sit back with your hips and lower back pressed flat against the seat pad. 2. Place your feet shoulder-width apart in the middle of the footplate. 3. Unlock the safety handles, lower the sled until your knees bend to 90 degrees, and push through your whole foot.'
       },
       {
         optionId: 'angled_hack_squat_machine',
         name: 'Angled Hack Squat Machine',
+        loadMode: 'plate_2sides',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=g9i05umL5vc',
         altVideoUrl: 'https://www.youtube.com/watch?v=0tn5K9NlCfo',
         restSeconds: 150,
-        targetMuscle: 'Quadriceps (Vasti) & Glutes',
-        formSetup: '1. Brace shoulders under pads and press entire back flat against the sled. 2. Place feet shoulder-width apart on the lower-to-mid platform. 3. Release handles, descend to full knee flexion, and drive up.'
+        targetMuscle: 'Front Thighs & Glutes',
+        formSetup: '1. Rest your shoulders under the top pads and press your back flat against the sled. 2. Set your feet shoulder-width apart on the footplate. 3. Unlock the safety handles, lower yourself under control, and push back up to the top.'
       }
     ]
   },
@@ -5296,37 +5332,40 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'single_leg_press_machine',
         name: 'Single-Leg Press Machine',
+        loadMode: 'plate_2sides',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=LbKwZIbVYZI',
         altVideoUrl: 'https://www.youtube.com/watch?v=x4vaHXRfKrg',
         restSeconds: 120,
-        targetMuscle: 'Unilateral Quadriceps & Gluteus Maximus',
-        formSetup: '1. Place working foot centered on the sled platform and keep non-working leg planted safely on the floor. 2. Lower sled slowly until full knee and hip flexion on the working leg, then press to extension without locking the knee.'
+        targetMuscle: 'Front Thighs & Glutes (One Leg at a Time)',
+        formSetup: '1. Sit in the leg press seat and place one foot in the center of the footplate while keeping your other foot on the floor. 2. Lower the footplate slowly until your working knee bends to 90 degrees. 3. Push through your mid-foot and heel to straighten your leg without locking your knee.'
       }
     ]
   },
   {
     categoryId: 'hip_hinge_posterior_chain',
-    label: 'Hip Hinge / Posterior Chain',
+    label: 'Hip Hinge / Back of Thighs',
     keywords: ['romanian deadlift', 'rdl', 'deadlift', 'good morning'],
     exactIds: ['tue_rdl', 'sat_deadlift', 'tue_barbell_rdl'],
     options: [
       {
         optionId: 'seated_hamstring_leg_curl_machine',
         name: 'Seated Hamstring Leg Curl Machine',
+        loadMode: 'pin_stack',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=xdbEG3xGLI8',
         altVideoUrl: 'https://www.youtube.com/watch?v=_lgE0gPvbik',
         restSeconds: 90,
-        targetMuscle: 'Hamstrings (Biceps Femoris, Semitendinosus, Semimembranosus)',
-        formSetup: '1. Align knee joint with machine pivot and set lower pad just above the Achilles tendon. 2. Lock thigh pad tightly over quads and lean torso slightly forward to pre-stretch hamstrings. 3. Curl all the way down and hold 1s.'
+        targetMuscle: 'Back of Thighs (Hamstrings)',
+        formSetup: '1. Sit back and adjust the backrest so your knees line up with the machine hinge. 2. Place the lower ankle pad just above your heels and lock the thigh pad snugly over your legs. 3. Pull your heels down and back as far as you can, hold 1 second, and return slowly.'
       },
       {
         optionId: 'back_hip_extension_45_machine',
         name: '45-Degree Back / Hip Extension Machine',
+        loadMode: 'plate_2sides',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=H8Swl1N-uis',
         altVideoUrl: 'https://www.youtube.com/watch?v=S1_eZIIZlIc',
         restSeconds: 90,
-        targetMuscle: 'Gluteus Maximus, Hamstrings & Erector Spinae',
-        formSetup: '1. Set pad height just below your hip crease so your pelvis can hinge freely. 2. Keep chin tucked and upper back slightly rounded to bias glutes/hamstrings, hinging down 90 degrees and driving hips into the pad at the top.'
+        targetMuscle: 'Glutes, Back of Thighs & Lower Back',
+        formSetup: '1. Set the top pad just below your hip bones so you can bend forward freely at the waist. 2. Cross your arms or hold a weight plate against your chest. 3. Lower your upper body under control and squeeze your glutes to come back up until your body is in a straight line.'
       }
     ]
   },
@@ -5339,11 +5378,12 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'seated_lying_leg_curl_machine',
         name: 'Seated / Lying Leg Curl Machine',
+        loadMode: 'pin_stack',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=xdbEG3xGLI8',
         altVideoUrl: 'https://www.youtube.com/watch?v=_lgE0gPvbik',
         restSeconds: 90,
-        targetMuscle: 'Hamstrings (Biceps Femoris, Semitendinosus & Semimembranosus)',
-        formSetup: '1. Align knee joint with machine pivot and position ankle roller just above heels. 2. Secure thigh pad or hold handles firmly, curl through full knee flexion, pause 1s, and lower over 2-3s.'
+        targetMuscle: 'Back of Thighs (Hamstrings)',
+        formSetup: '1. Line up your knees with the machine pivot dot and rest the roller pad just above your heels. 2. Hold the side handles tightly to keep your hips still. 3. Curl your heels back smoothly, pause 1 second, and lower the weight slowly.'
       }
     ]
   },
@@ -5356,45 +5396,96 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'seated_leg_extension_machine',
         name: 'Seated Leg Extension Machine',
+        loadMode: 'pin_stack',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=iQ92TuvBqRo',
         altVideoUrl: 'https://www.youtube.com/watch?v=uM86QE59Tgc',
         restSeconds: 90,
-        targetMuscle: 'Quadriceps (Rectus Femoris & Vasti)',
-        formSetup: '1. Adjust backrest so knees align directly with the machine pivot axis and set shin pad above ankles. 2. Grip side handles, extend knees to full quad contraction for 1s, and lower under a 2-3s eccentric.'
+        targetMuscle: 'Front Thighs',
+        formSetup: '1. Adjust the back pad so the backs of your knees sit flush against the edge of the seat. 2. Set the lower shin pad right above your ankles and hold the side handles. 3. Straighten your legs completely, hold 1 second at the top, and lower slowly.'
       }
     ]
   },
   {
     categoryId: 'bent_knee_calf_raise',
-    label: 'Bent-Knee Calf Raise',
-    keywords: ['seated weighted calf raise', 'seated calf'],
+    label: 'Seated Calf Raise / Calf Press',
+    keywords: ['seated weighted calf raise', 'seated calf', 'calf extension'],
     exactIds: ['sat_seated_calf'],
     options: [
       {
-        optionId: 'seated_calf_raise_machine',
-        name: 'Seated Calf Raise Machine',
+        optionId: 'seated_calf_press_extension_machine',
+        name: 'Seated Calf Press / Extension Machine',
+        subtypeLabel: 'Seated Calf Press / Extension Machine (Footplate Push)',
+        loadMode: 'plate_2sides',
+        primaryVideoUrl: 'https://www.youtube.com/watch?v=ZmDiJvXx344',
+        altVideoUrl: 'https://www.youtube.com/watch?v=z0FtV_s_GVA',
+        altVideoUrl2: 'https://www.youtube.com/watch?v=1cvpm--Y-4I',
+        restSeconds: 60,
+        targetMuscle: 'Calves',
+        formSetup: '1. Sit back flat in the seat and adjust the seat position (e.g., setting #6) so your knees are slightly bent. 2. Place the balls of your feet on the bottom edge of the footplate. 3. Push the footplate forward with your toes, pause 1 second, and let your heels come back slowly for a full stretch.'
+      },
+      {
+        optionId: 'bent_knee_lever_calf_machine',
+        name: 'Bent-Knee Lever Calf Machine (Pads Over Knees)',
+        subtypeLabel: 'Bent-Knee Lever Calf Machine (Pads Over Knees)',
+        loadMode: 'plate_2sides',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=z1N8ZRsb4bg',
         altVideoUrl: 'https://www.youtube.com/watch?v=FsqE-g1C5fk',
         restSeconds: 60,
-        targetMuscle: 'Soleus & Gastrocnemius (Bent-Knee Plantarflexion)',
-        formSetup: '1. Adjust thigh pad height (e.g., setting #6) snugly over lower thighs with balls of feet on the step. 2. Disengage safety bar and lower heels for 2-3s into a deep soleus stretch. 3. Drive to full tiptoe contraction and pause 1-2s.'
+        targetMuscle: 'Calves',
+        formSetup: '1. Sit on the bench and place the balls of your feet on the step. 2. Lock the pad snugly over your lower thighs just above your knees. 3. Push up onto your tiptoes, hold 1 second, and lower your heels slowly.'
+      },
+      {
+        optionId: 'standing_calf_raise_machine',
+        name: 'Standing Calf Raise Machine (Pads on Shoulders)',
+        subtypeLabel: 'Standing Calf Raise Machine (Pads on Shoulders)',
+        loadMode: 'pin_stack',
+        primaryVideoUrl: 'https://www.youtube.com/watch?v=_OewEscCsbo',
+        altVideoUrl: 'https://www.youtube.com/watch?v=yQZDGjL-xT4',
+        restSeconds: 60,
+        targetMuscle: 'Calves',
+        formSetup: '1. Stand under the shoulder pads and place the balls of your feet on the step block. 2. Keep your knees straight and push up as high as you can onto your toes. 3. Pause 1 second at the top and lower your heels slowly below the step.'
       }
     ]
   },
   {
     categoryId: 'straight_leg_calf_raise',
-    label: 'Straight-Leg Calf Raise',
+    label: 'Standing / Leg Press Calf Raise',
     keywords: ['standing calf', 'calf press'],
     exactIds: ['tue_calf'],
     options: [
       {
         optionId: 'standing_leg_press_calf_raise_machine',
         name: 'Standing / Leg Press Calf Raise Machine',
+        subtypeLabel: 'Standing / Leg Press Calf Raise Machine',
+        loadMode: 'pin_stack',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=_OewEscCsbo',
         altVideoUrl: 'https://www.youtube.com/watch?v=yQZDGjL-xT4',
         restSeconds: 60,
-        targetMuscle: 'Gastrocnemius & Soleus (Straight-Knee Plantarflexion)',
-        formSetup: '1. Place shoulders under pads (or balls of feet on bottom edge of leg press sled) with knees straight but not hyperextended. 2. Lower heels into maximum ankle dorsiflexion for 2s, then press high onto toes and hold 1-2s.'
+        targetMuscle: 'Calves',
+        formSetup: '1. Place your shoulders under the pads (or place the balls of your feet on the bottom edge of the leg press footplate). 2. Keep your knees straight without locking them backward. 3. Push up high onto your toes, pause 1 second, and lower your heels slowly for a deep stretch.'
+      },
+      {
+        optionId: 'seated_calf_press_extension_machine_alt',
+        name: 'Seated Calf Press / Extension Machine',
+        subtypeLabel: 'Seated Calf Press / Extension Machine (Footplate Push)',
+        loadMode: 'plate_2sides',
+        primaryVideoUrl: 'https://www.youtube.com/watch?v=ZmDiJvXx344',
+        altVideoUrl: 'https://www.youtube.com/watch?v=z0FtV_s_GVA',
+        altVideoUrl2: 'https://www.youtube.com/watch?v=1cvpm--Y-4I',
+        restSeconds: 60,
+        targetMuscle: 'Calves',
+        formSetup: '1. Sit back flat in the seat and adjust the seat position (e.g., setting #6) so your knees are slightly bent. 2. Place the balls of your feet on the bottom edge of the footplate. 3. Push the footplate forward with your toes, pause 1 second, and let your heels come back slowly for a full stretch.'
+      },
+      {
+        optionId: 'bent_knee_lever_calf_machine_alt',
+        name: 'Bent-Knee Lever Calf Machine (Pads Over Knees)',
+        subtypeLabel: 'Bent-Knee Lever Calf Machine (Pads Over Knees)',
+        loadMode: 'plate_2sides',
+        primaryVideoUrl: 'https://www.youtube.com/watch?v=z1N8ZRsb4bg',
+        altVideoUrl: 'https://www.youtube.com/watch?v=FsqE-g1C5fk',
+        restSeconds: 60,
+        targetMuscle: 'Calves',
+        formSetup: '1. Sit on the bench and place the balls of your feet on the step. 2. Lock the pad snugly over your lower thighs just above your knees. 3. Push up onto your tiptoes, hold 1 second, and lower your heels slowly.'
       }
     ]
   },
@@ -5407,20 +5498,22 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'seated_hip_abduction_machine',
         name: 'Seated Hip Abduction Machine',
+        loadMode: 'pin_stack',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=tu4o4quPv2k',
         altVideoUrl: 'https://www.youtube.com/watch?v=01HilwRf8m8',
         restSeconds: 60,
-        targetMuscle: 'Gluteus Medius, Gluteus Minimus & Upper Glutes',
-        formSetup: '1. Sit with outer knees against the pads and adjust starting width to a comfortable stretch. 2. Drive knees outward in a controlled arc, hold peak abduction for 1-2s, and return slowly.'
+        targetMuscle: 'Outer Glutes & Hips',
+        formSetup: '1. Sit in the machine with the pads resting against the outsides of your knees. 2. Hold the side handles and keep your back straight. 3. Push your knees outward against the pads, hold 1 second, and bring them back together slowly.'
       },
       {
         optionId: 'hip_thrust_glute_drive_machine',
         name: 'Hip Thrust / Glute Drive Machine',
+        loadMode: 'plate_2sides',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=V74XWj9FXAc',
         altVideoUrl: 'https://www.youtube.com/watch?v=tztHvSLdXLA',
         restSeconds: 120,
-        targetMuscle: 'Gluteus Maximus & Posterior Chain',
-        formSetup: '1. Rest upper back against the angled pad and secure the padded hip belt across your pelvis. 2. Plant feet so shins are vertical at top lockout, drive through heels to full hip extension, and squeeze glutes for 1-2s.'
+        targetMuscle: 'Glutes & Hips',
+        formSetup: '1. Rest your upper back against the back pad and buckle the padded belt snugly across your hips. 2. Place your feet flat on the footplate so your shins are vertical at the top. 3. Push through your heels to lift your hips, squeeze your glutes for 1 second, and lower slowly.'
       }
     ]
   },
@@ -5433,11 +5526,12 @@ export const UNIVERSAL_MACHINE_SWAPS: UniversalMachineCategory[] = [
       {
         optionId: 'seated_abdominal_crunch_machine',
         name: 'Seated Abdominal Crunch Machine',
+        loadMode: 'pin_stack',
         primaryVideoUrl: 'https://www.youtube.com/watch?v=mnRhbUB3Fjs',
         altVideoUrl: 'https://www.youtube.com/watch?v=3zJxX6PvwCc',
         restSeconds: 60,
-        targetMuscle: 'Rectus Abdominis & Obliques (Spinal Flexion)',
-        formSetup: '1. Adjust seat height so the upper pad/handles rest comfortably at upper chest/shoulder level. 2. Exhale and curl your ribcage down toward your pelvis (rounding your spine rather than hinging at the hips), hold 1s, and return slowly.'
+        targetMuscle: 'Stomach & Core (Abs)',
+        formSetup: '1. Sit in the machine and hold the top handles or rest your chest against the pad. 2. Breathe out and curl your ribs down toward your hips using your stomach muscles. 3. Hold the bottom crunch for 1 second and return slowly to the top.'
       }
     ]
   }
@@ -5452,14 +5546,12 @@ export function matchExerciseToUniversalMachineSwaps(ex: {
   const canonicalId = String(ex?.originalId || ex?.id || '').trim().toLowerCase();
   const rawName = String(ex?.originalName || ex?.name || '').trim().toLowerCase();
 
-  // Check exact ID match first (note: unilateral leg pattern e.g. split squat checked before bilateral squat)
   for (const cat of UNIVERSAL_MACHINE_SWAPS) {
     if (cat.exactIds.some(eid => eid.toLowerCase() === canonicalId)) {
       return cat;
     }
   }
 
-  // Check unilateral before bilateral if name contains split squat / bulgarian / lunge
   const orderedCategories = [
     ...UNIVERSAL_MACHINE_SWAPS.filter(c => c.categoryId === 'unilateral_leg_pattern'),
     ...UNIVERSAL_MACHINE_SWAPS.filter(c => c.categoryId !== 'unilateral_leg_pattern')
@@ -5483,16 +5575,105 @@ export function getDefaultUniversalOptionIndexForExercise(
   if (cat.categoryId === 'glute_abduction_hip_thrust' && (canonicalId === 'sat_hip_thrust' || rawName.includes('hip thrust') || rawName.includes('glute bridge'))) {
     return 1; // Hip Thrust / Glute Drive Machine
   }
-  return 0;
+  return 0; // For sat_seated_calf (bent_knee_calf_raise), Option 0 is Seated Calf Press / Extension Machine
 }
 
 export function getAiVisionPipelineSteps(originalExerciseName: string): string[] {
   const cleanName = String(originalExerciseName || 'Current Exercise').trim();
   return [
-    '1. Scanning machine geometry...',
-    `2. Verifying biomechanical equivalence with ${cleanName}...`,
+    '1. Scanning machine photo and seat setup...',
+    `2. Checking machine type and finding matching video for ${cleanName}...`,
     '3. Attaching verified machine form video & setup cues...'
   ];
+}
+
+export function computeMachineWeightMath(
+  totalWeightVal: number | string,
+  loadModeOrUnit: MachineLoadMode | 'lbs' | 'kg' = 'plate_2sides',
+  unitOrLoadMode: 'lbs' | 'kg' | MachineLoadMode = 'lbs'
+): {
+  bar: 0;
+  loadMode: MachineLoadMode;
+  unit: 'lbs' | 'kg';
+  perSide: number;
+  bothSides: number;
+  total: number;
+  summaryBadgeText: string;
+} {
+  const loadMode: MachineLoadMode =
+    loadModeOrUnit === 'pin_stack' || unitOrLoadMode === 'pin_stack' ? 'pin_stack' : 'plate_2sides';
+  const unit: 'lbs' | 'kg' =
+    loadModeOrUnit === 'kg' || unitOrLoadMode === 'kg' ? 'kg' : 'lbs';
+  const parsed = typeof totalWeightVal === 'number' ? totalWeightVal : parseFloat(String(totalWeightVal || '0'));
+  const total = Number.isFinite(parsed) && parsed >= 0 ? +parsed.toFixed(2) : 0;
+  const bothSides = total;
+  const perSide = +(total / 2).toFixed(2);
+  const summaryBadgeText =
+    loadMode === 'pin_stack'
+      ? `Machine Pin Weight: ${total} ${unit}`
+      : `Machine Plates: ${perSide} ${unit}/side = ${total} ${unit} total`;
+  return {
+    bar: 0,
+    loadMode,
+    unit,
+    perSide,
+    bothSides,
+    total,
+    summaryBadgeText
+  };
+}
+
+export function stripBarbellWeightFromMachineSets(
+  workoutLogs: Record<string, any>,
+  exId: string,
+  barWeightToStripLbs = 45
+): number {
+  if (!workoutLogs || typeof workoutLogs !== 'object' || !exId) return 0;
+  const escapedId = exId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const keyRegex = new RegExp(`^(?:w\\d+_)?\\d+_${escapedId}_\\d+$`);
+  let updatedCount = 0;
+  Object.keys(workoutLogs).forEach(k => {
+    if (!keyRegex.test(k)) return;
+    const entry = workoutLogs[k];
+    if (!entry || typeof entry !== 'object') return;
+    const unit = entry.unit === 'kg' ? 'kg' : 'lbs';
+    const barVal = unit === 'kg' ? 20 : barWeightToStripLbs;
+    const w = parseFloat(String(entry.weight || ''));
+    if (Number.isFinite(w) && w > barVal) {
+      entry.weight = String(+(w - barVal).toFixed(2));
+      updatedCount++;
+    }
+  });
+  return updatedCount;
+}
+
+export function upsertSharedMachineDatabaseEntry(
+  stateOrDb: Record<string, any>,
+  entry: Partial<SharedMachineDatabaseEntry> & { originalExKey: string; machineName: string; videoUrl: string }
+): SharedMachineDatabaseEntry {
+  const isStateWrapper = stateOrDb && typeof stateOrDb === 'object' && ('sharedMachineDatabase' in stateOrDb || 'exerciseSwaps' in stateOrDb);
+  const targetDb = isStateWrapper
+    ? (stateOrDb.sharedMachineDatabase || (stateOrDb.sharedMachineDatabase = {}))
+    : stateOrDb;
+  const key = String(entry.originalExKey || entry.machineId || '').trim();
+  const record: SharedMachineDatabaseEntry = {
+    machineId: entry.machineId || key,
+    originalExKey: key,
+    machineName: entry.machineName,
+    machineSubtype: entry.machineSubtype || entry.machineName,
+    loadMode: entry.loadMode === 'pin_stack' ? 'pin_stack' : 'plate_2sides',
+    simpleSteps: entry.simpleSteps || '',
+    targetMuscles: entry.targetMuscles || 'Target Muscles',
+    videoUrl: entry.videoUrl,
+    altVideoUrl: entry.altVideoUrl || entry.videoUrl,
+    altVideoUrl2: entry.altVideoUrl2 || '',
+    verifiedByUser: true,
+    updatedAt: entry.updatedAt || new Date().toISOString()
+  };
+  if (key && targetDb && typeof targetDb === 'object') {
+    targetDb[key] = record;
+  }
+  return record;
 }
 
 export function autoMigrateExerciseNotesToMachineSwaps(
@@ -5506,12 +5687,49 @@ export function autoMigrateExerciseNotesToMachineSwaps(
   if (!stateObj.revertedMachineSwaps || typeof stateObj.revertedMachineSwaps !== 'object') {
     stateObj.revertedMachineSwaps = {};
   }
+  if (!stateObj.sharedMachineDatabase || typeof stateObj.sharedMachineDatabase !== 'object') {
+    stateObj.sharedMachineDatabase = {};
+  }
+  if (!stateObj.machineBarStripped || typeof stateObj.machineBarStripped !== 'object') {
+    stateObj.machineBarStripped = {};
+  }
+  // Always clear stale pending verification boxes on startup
+  stateObj.pendingMachineSwapPreviews = {};
+
   const notesMap = stateObj.exerciseNotes && typeof stateObj.exerciseNotes === 'object' ? stateObj.exerciseNotes : {};
   const catalogById: Record<string, { id: string; name: string }> = {};
   if (Array.isArray(allExercisesCatalog)) {
     allExercisesCatalog.forEach(item => {
       if (item && item.id) catalogById[item.id] = item;
     });
+  }
+
+  // Upgrade any existing sat_seated_calf swap that used the old knee-lever video (z1N8ZRsb4bg) to Seated Calf Press / Extension Machine (ZmDiJvXx344)
+  const existingCalfSwap = stateObj.exerciseSwaps.sat_seated_calf;
+  if (
+    existingCalfSwap &&
+    (existingCalfSwap.videoUrl === 'https://www.youtube.com/watch?v=z1N8ZRsb4bg' ||
+      existingCalfSwap.name === 'Seated Calf Raise Machine')
+  ) {
+    const calfCat = UNIVERSAL_MACHINE_SWAPS.find(c => c.categoryId === 'bent_knee_calf_raise')!;
+    const calfOpt0 = calfCat.options[0];
+    stateObj.exerciseSwaps.sat_seated_calf = {
+      ...existingCalfSwap,
+      canonicalId: 'sat_seated_calf',
+      categoryId: calfCat.categoryId,
+      optionIndex: 0,
+      optionId: calfOpt0.optionId,
+      name: calfOpt0.name,
+      loadMode: calfOpt0.loadMode,
+      primaryVideoUrl: calfOpt0.primaryVideoUrl,
+      altVideoUrl: calfOpt0.altVideoUrl,
+      altVideoUrl2: calfOpt0.altVideoUrl2,
+      videoUrl: calfOpt0.primaryVideoUrl,
+      restSeconds: calfOpt0.restSeconds,
+      targetMuscle: calfOpt0.targetMuscle,
+      formSetup: calfOpt0.formSetup,
+      scope: 'all'
+    };
   }
 
   Object.keys(notesMap).forEach(noteKey => {
@@ -5523,29 +5741,59 @@ export function autoMigrateExerciseNotesToMachineSwaps(
     const hasMachinePhoto = photoVal.length > 0;
     if (!mentionsMachine && !hasMachinePhoto) return;
     if (stateObj.revertedMachineSwaps[noteKey]) return;
-    if (stateObj.exerciseSwaps[noteKey]) return;
 
     const exStub = catalogById[noteKey] || { id: noteKey, name: noteKey };
     const matchedCat = matchExerciseToUniversalMachineSwaps(exStub);
-    const optIdx = getDefaultUniversalOptionIndexForExercise(exStub, matchedCat);
+    let optIdx = getDefaultUniversalOptionIndexForExercise(exStub, matchedCat);
+    if (noteKey === 'sat_seated_calf' && /lever|knee\s*pad/i.test(textVal)) {
+      optIdx = 1;
+    }
     const chosenOpt = matchedCat.options[optIdx] || matchedCat.options[0];
     if (!chosenOpt) return;
 
-    stateObj.exerciseSwaps[noteKey] = {
-      canonicalId: noteKey,
-      categoryId: matchedCat.categoryId,
-      optionIndex: optIdx,
-      optionId: chosenOpt.optionId,
-      name: chosenOpt.name,
-      primaryVideoUrl: chosenOpt.primaryVideoUrl,
-      altVideoUrl: chosenOpt.altVideoUrl,
-      videoUrl: chosenOpt.primaryVideoUrl,
-      restSeconds: chosenOpt.restSeconds,
-      targetMuscle: chosenOpt.targetMuscle,
-      formSetup: chosenOpt.formSetup,
-      scope: 'all',
-      autoMigrated: true
-    };
+    if (!stateObj.exerciseSwaps[noteKey]) {
+      stateObj.exerciseSwaps[noteKey] = {
+        canonicalId: noteKey,
+        categoryId: matchedCat.categoryId,
+        optionIndex: optIdx,
+        optionId: chosenOpt.optionId,
+        name: chosenOpt.name,
+        loadMode: chosenOpt.loadMode,
+        primaryVideoUrl: chosenOpt.primaryVideoUrl,
+        altVideoUrl: chosenOpt.altVideoUrl,
+        altVideoUrl2: chosenOpt.altVideoUrl2 || '',
+        videoUrl: chosenOpt.primaryVideoUrl,
+        restSeconds: chosenOpt.restSeconds,
+        targetMuscle: chosenOpt.targetMuscle,
+        formSetup: chosenOpt.formSetup,
+        scope: 'all',
+        autoMigrated: true
+      };
+    }
+
+    upsertSharedMachineDatabaseEntry(stateObj, {
+      originalExKey: noteKey,
+      machineId: stateObj.exerciseSwaps[noteKey].optionId || chosenOpt.optionId,
+      machineName: stateObj.exerciseSwaps[noteKey].name || chosenOpt.name,
+      machineSubtype: chosenOpt.subtypeLabel || chosenOpt.name,
+      loadMode: stateObj.exerciseSwaps[noteKey].loadMode || chosenOpt.loadMode,
+      simpleSteps: stateObj.exerciseSwaps[noteKey].formSetup || chosenOpt.formSetup,
+      targetMuscles: stateObj.exerciseSwaps[noteKey].targetMuscle || chosenOpt.targetMuscle,
+      videoUrl: stateObj.exerciseSwaps[noteKey].videoUrl || chosenOpt.primaryVideoUrl,
+      altVideoUrl: stateObj.exerciseSwaps[noteKey].altVideoUrl || chosenOpt.altVideoUrl,
+      altVideoUrl2: chosenOpt.altVideoUrl2 || ''
+    });
+  });
+
+  // Strip 45 lb barbell from any swapped machine exercise
+  Object.keys(stateObj.exerciseSwaps).forEach(swapKey => {
+    const sw = stateObj.exerciseSwaps[swapKey];
+    if (!sw || sw.disabled) return;
+    const cid = sw.canonicalId || swapKey;
+    if (!stateObj.machineBarStripped[cid] && stateObj.workoutLogs) {
+      stripBarbellWeightFromMachineSets(stateObj.workoutLogs, cid, 45);
+      stateObj.machineBarStripped[cid] = true;
+    }
   });
 
   return stateObj.exerciseSwaps;
@@ -5564,6 +5812,9 @@ export function getEffectiveExercise(
   }
   if (!stateObj.revertedMachineSwaps || typeof stateObj.revertedMachineSwaps !== 'object') {
     stateObj.revertedMachineSwaps = {};
+  }
+  if (!stateObj.sharedMachineDatabase || typeof stateObj.sharedMachineDatabase !== 'object') {
+    stateObj.sharedMachineDatabase = {};
   }
 
   const canonicalId = String(rawEx.originalId || rawEx.id || '').trim();
@@ -5596,8 +5847,10 @@ export function getEffectiveExercise(
           optionIndex: optIdx,
           optionId: chosenOpt.optionId,
           name: chosenOpt.name,
+          loadMode: chosenOpt.loadMode,
           primaryVideoUrl: chosenOpt.primaryVideoUrl,
           altVideoUrl: chosenOpt.altVideoUrl,
+          altVideoUrl2: chosenOpt.altVideoUrl2 || '',
           videoUrl: chosenOpt.primaryVideoUrl,
           restSeconds: chosenOpt.restSeconds,
           targetMuscle: chosenOpt.targetMuscle,
@@ -5612,22 +5865,52 @@ export function getEffectiveExercise(
   const matchedCat = matchExerciseToUniversalMachineSwaps({ id: canonicalId, name: cleanOriginalName });
   const defaultOptIdx = getDefaultUniversalOptionIndexForExercise({ id: canonicalId, name: cleanOriginalName }, matchedCat);
 
+  const sharedDbEntry = stateObj.sharedMachineDatabase[canonicalId] || null;
   const activeSwap =
     stateObj.exerciseSwaps[slotKey] ||
     stateObj.exerciseSwaps[altSlotKey] ||
     stateObj.exerciseSwaps[canonicalId] ||
     (stateObj.swappedExercises && (stateObj.swappedExercises[slotKey] || stateObj.swappedExercises[altSlotKey])) ||
+    (!stateObj.revertedMachineSwaps[canonicalId] && !stateObj.revertedMachineSwaps[slotKey] ? sharedDbEntry : null) ||
     null;
 
   if (activeSwap && !activeSwap.disabled) {
     const optIdx = typeof activeSwap.optionIndex === 'number' ? activeSwap.optionIndex : defaultOptIdx;
     const catOption = matchedCat.options[optIdx] || matchedCat.options[0];
-    const machineName = activeSwap.name || activeSwap.suggestedMachineExercise || (catOption ? catOption.name : cleanOriginalName);
-    const primaryVid = activeSwap.primaryVideoUrl || activeSwap.videoUrl || (catOption ? catOption.primaryVideoUrl : rawEx.videoUrl);
-    const altVid = activeSwap.altVideoUrl || (catOption ? catOption.altVideoUrl : primaryVid);
+    const machineName =
+      activeSwap.name ||
+      activeSwap.machineName ||
+      activeSwap.suggestedMachineExercise ||
+      (catOption ? catOption.name : cleanOriginalName);
+    const primaryVid =
+      activeSwap.primaryVideoUrl ||
+      activeSwap.videoUrl ||
+      (sharedDbEntry && sharedDbEntry.videoUrl) ||
+      (catOption ? catOption.primaryVideoUrl : rawEx.videoUrl);
+    const altVid =
+      activeSwap.altVideoUrl ||
+      (sharedDbEntry && sharedDbEntry.altVideoUrl) ||
+      (catOption ? catOption.altVideoUrl : primaryVid);
+    const altVid2 =
+      activeSwap.altVideoUrl2 ||
+      (sharedDbEntry && sharedDbEntry.altVideoUrl2) ||
+      (catOption && catOption.altVideoUrl2 ? catOption.altVideoUrl2 : '');
+    const loadMode: MachineLoadMode =
+      (activeSwap.loadMode || (sharedDbEntry && sharedDbEntry.loadMode) || (catOption ? catOption.loadMode : 'plate_2sides')) === 'pin_stack'
+        ? 'pin_stack'
+        : 'plate_2sides';
     const restSecVal = Number(activeSwap.restSeconds || activeSwap.restSec || (catOption ? catOption.restSeconds : rawEx.restSec)) || 90;
-    const formSetupStr = activeSwap.formSetup || activeSwap.definitionAndCues || (catOption ? catOption.formSetup : rawEx.notes);
-    const targetMuscleStr = activeSwap.targetMuscle || activeSwap.targetMuscles || (catOption ? catOption.targetMuscle : '');
+    const formSetupStr =
+      activeSwap.formSetup ||
+      activeSwap.simpleSteps ||
+      activeSwap.definitionAndCues ||
+      (sharedDbEntry && sharedDbEntry.simpleSteps) ||
+      (catOption ? catOption.formSetup : rawEx.notes);
+    const targetMuscleStr =
+      activeSwap.targetMuscle ||
+      activeSwap.targetMuscles ||
+      (sharedDbEntry && sharedDbEntry.targetMuscles) ||
+      (catOption ? catOption.targetMuscle : '');
     const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(machineName + ' proper form tutorial')}`;
 
     return {
@@ -5638,17 +5921,21 @@ export function getEffectiveExercise(
       originalVideoUrl: rawEx.videoUrl || rawEx.video || '',
       originalNotes: rawEx.notes || rawEx.setup || '',
       name: machineName,
+      isSwapped: true,
       isSwappedMachine: true,
+      loadMode,
+      barWeight: 0,
       machineBadge: `Machine Active • Swapped from ${cleanOriginalName}`,
       videoUrl: primaryVid,
       video: primaryVid,
       primaryVideoUrl: primaryVid,
       altVideoUrl: altVid,
+      altVideoUrl2: altVid2,
       youtubeSearchUrl: searchUrl,
       formSetup: formSetupStr,
       notes: formSetupStr,
       targetMuscle: targetMuscleStr,
-       targetMuscles: targetMuscleStr,
+      targetMuscles: targetMuscleStr,
       restSec: restSecVal,
       restSeconds: restSecVal,
       restLabel: `${restSecVal}s rest`,
@@ -5666,6 +5953,7 @@ export function getEffectiveExercise(
     originalId: canonicalId,
     originalName: cleanOriginalName,
     name: cleanOriginalName,
+    isSwapped: false,
     isSwappedMachine: false,
     availableMachineOptions: matchedCat.options,
     selectedOptionIdx: defaultOptIdx,
@@ -5673,4 +5961,5 @@ export function getEffectiveExercise(
     altSlotKey
   };
 }
+
 
