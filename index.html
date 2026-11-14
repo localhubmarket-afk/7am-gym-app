@@ -1365,8 +1365,20 @@
       if (!merged.swappedExercises || typeof merged.swappedExercises !== 'object') {
         merged.swappedExercises = {};
       }
+      if (!merged.exerciseSwaps || typeof merged.exerciseSwaps !== 'object') {
+        merged.exerciseSwaps = {};
+      }
+      if (!merged.revertedMachineSwaps || typeof merged.revertedMachineSwaps !== 'object') {
+        merged.revertedMachineSwaps = {};
+      }
       if (!merged.pendingMachineSwapPreviews || typeof merged.pendingMachineSwapPreviews !== 'object') {
         merged.pendingMachineSwapPreviews = {};
+      }
+      if (merged.riceBannerDismissed === undefined) {
+        merged.riceBannerDismissed = false;
+      }
+      if (merged.openRiceTimerRecipe === undefined) {
+        merged.openRiceTimerRecipe = false;
       }
       return merged;
     }
@@ -3944,13 +3956,14 @@
       const RiceAlertBadge = document.getElementById('pinned-rice-alert-badge');
       const RiceAlertBanner = document.getElementById('pinned-rice-alert-banner');
       const RiceAlertText = document.getElementById('pinned-rice-alert-text');
-      const hasRiceActivity = Boolean(state.activeRiceTimerStage || state.riceTimerAlertBanner);
+      const activeRiceStageNum = state.activeRiceTimerStage ? Number(state.activeRiceTimerStage) : null;
+      const hasRiceActivity = Boolean((activeRiceStageNum || state.riceTimerAlertBanner) && !state.riceBannerDismissed);
       if (RiceAlertBadge) {
         if (hasRiceActivity) {
           RiceAlertBadge.className = 'hidden sm:inline-block px-2 py-0.5 rounded-md bg-amber-500/25 border border-amber-400/60 text-amber-200 text-[10px] font-extrabold tracking-wide whitespace-nowrap';
           RiceAlertBadge.textContent = state.riceTimerAlertBanner
-            ? 'MIX / STIR RICE!'
-            : `Rice Stage ${state.activeRiceTimerStage}/3 • MIX / STIR RICE`;
+            ? (activeRiceStageNum === 2 ? 'Rice Stage 2/2 • Cool-Down Rest' : 'MIX / STIR RICE!')
+            : (activeRiceStageNum === 2 ? 'Rice Stage 2/2 • Cool-Down Rest' : 'Rice Stage 1/2 • MIX / STIR RICE');
         } else {
           RiceAlertBadge.className = 'hidden';
         }
@@ -3960,7 +3973,9 @@
           RiceAlertBanner.classList.remove('hidden');
           RiceAlertText.textContent = state.riceTimerAlertBanner
             ? state.riceTimerAlertBanner
-            : `Rice Stage ${state.activeRiceTimerStage}/3 Running (${formatted}) • MIX / STIR RICE`;
+            : (activeRiceStageNum === 2
+                ? `Rice Stage 2/2 Cool-Down Running (${formatted}) • Let rest covered off heat`
+                : `Rice Stage 1/2 Running (${formatted}) • MIX / STIR RICE`);
         } else {
           RiceAlertBanner.classList.add('hidden');
         }
@@ -4102,6 +4117,7 @@
       state.lastSelectedRiceStage = stageSpec.stage;
       state.lastRiceMixAlertElapsedSec = null;
       state.riceTimerAlertBanner = '';
+      state.riceBannerDismissed = false;
       startTimer(stageSpec.seconds, `Rice Stage ${stageSpec.stage}/2: ${stageSpec.buttonLabel}`);
       syncStickyHeaderVisibility();
       renderRiceCookingTimerWidgets();
@@ -4113,6 +4129,7 @@
       const stageSpec = stages.find(s => s.stage === Number(stageNum));
       if (!stageSpec) return;
       state.riceTimerAlertBanner = stageSpec.completionBanner;
+      state.riceBannerDismissed = false;
       state.activeRiceTimerStage = null;
       state.lastSelectedRiceStage = stageSpec.stage === 1 ? 2 : 1;
       state.timerContextLabel = stageSpec.completionBanner;
@@ -4131,6 +4148,7 @@
     }
 
     function dismissRiceTimerAlert() {
+      state.riceBannerDismissed = true;
       state.riceTimerAlertBanner = '';
       if (!timerRunning) {
         state.activeRiceTimerStage = null;
@@ -4144,7 +4162,7 @@
     function buildRiceCookingTimerCardHtml(contextPrefix) {
       const stages = getTwoPhaseRiceTimerStages();
       const activeStage = state.activeRiceTimerStage ? Number(state.activeRiceTimerStage) : null;
-      const alertBanner = state.riceTimerAlertBanner || '';
+      const alertBanner = state.riceBannerDismissed ? '' : (state.riceTimerAlertBanner || '');
       const activeSpec = stages.find(s => s.stage === activeStage) || null;
       const cookMins = getRiceCookMinutes();
       const mixEnabled = isRiceMixAlertEnabled();
@@ -4152,6 +4170,7 @@
       const nextMixStr = computeRiceMixCountdownText();
       const riceStepsDone = ['rice_step_1', 'rice_step_2', 'rice_step_3', 'rice_step_4'].every(sid => Boolean(state.recipePrepLogs && state.recipePrepLogs[sid]));
       const bowlsLeft = (state.batchInventory && typeof state.batchInventory.riceBowlsRemaining === 'number') ? state.batchInventory.riceBowlsRemaining : 4;
+      const isRecipeOpen = Boolean(state.openRiceTimerRecipe);
 
       const buttonsHtml = stages.map(st => {
         const isCurrentRunning = (activeStage === st.stage && timerRunning);
@@ -4180,7 +4199,10 @@
             <div>
               <div class="flex flex-wrap items-center gap-1.5">
                 <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40">2-Phase Jasmine Rice Timer</span>
-                <span class="live-rice-next-mix-readout text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Next Mix/Stir in: ${nextMixStr}</span>
+                ${activeStage === 2
+                  ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-sky-500/15 text-sky-200 border border-sky-400/35">Stage 2/2 • Cool-Down Rest</span>`
+                  : `<span class="live-rice-next-mix-readout text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Next Mix/Stir in: ${nextMixStr}</span>`
+                }
                 <span class="text-[10px] font-extrabold px-2 py-0.5 rounded ${riceStepsDone ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40' : 'bg-slate-900 text-sky-300 border border-slate-700'}">${bowlsLeft}/4 Bowls in Fridge</span>
               </div>
               <p class="text-[11px] text-slate-400 mt-1">220g rinsed dry rice + 330 ml water • Syncs live with top sticky timer bar &amp; Batch 2/2</p>
@@ -4188,7 +4210,7 @@
             <div class="flex items-center gap-1.5">
               <span class="live-rice-timer-readout font-mono text-xs sm:text-sm font-extrabold px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400 whitespace-nowrap">${badgeTimeText}</span>
               ${(activeStage || alertBanner) ? `
-                <button type="button" class="rice-timer-clear-btn px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-300 border border-slate-700">Reset</button>
+                <button type="button" class="rice-timer-clear-btn px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-300 border border-slate-700">Dismiss</button>
               ` : ''}
             </div>
           </div>
@@ -4229,16 +4251,25 @@
             ${buttonsHtml}
           </div>
 
-          <!-- Video Tutorial Button & 1-Tap Sync with Batch 2/2 (4 Bowls in Fridge) -->
+          <!-- Video Tutorial Button, View Full Rice Recipe Toggle & 1-Tap Sync with Batch 2/2 (4 Bowls in Fridge) -->
           <div class="flex flex-wrap items-center justify-between gap-2 pt-0.5">
-            <a
-              href="https://www.youtube.com/watch?v=dVKVb1NFP8s"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="rice-tutorial-video-link inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/50 text-rose-200 text-[11px] font-extrabold transition"
-            >
-              <span>Watch Stovetop Jasmine Rice Tutorial</span>
-            </a>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <a
+                href="https://www.youtube.com/watch?v=dVKVb1NFP8s"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="rice-tutorial-video-link inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/50 text-rose-200 text-[11px] font-extrabold transition"
+              >
+                <span>Watch Stovetop Jasmine Rice Tutorial</span>
+              </a>
+              <button
+                type="button"
+                aria-expanded="${isRecipeOpen ? 'true' : 'false'}"
+                class="toggle-rice-full-recipe-btn px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-sky-400/45 text-sky-200 text-[11px] font-extrabold transition"
+              >
+                ${isRecipeOpen ? 'Hide Full Rice Recipe ▴' : 'View Full Rice Recipe ▾'}
+              </button>
+            </div>
             <button
               type="button"
               class="rice-timer-mark-prepped-btn px-3 py-1.5 rounded-xl text-[11px] font-extrabold border transition ${
@@ -4251,8 +4282,8 @@
             </button>
           </div>
 
-          <!-- Full Jasmine Rice Batch Recipe (4 Bowls • 600g Cooked) -->
-          <div class="bg-slate-900/95 border border-slate-800 rounded-xl p-2.5 space-y-1.5 text-left">
+          <!-- Full Jasmine Rice Batch Recipe (4 Bowls • 600g Cooked) — Hidden by Default Behind View Full Rice Recipe -->
+          <div class="rice-full-recipe-panel ${isRecipeOpen ? 'bg-slate-900/95 border border-slate-800 rounded-xl p-2.5 space-y-1.5 text-left' : 'hidden'}" style="display: ${isRecipeOpen ? 'block' : 'none'};">
             <div class="flex flex-wrap items-center justify-between gap-1">
               <span class="text-[11px] font-extrabold text-sky-300">Full Jasmine Rice Batch Recipe (4 Bowls • 600g Cooked)</span>
               <span class="text-[10px] font-bold text-emerald-300">150g cooked / bowl</span>
@@ -4269,7 +4300,7 @@
             </div>
           </div>
 
-          ${activeSpec && !alertBanner ? `
+          ${activeSpec && !alertBanner && !state.riceBannerDismissed ? `
             <div class="rounded-lg px-3 py-2 bg-sky-950/60 border border-sky-400/40 text-sky-200 text-[11px] font-bold flex flex-wrap items-center justify-between gap-2">
               <span>Active Stage ${activeSpec.stage}/2 (${activeSpec.buttonLabel})</span>
               <span class="font-mono text-xs text-emerald-300 shrink-0 live-rice-timer-readout">${badgeTimeText}</span>
@@ -4293,6 +4324,14 @@
           e.stopPropagation();
           const stNum = parseInt(btn.getAttribute('data-rice-stage') || '1', 10);
           startRiceTimerStage(stNum);
+        });
+      });
+      rootEl.querySelectorAll('.toggle-rice-full-recipe-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          state.openRiceTimerRecipe = !state.openRiceTimerRecipe;
+          saveState();
+          renderRiceCookingTimerWidgets();
         });
       });
       rootEl.querySelectorAll('.rice-cook-mins-btn').forEach(btn => {
@@ -5852,12 +5891,18 @@
 
     function getStepVisualDiagramHtml(ex, meta, dayIdx = state.selectedDayIndex) {
       const panelKey = getExercisePanelKey(dayIdx, ex.id);
+      const isMachineActive = Boolean(ex && ex.isSwappedMachine);
+      const primaryVid = (ex && (ex.primaryVideoUrl || ex.videoUrl)) || 'https://www.youtube.com/watch?v=YXjhMV7uz4c';
+      const altVid = (ex && ex.altVideoUrl) || primaryVid;
+      const searchUrl = (ex && ex.youtubeSearchUrl) || `https://www.youtube.com/results?search_query=${encodeURIComponent(((ex && ex.name) || 'gym machine') + ' proper form tutorial')}`;
+      const formSetupText = (ex && (ex.formSetup || ex.notes)) || '';
+
       return `
         <div class="bg-slate-950 border border-emerald-500/30 rounded-xl p-3 space-y-2.5">
           <div class="flex items-center justify-between border-b border-slate-800 pb-2">
             <div class="flex items-center gap-2">
               <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Visual Setup &amp; Execution</span>
-              <span class="text-xs font-bold text-white">${meta.equipLabel}</span>
+              <span class="text-xs font-bold text-white">${isMachineActive ? ex.name : (meta && meta.equipLabel ? meta.equipLabel : 'Equipment')}</span>
             </div>
             <button type="button" data-hide-img="${ex.id}" data-day-idx="${dayIdx}" data-panel-key="${panelKey}" class="hide-img-btn px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-[11px] font-extrabold transition">
               ✕ Hide Setup &amp; Image
@@ -5867,11 +5912,11 @@
             <!-- Step 1 Visual Panel -->
             <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 flex items-start gap-2.5">
               <div class="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 flex flex-col items-center justify-center shrink-0 p-1">
-                ${getEquipmentSvg(meta.equipType)}
+                ${getEquipmentSvg(isMachineActive ? 'machine' : (meta ? meta.equipType : 'machine'))}
               </div>
               <div>
                 <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">STEP 1: SETUP &amp; MACHINE</span>
-                <p class="text-[11px] text-slate-200 mt-1 leading-snug">${meta.step1Cue}</p>
+                <p class="text-[11px] text-slate-200 mt-1 leading-snug">${isMachineActive ? formSetupText : (meta ? meta.step1Cue : formSetupText)}</p>
               </div>
             </div>
             <!-- Step 2 Visual Panel -->
@@ -5883,13 +5928,24 @@
               </div>
               <div>
                 <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">STEP 2: EXECUTION CUES</span>
-                <p class="text-[11px] text-slate-200 mt-1 leading-snug">${meta.step2Cue}</p>
+                <p class="text-[11px] text-slate-200 mt-1 leading-snug">${isMachineActive && ex.targetMuscle ? `Target Muscles: ${ex.targetMuscle}. Maintain controlled 2-3s eccentric and full range of motion.` : (meta ? meta.step2Cue : formSetupText)}</p>
               </div>
             </div>
           </div>
-          <p class="text-[11px] text-slate-400 leading-relaxed pt-0.5">
-            <strong class="text-slate-200">Form Note:</strong> ${ex.notes}
+          <p class="text-[11px] text-slate-300 leading-relaxed pt-0.5">
+            <strong class="text-emerald-300">Form &amp; Setup Cues:</strong> ${formSetupText}
           </p>
+          <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-800/80">
+            <a href="${primaryVid}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold transition">
+              Primary Machine Video
+            </a>
+            <a href="${altVid}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 text-[11px] font-extrabold transition">
+              Alt Machine Video
+            </a>
+            <a href="${searchUrl}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[11px] font-bold transition">
+              Search YouTube for Exact Machine
+            </a>
+          </div>
         </div>
       `;
     }
@@ -6190,219 +6246,691 @@
       };
     }
 
-    const BIOMECHANICAL_MACHINE_SWAP_CATALOG = {
-      mon_incline_db_press: {
-        machineExerciseId: 'swap_machine_incline_chest_press',
-        suggestedMachineExercise: 'Selectorized Incline Chest Press Machine',
-        targetMuscles: 'Clavicular Pectoralis Major (Upper Chest), Anterior Deltoids, Triceps Brachii',
-        definitionAndCues: 'Adjust seat so handles align with upper chest (clavicle level). Retract shoulder blades against pad, press handles forward and slightly up without locking elbows, and lower under a 2-second eccentric.',
-        videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
-        restSec: 150,
-        restLabel: '2.5 min rest',
-        sets: 3,
-        reps: '8-10'
+    // =========================================================================
+    // COMPLETE 22-EXERCISE BIOMECHANICAL MACHINE & VERIFIED VIDEO DATABASE
+    // =========================================================================
+    const UNIVERSAL_MACHINE_SWAPS = [
+      {
+        categoryId: 'pull_ups',
+        label: 'Pull-Ups',
+        keywords: ['pull-up', 'pull up', 'chin-up'],
+        exactIds: ['day1_pullups', 'day2_pullups', 'day3_pullups', 'fri_pullups', 'day4_pullups', 'day5_pullups'],
+        options: [
+          {
+            optionId: 'assisted_pull_up_machine',
+            name: 'Assisted Pull-Up Machine (Knee/Foot Platform)',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=CdO5BvP6Ti8',
+            altVideoUrl: 'https://www.youtube.com/watch?v=gx0RWT7WbmA',
+            restSeconds: 90,
+            targetMuscle: 'Latissimus Dorsi, Biceps & Mid-Back',
+            formSetup: '1. Select counterweight pin (note: more weight = more assistance). 2. Kneel or stand on the platform and take a slightly wider than shoulder-width overhand grip. 3. Depress your scapulae, pull chest to the bar driving elbows down to hips, and lower into a controlled 2-3s dead-hang stretch.'
+          },
+          {
+            optionId: 'lat_pulldown_machine_for_pullups',
+            name: 'Lat Pulldown Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
+            altVideoUrl: 'https://www.youtube.com/watch?v=owMowIRkyvQ',
+            restSeconds: 90,
+            targetMuscle: 'Latissimus Dorsi, Teres Major & Biceps',
+            formSetup: '1. Lock thighs snugly under the knee pad. 2. Take a slightly wider than shoulder-width overhand grip. 3. Depress shoulder blades and pull the bar down to your upper chest while keeping torso tall, then control the 2-3s eccentric stretch.'
+          }
+        ]
       },
-      mon_seated_cable_row: {
-        machineExerciseId: 'swap_machine_chest_supported_row',
-        suggestedMachineExercise: 'Chest-Supported Machine Row',
-        targetMuscles: 'Latissimus Dorsi, Rhomboids, Mid/Lower Trapezius, Rear Delts',
-        definitionAndCues: 'Set chest pad so arms extend fully at start. Drive elbows straight back past torso while squeezing shoulder blades together for 1 second.',
-        videoUrl: 'https://www.youtube.com/watch?v=H75im9fAUMc',
-        restSec: 120,
-        restLabel: '2 min rest',
-        sets: 3,
-        reps: '10-12'
+      {
+        categoryId: 'flat_bench_press',
+        label: 'Flat Bench Press',
+        keywords: ['barbell bench press', 'flat dumbbell press', 'bench press'],
+        exactIds: ['mon_bench', 'thu_flat_db', 'wed_flat_db_press'],
+        options: [
+          {
+            optionId: 'seated_chest_press_machine',
+            name: 'Seated Chest Press Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=YXjhMV7uz4c',
+            altVideoUrl: 'https://www.youtube.com/watch?v=Qu7-ceCvq7w',
+            restSeconds: 120,
+            targetMuscle: 'Mid/Lower Pectoralis Major, Anterior Delts & Triceps',
+            formSetup: '1. Adjust seat height so handles align with your mid-to-lower chest line. 2. Retract and depress shoulder blades firmly into the backrest. 3. Press handles to full extension without rounding shoulders forward, then lower over 2-3s to a deep pec stretch.'
+          }
+        ]
       },
-      tue_barbell_rdl: {
-        machineExerciseId: 'swap_machine_seated_leg_curl_hinge',
-        suggestedMachineExercise: 'Seated Hamstring Curl / Glute-Ham Machine',
-        targetMuscles: 'Hamstrings (Biceps Femoris, Semitendinosus), Gluteus Maximus',
-        definitionAndCues: 'Align knee joint with machine pivot dot. Lock thigh pad snugly above knees, curl heels smoothly under seat, pause 1s at peak contraction, and control the 3-second return.',
-        videoUrl: 'https://www.youtube.com/watch?v=ELOCsoDSmrg',
-        restSec: 120,
-        restLabel: '2 min rest',
-        sets: 3,
-        reps: '10-12'
+      {
+        categoryId: 'incline_press',
+        label: 'Incline Press',
+        keywords: ['incline dumbbell press', 'incline bench', 'incline press'],
+        exactIds: ['thu_inc_db', 'mon_incline_db_press'],
+        options: [
+          {
+            optionId: 'incline_chest_press_machine',
+            name: 'Incline Chest Press Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=WxrKIPbeQP8',
+            altVideoUrl: 'https://www.youtube.com/watch?v=i3e4CG5tnfs',
+            restSeconds: 120,
+            targetMuscle: 'Clavicular (Upper) Pectoralis Major & Anterior Deltoids',
+            formSetup: '1. Set seat height so handles start at upper-chest / collarbone level. 2. Keep upper back arched slightly against the pad with scapulae retracted. 3. Press upward on the converging 30-45 degree path, pause briefly, and lower slowly.'
+          }
+        ]
       },
-      tue_walking_lunges: {
-        machineExerciseId: 'swap_machine_leg_press',
-        suggestedMachineExercise: '45-Degree Sled Leg Press Machine',
-        targetMuscles: 'Quadriceps, Gluteus Maximus, Adductors',
-        definitionAndCues: 'Place feet shoulder-width on mid-sled platform. Lower sled until knees reach 90 degrees without lower-back rounding, then drive through mid-foot.',
-        videoUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ',
-        restSec: 120,
-        restLabel: '2 min rest',
-        sets: 3,
-        reps: '10-12'
+      {
+        categoryId: 'chest_flyes',
+        label: 'Chest Flyes',
+        keywords: ['cable fly', 'flyes', 'pec deck', 'chest fly'],
+        exactIds: ['mon_cable_fly', 'thu_mid_fly'],
+        options: [
+          {
+            optionId: 'pec_deck_machine_fly',
+            name: 'Pec Deck / Seated Machine Chest Fly',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=g3T7LsEeDWQ',
+            altVideoUrl: 'https://www.youtube.com/watch?v=a9vQ_hwIksU',
+            restSeconds: 90,
+            targetMuscle: 'Pectoralis Major (Sternal & Costal Fibers)',
+            formSetup: '1. Adjust seat so handles align with mid-chest when arms are abducted. 2. Keep a soft 10-degree bend in elbows with shoulders pinned down and back. 3. Bring hands together in a wide hug arc, squeeze pecs for 1-2s, and return slowly.'
+          }
+        ]
       },
-      wed_flat_db_press: {
-        machineExerciseId: 'swap_machine_flat_chest_press',
-        suggestedMachineExercise: 'Seated Horizontal Chest Press Machine',
-        targetMuscles: 'Sternal Pectoralis Major (Mid/Lower Chest), Anterior Deltoids, Triceps',
-        definitionAndCues: 'Set seat height so handles align with mid-chest (nipple line). Keep wrists neutral and elbows tucked at 45 degrees as you press to full pec contraction.',
-        videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
-        restSec: 150,
-        restLabel: '2.5 min rest',
-        sets: 3,
-        reps: '8-10'
+      {
+        categoryId: 'horizontal_rows',
+        label: 'Horizontal Rows',
+        keywords: ['chest supported row', 'barbell row', 'dumbbell row', 'cable row'],
+        exactIds: ['mon_cs_row', 'fri_lat_row', 'mon_seated_cable_row'],
+        options: [
+          {
+            optionId: 'seated_chest_supported_row_machine',
+            name: 'Seated Chest-Supported Machine / Cable Row',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=GZbfZ033f74',
+            altVideoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
+            restSeconds: 120,
+            targetMuscle: 'Mid-Back (Rhomboids, Traps) & Latissimus Dorsi',
+            formSetup: '1. Adjust chest pad and seat height so your sternum braces comfortably against the pad. 2. Grip handles and drive elbows back past your torso while retracting shoulder blades. 3. Control the eccentric return until your lats and upper back protract fully.'
+          }
+        ]
       },
-      thu_barbell_back_squat: {
-        machineExerciseId: 'swap_machine_hack_squat',
-        suggestedMachineExercise: 'Linear Hack Squat / Pendulum Squat Machine',
-        targetMuscles: 'Quadriceps (Vastus Lateralis, Rectus Femoris), Gluteus Maximus',
-        definitionAndCues: 'Brace shoulders and lower back firmly against carriage pads. Descend with knees tracking over toes to parallel or below, then drive forcefully up.',
-        videoUrl: 'https://www.youtube.com/watch?v=0tn5K9NlCfo',
-        restSec: 180,
-        restLabel: '3 min rest',
-        sets: 3,
-        reps: '6-8'
+      {
+        categoryId: 'vertical_pull',
+        label: 'Vertical Pull',
+        keywords: ['lat pulldown', 'pulldown'],
+        exactIds: ['mon_lat_pd'],
+        options: [
+          {
+            optionId: 'converging_lat_pulldown_machine',
+            name: 'Converging / Cable Lat Pulldown Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
+            altVideoUrl: 'https://www.youtube.com/watch?v=owMowIRkyvQ',
+            restSeconds: 120,
+            targetMuscle: 'Latissimus Dorsi & Teres Major',
+            formSetup: '1. Lock thighs snugly under the knee pad. 2. Grip slightly wider than shoulder-width. 3. Pull elbows down and in toward your ribs while keeping chest tall, bringing the handles/bar to your upper chest.'
+          }
+        ]
       },
-      tue_squat: {
-        machineExerciseId: 'swap_machine_hack_squat',
-        suggestedMachineExercise: 'Linear Hack Squat / Pendulum Squat Machine',
-        targetMuscles: 'Quadriceps (Vastus Lateralis, Rectus Femoris), Gluteus Maximus',
-        definitionAndCues: 'Brace shoulders and lower back firmly against carriage pads. Descend with knees tracking over toes to parallel or below, then drive forcefully up.',
-        videoUrl: 'https://www.youtube.com/watch?v=0tn5K9NlCfo',
-        restSec: 180,
-        restLabel: '3 min rest',
-        sets: 3,
-        reps: '6-8'
+      {
+        categoryId: 'vertical_shoulder_press',
+        label: 'Vertical Shoulder Press',
+        keywords: ['overhead press', 'shoulder press', 'military press'],
+        exactIds: ['mon_ohp', 'fri_overhead_shoulder_press'],
+        options: [
+          {
+            optionId: 'seated_shoulder_press_machine',
+            name: 'Seated Shoulder Press Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=6v4nrRVySj0',
+            altVideoUrl: 'https://www.youtube.com/watch?v=Gkk-6q7Rq-s',
+            restSeconds: 120,
+            targetMuscle: 'Anterior & Lateral Deltoids, Triceps',
+            formSetup: '1. Set seat height so handles rest at ear/jaw level at the bottom. 2. Brace core and keep lower back flat against the pad. 3. Press vertically to lockout without shrugging traps, then lower over 2-3s.'
+          }
+        ]
       },
-      tue_rdl: {
-        machineExerciseId: 'swap_machine_seated_leg_curl_hinge',
-        suggestedMachineExercise: 'Seated Hamstring Curl / Glute-Ham Machine',
-        targetMuscles: 'Hamstrings (Biceps Femoris, Semitendinosus), Gluteus Maximus',
-        definitionAndCues: 'Align knee joint with machine pivot dot. Lock thigh pad snugly above knees, curl heels smoothly under seat, pause 1s at peak contraction, and control the 3-second return.',
-        videoUrl: 'https://www.youtube.com/watch?v=ELOCsoDSmrg',
-        restSec: 120,
-        restLabel: '2 min rest',
-        sets: 3,
-        reps: '10-12'
+      {
+        categoryId: 'lateral_deltoid_isolation',
+        label: 'Lateral Deltoid Isolation',
+        keywords: ['lateral raise', 'side raise'],
+        exactIds: ['mon_lat_raise', 'thu_db_lat'],
+        options: [
+          {
+            optionId: 'seated_lateral_raise_machine',
+            name: 'Seated Lateral Raise Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=NNAs8jx_zJI',
+            altVideoUrl: 'https://www.youtube.com/watch?v=EL_xr3NVUbc',
+            restSeconds: 60,
+            targetMuscle: 'Lateral (Medial) Deltoid',
+            formSetup: '1. Adjust seat so your shoulder joint aligns directly with the machine pivot axis. 2. Place elbows/forearms against the pads. 3. Lead with your elbows to raise arms to shoulder height (90 degrees), pause 1s, and lower under control.'
+          }
+        ]
       },
-      tue_lunges: {
-        machineExerciseId: 'swap_machine_leg_press',
-        suggestedMachineExercise: '45-Degree Sled Leg Press Machine',
-        targetMuscles: 'Quadriceps, Gluteus Maximus, Adductors',
-        definitionAndCues: 'Place feet shoulder-width on mid-sled platform. Lower sled until knees reach 90 degrees without lower-back rounding, then drive through mid-foot.',
-        videoUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ',
-        restSec: 120,
-        restLabel: '2 min rest',
-        sets: 3,
-        reps: '10-12'
+      {
+        categoryId: 'posterior_deltoid_upper_back',
+        label: 'Posterior Deltoid / Upper Back',
+        keywords: ['face pull', 'rear delt', 'reverse fly'],
+        exactIds: ['mon_face_pull', 'fri_rear_row', 'fri_face_pull'],
+        options: [
+          {
+            optionId: 'reverse_pec_deck_machine',
+            name: 'Reverse Pec Deck (Rear Delt Machine)',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=O2J8Qs7Wl3U',
+            altVideoUrl: 'https://www.youtube.com/watch?v=7tgx6QHB0-A',
+            restSeconds: 60,
+            targetMuscle: 'Posterior Deltoids, Infraspinatus & Mid-Traps',
+            formSetup: '1. Set machine arms to the front-most notches and sit facing the chest pad at shoulder height. 2. Push the handles outward and back in a wide arc using the backs of your shoulders without pinching your upper traps.'
+          }
+        ]
       },
-      mon_bench: {
-        machineExerciseId: 'swap_machine_flat_chest_press',
-        suggestedMachineExercise: 'Seated Horizontal Chest Press Machine',
-        targetMuscles: 'Sternal Pectoralis Major (Mid/Lower Chest), Anterior Deltoids, Triceps',
-        definitionAndCues: 'Set seat height so handles align with mid-chest (nipple line). Keep wrists neutral and elbows tucked at 45 degrees as you press to full pec contraction.',
-        videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
-        restSec: 150,
-        restLabel: '2.5 min rest',
-        sets: 3,
-        reps: '8-10'
+      {
+        categoryId: 'overhead_triceps',
+        label: 'Overhead Triceps',
+        keywords: ['overhead rope', 'overhead tricep', 'skullcrusher'],
+        exactIds: ['thu_oh_ext'],
+        options: [
+          {
+            optionId: 'seated_tricep_extension_machine',
+            name: 'Seated Tricep Extension Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=NNyuuN2sJb0',
+            altVideoUrl: 'https://www.youtube.com/watch?v=1AFJTda1btg',
+            restSeconds: 60,
+            targetMuscle: 'Triceps Brachii (Long & Lateral Heads)',
+            formSetup: '1. Adjust seat so your triceps rest flat on the angled pad with elbows aligned to the cam pivot. 2. Extend forearms to full lockout, contract triceps hard for 1s, and allow a full elbow-flexion stretch on the eccentric.'
+          }
+        ]
       },
-      mon_cs_row: {
-        machineExerciseId: 'swap_machine_chest_supported_row',
-        suggestedMachineExercise: 'Chest-Supported Machine Row',
-        targetMuscles: 'Latissimus Dorsi, Rhomboids, Mid/Lower Trapezius, Rear Delts',
-        definitionAndCues: 'Set chest pad so arms extend fully at start. Drive elbows straight back past torso while squeezing shoulder blades together for 1 second.',
-        videoUrl: 'https://www.youtube.com/watch?v=H75im9fAUMc',
-        restSec: 120,
-        restLabel: '2 min rest',
-        sets: 3,
-        reps: '10-12'
+      {
+        categoryId: 'tricep_pushdowns_dips',
+        label: 'Tricep Pushdowns / Dips',
+        keywords: ['cable pushdown', 'pushdowns', 'tricep dip'],
+        exactIds: ['thu_pushdown'],
+        options: [
+          {
+            optionId: 'seated_tricep_dip_pushdown_machine',
+            name: 'Seated Tricep Dip / Pushdown Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=8CvOC9Db3Yw',
+            altVideoUrl: 'https://www.youtube.com/watch?v=2NOglxsG1wE',
+            restSeconds: 60,
+            targetMuscle: 'Triceps Brachii (Lateral & Medial Heads)',
+            formSetup: '1. Sit tall with back against pad and grip handles with elbows tucked close to your sides. 2. Press handles downward to full elbow extension while keeping shoulders depressed, then bend elbows back to 90 degrees.'
+          }
+        ]
       },
-      mon_ohp: {
-        machineExerciseId: 'swap_machine_shoulder_press',
-        suggestedMachineExercise: 'Selectorized Overhead Shoulder Press Machine',
-        targetMuscles: 'Anterior & Lateral Deltoids, Upper Trapezius, Triceps Brachii',
-        definitionAndCues: 'Adjust seat so handles start at ear/jaw level. Press vertically overhead without arching low back, and lower under control.',
-        videoUrl: 'https://www.youtube.com/watch?v=Wqq43dKW1TU',
-        restSec: 150,
-        restLabel: '2.5 min rest',
-        sets: 3,
-        reps: '6-8'
+      {
+        categoryId: 'bicep_brachialis_curls',
+        label: 'Bicep & Brachialis Curls',
+        keywords: ['incline dumbbell curl', 'hammer curl', 'bicep curl', 'barbell curl', 'preacher curl'],
+        exactIds: ['fri_inc_curl', 'fri_hammer'],
+        options: [
+          {
+            optionId: 'seated_machine_preacher_bicep_curl',
+            name: 'Seated Machine Preacher / Bicep Curl',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=eYrAV7rnol0',
+            altVideoUrl: 'https://www.youtube.com/watch?v=Htw-s61mOw0',
+            restSeconds: 60,
+            targetMuscle: 'Biceps Brachii & Brachialis',
+            formSetup: '1. Set seat height so armpits sit flush on top of the arm pad and elbows align with the pivot point. 2. Curl handles smoothly to peak contraction, hold 1s, and lower over 2-3s to full extension.'
+          }
+        ]
       },
-      thu_inc_db: {
-        machineExerciseId: 'swap_machine_incline_chest_press',
-        suggestedMachineExercise: 'Selectorized Incline Chest Press Machine',
-        targetMuscles: 'Clavicular Pectoralis Major (Upper Chest), Anterior Deltoids, Triceps Brachii',
-        definitionAndCues: 'Adjust seat so handles align with upper chest (clavicle level). Retract shoulder blades against pad, press handles forward and slightly up without locking elbows, and lower under a 2-second eccentric.',
-        videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
-        restSec: 150,
-        restLabel: '2.5 min rest',
-        sets: 3,
-        reps: '8-10'
+      {
+        categoryId: 'upper_traps',
+        label: 'Upper Traps',
+        keywords: ['shrug'],
+        exactIds: ['shrug'],
+        options: [
+          {
+            optionId: 'standing_seated_leverage_shrug_machine',
+            name: 'Standing / Seated Leverage Shrug Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=rFsSeClGnNA',
+            altVideoUrl: 'https://www.youtube.com/watch?v=NJ8U95vMtZg',
+            restSeconds: 60,
+            targetMuscle: 'Upper Trapezius & Levator Scapulae',
+            formSetup: '1. Grip the parallel machine handles with arms straight. 2. Elevate shoulders up and slightly inward toward your ears, hold peak contraction for 2 full seconds, and lower into a deep stretch.'
+          }
+        ]
       },
-      thu_flat_db: {
-        machineExerciseId: 'swap_machine_flat_chest_press',
-        suggestedMachineExercise: 'Seated Horizontal Chest Press Machine',
-        targetMuscles: 'Sternal Pectoralis Major (Mid/Lower Chest), Anterior Deltoids, Triceps',
-        definitionAndCues: 'Set seat height so handles align with mid-chest (nipple line). Keep wrists neutral and elbows tucked at 45 degrees as you press to full pec contraction.',
-        videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
-        restSec: 150,
-        restLabel: '2.5 min rest',
-        sets: 3,
-        reps: '8-10'
+      {
+        categoryId: 'bilateral_squat_pattern',
+        label: 'Bilateral Squat Pattern',
+        keywords: ['back squat', 'front squat', 'goblet squat', 'squat'],
+        exactIds: ['tue_squat', 'thu_barbell_back_squat'],
+        options: [
+          {
+            optionId: 'seated_leg_press_machine',
+            name: 'Seated Leg Press Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=nDh_BlnLCGc',
+            altVideoUrl: 'https://www.youtube.com/watch?v=EotSw18oR9w',
+            restSeconds: 150,
+            targetMuscle: 'Quadriceps, Gluteus Maximus & Adductors',
+            formSetup: '1. Sit with lower back and glutes wedged firmly against the pad. 2. Place feet hip-to-shoulder width apart on the platform. 3. Unlock safeties and lower sled until knees reach 90+ degrees without lumbar rounding, then drive through mid-foot.'
+          },
+          {
+            optionId: 'angled_hack_squat_machine',
+            name: 'Angled Hack Squat Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=g9i05umL5vc',
+            altVideoUrl: 'https://www.youtube.com/watch?v=0tn5K9NlCfo',
+            restSeconds: 150,
+            targetMuscle: 'Quadriceps (Vasti) & Glutes',
+            formSetup: '1. Brace shoulders under pads and press entire back flat against the sled. 2. Place feet shoulder-width apart on the lower-to-mid platform. 3. Release handles, descend to full knee flexion, and drive up.'
+          }
+        ]
       },
-      fri_overhead_shoulder_press: {
-        machineExerciseId: 'swap_machine_shoulder_press',
-        suggestedMachineExercise: 'Selectorized Overhead Shoulder Press Machine',
-        targetMuscles: 'Anterior & Lateral Deltoids, Upper Trapezius, Triceps Brachii',
-        definitionAndCues: 'Adjust seat so handles start at ear/jaw level. Press vertically overhead without arching low back, and lower under control.',
-        videoUrl: 'https://www.youtube.com/watch?v=Wqq43dKW1TU',
-        restSec: 150,
-        restLabel: '2.5 min rest',
-        sets: 3,
-        reps: '8-10'
+      {
+        categoryId: 'unilateral_leg_pattern',
+        label: 'Unilateral Leg Pattern',
+        keywords: ['split squat', 'bulgarian', 'lunge', 'step up'],
+        exactIds: ['tue_lunges', 'sat_bss', 'tue_walking_lunges'],
+        options: [
+          {
+            optionId: 'single_leg_press_machine',
+            name: 'Single-Leg Press Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=LbKwZIbVYZI',
+            altVideoUrl: 'https://www.youtube.com/watch?v=x4vaHXRfKrg',
+            restSeconds: 120,
+            targetMuscle: 'Unilateral Quadriceps & Gluteus Maximus',
+            formSetup: '1. Place working foot centered on the sled platform and keep non-working leg planted safely on the floor. 2. Lower sled slowly until full knee and hip flexion on the working leg, then press to extension without locking the knee.'
+          }
+        ]
+      },
+      {
+        categoryId: 'hip_hinge_posterior_chain',
+        label: 'Hip Hinge / Posterior Chain',
+        keywords: ['romanian deadlift', 'rdl', 'deadlift', 'good morning'],
+        exactIds: ['tue_rdl', 'sat_deadlift', 'tue_barbell_rdl'],
+        options: [
+          {
+            optionId: 'seated_hamstring_leg_curl_machine',
+            name: 'Seated Hamstring Leg Curl Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=xdbEG3xGLI8',
+            altVideoUrl: 'https://www.youtube.com/watch?v=_lgE0gPvbik',
+            restSeconds: 90,
+            targetMuscle: 'Hamstrings (Biceps Femoris, Semitendinosus, Semimembranosus)',
+            formSetup: '1. Align knee joint with machine pivot and set lower pad just above the Achilles tendon. 2. Lock thigh pad tightly over quads and lean torso slightly forward to pre-stretch hamstrings. 3. Curl all the way down and hold 1s.'
+          },
+          {
+            optionId: 'back_hip_extension_45_machine',
+            name: '45-Degree Back / Hip Extension Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=H8Swl1N-uis',
+            altVideoUrl: 'https://www.youtube.com/watch?v=S1_eZIIZlIc',
+            restSeconds: 90,
+            targetMuscle: 'Gluteus Maximus, Hamstrings & Erector Spinae',
+            formSetup: '1. Set pad height just below your hip crease so your pelvis can hinge freely. 2. Keep chin tucked and upper back slightly rounded to bias glutes/hamstrings, hinging down 90 degrees and driving hips into the pad at the top.'
+          }
+        ]
+      },
+      {
+        categoryId: 'knee_flexion',
+        label: 'Knee Flexion',
+        keywords: ['leg curl', 'hamstring curl'],
+        exactIds: ['sat_leg_curl'],
+        options: [
+          {
+            optionId: 'seated_lying_leg_curl_machine',
+            name: 'Seated / Lying Leg Curl Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=xdbEG3xGLI8',
+            altVideoUrl: 'https://www.youtube.com/watch?v=_lgE0gPvbik',
+            restSeconds: 90,
+            targetMuscle: 'Hamstrings (Biceps Femoris, Semitendinosus & Semimembranosus)',
+            formSetup: '1. Align knee joint with machine pivot and position ankle roller just above heels. 2. Secure thigh pad or hold handles firmly, curl through full knee flexion, pause 1s, and lower over 2-3s.'
+          }
+        ]
+      },
+      {
+        categoryId: 'knee_extension',
+        label: 'Knee Extension',
+        keywords: ['leg extension', 'quad extension'],
+        exactIds: ['tue_leg_ext'],
+        options: [
+          {
+            optionId: 'seated_leg_extension_machine',
+            name: 'Seated Leg Extension Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=iQ92TuvBqRo',
+            altVideoUrl: 'https://www.youtube.com/watch?v=uM86QE59Tgc',
+            restSeconds: 90,
+            targetMuscle: 'Quadriceps (Rectus Femoris & Vasti)',
+            formSetup: '1. Adjust backrest so knees align directly with the machine pivot axis and set shin pad above ankles. 2. Grip side handles, extend knees to full quad contraction for 1s, and lower under a 2-3s eccentric.'
+          }
+        ]
+      },
+      {
+        categoryId: 'bent_knee_calf_raise',
+        label: 'Bent-Knee Calf Raise',
+        keywords: ['seated weighted calf raise', 'seated calf'],
+        exactIds: ['sat_seated_calf'],
+        options: [
+          {
+            optionId: 'seated_calf_raise_machine',
+            name: 'Seated Calf Raise Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=z1N8ZRsb4bg',
+            altVideoUrl: 'https://www.youtube.com/watch?v=FsqE-g1C5fk',
+            restSeconds: 60,
+            targetMuscle: 'Soleus & Gastrocnemius (Bent-Knee Plantarflexion)',
+            formSetup: '1. Adjust thigh pad height (e.g., setting #6) snugly over lower thighs with balls of feet on the step. 2. Disengage safety bar and lower heels for 2-3s into a deep soleus stretch. 3. Drive to full tiptoe contraction and pause 1-2s.'
+          }
+        ]
+      },
+      {
+        categoryId: 'straight_leg_calf_raise',
+        label: 'Straight-Leg Calf Raise',
+        keywords: ['standing calf', 'calf press'],
+        exactIds: ['tue_calf'],
+        options: [
+          {
+            optionId: 'standing_leg_press_calf_raise_machine',
+            name: 'Standing / Leg Press Calf Raise Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=_OewEscCsbo',
+            altVideoUrl: 'https://www.youtube.com/watch?v=yQZDGjL-xT4',
+            restSeconds: 60,
+            targetMuscle: 'Gastrocnemius & Soleus (Straight-Knee Plantarflexion)',
+            formSetup: '1. Place shoulders under pads (or balls of feet on bottom edge of leg press sled) with knees straight but not hyperextended. 2. Lower heels into maximum ankle dorsiflexion for 2s, then press high onto toes and hold 1-2s.'
+          }
+        ]
+      },
+      {
+        categoryId: 'glute_abduction_hip_thrust',
+        label: 'Glute Abduction / Hip Thrust',
+        keywords: ['hip abduction', 'abductor', 'hip thrust', 'glute bridge'],
+        exactIds: ['sat_abduction', 'sat_hip_thrust'],
+        options: [
+          {
+            optionId: 'seated_hip_abduction_machine',
+            name: 'Seated Hip Abduction Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=tu4o4quPv2k',
+            altVideoUrl: 'https://www.youtube.com/watch?v=01HilwRf8m8',
+            restSeconds: 60,
+            targetMuscle: 'Gluteus Medius, Gluteus Minimus & Upper Glutes',
+            formSetup: '1. Sit with outer knees against the pads and adjust starting width to a comfortable stretch. 2. Drive knees outward in a controlled arc, hold peak abduction for 1-2s, and return slowly.'
+          },
+          {
+            optionId: 'hip_thrust_glute_drive_machine',
+            name: 'Hip Thrust / Glute Drive Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=V74XWj9FXAc',
+            altVideoUrl: 'https://www.youtube.com/watch?v=tztHvSLdXLA',
+            restSeconds: 120,
+            targetMuscle: 'Gluteus Maximus & Posterior Chain',
+            formSetup: '1. Rest upper back against the angled pad and secure the padded hip belt across your pelvis. 2. Plant feet so shins are vertical at top lockout, drive through heels to full hip extension, and squeeze glutes for 1-2s.'
+          }
+        ]
+      },
+      {
+        categoryId: 'core_flexion',
+        label: 'Core Flexion',
+        keywords: ['cable abdominal crunch', 'abdominal crunch', 'ab crunch', 'core', 'side plank', 'dead bug'],
+        exactIds: ['cable_ab_crunch', 'tue_side_plank', 'wed_dead_bug', 'sun_cardio'],
+        options: [
+          {
+            optionId: 'seated_abdominal_crunch_machine',
+            name: 'Seated Abdominal Crunch Machine',
+            primaryVideoUrl: 'https://www.youtube.com/watch?v=mnRhbUB3Fjs',
+            altVideoUrl: 'https://www.youtube.com/watch?v=3zJxX6PvwCc',
+            restSeconds: 60,
+            targetMuscle: 'Rectus Abdominis & Obliques (Spinal Flexion)',
+            formSetup: '1. Adjust seat height so the upper pad/handles rest comfortably at upper chest/shoulder level. 2. Exhale and curl your ribcage down toward your pelvis (rounding your spine rather than hinging at the hips), hold 1s, and return slowly.'
+          }
+        ]
       }
-    };
+    ];
 
-    function verifyAndBuildMachineExerciseSwap(originalEx, customMachineNote) {
-      const exId = String((originalEx && (originalEx.originalId || originalEx.id)) || '').trim();
-      const origName = String((originalEx && (originalEx.originalName || originalEx.name)) || 'Current Exercise').trim();
-      const catalogMatch = BIOMECHANICAL_MACHINE_SWAP_CATALOG[exId];
-      const cleanedCustom = String(customMachineNote || '').trim();
+    function matchExerciseToUniversalMachineSwaps(ex) {
+      const canonicalId = String((ex && (ex.originalId || ex.id)) || '').trim().toLowerCase();
+      const rawName = String((ex && (ex.originalName || ex.name)) || '').trim().toLowerCase();
+      for (const cat of UNIVERSAL_MACHINE_SWAPS) {
+        if (cat.exactIds.some(eid => eid.toLowerCase() === canonicalId)) {
+          return cat;
+        }
+      }
+      const orderedCategories = [
+        ...UNIVERSAL_MACHINE_SWAPS.filter(c => c.categoryId === 'unilateral_leg_pattern'),
+        ...UNIVERSAL_MACHINE_SWAPS.filter(c => c.categoryId !== 'unilateral_leg_pattern')
+      ];
+      for (const cat of orderedCategories) {
+        if (cat.keywords.some(kw => rawName.includes(kw.toLowerCase()))) {
+          return cat;
+        }
+      }
+      return UNIVERSAL_MACHINE_SWAPS[UNIVERSAL_MACHINE_SWAPS.length - 1];
+    }
 
-      if (catalogMatch) {
-        const displayMachineName = cleanedCustom.length >= 4
-          ? `${catalogMatch.suggestedMachineExercise} (${cleanedCustom})`
-          : catalogMatch.suggestedMachineExercise;
+    function getDefaultUniversalOptionIndexForExercise(ex, cat) {
+      const canonicalId = String((ex && (ex.originalId || ex.id)) || '').trim().toLowerCase();
+      const rawName = String((ex && (ex.originalName || ex.name)) || '').trim().toLowerCase();
+      if (cat && cat.categoryId === 'glute_abduction_hip_thrust' && (canonicalId === 'sat_hip_thrust' || rawName.includes('hip thrust') || rawName.includes('glute bridge'))) {
+        return 1;
+      }
+      return 0;
+    }
+
+    function getAllKnownExercisesByIdMap() {
+      const map = {};
+      if (typeof DAYS_SCHEDULE !== 'undefined' && Array.isArray(DAYS_SCHEDULE)) {
+        DAYS_SCHEDULE.forEach(d => {
+          if (d && Array.isArray(d.exercises)) {
+            d.exercises.forEach(ex => {
+              if (ex && ex.id) map[ex.id] = ex;
+            });
+          }
+        });
+      }
+      if (typeof CABLE_CRUNCH_EXERCISE !== 'undefined' && CABLE_CRUNCH_EXERCISE && CABLE_CRUNCH_EXERCISE.id) {
+        map[CABLE_CRUNCH_EXERCISE.id] = CABLE_CRUNCH_EXERCISE;
+      }
+      return map;
+    }
+
+    function autoMigrateExerciseNotesToMachineSwaps() {
+      if (!state || typeof state !== 'object') return;
+      if (!state.exerciseSwaps || typeof state.exerciseSwaps !== 'object') state.exerciseSwaps = {};
+      if (!state.revertedMachineSwaps || typeof state.revertedMachineSwaps !== 'object') state.revertedMachineSwaps = {};
+      const notesMap = (state.exerciseNotes && typeof state.exerciseNotes === 'object') ? state.exerciseNotes : {};
+      const catalogById = getAllKnownExercisesByIdMap();
+
+      Object.keys(notesMap).forEach(noteKey => {
+        const noteEntry = notesMap[noteKey];
+        if (!noteEntry || typeof noteEntry !== 'object') return;
+        const textVal = String(noteEntry.text || '').trim();
+        const photoVal = String(noteEntry.photoDataUrl || '').trim();
+        const mentionsMachine = /machine/i.test(textVal);
+        const hasMachinePhoto = photoVal.length > 0;
+        if (!mentionsMachine && !hasMachinePhoto) return;
+        if (state.revertedMachineSwaps[noteKey]) return;
+        if (state.exerciseSwaps[noteKey]) return;
+
+        const exStub = catalogById[noteKey] || { id: noteKey, name: noteKey };
+        const matchedCat = matchExerciseToUniversalMachineSwaps(exStub);
+        const optIdx = getDefaultUniversalOptionIndexForExercise(exStub, matchedCat);
+        const chosenOpt = matchedCat.options[optIdx] || matchedCat.options[0];
+        if (!chosenOpt) return;
+
+        state.exerciseSwaps[noteKey] = {
+          canonicalId: noteKey,
+          categoryId: matchedCat.categoryId,
+          optionIndex: optIdx,
+          optionId: chosenOpt.optionId,
+          name: chosenOpt.name,
+          primaryVideoUrl: chosenOpt.primaryVideoUrl,
+          altVideoUrl: chosenOpt.altVideoUrl,
+          videoUrl: chosenOpt.primaryVideoUrl,
+          restSeconds: chosenOpt.restSeconds,
+          targetMuscle: chosenOpt.targetMuscle,
+          formSetup: chosenOpt.formSetup,
+          scope: 'all',
+          autoMigrated: true
+        };
+      });
+    }
+
+    function getEffectiveExercise(week, dayIdx, exIdx, rawEx) {
+      if (!rawEx || typeof rawEx !== 'object') return rawEx;
+      if (!state.exerciseSwaps || typeof state.exerciseSwaps !== 'object') state.exerciseSwaps = {};
+      if (!state.revertedMachineSwaps || typeof state.revertedMachineSwaps !== 'object') state.revertedMachineSwaps = {};
+
+      const canonicalId = String(rawEx.originalId || rawEx.id || '').trim();
+      const cleanOriginalName = String(rawEx.originalName || rawEx.name || '').replace(/^[A-Z]\d+[\.\:\-\)]\s*/i, '').trim();
+      const slotKey = `w${week}_d${dayIdx}_e${exIdx}`;
+      const altSlotKey = `w${week}_d${dayIdx}_${canonicalId}`;
+
+      const noteObj =
+        (state.exerciseNotes && (state.exerciseNotes[canonicalId] || state.exerciseNotes[slotKey] || state.exerciseNotes[altSlotKey])) ||
+        null;
+      if (
+        noteObj &&
+        !state.exerciseSwaps[slotKey] &&
+        !state.exerciseSwaps[altSlotKey] &&
+        !state.exerciseSwaps[canonicalId] &&
+        !state.revertedMachineSwaps[slotKey] &&
+        !state.revertedMachineSwaps[canonicalId]
+      ) {
+        const noteTxt = String(noteObj.text || '').trim();
+        const notePhoto = String(noteObj.photoDataUrl || '').trim();
+        if (/machine/i.test(noteTxt) || notePhoto.length > 0) {
+          const matchedCat = matchExerciseToUniversalMachineSwaps({ id: canonicalId, name: cleanOriginalName });
+          const optIdx = getDefaultUniversalOptionIndexForExercise({ id: canonicalId, name: cleanOriginalName }, matchedCat);
+          const chosenOpt = matchedCat.options[optIdx] || matchedCat.options[0];
+          if (chosenOpt) {
+            state.exerciseSwaps[canonicalId] = {
+              canonicalId,
+              categoryId: matchedCat.categoryId,
+              optionIndex: optIdx,
+              optionId: chosenOpt.optionId,
+              name: chosenOpt.name,
+              primaryVideoUrl: chosenOpt.primaryVideoUrl,
+              altVideoUrl: chosenOpt.altVideoUrl,
+              videoUrl: chosenOpt.primaryVideoUrl,
+              restSeconds: chosenOpt.restSeconds,
+              targetMuscle: chosenOpt.targetMuscle,
+              formSetup: chosenOpt.formSetup,
+              scope: 'all',
+              autoMigrated: true
+            };
+          }
+        }
+      }
+
+      const matchedCat = matchExerciseToUniversalMachineSwaps({ id: canonicalId, name: cleanOriginalName });
+      const defaultOptIdx = getDefaultUniversalOptionIndexForExercise({ id: canonicalId, name: cleanOriginalName }, matchedCat);
+
+      const activeSwap =
+        state.exerciseSwaps[slotKey] ||
+        state.exerciseSwaps[altSlotKey] ||
+        state.exerciseSwaps[canonicalId] ||
+        (state.swappedExercises && (state.swappedExercises[slotKey] || state.swappedExercises[altSlotKey])) ||
+        null;
+
+      if (activeSwap && !activeSwap.disabled) {
+        const optIdx = typeof activeSwap.optionIndex === 'number' ? activeSwap.optionIndex : defaultOptIdx;
+        const catOption = matchedCat.options[optIdx] || matchedCat.options[0];
+        const machineName = activeSwap.name || activeSwap.suggestedMachineExercise || (catOption ? catOption.name : cleanOriginalName);
+        const primaryVid = activeSwap.primaryVideoUrl || activeSwap.videoUrl || (catOption ? catOption.primaryVideoUrl : rawEx.videoUrl);
+        const altVid = activeSwap.altVideoUrl || (catOption ? catOption.altVideoUrl : primaryVid);
+        const restSecVal = Number(activeSwap.restSeconds || activeSwap.restSec || (catOption ? catOption.restSeconds : rawEx.restSec)) || 90;
+        const formSetupStr = activeSwap.formSetup || activeSwap.definitionAndCues || (catOption ? catOption.formSetup : rawEx.notes);
+        const targetMuscleStr = activeSwap.targetMuscle || activeSwap.targetMuscles || (catOption ? catOption.targetMuscle : '');
+        const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(machineName + ' proper form tutorial')}`;
+        const resolvedSwapKey = state.exerciseSwaps[slotKey]
+          ? slotKey
+          : (state.exerciseSwaps[altSlotKey] ? altSlotKey : canonicalId);
+
         return {
-          isMatch: true,
-          originalExerciseId: exId,
-          originalExerciseName: origName,
-          machineExerciseId: catalogMatch.machineExerciseId,
-          suggestedMachineExercise: displayMachineName,
-          targetMuscles: catalogMatch.targetMuscles,
-          definitionAndCues: catalogMatch.definitionAndCues,
-          videoUrl: catalogMatch.videoUrl,
-          restSec: catalogMatch.restSec,
-          restLabel: catalogMatch.restLabel,
-          sets: catalogMatch.sets || (originalEx && originalEx.sets) || 3,
-          reps: catalogMatch.reps || (originalEx && originalEx.reps) || '8-12',
-          confirmationHeadline: `Biomechanical Match Confirmed: ${displayMachineName} targets the same muscles as ${origName}. Replace today's exercise card?`
+          ...rawEx,
+          id: canonicalId,
+          originalId: canonicalId,
+          originalName: cleanOriginalName,
+          originalVideoUrl: rawEx.videoUrl || rawEx.video || '',
+          originalNotes: rawEx.notes || rawEx.setup || '',
+          name: machineName,
+          isSwappedMachine: true,
+          machineBadge: `Machine Active • Swapped from ${cleanOriginalName}`,
+          videoUrl: primaryVid,
+          video: primaryVid,
+          primaryVideoUrl: primaryVid,
+          altVideoUrl: altVid,
+          youtubeSearchUrl: searchUrl,
+          formSetup: formSetupStr,
+          notes: formSetupStr,
+          targetMuscle: targetMuscleStr,
+          targetMuscles: targetMuscleStr,
+          restSec: restSecVal,
+          restSeconds: restSecVal,
+          restLabel: `${restSecVal}s rest`,
+          availableMachineOptions: matchedCat.options,
+          selectedOptionIdx: optIdx,
+          swapScope: activeSwap.scope || (state.exerciseSwaps[slotKey] || state.exerciseSwaps[altSlotKey] ? 'today' : 'all'),
+          swapKey: resolvedSwapKey,
+          slotKey,
+          altSlotKey
         };
       }
 
-      const fallbackMachineName = cleanedCustom.length >= 3
-        ? `Selectorized ${cleanedCustom} Machine`
-        : `Selectorized ${origName} Machine`;
+      return {
+        ...rawEx,
+        id: canonicalId,
+        originalId: canonicalId,
+        originalName: cleanOriginalName,
+        name: cleanOriginalName,
+        isSwappedMachine: false,
+        availableMachineOptions: matchedCat.options,
+        selectedOptionIdx: defaultOptIdx,
+        slotKey,
+        altSlotKey
+      };
+    }
+
+    function verifyAndBuildMachineExerciseSwap(originalEx, customMachineNote, explicitOptionIdx, explicitScope) {
+      const exId = String((originalEx && (originalEx.originalId || originalEx.id)) || '').trim();
+      const origName = String((originalEx && (originalEx.originalName || originalEx.name)) || 'Current Exercise').trim();
+      const matchedCat = matchExerciseToUniversalMachineSwaps({ id: exId, name: origName });
+      const defaultOptIdx = getDefaultUniversalOptionIndexForExercise({ id: exId, name: origName }, matchedCat);
+      const optIdx = typeof explicitOptionIdx === 'number'
+        ? Math.max(0, Math.min(matchedCat.options.length - 1, explicitOptionIdx))
+        : defaultOptIdx;
+      const chosenOpt = matchedCat.options[optIdx] || matchedCat.options[0];
+      const scopeVal = explicitScope === 'today' ? 'today' : 'all';
+      const displayMachineName = chosenOpt.name;
+      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(displayMachineName + ' proper form tutorial')}`;
+
       return {
         isMatch: true,
+        canonicalId: exId,
         originalExerciseId: exId,
         originalExerciseName: origName,
-        machineExerciseId: `swap_machine_${exId || 'custom'}`,
-        suggestedMachineExercise: fallbackMachineName,
-        targetMuscles: 'Primary Target Muscle Group & Synergists (Identical Movement Plane)',
-        definitionAndCues: `Adjust machine seat and pin weight so the movement path matches ${origName}. Maintain a controlled 2-second eccentric and full range of motion.`,
-        videoUrl: (originalEx && originalEx.videoUrl) || 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
-        restSec: (originalEx && originalEx.restSec) || 90,
-        restLabel: (originalEx && originalEx.restLabel) || '90s rest',
+        categoryId: matchedCat.categoryId,
+        optionIndex: optIdx,
+        optionId: chosenOpt.optionId,
+        availableOptions: matchedCat.options,
+        scope: scopeVal,
+        machineExerciseId: chosenOpt.optionId,
+        name: displayMachineName,
+        suggestedMachineExercise: displayMachineName,
+        targetMuscle: chosenOpt.targetMuscle,
+        targetMuscles: chosenOpt.targetMuscle,
+        formSetup: chosenOpt.formSetup,
+        definitionAndCues: chosenOpt.formSetup,
+        primaryVideoUrl: chosenOpt.primaryVideoUrl,
+        altVideoUrl: chosenOpt.altVideoUrl,
+        videoUrl: chosenOpt.primaryVideoUrl,
+        youtubeSearchUrl: searchUrl,
+        restSeconds: chosenOpt.restSeconds,
+        restSec: chosenOpt.restSeconds,
+        restLabel: `${chosenOpt.restSeconds}s rest`,
         sets: (originalEx && originalEx.sets) || 3,
-        reps: (originalEx && originalEx.reps) || '10-12',
-        confirmationHeadline: `Biomechanical Match Confirmed: ${fallbackMachineName} targets the same muscles as ${origName}. Replace today's exercise card?`
+        reps: (originalEx && originalEx.reps) || '8-12',
+        pipelineStep: 3,
+        pipelineText: `1. Scanning machine geometry... -> 2. Verifying biomechanical equivalence with ${origName}... -> 3. Attaching verified machine form video & setup cues...`,
+        confirmationHeadline: `Biomechanical Match Confirmed: ${displayMachineName} targets the same muscles as ${origName}. Replace today's exercise card?`
       };
+    }
+
+    function runDeliberateAiVisionPipeline(exId, origName, onComplete) {
+      const steps = [
+        { step: 1, pct: 33, text: '1. Scanning machine geometry...' },
+        { step: 2, pct: 67, text: `2. Verifying biomechanical equivalence with ${origName}...` },
+        { step: 3, pct: 100, text: '3. Attaching verified machine form video & setup cues...' }
+      ];
+      const statusBox = document.querySelector(`[data-ai-vision-pipeline="${exId}"]`);
+      const statusTextEl = document.querySelector(`[data-ai-vision-step-text="${exId}"]`);
+      const statusFillEl = document.querySelector(`[data-ai-vision-step-fill="${exId}"]`);
+      if (statusBox) statusBox.classList.remove('hidden');
+
+      steps.forEach((st, idx) => {
+        setTimeout(() => {
+          if (statusTextEl) statusTextEl.textContent = st.text;
+          if (statusFillEl) statusFillEl.style.width = `${st.pct}%`;
+          if (idx === steps.length - 1 && typeof onComplete === 'function') {
+            onComplete();
+          }
+        }, idx * 90);
+      });
     }
 
     function parseTargetRepsNumber(repsStr, pullupDayNum, setIdx, week) {
@@ -8349,7 +8877,16 @@
 
       const hasCrunchToday = state.crunchDays.includes(dayIdx);
       const day5Spec = getEffectiveDay5PullupSpec(week);
-      const exercisesToday = [...dayObj.exercises].map(rawEx => {
+      if (!state.exerciseSwaps || typeof state.exerciseSwaps !== 'object') state.exerciseSwaps = {};
+      if (!state.revertedMachineSwaps || typeof state.revertedMachineSwaps !== 'object') state.revertedMachineSwaps = {};
+      autoMigrateExerciseNotesToMachineSwaps();
+
+      const rawDayExercises = [...dayObj.exercises];
+      if (hasCrunchToday && !dayAssignment.isRestDay) {
+        rawDayExercises.push(CABLE_CRUNCH_EXERCISE);
+      }
+
+      const exercisesToday = rawDayExercises.map((rawEx, exIdx) => {
         const cleanBaseName = String(rawEx.name || '').replace(/^[A-Z]\d+[\.\:\-\)]\s*/i, '').trim();
         let exObj = {
           ...rawEx,
@@ -8361,37 +8898,15 @@
           exObj = {
             ...exObj,
             name: `Daily Pull-Ups (${day5Spec.shortTitle})`,
+            originalName: `Daily Pull-Ups (${day5Spec.shortTitle})`,
             sets: day5Spec.setsCount,
             reps: day5Spec.repsLabel,
             restSec: day5Spec.restSec,
             restLabel: day5Spec.restLabel
           };
         }
-        const swapKey = `w${week}_d${dayIdx}_${rawEx.id}`;
-        const activeSwap = state.swappedExercises && state.swappedExercises[swapKey];
-        if (activeSwap && activeSwap.machineExerciseId) {
-          return {
-            ...exObj,
-            id: activeSwap.machineExerciseId,
-            originalId: rawEx.id,
-            originalName: exObj.name,
-            name: activeSwap.suggestedMachineExercise,
-            notes: activeSwap.definitionAndCues,
-            videoUrl: activeSwap.videoUrl || exObj.videoUrl,
-            restSec: activeSwap.restSec || exObj.restSec,
-            restLabel: activeSwap.restLabel || exObj.restLabel,
-            sets: activeSwap.sets || exObj.sets,
-            reps: activeSwap.reps || exObj.reps,
-            targetMuscles: activeSwap.targetMuscles || '',
-            isSwappedMachine: true,
-            swapKey
-          };
-        }
-        return exObj;
+        return getEffectiveExercise(week, dayIdx, exIdx, exObj);
       });
-      if (hasCrunchToday && !dayAssignment.isRestDay) {
-        exercisesToday.push(CABLE_CRUNCH_EXERCISE);
-      }
 
       // Count sets completed today in current week BEFORE evaluating Pre-Gym Fuel Check-In banner
       let todayTotalSets = 0;
@@ -9335,11 +9850,11 @@
             ${ex.isSwappedMachine ? `
               <div class="flex flex-wrap items-center justify-between gap-2 bg-emerald-950/60 border border-emerald-400/50 rounded-xl px-3 py-2">
                 <div class="flex items-center gap-1.5 min-w-0">
-                  <span class="px-2 py-0.5 rounded bg-emerald-400 text-slate-950 text-[10px] font-extrabold uppercase shrink-0">Machine Swap Active</span>
-                  <span class="text-[11px] font-bold text-emerald-200 truncate">Replaces ${ex.originalName} (History Saved)</span>
+                  <span class="px-2 py-0.5 rounded bg-emerald-400 text-slate-950 text-[10px] font-extrabold uppercase shrink-0">Machine Active</span>
+                  <span class="text-[11px] font-bold text-emerald-200 truncate">${ex.machineBadge || `Machine Active • Swapped from ${ex.originalName}`}</span>
                 </div>
-                <button type="button" data-revert-machine-swap="${ex.swapKey}" data-orig-name="${ex.originalName}" class="revert-machine-swap-btn px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold whitespace-nowrap transition">
-                  Switch Back to ${ex.originalName}
+                <button type="button" data-revert-machine-swap="${ex.swapKey || ex.id}" data-canonical-id="${ex.originalId || ex.id}" data-slot-key="${ex.slotKey || ''}" data-alt-slot-key="${ex.altSlotKey || ''}" data-orig-name="${ex.originalName}" class="revert-machine-swap-btn px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-emerald-400/50 text-emerald-200 text-[11px] font-extrabold whitespace-nowrap transition">
+                  Switch Back to Original (${ex.originalName})
                 </button>
               </div>
             ` : ''}
@@ -9442,7 +9957,7 @@
                 <button type="button" data-rest-sec="${ex.restSec}" data-ex-name="${ex.name}" class="quick-rest-btn shrink-0 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 text-[11px] font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 whitespace-nowrap transition">
                    ${ex.restLabel}
                 </button>
-                <a href="${ex.videoUrl}" target="_blank" rel="noopener noreferrer" class="shrink-0 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 whitespace-nowrap transition">
+                <a href="${ex.videoUrl}" data-ex-video-btn="${ex.id}" target="_blank" rel="noopener noreferrer" class="shrink-0 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 whitespace-nowrap transition">
                    Video
                 </a>
               </div>
@@ -9690,17 +10205,18 @@
                     type="button"
                     data-ai-swap-check-ex="${ex.id}"
                     data-orig-ex-id="${ex.originalId || ex.id}"
+                    data-slot-key="${ex.slotKey || ''}"
                     class="ai-check-swap-ex-btn shrink-0 py-2 px-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold whitespace-nowrap transition"
-                    title="Verify biomechanical machine match and swap exercise card"
+                    title="Verify biomechanical machine match and switch to machine form & video"
                   >
-                    Swap Machine
+                    Switch to Machine Form &amp; Video
                   </button>
                 </div>
 
                 <div id="ex-note-panel-${ex.id}" class="${isNotePanelOpen ? 'bg-slate-950/90 border border-slate-800 rounded-xl p-3 space-y-2.5' : 'hidden'}">
                   <div>
                     <label for="ex-note-input-${ex.id}" class="block text-[10px] font-extrabold uppercase tracking-wider text-amber-300 mb-1">
-                      Machine Pin / Seat Setting Note (Auto-Saves &amp; Shows Next Week)
+                      Machine Pin / Seat Setting Note (Auto-Saves &amp; Auto-Activates Machine Video When "Machine" Is Typed)
                     </label>
                     <input
                       id="ex-note-input-${ex.id}"
@@ -9726,6 +10242,7 @@
                         type="button"
                         data-ai-swap-check-ex="${ex.id}"
                         data-orig-ex-id="${ex.originalId || ex.id}"
+                        data-slot-key="${ex.slotKey || ''}"
                         class="ai-check-swap-ex-btn px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-xs font-extrabold transition"
                       >
                         AI Check &amp; Swap Exercise
@@ -9744,25 +10261,98 @@
                     </div>
                   ` : ''}
 
+                  <!-- 3-Step AI Vision Progress Bar -->
+                  <div data-ai-vision-pipeline="${ex.id}" class="${pendingSwapPreview ? 'bg-slate-900 border border-sky-500/40 rounded-xl p-2.5 space-y-1.5' : 'hidden'}">
+                    <div class="flex items-center justify-between gap-2 text-[10px] font-extrabold text-sky-300">
+                      <span data-ai-vision-step-text="${ex.id}">1. Scanning machine geometry... -&gt; 2. Verifying biomechanical equivalence with ${ex.originalName || ex.name}... -&gt; 3. Attaching verified machine form video &amp; setup cues...</span>
+                      <span class="text-emerald-300 shrink-0">3/3 Verified</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                      <div data-ai-vision-step-fill="${ex.id}" class="h-full bg-gradient-to-r from-sky-400 to-emerald-400 transition-all duration-200" style="width: 100%"></div>
+                    </div>
+                  </div>
+
                   ${pendingSwapPreview ? `
-                    <div data-ai-swap-preview-card="${ex.id}" class="bg-emerald-950/75 border-2 border-emerald-400/70 rounded-xl p-3 space-y-2 shadow-md">
+                    <div data-ai-swap-preview-card="${ex.id}" class="bg-emerald-950/75 border-2 border-emerald-400/70 rounded-xl p-3 space-y-2.5 shadow-md">
                       <div class="text-xs font-extrabold text-emerald-200 leading-snug">
                         ${pendingSwapPreview.confirmationHeadline}
                       </div>
-                      <div class="bg-slate-950/90 border border-slate-800 rounded-lg p-2.5 space-y-1 text-[11px]">
+
+                      ${pendingSwapPreview.availableOptions && pendingSwapPreview.availableOptions.length > 1 ? `
+                        <div class="space-y-1">
+                          <div class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Select Your Gym Machine (${pendingSwapPreview.availableOptions.length} Verified Options):</div>
+                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                            ${pendingSwapPreview.availableOptions.map((mOpt, mIdx) => {
+                              const isSelOpt = mIdx === (pendingSwapPreview.optionIndex || 0);
+                              return `
+                                <button
+                                  type="button"
+                                  data-machine-opt-ex="${ex.id}"
+                                  data-machine-opt-idx="${mIdx}"
+                                  aria-pressed="${isSelOpt ? 'true' : 'false'}"
+                                  class="select-machine-opt-btn text-left px-2.5 py-2 rounded-xl border text-[11px] font-extrabold transition ${
+                                    isSelOpt
+                                      ? 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-sm'
+                                      : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-700'
+                                  }"
+                                >
+                                  ${isSelOpt ? '✓ ' : ''}Option ${mIdx + 1}: ${mOpt.name}
+                                </button>
+                              `;
+                            }).join('')}
+                          </div>
+                        </div>
+                      ` : ''}
+
+                      <div class="space-y-1">
+                        <div class="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">Swap Scope:</div>
+                        <div class="grid grid-cols-2 gap-1.5">
+                          <button
+                            type="button"
+                            data-swap-scope-ex="${ex.id}"
+                            data-swap-scope-val="all"
+                            aria-pressed="${pendingSwapPreview.scope !== 'today' ? 'true' : 'false'}"
+                            class="select-swap-scope-btn px-2.5 py-1.5 rounded-xl border text-[11px] font-extrabold transition ${
+                              pendingSwapPreview.scope !== 'today'
+                                ? 'bg-sky-400 text-slate-950 border-sky-300 shadow-sm'
+                                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                            }"
+                          >
+                            ${pendingSwapPreview.scope !== 'today' ? '✓ ' : ''}Apply to All Days (Recommended)
+                          </button>
+                          <button
+                            type="button"
+                            data-swap-scope-ex="${ex.id}"
+                            data-swap-scope-val="today"
+                            aria-pressed="${pendingSwapPreview.scope === 'today' ? 'true' : 'false'}"
+                            class="select-swap-scope-btn px-2.5 py-1.5 rounded-xl border text-[11px] font-extrabold transition ${
+                              pendingSwapPreview.scope === 'today'
+                                ? 'bg-sky-400 text-slate-950 border-sky-300 shadow-sm'
+                                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                            }"
+                          >
+                            ${pendingSwapPreview.scope === 'today' ? '✓ ' : ''}Apply to Today Only
+                          </button>
+                        </div>
+                      </div>
+
+                      <div class="bg-slate-950/90 border border-slate-800 rounded-lg p-2.5 space-y-1.5 text-[11px]">
                         <div class="font-extrabold text-white">Replacement: ${pendingSwapPreview.suggestedMachineExercise}</div>
                         <div class="text-sky-300 font-bold">Target Muscles: ${pendingSwapPreview.targetMuscles}</div>
                         <div class="text-slate-300 leading-snug">${pendingSwapPreview.definitionAndCues}</div>
-                        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
                           <span class="font-mono font-bold text-emerald-300">Recommended Rest: ${pendingSwapPreview.restLabel} (${pendingSwapPreview.restSec}s)</span>
-                          <a href="${pendingSwapPreview.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:text-sky-200 underline font-extrabold">Watch Machine Demo Video</a>
+                          <div class="flex flex-wrap items-center gap-2">
+                            <a href="${pendingSwapPreview.primaryVideoUrl || pendingSwapPreview.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-emerald-300 hover:text-emerald-200 underline font-extrabold">Primary Machine Video</a>
+                            <a href="${pendingSwapPreview.altVideoUrl || pendingSwapPreview.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:text-sky-200 underline font-extrabold">Alt Machine Video</a>
+                          </div>
                         </div>
                       </div>
                       <div class="flex flex-wrap items-center justify-end gap-2">
                         <button type="button" data-cancel-ai-swap="${ex.id}" class="cancel-ai-swap-btn px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold transition">
                           Cancel
                         </button>
-                        <button type="button" data-confirm-ai-swap="${ex.id}" data-orig-ex-id="${ex.originalId || ex.id}" class="confirm-ai-swap-btn px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-sm transition">
+                        <button type="button" data-confirm-ai-swap="${ex.id}" data-orig-ex-id="${ex.originalId || ex.id}" data-slot-key="${ex.slotKey || ''}" data-alt-slot-key="${ex.altSlotKey || ''}" class="confirm-ai-swap-btn px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-sm transition">
                           Confirm &amp; Replace Card
                         </button>
                       </div>
@@ -9811,7 +10401,7 @@
         });
       });
 
-      // AI Machine Photo Check & Smart Exercise Swap Listeners (Built-in Biomechanical Matcher + Optional Gemini 2.5 Flash Vision Upgrade)
+      // AI Machine Photo Check & Smart Exercise Swap Listeners (Deliberate 3-Step AI Vision + Multi-Option + All Days / Today Scope)
       listEl.querySelectorAll('.ai-check-swap-ex-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
           const exId = btn.getAttribute('data-ai-swap-check-ex');
@@ -9819,51 +10409,48 @@
           const exObj = exercisesToday.find(e => e.id === exId) || { id: origExId, originalId: origExId, name: origExId };
           const noteInput = document.getElementById(`ex-note-input-${exId}`);
           const customNote = noteInput ? noteInput.value : ((state.exerciseNotes && state.exerciseNotes[exId] && state.exerciseNotes[exId].text) || '');
-          const swapProposal = verifyAndBuildMachineExerciseSwap(exObj, customNote);
+          const prevPending = state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId];
+          const swapProposal = verifyAndBuildMachineExerciseSwap(
+            exObj,
+            customNote,
+            prevPending ? prevPending.optionIndex : undefined,
+            prevPending ? prevPending.scope : 'all'
+          );
           if (!state.pendingMachineSwapPreviews) state.pendingMachineSwapPreviews = {};
           state.pendingMachineSwapPreviews[exId] = swapProposal;
           state.openNotePanels[exId] = true;
           saveState();
           renderWorkoutView();
+          runDeliberateAiVisionPipeline(exId, swapProposal.originalExerciseName);
           showToast(`Biomechanical match verified: ${swapProposal.suggestedMachineExercise}`);
+        });
+      });
 
-          const savedPhoto = state.exerciseNotes && state.exerciseNotes[exId] && state.exerciseNotes[exId].photoDataUrl;
-          const userKey = (state.coachApiKey || '').trim();
-          if (savedPhoto && userKey && savedPhoto.startsWith('data:image/')) {
-            try {
-              const base64Data = savedPhoto.split(',')[1] || '';
-              const mimeMatch = savedPhoto.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/);
-              const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-              const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(userKey)}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  contents: [{
-                    parts: [
-                      { text: `Analyze this gym machine photo to replace "${swapProposal.originalExerciseName}". Return JSON with keys: suggestedMachineExercise, targetMuscles, definitionAndCues.` },
-                      { inlineData: { mimeType, data: base64Data } }
-                    ]
-                  }],
-                  generationConfig: { responseMimeType: 'application/json' }
-                })
-              });
-              if (resp.ok) {
-                const json = await resp.json();
-                const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                const parsed = JSON.parse(rawText);
-                if (parsed && parsed.suggestedMachineExercise && state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId]) {
-                  state.pendingMachineSwapPreviews[exId] = Object.assign({}, swapProposal, {
-                    suggestedMachineExercise: String(parsed.suggestedMachineExercise),
-                    targetMuscles: String(parsed.targetMuscles || swapProposal.targetMuscles),
-                    definitionAndCues: String(parsed.definitionAndCues || swapProposal.definitionAndCues),
-                    confirmationHeadline: `Biomechanical Match Confirmed: ${parsed.suggestedMachineExercise} targets the same muscles as ${swapProposal.originalExerciseName}. Replace today's exercise card?`
-                  });
-                  saveState();
-                  renderWorkoutView();
-                }
-              }
-            } catch (e) {}
-          }
+      listEl.querySelectorAll('.select-machine-opt-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-machine-opt-ex');
+          const optIdx = parseInt(btn.getAttribute('data-machine-opt-idx') || '0', 10);
+          const exObj = exercisesToday.find(e => e.id === exId);
+          const curPreview = state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId];
+          if (!exObj || !curPreview) return;
+          const updatedPreview = verifyAndBuildMachineExerciseSwap(exObj, '', optIdx, curPreview.scope || 'all');
+          state.pendingMachineSwapPreviews[exId] = updatedPreview;
+          saveState();
+          renderWorkoutView();
+        });
+      });
+
+      listEl.querySelectorAll('.select-swap-scope-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-swap-scope-ex');
+          const scopeVal = btn.getAttribute('data-swap-scope-val') === 'today' ? 'today' : 'all';
+          const exObj = exercisesToday.find(e => e.id === exId);
+          const curPreview = state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId];
+          if (!exObj || !curPreview) return;
+          const updatedPreview = verifyAndBuildMachineExerciseSwap(exObj, '', curPreview.optionIndex, scopeVal);
+          state.pendingMachineSwapPreviews[exId] = updatedPreview;
+          saveState();
+          renderWorkoutView();
         });
       });
 
@@ -9871,15 +10458,31 @@
         btn.addEventListener('click', () => {
           const exId = btn.getAttribute('data-confirm-ai-swap');
           const origExId = btn.getAttribute('data-orig-ex-id') || exId;
+          const slotKey = btn.getAttribute('data-slot-key') || `w${week}_d${dayIdx}_${origExId}`;
+          const altSlotKey = btn.getAttribute('data-alt-slot-key') || `w${week}_d${dayIdx}_${origExId}`;
           const preview = state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId];
           if (!preview) return;
+          if (!state.exerciseSwaps) state.exerciseSwaps = {};
           if (!state.swappedExercises) state.swappedExercises = {};
-          const swapKey = `w${week}_d${dayIdx}_${origExId}`;
-          state.swappedExercises[swapKey] = preview;
+          if (!state.revertedMachineSwaps) state.revertedMachineSwaps = {};
+
+          delete state.revertedMachineSwaps[origExId];
+          delete state.revertedMachineSwaps[slotKey];
+          delete state.revertedMachineSwaps[altSlotKey];
+
+          if (preview.scope === 'today') {
+            state.exerciseSwaps[slotKey] = preview;
+            state.exerciseSwaps[altSlotKey] = preview;
+            state.swappedExercises[altSlotKey] = preview;
+          } else {
+            state.exerciseSwaps[origExId] = preview;
+            state.swappedExercises[altSlotKey] = preview;
+          }
           delete state.pendingMachineSwapPreviews[exId];
           saveState();
           renderWorkoutView();
-          showToast(`Replaced card with ${preview.suggestedMachineExercise} (History preserved)`);
+          if (PULLUP_EX_ID_TO_DAY[origExId]) renderPullupView();
+          showToast(`Activated ${preview.suggestedMachineExercise} (${preview.scope === 'today' ? 'Today Only' : 'All Days'})`);
         });
       });
 
@@ -9897,12 +10500,29 @@
       listEl.querySelectorAll('.revert-machine-swap-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const swapKey = btn.getAttribute('data-revert-machine-swap');
+          const canonicalId = btn.getAttribute('data-canonical-id') || swapKey;
+          const slotKey = btn.getAttribute('data-slot-key');
+          const altSlotKey = btn.getAttribute('data-alt-slot-key');
           const origName = btn.getAttribute('data-orig-name') || 'Original Exercise';
-          if (swapKey && state.swappedExercises) {
-            delete state.swappedExercises[swapKey];
+          if (!state.revertedMachineSwaps) state.revertedMachineSwaps = {};
+          if (canonicalId) state.revertedMachineSwaps[canonicalId] = true;
+          if (slotKey) state.revertedMachineSwaps[slotKey] = true;
+          if (altSlotKey) state.revertedMachineSwaps[altSlotKey] = true;
+          if (state.exerciseSwaps) {
+            if (swapKey) delete state.exerciseSwaps[swapKey];
+            if (canonicalId) delete state.exerciseSwaps[canonicalId];
+            if (slotKey) delete state.exerciseSwaps[slotKey];
+            if (altSlotKey) delete state.exerciseSwaps[altSlotKey];
+          }
+          if (state.swappedExercises) {
+            if (swapKey) delete state.swappedExercises[swapKey];
+            if (canonicalId) delete state.swappedExercises[canonicalId];
+            if (slotKey) delete state.swappedExercises[slotKey];
+            if (altSlotKey) delete state.swappedExercises[altSlotKey];
           }
           saveState();
           renderWorkoutView();
+          if (PULLUP_EX_ID_TO_DAY[canonicalId]) renderPullupView();
           showToast(`Switched back to ${origName}`);
         });
       });
@@ -10018,6 +10638,15 @@
               : '+ Add Machine Note / Photo';
           }
         });
+        inp.addEventListener('change', () => {
+          if (/\bmachine\b/i.test(String(inp.value || ''))) {
+            const migrated = autoMigrateExerciseNotesToMachineSwaps();
+            if (migrated) {
+              renderWorkoutView();
+              showToast('Machine note detected — Card updated to Machine Form & Video');
+            }
+          }
+        });
       });
 
       listEl.querySelectorAll('.ex-note-photo-input').forEach(fileInp => {
@@ -10034,10 +10663,15 @@
               updatedWeek: week,
               updatedAt: new Date().toISOString()
             };
+            const exObj = exercisesToday.find(item => item.id === exId) || { id: exId, originalId: exId, name: exId };
+            const swapProposal = verifyAndBuildMachineExerciseSwap(exObj, prev.text || '', undefined, 'all');
+            if (!state.pendingMachineSwapPreviews) state.pendingMachineSwapPreviews = {};
+            state.pendingMachineSwapPreviews[exId] = swapProposal;
             state.openNotePanels[exId] = true;
             saveState();
             renderWorkoutView();
-            showToast(' Machine setting photo compressed & saved to exercise!');
+            runDeliberateAiVisionPipeline(exId, swapProposal.originalExerciseName);
+            showToast('Machine photo analyzed — Review AI Machine Match Verdict below.');
           });
         });
       });
@@ -11760,12 +12394,7 @@
 
       const loggedWithBadgeEl = document.getElementById('vegan-logged-with-plan-badge');
       if (loggedWithBadgeEl) {
-        if (isDayLoggedToday && state.fuelDaySnapshots && state.fuelDaySnapshots[dayKey]) {
-          loggedWithBadgeEl.textContent = ` ${dayPlan.badgeLabel}`;
-          loggedWithBadgeEl.classList.remove('hidden');
-        } else {
-          loggedWithBadgeEl.classList.add('hidden');
-        }
+        loggedWithBadgeEl.classList.add('hidden');
       }
 
       const mainPlanHeadingEl = document.getElementById('vegan-main-plan-heading');

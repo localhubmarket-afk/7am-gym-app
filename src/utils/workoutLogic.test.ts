@@ -1336,3 +1336,63 @@ test('7 Upgrades Suite: Single Timer Bar, Pull-Up Pyramid + Day 5 Selector, Deco
   assert.equal(benchSwap.switchBackButtonLabel, 'Switch Back to Barbell Bench Press');
 });
 
+test('Universal 22-Exercise Machine Database, Auto-Migration, getEffectiveExercise & 3-Step AI Vision Pipeline', async () => {
+  const mod = await import('./workoutLogic');
+  assert.equal(mod.UNIVERSAL_MACHINE_SWAPS.length, 22);
+
+  // Check multi-option categories
+  const squatCat = mod.matchExerciseToUniversalMachineSwaps({ id: 'tue_squat', name: 'Barbell Back Squat' });
+  assert.equal(squatCat.options.length, 2);
+  assert.equal(squatCat.options[0].name, 'Seated Leg Press Machine');
+  assert.equal(squatCat.options[0].primaryVideoUrl, 'https://www.youtube.com/watch?v=nDh_BlnLCGc');
+  assert.equal(squatCat.options[1].name, 'Angled Hack Squat Machine');
+  assert.equal(squatCat.options[1].primaryVideoUrl, 'https://www.youtube.com/watch?v=g9i05umL5vc');
+
+  const pullupCat = mod.matchExerciseToUniversalMachineSwaps({ id: 'day1_pullups', name: 'Overhand Pull-Ups' });
+  assert.equal(pullupCat.options.length, 2);
+  assert.equal(pullupCat.options[0].primaryVideoUrl, 'https://www.youtube.com/watch?v=CdO5BvP6Ti8');
+  assert.equal(pullupCat.options[1].primaryVideoUrl, 'https://www.youtube.com/watch?v=CAwf7n6Luuc');
+
+  const rdlCat = mod.matchExerciseToUniversalMachineSwaps({ id: 'tue_rdl', name: 'Dumbbell Romanian Deadlift' });
+  assert.equal(rdlCat.options.length, 2);
+  assert.equal(rdlCat.options[0].primaryVideoUrl, 'https://www.youtube.com/watch?v=xdbEG3xGLI8');
+  assert.equal(rdlCat.options[1].primaryVideoUrl, 'https://www.youtube.com/watch?v=H8Swl1N-uis');
+
+  // Auto-migration from saved exerciseNotes containing "machine" or photo
+  const mockState: Record<string, any> = {
+    exerciseNotes: {
+      sat_seated_calf: { text: 'Using the seated calf machine pin #6', photoDataUrl: '' },
+      mon_bench: { text: 'Pin #8', photoDataUrl: 'data:image/jpeg;base64,abc123' }
+    },
+    exerciseSwaps: {},
+    revertedMachineSwaps: {}
+  };
+  mod.autoMigrateExerciseNotesToMachineSwaps(mockState);
+  assert.equal(mockState.exerciseSwaps.sat_seated_calf.name, 'Seated Calf Raise Machine');
+  assert.equal(mockState.exerciseSwaps.sat_seated_calf.videoUrl, 'https://www.youtube.com/watch?v=z1N8ZRsb4bg');
+  assert.equal(mockState.exerciseSwaps.mon_bench.name, 'Seated Chest Press Machine');
+  assert.equal(mockState.exerciseSwaps.mon_bench.videoUrl, 'https://www.youtube.com/watch?v=YXjhMV7uz4c');
+
+  // Universal getEffectiveExercise across any week and day
+  const effCalf = mod.getEffectiveExercise(mockState, 2, 4, 6, {
+    id: 'sat_seated_calf',
+    name: 'Seated Weighted Calf Raise',
+    videoUrl: 'https://youtu.be/2TkLMol2bCo',
+    restSec: 60,
+    notes: 'Original calf setup'
+  });
+  assert.equal(effCalf.isSwappedMachine, true);
+  assert.equal(effCalf.name, 'Seated Calf Raise Machine');
+  assert.equal(effCalf.videoUrl, 'https://www.youtube.com/watch?v=z1N8ZRsb4bg');
+  assert.equal(effCalf.altVideoUrl, 'https://www.youtube.com/watch?v=FsqE-g1C5fk');
+  assert.equal(effCalf.machineBadge, 'Machine Active • Swapped from Seated Weighted Calf Raise');
+
+  // 3-step AI Vision pipeline
+  const steps = mod.getAiVisionPipelineSteps('Barbell Back Squat');
+  assert.equal(steps.length, 3);
+  assert.equal(steps[0], '1. Scanning machine geometry...');
+  assert.equal(steps[1], '2. Verifying biomechanical equivalence with Barbell Back Squat...');
+  assert.equal(steps[2], '3. Attaching verified machine form video & setup cues...');
+});
+
+
