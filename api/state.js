@@ -92,6 +92,16 @@ export default async function handler(req, res) {
               }
             });
           }
+          if (d.customDayScheduleByWeek && typeof d.customDayScheduleByWeek === 'object') {
+            if (!baseData.customDayScheduleByWeek || typeof baseData.customDayScheduleByWeek !== 'object') {
+              baseData.customDayScheduleByWeek = {};
+            }
+            Object.keys(d.customDayScheduleByWeek).forEach(k => {
+              if (!baseData.customDayScheduleByWeek[k]) {
+                baseData.customDayScheduleByWeek[k] = d.customDayScheduleByWeek[k];
+              }
+            });
+          }
         });
       }
 

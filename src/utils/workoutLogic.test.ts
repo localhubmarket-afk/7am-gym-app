@@ -1445,4 +1445,60 @@ test('Universal 22-Exercise Machine Database, Plain English, 0-lb Bar Math, Stri
   assert.equal(steps[2], '3. Attaching verified machine form video & setup cues...');
 });
 
+test('Subtest 27: Flexible 7-Day Schedule & Smart Next-Workout Recommendation Engine (Wrap to Day 1 when 5/5 Done)', async () => {
+  const mod = (await import('./workoutLogic.ts')) as Record<string, any>;
+  assert.equal(typeof mod.getCustomDayScheduleForWeek, 'function');
+  assert.equal(typeof mod.isWorkoutSlotComplete, 'function');
+  assert.equal(typeof mod.getRecommendedNextWorkoutSlot, 'function');
+  assert.equal(typeof mod.assignWorkoutOrRestSlotToDay, 'function');
+
+  // Case C: 0 workouts completed -> Recommends Slot 0 (Day 1: Upper Body 1)
+  const recStart = mod.getRecommendedNextWorkoutSlot(1, 5, { completedSlots: [] });
+  assert.equal(recStart.recommendedSlot, 0);
+  assert.equal(recStart.allFiveCompleted, false);
+  assert.equal(recStart.reasonBadge, 'Recommended Start: Day 1 • Upper Body 1');
+
+  // Case B: Mid-week (Slots 0 and 1 completed) -> Recommends Slot 2 (Day 3: Upper Body 2 • Push Focus)
+  const recMid = mod.getRecommendedNextWorkoutSlot(1, 2, { completedSlots: [0, 1] });
+  assert.equal(recMid.recommendedSlot, 2);
+  assert.equal(recMid.daySub, 'Push');
+  assert.equal(recMid.reasonBadge, 'Recommended Next: Upper Body 2 • Push Focus (Follows your last workout)');
+
+  // Case A: All 5 workouts completed (Slots 0, 1, 2, 3, 4 done) on Day 6 (Rest 1) -> Wraps around to Slot 0 (Day 1: Upper Body 1 • Push & Pull)
+  const recAll5 = mod.getRecommendedNextWorkoutSlot(1, 5, { completedSlots: [0, 1, 2, 3, 4] });
+  assert.equal(recAll5.recommendedSlot, 0);
+  assert.equal(recAll5.allFiveCompleted, true);
+  assert.equal(recAll5.reasonBadge, 'Recommended: Day 1 • Upper Body 1 (All 5 Days Completed — Next in Cycle)');
+  assert.equal(recAll5.headline, 'Suggested Next Workout: Day 1 — Upper Body 1 • Push & Pull (5/5 workouts finished)');
+  assert.equal(recAll5.advanceNextWeekLabel, 'Advance to Week 2 • Day 1 Now');
+
+  // Assigning Bonus Repeat Slot 0 on Day 6 (index 5) when all 5 workouts are complete does NOT overwrite Day 1 (index 0)
+  const stateAllDone: Record<string, any> = {
+    completedSlotsByWeek: { 1: [0, 1, 2, 3, 4] },
+    customDayScheduleByWeek: {}
+  };
+  const bonusRes = mod.assignWorkoutOrRestSlotToDay(1, 5, 0, stateAllDone);
+  assert.deepEqual(bonusRes.schedule, [0, 1, 2, 3, 4, 0, 5]);
+  assert.equal(bonusRes.assignment.templateSlotIndex, 0);
+  assert.equal(bonusRes.assignment.isBonusRepeat, true);
+  assert.equal(bonusRes.assignment.logSlotKey, 'd5_bonus_slot0');
+  assert.equal(bonusRes.assignment.waterTargetMl, 3000);
+
+  // Day 1 (index 0) still retains non-bonus Slot 0
+  const day1Assign = mod.getDayAssignment(1, 0, stateAllDone);
+  assert.equal(day1Assign.templateSlotIndex, 0);
+  assert.equal(day1Assign.isBonusRepeat, false);
+  assert.equal(day1Assign.logSlotKey, '0');
+
+  // Mid-week swap: Swapping Day 3 (index 2, Push) with Pull (Slot 3 on index 3) auto-shifts displaced workout so all 5 remain
+  const stateMidWeek: Record<string, any> = {
+    completedSlotsByWeek: { 2: [0, 1] },
+    customDayScheduleByWeek: {}
+  };
+  const midSwapRes = mod.assignWorkoutOrRestSlotToDay(2, 2, 3, stateMidWeek);
+  assert.deepEqual(midSwapRes.schedule, [0, 1, 3, 2, 4, 5, 6]);
+  assert.equal(midSwapRes.swappedWithDayIdx, 3);
+});
+
+
 

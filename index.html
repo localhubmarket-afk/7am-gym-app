@@ -1018,7 +1018,11 @@
       maxUnlockedWeek: 2,
       completedWeeks: { 1: true },
       weeklyRestDays: { default: [5, 6] },
+      customDayScheduleByWeek: {},
       openRestDayDrawer: false,
+      openDayWorkoutPicker: false,
+      showRestDayMobility: false,
+      openRestMobilityDrawer: false,
       lastPickedRestDayIdx: null,
       pullupViewMode: 'selected',
       pullupSingleDayCollapsed: {},
@@ -1265,13 +1269,19 @@
       const merged = Object.assign({}, base, loaded || {});
       ensureFrancoisWeek1Data(merged, false);
       syncProgressiveWeekState(merged);
-      // Always start with all Setup & Image panels hidden so no exercise ever gets stuck open
+      // Always start with all Setup & Image panels and Rest Day Mobility drawer hidden so no card ever gets stuck open
       merged.openImagePanels = {};
+      merged.showRestDayMobility = false;
+      merged.openRestMobilityDrawer = false;
+      merged.openDayWorkoutPicker = false;
       if (!merged.cardCollapsedState) merged.cardCollapsedState = {};
       if (!merged.weeklyRestDays || typeof merged.weeklyRestDays !== 'object') {
         merged.weeklyRestDays = { default: [5, 6] };
       } else if (!Array.isArray(merged.weeklyRestDays.default) || merged.weeklyRestDays.default.length !== 2) {
         merged.weeklyRestDays.default = [5, 6];
+      }
+      if (!merged.customDayScheduleByWeek || typeof merged.customDayScheduleByWeek !== 'object') {
+        merged.customDayScheduleByWeek = {};
       }
       if (merged.pullupViewMode !== 'selected' && merged.pullupViewMode !== 'all') {
         merged.pullupViewMode = 'selected';
@@ -7479,55 +7489,127 @@
       if (!state.weeklyRestDays || typeof state.weeklyRestDays !== 'object') {
         state.weeklyRestDays = { default: [5, 6] };
       }
+      if (!state.customDayScheduleByWeek || typeof state.customDayScheduleByWeek !== 'object') {
+        state.customDayScheduleByWeek = {};
+      }
       const norm = normalizeRestDaysTuple(restDaysPair);
       const wKey = String(Math.max(1, Math.floor(Number(week) || 1)));
       state.weeklyRestDays[wKey] = norm;
       state.weeklyRestDays.default = norm;
+      // Rebuild 7-day slot array for this week to match the chosen 2 rest days
+      const [r1, r2] = norm;
+      const nextSched = [];
+      let liftCounter = 0;
+      let restCounter = 0;
+      for (let c = 0; c <= 6; c++) {
+        if (c === r1 || c === r2) {
+          nextSched.push(Math.min(6, 5 + restCounter));
+          restCounter++;
+        } else {
+          nextSched.push(Math.min(4, liftCounter));
+          liftCounter++;
+        }
+      }
+      state.customDayScheduleByWeek[wKey] = nextSched;
       return norm;
     }
 
-    function formatRestDaysBadgeLabel(restDaysPair) {
+    function getCustomDayScheduleForWeek(week) {
+      const wKey = String(Math.max(1, Math.floor(Number(week) || 1)));
+      if (
+        state &&
+        state.customDayScheduleByWeek &&
+        typeof state.customDayScheduleByWeek === 'object' &&
+        Array.isArray(state.customDayScheduleByWeek[wKey]) &&
+        state.customDayScheduleByWeek[wKey].length === 7
+      ) {
+        return state.customDayScheduleByWeek[wKey].map(v => Math.max(0, Math.min(6, Math.floor(Number(v) || 0))));
+      }
+      const [r1, r2] = getWeekRestDays(week);
+      const derived = [];
+      let liftCounter = 0;
+      let restCounter = 0;
+      for (let c = 0; c <= 6; c++) {
+        if (c === r1 || c === r2) {
+          derived.push(Math.min(6, 5 + restCounter));
+          restCounter++;
+        } else {
+          derived.push(Math.min(4, liftCounter));
+          liftCounter++;
+        }
+      }
+      return derived;
+    }
+
+    function formatRestDaysBadgeLabel(restDaysPair, weekOverride) {
+      const wk = weekOverride || (state && (state.selectedWeek || state.currentWeek)) || 1;
+      const sched = getCustomDayScheduleForWeek(wk);
+      const restIndices = [];
+      sched.forEach((s, idx) => {
+        if (s === 5 || s === 6) restIndices.push(idx + 1);
+      });
+      if (restIndices.length === 2) {
+        return `Schedule: Rest Days ${restIndices[0]} & ${restIndices[1]} (Change)`;
+      }
+      if (restIndices.length === 1) {
+        return `Schedule: Rest Day ${restIndices[0]} • 6 Lift Days (Change)`;
+      }
+      if (restIndices.length === 0) {
+        return `Schedule: 7 Lift Days Active (Change)`;
+      }
       const [r1, r2] = normalizeRestDaysTuple(restDaysPair);
       return `Schedule: Rest Days ${r1 + 1} & ${r2 + 1} (Change)`;
     }
 
     function getDayAssignment(week, calendarDayIdx) {
       const dIdx = Math.max(0, Math.min(6, Math.floor(Number(calendarDayIdx) || 0)));
-      const [r1, r2] = getWeekRestDays(week);
-      let liftCounter = 0;
-      let restCounter = 0;
+      const sched = getCustomDayScheduleForWeek(week);
+      const rawSlot = Math.max(0, Math.min(6, sched[dIdx] !== undefined ? sched[dIdx] : dIdx));
+      const isRest = (rawSlot === 5 || rawSlot === 6);
 
-      for (let c = 0; c <= 6; c++) {
-        const isRest = (c === r1 || c === r2);
-        const slotIdx = isRest ? (5 + restCounter) : liftCounter;
-        const pullupNum = isRest ? null : (liftCounter + 1);
-        if (c === dIdx) {
-          const baseTemplate = DAYS_SCHEDULE[slotIdx] || DAYS_SCHEDULE[0];
-          return {
-            calendarDayIdx: c,
-            dayNumber: c + 1,
-            templateSlotIndex: slotIdx,
-            daySub: baseTemplate.daySub || (isRest ? `Rest ${restCounter + 1}` : `Lift ${liftCounter + 1}`),
-            isRestDay: isRest,
-            pullupSessionNum: pullupNum
-          };
+      if (isRest) {
+        let restOrder = 1;
+        for (let c = 0; c < dIdx; c++) {
+          if (sched[c] === 5 || sched[c] === 6) restOrder++;
         }
-        if (isRest) restCounter++;
-        else liftCounter++;
+        const slotIdx = restOrder >= 2 ? 6 : 5;
+        const baseTemplate = DAYS_SCHEDULE[slotIdx] || DAYS_SCHEDULE[5];
+        return {
+          calendarDayIdx: dIdx,
+          dayNumber: dIdx + 1,
+          templateSlotIndex: slotIdx,
+          daySub: baseTemplate ? baseTemplate.daySub : `Rest ${restOrder}`,
+          isRestDay: true,
+          pullupSessionNum: null,
+          isBonusRepeat: false,
+          logSlotKey: String(slotIdx)
+        };
       }
+
+      const slotIdx = Math.max(0, Math.min(4, rawSlot));
+      const pullupNum = slotIdx + 1;
+      const isBonusRepeat = sched.slice(0, dIdx).includes(slotIdx);
+      const logSlotKey = isBonusRepeat ? `d${dIdx}_bonus_slot${slotIdx}` : String(slotIdx);
+      const baseTemplate = DAYS_SCHEDULE[slotIdx] || DAYS_SCHEDULE[0];
 
       return {
         calendarDayIdx: dIdx,
         dayNumber: dIdx + 1,
-        templateSlotIndex: 0,
-        daySub: 'Upper 1',
+        templateSlotIndex: slotIdx,
+        daySub: baseTemplate.daySub || `Lift ${slotIdx + 1}`,
         isRestDay: false,
-        pullupSessionNum: 1
+        pullupSessionNum: pullupNum,
+        isBonusRepeat,
+        logSlotKey
       };
     }
 
     function getCalendarDayForTemplateSlot(week, templateSlotIndex) {
       const targetSlot = Math.max(0, Math.min(6, Math.floor(Number(templateSlotIndex) || 0)));
+      for (let c = 0; c <= 6; c++) {
+        const assign = getDayAssignment(week, c);
+        if (assign.templateSlotIndex === targetSlot && !assign.isBonusRepeat) return c;
+      }
       for (let c = 0; c <= 6; c++) {
         const assign = getDayAssignment(week, c);
         if (assign.templateSlotIndex === targetSlot) return c;
@@ -7544,7 +7626,408 @@
         daySub: base.daySub,
         templateSlotIndex: assign.templateSlotIndex,
         isRestDay: assign.isRestDay,
-        pullupDay: assign.pullupSessionNum || 0
+        pullupDay: assign.pullupSessionNum || 0,
+        isBonusRepeat: Boolean(assign.isBonusRepeat),
+        logSlotKey: assign.logSlotKey || String(assign.templateSlotIndex)
+      });
+    }
+
+    function isWorkoutSlotComplete(week, slotIdx) {
+      const safeSlot = Math.max(0, Math.min(6, Math.floor(Number(slotIdx) || 0)));
+      if (safeSlot >= 5) return false;
+      const baseDay = DAYS_SCHEDULE[safeSlot];
+      if (!baseDay || !Array.isArray(baseDay.exercises) || baseDay.exercises.length === 0) return false;
+      const primaryCalDay = getCalendarDayForTemplateSlot(week, safeSlot);
+      for (const ex of baseDay.exercises) {
+        const setsCount = ex.sets || 3;
+        for (let s = 1; s <= setsCount; s++) {
+          const directEntry = state.workoutLogs && (
+            state.workoutLogs[`w${week}_${safeSlot}_${ex.id}_${s}`] ||
+            (week === 1 ? state.workoutLogs[`${safeSlot}_${ex.id}_${s}`] : null)
+          );
+          if (directEntry && directEntry.done) continue;
+          const fallbackEntry = getLogEntry(week, primaryCalDay, ex.id, s);
+          if (!fallbackEntry || !fallbackEntry.done) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function getRecommendedNextWorkoutSlot(week, currentDayIdx) {
+      const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+      const safeDayIdx = Math.max(0, Math.min(6, Math.floor(Number(currentDayIdx) || 0)));
+      const completedSlots = [];
+      for (let s = 0; s < 5; s++) {
+        if (isWorkoutSlotComplete(safeWeek, s)) {
+          completedSlots.push(s);
+        }
+      }
+      const completedCount = completedSlots.length;
+      const allFiveCompleted = completedCount === 5;
+
+      // Case A: All 5 core workouts completed (completedCount === 5) -> wrap around to Slot 0 (Day 1: Upper Body 1 • Push & Pull)
+      if (allFiveCompleted) {
+        const base0 = DAYS_SCHEDULE[0];
+        return {
+          week: safeWeek,
+          currentDayIdx: safeDayIdx,
+          recommendedSlot: 0,
+          daySub: base0.daySub,
+          workoutTitle: base0.title,
+          fullWorkoutLabel: `Day 1: ${base0.title}`,
+          completedSlots,
+          completedCount,
+          allFiveCompleted: true,
+          reasonBadge: 'Recommended: Day 1 • Upper Body 1 (All 5 Days Completed — Next in Cycle)',
+          headline: `Suggested Next Workout: Day 1 — ${base0.title} (5/5 workouts finished)`,
+          startButtonLabel: `Start Suggested: Day 1: ${base0.title}`,
+          advanceNextWeekLabel: `Advance to Week ${safeWeek + 1} • Day 1 Now`
+        };
+      }
+
+      // Case B: Some workouts completed (0 < completedCount < 5)
+      if (completedCount > 0) {
+        const sched = getCustomDayScheduleForWeek(safeWeek);
+        let lastDoneSlot = completedSlots[completedSlots.length - 1];
+        for (let d = safeDayIdx - 1; d >= 0; d--) {
+          const sl = sched[d];
+          if (sl >= 0 && sl <= 4 && completedSlots.includes(sl)) {
+            lastDoneSlot = sl;
+            break;
+          }
+        }
+        let nextSlot = 0;
+        for (let offset = 1; offset <= 5; offset++) {
+          const cand = (lastDoneSlot + offset) % 5;
+          if (!completedSlots.includes(cand)) {
+            nextSlot = cand;
+            break;
+          }
+        }
+        const baseNext = DAYS_SCHEDULE[nextSlot] || DAYS_SCHEDULE[0];
+        return {
+          week: safeWeek,
+          currentDayIdx: safeDayIdx,
+          recommendedSlot: nextSlot,
+          daySub: baseNext.daySub,
+          workoutTitle: baseNext.title,
+          fullWorkoutLabel: `Day ${nextSlot + 1}: ${baseNext.title}`,
+          completedSlots,
+          completedCount,
+          allFiveCompleted: false,
+          reasonBadge: `Recommended Next: ${baseNext.title} (Follows your last workout)`,
+          headline: `Suggested Next Workout: Day ${nextSlot + 1} — ${baseNext.title} (${completedCount}/5 workouts finished)`,
+          startButtonLabel: `Start Suggested: Day ${nextSlot + 1}: ${baseNext.title}`,
+          advanceNextWeekLabel: null
+        };
+      }
+
+      // Case C: No workouts completed yet (completedCount === 0)
+      const base0 = DAYS_SCHEDULE[0];
+      return {
+        week: safeWeek,
+        currentDayIdx: safeDayIdx,
+        recommendedSlot: 0,
+        daySub: base0.daySub,
+        workoutTitle: base0.title,
+        fullWorkoutLabel: `Day 1: ${base0.title}`,
+        completedSlots: [],
+        completedCount: 0,
+        allFiveCompleted: false,
+        reasonBadge: 'Recommended Start: Day 1 • Upper Body 1',
+        headline: `Suggested Next Workout: Day 1 — ${base0.title} (0/5 workouts finished)`,
+        startButtonLabel: `Start Suggested: Day 1: ${base0.title}`,
+        advanceNextWeekLabel: null
+      };
+    }
+
+    function assignWorkoutOrRestSlotToDay(week, dayIdx, targetSlotInput) {
+      const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+      const safeDayIdx = Math.max(0, Math.min(6, Math.floor(Number(dayIdx) || 0)));
+      if (!state.customDayScheduleByWeek || typeof state.customDayScheduleByWeek !== 'object') {
+        state.customDayScheduleByWeek = {};
+      }
+      if (!state.weeklyRestDays || typeof state.weeklyRestDays !== 'object') {
+        state.weeklyRestDays = { default: [5, 6] };
+      }
+
+      const sched = [...getCustomDayScheduleForWeek(safeWeek)];
+      const oldSlot = sched[safeDayIdx];
+      let swappedWithDayIdx = null;
+      const isTargetRest = (targetSlotInput === 'rest' || targetSlotInput === 5 || targetSlotInput === 6);
+
+      if (isTargetRest) {
+        if (oldSlot !== 5 && oldSlot !== 6) {
+          let restCandidateIdx = -1;
+          for (let c = safeDayIdx + 1; c < 7; c++) {
+            if (sched[c] === 5 || sched[c] === 6) {
+              restCandidateIdx = c;
+              break;
+            }
+          }
+          if (restCandidateIdx === -1) {
+            for (let c = 0; c < safeDayIdx; c++) {
+              if (sched[c] === 5 || sched[c] === 6) {
+                restCandidateIdx = c;
+                break;
+              }
+            }
+          }
+          if (restCandidateIdx !== -1) {
+            sched[restCandidateIdx] = oldSlot;
+            sched[safeDayIdx] = 5;
+            swappedWithDayIdx = restCandidateIdx;
+          } else {
+            sched[safeDayIdx] = 5;
+          }
+        }
+      } else {
+        const targetSlot = Math.max(0, Math.min(4, Math.floor(Number(targetSlotInput) || 0)));
+        const rec = getRecommendedNextWorkoutSlot(safeWeek, safeDayIdx);
+        const isTargetAlreadyDone = rec.completedSlots.includes(targetSlot);
+
+        if (rec.allFiveCompleted || (isTargetAlreadyDone && (oldSlot === 5 || oldSlot === 6))) {
+          // Assign as bonus/repeat workout on this day without overwriting the completed earlier day
+          sched[safeDayIdx] = targetSlot;
+        } else if (oldSlot !== targetSlot) {
+          let otherIdx = -1;
+          for (let c = 0; c < 7; c++) {
+            if (c !== safeDayIdx && sched[c] === targetSlot) {
+              otherIdx = c;
+              break;
+            }
+          }
+          if (otherIdx !== -1) {
+            sched[otherIdx] = oldSlot;
+            sched[safeDayIdx] = targetSlot;
+            swappedWithDayIdx = otherIdx;
+          } else {
+            sched[safeDayIdx] = targetSlot;
+          }
+        }
+      }
+
+      let restIdxCounter = 0;
+      const restDayIndices = [];
+      for (let c = 0; c < 7; c++) {
+        if (sched[c] === 5 || sched[c] === 6) {
+          sched[c] = restIdxCounter === 0 ? 5 : 6;
+          restIdxCounter++;
+          restDayIndices.push(c);
+        }
+      }
+
+      const wKey = String(safeWeek);
+      state.customDayScheduleByWeek[wKey] = sched;
+      if (restDayIndices.length >= 2) {
+        state.weeklyRestDays[wKey] = [restDayIndices[0], restDayIndices[1]];
+      } else if (restDayIndices.length === 1) {
+        const rOnly = restDayIndices[0];
+        state.weeklyRestDays[wKey] = normalizeRestDaysTuple([rOnly, rOnly === 6 ? 5 : 6]);
+      }
+
+      return {
+        schedule: sched,
+        assignment: getDayAssignment(safeWeek, safeDayIdx),
+        swappedWithDayIdx
+      };
+    }
+
+    function applyWorkoutOrRestChoiceToDay(week, dayIdx, targetSlotInput) {
+      const res = assignWorkoutOrRestSlotToDay(week, dayIdx, targetSlotInput);
+      state.openDayWorkoutPicker = false;
+      saveState();
+      renderWorkoutView();
+      renderPullupView();
+      renderVeganView();
+      const assign = res.assignment;
+      if (assign.isRestDay) {
+        showToast(`Day ${dayIdx + 1} set to Rest & Muscle Recovery Day (2,500 ml Water Target • all logged sets preserved)`);
+      } else {
+        const baseObj = DAYS_SCHEDULE[assign.templateSlotIndex] || DAYS_SCHEDULE[0];
+        const bonusSuffix = assign.isBonusRepeat ? ' (Bonus Cycle Session — Week logs preserved)' : '';
+        showToast(`Day ${dayIdx + 1} set to ${baseObj.title}${bonusSuffix}`);
+      }
+      return res;
+    }
+
+    function advanceToNextWeekDay1Now(currentWeek) {
+      syncProgressiveWeekState(state);
+      const cur = Math.max(1, Math.floor(Number(currentWeek || state.selectedWeek || state.currentWeek || 1)));
+      if (!state.completedWeeks || typeof state.completedWeeks !== 'object') state.completedWeeks = {};
+      state.completedWeeks[cur] = true;
+      const nextW = Math.min(12, cur + 1);
+      state.maxUnlockedWeek = Math.min(12, Math.max((state.maxUnlockedWeek || 1) + 1, nextW));
+      state.selectedWeek = nextW;
+      state.currentWeek = nextW;
+      state.selectedDayIndex = 0;
+      state.openDayWorkoutPicker = false;
+      const weekSel = document.getElementById('week-select');
+      if (weekSel) weekSel.value = String(nextW);
+      saveState();
+      renderWorkoutView();
+      renderPullupView();
+      renderVeganView();
+      showToast(`Advanced to Week ${nextW} • Day 1: Upper Body 1 • Push & Pull (Week ${cur} weights pre-filled)`);
+    }
+
+    function buildDayWorkoutPickerHtml(week, dayIdx) {
+      const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+      const safeDayIdx = Math.max(0, Math.min(6, Math.floor(Number(dayIdx) || 0)));
+      const curAssign = getDayAssignment(safeWeek, safeDayIdx);
+      const rec = getRecommendedNextWorkoutSlot(safeWeek, safeDayIdx);
+
+      const optionSlots = [0, 1, 2, 3, 4];
+      const workoutCardsHtml = optionSlots.map(slotNum => {
+        const baseObj = DAYS_SCHEDULE[slotNum] || DAYS_SCHEDULE[0];
+        const isDone = rec.completedSlots.includes(slotNum);
+        const isRecommended = rec.recommendedSlot === slotNum;
+        const isCurrentAssigned = !curAssign.isRestDay && curAssign.templateSlotIndex === slotNum;
+
+        return `
+          <button
+            type="button"
+            data-pick-workout-slot="${slotNum}"
+            class="day-workout-pick-option-btn w-full text-left px-3 py-2.5 rounded-xl border transition flex items-center justify-between gap-2 ${
+              isRecommended
+                ? 'bg-emerald-950/60 hover:bg-emerald-900/60 border-emerald-400/70 text-white shadow-sm'
+                : (isCurrentAssigned
+                    ? 'bg-sky-950/50 hover:bg-sky-900/50 border-sky-400/60 text-white'
+                    : 'bg-slate-900/90 hover:bg-slate-800 border-slate-700 text-slate-200')
+            }"
+          >
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-xs font-extrabold text-white">Workout ${slotNum + 1}: ${baseObj.title}</span>
+                ${isRecommended ? `<span class="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-400 text-slate-950">Recommended Next</span>` : ''}
+                ${isDone ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-400/35">Done</span>` : ''}
+                ${isCurrentAssigned ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/35">Current</span>` : ''}
+              </div>
+              <p class="text-[10px] text-slate-400 mt-0.5">Pull-Up Session ${slotNum + 1} • 3,000 ml Water Target • ${baseObj.exercises.length} Exercises</p>
+            </div>
+            <span class="shrink-0 text-[10px] font-extrabold px-2 py-1 rounded-lg ${
+              isRecommended ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-200 border border-slate-700'
+            }">Select</span>
+          </button>
+        `;
+      }).join('');
+
+      const isCurrentlyRest = curAssign.isRestDay;
+      const restOptionHtml = `
+        <button
+          type="button"
+          data-pick-workout-slot="rest"
+          class="day-workout-pick-option-btn w-full text-left px-3 py-2.5 rounded-xl border transition flex items-center justify-between gap-2 ${
+            isCurrentlyRest
+              ? 'bg-amber-500/20 border-amber-400/60 text-amber-100'
+              : 'bg-slate-900/90 hover:bg-slate-800 border-slate-700 text-slate-200'
+          }"
+        >
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-xs font-extrabold text-amber-300">Rest &amp; Muscle Recovery Day</span>
+              ${isCurrentlyRest ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-400 text-slate-950">Current</span>` : ''}
+            </div>
+            <p class="text-[10px] text-slate-400 mt-0.5">2,500 ml Water • Active Recovery &amp; Tendon Supercompensation</p>
+          </div>
+          <span class="shrink-0 text-[10px] font-extrabold px-2 py-1 rounded-lg bg-amber-500/25 text-amber-200 border border-amber-400/40">Set Rest</span>
+        </button>
+      `;
+
+      return `
+        <div id="day-workout-picker-panel" class="mt-2.5 rounded-2xl bg-slate-950/95 border-2 border-emerald-500/50 p-3 space-y-3 shadow-xl">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Week ${safeWeek} • Day ${safeDayIdx + 1} Workout &amp; Rest Selector</span>
+              <h3 class="text-xs sm:text-sm font-extrabold text-white mt-0.5">Choose Workout or Rest Day for Day ${safeDayIdx + 1}</h3>
+            </div>
+            <button type="button" class="close-day-workout-picker-btn shrink-0 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-extrabold border border-slate-700">
+              Close ✕
+            </button>
+          </div>
+
+          <!-- 1. Smart Suggestion Callout Banner (Pre-Selected Default) -->
+          <div id="day-picker-smart-suggestion-card" class="rounded-xl bg-gradient-to-br from-emerald-950/80 via-slate-900 to-emerald-950/50 border border-emerald-400/50 p-3 space-y-2">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span id="day-picker-reason-badge" class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-400/20 text-emerald-300 border border-emerald-400/40">
+                ${rec.reasonBadge}
+              </span>
+            </div>
+            <p id="day-picker-suggestion-headline" class="text-xs sm:text-sm font-extrabold text-white leading-snug">
+              ${rec.headline}
+            </p>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-0.5">
+              <button
+                type="button"
+                id="picker-start-suggested-btn"
+                data-suggested-slot="${rec.recommendedSlot}"
+                class="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition shadow-sm text-center"
+              >
+                ${rec.startButtonLabel}
+              </button>
+              ${rec.allFiveCompleted ? `
+                <button
+                  type="button"
+                  id="picker-advance-next-week-btn"
+                  class="py-2 px-3 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 text-xs font-extrabold transition text-center whitespace-nowrap"
+                >
+                  ${rec.advanceNextWeekLabel}
+                </button>
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- 2. All 5 Workouts + Rest Day Multiple-Choice Grid -->
+          <div class="space-y-1.5">
+            <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Or Pick Any Specific Workout or Rest Day for Day ${safeDayIdx + 1}:</span>
+            <div class="grid grid-cols-1 gap-1.5">
+              ${workoutCardsHtml}
+              ${restOptionHtml}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function bindDayWorkoutPickerEvents(containerEl, week, dayIdx) {
+      if (!containerEl) return;
+      containerEl.querySelectorAll('.close-day-workout-picker-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.openDayWorkoutPicker = false;
+          renderWorkoutView();
+          renderPullupView();
+        });
+      });
+
+      const startSuggestedBtn = containerEl.querySelector('#picker-start-suggested-btn');
+      if (startSuggestedBtn) {
+        startSuggestedBtn.addEventListener('click', () => {
+          const suggestedSlot = parseInt(startSuggestedBtn.getAttribute('data-suggested-slot'), 10) || 0;
+          applyWorkoutOrRestChoiceToDay(week, dayIdx, suggestedSlot);
+        });
+      }
+
+      const advanceNextWeekBtn = containerEl.querySelector('#picker-advance-next-week-btn');
+      if (advanceNextWeekBtn) {
+        advanceNextWeekBtn.addEventListener('click', () => {
+          advanceToNextWeekDay1Now(week);
+        });
+      }
+
+      containerEl.querySelectorAll('.day-workout-pick-option-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const rawSlot = btn.getAttribute('data-pick-workout-slot');
+          if (rawSlot === 'rest') {
+            applyWorkoutOrRestChoiceToDay(week, dayIdx, 'rest');
+          } else {
+            const slotNum = parseInt(rawSlot, 10);
+            if (!isNaN(slotNum)) {
+              applyWorkoutOrRestChoiceToDay(week, dayIdx, slotNum);
+            }
+          }
+        });
       });
     }
 
@@ -7624,31 +8107,31 @@
     }
 
     function swapLiftDayToRest(week, dayIdx) {
-      const curRest = getWeekRestDays(week);
-      const nextRest = swapTodayToRestDay(curRest, dayIdx);
-      setWeekRestDays(week, nextRest);
-      saveState();
-      renderWorkoutView();
-      renderPullupView();
-      renderVeganView();
-      showToast(`Day ${dayIdx + 1} is now a Rest Day (Schedule: Rest Days ${nextRest[0] + 1} & ${nextRest[1] + 1} • all logged sets preserved)`);
-      return nextRest;
+      applyWorkoutOrRestChoiceToDay(week, dayIdx, 'rest');
+      return getWeekRestDays(week);
     }
 
     function swapRestDayToLift(week, dayIdx) {
-      const curRest = getWeekRestDays(week);
-      const nextRest = swapRestDayWithNextWorkout(curRest, dayIdx);
-      setWeekRestDays(week, nextRest);
-      saveState();
-      renderWorkoutView();
-      renderPullupView();
-      renderVeganView();
-      const nowAssigned = getDayAssignment(week, dayIdx);
-      showToast(`Pulled ${nowAssigned.daySub} into Day ${dayIdx + 1} (Rest Days: ${nextRest[0] + 1} & ${nextRest[1] + 1})`);
-      return nextRest;
+      const rec = getRecommendedNextWorkoutSlot(week, dayIdx);
+      applyWorkoutOrRestChoiceToDay(week, dayIdx, rec.recommendedSlot);
+      return getWeekRestDays(week);
     }
 
     function getLogEntry(week, dayIdx, exId, setIdx) {
+      const assign = typeof getDayAssignment === 'function'
+        ? getDayAssignment(week, dayIdx)
+        : { templateSlotIndex: dayIdx, isBonusRepeat: false, logSlotKey: String(dayIdx) };
+
+      // If this calendar day is a bonus/repeat workout (e.g., Day 6 repeating Day 1 Upper 1 after 5/5 workouts are done),
+      // read strictly from its dedicated bonus slot key so Day 1's completed logs are never overwritten or conflated!
+      if (assign.isBonusRepeat && exId !== 'cable_ab_crunch') {
+        const bonusKey = `w${week}_${assign.logSlotKey}_${exId}_${setIdx}`;
+        if (state.workoutLogs && state.workoutLogs[bonusKey]) {
+          return state.workoutLogs[bonusKey];
+        }
+        return null;
+      }
+
       const pullupDayNum = PULLUP_EX_ID_TO_DAY[exId];
       if (pullupDayNum) {
         if (!state.pullupLogs || typeof state.pullupLogs !== 'object') state.pullupLogs = {};
@@ -7668,9 +8151,7 @@
           };
         }
       }
-      const slotIdx = typeof getDayAssignment === 'function'
-        ? getDayAssignment(week, dayIdx).templateSlotIndex
-        : dayIdx;
+      const slotIdx = assign.templateSlotIndex;
       const slotWeekKey = `w${week}_${slotIdx}_${exId}_${setIdx}`;
       if (state.workoutLogs[slotWeekKey]) {
         return state.workoutLogs[slotWeekKey];
@@ -7754,8 +8235,24 @@
       if (exId === 'cable_ab_crunch') {
         return getPreviousDayAbSuggestion(currentWeek, dayIdx, setIdx);
       }
+      const assign = typeof getDayAssignment === 'function' ? getDayAssignment(currentWeek, dayIdx) : null;
+      if (assign && assign.isBonusRepeat) {
+        const primaryDay = getCalendarDayForTemplateSlot(currentWeek, assign.templateSlotIndex);
+        const earlierThisWeek = getLogEntry(currentWeek, primaryDay, exId, setIdx);
+        if (earlierThisWeek && (earlierThisWeek.weight !== '' || earlierThisWeek.reps !== '')) {
+          return {
+            week: currentWeek,
+            sourceLabel: `Wk ${currentWeek} • Day ${primaryDay + 1}`,
+            isDailyPrev: false,
+            weight: earlierThisWeek.weight,
+            reps: earlierThisWeek.reps,
+            unit: earlierThisWeek.unit || getExerciseUnit(exId)
+          };
+        }
+      }
       for (let w = currentWeek - 1; w >= 1; w--) {
-        const prev = getLogEntry(w, dayIdx, exId, setIdx);
+        const targetCalDay = assign ? getCalendarDayForTemplateSlot(w, assign.templateSlotIndex) : dayIdx;
+        const prev = getLogEntry(w, targetCalDay, exId, setIdx);
         if (prev && (prev.weight !== '' || prev.reps !== '')) {
           return {
             week: w,
@@ -8521,7 +9018,24 @@
               ${dayPickerPillsHtml}
             </div>
           </div>
+
+          <div class="pt-1 border-t border-slate-800 flex items-center justify-between gap-2">
+            <span class="text-[10px] font-bold text-slate-300">Want to change Day ${(state.selectedDayIndex || 0) + 1}'s specific workout?</span>
+            <button type="button" class="open-day-workout-picker-from-drawer-btn px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-[10px] font-extrabold transition whitespace-nowrap">
+              Choose Workout for Day ${(state.selectedDayIndex || 0) + 1} ▾
+            </button>
+          </div>
         `;
+
+        drawer.querySelectorAll('.open-day-workout-picker-from-drawer-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.openRestDayDrawer = false;
+            state.openDayWorkoutPicker = true;
+            saveState();
+            renderWorkoutView();
+            renderPullupView();
+          });
+        });
 
         drawer.querySelectorAll('.close-rest-scheduler-btn').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -8606,6 +9120,9 @@
       grid.querySelectorAll('.day-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           state.selectedDayIndex = parseInt(btn.getAttribute('data-day-idx'), 10);
+          state.showRestDayMobility = false;
+          state.openRestMobilityDrawer = false;
+          state.openDayWorkoutPicker = false;
           saveState();
           renderWorkoutView();
           renderPullupView();
@@ -9760,8 +10277,8 @@
 
               <!-- Separate Action Row Below Title -->
               <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
-                <button type="button" id="banner-train-today-instead-btn" class="text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 border border-emerald-300 transition whitespace-nowrap" title="Pull your next scheduled workout into today in 1 tap">
-                  Train Today Instead (Swap Workout)
+                <button type="button" id="banner-train-today-instead-btn" aria-expanded="${state.openDayWorkoutPicker ? 'true' : 'false'}" class="text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 border border-emerald-300 transition whitespace-nowrap" title="Choose a workout to train today (with smart next-workout recommendation)">
+                  ${state.openDayWorkoutPicker ? 'Hide Workout Selector ▴' : 'Train Today Instead (Choose Workout)'}
                 </button>
                 <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border transition ${
                   hasCrunchToday
@@ -9771,6 +10288,8 @@
                   ${hasCrunchToday ? '✓ Abs On' : '+ Optional Abs'}
                 </button>
               </div>
+
+              ${state.openDayWorkoutPicker ? buildDayWorkoutPickerHtml(week, dayIdx) : ''}
 
               <!-- 1. Recovery Status Banner -->
               <div class="rounded-xl bg-emerald-950/40 border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-200 leading-relaxed">
@@ -9812,6 +10331,7 @@
               <div class="flex flex-wrap items-center gap-1.5">
                 <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Wk ${week} • ${dayObj.dayFull} • ${gymStart12}</span>
                 <span class="text-[9px] font-extrabold bg-sky-500/15 text-sky-300 border border-sky-400/30 px-2 py-0.5 rounded-full">LIFT DAY</span>
+                ${dayAssignment.isBonusRepeat ? `<span class="text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-full">NEXT CYCLE BONUS SESSION</span>` : ''}
                 ${isDayAllDone ? '<span class="text-[9px] font-bold bg-rose-500/15 text-rose-300 border border-rose-400/30 px-2 py-0.5 rounded-full">✓ Complete</span>' : ''}
                 ${isDayPartial ? `<span class="text-[9px] font-bold bg-amber-400/15 text-amber-200 border border-amber-300/30 px-2 py-0.5 rounded-full">${todayDoneSets}/${todayTotalSets}</span>` : ''}
               </div>
@@ -9821,9 +10341,15 @@
 
               <!-- Separate Action Row Below Title -->
               <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
-                ${!isDayAllDone ? `
-                  <button type="button" id="banner-swap-to-rest-btn" class="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-500/35 transition whitespace-nowrap" title="Make today a Rest Day and shift remaining lifting workouts forward without losing logged data">
-                    Swap Today to Rest Day
+                <button type="button" id="banner-swap-to-rest-btn" class="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-500/35 transition whitespace-nowrap" title="Make today a Rest Day and shift remaining lifting workouts forward without losing logged data">
+                  Swap Today to Rest Day
+                </button>
+                <button type="button" id="banner-change-workout-btn" aria-expanded="${state.openDayWorkoutPicker ? 'true' : 'false'}" class="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 transition whitespace-nowrap" title="Choose any of the 5 workouts or Rest Day for today">
+                  ${state.openDayWorkoutPicker ? 'Hide Workout Selector ▴' : 'Change Today\'s Workout ▾'}
+                </button>
+                ${dayAssignment.isBonusRepeat ? `
+                  <button type="button" id="banner-bonus-advance-week-btn" class="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/45 transition whitespace-nowrap">
+                    Advance to Week ${week + 1} • Day 1 Instead
                   </button>
                 ` : ''}
                 <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition ${
@@ -9834,6 +10360,8 @@
                   ${hasCrunchToday ? '✓ Abs On' : '+ Abs'}
                 </button>
               </div>
+
+              ${state.openDayWorkoutPicker ? buildDayWorkoutPickerHtml(week, dayIdx) : ''}
             </div>
 
             <!-- Compact Progress Bar -->
@@ -9877,6 +10405,8 @@
           `;
         }
 
+        bindDayWorkoutPickerEvents(banner, week, dayIdx);
+
         const restWalkBtn = document.getElementById('rest-card-walk-pill-btn');
         if (restWalkBtn) {
           restWalkBtn.addEventListener('click', () => {
@@ -9897,10 +10427,24 @@
             swapLiftDayToRest(week, dayIdx);
           });
         }
+        const changeWorkoutBtn = document.getElementById('banner-change-workout-btn');
+        if (changeWorkoutBtn) {
+          changeWorkoutBtn.addEventListener('click', () => {
+            state.openDayWorkoutPicker = !state.openDayWorkoutPicker;
+            renderWorkoutView();
+          });
+        }
+        const bonusAdvanceWeekBtn = document.getElementById('banner-bonus-advance-week-btn');
+        if (bonusAdvanceWeekBtn) {
+          bonusAdvanceWeekBtn.addEventListener('click', () => {
+            advanceToNextWeekDay1Now(week);
+          });
+        }
         const trainTodayInsteadBtn = document.getElementById('banner-train-today-instead-btn');
         if (trainTodayInsteadBtn) {
           trainTodayInsteadBtn.addEventListener('click', () => {
-            swapRestDayToLift(week, dayIdx);
+            state.openDayWorkoutPicker = !state.openDayWorkoutPicker;
+            renderWorkoutView();
           });
         }
         const bannerShoeBtn = document.getElementById('banner-open-shoe-gear-btn');
@@ -11067,7 +11611,7 @@
       }).join('');
 
       if (dayAssignment.isRestDay) {
-        const isRestDrawerOpen = Boolean(state.openRestMobilityDrawer);
+        const isRestDrawerOpen = Boolean(state.showRestDayMobility && state.openRestMobilityDrawer);
         listEl.innerHTML = `
           <details id="rest-day-mobility-drawer" ${isRestDrawerOpen ? 'open' : ''} class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5">
             <summary class="cursor-pointer flex items-center justify-between gap-2 text-xs font-extrabold text-emerald-300 select-none">
@@ -11083,6 +11627,7 @@
         if (restMobilityDrawerEl) {
           restMobilityDrawerEl.addEventListener('toggle', () => {
             state.openRestMobilityDrawer = restMobilityDrawerEl.open;
+            state.showRestDayMobility = restMobilityDrawerEl.open;
           });
         }
       } else {
@@ -11803,7 +12348,7 @@
               }
             }
           }
-          if (PULLUP_EX_ID_TO_DAY[exId]) {
+          if (PULLUP_EX_ID_TO_DAY[exId] && !dayAssignment.isBonusRepeat) {
             syncPullupStateBothWays(week, PULLUP_EX_ID_TO_DAY[exId], setIdx, state.workoutLogs[key]);
             renderPullupView();
           }
@@ -12029,7 +12574,7 @@
                 if (week === 1) {
                   state.workoutLogs[`${kIdx}_${exId}_${kNext}`] = Object.assign({}, state.workoutLogs[nextKey]);
                 }
-                if (pullupDayNum) {
+                if (pullupDayNum && !dayAssignment.isBonusRepeat) {
                   syncPullupStateBothWays(week, pullupDayNum, kNext, state.workoutLogs[nextKey]);
                 }
               }
@@ -12058,7 +12603,7 @@
             state.workoutLogs[`${kIdx}_${exId}_${setIdx}`] = Object.assign({}, state.workoutLogs[key]);
           }
 
-          if (pullupDayNum) {
+          if (pullupDayNum && !dayAssignment.isBonusRepeat) {
             syncPullupStateBothWays(week, pullupDayNum, setIdx, state.workoutLogs[key]);
             renderPullupView();
           }
@@ -12422,6 +12967,9 @@
           btn.addEventListener('click', () => {
             state.selectedDayIndex = parseInt(btn.getAttribute('data-pullup-day-idx'), 10) || 0;
             state.activeFocusedExId = null;
+            state.showRestDayMobility = false;
+            state.openRestMobilityDrawer = false;
+            state.openDayWorkoutPicker = false;
             saveState();
             renderPullupView();
             renderWorkoutView();
@@ -15006,6 +15554,7 @@
         progressPhotos: JSON.parse(JSON.stringify(state.progressPhotos || [])),
         watchSettings: JSON.parse(JSON.stringify(state.watchSettings || { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25 })),
         weeklyRestDays: JSON.parse(JSON.stringify(state.weeklyRestDays || { default: [5, 6] })),
+        customDayScheduleByWeek: JSON.parse(JSON.stringify(state.customDayScheduleByWeek || {})),
         pullupViewMode: state.pullupViewMode === 'all' ? 'all' : 'selected'
       };
     }
@@ -15051,6 +15600,9 @@
       }
       if (s.weeklyRestDays && typeof s.weeklyRestDays === 'object') {
         state.weeklyRestDays = Object.assign({ default: [5, 6] }, JSON.parse(JSON.stringify(s.weeklyRestDays)));
+      }
+      if (s.customDayScheduleByWeek && typeof s.customDayScheduleByWeek === 'object') {
+        state.customDayScheduleByWeek = JSON.parse(JSON.stringify(s.customDayScheduleByWeek));
       }
       if (s.pullupViewMode === 'selected' || s.pullupViewMode === 'all') {
         state.pullupViewMode = s.pullupViewMode;

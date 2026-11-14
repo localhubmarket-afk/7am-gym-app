@@ -3874,6 +3874,107 @@ export interface DayScheduleAssignment {
   waterTargetMl: number;
   waterDayTypeLabel: 'Lift Day' | 'Rest Day';
   showPreGymFuelCheck: boolean;
+  isBonusRepeat?: boolean;
+  logSlotKey?: string;
+}
+
+export interface WorkoutSlotCatalogItem {
+  slotIndex: number;
+  daySub: string;
+  title: string;
+  fullTitle: string;
+  isRestDay: boolean;
+  pullupSessionNum: number | null;
+}
+
+export const WORKOUT_SLOT_CATALOG: Record<number, WorkoutSlotCatalogItem> = {
+  0: {
+    slotIndex: 0,
+    daySub: 'Upper 1',
+    title: 'Upper Body 1 • Push & Pull',
+    fullTitle: 'Day 1: Upper Body 1 • Push & Pull',
+    isRestDay: false,
+    pullupSessionNum: 1
+  },
+  1: {
+    slotIndex: 1,
+    daySub: 'Lower 1',
+    title: 'Lower Body 1 • Quads & Calves',
+    fullTitle: 'Day 2: Lower Body 1 • Quads & Calves',
+    isRestDay: false,
+    pullupSessionNum: 2
+  },
+  2: {
+    slotIndex: 2,
+    daySub: 'Push',
+    title: 'Upper Body 2 • Push Focus',
+    fullTitle: 'Day 3: Upper Body 2 • Push Focus',
+    isRestDay: false,
+    pullupSessionNum: 3
+  },
+  3: {
+    slotIndex: 3,
+    daySub: 'Pull',
+    title: 'Upper Body 3 • Pull Focus',
+    fullTitle: 'Day 4: Upper Body 3 • Pull Focus',
+    isRestDay: false,
+    pullupSessionNum: 4
+  },
+  4: {
+    slotIndex: 4,
+    daySub: 'Lower 2',
+    title: 'Lower Body 2 • Glutes & Hamstrings',
+    fullTitle: 'Day 5: Lower Body 2 • Glutes & Hamstrings',
+    isRestDay: false,
+    pullupSessionNum: 5
+  },
+  5: {
+    slotIndex: 5,
+    daySub: 'Rest 1',
+    title: 'Rest & Muscle Recovery Day',
+    fullTitle: 'Rest 1: Rest & Muscle Recovery Day',
+    isRestDay: true,
+    pullupSessionNum: null
+  },
+  6: {
+    slotIndex: 6,
+    daySub: 'Rest 2',
+    title: 'Rest & Muscle Recovery Day',
+    fullTitle: 'Rest 2: Rest & Muscle Recovery Day',
+    isRestDay: true,
+    pullupSessionNum: null
+  }
+};
+
+export function getCustomDayScheduleForWeek(
+  week: number,
+  weeklyRestDaysOrState?: unknown
+): number[] {
+  const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+  if (weeklyRestDaysOrState && typeof weeklyRestDaysOrState === 'object' && !Array.isArray(weeklyRestDaysOrState)) {
+    const obj = weeklyRestDaysOrState as Record<string, any>;
+    const customMap = obj.customDayScheduleByWeek;
+    if (customMap && typeof customMap === 'object') {
+      const candidate = customMap[String(safeWeek)] || customMap[safeWeek];
+      if (Array.isArray(candidate) && candidate.length === 7) {
+        return candidate.map(v => Math.max(0, Math.min(6, Math.floor(Number(v) || 0))));
+      }
+    }
+  }
+  const [r1, r2] = getWeekRestDays(weeklyRestDaysOrState, safeWeek);
+  const derived: number[] = [];
+  let liftCounter = 0;
+  let restCounter = 0;
+  for (let c = 0; c < 7; c++) {
+    if (c === r1 || c === r2) {
+      derived.push(Math.min(6, 5 + restCounter));
+      restCounter++;
+    } else {
+      derived.push(Math.min(4, liftCounter));
+      liftCounter++;
+    }
+  }
+  return derived;
 }
 
 export function getDayAssignment(
@@ -3883,10 +3984,16 @@ export function getDayAssignment(
 ): DayScheduleAssignment {
   const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
   const safeCalIdx = Math.max(0, Math.min(6, Math.floor(Number(calendarDayIdx) || 0)));
-  const [r1, r2] = getWeekRestDays(weeklyRestDaysOrState, safeWeek);
+  const sched = getCustomDayScheduleForWeek(safeWeek, weeklyRestDaysOrState);
+  const rawSlot = Math.max(0, Math.min(6, sched[safeCalIdx] ?? 0));
+  const isRest = rawSlot === 5 || rawSlot === 6;
 
-  if (safeCalIdx === r1 || safeCalIdx === r2) {
-    const restNumber: 1 | 2 = safeCalIdx === r1 ? 1 : 2;
+  if (isRest) {
+    let restOrder = 1;
+    for (let c = 0; c < safeCalIdx; c++) {
+      if (sched[c] === 5 || sched[c] === 6) restOrder++;
+    }
+    const restNumber: 1 | 2 = restOrder >= 2 ? 2 : 1;
     const templateSlotIndex = restNumber === 1 ? 5 : 6;
     return {
       week: safeWeek,
@@ -3901,18 +4008,18 @@ export function getDayAssignment(
       daySub: TEMPLATE_SLOT_SUBLABELS[templateSlotIndex],
       waterTargetMl: 2500,
       waterDayTypeLabel: 'Rest Day',
-      showPreGymFuelCheck: false
+      showPreGymFuelCheck: false,
+      isBonusRepeat: false,
+      logSlotKey: String(templateSlotIndex)
     };
   }
 
-  let liftOrderIdx = 0;
-  for (let d = 0; d < safeCalIdx; d++) {
-    if (d !== r1 && d !== r2) {
-      liftOrderIdx++;
-    }
-  }
-  const templateSlotIndex = Math.max(0, Math.min(4, liftOrderIdx));
+  const templateSlotIndex = Math.max(0, Math.min(4, rawSlot));
   const sessionNum = templateSlotIndex + 1;
+  const isBonusRepeat = sched.slice(0, safeCalIdx).includes(templateSlotIndex);
+  const logSlotKey = isBonusRepeat
+    ? `d${safeCalIdx}_bonus_slot${templateSlotIndex}`
+    : String(templateSlotIndex);
 
   return {
     week: safeWeek,
@@ -3927,7 +4034,9 @@ export function getDayAssignment(
     daySub: TEMPLATE_SLOT_SUBLABELS[templateSlotIndex],
     waterTargetMl: 3000,
     waterDayTypeLabel: 'Lift Day',
-    showPreGymFuelCheck: true
+    showPreGymFuelCheck: true,
+    isBonusRepeat,
+    logSlotKey
   };
 }
 
@@ -5961,5 +6070,277 @@ export function getEffectiveExercise(
     altSlotKey
   };
 }
+
+// ============================================================================
+// FLEXIBLE 7-DAY SCHEDULE & SMART NEXT-WORKOUT RECOMMENDATION ENGINE
+// ============================================================================
+export const CORE_SLOT_REQUIRED_EX_IDS: Record<number, string[]> = {
+  0: ['day1_pullups', 'mon_bench', 'mon_row', 'mon_ohp', 'mon_lat_pulldown', 'mon_incline_curl', 'mon_tricep_pushdown', 'mon_face_pull'],
+  1: ['day2_pullups', 'tue_squat', 'tue_rdl', 'tue_split_squat', 'tue_leg_curl', 'tue_calf_raise', 'tue_hanging_leg_raise', 'tue_side_plank'],
+  2: ['day3_pullups', 'thu_incline_db', 'thu_flat_db_bench', 'thu_cable_fly', 'thu_seated_db_ohp', 'thu_lateral_raise', 'thu_overhead_tricep', 'thu_dips'],
+  3: ['day4_pullups', 'fri_barbell_row', 'fri_seated_row', 'fri_single_arm_lat', 'fri_rear_delt_fly', 'fri_ez_bar_curl', 'fri_hammer_curl', 'fri_shrugs'],
+  4: ['day5_pullups', 'sat_deadlift', 'sat_hip_thrust', 'sat_leg_press', 'sat_walking_lunge', 'sat_leg_extension', 'sat_seated_calf', 'sat_ab_wheel']
+};
+
+export function isWorkoutSlotComplete(
+  week: number,
+  slotIdx: number,
+  stateOrCompleted?: unknown
+): boolean {
+  const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+  const safeSlot = Math.max(0, Math.min(6, Math.floor(Number(slotIdx) || 0)));
+  if (safeSlot >= 5) return false;
+  if (!stateOrCompleted) return false;
+
+  if (Array.isArray(stateOrCompleted)) {
+    return stateOrCompleted.includes(safeSlot);
+  }
+
+  if (typeof stateOrCompleted === 'object') {
+    const obj = stateOrCompleted as Record<string, any>;
+    if (Array.isArray(obj.completedSlots)) {
+      return obj.completedSlots.includes(safeSlot);
+    }
+    if (obj.completedSlotsByWeek && typeof obj.completedSlotsByWeek === 'object') {
+      const wkArr = obj.completedSlotsByWeek[String(safeWeek)] || obj.completedSlotsByWeek[safeWeek];
+      if (Array.isArray(wkArr)) {
+        return wkArr.includes(safeSlot);
+      }
+      if (wkArr && typeof wkArr === 'object') {
+        return Boolean(wkArr[safeSlot] || wkArr[String(safeSlot)]);
+      }
+    }
+    if (typeof obj[safeSlot] === 'boolean' || typeof obj[String(safeSlot)] === 'boolean') {
+      return Boolean(obj[safeSlot] ?? obj[String(safeSlot)]);
+    }
+
+    const logs = obj.workoutLogs;
+    if (logs && typeof logs === 'object') {
+      const reqIds = CORE_SLOT_REQUIRED_EX_IDS[safeSlot] || [];
+      if (reqIds.length === 0) return false;
+      return reqIds.every(exId => {
+        const s1Key = `w${safeWeek}_${safeSlot}_${exId}_1`;
+        const legacyKey = safeWeek === 1 ? `${safeSlot}_${exId}_1` : '';
+        const e1 = logs[s1Key] || (legacyKey ? logs[legacyKey] : null);
+        return Boolean(e1 && e1.done);
+      });
+    }
+  }
+  return false;
+}
+
+export interface RecommendedNextWorkoutResult {
+  week: number;
+  currentDayIdx: number;
+  recommendedSlot: number;
+  daySub: string;
+  workoutTitle: string;
+  fullWorkoutLabel: string;
+  completedSlots: number[];
+  completedCount: number;
+  allFiveCompleted: boolean;
+  reasonBadge: string;
+  headline: string;
+  startButtonLabel: string;
+  advanceNextWeekLabel: string | null;
+}
+
+export function getRecommendedNextWorkoutSlot(
+  week: number,
+  currentDayIdx: number,
+  stateOrCompleted?: unknown
+): RecommendedNextWorkoutResult {
+  const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+  const safeDayIdx = Math.max(0, Math.min(6, Math.floor(Number(currentDayIdx) || 0)));
+
+  const completedSlots: number[] = [];
+  for (let s = 0; s < 5; s++) {
+    if (isWorkoutSlotComplete(safeWeek, s, stateOrCompleted)) {
+      completedSlots.push(s);
+    }
+  }
+  const completedCount = completedSlots.length;
+  const allFiveCompleted = completedCount === 5;
+
+  // Case A: All 5 core workouts completed (completedCount === 5) -> wrap around to Slot 0 (Day 1: Upper Body 1)
+  if (allFiveCompleted) {
+    const slotMeta = WORKOUT_SLOT_CATALOG[0];
+    return {
+      week: safeWeek,
+      currentDayIdx: safeDayIdx,
+      recommendedSlot: 0,
+      daySub: slotMeta.daySub,
+      workoutTitle: slotMeta.title,
+      fullWorkoutLabel: slotMeta.fullTitle,
+      completedSlots,
+      completedCount,
+      allFiveCompleted: true,
+      reasonBadge: 'Recommended: Day 1 • Upper Body 1 (All 5 Days Completed — Next in Cycle)',
+      headline: 'Suggested Next Workout: Day 1 — Upper Body 1 • Push & Pull (5/5 workouts finished)',
+      startButtonLabel: `Start Suggested: ${slotMeta.fullTitle}`,
+      advanceNextWeekLabel: `Advance to Week ${safeWeek + 1} • Day 1 Now`
+    };
+  }
+
+  // Case B: Some workouts completed (0 < completedCount < 5)
+  if (completedCount > 0) {
+    const sched = getCustomDayScheduleForWeek(safeWeek, stateOrCompleted);
+    let lastDoneSlot = completedSlots[completedSlots.length - 1];
+    for (let d = safeDayIdx - 1; d >= 0; d--) {
+      const sl = sched[d];
+      if (sl >= 0 && sl <= 4 && completedSlots.includes(sl)) {
+        lastDoneSlot = sl;
+        break;
+      }
+    }
+    let nextSlot = 0;
+    for (let offset = 1; offset <= 5; offset++) {
+      const cand = (lastDoneSlot + offset) % 5;
+      if (!completedSlots.includes(cand)) {
+        nextSlot = cand;
+        break;
+      }
+    }
+    const slotMeta = WORKOUT_SLOT_CATALOG[nextSlot] || WORKOUT_SLOT_CATALOG[0];
+    return {
+      week: safeWeek,
+      currentDayIdx: safeDayIdx,
+      recommendedSlot: nextSlot,
+      daySub: slotMeta.daySub,
+      workoutTitle: slotMeta.title,
+      fullWorkoutLabel: slotMeta.fullTitle,
+      completedSlots,
+      completedCount,
+      allFiveCompleted: false,
+      reasonBadge: `Recommended Next: ${slotMeta.title} (Follows your last workout)`,
+      headline: `Suggested Next Workout: Day ${nextSlot + 1} — ${slotMeta.title} (${completedCount}/5 workouts finished)`,
+      startButtonLabel: `Start Suggested: ${slotMeta.fullTitle}`,
+      advanceNextWeekLabel: null
+    };
+  }
+
+  // Case C: No workouts completed yet (completedCount === 0)
+  const slotMeta = WORKOUT_SLOT_CATALOG[0];
+  return {
+    week: safeWeek,
+    currentDayIdx: safeDayIdx,
+    recommendedSlot: 0,
+    daySub: slotMeta.daySub,
+    workoutTitle: slotMeta.title,
+    fullWorkoutLabel: slotMeta.fullTitle,
+    completedSlots: [],
+    completedCount: 0,
+    allFiveCompleted: false,
+    reasonBadge: 'Recommended Start: Day 1 • Upper Body 1',
+    headline: 'Suggested Next Workout: Day 1 — Upper Body 1 • Push & Pull (0/5 workouts finished)',
+    startButtonLabel: `Start Suggested: ${slotMeta.fullTitle}`,
+    advanceNextWeekLabel: null
+  };
+}
+
+export function assignWorkoutOrRestSlotToDay(
+  week: number,
+  dayIdx: number,
+  targetSlotInput: number | 'rest',
+  stateObj: Record<string, any>
+): {
+  schedule: number[];
+  assignment: DayScheduleAssignment;
+  swappedWithDayIdx: number | null;
+} {
+  const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+  const safeDayIdx = Math.max(0, Math.min(6, Math.floor(Number(dayIdx) || 0)));
+  if (!stateObj.customDayScheduleByWeek || typeof stateObj.customDayScheduleByWeek !== 'object') {
+    stateObj.customDayScheduleByWeek = {};
+  }
+  if (!stateObj.weeklyRestDays || typeof stateObj.weeklyRestDays !== 'object') {
+    stateObj.weeklyRestDays = { default: [5, 6] };
+  }
+
+  const sched = [...getCustomDayScheduleForWeek(safeWeek, stateObj)];
+  const oldSlot = sched[safeDayIdx];
+  let swappedWithDayIdx: number | null = null;
+
+  const isTargetRest = targetSlotInput === 'rest' || targetSlotInput === 5 || targetSlotInput === 6;
+
+  if (isTargetRest) {
+    if (oldSlot !== 5 && oldSlot !== 6) {
+      // Find a Rest Day in sched to receive the displaced workout (prefer upcoming rest day > safeDayIdx)
+      let restCandidateIdx = -1;
+      for (let c = safeDayIdx + 1; c < 7; c++) {
+        if (sched[c] === 5 || sched[c] === 6) {
+          restCandidateIdx = c;
+          break;
+        }
+      }
+      if (restCandidateIdx === -1) {
+        for (let c = 0; c < safeDayIdx; c++) {
+          if (sched[c] === 5 || sched[c] === 6) {
+            restCandidateIdx = c;
+            break;
+          }
+        }
+      }
+      if (restCandidateIdx !== -1) {
+        sched[restCandidateIdx] = oldSlot;
+        sched[safeDayIdx] = 5;
+        swappedWithDayIdx = restCandidateIdx;
+      } else {
+        sched[safeDayIdx] = 5;
+      }
+    }
+  } else {
+    const targetSlot = Math.max(0, Math.min(4, Math.floor(Number(targetSlotInput) || 0)));
+    const rec = getRecommendedNextWorkoutSlot(safeWeek, safeDayIdx, stateObj);
+    const isTargetAlreadyDone = rec.completedSlots.includes(targetSlot);
+
+    if (rec.allFiveCompleted || (isTargetAlreadyDone && (oldSlot === 5 || oldSlot === 6))) {
+      // Bonus / repeat workout on a Rest Day after completing that workout earlier in the week
+      sched[safeDayIdx] = targetSlot;
+    } else if (oldSlot !== targetSlot) {
+      // Find if targetSlot exists on another day in sched and swap so no uncompleted workout is lost
+      let otherIdx = -1;
+      for (let c = 0; c < 7; c++) {
+        if (c !== safeDayIdx && sched[c] === targetSlot) {
+          otherIdx = c;
+          break;
+        }
+      }
+      if (otherIdx !== -1) {
+        sched[otherIdx] = oldSlot;
+        sched[safeDayIdx] = targetSlot;
+        swappedWithDayIdx = otherIdx;
+      } else {
+        sched[safeDayIdx] = targetSlot;
+      }
+    }
+  }
+
+  // Normalize rest slot numbers (5 for first rest day, 6 for second/subsequent rest days)
+  let restIdxCounter = 0;
+  const restDayIndices: number[] = [];
+  for (let c = 0; c < 7; c++) {
+    if (sched[c] === 5 || sched[c] === 6) {
+      sched[c] = restIdxCounter === 0 ? 5 : 6;
+      restIdxCounter++;
+      restDayIndices.push(c);
+    }
+  }
+
+  stateObj.customDayScheduleByWeek[String(safeWeek)] = sched;
+  if (restDayIndices.length >= 2) {
+    stateObj.weeklyRestDays[String(safeWeek)] = [restDayIndices[0], restDayIndices[1]];
+  } else if (restDayIndices.length === 1) {
+    const rOnly = restDayIndices[0];
+    stateObj.weeklyRestDays[String(safeWeek)] = normalizeRestDaysTuple([rOnly, rOnly === 6 ? 5 : 6]);
+  }
+
+  return {
+    schedule: sched,
+    assignment: getDayAssignment(safeWeek, safeDayIdx, stateObj),
+    swappedWithDayIdx
+  };
+}
+
 
 
