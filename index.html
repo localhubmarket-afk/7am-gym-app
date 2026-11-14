@@ -1351,14 +1351,17 @@
       if (merged.lastChosenHardestPullUpDay === undefined) {
         merged.lastChosenHardestPullUpDay = null;
       }
+      merged.pullUpLogs = merged.pullupLogs;
       if (!merged.batchInventory || typeof merged.batchInventory !== 'object') {
         merged.batchInventory = { oatsJarsRemaining: 4, riceBowlsRemaining: 4, oatsPrepDay: null, ricePrepDay: null };
       } else {
         if (typeof merged.batchInventory.oatsJarsRemaining !== 'number') merged.batchInventory.oatsJarsRemaining = 4;
         if (typeof merged.batchInventory.riceBowlsRemaining !== 'number') merged.batchInventory.riceBowlsRemaining = 4;
-        if (merged.batchInventory.oatsPrepDay === undefined) merged.batchInventory.oatsPrepDay = null;
-        if (merged.batchInventory.ricePrepDay === undefined) merged.batchInventory.ricePrepDay = null;
+        if (merged.batchInventory.oatsPrepDay === undefined) merged.batchInventory.oatsPrepDay = merged.oatsPrepDay || null;
+        if (merged.batchInventory.ricePrepDay === undefined) merged.batchInventory.ricePrepDay = merged.ricePrepDay || null;
       }
+      merged.oatsPrepDay = merged.batchInventory.oatsPrepDay;
+      merged.ricePrepDay = merged.batchInventory.ricePrepDay;
       if (!merged.swappedExercises || typeof merged.swappedExercises !== 'object') {
         merged.swappedExercises = {};
       }
@@ -3722,18 +3725,46 @@
           manifestEl.setAttribute('href', '/manifest.json?v=pwa5');
         }
 
-        if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
-          navigator.serviceWorker
-            .register('/sw.js', { scope: '/' })
-            .then(reg => {
-              try {
-                if (reg && typeof reg.update === 'function') reg.update();
-              } catch (e) {}
-            })
-            .catch(() => {});
+        registerPwaServiceWorkerOnce();
+      } catch (e) {}
+    }
+
+    function registerPwaServiceWorkerOnce() {
+      try {
+        if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') return;
+        if (window.__gymSwRegistrationStarted) return;
+        window.__gymSwRegistrationStarted = true;
+
+        const doRegister = () => {
+          try {
+            const p = navigator.serviceWorker.register('/sw.js', {
+              scope: '/',
+              updateViaCache: 'none'
+            });
+            if (p && typeof p.then === 'function') {
+              p.catch(() => {});
+            }
+          } catch (err) {}
+        };
+
+        if (document.readyState === 'complete') {
+          doRegister();
+        } else {
+          window.addEventListener('load', doRegister, { once: true });
         }
       } catch (e) {}
     }
+
+    window.addEventListener('unhandledrejection', (event) => {
+      const reasonMsg = String((event && event.reason && (event.reason.message || event.reason)) || '');
+      if (
+        reasonMsg.includes('ServiceWorker') ||
+        reasonMsg.includes('sw.js')
+      ) {
+        event.preventDefault();
+      }
+    });
 
     window.deferredPwaPrompt = window.deferredPwaPrompt || null;
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -6439,6 +6470,7 @@
         state.pullupLogs[uLegacyKey] = { reps: merged.reps, done: merged.done, weight: merged.weight };
       }
       state.pullupLogs[uWeekKey] = { reps: merged.reps, done: merged.done, weight: merged.weight };
+      state.pullUpLogs = state.pullupLogs;
     }
 
     // =========================================================================
@@ -8082,10 +8114,14 @@
 
     function ensureBatchInventoryState() {
       if (!state.batchInventory || typeof state.batchInventory !== 'object') {
-        state.batchInventory = { oatsJarsRemaining: 4, riceBowlsRemaining: 4, oatsPrepDay: null, ricePrepDay: null };
+        state.batchInventory = { oatsJarsRemaining: 4, riceBowlsRemaining: 4, oatsPrepDay: state.oatsPrepDay || null, ricePrepDay: state.ricePrepDay || null };
       }
       if (typeof state.batchInventory.oatsJarsRemaining !== 'number') state.batchInventory.oatsJarsRemaining = 4;
       if (typeof state.batchInventory.riceBowlsRemaining !== 'number') state.batchInventory.riceBowlsRemaining = 4;
+      if (state.oatsPrepDay && !state.batchInventory.oatsPrepDay) state.batchInventory.oatsPrepDay = state.oatsPrepDay;
+      if (state.ricePrepDay && !state.batchInventory.ricePrepDay) state.batchInventory.ricePrepDay = state.ricePrepDay;
+      state.oatsPrepDay = state.batchInventory.oatsPrepDay || null;
+      state.ricePrepDay = state.batchInventory.ricePrepDay || null;
       return state.batchInventory;
     }
 
@@ -8184,9 +8220,11 @@
           const nextDayNum = ((state.selectedDayIndex || 0) + 1) % 7 + 1;
           if (bType === 'oats') {
             inv.oatsPrepDay = `Day ${nextDayNum}`;
+            state.oatsPrepDay = inv.oatsPrepDay;
             showToast(`Scheduled Overnight Oats 4-jar batch prep for Day ${nextDayNum}.`);
           } else {
             inv.ricePrepDay = `Day ${nextDayNum}`;
+            state.ricePrepDay = inv.ricePrepDay;
             showToast(`Scheduled Jasmine Rice 4-bowl cooking for Day ${nextDayNum}.`);
           }
           saveState();
@@ -8202,9 +8240,11 @@
           if (bType === 'oats') {
             inv.oatsJarsRemaining = 4;
             inv.oatsPrepDay = null;
+            state.oatsPrepDay = null;
             showToast('Marked 4 Overnight Oats jars prepped in fridge.');
           } else {
             syncRiceBatchInventoryAndSteps(true);
+            state.ricePrepDay = null;
             showToast('Marked 4 Jasmine Rice bowls prepped in fridge.');
           }
           saveState();
@@ -9630,21 +9670,32 @@
 
               <!-- UPGRADE 4, 5 & 6: Collapsible Exercise Notes, Dual Camera/Gallery Photo Buttons & AI Machine Swap -->
               <div class="pt-1 border-t border-slate-800/80 space-y-2">
-                <button
-                  type="button"
-                  data-note-toggle-ex="${ex.id}"
-                  aria-expanded="${isNotePanelOpen ? 'true' : 'false'}"
-                  class="toggle-ex-note-btn w-full py-2 px-3 rounded-xl border text-xs font-extrabold flex items-center justify-between gap-2 transition ${
-                    hasAnyNote
-                      ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-400/40 text-amber-200'
-                      : 'bg-slate-950/85 hover:bg-slate-900 border-slate-800 text-slate-300 hover:text-white'
-                  }"
-                >
-                  <span data-note-toggle-label="${ex.id}" class="truncate text-left">
-                    ${hasAnyNote ? ` View/Edit Note: "${notePreviewStr}"${hasNotePhoto ? ' ' : ''}` : '+ Add Machine Note / Photo'}
-                  </span>
-                  <span class="text-[10px] font-bold shrink-0 ${hasAnyNote ? 'text-amber-300' : 'text-slate-400'}">${isNotePanelOpen ? '▴ Hide' : '▾ Open'}</span>
-                </button>
+                <div class="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    data-note-toggle-ex="${ex.id}"
+                    aria-expanded="${isNotePanelOpen ? 'true' : 'false'}"
+                    class="toggle-ex-note-btn flex-1 min-w-0 py-2 px-3 rounded-xl border text-xs font-extrabold flex items-center justify-between gap-2 transition ${
+                      hasAnyNote
+                        ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-400/40 text-amber-200'
+                        : 'bg-slate-950/85 hover:bg-slate-900 border-slate-800 text-slate-300 hover:text-white'
+                    }"
+                  >
+                    <span data-note-toggle-label="${ex.id}" class="truncate text-left">
+                      ${hasAnyNote ? ` View/Edit Note: "${notePreviewStr}"${hasNotePhoto ? ' ' : ''}` : '+ Add Machine Note / Photo'}
+                    </span>
+                    <span class="text-[10px] font-bold shrink-0 ${hasAnyNote ? 'text-amber-300' : 'text-slate-400'}">${isNotePanelOpen ? '▴ Hide' : '▾ Open'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    data-ai-swap-check-ex="${ex.id}"
+                    data-orig-ex-id="${ex.originalId || ex.id}"
+                    class="ai-check-swap-ex-btn shrink-0 py-2 px-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold whitespace-nowrap transition"
+                    title="Verify biomechanical machine match and swap exercise card"
+                  >
+                    Swap Machine
+                  </button>
+                </div>
 
                 <div id="ex-note-panel-${ex.id}" class="${isNotePanelOpen ? 'bg-slate-950/90 border border-slate-800 rounded-xl p-3 space-y-2.5' : 'hidden'}">
                   <div>
@@ -9760,9 +9811,9 @@
         });
       });
 
-      // AI Machine Photo Check & Smart Exercise Swap Listeners
+      // AI Machine Photo Check & Smart Exercise Swap Listeners (Built-in Biomechanical Matcher + Optional Gemini 2.5 Flash Vision Upgrade)
       listEl.querySelectorAll('.ai-check-swap-ex-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', async () => {
           const exId = btn.getAttribute('data-ai-swap-check-ex');
           const origExId = btn.getAttribute('data-orig-ex-id') || exId;
           const exObj = exercisesToday.find(e => e.id === exId) || { id: origExId, originalId: origExId, name: origExId };
@@ -9775,6 +9826,44 @@
           saveState();
           renderWorkoutView();
           showToast(`Biomechanical match verified: ${swapProposal.suggestedMachineExercise}`);
+
+          const savedPhoto = state.exerciseNotes && state.exerciseNotes[exId] && state.exerciseNotes[exId].photoDataUrl;
+          const userKey = (state.coachApiKey || '').trim();
+          if (savedPhoto && userKey && savedPhoto.startsWith('data:image/')) {
+            try {
+              const base64Data = savedPhoto.split(',')[1] || '';
+              const mimeMatch = savedPhoto.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/);
+              const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+              const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(userKey)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{
+                    parts: [
+                      { text: `Analyze this gym machine photo to replace "${swapProposal.originalExerciseName}". Return JSON with keys: suggestedMachineExercise, targetMuscles, definitionAndCues.` },
+                      { inlineData: { mimeType, data: base64Data } }
+                    ]
+                  }],
+                  generationConfig: { responseMimeType: 'application/json' }
+                })
+              });
+              if (resp.ok) {
+                const json = await resp.json();
+                const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                const parsed = JSON.parse(rawText);
+                if (parsed && parsed.suggestedMachineExercise && state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId]) {
+                  state.pendingMachineSwapPreviews[exId] = Object.assign({}, swapProposal, {
+                    suggestedMachineExercise: String(parsed.suggestedMachineExercise),
+                    targetMuscles: String(parsed.targetMuscles || swapProposal.targetMuscles),
+                    definitionAndCues: String(parsed.definitionAndCues || swapProposal.definitionAndCues),
+                    confirmationHeadline: `Biomechanical Match Confirmed: ${parsed.suggestedMachineExercise} targets the same muscles as ${swapProposal.originalExerciseName}. Replace today's exercise card?`
+                  });
+                  saveState();
+                  renderWorkoutView();
+                }
+              }
+            } catch (e) {}
+          }
         });
       });
 
@@ -12730,9 +12819,9 @@
                   ${hasNotePhoto ? `<span class="text-[10px] font-bold text-sky-300">Photo Saved</span>` : ''}
                 </div>
 
-                <!-- Hidden-by-Default Timing & Prep Tip Box -->
-                <div data-fuel-tip-box="${slot.slotId}" class="${isTipExpanded ? 'bg-slate-950/80 border border-amber-500/35 rounded-xl px-3 py-2 text-[11px] text-amber-300/95 leading-snug' : 'hidden'}" style="display: ${isTipExpanded ? 'block' : 'none'};">
-                  <strong>Timing &amp; Prep Tip:</strong> ${mealObj.tip || slotSched.contextTip || slot.tip} ${slotSched.batchTip || ''}
+                <!-- Preparation Steps & Timing Note Box (Automatically visible when View Recipe & Steps is expanded) -->
+                <div data-fuel-tip-box="${slot.slotId}" class="${(isCardExpanded || isTipExpanded) ? 'bg-slate-950/80 border border-amber-500/35 rounded-xl px-3 py-2 text-[11px] text-amber-300/95 leading-snug' : 'hidden'}" style="display: ${(isCardExpanded || isTipExpanded) ? 'block' : 'none'};">
+                  <strong>Preparation Steps &amp; Timing Note:</strong> ${mealObj.tip || slotSched.contextTip || slot.tip} ${slotSched.batchTip || ''}
                 </div>
 
                 <!-- Hidden-by-Default Kitchen Note / Photo Panel -->
@@ -15451,9 +15540,6 @@
 
       // Register PWA Offline Service Worker at root scope
       ensureInstallablePwaAssets();
-      if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
-        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
-      }
 
       const openDbBtn = document.getElementById('open-db-modal-btn');
       const closeDbBtn = document.getElementById('close-db-modal-btn');

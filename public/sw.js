@@ -1,4 +1,4 @@
-const CACHE_NAME = 'budget-gym-v5';
+const CACHE_NAME = 'budget-gym-v6';
 const ASSETS = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', event => {
@@ -12,26 +12,44 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    ).then(() => self.clients.claim()).catch(() => {})
   );
 });
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-  const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/api/')) return;
+  let url;
+  try {
+    url = new URL(event.request.url);
+  } catch (e) {
+    return;
+  }
+  // Never intercept cross-origin requests, API routes, Vite dev modules, or the Service Worker script itself
+  if (url.origin !== self.location.origin) return;
+  if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname === '/sw.js' ||
+    url.pathname.endsWith('/sw.js') ||
+    url.pathname.startsWith('/@') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/node_modules/')
+  ) {
+    return;
+  }
 
   // Always use a Network-First strategy so installed PWAs never get trapped on stale HTML/JS
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        if (response && response.status === 200) {
+        if (response && response.status === 200 && response.type === 'basic') {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone)).catch(() => {});
         }
         return response;
       })
-      .catch(() => caches.match(event.request).then(cached => cached || caches.match('/index.html')))
+      .catch(() =>
+        caches.match(event.request).then(cached => cached || caches.match('/index.html'))
+      )
   );
 });
 
@@ -51,7 +69,7 @@ self.addEventListener('message', event => {
       },
       data.options || {}
     );
-    event.waitUntil(self.registration.showNotification(title, options));
+    event.waitUntil(self.registration.showNotification(title, options).catch(() => {}));
   }
 });
 
@@ -67,6 +85,6 @@ self.addEventListener('notificationclick', event => {
       if (self.clients.openWindow) {
         return self.clients.openWindow('./');
       }
-    })
+    }).catch(() => {})
   );
 });
