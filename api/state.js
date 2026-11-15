@@ -112,6 +112,19 @@ export default async function handler(req, res) {
               }
             });
           }
+          if (d.subscriptionChecklist && typeof d.subscriptionChecklist === 'object') {
+            if (!baseData.subscriptionChecklist || typeof baseData.subscriptionChecklist !== 'object') {
+              baseData.subscriptionChecklist = {};
+            }
+            Object.keys(d.subscriptionChecklist).forEach(k => {
+              if (d.subscriptionChecklist[k]) {
+                baseData.subscriptionChecklist[k] = true;
+              }
+            });
+          }
+          if (!baseData.shopListPeriod && (d.shopListPeriod === 'weekly' || d.shopListPeriod === 'quarterly')) {
+            baseData.shopListPeriod = d.shopListPeriod;
+          }
         });
       }
 

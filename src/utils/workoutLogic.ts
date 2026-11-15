@@ -4722,21 +4722,21 @@ export interface MachineExerciseSwapSpec {
   replacementName: string;
   primaryMuscles: string;
   movementPattern: string;
-  biomechanicalNotes: string;
+  formSetupNotes: string;
   videoUrl: string;
   restSec: number;
   restLabel: string;
   defaultWeightLbs: number;
 }
 
-export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseSwapSpec> = {
+export const STANDARD_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseSwapSpec> = {
   mon_bench: {
     originalExId: 'mon_bench',
     replacementId: 'swap_machine_chest_press',
     replacementName: 'Seated Chest Press Machine',
     primaryMuscles: 'Mid/Lower Pectoralis Major, Anterior Deltoids, Triceps',
     movementPattern: 'Horizontal Push (Fixed-Path Converging Press)',
-    biomechanicalNotes: 'Adjust seat so handles align with mid-chest (nipple line). Keep shoulder blades retracted against pad, elbows tucked 45-60 degrees, and press to full extension.',
+    formSetupNotes: 'Adjust seat so handles align with mid-chest (nipple line). Keep shoulder blades retracted against pad, elbows tucked 45-60 degrees, and press to full extension.',
     videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
     restSec: 120,
     restLabel: '2 min',
@@ -4748,7 +4748,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Seated Machine Row (Upper Back Focus)',
     primaryMuscles: 'Mid/Upper Trapezius, Rhomboids, Rear Deltoids, Lats',
     movementPattern: 'Chest-Supported Horizontal Pull',
-    biomechanicalNotes: 'Set chest pad so sternum rests firmly against cushion. Use wide overhand grip, flare elbows 45-60 degrees, and squeeze shoulder blades together for 1s.',
+    formSetupNotes: 'Set chest pad so sternum rests firmly against cushion. Use wide overhand grip, flare elbows 45-60 degrees, and squeeze shoulder blades together for 1s.',
     videoUrl: 'https://www.youtube.com/watch?v=GZbfZ033f74',
     restSec: 120,
     restLabel: '2 min',
@@ -4760,7 +4760,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Seated Shoulder Press Machine',
     primaryMuscles: 'Anterior & Lateral Deltoids, Triceps, Upper Chest',
     movementPattern: 'Vertical Overhead Push',
-    biomechanicalNotes: 'Set seat so handles start at ear/chin level. Brace core against back pad and press overhead without overarching lower back.',
+    formSetupNotes: 'Set seat so handles start at ear/chin level. Brace core against back pad and press overhead without overarching lower back.',
     videoUrl: 'https://www.youtube.com/watch?v=WvLMauqrnK8',
     restSec: 120,
     restLabel: '2 min',
@@ -4772,7 +4772,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Plate-Loaded Iso-Lateral High Pulldown Machine',
     primaryMuscles: 'Latissimus Dorsi, Teres Major, Biceps',
     movementPattern: 'Vertical Pull (Scapular Depression & Adduction)',
-    biomechanicalNotes: 'Lock thighs under pad, depress shoulders first, and drive elbows down and in toward ribs.',
+    formSetupNotes: 'Lock thighs under pad, depress shoulders first, and drive elbows down and in toward ribs.',
     videoUrl: 'https://youtu.be/AvYZZhEl7Xk',
     restSec: 120,
     restLabel: '2 min',
@@ -4784,7 +4784,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Seated Pec Deck / Machine Fly',
     primaryMuscles: 'Pectoralis Major (Sternal & Clavicular Heads)',
     movementPattern: 'Horizontal Shoulder Adduction',
-    biomechanicalNotes: 'Set seat so handles align with mid-chest. Keep a soft bend in elbows and bring hands together in a wide arc, pausing 1s at peak squeeze.',
+    formSetupNotes: 'Set seat so handles align with mid-chest. Keep a soft bend in elbows and bring hands together in a wide arc, pausing 1s at peak squeeze.',
     videoUrl: 'https://www.youtube.com/watch?v=Z57CtFmRMxA',
     restSec: 90,
     restLabel: '1.5 min',
@@ -4796,7 +4796,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Seated Lateral Raise Machine',
     primaryMuscles: 'Lateral (Middle) Deltoid',
     movementPattern: 'Scapular-Plane Shoulder Abduction',
-    biomechanicalNotes: 'Align shoulder joints with machine pivot axis. Push elbow pads outward to shoulder height and lower under strict 2s control.',
+    formSetupNotes: 'Align shoulder joints with machine pivot axis. Push elbow pads outward to shoulder height and lower under strict 2s control.',
     videoUrl: 'https://youtu.be/1muit9qEctY',
     restSec: 90,
     restLabel: '1.5 min',
@@ -4808,7 +4808,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Reverse Pec Deck (Rear Delt Machine)',
     primaryMuscles: 'Posterior Deltoids, Infraspinatus, Mid-Traps',
     movementPattern: 'Horizontal Shoulder Abduction & External Rotation',
-    biomechanicalNotes: 'Face the pad with handles at shoulder height. Sweep arms straight back keeping shoulders depressed away from ears.',
+    formSetupNotes: 'Face the pad with handles at shoulder height. Sweep arms straight back keeping shoulders depressed away from ears.',
     videoUrl: 'https://youtu.be/02g7XtSRXug',
     restSec: 60,
     restLabel: '1 min',
@@ -4820,7 +4820,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: '45-Degree Leg Press / Hack Squat Machine',
     primaryMuscles: 'Quadriceps (Vastus Lateralis, Medialis, Rectus Femoris), Glutes',
     movementPattern: 'Compound Knee & Hip Extension',
-    biomechanicalNotes: 'Place feet shoulder-width on lower-to-mid platform for quad emphasis. Lower sled until knees reach 90 degrees or deeper without lower-back rounding.',
+    formSetupNotes: 'Place feet shoulder-width on lower-to-mid platform for quad emphasis. Lower sled until knees reach 90 degrees or deeper without lower-back rounding.',
     videoUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ',
     restSec: 150,
     restLabel: '2-3 min',
@@ -4832,7 +4832,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Glute-Ham Raise / 45-Degree Back & Hip Extension',
     primaryMuscles: 'Hamstrings, Gluteus Maximus, Erector Spinae',
     movementPattern: 'Loaded Hip Hinge',
-    biomechanicalNotes: 'Set pad just below hip crease so pelvis can hinge freely. Keep spine neutral, hinge until full hamstring stretch, and drive hips into pad using glutes and hamstrings.',
+    formSetupNotes: 'Set pad just below hip crease so pelvis can hinge freely. Keep spine neutral, hinge until full hamstring stretch, and drive hips into pad using glutes and hamstrings.',
     videoUrl: 'https://youtu.be/Xu4DxwKWzl4',
     restSec: 60,
     restLabel: '1 min',
@@ -4844,7 +4844,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Iso-Lateral / Plate-Loaded Leg Extension Machine',
     primaryMuscles: 'Quadriceps (Rectus Femoris & Vastus Medialis)',
     movementPattern: 'Isolated Knee Extension',
-    biomechanicalNotes: 'Align knee joint with machine pivot, lock hips into seat with handles, and pause 1s at full knee lockout.',
+    formSetupNotes: 'Align knee joint with machine pivot, lock hips into seat with handles, and pause 1s at full knee lockout.',
     videoUrl: 'https://youtu.be/nIalczfM8es',
     restSec: 60,
     restLabel: '1 min',
@@ -4856,7 +4856,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Smith Machine Quad-Focused Split Squat',
     primaryMuscles: 'Quadriceps, Gluteus Maximus',
     movementPattern: 'Unilateral Knee-Dominant Split Squat',
-    biomechanicalNotes: 'Stand in split stance under Smith bar, keep torso upright, and drive front knee forward over toes to maximize quad tension.',
+    formSetupNotes: 'Stand in split stance under Smith bar, keep torso upright, and drive front knee forward over toes to maximize quad tension.',
     videoUrl: 'https://youtu.be/JB20RuTOaFc',
     restSec: 120,
     restLabel: '2 min',
@@ -4868,7 +4868,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Standing Calf Raise / Leg Press Calf Press Machine',
     primaryMuscles: 'Calves (Upper & Lower)',
     movementPattern: 'Straight-Leg Calf Raise',
-    biomechanicalNotes: 'Place balls of feet on platform edge, lower heels for a 2s bottom stretch, and press high onto big toes.',
+    formSetupNotes: 'Place balls of feet on platform edge, lower heels for a 2s bottom stretch, and press high onto big toes.',
     videoUrl: 'https://youtu.be/q2Eigaa9dKU',
     restSec: 90,
     restLabel: '1.5 min',
@@ -4880,7 +4880,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Seated Incline Chest Press Machine',
     primaryMuscles: 'Clavicular (Upper) Pectoralis Major, Anterior Deltoids, Triceps',
     movementPattern: '30-Degree Incline Converging Press',
-    biomechanicalNotes: 'Set seat so handles align with upper chest / collarbone. Retract shoulder blades and press along the upward converging arc.',
+    formSetupNotes: 'Set seat so handles align with upper chest / collarbone. Retract shoulder blades and press along the upward converging arc.',
     videoUrl: 'https://youtu.be/kpzUeELReEA',
     restSec: 120,
     restLabel: '2 min',
@@ -4892,7 +4892,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Seated Pec Deck Chest Fly Machine',
     primaryMuscles: 'Mid/Sternal Pectoralis Major',
     movementPattern: 'Seated Horizontal Adduction',
-    biomechanicalNotes: 'Keep chest tall against back pad, bring arms together at sternum level, and hold peak contraction for 1 full second.',
+    formSetupNotes: 'Keep chest tall against back pad, bring arms together at sternum level, and hold peak contraction for 1 full second.',
     videoUrl: 'https://youtu.be/Y8E3dHNsSTU',
     restSec: 90,
     restLabel: '1.5 min',
@@ -4904,7 +4904,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Iso-Lateral Flat Chest Press Machine',
     primaryMuscles: 'Sternal Pectoralis Major, Triceps, Front Delts',
     movementPattern: 'Horizontal Push',
-    biomechanicalNotes: 'Keep shoulder blades pinned back and drive handles smoothly to lockout without letting shoulders roll forward.',
+    formSetupNotes: 'Keep shoulder blades pinned back and drive handles smoothly to lockout without letting shoulders roll forward.',
     videoUrl: 'https://youtu.be/g14dhC5KYBM',
     restSec: 120,
     restLabel: '2 min',
@@ -4916,7 +4916,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Seated Lateral Raise Machine',
     primaryMuscles: 'Lateral Deltoids',
     movementPattern: 'Scapular-Plane Abduction',
-    biomechanicalNotes: 'Drive elbows outward against pads to shoulder level and control the eccentric phase.',
+    formSetupNotes: 'Drive elbows outward against pads to shoulder level and control the eccentric phase.',
     videoUrl: 'https://youtu.be/zcO3sgAeLA0',
     restSec: 90,
     restLabel: '1.5 min',
@@ -4928,7 +4928,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Seated Overhead Triceps Extension Machine',
     primaryMuscles: 'Triceps Brachii (Long Head Emphasis)',
     movementPattern: 'Overhead Elbow Extension',
-    biomechanicalNotes: 'Keep upper arms firmly on angled pad and extend forearms to full lockout.',
+    formSetupNotes: 'Keep upper arms firmly on angled pad and extend forearms to full lockout.',
     videoUrl: 'https://www.youtube.com/watch?v=7yoTblFCUQM',
     restSec: 90,
     restLabel: '1.5 min',
@@ -4940,7 +4940,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Seated Triceps Pressdown Machine',
     primaryMuscles: 'Triceps Brachii (Lateral & Medial Heads)',
     movementPattern: 'Vertical Elbow Extension',
-    biomechanicalNotes: 'Keep elbows tucked tight to ribs and press handles all the way down.',
+    formSetupNotes: 'Keep elbows tucked tight to ribs and press handles all the way down.',
     videoUrl: 'https://youtu.be/MlfCS_7ZLXA',
     restSec: 90,
     restLabel: '1.5 min',
@@ -4952,7 +4952,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Iso-Lateral Low Row Machine (Lat Focus)',
     primaryMuscles: 'Lower & Mid Latissimus Dorsi',
     movementPattern: 'Neutral-Grip Low Horizontal Pull',
-    biomechanicalNotes: 'Brace chest on pad, keep elbows tight to ribs, and pull handles down and back toward hips.',
+    formSetupNotes: 'Brace chest on pad, keep elbows tight to ribs, and pull handles down and back toward hips.',
     videoUrl: 'https://youtu.be/ZaEnZ47cDTk',
     restSec: 120,
     restLabel: '2 min',
@@ -4964,7 +4964,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Wide-Grip Upper Back / Rear Delt Row Machine',
     primaryMuscles: 'Rear Deltoids, Rhomboids, Mid-Traps',
     movementPattern: '45-Degree Elbows-Out Horizontal Pull',
-    biomechanicalNotes: 'Grip wide handles, keep elbows angled 45-60 degrees away from torso, and pull toward upper sternum.',
+    formSetupNotes: 'Grip wide handles, keep elbows angled 45-60 degrees away from torso, and pull toward upper sternum.',
     videoUrl: 'https://youtu.be/k9G7BykDD4o',
     restSec: 90,
     restLabel: '1.5 min',
@@ -4976,7 +4976,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Seated Preacher / Cable Biceps Curl Machine',
     primaryMuscles: 'Biceps Brachii (Long & Short Heads)',
     movementPattern: 'Stabilized Elbow Flexion',
-    biomechanicalNotes: 'Keep backs of upper arms flush against pad and curl smoothly through full range of motion.',
+    formSetupNotes: 'Keep backs of upper arms flush against pad and curl smoothly through full range of motion.',
     videoUrl: 'https://youtu.be/3D56VDVkQnM',
     restSec: 90,
     restLabel: '1.5 min',
@@ -4988,7 +4988,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Neutral-Grip Machine / Cable Rope Hammer Curl',
     primaryMuscles: 'Brachialis, Brachioradialis, Biceps',
     movementPattern: 'Neutral-Grip Elbow Flexion',
-    biomechanicalNotes: 'Keep palms facing each other (neutral grip), pin elbows at sides, and curl to shoulder height.',
+    formSetupNotes: 'Keep palms facing each other (neutral grip), pin elbows at sides, and curl to shoulder height.',
     videoUrl: 'https://youtu.be/OrGL-ymYREg',
     restSec: 90,
     restLabel: '1.5 min',
@@ -5000,7 +5000,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Reverse Pec Deck (Rear Delt Machine)',
     primaryMuscles: 'Posterior Deltoids, External Rotators, Mid-Traps',
     movementPattern: 'Horizontal Abduction',
-    biomechanicalNotes: 'Keep chest against pad and sweep arms back in a wide arc with shoulders down.',
+    formSetupNotes: 'Keep chest against pad and sweep arms back in a wide arc with shoulders down.',
     videoUrl: 'https://youtu.be/02g7XtSRXug',
     restSec: 60,
     restLabel: '1 min',
@@ -5012,7 +5012,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Trap Bar / Plate-Loaded Deadlift Machine',
     primaryMuscles: 'Glutes, Hamstrings, Erector Spinae, Quads, Traps',
     movementPattern: 'Compound Floor Pull / Hip Hinge',
-    biomechanicalNotes: 'Grip neutral handles at sides, brace lats and core, and drive floor away keeping spine neutral.',
+    formSetupNotes: 'Grip neutral handles at sides, brace lats and core, and drive floor away keeping spine neutral.',
     videoUrl: 'https://youtu.be/JL1tJTEmxfw',
     restSec: 150,
     restLabel: '2-3 min',
@@ -5024,7 +5024,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Single-Leg Glute-Focused Leg Press Machine',
     primaryMuscles: 'Gluteus Maximus, Hamstrings, Quadriceps',
     movementPattern: 'Unilateral Hip-Dominant Leg Press',
-    biomechanicalNotes: 'Place working foot high on sled platform to emphasize hip flexion and glute stretch. Control down and drive through heel.',
+    formSetupNotes: 'Place working foot high on sled platform to emphasize hip flexion and glute stretch. Control down and drive through heel.',
     videoUrl: 'https://youtu.be/sqadB2rroz0',
     restSec: 60,
     restLabel: '1 min / leg',
@@ -5036,7 +5036,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Belt / Plate-Loaded Glute Drive Hip Thrust Machine',
     primaryMuscles: 'Gluteus Maximus, Hamstrings',
     movementPattern: 'Loaded Horizontal Hip Extension',
-    biomechanicalNotes: 'Secure padded belt across hips, place feet so shins are vertical at top, and pause 1-2s at full glute lockout.',
+    formSetupNotes: 'Secure padded belt across hips, place feet so shins are vertical at top, and pause 1-2s at full glute lockout.',
     videoUrl: 'https://youtu.be/_vBMijiZoxE',
     restSec: 120,
     restLabel: '2 min',
@@ -5048,7 +5048,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Seated Leg Curl Machine',
     primaryMuscles: 'Hamstrings (Semitendinosus, Semimembranosus, Biceps Femoris)',
     movementPattern: 'Seated Knee Flexion (Lengthened Hip Position)',
-    biomechanicalNotes: 'Lock thigh pad snugly over knees, lean slightly forward for maximum hamstring stretch, and curl heels all the way under seat.',
+    formSetupNotes: 'Lock thigh pad snugly over knees, lean slightly forward for maximum hamstring stretch, and curl heels all the way under seat.',
     videoUrl: 'https://youtu.be/aYy3alWRDmk',
     restSec: 90,
     restLabel: '1.5 min',
@@ -5060,7 +5060,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Seated Hip Abduction Machine',
     primaryMuscles: 'Gluteus Medius & Minimus (Upper/Lateral Glutes)',
     movementPattern: 'Seated Hip Abduction',
-    biomechanicalNotes: 'Sit tall or lean slightly forward, drive knees outward against pads, and hold 1s at peak contraction.',
+    formSetupNotes: 'Sit tall or lean slightly forward, drive knees outward against pads, and hold 1s at peak contraction.',
     videoUrl: 'https://youtu.be/CA0ALPgTkxw',
     restSec: 60,
     restLabel: '1 min',
@@ -5072,7 +5072,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Seated Calf Press / Extension Machine',
     primaryMuscles: 'Calves',
     movementPattern: 'Seated Calf Press',
-    biomechanicalNotes: 'Sit back flat in the seat, place the balls of your feet on the footplate, and push forward with your toes.',
+    formSetupNotes: 'Sit back flat in the seat, place the balls of your feet on the footplate, and push forward with your toes.',
     videoUrl: 'https://www.youtube.com/watch?v=ZmDiJvXx344',
     restSec: 60,
     restLabel: '1 min',
@@ -5084,7 +5084,7 @@ export const BIOMECHANICAL_MACHINE_SWAP_CATALOG: Record<string, MachineExerciseS
     replacementName: 'Seated Abdominal Crunch Machine',
     primaryMuscles: 'Rectus Abdominis & Obliques',
     movementPattern: 'Loaded Spinal Flexion',
-    biomechanicalNotes: 'Brace feet under rollers, curl ribcage down toward pelvis while exhaling completely, and pause 1s at peak contraction.',
+    formSetupNotes: 'Brace feet under rollers, curl ribcage down toward pelvis while exhaling completely, and pause 1s at peak contraction.',
     videoUrl: 'https://www.youtube.com/watch?v=aBd6T01PBqw',
     restSec: 90,
     restLabel: '1.5 min',
@@ -5103,13 +5103,13 @@ export function verifyAndBuildMachineExerciseSwap(
   switchBackButtonLabel: string;
 } {
   const baseSpec =
-    BIOMECHANICAL_MACHINE_SWAP_CATALOG[originalExId] || {
+    STANDARD_MACHINE_SWAP_CATALOG[originalExId] || {
       originalExId,
       replacementId: `swap_machine_${originalExId}`,
       replacementName: `${originalExName} (Selectorized Machine Equivalent)`,
       primaryMuscles: 'Same Primary Target Muscle Group',
       movementPattern: 'Equivalent Stabilized Machine Path',
-      biomechanicalNotes: 'Align joint pivot with machine cam, maintain controlled 2s eccentric tempo, and train to the same target rep range.',
+      formSetupNotes: 'Align joint pivot with machine cam, maintain controlled 2s eccentric tempo, and train to the same target rep range.',
       videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ',
       restSec: 120,
       restLabel: '2 min',
@@ -6589,6 +6589,268 @@ export function syncSubsequentWeeksFromWeek(
     }
   }
 }
+
+export interface SubscriptionChecklistItemSpec {
+  id: 'cancelCreatineAutoship' | 'dropPeaTo3Containers';
+  actionNumber: 1 | 2;
+  title: string;
+  subtext: string;
+}
+
+export const SUBSCRIPTION_ACTION_CHECKLIST_ITEMS: SubscriptionChecklistItemSpec[] = [
+  {
+    id: 'cancelCreatineAutoship',
+    actionNumber: 1,
+    title: 'Action 1 (After Order 1 Ships): Cancel Naked Creatine Recurring Autoship',
+    subtext:
+      'Order 1 (2 x 1.1 LB = 1,000g for $47.98 CAD at 20% off) lasts 200 days (6.67 months). Cancel the recurring Creatine Autoship immediately after delivery because Order 2 only gives 10% off ($53.98 CAD + $20 shipping risk). For Order 2+ (Month 7), buy 1 kg Leanfit Micronized Creatine at Costco ($44.99 CAD regular / $34.99 on sale = $0.18-$0.22/day with $0 shipping).'
+  },
+  {
+    id: 'dropPeaTo3Containers',
+    actionNumber: 2,
+    title: 'Action 2 (Before Month 6 / Order 3): Drop Naked Pea Autoship from 4 to 3 Containers',
+    subtext:
+      '4 x 5 LB containers (9,072g every 3 months) supply 100.8 days at 90g/day, building a +972g (+10.8-day) buffer per quarter. After Quarter 2 (Month 6), your buffer reaches +1,944g (21.6 days) — switch Quarter 3 from 4 containers ($323.96) down to 3 containers ($242.97) to save $80.99 CAD.'
+  }
+];
+
+export type ShopListPeriod = 'weekly' | 'quarterly';
+
+export const SHOP_LIST_PERIOD_VIEWS: Record<
+  ShopListPeriod,
+  {
+    id: ShopListPeriod;
+    pillLabel: string;
+    storeCostText: string;
+    allInCostText: string;
+    summaryHighlights: string[];
+  }
+> = {
+  weekly: {
+    id: 'weekly',
+    pillLabel: 'Weekly Grocery View ($22.10/wk Store • $44.48/wk All-In)',
+    storeCostText: '$22.10/wk Store',
+    allInCostText: '$44.48/wk All-In',
+    summaryHighlights: [
+      '1,260 ml/wk milk ($3.19/wk)',
+      '1,225g/wk tofu ($8.97/wk)',
+      '630g/wk pea protein ($20.00/wk)',
+      '35g/wk creatine ($1.68/wk Order 1 • $1.57/wk Costco)',
+      '7 caps/wk Vitamin D3 ($0.70/wk)'
+    ]
+  },
+  quarterly: {
+    id: 'quarterly',
+    pillLabel: '3-Month (90-Day) Cycle View ($284.18 Store • $571.88 All-In)',
+    storeCostText: '$284.18 Store',
+    allInCostText: '$571.88 All-In',
+    summaryHighlights: [
+      '16.2L / 8.57 cartons milk = $41.06',
+      '15,750g / 45 blocks tofu = $115.33',
+      '8,100g consumed from 4 x 5 LB Naked Pea containers = $257.11 consumed / $287.96 Order 1 upfront',
+      '450g consumed from 1,000g Creatine = $21.59 Order 1 / $20.25 Costco',
+      '90 caps Vitamin D3 = $9.00'
+    ]
+  }
+};
+
+export interface ShoppingAisleItemSpec {
+  id: string;
+  itemNumber: number;
+  name: string;
+  qty: string;
+  weeklyQty: string;
+  quarterlyQty: string;
+  note: string;
+}
+
+export interface ShoppingAisleSpec {
+  category: string;
+  badge: string;
+  items: ShoppingAisleItemSpec[];
+}
+
+export const SHOPPING_AISLES: ShoppingAisleSpec[] = [
+  {
+    category: 'Aisle 1: Produce & Refrigerated Cooler (Weekly Fresh Run)',
+    badge: '4 Fresh Staples • No Frills / Walmart ($15.10/wk • $194.19 / 90d)',
+    items: [
+      {
+        id: 'shop_silk',
+        itemNumber: 1,
+        name: '1. Unsweetened Fortified Almond or Cashew Milk (1.89L carton — Fuel 2 Oats Only)',
+        qty: '1,260 ml / week (180 ml/day)',
+        weeklyQty: '1,260 ml / week (180 ml/day • $3.19/wk)',
+        quarterlyQty: '16.2L / 90 days (8.57 cartons = $41.06)',
+        note: '180 ml/day soaked in Fuel 2 Overnight Oats (Fuel 1 & Fuel 4 shakes use cold water to save $12.76/week while keeping 139g P at 1,325 kcal).'
+      },
+      {
+        id: 'shop_tofu',
+        itemNumber: 2,
+        name: '2. Sunrise or Rooster Extra-Firm Tofu (350g–454g block)',
+        qty: '1,225g / week (175g/day)',
+        weeklyQty: '1,225g / week (175g/day • 3.5 blocks = $8.97/wk)',
+        quarterlyQty: '15,750g / 90 days (45 blocks = $115.33)',
+        note: 'Weigh 175g/day (1/2 of a 350g block) for Fuel 3 — 3.5 blocks/week ($8.97/wk) or 45 blocks per 90-day cycle ($115.33).'
+      },
+      {
+        id: 'shop_broccoli',
+        itemNumber: 3,
+        name: '3. Broccoli Florets (Fresh Crown or Frozen Bag)',
+        qty: '525g / week (75g/day)',
+        weeklyQty: '525g / week (75g/day = $2.49/wk)',
+        quarterlyQty: '6,750g / 90 days (6.75 kg = $32.01)',
+        note: '75g steamed broccoli/day for Fuel 3 (100% daily Vitamin C to unlock non-heme iron absorption in tofu, oats & pea protein).'
+      },
+      {
+        id: 'shop_banana',
+        itemNumber: 4,
+        name: '4. Ripe Bananas (Peeled Weight)',
+        qty: '210g / week (30g/day)',
+        weeklyQty: '210g / week (30g/day = $0.45/wk)',
+        quarterlyQty: '2,700g / 90 days (~23 bananas = $5.79)',
+        note: '120g peeled banana (1 medium) per 4-day overnight oats batch (~2 medium bananas/wk = $0.45/wk or $5.79/90 days).'
+      }
+    ]
+  },
+  {
+    category: 'Aisle 2: Dry Pantry, Grains, Seeds & Nutritional Yeast',
+    badge: '5 Pantry Staples • Bulk / Costco / No Frills ($6.52/wk • $83.82 / 90d)',
+    items: [
+      {
+        id: 'shop_oats',
+        itemNumber: 5,
+        name: '5. Gluten-Free Protein Oats (907g bag)',
+        qty: '315g / week (45g/day)',
+        weeklyQty: '315g / week (45g/day = $2.43/wk)',
+        quarterlyQty: '4,050g / 90 days (4.47 bags = $31.24)',
+        note: '180g per 4-day batch (45g/day) — 1 bag lasts ~3 weeks ($2.43/wk or $31.24 per 90-day cycle).'
+      },
+      {
+        id: 'shop_rice',
+        itemNumber: 6,
+        name: '6. White Jasmine Rice',
+        qty: '385g dry / week (1,050g cooked)',
+        weeklyQty: '385g dry / week (1,050g cooked = $0.96/wk)',
+        quarterlyQty: '4,950g dry / 90 days (13,500g cooked = $12.34)',
+        note: '55g dry rice/day (= 150g cooked rice/day) for Fuel 3 — 4-day batch = 220g dry + 330 ml water ($0.96/wk or $12.34/90 days).'
+      },
+      {
+        id: 'shop_pb',
+        itemNumber: 7,
+        name: '7. Smooth Natural Peanut Butter (500g–1,000g jar)',
+        qty: '168g / week (24g/day)',
+        weeklyQty: '168g / week (24g/day = $1.18/wk)',
+        quarterlyQty: '2,160g / 90 days (2.16 kg = $15.17)',
+        note: '32g per 4-day oats batch (8g/day) + 16g/day in the evening with your Fuel 4 shake and Vitamin D3 capsule ($1.18/wk or $15.17/90 days).'
+      },
+      {
+        id: 'shop_chia',
+        itemNumber: 8,
+        name: '8. Organic Whole Chia Seeds',
+        qty: '42g / week (6g/day)',
+        weeklyQty: '42g / week (6g/day = $0.50/wk)',
+        quarterlyQty: '540g / 90 days (540g = $6.43)',
+        note: '24g per 4-day oats batch (6g/day) — covers 100% of your daily Omega-3 ALA ($0.50/wk or $6.43/90 days).'
+      },
+      {
+        id: 'shop_nooch',
+        itemNumber: 9,
+        name: '9. Fortified Nutritional Yeast Flakes (142g shaker or bulk)',
+        qty: '84g / week (12g/day)',
+        weeklyQty: '84g / week (12g/day = $1.45/wk)',
+        quarterlyQty: '1,080g / 90 days (1.08 kg = $18.64)',
+        note: '12g/day sprinkled on Fuel 3 tofu & rice bowl (+6g protein & B-complex vitamins; $1.45/wk or $18.64/90 days).'
+      }
+    ]
+  },
+  {
+    category: 'Aisle 3: Baking & Oil Aisle (Iodized Salt & Toasted Sesame Oil)',
+    badge: '2 Flavor & Iodine Staples ($0.48/wk • $6.17 / 90d)',
+    items: [
+      {
+        id: 'shop_iodine',
+        itemNumber: 10,
+        name: '10. Iodized Table Salt (Windsor Iodized Salt — NOT sea or pink Himalayan salt)',
+        qty: '10.5g / week (1.5g/day)',
+        weeklyQty: '10.5g / week (1.5g/day = $0.03/wk)',
+        quarterlyQty: '135g / 90 days ($0.39 / 3 mos)',
+        note: '1.5g/day (~1/4 tsp) on Fuel 3 covers 100% daily thyroid iodine (sea/kosher/Himalayan salt has no added iodine; 1kg box lasts >1 year).'
+      },
+      {
+        id: 'shop_sesame',
+        itemNumber: 11,
+        name: '11. Toasted Sesame Oil (Bottle)',
+        qty: '35g / week (5g/day)',
+        weeklyQty: '35g / week (5g/day = $0.45/wk)',
+        quarterlyQty: '450g / 90 days ($5.78 / 3 mos)',
+        note: '5g/day (1 tsp) drizzled on Fuel 3 tofu, rice & broccoli bowl for rich aroma & healthy fats ($0.45/wk or $5.78/90 days).'
+      }
+    ]
+  },
+  {
+    category: 'Aisle 4: Online / Costco Bulk Supplements',
+    badge: '3 Bulk Supplements • Naked Nutrition (Q1) + Costco (Order 2+)',
+    items: [
+      {
+        id: 'shop_isolate',
+        itemNumber: 12,
+        name: '12. Naked Pea Protein Isolate — 5 lb / 2,268g container, Unflavored, 90% P',
+        qty: '630g / week (90g/day)',
+        weeklyQty: '630g / week (90g/day)',
+        quarterlyQty: '8,100g / 90 days (Order 4 containers = 9,072g)',
+        note: '35g Fuel 1 + 10g Fuel 2 + 45g Fuel 4 = 90g/day (81g pure protein). 3-Month Schedule: Order 4 containers on Q1 ($287.96 CAD at 20% off = $71.99/container; leaves +972g buffer), keep 4 containers on Q2 ($323.96 at 10% off; buffer reaches +1,944g), then drop to 3 containers on Q3 ($242.97, saving $80.99 CAD).'
+      },
+      {
+        id: 'shop_creatine',
+        itemNumber: 13,
+        name: '13. 100% Micronized Creatine Monohydrate — Order 1 Naked -> Order 2+ Costco 1 kg',
+        qty: '35g / week (5g/day)',
+        weeklyQty: '35g / week (5g/day)',
+        quarterlyQty: '450g / 90 days (1,000g lasts 200 days)',
+        note: "5g/day in Fuel 1 Pre-Gym Shake. Order 1: Buy 2 x 1.1 LB (1,000g) Naked Creatine with 20% off first Autoship ($47.98 CAD = $0.24/day) for free shipping with Pea Protein, then CANCEL Autoship immediately. Order 2+ (after 200 days): Buy 1 kg Leanfit Creatine at Costco ($44.99 CAD reg / $34.99 sale = $1.57/wk or $20.25/3 mos) because Naked's 10% renewal ($53.98 + shipping risk) is more expensive than Costco."
+      },
+      {
+        id: 'shop_vitd3',
+        itemNumber: 14,
+        name: '14. Vegan Vitamin D3 Supplement — 1,000–2,500 IU, 180 Capsules = 6-Month Supply',
+        qty: '7 caps / week (1 cap/day)',
+        weeklyQty: '7 caps / week (1 cap/day)',
+        quarterlyQty: '90 caps / 90 days ($9.00 / 3 mos)',
+        note: '1 capsule daily with Fuel 4 peanut butter fat ensures 100% Vitamin D and Calcium absorption. 1 bottle (180 capsules = $18.00 CAD) lasts 180 days (6 months), matching your 6-month Creatine restock cycle.'
+      }
+    ]
+  }
+];
+
+export const MUSCLE_FUEL_SUPPLEMENT_SUPPLY_SUMMARY = {
+  headerTitle: 'Daily Muscle Fuel (1,325 kcal • 139g P • 173cm / 69kg)',
+  headerSubtitleOrder1: 'Full-Body • $6.35/d',
+  headerSubtitleCostco: 'Full-Body • $6.34/d',
+  rows: [
+    'Pea Protein (90g/d): 4 containers / 3 mos ($287.96 Order 1 -> +972g buffer/qtr -> 3 containers on Q3)',
+    'Creatine (5g/d): 2 x 1.1 LB Order 1 ($47.98 / 200 days) -> Cancel Sub -> Costco 1kg ($44.99) on Order 2+',
+    'Groceries (Items #1-#11): $22.10/wk ($284.18 / 3 mos) • Water in Fuel 1 & 4 shakes + 180ml milk in Fuel 2 Oats'
+  ]
+};
+
+export function getHeaderSubtitleCostText(isCostcoCreatineSwitched = false): string {
+  return isCostcoCreatineSwitched
+    ? MUSCLE_FUEL_SUPPLEMENT_SUPPLY_SUMMARY.headerSubtitleCostco
+    : MUSCLE_FUEL_SUPPLEMENT_SUPPLY_SUMMARY.headerSubtitleOrder1;
+}
+
+export function getShoppingAislesForPeriod(period: ShopListPeriod = 'weekly'): ShoppingAisleSpec[] {
+  const isQuarterly = period === 'quarterly';
+  return SHOPPING_AISLES.map(aisle => ({
+    ...aisle,
+    items: aisle.items.map(it => ({
+      ...it,
+      qty: isQuarterly ? it.quarterlyQty : it.weeklyQty
+    }))
+  }));
+}
+
 
 
 

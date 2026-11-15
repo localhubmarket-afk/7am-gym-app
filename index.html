@@ -90,7 +90,7 @@
           </div>
           <div class="min-w-0 flex-1">
             <h1 class="text-xs sm:text-sm font-extrabold tracking-tight text-white leading-tight whitespace-nowrap truncate">Budget Gym</h1>
-            <p class="text-[9px] sm:text-[10px] text-emerald-400 font-semibold leading-tight whitespace-nowrap truncate" id="header-subtitle">Full-Body • $5.55/d</p>
+            <p class="text-[9px] sm:text-[10px] text-emerald-400 font-semibold leading-tight whitespace-nowrap truncate" id="header-subtitle" title="Full-Body • $6.35/d ($6.34/d once switched to Costco Creatine)">Full-Body • $6.35/d</p>
           </div>
         </div>
 
@@ -615,7 +615,7 @@
         <!-- 1. Compact Title Row + [Recipes & Prep] + [G | LB] Toggle & [Log All 4] Button -->
         <div class="flex flex-wrap items-center justify-between gap-1.5">
           <div class="min-w-0 flex-1 flex flex-wrap items-center gap-1.5">
-            <h2 id="vegan-main-plan-heading" class="text-xs sm:text-sm font-extrabold text-white tracking-tight leading-snug">Daily Muscle Fuel (1,300 kcal • 138g P)</h2>
+            <h2 id="vegan-main-plan-heading" class="text-xs sm:text-sm font-extrabold text-white tracking-tight leading-snug">Daily Muscle Fuel (1,325 kcal • 139g P • 173cm / 69kg)</h2>
             <span id="vegan-logged-with-plan-badge" class="hidden text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-950/85 text-purple-200 border border-purple-400/50"></span>
           </div>
           <div class="flex flex-wrap items-center gap-1 shrink-0">
@@ -635,7 +635,7 @@
           <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
             <div class="flex justify-between text-xs font-bold">
               <span class="text-slate-300">Daily Protein</span>
-              <span id="macro-protein-text" class="text-emerald-400">0 / 138g</span>
+              <span id="macro-protein-text" class="text-emerald-400">0 / 139g</span>
             </div>
             <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-1.5">
               <div id="macro-protein-bar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 0%"></div>
@@ -644,12 +644,23 @@
           <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
             <div class="flex justify-between text-xs font-bold">
               <span class="text-slate-300">Daily Calories</span>
-              <span id="macro-kcal-text" class="text-amber-400">0 / 1,300 kcal</span>
+              <span id="macro-kcal-text" class="text-amber-400">0 / 1,325 kcal</span>
             </div>
             <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-1.5">
               <div id="macro-kcal-bar" class="bg-amber-400 h-full transition-all duration-300" style="width: 0%"></div>
             </div>
           </div>
+        </div>
+
+        <!-- Concise 3-Month & 6-Month Supplement Supply Summary Row -->
+        <div id="muscle-fuel-supplement-supply-summary" class="bg-slate-950/85 border border-emerald-500/35 rounded-xl p-2.5 space-y-1 text-[10.5px] sm:text-[11px] leading-snug">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-slate-800/80">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">3-Month &amp; 6-Month Supplement Supply Summary</span>
+            <span id="muscle-fuel-daily-cost-badge" class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">$6.35/d Order 1 -&gt; $6.34/d Costco</span>
+          </div>
+          <p class="text-slate-200 font-semibold"><strong class="text-emerald-300">Pea Protein (90g/d):</strong> 4 containers / 3 mos ($287.96 Order 1 -&gt; +972g buffer/qtr -&gt; 3 containers on Q3)</p>
+          <p class="text-slate-200 font-semibold"><strong class="text-sky-300">Creatine (5g/d):</strong> 2 x 1.1 LB Order 1 ($47.98 / 200 days) -&gt; Cancel Sub -&gt; Costco 1kg ($44.99) on Order 2+</p>
+          <p class="text-slate-200 font-semibold"><strong class="text-amber-300">Groceries (Items #1-#11):</strong> $22.10/wk ($284.18 / 3 mos) • Water in Fuel 1 &amp; 4 shakes + 180ml milk in Fuel 2 Oats</p>
         </div>
 
         <!-- Followed by Daily Water Intake Tracker -->
@@ -762,14 +773,29 @@
       <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-4 space-y-3">
         <div class="flex items-start justify-between gap-2">
           <div class="min-w-0 flex-1">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">7-Day 6-Pack Recomp &amp; Oats Prep</span>
-            <h2 class="text-base font-extrabold text-white mt-0.5">Weekly Muscle Fuel Shopping List</h2>
-            <p class="text-xs text-slate-300 mt-1">Exact weekly quantities for your Overnight Oats + Silk Protein batches and low-volume high-protein meals (caffeine-free).</p>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">1,325 kcal • 139g P • $6.35/d ($6.34/d Costco)</span>
+            <h2 id="shopping-main-heading" class="text-base font-extrabold text-white mt-0.5">Weekly &amp; 3-Month Muscle Fuel Shopping List</h2>
+            <p class="text-xs text-slate-300 mt-1">Exact weekly and 90-day quarterly quantities for your 4 x 5 LB Naked Pea Protein order, 200-day Creatine strategy, and weekly fresh groceries.</p>
           </div>
           <div class="text-right shrink-0 bg-slate-950/80 border border-slate-800 px-3 py-2 rounded-xl">
-            <span id="shopping-progress-count" class="block text-sm font-extrabold text-emerald-400">0 / 16</span>
+            <span id="shopping-progress-count" class="block text-sm font-extrabold text-emerald-400">0 / 14</span>
             <span class="block text-[10px] text-slate-400 uppercase font-semibold">In Cart</span>
           </div>
+        </div>
+
+        <!-- 1-Tap 2-Pill Toggle: Weekly View ($44.48/wk) vs. 3-Month Cycle View ($571.88 / 90 Days) -->
+        <div id="shop-list-period-toggle-bar" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5" role="group" aria-label="Shopping List Cycle Period Toggle">
+          <button type="button" id="shop-period-weekly-btn" data-shop-period="weekly" aria-pressed="true" class="shop-period-pill-btn py-2 px-3 rounded-xl text-xs font-extrabold border transition text-left bg-emerald-500 text-slate-950 border-emerald-300 shadow-sm">
+            Weekly Grocery View ($22.10/wk Store • $44.48/wk All-In)
+          </button>
+          <button type="button" id="shop-period-quarterly-btn" data-shop-period="quarterly" aria-pressed="false" class="shop-period-pill-btn py-2 px-3 rounded-xl text-xs font-extrabold border transition text-left bg-slate-950/90 hover:bg-slate-900 text-slate-200 border-slate-700">
+            3-Month (90-Day) Cycle View ($284.18 Store • $571.88 All-In)
+          </button>
+        </div>
+
+        <!-- Active Period Cost & Quantity Breakdown Box -->
+        <div id="shop-list-period-summary-box" class="bg-slate-950/85 border border-slate-800 rounded-xl p-2.5 text-[11px] text-slate-300 leading-snug">
+          <!-- Populated dynamically by renderShoppingView() -->
         </div>
 
         <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
@@ -780,8 +806,8 @@
           <button type="button" id="copy-shopping-list-btn" class="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition">
              Copy Unchecked List
           </button>
-          <button type="button" id="check-pantry-staples-btn" class="py-2 px-3 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold transition" title="Check off long-lasting pantry bottles/bags you already have at home">
-            ✓ Have Pantry Staples
+          <button type="button" id="check-pantry-staples-btn" class="py-2 px-3 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold transition" title="Check off long-lasting pantry bottles/bags and bulk supplements you already have at home">
+            ✓ Have Pantry &amp; Bulk Staples
           </button>
           <button type="button" id="reset-shopping-list-btn" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold transition">
             Uncheck All
@@ -1019,6 +1045,11 @@
       checkedEssentials: {},
       checkedGroceries: {},
       customShoppingItems: [],
+      shopListPeriod: 'weekly',
+      subscriptionChecklist: {
+        cancelCreatineAutoship: false,
+        dropPeaTo3Containers: false
+      },
       currentWeek: 1,
       selectedWeek: 1,
       maxUnlockedWeek: 2,
@@ -1331,6 +1362,15 @@
       if (!merged.loggedMealSnapshots || typeof merged.loggedMealSnapshots !== 'object') merged.loggedMealSnapshots = {};
       if (!merged.fuelCustomizations || typeof merged.fuelCustomizations !== 'object') merged.fuelCustomizations = {};
       if (!merged.fuelLogs || typeof merged.fuelLogs !== 'object') merged.fuelLogs = {};
+      if (merged.shopListPeriod !== 'weekly' && merged.shopListPeriod !== 'quarterly') {
+        merged.shopListPeriod = 'weekly';
+      }
+      if (!merged.subscriptionChecklist || typeof merged.subscriptionChecklist !== 'object') {
+        merged.subscriptionChecklist = { cancelCreatineAutoship: false, dropPeaTo3Containers: false };
+      } else {
+        merged.subscriptionChecklist.cancelCreatineAutoship = Boolean(merged.subscriptionChecklist.cancelCreatineAutoship);
+        merged.subscriptionChecklist.dropPeaTo3Containers = Boolean(merged.subscriptionChecklist.dropPeaTo3Containers);
+      }
       if (!merged.watchSettings || typeof merged.watchSettings !== 'object') {
         merged.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: Boolean(merged.watchNotificationsEnabled) };
       } else {
@@ -2155,24 +2195,56 @@
     // 3. LOW-APPETITE VEGAN NUTRITION DATA
     // =========================================================================
     const VEGAN_MODES = {
-      recomp_6pack: { kcal: 1300, protein: 138, label: '4-Card Muscle & Recomp Fuel Plan' },
+      recomp_6pack: { kcal: 1325, protein: 139, label: '4-Card Muscle & Recomp Fuel Plan' },
       low_appetite: { kcal: 2450, protein: 145, label: 'Low Appetite Bulk' },
       high_growth: { kcal: 2750, protein: 165, label: 'Max Muscle Gain' },
       light_day: { kcal: 2200, protein: 135, label: 'Rest / Light Day' }
     };
 
+    const SUBSCRIPTION_ACTION_CHECKLIST_ITEMS = [
+      {
+        id: 'cancelCreatineAutoship',
+        title: 'Action 1 (After Order 1 Ships): Cancel Naked Creatine Recurring Autoship',
+        subtext: 'Order 1 (2 x 1.1 LB = 1,000g for $47.98 CAD at 20% off) lasts 200 days (6.67 months). Cancel the recurring Creatine Autoship immediately after delivery because Order 2 only gives 10% off ($53.98 CAD + $20 shipping risk). For Order 2+ (Month 7), buy 1 kg Leanfit Micronized Creatine at Costco ($44.99 CAD regular / $34.99 on sale = $0.18-$0.22/day with $0 shipping).'
+      },
+      {
+        id: 'dropPeaTo3Containers',
+        title: 'Action 2 (Before Month 6 / Order 3): Drop Naked Pea Autoship from 4 to 3 Containers',
+        subtext: '4 x 5 LB containers (9,072g every 3 months) supply 100.8 days at 90g/day, building a +972g (+10.8-day) buffer per quarter. After Quarter 2 (Month 6), your buffer reaches +1,944g (21.6 days) — switch Quarter 3 from 4 containers ($323.96) down to 3 containers ($242.97) to save $80.99 CAD.'
+      }
+    ];
+
+    const SHOP_LIST_PERIOD_VIEWS = {
+      weekly: {
+        id: 'weekly',
+        label: 'Weekly Grocery View ($22.10/wk Store • $44.48/wk All-In)',
+        shortLabel: 'Weekly View ($44.48/wk)',
+        storeCost: '$22.10/wk',
+        allInCost: '$44.48/wk ($44.38/wk on Costco Creatine)',
+        summaryLine: 'Weekly Quantities: 1,260 ml/wk milk ($3.19) • 1,225g/wk tofu ($8.97) • 630g/wk pea protein ($20.00) • 35g/wk creatine ($1.68 Order 1 / $1.57 Costco) • 7 caps/wk Vitamin D3 ($0.70)'
+      },
+      quarterly: {
+        id: 'quarterly',
+        label: '3-Month (90-Day) Cycle View ($284.18 Store • $571.88 All-In)',
+        shortLabel: '3-Month Cycle View ($571.88 / 90 Days)',
+        storeCost: '$284.18 / 90 Days',
+        allInCost: '$571.88 / 90 Days ($570.54 on Costco Creatine)',
+        summaryLine: '90-Day Totals: 16.2L / 8.57 cartons milk ($41.06) • 15,750g / 45 blocks tofu ($115.33) • 8,100g consumed from 4 x 5 LB Naked Pea ($257.11 consumed / $287.96 Order 1 upfront) • 450g consumed from 1,000g Creatine ($21.59 Order 1 / $20.25 Costco) • 90 caps Vitamin D3 ($9.00)'
+      }
+    };
+
     const FUEL_PLAN_PRESETS = {
       almond_cashew_pea: {
         id: 'almond_cashew_pea',
-        shortLabel: 'Option B: Almond/Cashew + 105g Pea (Default)',
-        badgeLabel: 'Logged with: Option B Almond/Cashew Plan',
-        title: 'Option B: Unsweetened Almond/Cashew Milk + 105g Pea Protein',
-        dailyKcal: 1300,
-        exactKcal: 1295,
-        dailyProtein: 138,
+        shortLabel: 'Option B: Water Shakes + 90g Naked Pea + 5g Creatine (Default)',
+        badgeLabel: 'Logged with: Option B 90g Naked Pea + 5g Creatine Plan',
+        title: 'Option B: Water Shakes + 180ml Milk in Oats + 90g Naked Pea Protein',
+        dailyKcal: 1325,
+        exactKcal: 1325,
+        dailyProtein: 139,
         milkName: 'Unsweetened Fortified Almond or Cashew Milk',
-        peaProteinDailyG: 105,
-        peaProteinWeeklyG: 735,
+        peaProteinDailyG: 90,
+        peaProteinWeeklyG: 630,
         batchOats: {
           batchGrams: 1116,
           jarGrams: 279,
@@ -2181,7 +2253,7 @@
           subtitle: 'Prep time: 5 mins • Fridge life: 4 days • 29g P & 390 kcal per jar',
           steps: [
             { id: 'oats_step_1', title: 'Gluten-Free Protein Oats', detail: '45g per jar × 4 jars', weightBadge: '180g' },
-            { id: 'oats_step_pea', title: 'Pea Protein Isolate (Whisked in Jars)', detail: '10g per jar × 4 jars', weightBadge: '40g' },
+            { id: 'oats_step_pea', title: 'Naked Pea Protein Isolate (Whisked in Jars)', detail: '10g per jar × 4 jars', weightBadge: '40g' },
             { id: 'oats_step_2', title: 'Organic Whole Chia Seeds', detail: '6g per jar × 4 jars', weightBadge: '24g' },
             { id: 'oats_step_3', title: 'Peeled Ripe Banana (Mashed)', detail: '30g per jar × 4 jars', weightBadge: '120g' },
             { id: 'oats_step_4', title: 'Smooth Natural Peanut Butter', detail: '8g per jar × 4 jars', weightBadge: '32g' },
@@ -2191,31 +2263,36 @@
         },
         shopMilkItem: {
           id: 'shop_silk',
-          name: '1. Unsweetened Fortified Almond or Cashew Milk (1.89L carton — 6,300 ml/week)',
-          qty: '6,300 ml / week (900 ml/day)',
-          note: '360 ml pre-workout shake + 180 ml in oats + 360 ml evening shake (100% Daily B12, Vitamin D & Calcium)'
+          name: '1. Unsweetened Fortified Almond or Cashew Milk (1.89L carton — 1,260 ml/week)',
+          qty: '1,260 ml / week (180 ml/day)',
+          weeklyQty: '1,260 ml / week (180 ml/day)',
+          quarterlyQty: '16.2L / 90 days (8.57 cartons = $41.06)',
+          note: '180 ml/day in Fuel 2 Overnight Oats (Fuel 1 & Fuel 4 shakes use 350 ml cold water; $3.19/wk or $41.06 / 90 days)'
         },
         shopPeaItem: {
           id: 'shop_isolate',
-          name: '12. Pea Protein Isolate Powder (735g/week • 105g/day)',
-          qty: '735g / week (105g/day)',
-          note: '40g in Fuel 1 Pre-Gym Shake + 10g in Fuel 2 Oats + 55g in Fuel 4 Evening Shake = 84g pure isolate protein/day'
+          name: '12. Naked Pea Protein Isolate — 5 lb / 2,268g container, Unflavored, 90% P',
+          qty: '630g / week (90g/day)',
+          weeklyQty: '630g / week (90g/day)',
+          quarterlyQty: '8,100g / 90 days (Order 4 containers = 9,072g)',
+          note: '35g Fuel 1 + 10g Fuel 2 + 45g Fuel 4 = 90g/day (81g pure protein). 3-Month Schedule: Order 4 containers on Q1 ($287.96 CAD at 20% off = $71.99/container; leaves +972g buffer), keep 4 containers on Q2 ($323.96 at 10% off; buffer reaches +1,944g), then drop to 3 containers on Q3 ($242.97, saving $80.99 CAD).'
         },
         meals: {
           pre_shake: {
             slotId: 'pre_shake',
             mealNum: 1,
             time: 'FUEL 1 • PRE-GYM SHAKE (6:35 AM)',
-            title: 'Pre-Gym Fast Protein Shake',
-            tip: 'Drink 25 minutes before your workout: 40g Pea Protein Isolate shaken in 360 ml cold Unsweetened Almond/Cashew Milk for 36g fast amino acids with zero stomach bulk.',
-            kcal: 190,
-            protein: 36,
-            scaleGrams: 400,
-            scaleGText: 'Scale: 400g',
-            scaleLbText: 'Scale: 0.88 lb / 14.1 oz',
+            title: 'Pre-Gym Fast Protein & Creatine Shake',
+            tip: 'Drink 25 minutes before your workout: 35g Naked Pea Protein Isolate + 5g Micronized Creatine Monohydrate shaken in 350 ml cold water for 32g fast amino acids with zero stomach bulk.',
+            kcal: 140,
+            protein: 32,
+            scaleGrams: 390,
+            scaleGText: 'Scale: 390g',
+            scaleLbText: 'Scale: 0.86 lb / 13.8 oz',
             items: [
-              { id: 'm1_pea_isolate', name: 'Pea Protein Isolate', label: 'Pea Protein Isolate', weight: '40g', grams: 40, protein: 35, kcal: 145 },
-              { id: 'm1_silk_milk', name: 'Unsweetened Fortified Almond or Cashew Milk', label: 'Unsweetened Fortified Almond or Cashew Milk', weight: '360 ml', grams: 360, protein: 1, kcal: 45 }
+              { id: 'm1_pea_isolate', name: 'Naked Pea Protein Isolate (90% P)', label: 'Naked Pea Protein Isolate (90% P)', weight: '35g', grams: 35, protein: 32, kcal: 140 },
+              { id: 'm1_creatine', name: '100% Micronized Creatine Monohydrate', label: '100% Micronized Creatine Monohydrate', weight: '5g', grams: 5, protein: 0, kcal: 0 },
+              { id: 'm1_silk_milk', name: 'Cold Water (Shaker Bottle)', label: 'Cold Water (Shaker Bottle)', weight: '350 ml', grams: 350, protein: 0, kcal: 0 }
             ]
           },
           post_oats: {
@@ -2223,7 +2300,7 @@
             mealNum: 2,
             time: 'FUEL 2 • POST-GYM OVERNIGHT OATS (8:15 AM)',
             title: 'Post-Gym Overnight Protein Oats',
-            tip: 'Eat 15 minutes after finishing your workout (1 × 279g jar from your 4-day fridge batch with 10g Pea Protein Isolate whisked in) to replenish muscle glycogen.',
+            tip: 'Eat 15 minutes after finishing your workout (1 × 279g jar from your 4-day fridge batch with 10g Naked Pea Protein Isolate whisked in) to replenish muscle glycogen.',
             kcal: 390,
             protein: 29,
             scaleGrams: 279,
@@ -2231,7 +2308,7 @@
             scaleLbText: 'Scale: 0.62 lb / 9.8 oz',
             items: [
               { id: 'm2_oats', name: 'Gluten-Free Protein Oats', label: 'Gluten-Free Protein Oats', weight: '45g', grams: 45, protein: 10, kcal: 170 },
-              { id: 'm2_pea_oats', name: 'Pea Protein Isolate (whisked in jar)', label: 'Pea Protein Isolate (whisked in jar)', weight: '10g', grams: 10, protein: 8, kcal: 36 },
+              { id: 'm2_pea_oats', name: 'Naked Pea Protein Isolate (whisked in jar)', label: 'Naked Pea Protein Isolate (whisked in jar)', weight: '10g', grams: 10, protein: 9, kcal: 40 },
               { id: 'm2_silk_milk', name: 'Unsweetened Fortified Almond or Cashew Milk', label: 'Unsweetened Fortified Almond or Cashew Milk', weight: '180 ml', grams: 180, protein: 1, kcal: 24 },
               { id: 'm2_banana', name: 'Peeled Ripe Banana', label: 'Peeled Ripe Banana', weight: '30g', grams: 30, protein: 0.5, kcal: 27 },
               { id: 'm2_pb', name: 'Smooth Natural Peanut Butter', label: 'Smooth Natural Peanut Butter', weight: '8g', grams: 8, protein: 2, kcal: 48 },
@@ -2262,17 +2339,18 @@
             slotId: 'dinner',
             mealNum: 4,
             time: 'FUEL 4 • EVENING RECOVERY SHAKE (5:30 PM)',
-            title: 'Evening Protein & PB Shake',
-            tip: 'Zero cooking and zero chewing in the evening when appetite is lowest — shake 55g Pea Protein Isolate in 360 ml Almond/Cashew Milk and eat 16g smooth peanut butter.',
-            kcal: 295,
-            protein: 40,
-            scaleGrams: 431,
-            scaleGText: 'Scale: 431g',
-            scaleLbText: 'Scale: 0.95 lb / 15.2 oz',
+            title: 'Evening Protein, PB & Vitamin D3 Shake',
+            tip: 'Zero cooking and zero chewing in the evening when appetite is lowest — shake 45g Naked Pea Protein Isolate in 350 ml cold water, eat 16g smooth peanut butter, and take 1 capsule Vegan Vitamin D3.',
+            kcal: 275,
+            protein: 45,
+            scaleGrams: 411,
+            scaleGText: 'Scale: 411g',
+            scaleLbText: 'Scale: 0.91 lb / 14.5 oz',
             items: [
-              { id: 'm3_pea_isolate', name: 'Pea Protein Isolate', label: 'Pea Protein Isolate', weight: '55g', grams: 55, protein: 35, kcal: 155 },
-              { id: 'm3_silk_milk', name: 'Unsweetened Fortified Almond or Cashew Milk', label: 'Unsweetened Fortified Almond or Cashew Milk', weight: '360 ml', grams: 360, protein: 1, kcal: 45 },
-              { id: 'm3_pb', name: 'Smooth Natural Peanut Butter', label: 'Smooth Natural Peanut Butter', weight: '16g', grams: 16, protein: 4, kcal: 95 }
+              { id: 'm3_pea_isolate', name: 'Naked Pea Protein Isolate (90% P)', label: 'Naked Pea Protein Isolate (90% P)', weight: '45g', grams: 45, protein: 41, kcal: 180 },
+              { id: 'm3_silk_milk', name: 'Cold Water (Shaker Bottle)', label: 'Cold Water (Shaker Bottle)', weight: '350 ml', grams: 350, protein: 0, kcal: 0 },
+              { id: 'm3_pb', name: 'Smooth Natural Peanut Butter', label: 'Smooth Natural Peanut Butter', weight: '16g', grams: 16, protein: 4, kcal: 95 },
+              { id: 'm3_vitd3', name: 'Vegan Vitamin D3 Supplement (1,000–2,500 IU)', label: 'Vegan Vitamin D3 Supplement (1,000–2,500 IU)', weight: '1 cap', grams: 1, protein: 0, kcal: 0 }
             ]
           }
         }
@@ -2943,46 +3021,56 @@
     // Legacy item ID map for backward compatibility:
     // id: 'm1_pea_isolate', id: 'm1_silk_milk', id: 'm3_pea_isolate', id: 'm3_silk_milk', id: 'shop_tamari', id: 'creatine', id: 'shop_nooch', id: 'd3k2', id: 'leucine', id: 'shop_creatine', id: 'shop_edamame', id: 'shop_iodine', id: 'shop_potatoes', id: 'shop_seitan', id: 'shop_tempeh', id: 'shop_vitc', id: 'shop_isolate', id: 'sun_dead_bug'
     const VEGAN_ESSENTIALS = [
-      { id: 'b12', name: '✓ B12, Vitamin D & Calcium (200% B12, 95% D, 120% Ca)', detail: 'Covered automatically by your 900 ml/day of fortified plant milk (360 ml pre-gym shake + 180 ml in oats + 360 ml evening shake) + 12g nutritional yeast + 175g tofu.' },
+      { id: 'b12', name: '✓ B12, Vitamin D3 & Calcium (200% B12, 100% D3, 120% Ca)', detail: 'Covered automatically by 1 capsule daily Vegan Vitamin D3 (with Fuel 4 peanut butter fat) + 180 ml/day fortified plant milk in Fuel 2 Oats + 12g nutritional yeast + 175g calcium-set tofu.' },
       { id: 'iodine_zinc', name: '✓ Thyroid Iodine (1.5g Iodized Table Salt) + Iron & Vitamin C (75g Broccoli)', detail: '1.5g (~¼ tsp) of Iodized Table Salt (Windsor Iodized Salt — NOT sea salt or pink Himalayan salt) covers 100% daily thyroid iodine; 75g broccoli unlocks iron in pea protein, oats & tofu.' },
-      { id: 'omega3', name: '✓ Omega-3 ALA & 138g Complete Protein (All in Grams)', detail: '105g/day Pea Protein Isolate (or 75g on Silk/Soy plan) + 45g/day Gluten-Free Protein Oats + 175g/day tofu + 6g/day chia seeds, 24g/day peanut butter & 5g/day toasted sesame oil.' }
+      { id: 'omega3', name: '✓ 5g Creatine + Omega-3 ALA + 139g Complete Protein (All in Grams)', detail: '90g/day Naked Pea Protein Isolate (35g Fuel 1 + 10g Fuel 2 + 45g Fuel 4 = 81g pure protein) + 5g/day Micronized Creatine + 45g/day Oats + 175g/day tofu + 6g/day chia seeds & 24g/day peanut butter.' }
     ];
 
     const VEGAN_MEALS = [
       {
         slotId: 'pre_shake',
         time: 'FUEL 1 • PRE-GYM SHAKE (6:35 AM)',
-        title: 'Pre-Gym Fast Protein Shake',
-        tip: 'Drink 25 minutes before your workout for fast amino acids with zero stomach bulk during heavy compounds and abs.',
+        title: 'Pre-Gym Fast Protein & Creatine Shake',
+        tip: 'Drink 25 minutes before your workout for fast amino acids and 5g creatine saturation with zero stomach bulk during heavy compounds and abs.',
         options: [
           {
-            name: 'Pre-Gym Fast Protein Shake',
-            protein: 36,
-            kcal: 190,
-            volume: '190 kcal • 36g Protein',
-            ingredients: '40g Pea Protein Isolate shaken in 360 ml Unsweetened Fortified Almond or Cashew Milk.',
+            name: 'Pre-Gym Fast Protein & Creatine Shake',
+            protein: 32,
+            kcal: 140,
+            volume: '140 kcal • 32g Protein',
+            ingredients: '35g Naked Pea Protein Isolate + 5g Micronized Creatine Monohydrate shaken in 350 ml cold water.',
             ingredientRows: [
-              { name: 'Pea Protein Isolate', amount: '40g' },
-              { name: 'Unsweetened Fortified Almond or Cashew Milk', amount: '360 ml' }
+              { name: 'Naked Pea Protein Isolate (90% P)', amount: '35g' },
+              { name: '100% Micronized Creatine Monohydrate', amount: '5g' },
+              { name: 'Cold Water (Shaker Bottle)', amount: '350 ml' }
             ],
             items: [
               {
                 id: 'm1_pea_isolate',
-                name: 'Pea Protein Isolate',
-                weight: '40g',
-                label: 'Pea Protein Isolate',
-                subPills: ['Fast-digesting pre-workout amino acids'],
-                protein: 35,
-                kcal: 145
+                name: 'Naked Pea Protein Isolate (90% P)',
+                weight: '35g',
+                label: 'Naked Pea Protein Isolate (90% P)',
+                subPills: ['Fast-digesting pre-workout amino acids (32g pure protein)'],
+                protein: 32,
+                kcal: 140
+              },
+              {
+                id: 'm1_creatine',
+                name: '100% Micronized Creatine Monohydrate',
+                weight: '5g',
+                label: '100% Micronized Creatine Monohydrate',
+                subPills: ['5g daily saturation dose (Order 1 Naked 1,000g -> Order 2+ Costco 1 kg)'],
+                protein: 0,
+                kcal: 0
               },
               {
                 id: 'm1_silk_milk',
-                name: 'Unsweetened Fortified Almond or Cashew Milk',
-                weight: '360 ml',
-                label: 'Unsweetened Fortified Almond or Cashew Milk',
-                subPills: ['Cold unsweetened almond or cashew milk (100% Daily B12)'],
-                protein: 1,
-                kcal: 45
+                name: 'Cold Water (Shaker Bottle)',
+                weight: '350 ml',
+                label: 'Cold Water (Shaker Bottle)',
+                subPills: ['Zero-calorie hydration for rapid absorption'],
+                protein: 0,
+                kcal: 0
               }
             ]
           }
@@ -2999,10 +3087,10 @@
             protein: 29,
             kcal: 390,
             volume: '390 kcal • 29g Protein',
-            ingredients: '45g Gluten-Free Protein Oats + 10g Pea Protein Isolate (whisked in jar) + 180 ml Unsweetened Fortified Almond or Cashew Milk + 30g Peeled Ripe Banana + 8g Smooth Natural Peanut Butter + 6g Organic Whole Chia Seeds.',
+            ingredients: '45g Gluten-Free Protein Oats + 10g Naked Pea Protein Isolate (whisked in jar) + 180 ml Unsweetened Fortified Almond or Cashew Milk + 30g Peeled Ripe Banana + 8g Smooth Natural Peanut Butter + 6g Organic Whole Chia Seeds.',
             ingredientRows: [
               { name: 'Gluten-Free Protein Oats', amount: '45g' },
-              { name: 'Pea Protein Isolate (whisked in jar)', amount: '10g' },
+              { name: 'Naked Pea Protein Isolate (whisked in jar)', amount: '10g' },
               { name: 'Unsweetened Fortified Almond or Cashew Milk', amount: '180 ml' },
               { name: 'Peeled Ripe Banana', amount: '30g' },
               { name: 'Smooth Natural Peanut Butter', amount: '8g' },
@@ -3020,12 +3108,12 @@
               },
               {
                 id: 'm2_pea_oats',
-                name: 'Pea Protein Isolate (whisked in jar)',
+                name: 'Naked Pea Protein Isolate (whisked in jar)',
                 weight: '10g',
-                label: 'Pea Protein Isolate (whisked in jar)',
-                subPills: ['Whisked into jar for +8g complete protein'],
-                protein: 8,
-                kcal: 36
+                label: 'Naked Pea Protein Isolate (whisked in jar)',
+                subPills: ['Whisked into jar for +9g complete protein'],
+                protein: 9,
+                kcal: 40
               },
               {
                 id: 'm2_silk_milk',
@@ -3149,47 +3237,57 @@
       {
         slotId: 'dinner',
         time: 'FUEL 4 • EVENING RECOVERY SHAKE (5:30 PM)',
-        title: 'Evening Protein & PB Shake',
-        tip: 'Zero cooking and zero chewing in the evening when appetite is lowest — shake 55g isolate in 360 ml Almond/Cashew milk and eat 16g smooth peanut butter.',
+        title: 'Evening Protein, PB & Vitamin D3 Shake',
+        tip: 'Zero cooking and zero chewing in the evening when appetite is lowest — shake 45g Naked Pea Protein Isolate in 350 ml cold water, eat 16g smooth peanut butter, and take 1 capsule Vegan Vitamin D3.',
         options: [
           {
-            name: 'Evening Protein & PB Shake',
-            protein: 40,
-            kcal: 295,
-            volume: '295 kcal • 40g Protein',
-            ingredients: '55g Pea Protein Isolate + 360 ml Unsweetened Fortified Almond or Cashew Milk + 16g Smooth Natural Peanut Butter.',
+            name: 'Evening Protein, PB & Vitamin D3 Shake',
+            protein: 45,
+            kcal: 275,
+            volume: '275 kcal • 45g Protein',
+            ingredients: '45g Naked Pea Protein Isolate + 350 ml Cold Water + 16g Smooth Natural Peanut Butter + 1 capsule Vegan Vitamin D3.',
             ingredientRows: [
-              { name: 'Pea Protein Isolate', amount: '55g' },
-              { name: 'Unsweetened Fortified Almond or Cashew Milk', amount: '360 ml' },
-              { name: 'Smooth Natural Peanut Butter', amount: '16g' }
+              { name: 'Naked Pea Protein Isolate (90% P)', amount: '45g' },
+              { name: 'Cold Water (Shaker Bottle)', amount: '350 ml' },
+              { name: 'Smooth Natural Peanut Butter', amount: '16g' },
+              { name: 'Vegan Vitamin D3 Supplement', amount: '1 cap' }
             ],
             items: [
               {
                 id: 'm3_pea_isolate',
-                name: 'Pea Protein Isolate',
-                weight: '55g',
-                label: 'Pea Protein Isolate',
-                subPills: ['Sustained overnight muscle protein synthesis'],
-                protein: 35,
-                kcal: 155
+                name: 'Naked Pea Protein Isolate (90% P)',
+                weight: '45g',
+                label: 'Naked Pea Protein Isolate (90% P)',
+                subPills: ['Sustained overnight muscle protein synthesis (41g pure protein)'],
+                protein: 41,
+                kcal: 180
               },
               {
                 id: 'm3_silk_milk',
-                name: 'Unsweetened Fortified Almond or Cashew Milk',
-                weight: '360 ml',
-                label: 'Unsweetened Fortified Almond or Cashew Milk',
-                subPills: ['Cold unsweetened almond or cashew milk'],
-                protein: 1,
-                kcal: 45
+                name: 'Cold Water (Shaker Bottle)',
+                weight: '350 ml',
+                label: 'Cold Water (Shaker Bottle)',
+                subPills: ['Clean evening hydration'],
+                protein: 0,
+                kcal: 0
               },
               {
                 id: 'm3_pb',
                 name: 'Smooth Natural Peanut Butter',
                 weight: '16g',
                 label: 'Smooth Natural Peanut Butter',
-                subPills: ['Healthy fats to slow overnight amino acid release'],
+                subPills: ['Healthy fats to slow overnight amino acid release & absorb Vitamin D3'],
                 protein: 4,
                 kcal: 95
+              },
+              {
+                id: 'm3_vitd3',
+                name: 'Vegan Vitamin D3 Supplement (1,000–2,500 IU)',
+                weight: '1 cap',
+                label: 'Vegan Vitamin D3 Supplement (1,000–2,500 IU)',
+                subPills: ['1 capsule with peanut butter fat ensures 100% Vitamin D & Calcium absorption'],
+                protein: 0,
+                kcal: 0
               }
             ]
           }
@@ -3198,7 +3296,7 @@
     ];
 
     const GROCERY_ITEMS = [
-      'Unsweetened Fortified Almond or Cashew Milk (1.89L carton — 6,300 ml/week)',
+      'Unsweetened Fortified Almond or Cashew Milk (1.89L carton — 1,260 ml/week)',
       'Extra-Firm Tofu (1,225g/wk — 175g/day)',
       'Broccoli Florets (525g/wk — 75g/day)',
       'Ripe Bananas (210g peeled/wk — 30g/day)',
@@ -3209,49 +3307,160 @@
       'Fortified Nutritional Yeast (84g/wk — 12g/day)',
       'Iodized Table Salt — Windsor Iodized (10.5g/wk — 1.5g/day)',
       'Toasted Sesame Oil (35g/wk — 5g/day)',
-      'Pea Protein Isolate Powder (735g/week • 105g/day)'
+      'Naked Pea Protein Isolate — 5 lb / 2,268g container, Unflavored, 90% P (630g/week • 90g/day)',
+      '100% Micronized Creatine Monohydrate — Order 1 Naked -> Order 2+ Costco 1 kg (35g/week • 5g/day)',
+      'Vegan Vitamin D3 Supplement — 1,000–2,500 IU, 180 Capsules = 6-Month Supply (7 caps/week • 1 cap/day)'
     ];
 
-    const PANTRY_STAPLE_SHOP_IDS = ['shop_oats', 'shop_rice', 'shop_pb', 'shop_chia', 'shop_iodine', 'shop_sesame', 'shop_isolate'];
+    const PANTRY_STAPLE_SHOP_IDS = ['shop_oats', 'shop_rice', 'shop_pb', 'shop_chia', 'shop_iodine', 'shop_sesame', 'shop_isolate', 'shop_creatine', 'shop_vitd3'];
 
-    const WEEKLY_SHOPPING_CATEGORIES = [
+    const SHOPPING_AISLES = [
       {
         category: 'Aisle 1: Produce & Refrigerated Cooler (Weekly Fresh Run)',
         badge: '4 Fresh Staples • No Frills / Walmart',
         items: [
-          { id: 'shop_silk', name: '1. Unsweetened Fortified Almond or Cashew Milk (1.89L carton — 6,300 ml/week)', qty: '6,300 ml / week (900 ml/day)', note: '360 ml pre-workout shake + 180 ml in oats + 360 ml evening shake (100% Daily B12, Vitamin D & Calcium)' },
-          { id: 'shop_tofu', name: '2. Sunrise or Rooster Extra-Firm Tofu (350g–454g block)', qty: '1,225g / week (175g/day)', note: 'Weigh 175g/day (½ of a 350g block) for Fuel 3 — only 2.7 to 3.5 blocks/week!' },
-          { id: 'shop_broccoli', name: '3. Broccoli Florets (Fresh Crown or Frozen Bag)', qty: '525g / week (75g/day)', note: '75g steamed broccoli/day for Fuel 3 (100% daily Vitamin C to unlock iron in tofu, oats & pea protein)' },
-          { id: 'shop_banana', name: '4. Ripe Bananas (Peeled Weight)', qty: '210g / week (30g/day)', note: '120g peeled banana (1 medium) per 4-day overnight oats batch (~2 medium bananas/wk)' }
+          {
+            id: 'shop_silk',
+            name: '1. Unsweetened Fortified Almond or Cashew Milk (1.89L carton — 1,260 ml/week)',
+            qty: '1,260 ml / week (180 ml/day)',
+            weeklyQty: '1,260 ml / week (180 ml/day)',
+            quarterlyQty: '16.2L / 90 days (8.57 cartons = $41.06)',
+            note: '180 ml/day in Fuel 2 Overnight Oats (Fuel 1 & Fuel 4 shakes use 350 ml cold water; $3.19/wk or $41.06 / 90 days)'
+          },
+          {
+            id: 'shop_tofu',
+            name: '2. Sunrise or Rooster Extra-Firm Tofu (350g–454g block)',
+            qty: '1,225g / week (175g/day)',
+            weeklyQty: '1,225g / week (175g/day)',
+            quarterlyQty: '15,750g / 90 days (45 blocks = $115.33)',
+            note: 'Weigh 175g/day (½ of a 350g block) for Fuel 3 — 3.5 blocks/week ($8.97/wk or $115.33 / 90 days)'
+          },
+          {
+            id: 'shop_broccoli',
+            name: '3. Broccoli Florets (Fresh Crown or Frozen Bag)',
+            qty: '525g / week (75g/day)',
+            weeklyQty: '525g / week (75g/day)',
+            quarterlyQty: '6,750g / 90 days ($32.14 / 3 mos)',
+            note: '75g steamed broccoli/day for Fuel 3 (100% daily Vitamin C to unlock iron in tofu, oats & pea protein)'
+          },
+          {
+            id: 'shop_banana',
+            name: '4. Ripe Bananas (Peeled Weight)',
+            qty: '210g / week (30g/day)',
+            weeklyQty: '210g / week (30g/day)',
+            quarterlyQty: '2,700g / 90 days ($5.79 / 3 mos)',
+            note: '120g peeled banana (1 medium) per 4-day overnight oats batch (~2 medium bananas/wk)'
+          }
         ]
       },
       {
         category: 'Aisle 2: Dry Pantry, Grains, Seeds & Nutritional Yeast',
         badge: '5 Pantry Staples • Bulk / Costco / No Frills',
         items: [
-          { id: 'shop_oats', name: '5. Gluten-Free Protein Oats (907g bag)', qty: '315g / week (45g/day)', note: '180g per 4-day batch (45g/day) — 1 bag lasts ~3 weeks' },
-          { id: 'shop_rice', name: '6. White Jasmine Rice', qty: '385g dry / week (1,050g cooked)', note: '55g dry rice/day (= 150g cooked rice/day) for Fuel 3 — 4-day batch = 220g dry + 330 ml water' },
-          { id: 'shop_pb', name: '7. Smooth Natural Peanut Butter (500g–1,000g jar)', qty: '168g / week (24g/day)', note: '32g per 4-day oats batch (8g/day) + 16g/day in the evening with your Fuel 4 shake' },
-          { id: 'shop_chia', name: '8. Organic Whole Chia Seeds', qty: '42g / week (6g/day)', note: '24g per 4-day oats batch (6g/day) — covers 100% of your daily Omega-3 ALA' },
-          { id: 'shop_nooch', name: '9. Fortified Nutritional Yeast Flakes (142g shaker or bulk)', qty: '84g / week (12g/day)', note: '12g/day sprinkled on Fuel 3 tofu & rice bowl (+6g protein & B-complex vitamins)' }
+          {
+            id: 'shop_oats',
+            name: '5. Gluten-Free Protein Oats (907g bag)',
+            qty: '315g / week (45g/day)',
+            weeklyQty: '315g / week (45g/day)',
+            quarterlyQty: '4,050g / 90 days (4.5 bags = $35.64)',
+            note: '180g per 4-day batch (45g/day) — 1 bag lasts ~3 weeks ($2.77/wk or $35.64 / 90 days)'
+          },
+          {
+            id: 'shop_rice',
+            name: '6. White Jasmine Rice',
+            qty: '385g dry / week (1,050g cooked)',
+            weeklyQty: '385g dry / week (1,050g cooked)',
+            quarterlyQty: '4,950g dry / 90 days ($14.85 / 3 mos)',
+            note: '55g dry rice/day (= 150g cooked rice/day) for Fuel 3 — 4-day batch = 220g dry + 330 ml water'
+          },
+          {
+            id: 'shop_pb',
+            name: '7. Smooth Natural Peanut Butter (500g–1,000g jar)',
+            qty: '168g / week (24g/day)',
+            weeklyQty: '168g / week (24g/day)',
+            quarterlyQty: '2,160g / 90 days ($15.12 / 3 mos)',
+            note: '32g per 4-day oats batch (8g/day) + 16g/day in the evening with your Fuel 4 shake'
+          },
+          {
+            id: 'shop_chia',
+            name: '8. Organic Whole Chia Seeds',
+            qty: '42g / week (6g/day)',
+            weeklyQty: '42g / week (6g/day)',
+            quarterlyQty: '540g / 90 days ($5.94 / 3 mos)',
+            note: '24g per 4-day oats batch (6g/day) — covers 100% of your daily Omega-3 ALA'
+          },
+          {
+            id: 'shop_nooch',
+            name: '9. Fortified Nutritional Yeast Flakes (142g shaker or bulk)',
+            qty: '84g / week (12g/day)',
+            weeklyQty: '84g / week (12g/day)',
+            quarterlyQty: '1,080g / 90 days ($15.12 / 3 mos)',
+            note: '12g/day sprinkled on Fuel 3 tofu & rice bowl (+6g protein & B-complex vitamins)'
+          }
         ]
       },
       {
         category: 'Aisle 3: Baking & Oil Aisle (Iodized Salt & Toasted Sesame Oil)',
         badge: '2 Flavor & Iodine Staples',
         items: [
-          { id: 'shop_iodine', name: '10. Iodized Table Salt (Windsor Iodized Salt — NOT sea or pink Himalayan salt)', qty: '10.5g / week (1.5g/day)', note: '1.5g/day (~¼ tsp) on Fuel 3 covers 100% daily thyroid iodine (sea/kosher/Himalayan salt has no added iodine; 1kg box lasts >1 year!)' },
-          { id: 'shop_sesame', name: '11. Toasted Sesame Oil (Bottle)', qty: '35g / week (5g/day)', note: '5g/day (1 tsp) drizzled on Fuel 3 tofu, rice & broccoli bowl for rich aroma & healthy fats' }
+          {
+            id: 'shop_iodine',
+            name: '10. Iodized Table Salt (Windsor Iodized Salt — NOT sea or pink Himalayan salt)',
+            qty: '10.5g / week (1.5g/day)',
+            weeklyQty: '10.5g / week (1.5g/day)',
+            quarterlyQty: '135g / 90 days ($0.45 / 3 mos)',
+            note: '1.5g/day (~¼ tsp) on Fuel 3 covers 100% daily thyroid iodine (sea/kosher/Himalayan salt has no added iodine; 1kg box lasts >1 year)'
+          },
+          {
+            id: 'shop_sesame',
+            name: '11. Toasted Sesame Oil (Bottle)',
+            qty: '35g / week (5g/day)',
+            weeklyQty: '35g / week (5g/day)',
+            quarterlyQty: '450g / 90 days ($2.74 / 3 mos)',
+            note: '5g/day (1 tsp) drizzled on Fuel 3 tofu, rice & broccoli bowl for rich aroma & healthy fats'
+          }
         ]
       },
       {
-        category: 'Aisle 4: Online / Bulk Protein Supplement',
-        badge: '1 Bulk Staple • Yupik / Micro Ingredients / Canadian Protein',
+        category: 'Aisle 4: Online / Costco Bulk Supplements',
+        badge: '3 Bulk Supplements • Naked Nutrition (Order 1) -> Costco (Order 2+)',
         items: [
-          { id: 'shop_isolate', name: '12. Pea Protein Isolate Powder (735g/week • 105g/day)', qty: '735g / week (105g/day)', note: '40g in Fuel 1 Pre-Gym Shake + 10g in Fuel 2 Oats + 55g in Fuel 4 Evening Shake = 84g pure isolate protein/day' }
+          {
+            id: 'shop_isolate',
+            name: '12. Naked Pea Protein Isolate — 5 lb / 2,268g container, Unflavored, 90% P',
+            qty: '630g / week (90g/day)',
+            weeklyQty: '630g / week (90g/day)',
+            quarterlyQty: '8,100g / 90 days (Order 4 containers = 9,072g)',
+            note: '35g Fuel 1 + 10g Fuel 2 + 45g Fuel 4 = 90g/day (81g pure protein). 3-Month Schedule: Order 4 containers on Q1 ($287.96 CAD at 20% off = $71.99/container; leaves +972g buffer), keep 4 containers on Q2 ($323.96 at 10% off; buffer reaches +1,944g), then drop to 3 containers on Q3 ($242.97, saving $80.99 CAD).'
+          },
+          {
+            id: 'shop_creatine',
+            name: '13. 100% Micronized Creatine Monohydrate — Order 1 Naked -> Order 2+ Costco 1 kg',
+            qty: '35g / week (5g/day)',
+            weeklyQty: '35g / week (5g/day)',
+            quarterlyQty: '450g / 90 days (1,000g lasts 200 days)',
+            note: '5g/day in Fuel 1 Pre-Gym Shake. Order 1: Buy 2 x 1.1 LB (1,000g) Naked Creatine with 20% off first Autoship ($47.98 CAD = $0.24/day) for free shipping with Pea Protein, then CANCEL Autoship immediately. Order 2+ (after 200 days): Buy 1 kg Leanfit Creatine at Costco ($44.99 CAD reg / $34.99 sale = $1.57/wk or $20.25/3 mos) because Naked\'s 10% renewal ($53.98 + shipping risk) is more expensive than Costco.'
+          },
+          {
+            id: 'shop_vitd3',
+            name: '14. Vegan Vitamin D3 Supplement — 1,000–2,500 IU, 180 Capsules = 6-Month Supply',
+            qty: '7 caps / week (1 cap/day)',
+            weeklyQty: '7 caps / week (1 cap/day)',
+            quarterlyQty: '90 caps / 90 days ($9.00 / 3 mos)',
+            note: '1 capsule daily with Fuel 4 peanut butter fat ensures 100% Vitamin D and Calcium absorption. 1 bottle (180 capsules = $18.00 CAD) lasts 180 days (6 months), matching your 6-month Creatine restock cycle.'
+          }
         ]
       }
     ];
+
+    const WEEKLY_SHOPPING_CATEGORIES = SHOPPING_AISLES;
+
+    function syncHeaderCostSubtitle() {
+      const subEl = document.getElementById('header-subtitle');
+      if (!subEl) return;
+      const isCostcoCreatine = Boolean(state && state.subscriptionChecklist && state.subscriptionChecklist.cancelCreatineAutoship);
+      subEl.textContent = isCostcoCreatine ? 'Full-Body • $6.34/d' : 'Full-Body • $6.35/d';
+    }
 
     function getDynamicWeeklyShoppingCategories(targetState) {
       const s = targetState || state || {};
@@ -3267,12 +3476,12 @@
         : (s.activeFuelPreset || 'almond_cashew_pea');
       const preset = FUEL_PLAN_PRESETS[presetId] || FUEL_PLAN_PRESETS.almond_cashew_pea;
 
-      const cats = JSON.parse(JSON.stringify(WEEKLY_SHOPPING_CATEGORIES));
-      if (cats[0] && cats[0].items && cats[0].items[0]) {
-        cats[0].items[0] = JSON.parse(JSON.stringify(preset.shopMilkItem));
+      const cats = JSON.parse(JSON.stringify(SHOPPING_AISLES));
+      if (cats[0] && cats[0].items && cats[0].items[0] && preset.shopMilkItem) {
+        cats[0].items[0] = Object.assign({}, cats[0].items[0], JSON.parse(JSON.stringify(preset.shopMilkItem)));
       }
-      if (cats[3] && cats[3].items && cats[3].items[0]) {
-        cats[3].items[0] = JSON.parse(JSON.stringify(preset.shopPeaItem));
+      if (cats[3] && cats[3].items && cats[3].items[0] && preset.shopPeaItem) {
+        cats[3].items[0] = Object.assign({}, cats[3].items[0], JSON.parse(JSON.stringify(preset.shopPeaItem)));
       }
 
       if (activeSwaps.tofu && cats[0] && cats[0].items && cats[0].items[1]) {
@@ -3280,6 +3489,7 @@
         if (sw && sw.shopName) {
           cats[0].items[1].name = sw.shopName;
           cats[0].items[1].qty = sw.shopQty;
+          cats[0].items[1].weeklyQty = sw.shopQty;
         }
       }
       if (activeSwaps.broccoli && cats[0] && cats[0].items && cats[0].items[2]) {
@@ -3287,6 +3497,7 @@
         if (sw && sw.shopName) {
           cats[0].items[2].name = sw.shopName;
           cats[0].items[2].qty = sw.shopQty;
+          cats[0].items[2].weeklyQty = sw.shopQty;
         }
       }
       if (activeSwaps.rice && cats[1] && cats[1].items && cats[1].items[1]) {
@@ -3294,8 +3505,17 @@
         if (sw && sw.shopName) {
           cats[1].items[1].name = sw.shopName;
           cats[1].items[1].qty = sw.shopQty;
+          cats[1].items[1].weeklyQty = sw.shopQty;
         }
       }
+
+      const period = s.shopListPeriod === 'quarterly' ? 'quarterly' : 'weekly';
+      cats.forEach(c => {
+        (c.items || []).forEach(it => {
+          it.qty = period === 'quarterly' ? (it.quarterlyQty || it.qty) : (it.weeklyQty || it.qty);
+        });
+      });
+
       return cats;
     }
 
@@ -14200,8 +14420,9 @@
 
       const mainPlanHeadingEl = document.getElementById('vegan-main-plan-heading');
       if (mainPlanHeadingEl) {
-        mainPlanHeadingEl.textContent = `Daily Muscle Fuel (${dayPlan.dailyKcal.toLocaleString()} kcal • ${dayPlan.dailyProtein}g P)`;
+        mainPlanHeadingEl.textContent = `Daily Muscle Fuel (${dayPlan.dailyKcal.toLocaleString()} kcal • ${dayPlan.dailyProtein}g P • 173cm / 69kg)`;
       }
+      syncHeaderCostSubtitle();
 
       const switcherBarEl = document.getElementById('fuel-plan-switcher-bar');
       if (switcherBarEl) {
@@ -15413,6 +15634,34 @@
       const container = document.getElementById('weekly-shopping-categories');
       if (!container) return;
 
+      syncHeaderCostSubtitle();
+
+      const period = state.shopListPeriod === 'quarterly' ? 'quarterly' : 'weekly';
+      const periodConfig = SHOP_LIST_PERIOD_VIEWS[period] || SHOP_LIST_PERIOD_VIEWS.weekly;
+
+      const weeklyBtn = document.getElementById('shop-period-weekly-btn');
+      const quarterlyBtn = document.getElementById('shop-period-quarterly-btn');
+      if (weeklyBtn && quarterlyBtn) {
+        if (period === 'weekly') {
+          weeklyBtn.className = 'shop-period-btn px-3 py-2 rounded-lg text-[11px] font-extrabold transition bg-emerald-500 text-slate-950 shadow';
+          quarterlyBtn.className = 'shop-period-btn px-3 py-2 rounded-lg text-[11px] font-extrabold transition text-slate-300 hover:text-white';
+        } else {
+          quarterlyBtn.className = 'shop-period-btn px-3 py-2 rounded-lg text-[11px] font-extrabold transition bg-emerald-500 text-slate-950 shadow';
+          weeklyBtn.className = 'shop-period-btn px-3 py-2 rounded-lg text-[11px] font-extrabold transition text-slate-300 hover:text-white';
+        }
+      }
+
+      const periodSummaryBox = document.getElementById('shop-list-period-summary-box');
+      if (periodSummaryBox) {
+        periodSummaryBox.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-1 mb-1">
+            <span class="font-extrabold text-emerald-300 uppercase tracking-wider text-[10px]">${periodConfig.label}</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Store: ${periodConfig.storeCost} • All-In: ${periodConfig.allInCost}</span>
+          </div>
+          <p class="text-[11px] text-slate-300 leading-snug">${periodConfig.summaryLine}</p>
+        `;
+      }
+
       const dynamicCategories = getDynamicWeeklyShoppingCategories(state);
       const allBuiltIn = [];
       dynamicCategories.forEach(cat => {
@@ -15434,15 +15683,57 @@
       if (countEl) countEl.textContent = `${checkedCount} / ${totalCount}`;
       if (barEl) barEl.style.width = (totalCount > 0 ? Math.min(100, Math.round((checkedCount / totalCount) * 100)) : 0) + '%';
 
-      let html = dynamicCategories.map(cat => `
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5">
-          <div class="flex items-center justify-between gap-2">
+      if (!state.subscriptionChecklist || typeof state.subscriptionChecklist !== 'object') {
+        state.subscriptionChecklist = { cancelCreatineAutoship: false, dropPeaTo3Containers: false };
+      }
+
+      const subChecklistCompleted = SUBSCRIPTION_ACTION_CHECKLIST_ITEMS.filter(item => Boolean(state.subscriptionChecklist[item.id])).length;
+
+      let html = dynamicCategories.map((cat, catIdx) => {
+        const isAisle4 = catIdx === 3 || (cat.category && cat.category.indexOf('Aisle 4') !== -1);
+        const subscriptionTrackerHtml = isAisle4 ? `
+          <div id="subscription-action-tracker-card" class="bg-amber-950/25 border-2 border-amber-500/50 rounded-xl p-3.5 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div class="text-[10px] font-black uppercase tracking-wider text-amber-300">Subscription Action & Inventory Control Card</div>
+                <h4 class="text-xs sm:text-sm font-extrabold text-white">Post-Order Autoship & Costco Switchover Tracker</h4>
+              </div>
+              <span id="subscription-tracker-progress-badge" class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40">${subChecklistCompleted} / ${SUBSCRIPTION_ACTION_CHECKLIST_ITEMS.length} Actions Done</span>
+            </div>
+            <div class="space-y-2">
+              ${SUBSCRIPTION_ACTION_CHECKLIST_ITEMS.map(actionItem => {
+                const isChecked = Boolean(state.subscriptionChecklist[actionItem.id]);
+                return `
+                  <button type="button" data-sub-action-id="${actionItem.id}" class="sub-action-check-btn w-full text-left p-3 rounded-xl border transition flex items-start gap-2.5 ${
+                    isChecked
+                      ? 'bg-emerald-950/35 border-emerald-500/50'
+                      : 'bg-slate-950/85 border-amber-500/35 hover:border-amber-400'
+                  }">
+                    <span class="mt-0.5 w-4 h-4 shrink-0 rounded flex items-center justify-center text-[10px] font-black ${
+                      isChecked ? 'bg-emerald-500 text-slate-950' : 'border-2 border-amber-400 text-transparent'
+                    }">${isChecked ? '✓' : ''}</span>
+                    <div class="space-y-1">
+                      <div class="text-xs font-extrabold ${isChecked ? 'line-through text-emerald-300' : 'text-amber-200'}">${actionItem.title}</div>
+                      <p class="text-[11px] text-slate-300 leading-relaxed">${actionItem.subtext}</p>
+                    </div>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        ` : '';
+
+        return `
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
             <h3 class="text-xs font-extrabold uppercase tracking-wider text-white">${cat.category}</h3>
             <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">${cat.badge}</span>
           </div>
+          ${subscriptionTrackerHtml}
           <div class="space-y-1.5">
             ${cat.items.map(it => {
               const done = !!state.checkedGroceries[it.id];
+              const badgeQty = period === 'quarterly' ? (it.quarterlyQty || it.qty) : (it.weeklyQty || it.qty);
               return `
                 <button type="button" data-shop-id="${it.id}" class="shop-item-btn w-full text-left p-2.5 rounded-xl border transition flex items-start justify-between gap-2 ${
                   done ? 'bg-emerald-950/30 border-emerald-500/30 opacity-75' : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
@@ -15453,16 +15744,17 @@
                     }">${done ? '✓' : ''}</span>
                     <div>
                       <div class="text-xs sm:text-sm font-extrabold ${done ? 'line-through text-slate-400' : 'text-white'}">${it.name}</div>
-                      <div class="text-[11px] text-slate-400 mt-0.5 line-clamp-1">${it.note}</div>
+                      <div class="text-[11px] text-slate-400 mt-0.5 leading-relaxed">${it.note}</div>
                     </div>
                   </div>
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-emerald-300 shrink-0">${it.qty}</span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-emerald-300 shrink-0">${badgeQty}</span>
                 </button>
               `;
             }).join('')}
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
 
       if (customList.length > 0) {
         html += `
@@ -15498,6 +15790,23 @@
           state.checkedGroceries[id] = !state.checkedGroceries[id];
           saveState();
           renderShoppingView();
+        });
+      });
+
+      container.querySelectorAll('.sub-action-check-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const actionId = btn.getAttribute('data-sub-action-id');
+          if (!actionId) return;
+          if (!state.subscriptionChecklist || typeof state.subscriptionChecklist !== 'object') {
+            state.subscriptionChecklist = { cancelCreatineAutoship: false, dropPeaTo3Containers: false };
+          }
+          state.subscriptionChecklist[actionId] = !state.subscriptionChecklist[actionId];
+          saveState();
+          renderShoppingView();
+          syncHeaderCostSubtitle();
+          showToast(state.subscriptionChecklist[actionId]
+            ? 'Subscription action marked completed and saved'
+            : 'Subscription action unchecked');
         });
       });
 
@@ -16624,6 +16933,23 @@
         });
       }
 
+      const shopPeriodWeeklyBtn = document.getElementById('shop-period-weekly-btn');
+      const shopPeriodQuarterlyBtn = document.getElementById('shop-period-quarterly-btn');
+      if (shopPeriodWeeklyBtn) {
+        shopPeriodWeeklyBtn.addEventListener('click', () => {
+          state.shopListPeriod = 'weekly';
+          saveState();
+          renderShoppingView();
+        });
+      }
+      if (shopPeriodQuarterlyBtn) {
+        shopPeriodQuarterlyBtn.addEventListener('click', () => {
+          state.shopListPeriod = 'quarterly';
+          saveState();
+          renderShoppingView();
+        });
+      }
+
       const checkPantryBtn = document.getElementById('check-pantry-staples-btn');
       if (checkPantryBtn) {
         checkPantryBtn.addEventListener('click', () => {
@@ -16633,7 +16959,7 @@
           saveState();
           renderShoppingView();
           renderVeganView();
-          showToast('✓ Checked off 7 long-lasting pantry staples — only fresh weekly items remain!');
+          showToast('✓ Checked off 9 long-lasting pantry & bulk supplement staples — only fresh weekly items remain!');
         });
       }
 
@@ -16649,7 +16975,7 @@
           saveState();
           renderShoppingView();
           renderVeganView();
-          showToast('Shopping list unchecked for a new week');
+          showToast('Shopping list unchecked for a new cycle');
         });
       }
 
@@ -16664,14 +16990,15 @@
           customShopInput.value = '';
           saveState();
           renderShoppingView();
-          showToast('Added "' + val + '" to Weekly Shop List');
+          showToast('Added "' + val + '" to Shop List');
         });
       }
 
       const copyShopBtn = document.getElementById('copy-shopping-list-btn');
       if (copyShopBtn) {
         copyShopBtn.addEventListener('click', () => {
-          const lines = [' Weekly Muscle Fuel Shopping List:'];
+          const isQ = state.shopListPeriod === 'quarterly';
+          const lines = [isQ ? '3-Month (90-Day) Muscle Fuel Shopping List:' : 'Weekly Muscle Fuel Shopping List:'];
           const dynamicCats = getDynamicWeeklyShoppingCategories(state);
           dynamicCats.forEach(cat => {
             cat.items.forEach(it => {
@@ -16692,7 +17019,7 @@
           ta.select();
           try {
             document.execCommand('copy');
-            showToast(' Copied weekly shopping list!');
+            showToast(isQ ? 'Copied 3-month (90-day) shopping list!' : 'Copied weekly shopping list!');
           } catch (err) {
             showToast('Shopping list ready!');
           }

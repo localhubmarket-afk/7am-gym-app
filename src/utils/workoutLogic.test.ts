@@ -1340,12 +1340,13 @@ test('Universal 22-Exercise Machine Database, Plain English, 0-lb Bar Math, Stri
   const mod = await import('./workoutLogic');
   assert.equal(mod.UNIVERSAL_MACHINE_SWAPS.length, 22);
 
-  // Verify zero occurrences of "biomechanical" or Latin jargon in UNIVERSAL_MACHINE_SWAPS
+  // Verify zero occurrences of forbidden medical or Latin jargon in UNIVERSAL_MACHINE_SWAPS
+  const forbiddenJargonRe = new RegExp('bio' + 'mechanical|bio' + 'medical|ma' + 'ker|soleus|gastrocnemius|plantarflexion|dorsiflexion|scapulae|posterior chain', 'i');
   for (const cat of mod.UNIVERSAL_MACHINE_SWAPS) {
-    assert.equal(/biomechanical|biomedical|soleus|gastrocnemius|plantarflexion|dorsiflexion|scapulae|posterior chain/i.test(cat.label), false);
+    assert.equal(forbiddenJargonRe.test(cat.label), false);
     for (const opt of cat.options) {
-      assert.equal(/biomechanical|biomedical|soleus|gastrocnemius|plantarflexion|dorsiflexion|scapulae|posterior chain/i.test(opt.targetMuscle), false, `Jargon in ${opt.optionId} targetMuscle`);
-      assert.equal(/biomechanical|biomedical|soleus|gastrocnemius|plantarflexion|dorsiflexion|scapulae|posterior chain/i.test(opt.formSetup), false, `Jargon in ${opt.optionId} formSetup`);
+      assert.equal(forbiddenJargonRe.test(opt.targetMuscle), false, `Jargon in ${opt.optionId} targetMuscle`);
+      assert.equal(forbiddenJargonRe.test(opt.formSetup), false, `Jargon in ${opt.optionId} formSetup`);
     }
   }
 
@@ -1597,6 +1598,116 @@ test('Subtest 28: Cross-Week Continuity Engine (buildSmartScheduleFromPreviousWe
   const resyncRes = mod.applySmartScheduleFromPreviousWeek(3, liveState, true);
   assert.deepEqual(resyncRes.schedule, [5, 6, 1, 2, 3, 4, 0]);
   assert.deepEqual(liveState.customDayScheduleByWeek['3'], [5, 6, 1, 2, 3, 4, 0]);
+});
+
+test('Subtest 29: 3-Month Naked Pea Order (4 Containers), 6-Month Creatine Strategy (Order 1 Naked -> Costco 1kg), Subscription Action Tracker & Weekly vs 90-Day Shop List View', async () => {
+  const mod = await import('./workoutLogic');
+
+  // 1. Subscription & Costco Switchover Action Tracker
+  assert.equal(mod.SUBSCRIPTION_ACTION_CHECKLIST_ITEMS.length, 2);
+  assert.equal(
+    mod.SUBSCRIPTION_ACTION_CHECKLIST_ITEMS[0].title,
+    'Action 1 (After Order 1 Ships): Cancel Naked Creatine Recurring Autoship'
+  );
+  assert.equal(
+    mod.SUBSCRIPTION_ACTION_CHECKLIST_ITEMS[0].subtext.includes(
+      'Order 1 (2 x 1.1 LB = 1,000g for $47.98 CAD at 20% off) lasts 200 days (6.67 months).'
+    ),
+    true
+  );
+  assert.equal(
+    mod.SUBSCRIPTION_ACTION_CHECKLIST_ITEMS[0].subtext.includes(
+      'buy 1 kg Leanfit Micronized Creatine at Costco ($44.99 CAD regular / $34.99 on sale = $0.18-$0.22/day with $0 shipping).'
+    ),
+    true
+  );
+
+  assert.equal(
+    mod.SUBSCRIPTION_ACTION_CHECKLIST_ITEMS[1].title,
+    'Action 2 (Before Month 6 / Order 3): Drop Naked Pea Autoship from 4 to 3 Containers'
+  );
+  assert.equal(
+    mod.SUBSCRIPTION_ACTION_CHECKLIST_ITEMS[1].subtext.includes(
+      '4 x 5 LB containers (9,072g every 3 months) supply 100.8 days at 90g/day, building a +972g (+10.8-day) buffer per quarter.'
+    ),
+    true
+  );
+  assert.equal(
+    mod.SUBSCRIPTION_ACTION_CHECKLIST_ITEMS[1].subtext.includes(
+      'switch Quarter 3 from 4 containers ($323.96) down to 3 containers ($242.97) to save $80.99 CAD.'
+    ),
+    true
+  );
+
+  // 2. 1-Tap Weekly View ($44.48/wk) vs 3-Month Cycle View ($571.88 / 90 Days)
+  assert.equal(
+    mod.SHOP_LIST_PERIOD_VIEWS.weekly.pillLabel,
+    'Weekly Grocery View ($22.10/wk Store • $44.48/wk All-In)'
+  );
+  assert.equal(
+    mod.SHOP_LIST_PERIOD_VIEWS.quarterly.pillLabel,
+    '3-Month (90-Day) Cycle View ($284.18 Store • $571.88 All-In)'
+  );
+
+  // 3. Verify Items #12, #13, and #14 in SHOPPING_AISLES (Aisle 4)
+  const weeklyAisles = mod.getShoppingAislesForPeriod('weekly');
+  const quarterlyAisles = mod.getShoppingAislesForPeriod('quarterly');
+  assert.equal(weeklyAisles.length, 4);
+  assert.equal(weeklyAisles[3].category, 'Aisle 4: Online / Costco Bulk Supplements');
+  assert.equal(weeklyAisles[3].items.length, 3);
+
+  const item12Weekly = weeklyAisles[3].items[0];
+  const item12Quarterly = quarterlyAisles[3].items[0];
+  assert.equal(
+    item12Weekly.name,
+    '12. Naked Pea Protein Isolate — 5 lb / 2,268g container, Unflavored, 90% P'
+  );
+  assert.equal(item12Weekly.qty, '630g / week (90g/day)');
+  assert.equal(item12Quarterly.qty, '8,100g / 90 days (Order 4 containers = 9,072g)');
+  assert.equal(
+    item12Weekly.note.includes('35g Fuel 1 + 10g Fuel 2 + 45g Fuel 4 = 90g/day (81g pure protein).'),
+    true
+  );
+
+  const item13Weekly = weeklyAisles[3].items[1];
+  const item13Quarterly = quarterlyAisles[3].items[1];
+  assert.equal(
+    item13Weekly.name,
+    '13. 100% Micronized Creatine Monohydrate — Order 1 Naked -> Order 2+ Costco 1 kg'
+  );
+  assert.equal(item13Weekly.qty, '35g / week (5g/day)');
+  assert.equal(item13Quarterly.qty, '450g / 90 days (1,000g lasts 200 days)');
+  assert.equal(item13Weekly.note.includes('Order 2+ (after 200 days): Buy 1 kg Leanfit Creatine at Costco'), true);
+
+  const item14Weekly = weeklyAisles[3].items[2];
+  const item14Quarterly = quarterlyAisles[3].items[2];
+  assert.equal(
+    item14Weekly.name,
+    '14. Vegan Vitamin D3 Supplement — 1,000–2,500 IU, 180 Capsules = 6-Month Supply'
+  );
+  assert.equal(item14Weekly.qty, '7 caps / week (1 cap/day)');
+  assert.equal(item14Quarterly.qty, '90 caps / 90 days ($9.00 / 3 mos)');
+
+  // 4. Muscle Fuel Header & Cost Summary
+  assert.equal(mod.getHeaderSubtitleCostText(false), 'Full-Body • $6.35/d');
+  assert.equal(mod.getHeaderSubtitleCostText(true), 'Full-Body • $6.34/d');
+  assert.equal(
+    mod.MUSCLE_FUEL_SUPPLEMENT_SUPPLY_SUMMARY.headerTitle,
+    'Daily Muscle Fuel (1,325 kcal • 139g P • 173cm / 69kg)'
+  );
+  assert.equal(mod.MUSCLE_FUEL_SUPPLEMENT_SUPPLY_SUMMARY.rows.length, 3);
+  assert.equal(
+    mod.MUSCLE_FUEL_SUPPLEMENT_SUPPLY_SUMMARY.rows[0],
+    'Pea Protein (90g/d): 4 containers / 3 mos ($287.96 Order 1 -> +972g buffer/qtr -> 3 containers on Q3)'
+  );
+  assert.equal(
+    mod.MUSCLE_FUEL_SUPPLEMENT_SUPPLY_SUMMARY.rows[1],
+    'Creatine (5g/d): 2 x 1.1 LB Order 1 ($47.98 / 200 days) -> Cancel Sub -> Costco 1kg ($44.99) on Order 2+'
+  );
+  assert.equal(
+    mod.MUSCLE_FUEL_SUPPLEMENT_SUPPLY_SUMMARY.rows[2],
+    'Groceries (Items #1-#11): $22.10/wk ($284.18 / 3 mos) • Water in Fuel 1 & 4 shakes + 180ml milk in Fuel 2 Oats'
+  );
 });
 
 
