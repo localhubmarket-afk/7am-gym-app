@@ -6851,6 +6851,429 @@ export function getShoppingAislesForPeriod(period: ShopListPeriod = 'weekly'): S
   }));
 }
 
+// ============================================================================
+// UPGRADE 1: AUTO-CASCADE WEIGHT & REPS TO SUBSEQUENT UNLOGGED SETS
+// ============================================================================
+export function cascadeSetWeightAndRepsForward(
+  workoutLogs: Record<string, SetLog>,
+  week: number,
+  keyDayOrSlotIdx: number,
+  exId: string,
+  fromSetIdx: number,
+  totalSets: number,
+  newWeight?: string,
+  newReps?: string,
+  unit = 'lbs'
+): { updatedSets: number[]; workoutLogs: Record<string, SetLog> } {
+  const updatedSets: number[] = [];
+  const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
+  const safeFrom = Math.max(1, Math.floor(Number(fromSetIdx) || 1));
+  const safeTotal = Math.max(safeFrom, Math.floor(Number(totalSets) || 1));
+
+  for (let s = safeFrom + 1; s <= safeTotal; s++) {
+    const k = `w${safeWeek}_${keyDayOrSlotIdx}_${exId}_${s}`;
+    const legacyK = `${keyDayOrSlotIdx}_${exId}_${s}`;
+    const existing = workoutLogs[k] || (safeWeek === 1 ? workoutLogs[legacyK] : undefined);
+    if (existing && existing.done) {
+      continue;
+    }
+    const nextEntry: SetLog = {
+      weight: newWeight !== undefined ? String(newWeight) : String(existing?.weight ?? ''),
+      reps: newReps !== undefined ? String(newReps) : String(existing?.reps ?? ''),
+      done: false,
+      unit: unit || existing?.unit || 'lbs'
+    };
+    workoutLogs[k] = nextEntry;
+    if (safeWeek === 1) {
+      workoutLogs[legacyK] = { ...nextEntry };
+    }
+    updatedSets.push(s);
+  }
+
+  return { updatedSets, workoutLogs };
+}
+
+// ============================================================================
+// UPGRADE 2: DISTINCT "IN-PROGRESS" COLOR CODING (ZEIGARNIK EFFECT)
+// ============================================================================
+export interface ExerciseProgressVisualState {
+  stateCode: 0 | 1 | 2;
+  stateLabel: 'not_started' | 'in_progress' | 'completed';
+  doneSets: number;
+  totalSets: number;
+  remainingSets: number;
+  headerBadgeText: string | null;
+  headerBadgeStyle: string;
+  cardBorderStyle: string;
+  cardBackgroundStyle: string;
+  summaryBarBorderStyle: string;
+  summaryTextColorStyle: string;
+  collapsedRightCtaText: string;
+}
+
+export function getExerciseProgressVisualState(
+  doneSets: number,
+  totalSets: number,
+  isExpanded = false
+): ExerciseProgressVisualState {
+  const safeTotal = Math.max(1, Math.floor(Number(totalSets) || 1));
+  const safeDone = Math.max(0, Math.min(safeTotal, Math.floor(Number(doneSets) || 0)));
+  const remainingSets = Math.max(0, safeTotal - safeDone);
+
+  if (safeDone === 0) {
+    return {
+      stateCode: 0,
+      stateLabel: 'not_started',
+      doneSets: 0,
+      totalSets: safeTotal,
+      remainingSets: safeTotal,
+      headerBadgeText: null,
+      headerBadgeStyle: '',
+      cardBorderStyle: isExpanded ? '2px solid #38bdf8' : '1px solid #1e293b',
+      cardBackgroundStyle: '',
+      summaryBarBorderStyle: '1px solid #1e293b',
+      summaryTextColorStyle: '#cbd5e1',
+      collapsedRightCtaText: 'Tap to Open Sets ▼'
+    };
+  }
+
+  if (safeDone < safeTotal) {
+    const setsWord = remainingSets === 1 ? 'set' : 'sets';
+    return {
+      stateCode: 1,
+      stateLabel: 'in_progress',
+      doneSets: safeDone,
+      totalSets: safeTotal,
+      remainingSets,
+      headerBadgeText: `IN PROGRESS • ${safeDone}/${safeTotal}`,
+      headerBadgeStyle: 'background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b;',
+      cardBorderStyle: '2px solid #f59e0b',
+      cardBackgroundStyle: 'rgba(245, 158, 11, 0.08)',
+      summaryBarBorderStyle: '1px solid #f59e0b',
+      summaryTextColorStyle: '#fbbf24',
+      collapsedRightCtaText: `Resume (${remainingSets} ${setsWord} left) ▼`
+    };
+  }
+
+  return {
+    stateCode: 2,
+    stateLabel: 'completed',
+    doneSets: safeTotal,
+    totalSets: safeTotal,
+    remainingSets: 0,
+    headerBadgeText: 'Done',
+    headerBadgeStyle: 'background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.5);',
+    cardBorderStyle: isExpanded ? '2px solid #10b981' : '1px solid rgba(16, 185, 129, 0.45)',
+    cardBackgroundStyle: '',
+    summaryBarBorderStyle: '1px solid rgba(16, 185, 129, 0.45)',
+    summaryTextColorStyle: '#6ee7b7',
+    collapsedRightCtaText: 'Show / Edit Sets ▼'
+  };
+}
+
+// ============================================================================
+// UPGRADE 3: UNCRUSHABLE SET ROW GRID GEOMETRY CONSTANTS
+// ============================================================================
+export const UNCRUSHABLE_SET_ROW_GRID_STYLE =
+  'grid-template-columns: 48px minmax(112px, 1.3fr) minmax(92px, 1fr) 76px; gap: 6px; align-items: center;';
+
+export const UNCRUSHABLE_NUMBER_DISPLAY_STYLE =
+  'min-width: 52px; font-size: 15px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: visible;';
+
+// ============================================================================
+// UPGRADE 4: 1-TAP DELETE NOTE HELPER
+// ============================================================================
+export function deleteExerciseNoteEntry(
+  exerciseNotes: Record<string, { text?: string; photoDataUrl?: string; updatedAt?: string }>,
+  exKey: string,
+  keepPhoto = true
+): Record<string, { text?: string; photoDataUrl?: string; updatedAt?: string }> {
+  if (!exerciseNotes || typeof exerciseNotes !== 'object' || !exKey) {
+    return exerciseNotes || {};
+  }
+  const existing = exerciseNotes[exKey];
+  if (!existing) return exerciseNotes;
+
+  if (keepPhoto && existing.photoDataUrl) {
+    exerciseNotes[exKey] = {
+      text: '',
+      photoDataUrl: existing.photoDataUrl,
+      updatedAt: new Date().toISOString()
+    };
+  } else {
+    delete exerciseNotes[exKey];
+  }
+  return exerciseNotes;
+}
+
+// ============================================================================
+// UPGRADE 5: AUTO-OPEN WARM-UP ACCORDION ON WORKOUT START
+// ============================================================================
+export function shouldAutoOpenWarmupAccordion(
+  isRestDay: boolean,
+  completedSetsToday: number,
+  warmupClosedForDay = false,
+  warmupCompletedForDay = false
+): boolean {
+  if (isRestDay) return false;
+  if (completedSetsToday > 0) return false;
+  if (warmupClosedForDay || warmupCompletedForDay) return false;
+  return true;
+}
+
+// ============================================================================
+// UPGRADE 6: FIRST-OPEN GYM TIME PROMPT + SYNCED CHRONO SCHEDULE & AUTO-ADJUST
+// ============================================================================
+export interface SyncedWaterCheckpoint {
+  ml: number;
+  offsetMinutes: number;
+  timeMinutes: number;
+  time12: string;
+  shortTag: string;
+  label: string;
+}
+
+export interface SyncedChronoSchedule {
+  gymTimeMinutes: number;
+  gymEndTimeMinutes: number;
+  gymTimeHHMM: string;
+  gymEndTimeHHMM: string;
+  gymTime12: string;
+  gymEndTime12: string;
+  fuel1Minutes: number;
+  fuel1Time12: string;
+  warmupMinutes: number;
+  warmupTime12: string;
+  warmupHeaderUpper: string;
+  warmupHeaderLower: string;
+  fuel2Minutes: number;
+  fuel2Time12: string;
+  fuel3Minutes: number;
+  fuel3Time12: string;
+  fuel4Minutes: number;
+  fuel4Time12: string;
+  waterSchedule: SyncedWaterCheckpoint[];
+}
+
+export function normalizeMinutesOfDay(mins: number): number {
+  const rounded = Math.round(Number(mins) || 0);
+  return ((rounded % 1440) + 1440) % 1440;
+}
+
+export function roundMinutesToNearest5(mins: number): number {
+  const clamped = ((Math.round((Number(mins) || 0) / 5) * 5) % 1440 + 1440) % 1440;
+  return clamped;
+}
+
+export function formatMinutesOfDayToHHMM(mins: number): string {
+  const norm = normalizeMinutesOfDay(mins);
+  const h = Math.floor(norm / 60);
+  const m = norm % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+export function formatMinutesOfDayTo12Hr(mins: number): string {
+  const norm = normalizeMinutesOfDay(mins);
+  const h24 = Math.floor(norm / 60);
+  const m = norm % 60;
+  const ampm = h24 >= 12 ? 'PM' : 'AM';
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+export function parseTimeHHMMToMinutesRaw(hhmm: string | number | null | undefined): number {
+  if (typeof hhmm === 'number' && Number.isFinite(hhmm)) {
+    return normalizeMinutesOfDay(hhmm);
+  }
+  if (!hhmm || typeof hhmm !== 'string') return 420; // 07:00 AM
+  const parts = hhmm.trim().split(':');
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10) || 0;
+  if (isNaN(h)) return 420;
+  return normalizeMinutesOfDay(h * 60 + m);
+}
+
+export function getSyncedChronoSchedule(
+  gymTimeInput: number | string = 420
+): SyncedChronoSchedule {
+  const gymTimeMinutes =
+    typeof gymTimeInput === 'number'
+      ? normalizeMinutesOfDay(gymTimeInput)
+      : parseTimeHHMMToMinutesRaw(gymTimeInput);
+  const gymEndTimeMinutes = normalizeMinutesOfDay(gymTimeMinutes + 60);
+
+  // Relative offsets from Gym Time (T_gym):
+  // - Fuel 1 (Pre-Gym Shake + Creatine): T_gym - 25 min
+  // - Warm-Up & Gym Session: T_gym
+  // - Fuel 2 (Post-Gym Overnight Oats): T_gym + 75 min
+  // - Fuel 3 (Tofu, Rice & Broccoli Bowl): T_gym + 360 min (+6 hours)
+  // - Fuel 4 (Evening Shake & PB + Vitamin D3): T_gym + 630 min (+10.5 hours)
+  const fuel1Minutes = normalizeMinutesOfDay(gymTimeMinutes - 25);
+  const warmupMinutes = gymTimeMinutes;
+  const fuel2Minutes = normalizeMinutesOfDay(gymTimeMinutes + 75);
+  const fuel3Minutes = normalizeMinutesOfDay(gymTimeMinutes + 360);
+  const fuel4Minutes = normalizeMinutesOfDay(gymTimeMinutes + 630);
+
+  const gymTime12 = formatMinutesOfDayTo12Hr(gymTimeMinutes);
+  const gymEndTime12 = formatMinutesOfDayTo12Hr(gymEndTimeMinutes);
+  const fuel1Time12 = formatMinutesOfDayTo12Hr(fuel1Minutes);
+  const warmupTime12 = gymTime12;
+  const fuel2Time12 = formatMinutesOfDayTo12Hr(fuel2Minutes);
+  const fuel3Time12 = formatMinutesOfDayTo12Hr(fuel3Minutes);
+  const fuel4Time12 = formatMinutesOfDayTo12Hr(fuel4Minutes);
+
+  // Water Schedule (6 x 500 ml):
+  // -30m Pre-Gym, +30m Intra-Gym, +90m Post-Gym, +4h (240m) Midday, +7.5h (450m) Afternoon, +10.5h (630m) Evening
+  const waterCheckpointsSpec = [
+    { ml: 500, offsetMinutes: -30, shortTag: 'Pre-Gym' },
+    { ml: 1000, offsetMinutes: 30, shortTag: 'Intra-Gym' },
+    { ml: 1500, offsetMinutes: 90, shortTag: 'Post-Gym' },
+    { ml: 2000, offsetMinutes: 240, shortTag: 'Midday' },
+    { ml: 2500, offsetMinutes: 450, shortTag: 'Afternoon' },
+    { ml: 3000, offsetMinutes: 630, shortTag: 'Evening' }
+  ];
+
+  const waterSchedule: SyncedWaterCheckpoint[] = waterCheckpointsSpec.map(spec => {
+    const tMins = normalizeMinutesOfDay(gymTimeMinutes + spec.offsetMinutes);
+    const t12 = formatMinutesOfDayTo12Hr(tMins);
+    return {
+      ml: spec.ml,
+      offsetMinutes: spec.offsetMinutes,
+      timeMinutes: tMins,
+      time12: t12,
+      shortTag: spec.shortTag,
+      label: `500 ml • ${t12} (${spec.shortTag})`
+    };
+  });
+
+  return {
+    gymTimeMinutes,
+    gymEndTimeMinutes,
+    gymTimeHHMM: formatMinutesOfDayToHHMM(gymTimeMinutes),
+    gymEndTimeHHMM: formatMinutesOfDayToHHMM(gymEndTimeMinutes),
+    gymTime12,
+    gymEndTime12,
+    fuel1Minutes,
+    fuel1Time12,
+    warmupMinutes,
+    warmupTime12,
+    warmupHeaderUpper: `${warmupTime12} UPPER BODY WARM-UP`,
+    warmupHeaderLower: `${warmupTime12} LOWER BODY WARM-UP`,
+    fuel2Minutes,
+    fuel2Time12,
+    fuel3Minutes,
+    fuel3Time12,
+    fuel4Minutes,
+    fuel4Time12,
+    waterSchedule
+  };
+}
+
+export interface LiveGymTimeAutoSyncResult {
+  shouldAutoSync: boolean;
+  diffMinutes: number;
+  previousGymTimeMinutes: number;
+  previousGymTimeHHMM: string;
+  previousGymTime12: string;
+  syncedGymTimeMinutes: number;
+  syncedGymTimeHHMM: string;
+  syncedGymTime12: string;
+  bannerText: string;
+  schedule: SyncedChronoSchedule;
+}
+
+export function checkAutoSyncGymTimeOnLiveWorkout(
+  scheduledGymTimeInput: number | string,
+  currentClockMinutesInput: number | string
+): LiveGymTimeAutoSyncResult {
+  const prevMins =
+    typeof scheduledGymTimeInput === 'number'
+      ? normalizeMinutesOfDay(scheduledGymTimeInput)
+      : parseTimeHHMMToMinutesRaw(scheduledGymTimeInput);
+  const rawClockMins =
+    typeof currentClockMinutesInput === 'number'
+      ? normalizeMinutesOfDay(currentClockMinutesInput)
+      : parseTimeHHMMToMinutesRaw(currentClockMinutesInput);
+
+  const directDiff = Math.abs(rawClockMins - prevMins);
+  const circularDiff = Math.min(directDiff, 1440 - directDiff);
+  const shouldAutoSync = circularDiff >= 20;
+
+  const syncedMins = shouldAutoSync ? roundMinutesToNearest5(rawClockMins) : prevMins;
+  const schedule = getSyncedChronoSchedule(syncedMins);
+  const prev12 = formatMinutesOfDayTo12Hr(prevMins);
+  const synced12 = formatMinutesOfDayTo12Hr(syncedMins);
+
+  return {
+    shouldAutoSync,
+    diffMinutes: circularDiff,
+    previousGymTimeMinutes: prevMins,
+    previousGymTimeHHMM: formatMinutesOfDayToHHMM(prevMins),
+    previousGymTime12: prev12,
+    syncedGymTimeMinutes: syncedMins,
+    syncedGymTimeHHMM: formatMinutesOfDayToHHMM(syncedMins),
+    syncedGymTime12: synced12,
+    bannerText: `Workout Time Auto-Synced to ${synced12} — Meal & Water schedules shifted automatically to match your live session (Undo)`,
+    schedule
+  };
+}
+
+// ============================================================================
+// UPGRADE 7: HIDEABLE WEEKLY GROCERIES VS 3- & 6-MONTH BULK SUPPLEMENTS
+// ============================================================================
+export function getFuelSupplementSummaryToggleLabel(isOpen = false, dailyCostText = '$6.35/d'): string {
+  return isOpen
+    ? `3-Month & 6-Month Bulk Supplement Plan (${dailyCostText}) — Hide ▲`
+    : `3-Month & 6-Month Bulk Supplement Plan (${dailyCostText}) — Show Details ▼`;
+}
+
+export function getShopListMasterSectionSpecs(period: ShopListPeriod = 'weekly') {
+  const allAisles = getShoppingAislesForPeriod(period);
+  const weeklyGroceryAisles = allAisles.slice(0, 3);
+  const bulkSupplementAisle = allAisles[3];
+  const weeklyItemsCount = weeklyGroceryAisles.reduce((acc, a) => acc + a.items.length, 0);
+  const bulkItemsCount = bulkSupplementAisle ? bulkSupplementAisle.items.length : 3;
+
+  return {
+    weeklySection: {
+      title: `WEEKLY SUPERMARKET GROCERY LIST (${weeklyItemsCount} Items • $22.10/wk)`,
+      hideBtnLabel: 'Hide Weekly List ▲',
+      showBtnLabel: `Show Weekly List (${weeklyItemsCount} items) ▼`,
+      aisles: weeklyGroceryAisles
+    },
+    bulkSection: {
+      title: `3-MONTH & 6-MONTH BULK SUPPLEMENTS (${bulkItemsCount} Items • Naked & Costco)`,
+      hideBtnLabel: 'Hide 3m/6m Supplements ▲',
+      showBtnLabel: 'Show 3m/6m Supplements (Pea, Creatine, D3) ▼',
+      cards: {
+        postOrderChecklist: [
+          {
+            id: 'cancelCreatineAutoship',
+            label: 'Cancel Naked Creatine Autoship after Order 1 ships (Switch to Costco $44.99/1kg at Day 200)'
+          },
+          {
+            id: 'dropPeaTo3Containers',
+            label: 'Drop Naked Pea from 4 to 3 containers before Month 6 / Order 3 (Save $80.99)'
+          }
+        ],
+        threeMonthCycleCard: {
+          badge: 'Every 90 Days',
+          title: '3-Month Cycle Card (Every 90 Days)',
+          summary: 'Naked Pea Protein Isolate (4 x 5 LB = 9,072g -> 8,100g used, +972g buffer/qtr)',
+          item: bulkSupplementAisle?.items[0] || null
+        },
+        sixMonthCycleCard: {
+          badge: 'Every 180–200 Days',
+          title: '6-Month Cycle Card (Every 180–200 Days)',
+          summary: 'Micronized Creatine (1,000g = 200 days) + Vegan Vitamin D3 (180 caps = 180 days)',
+          items: bulkSupplementAisle ? bulkSupplementAisle.items.slice(1, 3) : []
+        }
+      }
+    }
+  };
+}
+
+
 
 
 

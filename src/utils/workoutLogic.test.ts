@@ -1710,6 +1710,138 @@ test('Subtest 29: 3-Month Naked Pea Order (4 Containers), 6-Month Creatine Strat
   );
 });
 
+test('Subtest 30: Auto-Cascade Sets, Zeigarnik In-Progress State, Uncrushable Grid, 1-Tap Delete Note, Auto-Open Warm-Up, Synced Chrono Schedule & Hideable Shop Sections', async () => {
+  const mod = await import('./workoutLogic');
+
+  // 1. Auto-Cascade Weight & Reps forward to subsequent unlogged sets (including when editing a logged set)
+  const logs: Record<string, any> = {
+    w2_0_cable_ab_crunch_1: { weight: '57.5', reps: '15', done: true, unit: 'lbs' },
+    w2_0_cable_ab_crunch_2: { weight: '50', reps: '12', done: false, unit: 'lbs' },
+    w2_0_cable_ab_crunch_3: { weight: '50', reps: '12', done: false, unit: 'lbs' }
+  };
+  const cascadeRes = mod.cascadeSetWeightAndRepsForward(
+    logs,
+    2,
+    0,
+    'cable_ab_crunch',
+    1,
+    3,
+    '62.5',
+    '16',
+    'lbs'
+  );
+  assert.deepEqual(cascadeRes.updatedSets, [2, 3]);
+  assert.equal(logs.w2_0_cable_ab_crunch_2.weight, '62.5');
+  assert.equal(logs.w2_0_cable_ab_crunch_2.reps, '16');
+  assert.equal(logs.w2_0_cable_ab_crunch_3.weight, '62.5');
+  assert.equal(logs.w2_0_cable_ab_crunch_3.reps, '16');
+
+  // Ensure already-logged subsequent sets are not overwritten if an earlier set is edited
+  logs.w2_0_cable_ab_crunch_2.done = true;
+  logs.w2_0_cable_ab_crunch_2.weight = '62.5';
+  const cascadeRes2 = mod.cascadeSetWeightAndRepsForward(
+    logs,
+    2,
+    0,
+    'cable_ab_crunch',
+    1,
+    3,
+    '65',
+    '15',
+    'lbs'
+  );
+  assert.deepEqual(cascadeRes2.updatedSets, [3]);
+  assert.equal(logs.w2_0_cable_ab_crunch_2.weight, '62.5');
+  assert.equal(logs.w2_0_cable_ab_crunch_3.weight, '65');
+
+  // 2. Zeigarnik In-Progress Color Coding (State 0, State 1, State 2)
+  const state0 = mod.getExerciseProgressVisualState(0, 3, false);
+  assert.equal(state0.stateCode, 0);
+  assert.equal(state0.headerBadgeText, null);
+  assert.equal(state0.cardBorderStyle, '1px solid #1e293b');
+
+  const state1 = mod.getExerciseProgressVisualState(1, 3, false);
+  assert.equal(state1.stateCode, 1);
+  assert.equal(state1.headerBadgeText, 'IN PROGRESS • 1/3');
+  assert.equal(state1.cardBorderStyle, '2px solid #f59e0b');
+  assert.equal(state1.cardBackgroundStyle, 'rgba(245, 158, 11, 0.08)');
+  assert.equal(state1.collapsedRightCtaText, 'Resume (2 sets left) ▼');
+
+  const state2 = mod.getExerciseProgressVisualState(3, 3, false);
+  assert.equal(state2.stateCode, 2);
+  assert.equal(state2.headerBadgeText, 'Done');
+
+  // 3. Uncrushable Set Row Grid Geometry constants
+  assert.equal(
+    mod.UNCRUSHABLE_SET_ROW_GRID_STYLE.includes('grid-template-columns: 48px minmax(112px, 1.3fr) minmax(92px, 1fr) 76px'),
+    true
+  );
+  assert.equal(mod.UNCRUSHABLE_NUMBER_DISPLAY_STYLE.includes('min-width: 52px; font-size: 15px;'), true);
+
+  // 4. 1-Tap Delete Note helper
+  const notesMap: Record<string, any> = {
+    cable_ab_crunch: { text: 'High pulley pin 12', photoDataUrl: '' }
+  };
+  mod.deleteExerciseNoteEntry(notesMap, 'cable_ab_crunch');
+  assert.equal(notesMap.cable_ab_crunch, undefined);
+
+  // 5. Auto-Open Warm-Up Accordion on Workout Start
+  assert.equal(mod.shouldAutoOpenWarmupAccordion(false, 0, false, false), true);
+  assert.equal(mod.shouldAutoOpenWarmupAccordion(true, 0, false, false), false);
+  assert.equal(mod.shouldAutoOpenWarmupAccordion(false, 1, false, false), false);
+  assert.equal(mod.shouldAutoOpenWarmupAccordion(false, 0, true, false), false);
+
+  // 6. Synced Chrono Schedule (e.g., 7:00 AM vs 8:00 AM Gym Time) & Live 20-Min Auto-Sync
+  const sched7am = mod.getSyncedChronoSchedule('07:00');
+  assert.equal(sched7am.fuel1Time12, '6:35 AM');
+  assert.equal(sched7am.warmupHeaderUpper, '7:00 AM UPPER BODY WARM-UP');
+  assert.equal(sched7am.fuel2Time12, '8:15 AM');
+  assert.equal(sched7am.fuel3Time12, '1:00 PM');
+  assert.equal(sched7am.fuel4Time12, '5:30 PM');
+  assert.equal(sched7am.waterSchedule.length, 6);
+  assert.equal(sched7am.waterSchedule[0].time12, '6:30 AM');
+  assert.equal(sched7am.waterSchedule[1].time12, '7:30 AM');
+  assert.equal(sched7am.waterSchedule[2].time12, '8:30 AM');
+
+  const sched8am = mod.getSyncedChronoSchedule('08:00');
+  assert.equal(sched8am.fuel1Time12, '7:35 AM');
+  assert.equal(sched8am.warmupHeaderUpper, '8:00 AM UPPER BODY WARM-UP');
+  assert.equal(sched8am.fuel2Time12, '9:15 AM');
+  assert.equal(sched8am.fuel3Time12, '2:00 PM');
+  assert.equal(sched8am.fuel4Time12, '6:30 PM');
+
+  const liveSyncCheck = mod.checkAutoSyncGymTimeOnLiveWorkout('07:00', '08:02');
+  assert.equal(liveSyncCheck.shouldAutoSync, true);
+  assert.equal(liveSyncCheck.syncedGymTime12, '8:00 AM');
+  assert.equal(
+    liveSyncCheck.bannerText,
+    'Workout Time Auto-Synced to 8:00 AM — Meal & Water schedules shifted automatically to match your live session (Undo)'
+  );
+
+  // 7. Hideable Muscle Fuel Supplement Summary & Shop List Master Sections
+  assert.equal(
+    mod.getFuelSupplementSummaryToggleLabel(false, '$6.35/d'),
+    '3-Month & 6-Month Bulk Supplement Plan ($6.35/d) — Show Details ▼'
+  );
+  assert.equal(
+    mod.getFuelSupplementSummaryToggleLabel(true, '$6.35/d'),
+    '3-Month & 6-Month Bulk Supplement Plan ($6.35/d) — Hide ▲'
+  );
+
+  const shopMaster = mod.getShopListMasterSectionSpecs('weekly');
+  assert.equal(shopMaster.weeklySection.title, 'WEEKLY SUPERMARKET GROCERY LIST (11 Items • $22.10/wk)');
+  assert.equal(shopMaster.bulkSection.title, '3-MONTH & 6-MONTH BULK SUPPLEMENTS (3 Items • Naked & Costco)');
+  assert.equal(
+    shopMaster.bulkSection.cards.threeMonthCycleCard.summary,
+    'Naked Pea Protein Isolate (4 x 5 LB = 9,072g -> 8,100g used, +972g buffer/qtr)'
+  );
+  assert.equal(
+    shopMaster.bulkSection.cards.sixMonthCycleCard.summary,
+    'Micronized Creatine (1,000g = 200 days) + Vegan Vitamin D3 (180 caps = 180 days)'
+  );
+});
+
+
 
 
 

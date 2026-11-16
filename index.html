@@ -178,7 +178,7 @@
   </div>
 
   <!-- Main Content Container (Sits cleanly below fixed top header with dynamic ResizeObserver spacer) -->
-  <main id="main-content-container" class="max-w-xl w-full mx-auto px-3 sm:px-4 pt-24 space-y-2.5 overflow-x-hidden">
+  <main id="main-content-container" class="max-w-xl w-full mx-auto px-3 sm:px-4 pt-24 space-y-2.5 overflow-x-hidden" style="padding-bottom: 110px;">
 
     <!-- 5-Minute Forgotten Last Set Reminder Banner ("Did you finish your workout?") -->
     <div id="forgotten-set-reminder-banner" role="region" aria-label="Unfinished Workout Reminder" class="hidden bg-amber-950/90 border-2 border-amber-400/80 rounded-2xl p-3.5 space-y-2.5 shadow-xl">
@@ -204,6 +204,10 @@
 
     <!-- ==================== VIEW 1: WORKOUT & WEIGHT TRACKER ==================== -->
     <section id="view-workout" class="space-y-2.5">
+      <!-- UPGRADE 6: First-Open & Daily Gym Time Prompt + Live Workout Time Auto-Sync Banner -->
+      <div id="gym-time-top-banner-workout" class="space-y-2"></div>
+      <div id="live-gym-time-autosync-banner" class="hidden"></div>
+
       <!-- Pre-Workout Fuel Check-In Prompt Banner (Days 1–5 when Fuel 1 is unlogged) -->
       <div id="pre-workout-fuel-checkin-banner" class="hidden bg-amber-500/15 border border-amber-400/50 rounded-2xl p-3 space-y-2 shadow-lg shadow-amber-950/30">
         <!-- Populated dynamically by JS -->
@@ -591,6 +595,9 @@
 
     <!-- ==================== VIEW 4: LOW-APPETITE VEGAN MEAL PLANNER ==================== -->
     <section id="view-vegan" class="hidden space-y-4">
+      <!-- UPGRADE 6: First-Open & Daily Gym Time Prompt on Muscle Fuel Tab -->
+      <div id="gym-time-top-banner-fuel" class="space-y-2"></div>
+
       <!-- Synced 7-Day Cycle & Progressive Week Selector Card (Matches Gym Tab) -->
       <div id="vegan-top-day-selector-container" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -652,15 +659,17 @@
           </div>
         </div>
 
-        <!-- Concise 3-Month & 6-Month Supplement Supply Summary Row -->
-        <div id="muscle-fuel-supplement-supply-summary" class="bg-slate-950/85 border border-emerald-500/35 rounded-xl p-2.5 space-y-1 text-[10.5px] sm:text-[11px] leading-snug">
-          <div class="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-slate-800/80">
-            <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">3-Month &amp; 6-Month Supplement Supply Summary</span>
+        <!-- UPGRADE 7: Collapsible 1-Line 3-Month & 6-Month Supplement Supply Summary Bar (Hidden by Default) -->
+        <div id="muscle-fuel-supplement-supply-summary" class="bg-slate-950/85 border border-emerald-500/35 rounded-xl overflow-hidden text-[10.5px] sm:text-[11px] leading-snug">
+          <button type="button" id="toggle-fuel-supplement-summary-btn" aria-expanded="false" class="w-full px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-left hover:bg-slate-900/80 transition">
+            <span id="toggle-fuel-supplement-summary-label" class="text-[11px] font-extrabold text-emerald-300">3-Month &amp; 6-Month Bulk Supplement Plan ($6.35/d) — Show Details ▼</span>
             <span id="muscle-fuel-daily-cost-badge" class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">$6.35/d Order 1 -&gt; $6.34/d Costco</span>
+          </button>
+          <div id="muscle-fuel-supplement-summary-details" class="hidden px-3 pb-2.5 pt-1.5 border-t border-slate-800/80 space-y-1">
+            <p class="text-slate-200 font-semibold"><strong class="text-emerald-300">Pea Protein (90g/d):</strong> 4 containers / 3 mos ($287.96 Order 1 -&gt; +972g buffer/qtr -&gt; 3 containers on Q3)</p>
+            <p class="text-slate-200 font-semibold"><strong class="text-sky-300">Creatine (5g/d):</strong> 2 x 1.1 LB Order 1 ($47.98 / 200 days) -&gt; Cancel Sub -&gt; Costco 1kg ($44.99) on Order 2+</p>
+            <p class="text-slate-200 font-semibold"><strong class="text-amber-300">Groceries (Items #1-#11):</strong> $22.10/wk ($284.18 / 3 mos) • Water in Fuel 1 &amp; 4 shakes + 180ml milk in Fuel 2 Oats</p>
           </div>
-          <p class="text-slate-200 font-semibold"><strong class="text-emerald-300">Pea Protein (90g/d):</strong> 4 containers / 3 mos ($287.96 Order 1 -&gt; +972g buffer/qtr -&gt; 3 containers on Q3)</p>
-          <p class="text-slate-200 font-semibold"><strong class="text-sky-300">Creatine (5g/d):</strong> 2 x 1.1 LB Order 1 ($47.98 / 200 days) -&gt; Cancel Sub -&gt; Costco 1kg ($44.99) on Order 2+</p>
-          <p class="text-slate-200 font-semibold"><strong class="text-amber-300">Groceries (Items #1-#11):</strong> $22.10/wk ($284.18 / 3 mos) • Water in Fuel 1 &amp; 4 shakes + 180ml milk in Fuel 2 Oats</p>
         </div>
 
         <!-- Followed by Daily Water Intake Tracker -->
@@ -1050,6 +1059,15 @@
         cancelCreatineAutoship: false,
         dropPeaTo3Containers: false
       },
+      hasSetInitialGymTime: false,
+      openGymTimePromptCard: false,
+      warmupClosedByDay: {},
+      lastGymTimeAutoSync: null,
+      showFuelSupplementSummary: false,
+      hideWeeklyGroceries: false,
+      hideBulkSupplements: false,
+      hideCheckedGroceries: false,
+      collapsedShopAisles: {},
       currentWeek: 1,
       selectedWeek: 1,
       maxUnlockedWeek: 2,
@@ -1371,6 +1389,14 @@
         merged.subscriptionChecklist.cancelCreatineAutoship = Boolean(merged.subscriptionChecklist.cancelCreatineAutoship);
         merged.subscriptionChecklist.dropPeaTo3Containers = Boolean(merged.subscriptionChecklist.dropPeaTo3Containers);
       }
+      merged.hasSetInitialGymTime = Boolean(merged.hasSetInitialGymTime);
+      merged.openGymTimePromptCard = Boolean(merged.openGymTimePromptCard);
+      if (!merged.warmupClosedByDay || typeof merged.warmupClosedByDay !== 'object') merged.warmupClosedByDay = {};
+      merged.showFuelSupplementSummary = Boolean(merged.showFuelSupplementSummary);
+      merged.hideWeeklyGroceries = Boolean(merged.hideWeeklyGroceries);
+      merged.hideBulkSupplements = Boolean(merged.hideBulkSupplements);
+      merged.hideCheckedGroceries = Boolean(merged.hideCheckedGroceries);
+      if (!merged.collapsedShopAisles || typeof merged.collapsedShopAisles !== 'object') merged.collapsedShopAisles = {};
       if (!merged.watchSettings || typeof merged.watchSettings !== 'object') {
         merged.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: Boolean(merged.watchNotificationsEnabled) };
       } else {
@@ -4717,6 +4743,16 @@
         requestAndConnectWatchNotifications(true);
       }
       const isRiceContext = Boolean(contextLabel && String(contextLabel).includes('Rice Stage'));
+      if (!isRiceContext && typeof getDayCompletionStatus === 'function' && typeof autoSyncGymTimeFromSetLog === 'function') {
+        const w = state.selectedWeek || state.currentWeek || 1;
+        const d = state.selectedDayIndex || 0;
+        const assign = typeof getDayAssignment === 'function' ? getDayAssignment(w, d) : { isRestDay: false };
+        const comp = getDayCompletionStatus(w, d);
+        if (!assign.isRestDay && comp.doneSets === 0) {
+          autoSyncGymTimeFromSetLog(w, d, true, false);
+          if (typeof renderGymTimeTopBanners === 'function') renderGymTimeTopBanners(w, d);
+        }
+      }
       if (typeof customSeconds === 'number' && customSeconds > 0) {
         state.timerSeconds = customSeconds;
         state.timerTotalSeconds = customSeconds;
@@ -9103,10 +9139,15 @@
     }
 
     // =========================================================================
-    // 5B. SMART 15-MINUTE GYM TIME & ADAPTIVE CHRONO-NUTRITION ENGINE
+    // 5B. SMART GYM TIME, FIRST-OPEN PROMPT & ADAPTIVE CHRONO-NUTRITION ENGINE
     // =========================================================================
     function roundTo15Minutes(totalMins) {
       const clamped = ((Math.round(totalMins / 15) * 15) % 1440 + 1440) % 1440;
+      return clamped;
+    }
+
+    function roundTo5Minutes(totalMins) {
+      const clamped = ((Math.round(totalMins / 5) * 5) % 1440 + 1440) % 1440;
       return clamped;
     }
 
@@ -9116,11 +9157,11 @@
       const h = parseInt(parts[0], 10);
       const m = parseInt(parts[1], 10) || 0;
       if (isNaN(h)) return 420;
-      return roundTo15Minutes(Math.max(0, Math.min(1439, h * 60 + m)));
+      return Math.max(0, Math.min(1439, h * 60 + m));
     }
 
     function minutesToHHMM(totalMins) {
-      const clamped = roundTo15Minutes(totalMins);
+      const clamped = ((Math.round(totalMins) % 1440) + 1440) % 1440;
       const h = Math.floor(clamped / 60);
       const m = clamped % 60;
       return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
@@ -9135,16 +9176,73 @@
       return h12 + ":" + String(m).padStart(2, "0") + " " + ampm;
     }
 
+    function getSyncedChronoSchedule(gymTimeMinutes, warmupType) {
+      const baseMins = ((Math.round(Number(gymTimeMinutes) || 420) % 1440) + 1440) % 1440;
+      const fuel1Minutes = ((baseMins - 25) % 1440 + 1440) % 1440;
+      const fuel2Minutes = (baseMins + 75) % 1440;
+      const fuel3Minutes = (baseMins + 360) % 1440;
+      const fuel4Minutes = (baseMins + 630) % 1440;
+      const gymTime12 = formatMinutesTo12Hr(baseMins);
+      const warmupLabel = (warmupType === 'lower' ? 'LOWER BODY' : 'UPPER BODY') + ' WARM-UP';
+
+      const waterOffsets = [
+        { slot: 1, label: 'Bottle 1 • Pre-Gym Hydration (-30m)', offsetMinutes: -30, amountMl: 500 },
+        { slot: 2, label: 'Bottle 2 • Intra-Gym Hydration (+30m)', offsetMinutes: 30, amountMl: 500 },
+        { slot: 3, label: 'Bottle 3 • Post-Gym Hydration (+90m)', offsetMinutes: 90, amountMl: 500 },
+        { slot: 4, label: 'Bottle 4 • Midday Hydration (+4h)', offsetMinutes: 240, amountMl: 500 },
+        { slot: 5, label: 'Bottle 5 • Afternoon Hydration (+7.5h)', offsetMinutes: 450, amountMl: 500 },
+        { slot: 6, label: 'Bottle 6 • Evening Hydration (+10.5h)', offsetMinutes: 630, amountMl: 500 }
+      ];
+
+      return {
+        gymTimeMinutes: baseMins,
+        gymTime24: minutesToHHMM(baseMins),
+        gymTime12,
+        warmupHeader: `${gymTime12} ${warmupLabel}`,
+        fuel1Minutes,
+        fuel1Time12: formatMinutesTo12Hr(fuel1Minutes),
+        fuel2Minutes,
+        fuel2Time12: formatMinutesTo12Hr(fuel2Minutes),
+        fuel3Minutes,
+        fuel3Time12: formatMinutesTo12Hr(fuel3Minutes),
+        fuel4Minutes,
+        fuel4Time12: formatMinutesTo12Hr(fuel4Minutes),
+        waterCheckpoints: waterOffsets.map(w => {
+          const mins = ((baseMins + w.offsetMinutes) % 1440 + 1440) % 1440;
+          return {
+            slot: w.slot,
+            label: w.label,
+            offsetMinutes: w.offsetMinutes,
+            timeMinutes: mins,
+            time12: formatMinutesTo12Hr(mins),
+            amountMl: w.amountMl
+          };
+        }),
+        waterSchedule: waterOffsets.map(w => {
+          const mins = ((baseMins + w.offsetMinutes) % 1440 + 1440) % 1440;
+          return {
+            ml: w.slot * 500,
+            time12: formatMinutesTo12Hr(mins),
+            label: `500 ml • ${formatMinutesTo12Hr(mins)}`
+          };
+        })
+      };
+    }
+
     function build15MinGymTimeOptionsHtml(selectedHHMM) {
       const selMins = parseHHMMToMinutes(selectedHHMM || "07:00");
       const selNormalized = minutesToHHMM(selMins);
       let opts = "";
-      // Generate every 15-minute slot from 5:00 AM (300m) to 10:45 PM (1365m)
+      let foundExact = false;
       for (let mins = 300; mins <= 1365; mins += 15) {
         const hhmm = minutesToHHMM(mins);
+        if (hhmm === selNormalized) foundExact = true;
         const label12 = formatMinutesTo12Hr(mins);
         const tag = mins === 420 ? " (Default)" : (mins === 720 ? " (Midday)" : (mins === 915 ? " (Afternoon)" : (mins === 1050 ? " (Evening)" : "")));
         opts += `<option value="${hhmm}" ${hhmm === selNormalized ? "selected" : ""}>${label12}${tag}</option>`;
+      }
+      if (!foundExact) {
+        opts = `<option value="${selNormalized}" selected>${formatMinutesTo12Hr(selMins)} (Synced)</option>` + opts;
       }
       return opts;
     }
@@ -9152,7 +9250,7 @@
     function getNowHHMM() {
       const now = new Date();
       const rawMins = now.getHours() * 60 + now.getMinutes();
-      return minutesToHHMM(roundTo15Minutes(rawMins));
+      return minutesToHHMM(roundTo5Minutes(rawMins));
     }
 
     function getDayGymSchedule(week, dayIdx) {
@@ -9180,7 +9278,7 @@
     function setManualDayGymStartTime(week, dayIdx, startHHMM, sourceLabel) {
       if (!state.gymScheduleByDay) state.gymScheduleByDay = {};
       const startMins = parseHHMMToMinutes(startHHMM || "07:00");
-      const endMins = Math.min(1425, startMins + 60);
+      const endMins = Math.min(1435, startMins + 60);
       const normStart = minutesToHHMM(startMins);
       const key = `w${week}_d${dayIdx}`;
       state.gymScheduleByDay[key] = {
@@ -9189,6 +9287,7 @@
         mode: normStart === "07:00" && !sourceLabel ? "default" : "manual",
         updatedLabel: sourceLabel || (normStart === "07:00" ? "Default 7:00 AM Gym" : `Custom Gym: ${formatMinutesTo12Hr(startMins)} – ${formatMinutesTo12Hr(endMins)}`)
       };
+      state.hasSetInitialGymTime = true;
     }
 
     function stepDayGymStartTimeBy15Min(week, dayIdx, deltaMins) {
@@ -9203,26 +9302,40 @@
       if (!state.gymScheduleByDay) state.gymScheduleByDay = {};
       const key = `w${week}_d${dayIdx}`;
       const existing = getDayGymSchedule(week, dayIdx);
-      const nowHHMM = getNowHHMM();
-      const nowMins = parseHHMMToMinutes(nowHHMM);
+      const prevStartMins = parseHHMMToMinutes(existing.startTime);
+      const now = new Date();
+      const rawNowMins = now.getHours() * 60 + now.getMinutes();
+      const nowMins5 = roundTo5Minutes(rawNowMins);
+      const diffMins = Math.abs(rawNowMins - prevStartMins);
 
-      if (isFinalSetToday) {
-        const startMins = existing.mode === "auto_start"
-          ? parseHHMMToMinutes(existing.startTime)
-          : Math.max(300, roundTo15Minutes(nowMins - 60));
+      if (isFirstSetToday && diffMins >= 20) {
+        const endMins = Math.min(1435, nowMins5 + 60);
+        const syncedStartHHMM = minutesToHHMM(nowMins5);
+        const syncedTime12 = formatMinutesTo12Hr(nowMins5);
         state.gymScheduleByDay[key] = {
-          startTime: minutesToHHMM(startMins),
-          endTime: minutesToHHMM(nowMins),
-          mode: "auto_end",
-          updatedLabel: ` Auto-synced from Last Exercise (${formatMinutesTo12Hr(startMins)}–${formatMinutesTo12Hr(nowMins)})`
-        };
-      } else if (isFirstSetToday) {
-        const endMins = Math.min(1425, roundTo15Minutes(nowMins + 60));
-        state.gymScheduleByDay[key] = {
-          startTime: minutesToHHMM(nowMins),
+          startTime: syncedStartHHMM,
           endTime: minutesToHHMM(endMins),
           mode: "auto_start",
-          updatedLabel: ` Auto-synced from First Exercise (${formatMinutesTo12Hr(nowMins)}–${formatMinutesTo12Hr(endMins)})`
+          updatedLabel: `Auto-synced to live session (${syncedTime12})`
+        };
+        state.lastGymTimeAutoSync = {
+          week,
+          dayIdx,
+          previousStartHHMM: existing.startTime || "07:00",
+          syncedStartHHMM,
+          syncedTime12,
+          bannerText: `Workout Time Auto-Synced to [${syncedTime12}] — Meal & Water schedules shifted automatically to match your live session (Undo)`
+        };
+        state.hasSetInitialGymTime = true;
+      } else if (isFinalSetToday) {
+        const startMins = existing.mode === "auto_start"
+          ? parseHHMMToMinutes(existing.startTime)
+          : prevStartMins;
+        state.gymScheduleByDay[key] = {
+          startTime: minutesToHHMM(startMins),
+          endTime: minutesToHHMM(nowMins5),
+          mode: "auto_end",
+          updatedLabel: `Auto-synced from Last Exercise (${formatMinutesTo12Hr(startMins)}–${formatMinutesTo12Hr(nowMins5)})`
         };
       }
       return getAdaptiveMealScheduleForDay(week, dayIdx);
@@ -9232,188 +9345,277 @@
       const sched = getDayGymSchedule(week, dayIdx);
       const startMins = parseHHMMToMinutes(sched.startTime);
       const endMins = parseHHMMToMinutes(sched.endTime || minutesToHHMM(startMins + 60));
-      const start12 = formatMinutesTo12Hr(startMins);
+      const dayObj = typeof getScheduledDayObject === 'function' ? getScheduledDayObject(week, dayIdx) : { warmupType: 'upper' };
+      const chrono = getSyncedChronoSchedule(startMins, dayObj && dayObj.warmupType === 'lower' ? 'lower' : 'upper');
+      const start12 = chrono.gymTime12;
       const end12 = formatMinutesTo12Hr(endMins);
-      const preShakeMins = Math.max(0, startMins - 25);
-      const preShakeStr = formatMinutesTo12Hr(preShakeMins);
-
-      // 1. Morning Gym: before 11:00 AM (Default 7:00 AM – 8:00 AM -> 6:35 AM Pre-Gym Shake + 8:15 AM Post-Gym Oats)
-      if (startMins < 660) {
-        const oatsMins = roundTo15Minutes(endMins + 15); // default 8:15 AM
-        const m2Mins = roundTo15Minutes(Math.max(oatsMins + 270, 780)); // default 1:00 PM
-        const m3Mins = roundTo15Minutes(Math.max(m2Mins + 270, 1050)); // default 5:30 PM
-        const oatsStr = formatMinutesTo12Hr(oatsMins);
-        const m2Str = formatMinutesTo12Hr(m2Mins);
-        const m3Str = formatMinutesTo12Hr(m3Mins);
-        return {
-          period: "morning",
-          start12,
-          end12,
-          preShakeStr,
-          oatsStr,
-          shakeFirst: true,
-          periodTitle: ` Morning Gym (${start12} – ${end12})`,
-          periodAdvice: `Drink Fuel 1 (${preShakeStr}) 25m before gym, then eat Fuel 2 Overnight Oats at ${oatsStr}.`,
-          nextPostWorkoutSlot: "post_oats",
-          nextPostWorkoutTime12: oatsStr,
-          slots: {
-            pre_shake: {
-              time12: preShakeStr,
-              headerText: `FUEL 1 • PRE-GYM SHAKE (${preShakeStr})`,
-              roleBadge: " Pre-Gym Amino Boost",
-              isPostWorkoutTarget: false,
-              contextTip: `Drink 25 mins before your ${start12} workout for fast amino acids with zero stomach bulk.`
-            },
-            post_oats: {
-              time12: oatsStr,
-              headerText: `FUEL 2 • POST-GYM OVERNIGHT OATS (${oatsStr})`,
-              roleBadge: " Post-Gym Glycogen",
-              isPostWorkoutTarget: true,
-              contextTip: `Eat 15 mins after finishing your ${end12} workout to replenish muscle glycogen.`
-            },
-            post: {
-              time12: `${preShakeStr} & ${oatsStr}`,
-              headerText: `FUEL 1 • PRE-GYM SHAKE (${preShakeStr})`,
-              roleBadge: " Pre + Post Gym",
-              isPostWorkoutTarget: true,
-              contextTip: `Drink your Pre-Gym Shake at ${preShakeStr}, then eat your Overnight Oats jar at ${oatsStr}.`
-            },
-            lunch: {
-              time12: m2Str,
-              headerText: `FUEL 3 • SAVOURY TOFU & JASMINE RICE BOWL (${m2Str})`,
-              roleBadge: " Midday Micronutrients",
-              isPostWorkoutTarget: false,
-              contextTip: `Midday whole-food bowl at ${m2Str}: 175g tofu + 150g rice + 75g broccoli + 12g yeast + 5g sesame oil + 1.5g iodized salt.`
-            },
-            dinner: {
-              time12: m3Str,
-              headerText: `FUEL 4 • EVENING RECOVERY SHAKE (${m3Str})`,
-              roleBadge: " Overnight Repair",
-              isPostWorkoutTarget: false,
-              contextTip: `Zero chewing at ${m3Str}: 45g pea isolate + 360 ml Silk milk shaken together + 16g peanut butter.`
-            }
-          }
-        };
-      }
-
-      // 2. Midday Gym: 11:00 AM – 2:15 PM
-      if (startMins < 870) {
-        const oatsMins = 495; // 8:15 AM
-        const m2Mins = roundTo15Minutes(endMins + 15);
-        const m3Mins = roundTo15Minutes(Math.max(m2Mins + 255, 1050));
-        const oatsStr = formatMinutesTo12Hr(oatsMins);
-        const m2Str = formatMinutesTo12Hr(m2Mins);
-        const m3Str = formatMinutesTo12Hr(m3Mins);
-        return {
-          period: "midday",
-          start12,
-          end12,
-          preShakeStr,
-          oatsStr,
-          shakeFirst: false,
-          periodTitle: ` Midday Gym (${start12} – ${end12})`,
-          periodAdvice: `Eat Overnight Oats at ${oatsStr}, drink Fuel 1 Shake at ${preShakeStr}, then eat Fuel 3 Bowl at ${m2Str}.`,
-          nextPostWorkoutSlot: "lunch",
-          nextPostWorkoutTime12: m2Str,
-          slots: {
-            pre_shake: {
-              time12: preShakeStr,
-              headerText: `FUEL 1 • PRE-GYM SHAKE (${preShakeStr})`,
-              roleBadge: " Pre-Gym Amino Boost",
-              isPostWorkoutTarget: false,
-              contextTip: `Drink 25 mins before your ${start12} workout.`
-            },
-            post_oats: {
-              time12: oatsStr,
-              headerText: `FUEL 2 • POST-GYM OVERNIGHT OATS (${oatsStr})`,
-              roleBadge: " Morning Glycogen",
-              isPostWorkoutTarget: false,
-              contextTip: `Eat at ${oatsStr} for morning training energy.`
-            },
-            post: {
-              time12: `${oatsStr} & ${preShakeStr}`,
-              headerText: `FUEL 1 • PRE-GYM SHAKE (${preShakeStr})`,
-              roleBadge: " Morning + Pre-Gym",
-              isPostWorkoutTarget: false,
-              contextTip: `Eat Oats at ${oatsStr}, then drink Pre-Gym Shake at ${preShakeStr}.`
-            },
-            lunch: {
-              time12: m2Str,
-              headerText: `FUEL 3 • SAVOURY TOFU & JASMINE RICE BOWL (${m2Str})`,
-              roleBadge: " Post-Workout Bowl",
-              isPostWorkoutTarget: true,
-              contextTip: `Eat at ${m2Str} (15 mins after your workout).`
-            },
-            dinner: {
-              time12: m3Str,
-              headerText: `FUEL 4 • EVENING RECOVERY SHAKE (${m3Str})`,
-              roleBadge: " Overnight Repair",
-              isPostWorkoutTarget: false,
-              contextTip: `Easy liquid recovery at ${m3Str}.`
-            }
-          }
-        };
-      }
-
-      // 3. Afternoon & Evening Gym: 2:30 PM onwards
-      const isAfternoon = startMins < 1020;
-      const oatsMins = 495;
-      const m2Mins = roundTo15Minutes(Math.max(720, startMins - 195));
-      const m3Mins = roundTo15Minutes(Math.min(1425, endMins + 15));
-      const oatsStr = formatMinutesTo12Hr(oatsMins);
-      const m2Str = formatMinutesTo12Hr(m2Mins);
-      const m3Str = formatMinutesTo12Hr(m3Mins);
-      const periodLabel = isAfternoon ? " Afternoon Gym" : " Evening Gym";
+      const preShakeStr = chrono.fuel1Time12;
+      const oatsStr = chrono.fuel2Time12;
+      const m2Str = chrono.fuel3Time12;
+      const m3Str = chrono.fuel4Time12;
+      const period = startMins < 660 ? "morning" : (startMins < 870 ? "midday" : (startMins < 1020 ? "afternoon" : "evening"));
+      const periodLabel = period === "morning" ? "Morning Gym" : (period === "midday" ? "Midday Gym" : (period === "afternoon" ? "Afternoon Gym" : "Evening Gym"));
 
       return {
-        period: isAfternoon ? "afternoon" : "evening",
+        period,
         start12,
         end12,
         preShakeStr,
         oatsStr,
-        shakeFirst: false,
+        m2Str,
+        m3Str,
+        chrono,
+        waterCheckpoints: chrono.waterCheckpoints,
+        shakeFirst: true,
         periodTitle: `${periodLabel} (${start12} – ${end12})`,
-        periodAdvice: `Eat Oats at ${oatsStr} and Tofu Bowl at ${m2Str}, drink Pre-Gym Shake at ${preShakeStr}, and finish with Evening Recovery Shake at ${m3Str}.`,
-        nextPostWorkoutSlot: "dinner",
-        nextPostWorkoutTime12: m3Str,
+        periodAdvice: `Drink Fuel 1 (${preShakeStr}) 25m before gym, eat Fuel 2 Overnight Oats at ${oatsStr}, Fuel 3 Bowl at ${m2Str}, and Fuel 4 Evening Shake at ${m3Str}.`,
+        nextPostWorkoutSlot: "post_oats",
+        nextPostWorkoutTime12: oatsStr,
         slots: {
           pre_shake: {
             time12: preShakeStr,
             headerText: `FUEL 1 • PRE-GYM SHAKE (${preShakeStr})`,
-            roleBadge: " Pre-Gym Amino Boost",
+            roleBadge: "Pre-Gym Amino Boost (-25m)",
             isPostWorkoutTarget: false,
-            contextTip: `Drink 25 mins before your ${start12} workout.`
+            contextTip: `Drink 25 mins before your ${start12} workout for fast amino acids with zero stomach bulk.`
           },
           post_oats: {
             time12: oatsStr,
             headerText: `FUEL 2 • POST-GYM OVERNIGHT OATS (${oatsStr})`,
-            roleBadge: " Morning Glycogen",
-            isPostWorkoutTarget: false,
-            contextTip: `Eat at ${oatsStr} for sustained daytime energy.`
+            roleBadge: "Post-Gym Glycogen (+75m)",
+            isPostWorkoutTarget: true,
+            contextTip: `Eat at ${oatsStr} (75 mins after ${start12} gym start) to replenish muscle glycogen.`
           },
           post: {
-            time12: `${oatsStr} & ${preShakeStr}`,
+            time12: `${preShakeStr} & ${oatsStr}`,
             headerText: `FUEL 1 • PRE-GYM SHAKE (${preShakeStr})`,
-            roleBadge: " Morning + Pre-Gym",
-            isPostWorkoutTarget: false,
-            contextTip: `Eat Oats at ${oatsStr}, then drink Pre-Gym Shake at ${preShakeStr}.`
+            roleBadge: "Pre + Post Gym",
+            isPostWorkoutTarget: true,
+            contextTip: `Drink your Pre-Gym Shake at ${preShakeStr}, then eat your Overnight Oats jar at ${oatsStr}.`
           },
           lunch: {
             time12: m2Str,
             headerText: `FUEL 3 • SAVOURY TOFU & JASMINE RICE BOWL (${m2Str})`,
-            roleBadge: " Midday Fuel",
+            roleBadge: "Midday Micronutrients (+6h)",
             isPostWorkoutTarget: false,
-            contextTip: `Eat at ${m2Str} (~3.25 hrs before your workout).`
+            contextTip: `Whole-food bowl at ${m2Str} (+6 hours from ${start12} gym start): 175g tofu + 150g rice + 75g broccoli + 12g yeast + 5g sesame oil + 1.5g iodized salt.`
           },
           dinner: {
             time12: m3Str,
             headerText: `FUEL 4 • EVENING RECOVERY SHAKE (${m3Str})`,
-            roleBadge: " Post-Workout Recovery",
-            isPostWorkoutTarget: true,
-            contextTip: `Drink at ${m3Str} (15 mins after your workout).`
+            roleBadge: "Overnight Repair (+10.5h)",
+            isPostWorkoutTarget: false,
+            contextTip: `Zero chewing at ${m3Str} (+10.5 hours from ${start12} gym start): 45g pea isolate + 350 ml water shaken together + 25g peanut butter + Vitamin D3.`
           }
         }
       };
+    }
+
+    const GYM_TIME_QUICK_PRESETS = [
+      { hhmm: '06:00', label: '6:00 AM' },
+      { hhmm: '06:30', label: '6:30 AM' },
+      { hhmm: '07:00', label: '7:00 AM' },
+      { hhmm: '07:30', label: '7:30 AM' },
+      { hhmm: '08:00', label: '8:00 AM' },
+      { hhmm: '09:00', label: '9:00 AM' },
+      { hhmm: '12:00', label: '12:00 PM' },
+      { hhmm: '17:00', label: '5:00 PM' },
+      { hhmm: '18:00', label: '6:00 PM' }
+    ];
+
+    function renderGymTimeTopBanners(week, dayIdx) {
+      const w = week || state.selectedWeek || state.currentWeek || 1;
+      const d = typeof dayIdx === 'number' ? dayIdx : (state.selectedDayIndex || 0);
+      const sched = getDayGymSchedule(w, d);
+      const mealSched = getAdaptiveMealScheduleForDay(w, d);
+      const chrono = mealSched.chrono;
+      const shouldShowExpandedCard = Boolean(!state.hasSetInitialGymTime || state.openGymTimePromptCard);
+
+      const containers = [
+        { id: 'gym-time-top-banner-workout', suffix: 'workout' },
+        { id: 'gym-time-top-banner-fuel', suffix: 'fuel' }
+      ];
+
+      containers.forEach(cfg => {
+        const el = document.getElementById(cfg.id);
+        if (!el) return;
+
+        if (shouldShowExpandedCard) {
+          el.innerHTML = `
+            <div data-gym-time-prompt-card="${cfg.suffix}" class="bg-slate-900/95 border-2 border-sky-400/70 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40">Daily Chrono-Nutrition &amp; Hydration Sync</span>
+                  <h3 class="text-xs sm:text-sm font-extrabold text-white mt-1">What time are you going to the gym today?</h3>
+                  <p class="text-[11px] text-slate-300 mt-0.5 leading-snug">Your Pre-Gym Shake (Fuel 1), Post-Gym Oats (Fuel 2), Lunch/Dinner (Fuel 3 &amp; 4), and 3,000 ml Water Schedule adjust automatically to your workout time.</p>
+                </div>
+                ${state.hasSetInitialGymTime ? `
+                  <button type="button" data-close-gym-prompt="${cfg.suffix}" class="close-gym-time-prompt-btn shrink-0 px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold border border-slate-700">Close</button>
+                ` : ''}
+              </div>
+
+              <div class="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
+                ${GYM_TIME_QUICK_PRESETS.map(p => {
+                  const isSel = sched.startTime === p.hhmm;
+                  return `
+                    <button
+                      type="button"
+                      data-quick-gym-hhmm="${p.hhmm}"
+                      class="quick-gym-time-btn py-1.5 px-2 rounded-xl border text-[11px] font-extrabold transition ${
+                        isSel
+                          ? 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-sm'
+                          : 'bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-800'
+                      }"
+                    >
+                      ${p.label}
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+
+              <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
+                <label class="inline-flex items-center gap-2 text-[11px] font-bold text-slate-200">
+                  <span>Custom Time:</span>
+                  <input
+                    type="time"
+                    id="custom-gym-time-picker-${cfg.suffix}"
+                    value="${sched.startTime}"
+                    class="custom-gym-time-input bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-extrabold text-white focus:outline-none focus:border-sky-400"
+                  />
+                </label>
+                <button
+                  type="button"
+                  data-save-gym-time-btn="${cfg.suffix}"
+                  class="save-gym-time-sync-btn px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-sm transition"
+                >
+                  Save Gym Time &amp; Sync Meals
+                </button>
+              </div>
+
+              <div class="bg-slate-950/90 border border-slate-800 rounded-xl px-2.5 py-1.5 text-[10.5px] text-slate-300 flex flex-wrap items-center justify-between gap-1.5">
+                <span><strong class="text-emerald-300">Fuel 1:</strong> ${chrono.fuel1Time12}</span>
+                <span>•</span>
+                <span><strong class="text-sky-300">Gym:</strong> ${chrono.gymTime12}</span>
+                <span>•</span>
+                <span><strong class="text-emerald-300">Fuel 2:</strong> ${chrono.fuel2Time12}</span>
+                <span>•</span>
+                <span><strong class="text-amber-300">Fuel 3:</strong> ${chrono.fuel3Time12}</span>
+                <span>•</span>
+                <span><strong class="text-purple-300">Fuel 4:</strong> ${chrono.fuel4Time12}</span>
+              </div>
+            </div>
+          `;
+        } else {
+          el.innerHTML = `
+            <div class="bg-slate-900/95 border border-sky-500/35 rounded-xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  data-open-gym-prompt="${cfg.suffix}"
+                  class="open-gym-time-prompt-btn inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 font-extrabold text-[11px] transition"
+                >
+                  <span>Gym Time: [${chrono.gymTime12}] (Change)</span>
+                </button>
+                <span class="text-[10.5px] font-semibold text-slate-300">
+                  Fuel 1: <strong class="text-emerald-300">${chrono.fuel1Time12}</strong> •
+                  Fuel 2: <strong class="text-emerald-300">${chrono.fuel2Time12}</strong> •
+                  Fuel 3: <strong class="text-amber-300">${chrono.fuel3Time12}</strong> •
+                  Fuel 4: <strong class="text-purple-300">${chrono.fuel4Time12}</strong>
+                </span>
+              </div>
+            </div>
+          `;
+        }
+
+        el.querySelectorAll('.open-gym-time-prompt-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.openGymTimePromptCard = true;
+            renderGymTimeTopBanners(w, d);
+          });
+        });
+
+        el.querySelectorAll('.close-gym-time-prompt-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.hasSetInitialGymTime = true;
+            state.openGymTimePromptCard = false;
+            saveState();
+            renderGymTimeTopBanners(w, d);
+          });
+        });
+
+        el.querySelectorAll('.quick-gym-time-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const hhmm = btn.getAttribute('data-quick-gym-hhmm') || '07:00';
+            setManualDayGymStartTime(w, d, hhmm);
+            state.hasSetInitialGymTime = true;
+            state.openGymTimePromptCard = false;
+            saveState();
+            renderWorkoutView();
+            renderVeganView();
+            const updatedChrono = getAdaptiveMealScheduleForDay(w, d).chrono;
+            showToast(`Gym Time set to ${updatedChrono.gymTime12} — Fuel 1 (${updatedChrono.fuel1Time12}), Fuel 2 (${updatedChrono.fuel2Time12}), Fuel 3 (${updatedChrono.fuel3Time12}), Fuel 4 (${updatedChrono.fuel4Time12}) synced`);
+          });
+        });
+
+        el.querySelectorAll('.save-gym-time-sync-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const picker = document.getElementById(`custom-gym-time-picker-${cfg.suffix}`);
+            const hhmm = (picker && picker.value) ? picker.value : sched.startTime;
+            setManualDayGymStartTime(w, d, hhmm);
+            state.hasSetInitialGymTime = true;
+            state.openGymTimePromptCard = false;
+            saveState();
+            renderWorkoutView();
+            renderVeganView();
+            const updatedChrono = getAdaptiveMealScheduleForDay(w, d).chrono;
+            showToast(`Gym Time set to ${updatedChrono.gymTime12} — Meals & 3,000 ml Water Schedule synced`);
+          });
+        });
+      });
+
+      const autoSyncBannerEl = document.getElementById('live-gym-time-autosync-banner');
+      if (autoSyncBannerEl) {
+        const syncInfo = state.lastGymTimeAutoSync;
+        if (syncInfo && syncInfo.week === w && syncInfo.dayIdx === d) {
+          autoSyncBannerEl.className = 'bg-amber-950/90 border-2 border-amber-400/80 rounded-xl px-3 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs shadow-md';
+          autoSyncBannerEl.innerHTML = `
+            <span class="font-extrabold text-amber-200 leading-snug">
+              Workout Time Auto-Synced to [${syncInfo.syncedTime12}] — Meal &amp; Water schedules shifted automatically to match your live session
+            </span>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button type="button" id="undo-live-gym-autosync-btn" class="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-[11px] transition">
+                Undo
+              </button>
+              <button type="button" id="dismiss-live-gym-autosync-btn" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[10px] border border-slate-700 transition">
+                Dismiss
+              </button>
+            </div>
+          `;
+          const undoBtn = document.getElementById('undo-live-gym-autosync-btn');
+          if (undoBtn) {
+            undoBtn.addEventListener('click', () => {
+              const prevHHMM = syncInfo.previousStartHHMM || '07:00';
+              setManualDayGymStartTime(w, d, prevHHMM);
+              state.lastGymTimeAutoSync = null;
+              saveState();
+              renderWorkoutView();
+              renderVeganView();
+              showToast(`Restored Gym Time to ${formatMinutesTo12Hr(parseHHMMToMinutes(prevHHMM))}`);
+            });
+          }
+          const dismissBtn = document.getElementById('dismiss-live-gym-autosync-btn');
+          if (dismissBtn) {
+            dismissBtn.addEventListener('click', () => {
+              state.lastGymTimeAutoSync = null;
+              saveState();
+              renderGymTimeTopBanners(w, d);
+            });
+          }
+        } else {
+          autoSyncBannerEl.className = 'hidden';
+          autoSyncBannerEl.innerHTML = '';
+        }
+      }
     }
 
     function getCrossWeekContinuityStatusText(week) {
@@ -9732,11 +9934,30 @@
       const titleEl = document.getElementById('warmup-title');
       const subEl = document.getElementById('warmup-subtitle');
       const panelEl = document.getElementById('warmup-panel');
+      const chevEl = document.getElementById('warmup-chevron');
       if (!panelEl) return;
 
       if (!state.warmupLogs || typeof state.warmupLogs !== 'object') state.warmupLogs = {};
+      if (!state.warmupClosedByDay || typeof state.warmupClosedByDay !== 'object') state.warmupClosedByDay = {};
       const week = state.selectedWeek || state.currentWeek || 1;
       const dayIdx = state.selectedDayIndex || 0;
+      const dayKey = `w${week}_d${dayIdx}`;
+      const dayAssignment = typeof getDayAssignment === 'function' ? getDayAssignment(week, dayIdx) : { isRestDay: false };
+      const compStatus = typeof getDayCompletionStatus === 'function' ? getDayCompletionStatus(week, dayIdx) : { doneSets: 0 };
+      const completedSetsToday = compStatus ? compStatus.doneSets : 0;
+
+      // Auto-open Warm-Up Accordion on Lifting Days when 0 sets are logged so far today and not manually closed
+      const closedPref = state.warmupClosedByDay[dayKey];
+      const shouldAutoOpen = !dayAssignment.isRestDay && completedSetsToday === 0 && !closedPref;
+      const isWarmupOpen = closedPref === 'forced_open' || shouldAutoOpen;
+      if (isWarmupOpen) {
+        panelEl.classList.remove('hidden');
+        if (chevEl) chevEl.textContent = '▲';
+      } else {
+        panelEl.classList.add('hidden');
+        if (chevEl) chevEl.textContent = '▼';
+      }
+
       const drills = dayObj.warmupType === 'upper' ? WARMUP_DATA.upper : WARMUP_DATA.lower;
       const curSched = getDayGymSchedule(week, dayIdx);
       const curStart12 = formatMinutesTo12Hr(parseHHMMToMinutes(curSched.startTime));
@@ -9803,6 +10024,13 @@
         <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 text-[11px] text-slate-300">
           <strong class="text-white">Part 2 (Warm-Up Sets):</strong> ${WARMUP_DATA.warmupSetsNote}
         </div>
+        <button
+          type="button"
+          id="warmup-complete-collapse-btn"
+          class="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-md transition"
+        >
+          Warm-Up Complete — Collapse &amp; Start Lift ▲
+        </button>
       `;
 
       panelEl.querySelectorAll('.warmup-drill-checkbox').forEach(cb => {
@@ -9816,6 +10044,20 @@
           showToast(cb.checked ? `✓ Warm-up drill complete: ${wName}` : `↺ Unchecked ${wName}`);
         });
       });
+
+      const completeCollapseBtn = document.getElementById('warmup-complete-collapse-btn');
+      if (completeCollapseBtn) {
+        completeCollapseBtn.addEventListener('click', () => {
+          drills.forEach((d, idx) => {
+            const wKey = `w${week}_d${dayIdx}_warmup_${d.id || idx}`;
+            state.warmupLogs[wKey] = true;
+          });
+          state.warmupClosedByDay[dayKey] = true;
+          saveState();
+          renderWarmupCard(dayObj);
+          showToast('Warm-Up Complete — Ready for Set 1');
+        });
+      }
     }
 
     
@@ -10511,6 +10753,7 @@
       const slotIdx = dayAssignment.templateSlotIndex;
       const dayObj = getScheduledDayObject(week, dayIdx);
       renderRestDaySchedulerDrawers();
+      renderGymTimeTopBanners(week, dayIdx);
       renderWarmupCard(dayObj);
       const warmupCardContainerEl = document.getElementById('warmup-card-container');
       if (warmupCardContainerEl) {
@@ -11314,7 +11557,7 @@
               ? `${prevWeekCarryWeight} ${exUnit} × `
               : '';
             const prevRPart = prevSuggestion.reps || defaultNumericReps;
-            prevWeekHintHtml = `<span data-prev-week-hint="${logKey}" class="block text-[9px] font-semibold text-sky-400/90 leading-tight mt-0.5">Last (${prevSrc}): ${prevWPart}${prevRPart}</span>`;
+            prevWeekHintHtml = `<div data-prev-week-hint="${logKey}" class="text-[10px] font-semibold text-sky-400/95 leading-tight pb-1 border-b border-slate-800/70" style="grid-column: 1 / -1;">Last (${prevSrc}): ${prevWPart}${prevRPart}</div>`;
           } else {
             suggestedWeightVal = rawLoggedWeight;
             suggestedRepsVal = (existing && existing.reps !== undefined && existing.reps !== '')
@@ -11404,14 +11647,14 @@
                   : 'bg-slate-950/75 border border-slate-800/80'
               }">
                 <div class="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-3">
+                  ${prevWeekHintHtml}
                   <div class="min-w-[56px] max-w-[145px]">
                     <span class="text-xs font-extrabold leading-tight block ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
-                    ${prevWeekHintHtml}
                   </div>
                   <div class="min-w-0 max-w-[200px] mx-auto w-full">
                     <div class="flex items-center bg-slate-900 border border-slate-700/90 rounded-lg overflow-hidden">
                       <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn w-8 h-9 sm:w-9 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
-                      <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full min-w-0 bg-transparent py-1 text-xs sm:text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none text-center" />
+                      <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full bg-transparent py-1 text-white placeholder-slate-500 focus:outline-none" style="min-width: 52px; font-size: 15px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: visible;" />
                       <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn w-8 h-9 sm:w-9 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
                     </div>
                   </div>
@@ -11438,10 +11681,10 @@
                       ? 'bg-slate-950/90 border border-sky-400/50'
                       : 'bg-slate-950/75 border border-slate-800/80')
               }">
-                <div class="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-1.5 sm:gap-2">
-                  <div class="min-w-[44px]">
+                <div class="set-row-uncrushable-grid" style="display: grid; grid-template-columns: 48px minmax(112px, 1.3fr) minmax(92px, 1fr) 76px; gap: 6px; align-items: center;">
+                  ${prevWeekHintHtml}
+                  <div class="min-w-0">
                     <span class="text-xs font-extrabold whitespace-nowrap ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
-                    ${prevWeekHintHtml}
                     ${isBarbellEx ? `
                       <button type="button" data-select-calc-ex="${ex.id}" data-set-idx="${s}" class="select-calc-set-btn block text-[9px] font-bold whitespace-nowrap ${isSelectedInCalc ? 'text-amber-300' : 'text-slate-400 hover:text-sky-300'} mt-0.5 transition" title="Select Set ${s} in Calculator">
                         ${isSelectedInCalc ? ' Active' : (isMachineEx && machineLoadMode === 'pin_stack' ? ' Pin' : ' Plates')}
@@ -11451,19 +11694,19 @@
                   <div class="min-w-0">
                     <div class="flex items-center bg-slate-900 border ${isBarbellEx ? 'border-amber-500/40' : 'border-slate-700/90'} rounded-lg overflow-hidden">
                       <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-${weightStep}" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Weight">−</button>
-                      <input type="number" step="${weightStep}" min="0" inputmode="decimal" placeholder="${weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full min-w-0 bg-transparent py-1 text-center text-xs sm:text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none" />
+                      <input type="number" step="${weightStep}" min="0" inputmode="decimal" placeholder="${weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full bg-transparent py-1 text-white placeholder-slate-500 focus:outline-none" style="min-width: 52px; font-size: 15px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: visible;" />
                       <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="${weightStep}" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Weight">+</button>
                     </div>
                   </div>
                   <div class="min-w-0">
                     <div class="flex items-center bg-slate-900 border border-slate-700/90 rounded-lg overflow-hidden">
                       <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
-                      <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full min-w-0 bg-transparent py-1 text-xs sm:text-sm font-extrabold text-white placeholder-slate-500 focus:outline-none text-center" />
+                      <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full bg-transparent py-1 text-white placeholder-slate-500 focus:outline-none" style="min-width: 52px; font-size: 15px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: visible;" />
                       <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
                     </div>
                   </div>
                   <div class="flex items-center justify-end shrink-0">
-                    <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${setRestSeconds}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn h-9 sm:h-10 px-2.5 sm:px-3 rounded-lg text-xs font-extrabold whitespace-nowrap transition ${
+                    <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${setRestSeconds}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn w-full h-9 sm:h-10 px-2 rounded-lg text-xs font-extrabold whitespace-nowrap transition ${
                       isDone
                         ? 'bg-emerald-500 text-slate-950 shadow-sm'
                         : (isCurrentTargetSet
@@ -11517,6 +11760,8 @@
         }
 
         const isExComplete = exDoneSets === ex.sets;
+        const isExInProgress = exDoneSets > 0 && exDoneSets < ex.sets;
+        const remainingSetsCount = Math.max(0, ex.sets - exDoneSets);
         const isUpNext = ex.id === upNextExId;
         const isCollapsedDone = isExerciseSetsCollapsed(dayIdx, ex.id, isExComplete);
         const isActiveCard = (!isCollapsedDone) || (state.activeFocusedExId ? ex.id === state.activeFocusedExId : (isUpNext && !isExComplete));
@@ -11529,12 +11774,14 @@
         const pendingSwapPreview = (state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[ex.id]) || null;
 
         return `
-          <article id="ex-card-${ex.id}" class="${
-            isActiveCard
-              ? 'border-2 border-sky-400 bg-slate-900 shadow-lg shadow-sky-950/50'
-              : (isExComplete
-                  ? 'border border-emerald-500/35 bg-slate-900/65 opacity-85 hover:opacity-100'
-                  : 'border border-slate-800 bg-slate-900/80 hover:border-slate-700')
+          <article id="ex-card-${ex.id}" data-ex-progress-state="${isExComplete ? 'completed' : (isExInProgress ? 'in_progress' : 'not_started')}" style="${isExInProgress ? 'border: 2px solid #f59e0b; background: rgba(245, 158, 11, 0.08);' : ''}" class="${
+            isExInProgress
+              ? 'border-2 border-amber-500 bg-slate-900 shadow-lg shadow-amber-950/30'
+              : (isActiveCard
+                  ? 'border-2 border-sky-400 bg-slate-900 shadow-lg shadow-sky-950/50'
+                  : (isExComplete
+                      ? 'border border-emerald-500/35 bg-slate-900/65 opacity-85 hover:opacity-100'
+                      : 'border border-slate-800 bg-slate-900/80 hover:border-slate-700'))
           } rounded-2xl p-3.5 sm:p-4 space-y-2.5 scroll-mt-28 transition-all">
             ${ex.isSwappedMachine ? `
               <div class="flex flex-wrap items-center justify-between gap-2 bg-emerald-950/60 border border-emerald-400/50 rounded-xl px-3 py-2">
@@ -11563,24 +11810,28 @@
                   <div data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${isExComplete ? '1' : '0'}" class="expand-done-btn cursor-pointer select-none group min-w-0">
                     <div class="flex flex-wrap items-center gap-1.5">
                       <span class="exercise-progress-badge whitespace-nowrap px-2 py-0.5 text-xs font-bold font-mono rounded-md transition-colors ${
-                        isActiveCard ? 'bg-sky-400 text-slate-950' : (isExComplete ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300 group-hover:text-sky-300')
+                        isExInProgress
+                          ? 'bg-amber-400 text-slate-950'
+                          : (isActiveCard ? 'bg-sky-400 text-slate-950' : (isExComplete ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300 group-hover:text-sky-300'))
                       }">#${exOrder + 1}/${totalExercisesToday}</span>
                       ${ex.isSwappedMachine ? `<span class="text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-md whitespace-nowrap">Machine</span>` : ''}
                       <span class="text-[11px] font-semibold text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded-md whitespace-nowrap">${isTimedHold ? `${ex.sets} Sets × ${targetHoldSec}s / side` : `${ex.sets} Sets × ${ex.reps}`}</span>
+                      ${isExInProgress ? `<span data-ex-inprogress-badge="${ex.id}" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b;">IN PROGRESS • ${exDoneSets}/${ex.sets}</span>` : ''}
                       ${isExComplete ? `<span class="text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">✓ Done</span>` : ''}
                     </div>
                     <h3 class="${
-                      isActiveCard
+                      isActiveCard || isExInProgress
                         ? 'text-base sm:text-lg font-extrabold text-white mt-1 leading-snug tracking-tight break-words'
                         : 'text-sm font-bold text-slate-200 group-hover:text-white mt-0.5 leading-snug break-words'
                     } transition-colors">${ex.name}</h3>
                   </div>
 
-                  <!-- UPGRADE 4: Prominent Amber Reminder Badge on Header (Visible Even When Collapsed!) -->
+                  <!-- UPGRADE 4: Prominent Amber Reminder Badge on Header (Visible Even When Collapsed, with 1-Tap × Delete Button!) -->
                   <div data-ex-header-note-wrap="${ex.id}" class="${hasAnyNote ? 'mt-1.5' : 'hidden'}">
                     <span data-ex-header-note-badge="${ex.id}" class="inline-flex flex-wrap items-center gap-1.5 text-[11px] font-extrabold text-amber-200 bg-amber-500/20 border border-amber-400/50 px-2.5 py-1 rounded-lg shadow-sm">
                       <span> Note: ${hasNoteText ? safeNoteValueAttr : 'Machine photo saved'}</span>
                       ${hasNotePhoto ? '<span class="text-[10px] bg-amber-400/25 text-amber-100 px-1.5 py-0.5 rounded"> Photo</span>' : ''}
+                      <button type="button" data-delete-note-pill="${ex.id}" class="delete-ex-note-pill-btn ml-1 px-1.5 py-0.5 rounded bg-rose-500/25 hover:bg-rose-500/40 border border-rose-400/50 text-rose-200 font-black text-xs leading-none transition" title="Delete note">×</button>
                     </span>
                   </div>
 
@@ -11635,14 +11886,14 @@
               `)}
             </div>
 
-            <!-- Summary Bar: Neutral Slate Border -->
-            <button type="button" data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${isExComplete ? '1' : '0'}" class="expand-done-btn w-full flex items-center justify-between bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-slate-300 rounded-xl px-3 py-2 text-xs transition">
+            <!-- Summary Bar: Zeigarnik Amber/Gold when In-Progress (1/3 or 2/3 logged), Emerald when Done, Slate when Not Started -->
+            <button type="button" data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${isExComplete ? '1' : '0'}" style="${isExInProgress ? 'border-color: #f59e0b; color: #fbbf24;' : ''}" class="expand-done-btn w-full flex items-center justify-between bg-slate-950/80 hover:bg-slate-950 border ${isExInProgress ? 'border-amber-500 text-amber-300' : 'border-slate-800/90 text-slate-300'} rounded-xl px-3 py-2 text-xs transition">
               <span class="font-medium text-left">
-                ${isExComplete ? `<span class="text-emerald-400 font-bold">✓ All ${ex.sets} sets logged</span>` : `${exDoneSets} / ${ex.sets} sets logged`}
-                ${isTimedHold ? `<span class="text-amber-300 ml-1">• <strong>${targetHoldSec}s / side</strong></span>` : (isBodyweightRepsOnly ? `<span class="text-emerald-300 ml-1">• <strong>Bodyweight Reps</strong></span>` : (meta.defaultWeightLbs > 0 ? `<span class="text-slate-400 ml-1">• <strong class="text-white">${activeCalcEffectiveTotal} ${exUnit}</strong></span>` : ''))}
+                ${isExComplete ? `<span class="text-emerald-400 font-bold">✓ All ${ex.sets} sets logged</span>` : (isExInProgress ? `<span class="font-extrabold" style="color: #fbbf24;">${exDoneSets} / ${ex.sets} sets logged</span>` : `${exDoneSets} / ${ex.sets} sets logged`)}
+                ${isTimedHold ? `<span class="text-amber-300 ml-1">• <strong>${targetHoldSec}s / side</strong></span>` : (isBodyweightRepsOnly ? `<span class="text-emerald-300 ml-1">• <strong>Bodyweight Reps</strong></span>` : (meta.defaultWeightLbs > 0 ? `<span class="${isExInProgress ? 'text-amber-200' : 'text-slate-400'} ml-1">• <strong class="text-white">${activeCalcEffectiveTotal} ${exUnit}</strong></span>` : ''))}
               </span>
-              <span class="${isActiveCard ? 'text-sky-300' : 'text-slate-400'} font-bold text-[11px] shrink-0">
-                ${isCollapsedDone ? 'Tap to Open ▾' : 'Close ▴'}
+              <span class="${isExInProgress ? 'text-amber-300 font-extrabold' : (isActiveCard ? 'text-sky-300 font-bold' : 'text-slate-400 font-bold')} text-[11px] shrink-0">
+                ${isCollapsedDone ? (isExInProgress ? `Resume (${remainingSetsCount} ${remainingSetsCount === 1 ? 'set' : 'sets'} left) ▼` : 'Tap to Open ▾') : 'Close ▴'}
               </span>
             </button>
 
@@ -11974,14 +12225,25 @@
                     <label for="ex-note-input-${ex.id}" class="block text-[10px] font-extrabold uppercase tracking-wider text-amber-300 mb-1">
                       Machine Pin / Seat Setting Note (Auto-Saves &amp; Auto-Activates Machine Video When "Machine" Is Typed)
                     </label>
-                    <input
-                      id="ex-note-input-${ex.id}"
-                      type="text"
-                      data-note-input-ex="${ex.id}"
-                      placeholder="e.g., Machine pin #6, seat height 4"
-                      value="${safeNoteValueAttr}"
-                      class="ex-note-text-input w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
-                    />
+                    <div class="flex items-center gap-1.5">
+                      <input
+                        id="ex-note-input-${ex.id}"
+                        type="text"
+                        data-note-input-ex="${ex.id}"
+                        placeholder="e.g., Machine pin #6, seat height 4"
+                        value="${safeNoteValueAttr}"
+                        class="ex-note-text-input flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                      />
+                      <button
+                        type="button"
+                        data-delete-note-ex="${ex.id}"
+                        data-delete-note-btn="${ex.id}"
+                        style="background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);"
+                        class="delete-ex-note-btn ${hasAnyNote ? 'inline-flex' : 'hidden'} items-center justify-center shrink-0 px-3 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap transition hover:opacity-90"
+                      >
+                        Delete Note
+                      </button>
+                    </div>
                   </div>
 
                   <div class="flex flex-wrap items-center justify-between gap-2">
@@ -12561,7 +12823,44 @@
         });
       });
 
-      // UPGRADE 4 Listeners: Collapsible Exercise Notes & Photo Upload/Removal
+      // UPGRADE 4 Listeners: Collapsible Exercise Notes, 1-Tap Delete Note & Photo Upload/Removal
+      function handleDeleteExerciseNote(exId) {
+        if (!exId) return;
+        if (!state.exerciseNotes) state.exerciseNotes = {};
+        const prev = state.exerciseNotes[exId] || { text: '', photoDataUrl: '' };
+        if (prev.photoDataUrl) {
+          state.exerciseNotes[exId] = {
+            text: '',
+            photoDataUrl: prev.photoDataUrl,
+            updatedWeek: week,
+            updatedAt: new Date().toISOString()
+          };
+        } else {
+          delete state.exerciseNotes[exId];
+        }
+        const inpEl = document.getElementById(`ex-note-input-${exId}`);
+        if (inpEl) inpEl.value = '';
+        saveState();
+        renderWorkoutView();
+        showToast('Deleted exercise note');
+      }
+
+      listEl.querySelectorAll('.delete-ex-note-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const exId = btn.getAttribute('data-delete-note-ex');
+          handleDeleteExerciseNote(exId);
+        });
+      });
+
+      listEl.querySelectorAll('.delete-ex-note-pill-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const exId = btn.getAttribute('data-delete-note-pill');
+          handleDeleteExerciseNote(exId);
+        });
+      });
+
       listEl.querySelectorAll('.toggle-ex-note-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const exId = btn.getAttribute('data-note-toggle-ex');
@@ -12589,6 +12888,11 @@
           const clean = String(textVal || '').trim();
           const hasPhoto = Boolean(prev.photoDataUrl);
           const hasAny = clean.length > 0 || hasPhoto;
+          const delBtn = listEl.querySelector(`.delete-ex-note-btn[data-delete-note-ex="${exId}"]`);
+          if (delBtn) {
+            if (clean.length > 0) delBtn.classList.remove('hidden');
+            else delBtn.classList.add('hidden');
+          }
           const wrapEl = listEl.querySelector(`[data-ex-header-note-wrap="${exId}"]`);
           const badgeEl = listEl.querySelector(`[data-ex-header-note-badge="${exId}"]`);
           if (wrapEl && badgeEl) {
@@ -12596,7 +12900,14 @@
               wrapEl.classList.remove('hidden');
               wrapEl.classList.add('mt-1.5');
               const safeTxt = clean.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-              badgeEl.innerHTML = `<span> Note: ${clean ? safeTxt : 'Machine photo saved'}</span>${hasPhoto ? '<span class="text-[10px] bg-amber-400/25 text-amber-100 px-1.5 py-0.5 rounded"> Photo</span>' : ''}`;
+              badgeEl.innerHTML = `<span>Note: ${clean ? safeTxt : 'Machine photo saved'}</span>${hasPhoto ? '<span class="text-[10px] bg-amber-400/25 text-amber-100 px-1.5 py-0.5 rounded">Photo</span>' : ''}<button type="button" data-delete-note-pill="${exId}" class="delete-ex-note-pill-btn ml-1 px-1.5 py-0.5 rounded bg-rose-500/25 hover:bg-rose-500/40 text-rose-200 border border-rose-400/40 text-[10px] font-black leading-none transition" title="Delete note">×</button>`;
+              const pillBtn = badgeEl.querySelector('.delete-ex-note-pill-btn');
+              if (pillBtn) {
+                pillBtn.addEventListener('click', (ev) => {
+                  ev.stopPropagation();
+                  handleDeleteExerciseNote(exId);
+                });
+              }
             } else {
               wrapEl.classList.add('hidden');
             }
@@ -12605,8 +12916,8 @@
           if (toggleLbl) {
             const preview = clean.length > 34 ? clean.slice(0, 34) + '…' : (clean || 'Photo attached');
             toggleLbl.textContent = hasAny
-              ? ` View/Edit Note: "${preview}"${hasPhoto ? ' ' : ''}`
-              : '+ Add Machine Note / Photo';
+              ? `View/Edit Note: "${preview}"`
+              : '+ Add Machine / Seat Note';
           }
         });
         inp.addEventListener('change', () => {
@@ -12660,11 +12971,81 @@
           state.exerciseNotes[exId].photoDataUrl = '';
           saveState();
           renderWorkoutView();
-          showToast(' Removed exercise photo');
+          showToast('Removed exercise photo');
         });
       });
 
-      // Helper to apply a new canonical total weight to a SINGLE Barbell or Machine Set Row (or explicitly to remaining unlogged sets when requested)
+      // UPGRADE 1 Helper: Auto-cascade modified Weight and/or Reps from Set k to all subsequent unlogged sets (k+1..N)
+      function cascadeSetModificationToSubsequentUnloggedSets(exId, fromSetIdx, newWeightStr, newRepsStr) {
+        const exObj = exercisesToday.find(e => e.id === exId);
+        if (!exObj) return;
+        const exUnit = getExerciseUnit(exId);
+        const kIdx = exId === 'cable_ab_crunch' ? dayIdx : slotIdx;
+        const pullupDayNum = PULLUP_EX_ID_TO_DAY[exId] || 0;
+        const isBarOrMac = BARBELL_EX_IDS.includes(exId) || Boolean((exObj && (exObj.isSwappedMachine || exObj.isSwapped)) || isExerciseInMachineMode(exId, week, dayIdx));
+
+        for (let kNext = fromSetIdx + 1; kNext <= exObj.sets; kNext++) {
+          const nextKey = `w${week}_${kIdx}_${exId}_${kNext}`;
+          const existingNext = getLogEntry(week, dayIdx, exId, kNext);
+          if (existingNext && existingNext.done) continue;
+          if (!state.workoutLogs[nextKey]) {
+            state.workoutLogs[nextKey] = {
+              weight: existingNext && existingNext.weight !== undefined ? String(existingNext.weight) : '',
+              reps: existingNext && existingNext.reps !== undefined ? String(existingNext.reps) : '',
+              done: false,
+              unit: exUnit
+            };
+          }
+          if (newWeightStr !== undefined && newWeightStr !== null) {
+            state.workoutLogs[nextKey].weight = String(newWeightStr);
+            const wInp = listEl.querySelector(`input.workout-input[data-log-key="${nextKey}"][data-field="weight"]`);
+            if (wInp && document.activeElement !== wInp) {
+              wInp.value = String(newWeightStr);
+            }
+            if (isBarOrMac && newWeightStr !== '') {
+              const numW = parseFloat(newWeightStr);
+              if (!isNaN(numW)) {
+                const mathNext = computeBarbellMath(numW, exId, exUnit, exObj);
+                const roTotalEl = listEl.querySelector(`[data-barbell-ro-total="${nextKey}"]`);
+                if (roTotalEl) {
+                  roTotalEl.innerHTML = `
+                    <span class="font-bold text-slate-300">
+                      ${mathNext.isMachine
+                        ? (mathNext.loadMode === 'pin_stack'
+                            ? `<strong class="text-emerald-300">Machine Pin Weight:</strong> <strong class="text-white">${mathNext.total} ${exUnit}</strong>`
+                            : `<strong class="text-emerald-300">Machine Plates: ${mathNext.perSide} ${exUnit}/side</strong> = <strong class="text-white">${mathNext.total} ${exUnit} total</strong>`)
+                        : `<strong class="text-amber-300">${mathNext.bar} ${exUnit}</strong> Bar + <strong class="text-emerald-300">${mathNext.perSide} ${exUnit}/side</strong> = <strong class="text-white">${mathNext.total} ${exUnit}</strong>`}
+                    </span>
+                    <div class="flex flex-wrap items-center gap-1">
+                      ${mathNext.plateChipsHtml}
+                    </div>
+                  `;
+                }
+                const inpSide = listEl.querySelector(`input[data-bar3-inp="perSide"][data-log-key="${nextKey}"]`);
+                const inpBoth = listEl.querySelector(`input[data-bar3-inp="bothSides"][data-log-key="${nextKey}"]`);
+                if (inpSide && document.activeElement !== inpSide) inpSide.value = String(mathNext.perSide);
+                if (inpBoth && document.activeElement !== inpBoth) inpBoth.value = String(mathNext.isMachine && mathNext.loadMode === 'pin_stack' ? mathNext.total : mathNext.bothSides);
+              }
+            }
+          }
+          if (newRepsStr !== undefined && newRepsStr !== null) {
+            state.workoutLogs[nextKey].reps = String(newRepsStr);
+            const rInp = listEl.querySelector(`input.workout-input[data-log-key="${nextKey}"][data-field="reps"]`);
+            if (rInp && document.activeElement !== rInp) {
+              rInp.value = String(newRepsStr);
+            }
+          }
+          state.workoutLogs[nextKey].unit = exUnit;
+          if (week === 1) {
+            state.workoutLogs[`${kIdx}_${exId}_${kNext}`] = Object.assign({}, state.workoutLogs[nextKey]);
+          }
+          if (pullupDayNum && !dayAssignment.isBonusRepeat) {
+            syncPullupStateBothWays(week, pullupDayNum, kNext, state.workoutLogs[nextKey]);
+          }
+        }
+      }
+
+      // Helper to apply a new canonical total weight to a Barbell or Machine Set Row and auto-cascade forward to subsequent unlogged sets
       function applyBarbellSetMathAndSyncDOM(key, exId, setIdx, newTotalVal, syncAllUnloggedSets) {
         const exUnit = getExerciseUnit(exId);
         const exObj = exercisesToday.find(e => e.id === exId);
@@ -12672,9 +13053,10 @@
         if (!state.exerciseUnitPrefs[exId]) {
           state.exerciseUnitPrefs[exId] = exUnit;
         }
-        const targetSets = (syncAllUnloggedSets && exObj)
+        const targetSets = exObj
           ? Array.from({ length: exObj.sets }, (_, i) => i + 1).filter(sNum => {
               if (sNum === setIdx) return true;
+              if (!syncAllUnloggedSets && sNum < setIdx) return false;
               const existing = getLogEntry(week, dayIdx, exId, sNum);
               return !existing || !existing.done;
             })
@@ -12896,6 +13278,14 @@
             const legacyKey = `${kIdx}_${exId}_${setIdx}`;
             state.workoutLogs[legacyKey] = Object.assign({}, state.workoutLogs[key]);
           }
+
+          // UPGRADE 1: Auto-cascade weight or reps from Set k to all subsequent unlogged sets (k+1..N)
+          if (field === 'weight') {
+            cascadeSetModificationToSubsequentUnloggedSets(exId, setIdx, inp.value, null);
+          } else if (field === 'reps') {
+            cascadeSetModificationToSubsequentUnloggedSets(exId, setIdx, null, inp.value);
+          }
+
           const exObjForInp = exercisesToday.find(e => e.id === exId);
           const isMacInp = Boolean((exObjForInp && (exObjForInp.isSwappedMachine || exObjForInp.isSwapped)) || isExerciseInMachineMode(exId, week, dayIdx));
           if (field === 'weight' && (BARBELL_EX_IDS.includes(exId) || isMacInp)) {
@@ -13335,10 +13725,18 @@
           const dIdx = parseInt(btn.getAttribute('data-day-idx'), 10);
           const targetDay = isNaN(dIdx) ? dayIdx : dIdx;
           const isComp = btn.getAttribute('data-is-complete') === '1';
-          toggleExerciseSetsCollapsed(targetDay, exId, isComp);
+          const nowCollapsed = toggleExerciseSetsCollapsed(targetDay, exId, isComp);
           saveState();
           renderWorkoutView();
           if (PULLUP_EX_ID_TO_DAY[exId]) renderPullupView();
+          if (!nowCollapsed && exId) {
+            setTimeout(() => {
+              const cardEl = document.getElementById(`ex-card-${exId}`);
+              if (cardEl && typeof cardEl.scrollIntoView === 'function') {
+                cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }, 90);
+          }
         });
       });
 
@@ -13372,12 +13770,14 @@
             }
             curEntry.weight = String(nextW);
             if (inp) inp.value = String(nextW);
+            cascadeSetModificationToSubsequentUnloggedSets(exId, setIdx, curEntry.weight, null);
           } else {
             const defR = parseInt(parseTargetRepsNumber(exObj ? exObj.reps : '10', pullupDayNum, setIdx), 10) || 10;
             const baseR = (inp && inp.value !== '') ? parseInt(inp.value, 10) : (parseInt(curEntry.reps, 10) || defR);
             const nextR = Math.max(1, baseR + Math.round(delta));
             curEntry.reps = String(nextR);
             if (inp) inp.value = String(nextR);
+            cascadeSetModificationToSubsequentUnloggedSets(exId, setIdx, null, curEntry.reps);
           }
 
           curEntry.unit = exUnit;
@@ -14100,6 +14500,32 @@
       const dayIdx = state.selectedDayIndex || 0;
       const dayObj = getScheduledDayObject(week, dayIdx);
       if (!state.checkedMealIngredients) state.checkedMealIngredients = {};
+
+      // UPGRADE 6: Render 1-Tap Gym Time Banner & Prompt Card at top of Muscle Fuel tab
+      renderGymTimeTopBanners(week, dayIdx);
+
+      // UPGRADE 7: Sync Collapsible 1-Line 3-Month & 6-Month Bulk Supplement Summary Bar
+      const toggleFuelSuppBtn = document.getElementById('toggle-fuel-supplement-summary-btn');
+      const toggleFuelSuppLabel = document.getElementById('toggle-fuel-supplement-summary-label');
+      const fuelSuppDetails = document.getElementById('muscle-fuel-supplement-summary-details');
+      const isFuelSuppOpen = Boolean(state.showFuelSupplementSummary);
+      if (toggleFuelSuppLabel) {
+        toggleFuelSuppLabel.textContent = isFuelSuppOpen
+          ? '3-Month & 6-Month Bulk Supplement Plan ($6.35/d) — Hide ▲'
+          : '3-Month & 6-Month Bulk Supplement Plan ($6.35/d) — Show Details ▼';
+      }
+      if (toggleFuelSuppBtn) {
+        toggleFuelSuppBtn.setAttribute('aria-expanded', isFuelSuppOpen ? 'true' : 'false');
+        toggleFuelSuppBtn.onclick = () => {
+          state.showFuelSupplementSummary = !state.showFuelSupplementSummary;
+          saveState();
+          renderVeganView();
+        };
+      }
+      if (fuelSuppDetails) {
+        if (isFuelSuppOpen) fuelSuppDetails.classList.remove('hidden');
+        else fuelSuppDetails.classList.add('hidden');
+      }
 
       // Render Smart 15-Minute Gym Time & Auto-Meal Sync Bar in Vegan Fuel
       if (!state.hiddenMealChecklists) state.hiddenMealChecklists = {};
@@ -15192,15 +15618,9 @@
         const waterPct = Math.min(100, Math.round((waterLoggedMl / waterTargetMl) * 100));
         const isLiftDayHydration = !getDayAssignment(week, dayIdx).isRestDay;
         const isWaterSchedOpen = Boolean(state.openWaterScheduleDrawer);
+        const syncedChrono = getSyncedChronoSchedule(parseHHMMToMinutes(dayGymSched.startTime));
         const bottleSlots = isLiftDayHydration
-          ? [
-              { ml: 500, label: '500 ml • Wake / Pre-Gym' },
-              { ml: 1000, label: '500 ml • During Gym' },
-              { ml: 1500, label: '500 ml • Post-Gym' },
-              { ml: 2000, label: '500 ml • 11:00 AM' },
-              { ml: 2500, label: '500 ml • 1:00 PM Bowl' },
-              { ml: 3000, label: '500 ml • 4:00 PM' }
-            ]
+          ? syncedChrono.waterSchedule.map(w => ({ ml: w.ml, label: w.label }))
           : [
               { ml: 500, label: '500 ml • Morning' },
               { ml: 1000, label: '500 ml • Late Morning' },
@@ -15686,104 +16106,251 @@
       if (!state.subscriptionChecklist || typeof state.subscriptionChecklist !== 'object') {
         state.subscriptionChecklist = { cancelCreatineAutoship: false, dropPeaTo3Containers: false };
       }
+      if (!state.collapsedShopAisles || typeof state.collapsedShopAisles !== 'object') {
+        state.collapsedShopAisles = {};
+      }
 
       const subChecklistCompleted = SUBSCRIPTION_ACTION_CHECKLIST_ITEMS.filter(item => Boolean(state.subscriptionChecklist[item.id])).length;
 
-      let html = dynamicCategories.map((cat, catIdx) => {
-        const isAisle4 = catIdx === 3 || (cat.category && cat.category.indexOf('Aisle 4') !== -1);
-        const subscriptionTrackerHtml = isAisle4 ? `
-          <div id="subscription-action-tracker-card" class="bg-amber-950/25 border-2 border-amber-500/50 rounded-xl p-3.5 space-y-2.5">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <div class="text-[10px] font-black uppercase tracking-wider text-amber-300">Subscription Action & Inventory Control Card</div>
-                <h4 class="text-xs sm:text-sm font-extrabold text-white">Post-Order Autoship & Costco Switchover Tracker</h4>
-              </div>
-              <span id="subscription-tracker-progress-badge" class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40">${subChecklistCompleted} / ${SUBSCRIPTION_ACTION_CHECKLIST_ITEMS.length} Actions Done</span>
-            </div>
-            <div class="space-y-2">
-              ${SUBSCRIPTION_ACTION_CHECKLIST_ITEMS.map(actionItem => {
-                const isChecked = Boolean(state.subscriptionChecklist[actionItem.id]);
-                return `
-                  <button type="button" data-sub-action-id="${actionItem.id}" class="sub-action-check-btn w-full text-left p-3 rounded-xl border transition flex items-start gap-2.5 ${
-                    isChecked
-                      ? 'bg-emerald-950/35 border-emerald-500/50'
-                      : 'bg-slate-950/85 border-amber-500/35 hover:border-amber-400'
-                  }">
-                    <span class="mt-0.5 w-4 h-4 shrink-0 rounded flex items-center justify-center text-[10px] font-black ${
-                      isChecked ? 'bg-emerald-500 text-slate-950' : 'border-2 border-amber-400 text-transparent'
-                    }">${isChecked ? '✓' : ''}</span>
-                    <div class="space-y-1">
-                      <div class="text-xs font-extrabold ${isChecked ? 'line-through text-emerald-300' : 'text-amber-200'}">${actionItem.title}</div>
-                      <p class="text-[11px] text-slate-300 leading-relaxed">${actionItem.subtext}</p>
-                    </div>
-                  </button>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        ` : '';
+      const weeklyAisleCategories = dynamicCategories.filter((cat, catIdx) => !(catIdx === 3 || (cat.category && cat.category.indexOf('Aisle 4') !== -1)));
+      const bulkSupplementCategory = dynamicCategories.find((cat, catIdx) => catIdx === 3 || (cat.category && cat.category.indexOf('Aisle 4') !== -1));
 
+      const hideWeeklyGroceries = Boolean(state.hideWeeklyGroceries);
+      const hideBulkSupplements = Boolean(state.hideBulkSupplements);
+      const hideCheckedGroceries = Boolean(state.hideCheckedGroceries);
+
+      const weeklyItemsHtml = weeklyAisleCategories.map((cat, aisleIdx) => {
+        const aisleKey = `aisle_${aisleIdx + 1}`;
+        const isAisleCollapsed = Boolean(state.collapsedShopAisles[aisleKey]);
+        const visibleItems = cat.items.filter(it => !hideCheckedGroceries || !state.checkedGroceries[it.id]);
+        const checkedInAisle = cat.items.filter(it => Boolean(state.checkedGroceries[it.id])).length;
         return `
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <h3 class="text-xs font-extrabold uppercase tracking-wider text-white">${cat.category}</h3>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">${cat.badge}</span>
-          </div>
-          ${subscriptionTrackerHtml}
-          <div class="space-y-1.5">
-            ${cat.items.map(it => {
-              const done = !!state.checkedGroceries[it.id];
-              const badgeQty = period === 'quarterly' ? (it.quarterlyQty || it.qty) : (it.weeklyQty || it.qty);
-              return `
-                <button type="button" data-shop-id="${it.id}" class="shop-item-btn w-full text-left p-2.5 rounded-xl border transition flex items-start justify-between gap-2 ${
-                  done ? 'bg-emerald-950/30 border-emerald-500/30 opacity-75' : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
-                }">
-                  <div class="flex items-start gap-2.5">
-                    <span class="mt-0.5 w-4 h-4 shrink-0 rounded flex items-center justify-center text-[10px] font-bold ${
-                      done ? 'bg-emerald-500 text-slate-950' : 'border border-slate-600'
-                    }">${done ? '✓' : ''}</span>
-                    <div>
-                      <div class="text-xs sm:text-sm font-extrabold ${done ? 'line-through text-slate-400' : 'text-white'}">${it.name}</div>
-                      <div class="text-[11px] text-slate-400 mt-0.5 leading-relaxed">${it.note}</div>
-                    </div>
-                  </div>
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-emerald-300 shrink-0">${badgeQty}</span>
-                </button>
-              `;
-            }).join('')}
-          </div>
-        </div>
-      `;
-      }).join('');
-
-      if (customList.length > 0) {
-        html += `
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5">
-            <h3 class="text-xs font-extrabold uppercase tracking-wider text-white">5. Your Added Weekly Items</h3>
-            <div class="space-y-1.5">
-              ${customList.map((name, idx) => {
-                const cid = 'custom_' + idx;
-                const done = !!state.checkedGroceries[cid];
+          <div class="bg-slate-950/80 border border-emerald-500/30 rounded-2xl p-3.5 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <h4 class="text-xs font-extrabold uppercase tracking-wider text-emerald-200">${cat.category}</h4>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">${cat.badge}</span>
+              </div>
+              <button type="button" data-toggle-shop-aisle="${aisleKey}" class="shop-aisle-toggle-btn px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[10px] font-extrabold text-emerald-300 transition">
+                ${isAisleCollapsed ? `Show Aisle (${checkedInAisle}/${cat.items.length}) ▼` : `Collapse Aisle ▲`}
+              </button>
+            </div>
+            <div class="${isAisleCollapsed ? 'hidden' : 'space-y-1.5'}">
+              ${visibleItems.length === 0 ? `
+                <div class="text-[11px] text-emerald-300/80 italic py-1.5 px-2">All items in this aisle are checked off.</div>
+              ` : visibleItems.map(it => {
+                const done = !!state.checkedGroceries[it.id];
+                const badgeQty = period === 'quarterly' ? (it.quarterlyQty || it.qty) : (it.weeklyQty || it.qty);
                 return `
-                  <button type="button" data-shop-id="${cid}" class="shop-item-btn w-full text-left p-2.5 rounded-xl border transition flex items-center justify-between gap-2 ${
-                    done ? 'bg-emerald-950/30 border-emerald-500/30 opacity-75' : 'bg-slate-950/70 border-slate-800'
+                  <button type="button" data-shop-id="${it.id}" class="shop-item-btn w-full text-left p-2.5 rounded-xl border transition flex items-start justify-between gap-2 ${
+                    done ? 'bg-emerald-950/35 border-emerald-500/40 opacity-75' : 'bg-slate-900/90 border-slate-800 hover:border-emerald-500/40'
                   }">
-                    <div class="flex items-center gap-2.5">
-                      <span class="w-4 h-4 shrink-0 rounded flex items-center justify-center text-[10px] font-bold ${
+                    <div class="flex items-start gap-2.5">
+                      <span class="mt-0.5 w-4 h-4 shrink-0 rounded flex items-center justify-center text-[10px] font-bold ${
                         done ? 'bg-emerald-500 text-slate-950' : 'border border-slate-600'
                       }">${done ? '✓' : ''}</span>
-                      <span class="text-xs font-bold ${done ? 'line-through text-slate-400' : 'text-white'}">${name}</span>
+                      <div>
+                        <div class="text-xs sm:text-sm font-extrabold ${done ? 'line-through text-slate-400' : 'text-white'}">${it.name}</div>
+                        <div class="text-[11px] text-slate-400 mt-0.5 leading-relaxed">${it.note}</div>
+                      </div>
                     </div>
-                    <span class="text-[10px] text-slate-400">Custom</span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-emerald-300 shrink-0">${badgeQty}</span>
                   </button>
                 `;
               }).join('')}
             </div>
           </div>
         `;
+      }).join('');
+
+      const customWeeklyHtml = customList.length > 0 ? `
+        <div class="bg-slate-950/80 border border-emerald-500/30 rounded-2xl p-3.5 space-y-2">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-emerald-200">Your Added Weekly Items</h4>
+          <div class="space-y-1.5">
+            ${customList.map((name, idx) => {
+              const cid = 'custom_' + idx;
+              const done = !!state.checkedGroceries[cid];
+              if (hideCheckedGroceries && done) return '';
+              return `
+                <button type="button" data-shop-id="${cid}" class="shop-item-btn w-full text-left p-2.5 rounded-xl border transition flex items-center justify-between gap-2 ${
+                  done ? 'bg-emerald-950/35 border-emerald-500/40 opacity-75' : 'bg-slate-900/90 border-slate-800'
+                }">
+                  <div class="flex items-center gap-2.5">
+                    <span class="w-4 h-4 shrink-0 rounded flex items-center justify-center text-[10px] font-bold ${
+                      done ? 'bg-emerald-500 text-slate-950' : 'border border-slate-600'
+                    }">${done ? '✓' : ''}</span>
+                    <span class="text-xs font-bold ${done ? 'line-through text-slate-400' : 'text-white'}">${name}</span>
+                  </div>
+                  <span class="text-[10px] text-slate-400">Custom</span>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      ` : '';
+
+      // Master Section 2 items: Pea Protein (3m), Creatine + D3 (6m)
+      const bulkItems = bulkSupplementCategory ? bulkSupplementCategory.items : [];
+      const peaItem = bulkItems.find(it => it.id === 'shop_12') || bulkItems[0];
+      const sixMonthItems = bulkItems.filter(it => it.id !== 'shop_12');
+
+      function renderBulkSupplementItemBtn(it, accentBorderClass) {
+        if (!it) return '';
+        const done = !!state.checkedGroceries[it.id];
+        const badgeQty = period === 'quarterly' ? (it.quarterlyQty || it.qty) : (it.weeklyQty || it.qty);
+        return `
+          <button type="button" data-shop-id="${it.id}" class="shop-item-btn w-full text-left p-3 rounded-xl border transition flex items-start justify-between gap-2 ${
+            done ? 'bg-emerald-950/35 border-emerald-500/45 opacity-80' : `bg-slate-950/85 ${accentBorderClass}`
+          }">
+            <div class="flex items-start gap-2.5">
+              <span class="mt-0.5 w-4 h-4 shrink-0 rounded flex items-center justify-center text-[10px] font-bold ${
+                done ? 'bg-emerald-500 text-slate-950' : 'border border-indigo-400'
+              }">${done ? '✓' : ''}</span>
+              <div>
+                <div class="text-xs sm:text-sm font-extrabold ${done ? 'line-through text-slate-400' : 'text-white'}">${it.name}</div>
+                <div class="text-[11px] text-slate-300 mt-0.5 leading-relaxed">${it.note}</div>
+              </div>
+            </div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-950/90 text-amber-300 border border-amber-500/35 shrink-0">${badgeQty}</span>
+          </button>
+        `;
       }
 
+      const html = `
+        <!-- MASTER SECTION 1: WEEKLY SUPERMARKET GROCERY LIST (Emerald Fresh-Market Theme) -->
+        <section id="shop-master-weekly-groceries" class="rounded-2xl border-2 border-emerald-500/50 bg-emerald-950/15 p-3.5 sm:p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div class="text-[10px] font-black uppercase tracking-wider text-emerald-400">Master Section 1 • Fresh Supermarket Aisles 1–3</div>
+              <h3 class="text-xs sm:text-sm font-extrabold text-white">WEEKLY SUPERMARKET GROCERY LIST (11 Items • $22.10/wk)</h3>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button type="button" id="toggle-hide-checked-groceries-btn" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition ${
+                hideCheckedGroceries
+                  ? 'bg-emerald-500 text-slate-950 border-emerald-300'
+                  : 'bg-slate-900 text-emerald-300 border-emerald-500/40 hover:bg-slate-800'
+              }">
+                ${hideCheckedGroceries ? '✓ Hide Checked Items' : 'Hide Checked Items'}
+              </button>
+              <button type="button" id="toggle-master-weekly-groceries-btn" aria-expanded="${!hideWeeklyGroceries ? 'true' : 'false'}" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-[10px] font-extrabold transition">
+                ${hideWeeklyGroceries ? 'Show Weekly List (11 items) ▼' : 'Hide Weekly List ▲'}
+              </button>
+            </div>
+          </div>
+
+          <div id="shop-master-weekly-groceries-body" class="${hideWeeklyGroceries ? 'hidden' : 'space-y-3'}">
+            ${weeklyItemsHtml}
+            ${customWeeklyHtml}
+          </div>
+        </section>
+
+        <!-- MASTER SECTION 2: 3-MONTH & 6-MONTH BULK SUPPLEMENTS (Distinct Indigo/Amber Subscription Vault Theme) -->
+        <section id="shop-master-bulk-supplements" class="rounded-2xl border-2 border-indigo-500/55 bg-indigo-950/20 p-3.5 sm:p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div class="text-[10px] font-black uppercase tracking-wider text-amber-300">Master Section 2 • Quarterly &amp; Semi-Annual Subscription Vault</div>
+              <h3 class="text-xs sm:text-sm font-extrabold text-white">3-MONTH &amp; 6-MONTH BULK SUPPLEMENTS (3 Items • Naked &amp; Costco)</h3>
+            </div>
+            <button type="button" id="toggle-master-bulk-supplements-btn" aria-expanded="${!hideBulkSupplements ? 'true' : 'false'}" class="px-2.5 py-1 rounded-lg bg-indigo-500/25 hover:bg-indigo-500/35 border border-amber-400/50 text-amber-200 text-[10px] font-extrabold transition">
+              ${hideBulkSupplements ? 'Show 3m/6m Supplements (Pea, Creatine, D3) ▼' : 'Hide 3m/6m Supplements ▲'}
+            </button>
+          </div>
+
+          <div id="shop-master-bulk-supplements-body" class="${hideBulkSupplements ? 'hidden' : 'space-y-3'}">
+            <!-- Card 1: Post-Order Action Checklist (Amber Warning Card) -->
+            <div id="subscription-action-tracker-card" class="bg-amber-950/25 border-2 border-amber-500/50 rounded-xl p-3.5 space-y-2.5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div class="text-[10px] font-black uppercase tracking-wider text-amber-300">Card 1 • Post-Order Action Checklist</div>
+                  <h4 class="text-xs sm:text-sm font-extrabold text-white">Cancel Creatine Autoship + Drop Q3 Pea Protein to 3 Containers</h4>
+                </div>
+                <span id="subscription-tracker-progress-badge" class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40">${subChecklistCompleted} / ${SUBSCRIPTION_ACTION_CHECKLIST_ITEMS.length} Actions Done</span>
+              </div>
+              <div class="space-y-2">
+                ${SUBSCRIPTION_ACTION_CHECKLIST_ITEMS.map(actionItem => {
+                  const isChecked = Boolean(state.subscriptionChecklist[actionItem.id]);
+                  return `
+                    <button type="button" data-sub-action-id="${actionItem.id}" class="sub-action-check-btn w-full text-left p-3 rounded-xl border transition flex items-start gap-2.5 ${
+                      isChecked
+                        ? 'bg-emerald-950/35 border-emerald-500/50'
+                        : 'bg-slate-950/85 border-amber-500/35 hover:border-amber-400'
+                    }">
+                      <span class="mt-0.5 w-4 h-4 shrink-0 rounded flex items-center justify-center text-[10px] font-black ${
+                        isChecked ? 'bg-emerald-500 text-slate-950' : 'border-2 border-amber-400 text-transparent'
+                      }">${isChecked ? '✓' : ''}</span>
+                      <div class="space-y-1">
+                        <div class="text-xs font-extrabold ${isChecked ? 'line-through text-emerald-300' : 'text-amber-200'}">${actionItem.title}</div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">${actionItem.subtext}</p>
+                      </div>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- Card 2: 3-Month Cycle Card -->
+            <div class="bg-slate-950/85 border border-indigo-500/45 rounded-xl p-3.5 space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="text-[10px] font-black uppercase tracking-wider text-indigo-300">Card 2 • 3-Month (90-Day) Cycle</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-200 border border-indigo-500/40">$287.96 CAD / 90d ($3.20/d)</span>
+              </div>
+              ${renderBulkSupplementItemBtn(peaItem, 'border-indigo-500/40 hover:border-indigo-400')}
+            </div>
+
+            <!-- Card 3: 6-Month Cycle Card -->
+            <div class="bg-slate-950/85 border border-amber-500/40 rounded-xl p-3.5 space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="text-[10px] font-black uppercase tracking-wider text-amber-300">Card 3 • 6-Month (200-Day) Cycle</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40">Creatine ($0.24/d -> $0.22/d) + D3 ($0.07/d)</span>
+              </div>
+              <div class="space-y-2">
+                ${sixMonthItems.map(it => renderBulkSupplementItemBtn(it, 'border-amber-500/35 hover:border-amber-400')).join('')}
+              </div>
+            </div>
+          </div>
+        </section>
+      `;
+
       container.innerHTML = html;
+
+      const toggleMasterWeeklyBtn = document.getElementById('toggle-master-weekly-groceries-btn');
+      if (toggleMasterWeeklyBtn) {
+        toggleMasterWeeklyBtn.addEventListener('click', () => {
+          state.hideWeeklyGroceries = !state.hideWeeklyGroceries;
+          saveState();
+          renderShoppingView();
+        });
+      }
+
+      const toggleMasterBulkBtn = document.getElementById('toggle-master-bulk-supplements-btn');
+      if (toggleMasterBulkBtn) {
+        toggleMasterBulkBtn.addEventListener('click', () => {
+          state.hideBulkSupplements = !state.hideBulkSupplements;
+          saveState();
+          renderShoppingView();
+        });
+      }
+
+      const toggleHideCheckedBtn = document.getElementById('toggle-hide-checked-groceries-btn');
+      if (toggleHideCheckedBtn) {
+        toggleHideCheckedBtn.addEventListener('click', () => {
+          state.hideCheckedGroceries = !state.hideCheckedGroceries;
+          saveState();
+          renderShoppingView();
+        });
+      }
+
+      container.querySelectorAll('.shop-aisle-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const aisleKey = btn.getAttribute('data-toggle-shop-aisle');
+          if (!aisleKey) return;
+          if (!state.collapsedShopAisles) state.collapsedShopAisles = {};
+          state.collapsedShopAisles[aisleKey] = !state.collapsedShopAisles[aisleKey];
+          saveState();
+          renderShoppingView();
+        });
+      });
+
       container.querySelectorAll('.shop-item-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const id = btn.getAttribute('data-shop-id');
@@ -16577,13 +17144,22 @@
         const panel = document.getElementById('warmup-panel');
         const chev = document.getElementById('warmup-chevron');
         const isHidden = panel.classList.contains('hidden');
+        const week = state.selectedWeek || state.currentWeek || 1;
+        const dayIdx = state.selectedDayIndex || 0;
+        const dayKey = `w${week}_d${dayIdx}`;
+        if (!state.warmupClosedByDay || typeof state.warmupClosedByDay !== 'object') {
+          state.warmupClosedByDay = {};
+        }
         if (isHidden) {
           panel.classList.remove('hidden');
           chev.textContent = '▲';
+          state.warmupClosedByDay[dayKey] = 'forced_open';
         } else {
           panel.classList.add('hidden');
           chev.textContent = '▼';
+          state.warmupClosedByDay[dayKey] = true;
         }
+        saveState();
       });
 
       // Smart Gym Shoe Tracker Accordion & Controls

@@ -125,6 +125,21 @@ export default async function handler(req, res) {
           if (!baseData.shopListPeriod && (d.shopListPeriod === 'weekly' || d.shopListPeriod === 'quarterly')) {
             baseData.shopListPeriod = d.shopListPeriod;
           }
+          if (d.hasSetInitialGymTime) {
+            baseData.hasSetInitialGymTime = true;
+          }
+          if (d.warmupClosedByDay && typeof d.warmupClosedByDay === 'object') {
+            if (!baseData.warmupClosedByDay || typeof baseData.warmupClosedByDay !== 'object') {
+              baseData.warmupClosedByDay = {};
+            }
+            Object.assign(baseData.warmupClosedByDay, d.warmupClosedByDay);
+          }
+          if (d.gymScheduleByDay && typeof d.gymScheduleByDay === 'object') {
+            if (!baseData.gymScheduleByDay || typeof baseData.gymScheduleByDay !== 'object') {
+              baseData.gymScheduleByDay = {};
+            }
+            Object.assign(baseData.gymScheduleByDay, d.gymScheduleByDay);
+          }
         });
       }
 
