@@ -4401,33 +4401,40 @@ export interface PyramidNextSetSuggestion {
 export function computePyramidNextSetSuggestions(
   loggedSetIdxZeroBased: number,
   loggedReps: number,
-  previousBestMax = 4
+  previousBestMax = 4,
+  totalSets = 5
 ): PyramidNextSetSuggestion {
+  const safeTotal = Math.max(5, Math.min(9, Math.floor(Number(totalSets) || 5)));
+  const maxSetIdx = safeTotal - 1;
+  const lastPyramidIdx = safeTotal - 2;
   const cleanReps = Math.max(1, Math.floor(Number(loggedReps) || 1));
-  const safeMax = Math.max(4, Math.floor(Number(previousBestMax) || 4));
-  const suggestedRepsBySetIndex: Record<number, number> = {
-    0: 1,
-    1: 2,
-    2: 3,
-    3: 4,
-    4: safeMax
-  };
+  const safeMax = Math.max(lastPyramidIdx, Math.floor(Number(previousBestMax) || lastPyramidIdx));
+  const suggestedRepsBySetIndex: Record<number, number> = {};
+  for (let i = 0; i <= lastPyramidIdx; i++) {
+    suggestedRepsBySetIndex[i] = i + 1;
+  }
+  suggestedRepsBySetIndex[maxSetIdx] = Math.max(safeTotal === 5 ? 4 : safeTotal, safeMax);
 
-  if (loggedSetIdxZeroBased >= 0 && loggedSetIdxZeroBased <= 2) {
+  if (loggedSetIdxZeroBased >= 0 && loggedSetIdxZeroBased < lastPyramidIdx) {
     let nextTarget = cleanReps + 1;
-    for (let idx = loggedSetIdxZeroBased + 1; idx <= 3; idx++) {
+    for (let idx = loggedSetIdxZeroBased + 1; idx <= lastPyramidIdx; idx++) {
       suggestedRepsBySetIndex[idx] = nextTarget;
       nextTarget += 1;
     }
   }
-  suggestedRepsBySetIndex[4] = Math.max(4, safeMax, cleanReps);
+  suggestedRepsBySetIndex[maxSetIdx] = Math.max(
+    safeTotal === 5 ? 4 : safeTotal,
+    safeMax,
+    cleanReps
+  );
 
-  const restTimerSeconds = loggedSetIdxZeroBased >= 0 && loggedSetIdxZeroBased <= 3
-    ? Math.max(10, cleanReps * 10)
-    : 60;
+  const restTimerSeconds =
+    loggedSetIdxZeroBased >= 0 && loggedSetIdxZeroBased <= lastPyramidIdx
+      ? Math.max(10, cleanReps * 10)
+      : 60;
 
   return {
-    nextSetIndex: loggedSetIdxZeroBased < 4 ? loggedSetIdxZeroBased + 1 : null,
+    nextSetIndex: loggedSetIdxZeroBased < maxSetIdx ? loggedSetIdxZeroBased + 1 : null,
     suggestedRepsBySetIndex,
     restTimerSeconds,
     restTimerLabel: `${restTimerSeconds}s`
@@ -7335,6 +7342,485 @@ export function getEli12WaterScheduleFormulaText(waterTargetMl = 3000): string {
   const totalMl = (Number(waterTargetMl) || 3000) + 900;
   return `+ 720 ml water in shakes + 180 ml milk in oats = ${totalMl.toLocaleString()} ml total`;
 }
+
+// ============================================================================
+// UPGRADE 9: FULL-WIDTH STACKED SHOP/FUEL CARDS (ELI12), PULL-UP PYRAMID UP TO
+// 9 SETS + 2-WAY GYM<->PULL-UPS SYNC, & SIDE PLANK 3-STATE TIMER-FIRST FLOW
+// ============================================================================
+
+export interface ShopItemFullWidthSpec {
+  id: string;
+  itemNumber: number;
+  shortName: string;
+  weeklyQtyPill: string;
+  quarterlyQtyPill: string;
+  weeklyCostPill: string;
+  quarterlyCostPill: string;
+  eli12Summary: string;
+  fullMathNotes: string;
+  detailsToggleClosedLabel: string;
+  detailsToggleOpenLabel: string;
+}
+
+export const SHOP_ITEM_ELI12_SPECS: Record<string, ShopItemFullWidthSpec> = {
+  shop_silk_milk: {
+    id: 'shop_silk_milk',
+    itemNumber: 1,
+    shortName: '1. Unsweetened Almond or Cashew Milk (1.89L)',
+    weeklyQtyPill: '1,260 ml/wk (180 ml/day)',
+    quarterlyQtyPill: '16.2 L / 90 days (9 cartons)',
+    weeklyCostPill: '$3.19/wk',
+    quarterlyCostPill: '$41.06 / 3 mos',
+    eli12Summary: 'Use 180 ml/day in Overnight Oats. Use water in shakes.',
+    fullMathNotes:
+      'Used in Fuel 2 Overnight Oats only (180 ml/jar). Shakes use cold water to save ~$10/wk while providing 50% Daily Calcium & 20% Vit D.',
+    detailsToggleClosedLabel: 'Read Full Math & Notes ▼',
+    detailsToggleOpenLabel: 'Hide Full Math & Notes ▲'
+  },
+  shop_tofu: {
+    id: 'shop_tofu',
+    itemNumber: 2,
+    shortName: '2. Extra-Firm Tofu (350g Packs)',
+    weeklyQtyPill: '1,225g/wk (175g/day)',
+    quarterlyQtyPill: '15.75 kg / 90 days (45 packs)',
+    weeklyCostPill: '$8.75/wk',
+    quarterlyCostPill: '$112.50 / 3 mos',
+    eli12Summary: 'Eat 175g (half a block) in your daily lunch bowl.',
+    fullMathNotes:
+      '3.5 packs/week (1/2 block = 175g per day in Fuel 3 Lunch Bowl) for 21g complete soy protein and bioavailable calcium.',
+    detailsToggleClosedLabel: 'Read Full Math & Notes ▼',
+    detailsToggleOpenLabel: 'Hide Full Math & Notes ▲'
+  },
+  shop_broccoli: {
+    id: 'shop_broccoli',
+    itemNumber: 3,
+    shortName: '3. Fresh Broccoli Crowns (or Frozen Florets)',
+    weeklyQtyPill: '525g/wk (75g/day)',
+    quarterlyQtyPill: '6.75 kg / 90 days',
+    weeklyCostPill: '$2.49/wk',
+    quarterlyCostPill: '$32.01 / 3 mos',
+    eli12Summary: 'Steam 75g daily with lunch for 100% Vitamin C.',
+    fullMathNotes:
+      '75g steamed florets daily in Fuel 3 Bowl — covers 100% Daily Vitamin C and sulforaphane.',
+    detailsToggleClosedLabel: 'Read Full Math & Notes ▼',
+    detailsToggleOpenLabel: 'Hide Full Math & Notes ▲'
+  },
+  shop_bananas: {
+    id: 'shop_bananas',
+    itemNumber: 4,
+    shortName: '4. Fresh Ripe Bananas (Small Bunch)',
+    weeklyQtyPill: '210g/wk (30g/day)',
+    quarterlyQtyPill: '2.7 kg / 90 days (~27 bananas)',
+    weeklyCostPill: '$0.45/wk',
+    quarterlyCostPill: '$5.79 / 3 mos',
+    eli12Summary: 'Mash 30g per jar into your 4-day Overnight Oats batch.',
+    fullMathNotes:
+      '~2 medium bananas/week (120g peeled per 4-day Oats batch) for natural sweetness and potassium.',
+    detailsToggleClosedLabel: 'Read Full Math & Notes ▼',
+    detailsToggleOpenLabel: 'Hide Full Math & Notes ▲'
+  },
+  shop_oats: {
+    id: 'shop_oats',
+    itemNumber: 5,
+    shortName: '5. Gluten-Free Rolled Protein Oats',
+    weeklyQtyPill: '315g/wk (45g/day)',
+    quarterlyQtyPill: '4,050g / 90 days (~4 bags)',
+    weeklyCostPill: '$2.45/wk',
+    quarterlyCostPill: '$31.50 / 3 mos',
+    eli12Summary: 'Use 45g dry oats per jar in Fuel 2 Overnight Oats.',
+    fullMathNotes:
+      '180g per 4-day Overnight Oats batch (10g protein + 5g beta-glucan soluble fiber per jar).',
+    detailsToggleClosedLabel: 'Read Full Math & Notes ▼',
+    detailsToggleOpenLabel: 'Hide Full Math & Notes ▲'
+  },
+  shop_rice: {
+    id: 'shop_rice',
+    itemNumber: 6,
+    shortName: '6. Dry White Jasmine Rice (Bulk Bag)',
+    weeklyQtyPill: '385g dry/wk (150g cooked/day)',
+    quarterlyQtyPill: '4.95 kg dry / 90 days (1 bulk bag)',
+    weeklyCostPill: '$1.15/wk',
+    quarterlyCostPill: '$14.79 / 3 mos',
+    eli12Summary: 'Cook 220g dry rice every 4 days for 4 x 150g bowls.',
+    fullMathNotes:
+      '220g dry rice cooked in 330 ml water yields 600g cooked rice (4 x 150g bowls for Fuel 3).',
+    detailsToggleClosedLabel: 'Read Full Math & Notes ▼',
+    detailsToggleOpenLabel: 'Hide Full Math & Notes ▲'
+  },
+  shop_pb: {
+    id: 'shop_pb',
+    itemNumber: 7,
+    shortName: '7. Smooth Natural Peanut Butter (1 kg Jar)',
+    weeklyQtyPill: '168g/wk (24g/day)',
+    quarterlyQtyPill: '2,160g / 90 days (2.2 jars)',
+    weeklyCostPill: '$1.35/wk',
+    quarterlyCostPill: '$17.36 / 3 mos',
+    eli12Summary: 'Use 8g in Overnight Oats + 16g with your Evening Shake.',
+    fullMathNotes:
+      '8g in Fuel 2 Overnight Oats + 16g eaten by spoon with Fuel 4 Evening Shake for healthy fats & Vitamin E.',
+    detailsToggleClosedLabel: 'Read Full Math & Notes ▼',
+    detailsToggleOpenLabel: 'Hide Full Math & Notes ▲'
+  },
+  shop_chia: {
+    id: 'shop_chia',
+    itemNumber: 8,
+    shortName: '8. Organic Whole Chia Seeds',
+    weeklyQtyPill: '42g/wk (6g/day)',
+    quarterlyQtyPill: '540g / 90 days (1 medium bag)',
+    weeklyCostPill: '$0.55/wk',
+    quarterlyCostPill: '$7.07 / 3 mos',
+    eli12Summary: 'Mix 6g per jar into Overnight Oats for Omega-3 ALA.',
+    fullMathNotes:
+      '24g per 4-day Oats batch — covers 100% Daily Omega-3 ALA (1.1g) and thickens oats naturally.',
+    detailsToggleClosedLabel: 'Read Full Math & Notes ▼',
+    detailsToggleOpenLabel: 'Hide Full Math & Notes ▲'
+  },
+  shop_nooch: {
+    id: 'shop_nooch',
+    itemNumber: 9,
+    shortName: '9. Fortified Nutritional Yeast Flakes',
+    weeklyQtyPill: '84g/wk (12g/day)',
+    quarterlyQtyPill: '1,080g / 90 days',
+    weeklyCostPill: '$1.30/wk',
+    quarterlyCostPill: '$16.71 / 3 mos',
+    eli12Summary: 'Sprinkle 12g on your Tofu & Rice bowl for B12 & 6g protein.',
+    fullMathNotes:
+      '6g complete protein + >300% Daily Vitamin B12, Zinc, and Selenium sprinkled over Fuel 3 Tofu & Rice bowl.',
+    detailsToggleClosedLabel: 'Read Full Math & Notes ▼',
+    detailsToggleOpenLabel: 'Hide Full Math & Notes ▲'
+  },
+  shop_sauce: {
+    id: 'shop_sauce',
+    itemNumber: 10,
+    shortName: '10. Toasted Sesame Oil (Pantry Bottle)',
+    weeklyQtyPill: '35g/wk (5g/day)',
+    quarterlyQtyPill: '450 ml / 90 days (1 bottle)',
+    weeklyCostPill: '$0.35/wk',
+    quarterlyCostPill: '$4.50 / 3 mos',
+    eli12Summary: 'Drizzle 5g (1 tsp) on lunch to absorb fat-soluble vitamins.',
+    fullMathNotes:
+      '5g (1 tsp) drizzled on Fuel 3 Bowl to unlock fat-soluble Vitamins A, D, E, and K absorption.',
+    detailsToggleClosedLabel: 'Read Full Math & Notes ▼',
+    detailsToggleOpenLabel: 'Hide Full Math & Notes ▲'
+  },
+  shop_nori: {
+    id: 'shop_nori',
+    itemNumber: 11,
+    shortName: '11. Iodized Table Salt (Pantry Box)',
+    weeklyQtyPill: '10.5g/wk (1.5g/day)',
+    quarterlyQtyPill: '135g / 90 days (1 box)',
+    weeklyCostPill: '$0.07/wk',
+    quarterlyCostPill: '$0.90 / 3 mos',
+    eli12Summary: 'Use 1.5g (1/4 tsp) on lunch for 100% daily thyroid iodine.',
+    fullMathNotes:
+      '1.5g (1/4 tsp) on Fuel 3 Tofu & Rice Bowl provides ~70-110 mcg iodine (100% Daily Thyroid Target).',
+    detailsToggleClosedLabel: 'Read Full Math & Notes ▼',
+    detailsToggleOpenLabel: 'Hide Full Math & Notes ▲'
+  },
+  shop_pea_protein: {
+    id: 'shop_pea_protein',
+    itemNumber: 12,
+    shortName: '12. Naked Pea Protein Isolate (5 lb / 2,268g Tub)',
+    weeklyQtyPill: '630g/wk (90g/day)',
+    quarterlyQtyPill: '8,100g / 90 days (Order 4 tubs = 9,072g)',
+    weeklyCostPill: '$20.09/wk',
+    quarterlyCostPill: '$258.30 / 3 mos',
+    eli12Summary: 'Take 90g/day (35g Pre-Gym + 10g Oats + 45g Evening Shake).',
+    fullMathNotes:
+      '35g Fuel 1 + 10g Fuel 2 + 45g Fuel 4 = 90g/day (81g pure protein). Order 4 containers every 3 months (9,072g total = 100.8 days supply, leaving a +972g / 10.8-day buffer per quarter). Order 1 (20% off): $287.96 CAD ($2.86/day). Order 2 (10% off): $323.96 CAD. Drop Quarter 3 to 3 containers ($242.97 CAD) to use your accumulated buffer!',
+    detailsToggleClosedLabel: 'Read Full Math & Notes ▼',
+    detailsToggleOpenLabel: 'Hide Full Math & Notes ▲'
+  },
+  shop_creatine: {
+    id: 'shop_creatine',
+    itemNumber: 13,
+    shortName: '13. Micronized Creatine Monohydrate (5g/day)',
+    weeklyQtyPill: '35g/wk (5g/day)',
+    quarterlyQtyPill: '450g / 90 days (1,000g lasts 200 days)',
+    weeklyCostPill: '$1.68/wk',
+    quarterlyCostPill: '$21.60 / 3 mos',
+    eli12Summary: 'Mix 5g daily in your Post-Gym or Pre-Gym shake.',
+    fullMathNotes:
+      'Order 1: Add 2 x 1.1 LB (1,000g total) to your first Naked order at 20% off = $47.98 CAD ($0.24/day for 200 days / 6.67 months) -> Cancel Naked Creatine Autoship immediately after Order 1 ships (Naked renewal is $53.98 + shipping). Order 2+ (after 200 days): Buy 1 kg Leanfit Creatine at Costco for $44.99 CAD ($34.99 on sale = $0.18-$0.22/day).',
+    detailsToggleClosedLabel: 'Read Full Math & Notes ▼',
+    detailsToggleOpenLabel: 'Hide Full Math & Notes ▲'
+  },
+  shop_vit_d3: {
+    id: 'shop_vit_d3',
+    itemNumber: 14,
+    shortName: '14. Vegan Vitamin D3 Supplement (1,000–2,500 IU)',
+    weeklyQtyPill: '7 caps/wk (1 cap/day)',
+    quarterlyQtyPill: '90 caps / 90 days (180-cap bottle)',
+    weeklyCostPill: '$0.70/wk',
+    quarterlyCostPill: '$9.00 / 3 mos',
+    eli12Summary: 'Take 1 capsule daily with lunch (~$0.10/day).',
+    fullMathNotes:
+      '1 capsule/day (~$0.10/day • $0.70/wk • $9.00 per 3 months) — covers 100% Daily Vitamin D3 without drinking 3.5 cartons of fortified plant milk per week.',
+    detailsToggleClosedLabel: 'Read Full Math & Notes ▼',
+    detailsToggleOpenLabel: 'Hide Full Math & Notes ▲'
+  }
+};
+
+export function getShopItemFullWidthSpec(
+  itemId: string,
+  period: ShopListPeriod = 'weekly'
+): ShopItemFullWidthSpec & { activeQtyPill: string; activeCostPill: string } {
+  const base = SHOP_ITEM_ELI12_SPECS[itemId] || {
+    id: itemId,
+    itemNumber: 0,
+    shortName: itemId,
+    weeklyQtyPill: '',
+    quarterlyQtyPill: '',
+    weeklyCostPill: '',
+    quarterlyCostPill: '',
+    eli12Summary: '',
+    fullMathNotes: '',
+    detailsToggleClosedLabel: 'Read Full Math & Notes ▼',
+    detailsToggleOpenLabel: 'Hide Full Math & Notes ▲'
+  };
+  return {
+    ...base,
+    activeQtyPill: period === 'quarterly' ? base.quarterlyQtyPill : base.weeklyQtyPill,
+    activeCostPill: period === 'quarterly' ? base.quarterlyCostPill : base.weeklyCostPill
+  };
+}
+
+export interface BulkStepEli12Spec {
+  id: 'cancelCreatineAutoship' | 'dropPeaTo3Containers';
+  title: string;
+  eli12Summary: string;
+  whyDetails: string;
+  whyToggleClosedLabel: string;
+  whyToggleOpenLabel: string;
+}
+
+export const BULK_SUPPLEMENT_STEP_ELI12_SPECS: BulkStepEli12Spec[] = [
+  {
+    id: 'cancelCreatineAutoship',
+    title: 'Step 1: Cancel Naked Creatine auto-ship after Order 1 arrives',
+    eli12Summary: 'Your first 2 tubs (1,000g) last 200 days. Buy your next 1 kg tub at Costco for $44.99.',
+    whyDetails:
+      'Order 1 (2 x 1.1 LB = 1,000g for $47.98 CAD at 20% off) lasts 200 days (6.67 months). Naked drops renewal discounts to 10% ($53.98 CAD + shipping). After 200 days, buy 1 kg Leanfit Micronized Creatine at Costco ($44.99 CAD regular / $34.99 on sale = $0.18-$0.22/day with $0 shipping).',
+    whyToggleClosedLabel: 'Why? ▼',
+    whyToggleOpenLabel: 'Hide Why ▲'
+  },
+  {
+    id: 'dropPeaTo3Containers',
+    title: 'Step 2: Change Naked Pea auto-ship from 4 tubs to 3 tubs before Month 6',
+    eli12Summary: '4 tubs give you +10.8 extra days per 3 months. Drop to 3 tubs on Order 3 to save $80.99.',
+    whyDetails:
+      '4 x 5 LB containers (9,072g every 3 months) supply 100.8 days at 90g/day, building a +972g (+10.8-day) buffer per quarter. After Quarter 1 ($287.96 at 20% off) and Quarter 2 ($323.96 at 10% off), you will have +1,944g (21.6 days) banked — switch Quarter 3 from 4 containers ($323.96) down to 3 containers ($242.97) to save $80.99 CAD.',
+    whyToggleClosedLabel: 'Why? ▼',
+    whyToggleOpenLabel: 'Hide Why ▲'
+  }
+];
+
+// ============================================================================
+// PULL-UP PYRAMID & SESSION SET EXPANSION (5 TO 9 SETS) + 2-WAY GYM/PULL-UPS SYNC
+// ============================================================================
+
+export function getPullupCustomSetKey(week: number, pullupDayNum: number): string {
+  const w = Math.max(1, Math.floor(Number(week) || 1));
+  const d = Math.max(1, Math.min(5, Math.floor(Number(pullupDayNum) || 1)));
+  return `w${w}_s${d}`;
+}
+
+export function getEffectivePullupSetsCount(
+  customSetCounts: Record<string, number> | undefined,
+  week: number,
+  pullupDayNum: number,
+  baseSets = 5
+): number {
+  const safeBase = Math.max(5, Math.min(9, Math.floor(Number(baseSets) || 5)));
+  const key = getPullupCustomSetKey(week, pullupDayNum);
+  const raw = customSetCounts?.[key];
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    return Math.max(5, Math.min(9, Math.floor(raw)));
+  }
+  return safeBase;
+}
+
+export function adjustPullupSetsCount(
+  customSetCounts: Record<string, number> | undefined,
+  week: number,
+  pullupDayNum: number,
+  action: 'add' | 'show_all_9' | 'remove',
+  baseSets = 5
+): {
+  nextCustomSetCounts: Record<string, number>;
+  previousSetsCount: number;
+  newSetsCount: number;
+} {
+  const nextMap: Record<string, number> = { ...(customSetCounts || {}) };
+  const prev = getEffectivePullupSetsCount(nextMap, week, pullupDayNum, baseSets);
+  let next = prev;
+  if (action === 'add') {
+    next = Math.min(9, prev + 1);
+  } else if (action === 'show_all_9') {
+    next = 9;
+  } else if (action === 'remove') {
+    next = Math.max(5, prev - 1);
+  }
+  const key = getPullupCustomSetKey(week, pullupDayNum);
+  nextMap[key] = next;
+  return {
+    nextCustomSetCounts: nextMap,
+    previousSetsCount: prev,
+    newSetsCount: next
+  };
+}
+
+export function getPullupExpansionControlSpec(currentSetsCount: number, isBaseNineSets = false): {
+  currentSetsCount: number;
+  canAddSet: boolean;
+  canShowAllNine: boolean;
+  canRemoveSet: boolean;
+  addSetButtonLabel: string | null;
+  showAllNineButtonLabel: string | null;
+  removeSetButtonLabel: string | null;
+} {
+  const safeCount = Math.max(5, Math.min(9, Math.floor(Number(currentSetsCount) || 5)));
+  const canAddSet = safeCount < 9;
+  const canShowAllNine = safeCount < 9;
+  const canRemoveSet = !isBaseNineSets && safeCount > 5;
+  return {
+    currentSetsCount: safeCount,
+    canAddSet,
+    canShowAllNine,
+    canRemoveSet,
+    addSetButtonLabel: canAddSet ? `+ Keep Going! Add Set ${safeCount + 1} (Up to 9 Pull-Up Sets)` : null,
+    showAllNineButtonLabel: canShowAllNine ? 'Show All 9 Sets' : null,
+    removeSetButtonLabel: canRemoveSet ? `- Remove Set ${safeCount}` : null
+  };
+}
+
+// ============================================================================
+// TIMED HOLDS (#7/8 SIDE PLANK): 5 PRESETS (INCLUDING 1 MIN / 60S) & 3-STATE FLOW
+// ============================================================================
+
+export interface TimedHoldDurationPreset {
+  seconds: number;
+  buttonLabel: string;
+  shortActionLabel: string;
+}
+
+export const TIMED_HOLD_DURATION_PRESETS: readonly TimedHoldDurationPreset[] = [
+  { seconds: 30, buttonLabel: '30 sec', shortActionLabel: '30s' },
+  { seconds: 45, buttonLabel: '45 sec', shortActionLabel: '45s' },
+  { seconds: 60, buttonLabel: '1 min (60s)', shortActionLabel: '1 min' },
+  { seconds: 75, buttonLabel: '1m 15s (75s)', shortActionLabel: '1m 15s' },
+  { seconds: 90, buttonLabel: '1m 30s (90s)', shortActionLabel: '1m 30s' }
+] as const;
+
+export function formatTimedHoldShortActionLabel(seconds: number): string {
+  const sec = Math.max(5, Math.floor(Number(seconds) || 30));
+  if (sec === 60) return '1 min';
+  if (sec === 75) return '1m 15s';
+  if (sec === 90) return '1m 30s';
+  if (sec % 60 === 0 && sec > 60) return `${sec / 60} min`;
+  return `${sec}s`;
+}
+
+export function formatSecondsToMMSS(seconds: number): string {
+  const safe = Math.max(0, Math.floor(Number(seconds) || 0));
+  const m = Math.floor(safe / 60);
+  const s = safe % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+export type TimedHoldSetFlowStatus = 'not_started' | 'running' | 'paused' | 'completed';
+
+export interface TimedHoldSetRuntimeState {
+  status: TimedHoldSetFlowStatus;
+  remainingSec?: number;
+  targetSec?: number;
+  side?: 'Left Side' | 'Right Side';
+}
+
+export interface TimedHoldSetUiSpec {
+  setIndexOneBased: number;
+  flowState: 'state_a_not_started' | 'state_b_running' | 'state_c_completed' | 'logged_done';
+  isActiveRunning: boolean;
+  showPrimaryLogButton: boolean;
+  activeSetBadgeText: string | null;
+  rowBorderStyle: string;
+  rowBackgroundStyle: string;
+  primaryButtonLabel: string;
+  secondaryLinkLabel: string | null;
+}
+
+export function getTimedHoldSetUiSpec(
+  setIndexOneBased: number,
+  targetHoldSec: number,
+  runtimeState?: TimedHoldSetRuntimeState | null,
+  isLoggedDone = false
+): TimedHoldSetUiSpec {
+  const safeSet = Math.max(1, Math.floor(Number(setIndexOneBased) || 1));
+  const safeTarget = Math.max(5, Math.floor(Number(targetHoldSec) || 30));
+  const shortDur = formatTimedHoldShortActionLabel(safeTarget);
+
+  if (isLoggedDone) {
+    return {
+      setIndexOneBased: safeSet,
+      flowState: 'logged_done',
+      isActiveRunning: false,
+      showPrimaryLogButton: true,
+      activeSetBadgeText: null,
+      rowBorderStyle: '1px solid rgba(16, 185, 129, 0.45)',
+      rowBackgroundStyle: 'rgba(16, 185, 129, 0.10)',
+      primaryButtonLabel: '✓ Done',
+      secondaryLinkLabel: 'Restart Timer'
+    };
+  }
+
+  const status = runtimeState?.status || 'not_started';
+  if (status === 'running' || status === 'paused') {
+    const rem =
+      typeof runtimeState?.remainingSec === 'number'
+        ? Math.max(0, Math.floor(runtimeState.remainingSec))
+        : safeTarget;
+    const mmss = formatSecondsToMMSS(rem);
+    const pauseOrResume = status === 'paused' ? 'Resume' : 'Pause';
+    return {
+      setIndexOneBased: safeSet,
+      flowState: 'state_b_running',
+      isActiveRunning: true,
+      showPrimaryLogButton: false,
+      activeSetBadgeText: 'ACTIVE SET',
+      rowBorderStyle: '2px solid #f59e0b',
+      rowBackgroundStyle: 'rgba(245, 158, 11, 0.18)',
+      primaryButtonLabel: `Holding: ${mmss} Left (${pauseOrResume})`,
+      secondaryLinkLabel: 'Skip timer & log'
+    };
+  }
+
+  if (status === 'completed') {
+    return {
+      setIndexOneBased: safeSet,
+      flowState: 'state_c_completed',
+      isActiveRunning: false,
+      showPrimaryLogButton: true,
+      activeSetBadgeText: 'HOLD COMPLETE',
+      rowBorderStyle: '2px solid #38bdf8',
+      rowBackgroundStyle: 'rgba(56, 189, 248, 0.14)',
+      primaryButtonLabel: `✓ Hold Complete — Tap to Log Set ${safeSet}`,
+      secondaryLinkLabel: 'Restart Timer'
+    };
+  }
+
+  return {
+    setIndexOneBased: safeSet,
+    flowState: 'state_a_not_started',
+    isActiveRunning: false,
+    showPrimaryLogButton: false,
+    activeSetBadgeText: null,
+    rowBorderStyle: '1px solid rgba(51, 65, 85, 0.7)',
+    rowBackgroundStyle: 'rgba(2, 6, 23, 0.55)',
+    primaryButtonLabel: `Start ${shortDur} Timer`,
+    secondaryLinkLabel: 'Skip timer & log'
+  };
+}
+
 
 
 

@@ -1908,6 +1908,104 @@ test('Subtest 31: BDA/W3C Cognitive Accessibility & ELI12 Plain-English Visual H
   );
 });
 
+test('Subtest 32: Full-Width Stacked Shop/Fuel Cards (ELI12), Pull-Up Pyramid Up to 9 Sets + 2-Way Sync, and Side Plank 3-State Timer-First Flow', async () => {
+  const mod = await import('./workoutLogic');
+
+  // 1. Full-Width Stacked Shopping List Item Specs (14 items) & Bulk Action Steps
+  assert.equal(Object.keys(mod.SHOP_ITEM_ELI12_SPECS).length, 14);
+  const milkWeekly = mod.getShopItemFullWidthSpec('shop_silk_milk', 'weekly');
+  assert.equal(milkWeekly.shortName, '1. Unsweetened Almond or Cashew Milk (1.89L)');
+  assert.equal(milkWeekly.activeQtyPill, '1,260 ml/wk (180 ml/day)');
+  assert.equal(milkWeekly.activeCostPill, '$3.19/wk');
+  assert.equal(milkWeekly.eli12Summary, 'Use 180 ml/day in Overnight Oats. Use water in shakes.');
+  assert.equal(milkWeekly.detailsToggleClosedLabel, 'Read Full Math & Notes ▼');
+  assert.equal(milkWeekly.detailsToggleOpenLabel, 'Hide Full Math & Notes ▲');
+
+  const milkQuarterly = mod.getShopItemFullWidthSpec('shop_silk_milk', 'quarterly');
+  assert.equal(milkQuarterly.activeQtyPill, '16.2 L / 90 days (9 cartons)');
+  assert.equal(milkQuarterly.activeCostPill, '$41.06 / 3 mos');
+
+  assert.equal(mod.BULK_SUPPLEMENT_STEP_ELI12_SPECS.length, 2);
+  assert.equal(
+    mod.BULK_SUPPLEMENT_STEP_ELI12_SPECS[0].title,
+    'Step 1: Cancel Naked Creatine auto-ship after Order 1 arrives'
+  );
+  assert.equal(mod.BULK_SUPPLEMENT_STEP_ELI12_SPECS[0].whyToggleClosedLabel, 'Why? ▼');
+  assert.equal(
+    mod.BULK_SUPPLEMENT_STEP_ELI12_SPECS[1].title,
+    'Step 2: Change Naked Pea auto-ship from 4 tubs to 3 tubs before Month 6'
+  );
+
+  // 2. Pull-Up Pyramid Expansion from 5 Sets up to 9 Sets & Control Bar Spec
+  let customSets: Record<string, number> = {};
+  assert.equal(mod.getEffectivePullupSetsCount(customSets, 1, 2, 5), 5);
+  const ctrl5 = mod.getPullupExpansionControlSpec(5, false);
+  assert.equal(ctrl5.addSetButtonLabel, '+ Keep Going! Add Set 6 (Up to 9 Pull-Up Sets)');
+  assert.equal(ctrl5.showAllNineButtonLabel, 'Show All 9 Sets');
+  assert.equal(ctrl5.removeSetButtonLabel, null);
+
+  const add6 = mod.adjustPullupSetsCount(customSets, 1, 2, 'add', 5);
+  customSets = add6.nextCustomSetCounts;
+  assert.equal(add6.newSetsCount, 6);
+  const ctrl6 = mod.getPullupExpansionControlSpec(6, false);
+  assert.equal(ctrl6.addSetButtonLabel, '+ Keep Going! Add Set 7 (Up to 9 Pull-Up Sets)');
+  assert.equal(ctrl6.removeSetButtonLabel, '- Remove Set 6');
+
+  const show9 = mod.adjustPullupSetsCount(customSets, 1, 2, 'show_all_9', 5);
+  customSets = show9.nextCustomSetCounts;
+  assert.equal(show9.newSetsCount, 9);
+  const ctrl9 = mod.getPullupExpansionControlSpec(9, false);
+  assert.equal(ctrl9.addSetButtonLabel, null);
+  assert.equal(ctrl9.showAllNineButtonLabel, null);
+  assert.equal(ctrl9.removeSetButtonLabel, '- Remove Set 9');
+
+  // Verify Pyramid cascading suggestions across 9 sets (1, 2, 3, 4, 5, 6, 7, 8, 9)
+  const pyr9 = mod.computePyramidNextSetSuggestions(0, 1, 5, 9);
+  assert.equal(pyr9.suggestedRepsBySetIndex[0], 1);
+  assert.equal(pyr9.suggestedRepsBySetIndex[5], 6);
+  assert.equal(pyr9.suggestedRepsBySetIndex[7], 8);
+  assert.equal(pyr9.suggestedRepsBySetIndex[8], 9);
+
+  // 3. Side Plank & Timed Holds: 5 Presets (including 1 min / 60s) & 3-State Button Flow
+  assert.equal(mod.TIMED_HOLD_DURATION_PRESETS.length, 5);
+  assert.deepEqual(
+    mod.TIMED_HOLD_DURATION_PRESETS.map(p => p.buttonLabel),
+    ['30 sec', '45 sec', '1 min (60s)', '1m 15s (75s)', '1m 30s (90s)']
+  );
+
+  // State A: Not Started (30s or 1 min) -> No primary Log button yet
+  const stateA30 = mod.getTimedHoldSetUiSpec(1, 30, null, false);
+  assert.equal(stateA30.flowState, 'state_a_not_started');
+  assert.equal(stateA30.showPrimaryLogButton, false);
+  assert.equal(stateA30.primaryButtonLabel, 'Start 30s Timer');
+  assert.equal(stateA30.secondaryLinkLabel, 'Skip timer & log');
+
+  const stateA60 = mod.getTimedHoldSetUiSpec(2, 60, null, false);
+  assert.equal(stateA60.primaryButtonLabel, 'Start 1 min Timer');
+
+  // State B: Timer Running -> Active Amber/Gold Highlight + ACTIVE SET badge + Holding countdown
+  const stateB = mod.getTimedHoldSetUiSpec(1, 60, { status: 'running', remainingSec: 45 }, false);
+  assert.equal(stateB.flowState, 'state_b_running');
+  assert.equal(stateB.isActiveRunning, true);
+  assert.equal(stateB.activeSetBadgeText, 'ACTIVE SET');
+  assert.equal(stateB.rowBorderStyle, '2px solid #f59e0b');
+  assert.equal(stateB.rowBackgroundStyle, 'rgba(245, 158, 11, 0.18)');
+  assert.equal(stateB.primaryButtonLabel, 'Holding: 00:45 Left (Pause)');
+
+  // State C: Hold Timer Finished (00:00 Reached) -> Reveal pulsing Log Set button
+  const stateC = mod.getTimedHoldSetUiSpec(1, 60, { status: 'completed', remainingSec: 0 }, false);
+  assert.equal(stateC.flowState, 'state_c_completed');
+  assert.equal(stateC.showPrimaryLogButton, true);
+  assert.equal(stateC.primaryButtonLabel, '✓ Hold Complete — Tap to Log Set 1');
+  assert.equal(stateC.secondaryLinkLabel, 'Restart Timer');
+
+  // Logged Done state
+  const stateDone = mod.getTimedHoldSetUiSpec(1, 60, { status: 'completed', remainingSec: 0 }, true);
+  assert.equal(stateDone.flowState, 'logged_done');
+  assert.equal(stateDone.primaryButtonLabel, '✓ Done');
+});
+
+
 
 
 
