@@ -7237,23 +7237,25 @@ export function getShopListMasterSectionSpecs(period: ShopListPeriod = 'weekly')
   return {
     weeklySection: {
       title: `WEEKLY SUPERMARKET GROCERY LIST (${weeklyItemsCount} Items • $22.10/wk)`,
-      hideBtnLabel: 'Hide Weekly List ▲',
-      showBtnLabel: `Show Weekly List (${weeklyItemsCount} items) ▼`,
+      eli12Title: `Weekly Store Groceries (${weeklyItemsCount} Items • $22.10/wk)`,
+      hideBtnLabel: 'Hide List ▲',
+      showBtnLabel: 'Show List ▼',
       aisles: weeklyGroceryAisles
     },
     bulkSection: {
       title: `3-MONTH & 6-MONTH BULK SUPPLEMENTS (${bulkItemsCount} Items • Naked & Costco)`,
-      hideBtnLabel: 'Hide 3m/6m Supplements ▲',
-      showBtnLabel: 'Show 3m/6m Supplements (Pea, Creatine, D3) ▼',
+      eli12Title: `3- & 6-Month Bulk Supplements (${bulkItemsCount} Items)`,
+      hideBtnLabel: 'Hide List ▲',
+      showBtnLabel: 'Show List ▼',
       cards: {
         postOrderChecklist: [
           {
             id: 'cancelCreatineAutoship',
-            label: 'Cancel Naked Creatine Autoship after Order 1 ships (Switch to Costco $44.99/1kg at Day 200)'
+            label: 'Step 1: Cancel Naked Creatine auto-ship after Order 1 arrives (Buy at Costco next time for $44.99)'
           },
           {
             id: 'dropPeaTo3Containers',
-            label: 'Drop Naked Pea from 4 to 3 containers before Month 6 / Order 3 (Save $80.99)'
+            label: 'Step 2: Change Naked Pea auto-ship from 4 tubs to 3 tubs before Month 6 (Save $80.99)'
           }
         ],
         threeMonthCycleCard: {
@@ -7272,6 +7274,68 @@ export function getShopListMasterSectionSpecs(period: ShopListPeriod = 'weekly')
     }
   };
 }
+
+// ============================================================================
+// UPGRADE 8: BDA / W3C COGNITIVE ACCESSIBILITY & ELI12 VISUAL HIERARCHY SPECS
+// ============================================================================
+export const ELI12_ACCESSIBILITY_SPECS = {
+  shopList: {
+    eyebrowLeft: '1,325 kcal • 139g Protein • $6.35/day',
+    title: 'Shopping List',
+    subtitle: 'Check off what you have at home. Copy the rest for the store.',
+    viewSwitcher: {
+      weeklyTitle: '1-Week View',
+      weeklySub: '$22.10 Store • $44.48 Total',
+      quarterlyTitle: '3-Month View',
+      quarterlySub: '$284.18 Store • $571.88 Total',
+      breakdownToggleClosed: 'View Cost Breakdown & Order Math ▼',
+      breakdownToggleOpen: 'Hide Cost Breakdown & Order Math ▲'
+    },
+    actionButtons: ['Copy Unchecked', 'Check Pantry Staples', 'Uncheck All'],
+    section1Title: 'Weekly Store Groceries (11 Items • $22.10/wk)',
+    section2Title: '3- & 6-Month Bulk Supplements (3 Items)',
+    steps: [
+      'Step 1: Cancel Naked Creatine auto-ship after Order 1 arrives (Buy at Costco next time for $44.99)',
+      'Step 2: Change Naked Pea auto-ship from 4 tubs to 3 tubs before Month 6 (Save $80.99)'
+    ]
+  },
+  muscleFuel: {
+    title: 'Daily Food & Water',
+    logAllBtn: '✓ Log All 4 Meals',
+    subtitle: '1,325 kcal • 139g Protein (173cm • 69kg)',
+    proteinCardLabel: 'DAILY PROTEIN',
+    caloriesCardLabel: 'DAILY CALORIES',
+    supplementSummaryClosed: '3- & 6-Month Supplement Plan ($6.35/day) — Show ▼',
+    supplementSummaryOpen: '3- & 6-Month Supplement Plan ($6.35/day) — Hide ▲',
+    waterScheduleFormulaLiftDay: '+ 720 ml water in shakes + 180 ml milk in oats = 3,900 ml total'
+  },
+  gymTab: {
+    adminDrawerBtnClosed: 'Schedule, Sync & Stats ▼',
+    adminDrawerBtnOpen: 'Schedule, Sync & Stats ▲',
+    adminGridButtons: [
+      'Change Rest Days (6 & 7)',
+      'Stats / Dashboard',
+      'Finish Week -> Next',
+      'Workout & Display Settings'
+    ],
+    crossWeekButtons: ['Re-Sync from Week 2', 'Reset to Standard'],
+    activeDayActions: ['Swap Today to Rest Day', "Change Today's Workout ▼"],
+    quickStatusLabels: ['Water: 0/3L (+500)', 'Next Fuel: 8:15 AM', 'Gear Checklist']
+  },
+  pullupsAndTimer: {
+    pullupsHeading: 'Overhand Pull-Up Program',
+    pullupsActionButtons: ['Form Video', 'Program Rules'],
+    day1Eli12Desc: 'Do 5 sets of pull-ups. Stop each set when you cannot do another clean rep.',
+    riceTimerAccordionTitle: 'Jasmine Rice Timer (10m Cook + 10m Rest) ▼',
+    pyramidHelperAccordionTitle: 'Pull-Up Pyramid Rest Helper (10s × Reps) ▼'
+  }
+} as const;
+
+export function getEli12WaterScheduleFormulaText(waterTargetMl = 3000): string {
+  const totalMl = (Number(waterTargetMl) || 3000) + 900;
+  return `+ 720 ml water in shakes + 180 ml milk in oats = ${totalMl.toLocaleString()} ml total`;
+}
+
 
 
 

@@ -215,6 +215,7 @@
 
       <!-- Streamlined 7-Day Cycle & Progressive Week Selector Card -->
       <div id="gym-week-day-selector-card" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
+        <!-- Row 1: Week 1 | Week 2 | Week 3 pills on the left + single Schedule, Sync & Stats button on the right -->
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex flex-wrap items-center gap-1.5 min-w-0">
             <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400 whitespace-nowrap">Week:</span>
@@ -227,74 +228,91 @@
               <option value="2">Week 2</option>
             </select>
           </div>
-          <div class="flex flex-wrap items-center gap-1.5">
-            <button type="button" id="gym-open-rest-scheduler-btn" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-[10px] font-extrabold whitespace-nowrap transition" title="Customize weekly Rest Days without losing logged sets">
-              Schedule: Rest Days 6 &amp; 7 (Change)
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              id="toggle-gym-admin-drawer-btn"
+              aria-expanded="false"
+              class="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-sky-400/50 text-sky-200 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center"
+            >
+              Schedule, Sync &amp; Stats ▼
             </button>
-            <button type="button" id="gym-open-dashboard-pill-btn" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-300 text-[10px] font-extrabold whitespace-nowrap transition" title="Open Progress &amp; Analytics Dashboard">
-              Stats / Dashboard
-            </button>
-            <button type="button" id="quick-next-week-btn" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-300 text-[10px] font-extrabold whitespace-nowrap transition" title="Finish current week, unlock next week &amp; carry forward weights as placeholders">
-              Finish Week -&gt; Next
-            </button>
-
             <span class="hidden sm:inline text-[10px] bg-slate-950 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-full font-semibold" id="crunch-weekly-badge">Done / Partial</span>
           </div>
         </div>
 
-        <!-- Cross-Week Continuity Banner & 1-Tap Controls (Visible in Week 2+) -->
-        <div id="cross-week-continuity-banner" class="hidden"></div>
+        <!-- Row 2: The 7 aligned day buttons (DAY 1 to DAY 7) -->
+        <div class="grid grid-cols-7 gap-1.5" id="day-selector-grid">
+          <!-- Populated dynamically by JS -->
+        </div>
+
+        <!-- Collapsible Schedule, Sync & Stats Drawer (Progressive Disclosure — Symmetrical 2-Column Grid) -->
+        <div id="gym-admin-tools-drawer" class="hidden pt-2.5 border-t border-slate-800/80 space-y-2.5">
+          <div class="grid grid-cols-2 gap-2" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+            <button type="button" id="gym-open-rest-scheduler-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Customize weekly Rest Days without losing logged sets">
+              Change Rest Days (6 &amp; 7)
+            </button>
+            <button type="button" id="gym-open-dashboard-pill-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-300 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Open Progress &amp; Analytics Dashboard">
+              Stats / Dashboard
+            </button>
+            <button type="button" id="quick-next-week-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-300 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Finish current week, unlock next week &amp; carry forward weights as placeholders">
+              Finish Week -&gt; Next
+            </button>
+            <button type="button" id="open-workout-display-settings-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
+              Workout &amp; Display Settings
+            </button>
+          </div>
+
+          <!-- Cross-Week Continuity Banner & 1-Tap Controls (Visible in Week 2+) -->
+          <div id="cross-week-continuity-banner" class="hidden"></div>
+
+          <!-- Collapsible Secondary Settings Drawer (Progressive Disclosure — Keeps Screen Clean!) -->
+          <details id="gym-secondary-settings-drawer" class="pt-1 border-t border-slate-800/70 text-xs">
+            <summary class="cursor-pointer text-xs font-semibold text-slate-300 hover:text-white flex items-center justify-between py-1">
+              <span>Workout &amp; Display Settings</span>
+              <span class="text-[11px] text-emerald-400">Tap to open ▼</span>
+            </summary>
+            <div class="pt-2.5 space-y-2.5">
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <select id="weight-unit-select" aria-label="Weight unit" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-xl px-2.5 py-2 font-semibold focus:outline-none focus:border-emerald-500">
+                  <option value="lbs">Default: lbs</option>
+                  <option value="kg">Default: kg</option>
+                </select>
+                <button type="button" id="settings-open-rest-scheduler-btn" class="px-2.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
+                  Change Rest Days (6 &amp; 7)
+                </button>
+                <button type="button" id="finish-week-btn" class="px-2.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
+                  Finish Week -&gt; Next
+                </button>
+              </div>
+              <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span class="text-slate-300 font-medium">Daily Abs Schedule:</span>
+                <div class="grid grid-cols-2 gap-1.5" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                  <button type="button" id="crunch-preset-lift" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 whitespace-nowrap transition">
+                    Every Day (Days 1–7)
+                  </button>
+                  <button type="button" id="crunch-preset-spaced" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 whitespace-nowrap transition">
+                    5 Lift Days (Days 1–5)
+                  </button>
+                </div>
+              </div>
+              <select id="exercise-jump-select" aria-label="Jump to exercise or machine" class="hidden"></select>
+              <div class="grid grid-cols-2 gap-2 w-full pt-1 border-t border-slate-800/70" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                <button type="button" id="toggle-focus-collapse-btn" style="min-height: 40px;" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition inline-flex items-center justify-center text-center" title="Automatically collapse finished exercises to save screen space">
+                  Default Hidden: ON
+                </button>
+                <button type="button" id="toggle-all-images-btn" style="min-height: 40px;" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition inline-flex items-center justify-center text-center">
+                  Show/Hide All Diagrams
+                </button>
+              </div>
+            </div>
+          </details>
+        </div>
 
         <!-- Inline Rest Day Scheduler Drawer (Gym Tab) -->
         <div id="rest-day-scheduler-drawer" class="hidden bg-slate-950/95 border border-amber-400/50 rounded-xl p-3 space-y-2.5">
           <!-- Populated dynamically by JS -->
         </div>
-
-        <div class="grid grid-cols-7 gap-1.5" id="day-selector-grid">
-          <!-- Populated dynamically by JS -->
-        </div>
-
-        <!-- Collapsible Secondary Settings Drawer (Progressive Disclosure — Keeps Screen Clean!) -->
-        <details id="gym-secondary-settings-drawer" class="pt-1 border-t border-slate-800/70 text-xs">
-          <summary class="cursor-pointer text-[11px] font-semibold text-slate-400 hover:text-slate-200 flex items-center justify-between py-0.5">
-            <span>Workout &amp; Display Settings</span>
-            <span class="text-[10px] text-emerald-400">Tap to open</span>
-          </summary>
-          <div class="pt-2.5 space-y-2.5">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <select id="weight-unit-select" aria-label="Weight unit" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 font-semibold focus:outline-none focus:border-emerald-500">
-                <option value="lbs">Default: lbs</option>
-                <option value="kg">Default: kg</option>
-              </select>
-              <button type="button" id="settings-open-rest-scheduler-btn" class="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-[11px] font-extrabold transition">
-                Schedule: Rest Days 6 &amp; 7 (Change)
-              </button>
-              <button type="button" id="finish-week-btn" class="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-[11px] font-extrabold transition">
-                Finish Week -&gt; Next
-              </button>
-            </div>
-            <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <span class="text-slate-400 font-medium">Daily Abs Schedule:</span>
-              <div class="flex items-center gap-1.5">
-                <button type="button" id="crunch-preset-lift" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">
-                  Every Day (Days 1–7)
-                </button>
-                <button type="button" id="crunch-preset-spaced" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 transition">
-                  5 Lift Days (Days 1–5)
-                </button>
-              </div>
-            </div>
-            <select id="exercise-jump-select" aria-label="Jump to exercise or machine" class="hidden"></select>
-            <div class="flex items-center gap-1.5 w-full pt-1 border-t border-slate-800/70">
-              <button type="button" id="toggle-focus-collapse-btn" class="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold transition" title="Automatically collapse finished exercises to save screen space">
-                Default Hidden (Auto-Next): ON
-              </button>
-              <button type="button" id="toggle-all-images-btn" class="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold transition">
-                Show/Hide All Diagrams
-              </button>
-            </div>
-          </div>
-        </details>
       </div>
 
       <!-- Neuromarketing Dopamine Strip: Smart Profile Status, Live Volume, 1RM PRs & Grocery Money Saved -->
@@ -309,17 +327,17 @@
 
       <!-- Collapsible Warm-Up Routine Card (Sits Directly Above Exercise #1/9, Hidden on Rest Days) -->
       <div id="warmup-card-container" class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-        <button type="button" id="toggle-warmup-btn" class="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-slate-800/50 transition">
+        <button type="button" id="toggle-warmup-btn" class="w-full px-3 py-2.5 flex items-center justify-between text-left hover:bg-slate-800/50 transition">
           <div class="flex items-center gap-2">
             <span class="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
               <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
             </span>
             <div>
-              <h2 class="text-[11px] font-bold text-white uppercase tracking-wider" id="warmup-title">Dynamic Warm-Up (~10 Min)</h2>
-              <p class="hidden sm:block text-[10px] text-slate-400" id="warmup-subtitle">Tap to view mobility drills &amp; warm-up sets</p>
+              <h2 class="text-xs sm:text-sm font-bold text-white" id="warmup-title">Dynamic Warm-Up (~10 Min)</h2>
+              <p class="hidden sm:block text-[11px] text-slate-400" id="warmup-subtitle">Tap to view mobility drills &amp; warm-up sets</p>
             </div>
           </div>
-          <span id="warmup-chevron" class="text-slate-400 text-xs font-bold transition-transform">v</span>
+          <span id="warmup-chevron" class="text-slate-400 text-xs font-bold transition-transform">▼</span>
         </button>
         <div id="warmup-panel" class="hidden px-4 pb-4 pt-1 border-t border-slate-800/80 space-y-3">
           <!-- Populated by JS -->
@@ -353,8 +371,8 @@
             </div>
           </div>
           <div class="flex flex-wrap items-center gap-1.5">
-            <button type="button" id="pullups-open-rest-scheduler-btn" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-[10px] font-extrabold whitespace-nowrap transition" title="Customize weekly Rest Days without losing logged sets">
-              Schedule: Rest Days 6 &amp; 7 (Change)
+            <button type="button" id="pullups-open-rest-scheduler-btn" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-[11px] font-extrabold whitespace-nowrap transition" title="Customize weekly Rest Days without losing logged sets">
+              Change Rest Days (6 &amp; 7)
             </button>
             <span id="pullups-active-week-badge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-emerald-300 whitespace-nowrap">Week 1 • Day 1</span>
           </div>
@@ -375,49 +393,51 @@
 
         <!-- Single-Day Focus Mode Toggle Subheader -->
         <div class="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-800/80">
-          <span id="pullups-selected-day-summary" class="text-[11px] font-bold text-slate-300">Selected: Day 1 (Pull-Up Session 1)</span>
+          <span id="pullups-selected-day-summary" class="text-xs font-bold text-slate-300">Selected: Day 1 (Pull-Up Session 1)</span>
           <div class="inline-flex items-center bg-slate-950 border border-slate-800 rounded-xl p-0.5" role="group" aria-label="Pull-Ups View Mode">
             <span class="text-[10px] font-bold text-slate-400 px-2">View Mode:</span>
-            <button type="button" id="pullups-view-mode-selected-btn" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-sky-400 text-slate-950 transition">
+            <button type="button" id="pullups-view-mode-selected-btn" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-sky-400 text-slate-950 transition whitespace-nowrap">
               Selected Day
             </button>
-            <button type="button" id="pullups-view-mode-all-btn" class="px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white transition">
+            <button type="button" id="pullups-view-mode-all-btn" class="px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white transition whitespace-nowrap">
               All 5 Days
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Compact Expandable Overhand Pull-Up Progression Program Bar + Prominent Training Set Stepper -->
+      <!-- Full-Width Non-Truncated Overhand Pull-Up Program Header + Symmetrical 2-Column Action Row -->
       <div class="bg-gradient-to-br from-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
         <details id="pullup-program-rules-drawer" class="group">
-          <summary class="cursor-pointer list-none flex items-center justify-between gap-2">
-            <div class="min-w-0">
-              <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 block">5-Session Weekly Progression</span>
-              <h2 class="text-sm font-extrabold text-white truncate">Overhand Pull-Up Progression Program</h2>
+          <summary class="cursor-pointer list-none space-y-2">
+            <div class="w-full">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 block">5-Session Weekly Plan</span>
+              <h2 id="pullups-tab-main-heading" class="text-base sm:text-lg font-extrabold text-white leading-snug">Overhand Pull-Up Program</h2>
             </div>
-            <div class="flex items-center gap-2 shrink-0">
-              <a href="https://youtu.be/w_yuTRQd6HA" target="_blank" rel="noopener noreferrer" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold px-2.5 py-1 rounded-xl transition">
+            <div class="grid grid-cols-2 gap-2" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+              <a href="https://youtu.be/w_yuTRQd6HA" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" style="min-height: 40px;" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-extrabold px-3 py-2 rounded-xl transition inline-flex items-center justify-center text-center whitespace-nowrap">
                 Form Video
               </a>
-              <span class="text-[10px] font-bold text-sky-300 bg-slate-950 border border-slate-800 px-2 py-1 rounded-lg">Program Rules</span>
+              <span style="min-height: 40px;" class="text-xs font-extrabold text-sky-300 bg-slate-950 hover:bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl inline-flex items-center justify-center text-center whitespace-nowrap">
+                Program Rules ▼
+              </span>
             </div>
           </summary>
-          <p class="text-xs text-slate-300 mt-2 pt-2 border-t border-slate-800/80 leading-relaxed">
-            5 Pull-Up sessions mapped across your 5 weekly lifting days with 2 dedicated Rest &amp; Lat Recovery days. Focus on strict, dead-hang overhand execution on every repetition.
+          <p class="text-xs text-slate-300 mt-2.5 pt-2.5 border-t border-slate-800/80 leading-relaxed">
+            Do 5 pull-up sessions across your 5 weekly lifting days. Take 2 rest days so your back and arms recover cleanly. Use a full dead hang on every rep.
           </p>
         </details>
 
         <!-- Training Set Rep Gauge Control (Prominently shown on Session 3 & Session 4 or when All 5 Days is active) -->
         <div id="pullup-training-set-stepper-card" class="bg-slate-950/80 border border-emerald-500/35 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2.5">
           <div class="min-w-0 flex-1">
-            <div class="text-xs font-extrabold text-white">Your "Training Set" Reps</div>
-            <div class="text-[11px] text-slate-400">Used on Session 3 (9 Training Sets) &amp; Session 4 (Max Training Sets). Raise by +1 on Session 4 if you finish all 9 sets on Session 3.</div>
+            <div class="text-xs font-extrabold text-white">Your Training Set Reps</div>
+            <div class="text-[11px] text-slate-400 leading-snug">Used on Day 3 and Day 4. Add +1 rep next week when you finish 9 clean sets.</div>
           </div>
           <div class="flex items-center gap-2 shrink-0">
-            <button type="button" id="pullup-ts-minus" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm" aria-label="Decrease Training Set Reps">-</button>
-            <span id="pullup-ts-value" class="font-mono text-base font-extrabold text-emerald-400 w-14 text-center">3 reps</span>
-            <button type="button" id="pullup-ts-plus" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm" aria-label="Increase Training Set Reps">+</button>
+            <button type="button" id="pullup-ts-minus" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm" aria-label="Decrease Training Set Reps">-</button>
+            <span id="pullup-ts-value" class="font-mono text-base font-extrabold text-emerald-400 w-14 text-center whitespace-nowrap">3 reps</span>
+            <button type="button" id="pullup-ts-plus" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm" aria-label="Increase Training Set Reps">+</button>
           </div>
         </div>
       </div>
@@ -434,11 +454,11 @@
         <div class="flex flex-wrap items-center justify-between gap-2">
           <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Gym Rest Timer</span>
           <div class="flex items-center gap-1.5">
-            <button type="button" id="timer-open-watch-btn" class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-400/40 transition">
-               Watch &amp; HR
+            <button type="button" id="timer-open-watch-btn" class="text-xs font-extrabold px-2.5 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-400/40 transition whitespace-nowrap">
+              Watch &amp; HR
             </button>
-            <button type="button" id="timer-sound-toggle" class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-400 border border-slate-700 transition">
-               Sound &amp; Vibe
+            <button type="button" id="timer-sound-toggle" class="text-xs font-extrabold px-2.5 py-1.5 rounded-lg bg-slate-800 text-emerald-400 border border-slate-700 transition whitespace-nowrap">
+              Sound &amp; Vibe
             </button>
           </div>
         </div>
@@ -491,7 +511,7 @@
 
         <!-- Preset Buttons Matching Program Rest Intervals -->
         <div class="pt-3 border-t border-slate-800 space-y-2 text-left">
-          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Program Rest Presets</div>
+          <div class="text-xs font-bold text-slate-300">Program Rest Presets</div>
           <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
             <button type="button" data-timer-sec="30" class="timer-preset-btn py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700">
               30s <span class="block text-[10px] font-normal text-slate-400">Side/Arm</span>
@@ -519,23 +539,23 @@
           <div class="bg-slate-950/85 border border-slate-800 rounded-xl p-3 space-y-2.5">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center gap-1.5">
-                <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400"> Chime Tone &amp; Volume</span>
-                <span class="text-[10px] font-semibold text-slate-400 hidden sm:inline">• Zero-Crackle Spotify / BT Safe</span>
+                <span class="text-xs font-extrabold text-emerald-400">Chime Tone &amp; Volume</span>
+                <span class="text-[10px] font-semibold text-slate-400 hidden sm:inline">• Zero-Crackle Bluetooth Safe</span>
               </div>
               <button type="button" id="timer-test-sound-btn" class="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-[11px] font-extrabold text-emerald-300 transition shrink-0">
-                 Test Sound
+                Test Sound
               </button>
             </div>
 
             <!-- 3 Harmonious Tone Selector Pills -->
             <div class="grid grid-cols-3 gap-1.5" role="group" aria-label="Timer Chime Tone Presets">
-              <button type="button" data-timer-tone="warm_marimba" class="timer-tone-pill-btn py-1.5 px-2 rounded-lg text-xs font-extrabold border transition border-emerald-400 bg-emerald-500/20 text-emerald-200 shadow-sm">
+              <button type="button" data-timer-tone="warm_marimba" class="timer-tone-pill-btn py-1.5 px-2 rounded-lg text-xs font-extrabold border transition border-emerald-400 bg-emerald-500/20 text-emerald-200 shadow-sm whitespace-nowrap">
                 Warm Chime
               </button>
-              <button type="button" data-timer-tone="soft_bell" class="timer-tone-pill-btn py-1.5 px-2 rounded-lg text-xs font-semibold border transition border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-700">
+              <button type="button" data-timer-tone="soft_bell" class="timer-tone-pill-btn py-1.5 px-2 rounded-lg text-xs font-semibold border transition border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-700 whitespace-nowrap">
                 Soft Bell
               </button>
-              <button type="button" data-timer-tone="gentle_tap" class="timer-tone-pill-btn py-1.5 px-2 rounded-lg text-xs font-semibold border transition border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-700">
+              <button type="button" data-timer-tone="gentle_tap" class="timer-tone-pill-btn py-1.5 px-2 rounded-lg text-xs font-semibold border transition border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-700 whitespace-nowrap">
                 Gentle Tap
               </button>
             </div>
@@ -543,7 +563,7 @@
             <!-- Volume Slider (10% to 100%, Default 55%) -->
             <div class="flex items-center gap-2.5 pt-0.5">
               <label for="timer-volume-slider" class="text-[11px] font-bold text-slate-300 whitespace-nowrap shrink-0">
-                 Volume:
+                Volume:
               </label>
               <input
                 type="range"
@@ -562,29 +582,27 @@
           </div>
         </div>
 
-        <!-- Compact Expandable Pull-Up Pyramid Rest Helper (Collapsed unless Day 2) -->
+        <!-- Compact Expandable Pull-Up Pyramid Rest Helper (Title Case, 1-Line Clean Layout) -->
         <details id="pyramid-rest-helper-details" class="pt-3 border-t border-slate-800 text-left">
-          <summary class="cursor-pointer flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-emerald-400 hover:text-emerald-300 select-none">
-            <span>PULL-UP PYRAMID REST HELPER (10S × REPS)</span>
-            <span class="text-[10px] text-slate-400">▾</span>
+          <summary class="cursor-pointer flex items-center justify-between text-sm font-bold text-emerald-400 hover:text-emerald-300 select-none">
+            <span class="whitespace-nowrap">Pull-Up Pyramid Rest Helper (10s × Reps) ▼</span>
           </summary>
-          <div class="flex flex-wrap gap-1.5 pt-2.5">
-            <button type="button" data-timer-sec="10" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">1 Rep (10s)</button>
-            <button type="button" data-timer-sec="20" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">2 Reps (20s)</button>
-            <button type="button" data-timer-sec="30" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">3 Reps (30s)</button>
-            <button type="button" data-timer-sec="40" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">4 Reps (40s)</button>
-            <button type="button" data-timer-sec="50" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">5 Reps (50s)</button>
-            <button type="button" data-timer-sec="60" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">6 Reps (60s)</button>
-            <button type="button" data-timer-sec="70" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">7 Reps (70s)</button>
-            <button type="button" data-timer-sec="80" class="timer-preset-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700">8 Reps (80s)</button>
+          <div class="grid grid-cols-4 gap-1.5 pt-2.5">
+            <button type="button" data-timer-sec="10" class="timer-preset-btn px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700 whitespace-nowrap">1 Rep (10s)</button>
+            <button type="button" data-timer-sec="20" class="timer-preset-btn px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700 whitespace-nowrap">2 Reps (20s)</button>
+            <button type="button" data-timer-sec="30" class="timer-preset-btn px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700 whitespace-nowrap">3 Reps (30s)</button>
+            <button type="button" data-timer-sec="40" class="timer-preset-btn px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700 whitespace-nowrap">4 Reps (40s)</button>
+            <button type="button" data-timer-sec="50" class="timer-preset-btn px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700 whitespace-nowrap">5 Reps (50s)</button>
+            <button type="button" data-timer-sec="60" class="timer-preset-btn px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700 whitespace-nowrap">6 Reps (60s)</button>
+            <button type="button" data-timer-sec="70" class="timer-preset-btn px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700 whitespace-nowrap">7 Reps (70s)</button>
+            <button type="button" data-timer-sec="80" class="timer-preset-btn px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700 whitespace-nowrap">8 Reps (80s)</button>
           </div>
         </details>
 
-        <!-- Collapsible Rice Cooking Timer (2-Phase Jasmine Rice Stovetop Timer with 1.5m Mix/Stir Alerts) -->
+        <!-- Collapsible Rice Cooking Timer (Clean Title Case on 1 Line — No "DOWN)" Orphan Wrap) -->
         <details id="timer-rice-cooking-details" class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-left">
-          <summary class="cursor-pointer flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-sky-400 hover:text-sky-300 select-none">
-            <span>Rice Cooking Timer (10–12m Cook + 10m Cool-Down)</span>
-            <span class="text-[10px] text-slate-400">▾</span>
+          <summary class="cursor-pointer flex items-center justify-between text-sm font-bold text-sky-400 hover:text-sky-300 select-none">
+            <span class="whitespace-nowrap">Jasmine Rice Timer (10m Cook + 10m Rest) ▼</span>
           </summary>
           <div id="timer-rice-stage-container" class="pt-2.5 space-y-2">
             <!-- Populated dynamically by renderRiceCookingTimerWidgets() -->
@@ -602,13 +620,13 @@
       <div id="vegan-top-day-selector-container" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex flex-wrap items-center gap-1.5 min-w-0">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400 whitespace-nowrap"> Week:</span>
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400 whitespace-nowrap">Week:</span>
             <div id="vegan-progressive-week-pills" class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Progressive Training Weeks">
               <!-- Populated dynamically by JS -->
             </div>
           </div>
           <div class="flex items-center gap-1.5">
-            <span id="vegan-week-day-title" class="hidden sm:inline text-[11px] font-bold text-slate-300"> Week 1 • Day 1</span>
+            <span id="vegan-week-day-title" class="hidden sm:inline text-[11px] font-bold text-slate-300">Week 1 • Day 1</span>
             <span id="vegan-day-status-pill" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 whitespace-nowrap">0/4 Fuel Today</span>
           </div>
         </div>
@@ -617,58 +635,65 @@
         </div>
       </div>
 
-      <!-- Simplified Daily Muscle Fuel Header Card (MacroFactor / Hevy Standard) -->
-      <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
-        <!-- 1. Compact Title Row + [Recipes & Prep] + [G | LB] Toggle & [Log All 4] Button -->
-        <div class="flex flex-wrap items-center justify-between gap-1.5">
-          <div class="min-w-0 flex-1 flex flex-wrap items-center gap-1.5">
-            <h2 id="vegan-main-plan-heading" class="text-xs sm:text-sm font-extrabold text-white tracking-tight leading-snug">Daily Muscle Fuel (1,325 kcal • 139g P • 173cm / 69kg)</h2>
+      <!-- Simplified Daily Food & Water Header Card (MacroFactor / Hevy Standard) -->
+      <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-3">
+        <!-- Row 1: Title "Daily Food & Water" on left + green button "✓ Log All 4 Meals" on right -->
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0 flex items-center gap-1.5">
+            <h2 id="vegan-main-plan-heading" class="text-base sm:text-lg font-extrabold text-white tracking-tight leading-snug whitespace-nowrap">Daily Food &amp; Water</h2>
             <span id="vegan-logged-with-plan-badge" class="hidden text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-950/85 text-purple-200 border border-purple-400/50"></span>
           </div>
-          <div class="flex flex-wrap items-center gap-1 shrink-0">
-            <button type="button" id="toggle-all-fuel-recipes-btn" class="text-[10.5px] sm:text-[11px] font-extrabold px-2 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 transition whitespace-nowrap">
+          <button type="button" id="log-all-vegan-day-btn" class="text-xs font-extrabold px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition whitespace-nowrap shadow-sm">
+            ✓ Log All 4 Meals
+          </button>
+        </div>
+
+        <!-- Row 2: Subtitle "1,325 kcal • 139g Protein (173cm • 69kg)" on left + G | LB unit switch & Recipes & Prep button on right -->
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <p id="vegan-main-plan-subtitle" class="text-xs font-semibold text-slate-300 whitespace-nowrap">1,325 kcal • 139g Protein (173cm • 69kg)</p>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <div class="inline-flex items-center rounded-lg bg-slate-950 border border-sky-500/40 p-0.5" role="group" aria-label="Kitchen Scale Weight Unit Toggle">
+              <button type="button" id="fuel-unit-g-btn" data-fuel-unit="g" class="px-2.5 py-1 rounded-md text-[10px] font-extrabold bg-sky-400 text-slate-950 transition">G</button>
+              <button type="button" id="fuel-unit-lb-btn" data-fuel-unit="lb" class="px-2.5 py-1 rounded-md text-[10px] font-extrabold text-sky-300 hover:text-white transition">LB</button>
+            </div>
+            <button type="button" id="toggle-all-fuel-recipes-btn" class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 transition whitespace-nowrap">
               Recipes &amp; Prep
             </button>
-            <div class="inline-flex items-center rounded-lg bg-slate-950 border border-sky-500/40 p-0.5" role="group" aria-label="Kitchen Scale Weight Unit Toggle">
-              <button type="button" id="fuel-unit-g-btn" data-fuel-unit="g" class="px-2 py-1 rounded-md text-[10px] font-extrabold bg-sky-500 text-slate-950 transition">G</button>
-              <button type="button" id="fuel-unit-lb-btn" data-fuel-unit="lb" class="px-2 py-1 rounded-md text-[10px] font-extrabold text-sky-300 hover:text-white transition">LB</button>
-            </div>
-            <button type="button" id="log-all-vegan-day-btn" class="text-[10.5px] sm:text-[11px] font-extrabold px-2 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 transition whitespace-nowrap">✓ Log All 4</button>
           </div>
         </div>
 
-        <!-- 2. Immediately Below Title: Daily Protein & Daily Calories Progress Bars -->
-        <div class="grid grid-cols-2 gap-2.5">
-          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
-            <div class="flex justify-between text-xs font-bold">
-              <span class="text-slate-300">Daily Protein</span>
-              <span id="macro-protein-text" class="text-emerald-400">0 / 139g</span>
-            </div>
-            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-1.5">
+        <!-- Identical 2-Row Stacked Layout for Daily Protein & Daily Calories Cards -->
+        <div class="grid grid-cols-2 gap-2.5" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 space-y-1">
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">DAILY PROTEIN</div>
+            <div id="macro-protein-text" class="text-base sm:text-lg font-extrabold text-emerald-400 whitespace-nowrap">0 / 139 g</div>
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden pt-0.5">
               <div id="macro-protein-bar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 0%"></div>
             </div>
           </div>
-          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
-            <div class="flex justify-between text-xs font-bold">
-              <span class="text-slate-300">Daily Calories</span>
-              <span id="macro-kcal-text" class="text-amber-400">0 / 1,325 kcal</span>
-            </div>
-            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-1.5">
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 space-y-1">
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">DAILY CALORIES</div>
+            <div id="macro-kcal-text" class="text-base sm:text-lg font-extrabold text-amber-400 whitespace-nowrap">0 / 1,325 kcal</div>
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden pt-0.5">
               <div id="macro-kcal-bar" class="bg-amber-400 h-full transition-all duration-300" style="width: 0%"></div>
             </div>
           </div>
         </div>
 
-        <!-- UPGRADE 7: Collapsible 1-Line 3-Month & 6-Month Supplement Supply Summary Bar (Hidden by Default) -->
-        <div id="muscle-fuel-supplement-supply-summary" class="bg-slate-950/85 border border-emerald-500/35 rounded-xl overflow-hidden text-[10.5px] sm:text-[11px] leading-snug">
-          <button type="button" id="toggle-fuel-supplement-summary-btn" aria-expanded="false" class="w-full px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-left hover:bg-slate-900/80 transition">
-            <span id="toggle-fuel-supplement-summary-label" class="text-[11px] font-extrabold text-emerald-300">3-Month &amp; 6-Month Bulk Supplement Plan ($6.35/d) — Show Details ▼</span>
-            <span id="muscle-fuel-daily-cost-badge" class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">$6.35/d Order 1 -&gt; $6.34/d Costco</span>
+        <!-- Clean 1-Line Supplement Summary Drawer (Extra badge hidden until opened) -->
+        <div id="muscle-fuel-supplement-supply-summary" class="bg-slate-950/85 border border-emerald-500/35 rounded-xl overflow-hidden text-xs leading-snug">
+          <button type="button" id="toggle-fuel-supplement-summary-btn" aria-expanded="false" class="w-full px-3 py-2.5 flex items-center justify-between gap-2 text-left hover:bg-slate-900/80 transition">
+            <span id="toggle-fuel-supplement-summary-label" class="text-xs font-extrabold text-emerald-300">3- &amp; 6-Month Supplement Plan ($6.35/day)</span>
+            <span id="toggle-fuel-supplement-summary-action" class="text-xs font-extrabold text-sky-300 whitespace-nowrap shrink-0">Show ▼</span>
           </button>
-          <div id="muscle-fuel-supplement-summary-details" class="hidden px-3 pb-2.5 pt-1.5 border-t border-slate-800/80 space-y-1">
-            <p class="text-slate-200 font-semibold"><strong class="text-emerald-300">Pea Protein (90g/d):</strong> 4 containers / 3 mos ($287.96 Order 1 -&gt; +972g buffer/qtr -&gt; 3 containers on Q3)</p>
-            <p class="text-slate-200 font-semibold"><strong class="text-sky-300">Creatine (5g/d):</strong> 2 x 1.1 LB Order 1 ($47.98 / 200 days) -&gt; Cancel Sub -&gt; Costco 1kg ($44.99) on Order 2+</p>
-            <p class="text-slate-200 font-semibold"><strong class="text-amber-300">Groceries (Items #1-#11):</strong> $22.10/wk ($284.18 / 3 mos) • Water in Fuel 1 &amp; 4 shakes + 180ml milk in Fuel 2 Oats</p>
+          <div id="muscle-fuel-supplement-summary-details" class="hidden px-3 pb-3 pt-2 border-t border-slate-800/80 space-y-1.5">
+            <div class="flex items-center justify-between gap-2 pb-1">
+              <span class="text-[11px] font-bold text-slate-300">Bulk Order &amp; Costco Switchover Math</span>
+              <span id="muscle-fuel-daily-cost-badge" class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 whitespace-nowrap">$6.35/d Order 1 -&gt; $6.34/d Costco</span>
+            </div>
+            <p class="text-slate-200 text-[11px] leading-relaxed"><strong class="text-emerald-300">Pea Protein (90g/d):</strong> 4 tubs every 3 months ($287.96 Order 1). Switch to 3 tubs on Month 6 to save $80.99.</p>
+            <p class="text-slate-200 text-[11px] leading-relaxed"><strong class="text-sky-300">Creatine (5g/d):</strong> 2 tubs on Order 1 ($47.98 for 200 days). Cancel auto-ship and buy 1 kg at Costco ($44.99) next.</p>
+            <p class="text-slate-200 text-[11px] leading-relaxed"><strong class="text-amber-300">Store Groceries (11 items):</strong> $22.10/wk ($284.18 / 3 mos) • Water in shakes + 180 ml milk in oats.</p>
           </div>
         </div>
 
@@ -698,8 +723,8 @@
       <div class="space-y-2.5">
         <div class="flex items-center justify-between px-1">
           <div class="flex items-center gap-1.5">
-            <span class="text-xs font-extrabold uppercase tracking-wider text-sky-400"> 4-Day Kitchen Scale Batch Prep (2)</span>
-            <span class="text-[10px] font-semibold text-slate-400">Cook once every 4 days</span>
+            <span class="text-xs font-extrabold text-sky-400">4-Day Kitchen Scale Batch Prep (2)</span>
+            <span class="text-[11px] font-semibold text-slate-400">• Cook once every 4 days</span>
           </div>
         </div>
         <div id="batch-recipe-cards-container" class="space-y-3">
@@ -711,14 +736,13 @@
       <!-- Collapsed-by-Default 100% Micronutrient Coverage Accordion -->
       <details id="micronutrient-coverage-accordion" class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 text-xs">
         <summary class="cursor-pointer font-extrabold text-emerald-400 hover:text-emerald-300 flex items-center justify-between gap-2 select-none">
-          <span>100% Micronutrient Coverage (B12, D, Calcium, Iodine, Omega-3) — Tap to View</span>
-          <span class="text-[10px] text-slate-400 shrink-0">▾</span>
+          <span>100% Micronutrient Coverage (B12, D3, Calcium, Iodine, Omega-3) ▼</span>
         </summary>
         <div class="mt-3 pt-3 border-t border-slate-800 space-y-2.5">
           <div class="flex items-center justify-between gap-2">
             <p class="text-[11px] text-slate-400">Covered automatically across your 4 daily Fuel cards</p>
-            <button type="button" id="open-shopping-tab-btn" class="shrink-0 px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-extrabold">
-               Full Weekly List →
+            <button type="button" id="open-shopping-tab-btn" class="shrink-0 px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-extrabold whitespace-nowrap">
+              Full Shopping List →
             </button>
           </div>
           <div id="vegan-essentials-list" class="grid grid-cols-1 gap-2">
@@ -729,12 +753,12 @@
 
       <!-- Hidden Advanced Settings (Preserves all optional controls & IDs cleanly) -->
       <details class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-3 text-xs text-slate-400">
-        <summary class="cursor-pointer font-semibold text-slate-400 hover:text-slate-200">Optional: Adjust Batch Days or Calorie Target</summary>
+        <summary class="cursor-pointer font-semibold text-slate-400 hover:text-slate-200">Optional: Adjust Batch Days or Calorie Target ▼</summary>
         <div class="mt-3 space-y-3">
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
             <button type="button" data-meal-mode="recomp_6pack" class="meal-mode-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-emerald-500/20 text-emerald-300 border-emerald-500/40">
               6-Pack Recomp (Cut)
-              <span class="block text-[10px] font-normal opacity-80">1,400 kcal • 138g P</span>
+              <span class="block text-[10px] font-normal opacity-80">1,325 kcal • 139g P</span>
             </button>
             <button type="button" data-meal-mode="low_appetite" class="meal-mode-btn py-2 px-2 rounded-xl text-xs font-bold border transition bg-slate-800 text-slate-300 border-slate-700">
               Low Appetite Bulk
@@ -780,30 +804,35 @@
     <!-- ==================== VIEW 5: WEEKLY MUSCLE FUEL SHOPPING LIST ==================== -->
     <section id="view-shopping" class="hidden space-y-4">
       <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-4 space-y-3">
-        <div class="flex items-start justify-between gap-2">
-          <div class="min-w-0 flex-1">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">1,325 kcal • 139g P • $6.35/d ($6.34/d Costco)</span>
-            <h2 id="shopping-main-heading" class="text-base font-extrabold text-white mt-0.5">Weekly &amp; 3-Month Muscle Fuel Shopping List</h2>
-            <p class="text-xs text-slate-300 mt-1">Exact weekly and 90-day quarterly quantities for your 4 x 5 LB Naked Pea Protein order, 200-day Creatine strategy, and weekly fresh groceries.</p>
-          </div>
-          <div class="text-right shrink-0 bg-slate-950/80 border border-slate-800 px-3 py-2 rounded-xl">
-            <span id="shopping-progress-count" class="block text-sm font-extrabold text-emerald-400">0 / 14</span>
-            <span class="block text-[10px] text-slate-400 uppercase font-semibold">In Cart</span>
-          </div>
+        <!-- Row 1 (Eyebrow): 1,325 kcal • 139g Protein • $6.35/day on left, 12 / 14 IN CART badge on right (nowrap) -->
+        <div class="flex items-center justify-between gap-2">
+          <span id="shopping-eyebrow-summary" class="text-xs font-bold text-emerald-400 whitespace-nowrap">1,325 kcal • 139g Protein • $6.35/day</span>
+          <span class="inline-flex items-center gap-1.5 bg-slate-950/90 border border-slate-800 px-2.5 py-1 rounded-xl whitespace-nowrap shrink-0">
+            <span id="shopping-progress-count" class="text-xs font-extrabold text-emerald-400">0 / 14</span>
+            <span class="text-[10px] text-slate-300 uppercase font-extrabold">IN CART</span>
+          </span>
         </div>
 
-        <!-- 1-Tap 2-Pill Toggle: Weekly View ($44.48/wk) vs. 3-Month Cycle View ($571.88 / 90 Days) -->
-        <div id="shop-list-period-toggle-bar" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5" role="group" aria-label="Shopping List Cycle Period Toggle">
-          <button type="button" id="shop-period-weekly-btn" data-shop-period="weekly" aria-pressed="true" class="shop-period-pill-btn py-2 px-3 rounded-xl text-xs font-extrabold border transition text-left bg-emerald-500 text-slate-950 border-emerald-300 shadow-sm">
-            Weekly Grocery View ($22.10/wk Store • $44.48/wk All-In)
+        <!-- Row 2 (Title): Shopping List (clean 20px bold heading) & Row 3 (1-Line ELI12 Subtitle) -->
+        <div class="space-y-1">
+          <h2 id="shopping-main-heading" class="text-xl font-extrabold text-white leading-tight">Shopping List</h2>
+          <p class="text-xs text-slate-300 leading-relaxed">Check off what you have at home. Copy the rest for the store.</p>
+        </div>
+
+        <!-- Symmetrical 2-Column View Switcher (No "In)" Wrapping) -->
+        <div id="shop-list-period-toggle-bar" class="grid grid-cols-2 gap-2 pt-0.5" style="grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px;" role="group" aria-label="Shopping List Cycle Period Toggle">
+          <button type="button" id="shop-period-weekly-btn" data-shop-period="weekly" aria-pressed="true" style="min-height: 48px;" class="shop-period-pill-btn min-w-0 py-2 px-2 rounded-xl border transition flex flex-col items-center justify-center text-center bg-emerald-500 text-slate-950 border-emerald-300 shadow-sm">
+            <span class="text-xs font-extrabold whitespace-nowrap">1-Week View</span>
+            <span class="text-[10px] font-bold opacity-90 whitespace-nowrap">$22.10 Store • $44.48 Total</span>
           </button>
-          <button type="button" id="shop-period-quarterly-btn" data-shop-period="quarterly" aria-pressed="false" class="shop-period-pill-btn py-2 px-3 rounded-xl text-xs font-extrabold border transition text-left bg-slate-950/90 hover:bg-slate-900 text-slate-200 border-slate-700">
-            3-Month (90-Day) Cycle View ($284.18 Store • $571.88 All-In)
+          <button type="button" id="shop-period-quarterly-btn" data-shop-period="quarterly" aria-pressed="false" style="min-height: 48px;" class="shop-period-pill-btn min-w-0 py-2 px-2 rounded-xl border transition flex flex-col items-center justify-center text-center bg-slate-950/90 hover:bg-slate-900 text-slate-200 border-slate-700">
+            <span class="text-xs font-extrabold whitespace-nowrap">3-Month View</span>
+            <span class="text-[10px] font-semibold text-slate-400 whitespace-nowrap">$284.18 Store • $571.88 Total</span>
           </button>
         </div>
 
-        <!-- Active Period Cost & Quantity Breakdown Box -->
-        <div id="shop-list-period-summary-box" class="bg-slate-950/85 border border-slate-800 rounded-xl p-2.5 text-[11px] text-slate-300 leading-snug">
+        <!-- Compact Collapsible Cost Breakdown & Order Math Drawer -->
+        <div id="shop-list-period-summary-box" class="bg-slate-950/85 border border-slate-800 rounded-xl overflow-hidden text-xs text-slate-300 leading-snug">
           <!-- Populated dynamically by renderShoppingView() -->
         </div>
 
@@ -811,14 +840,15 @@
           <div id="shopping-progress-bar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 0%"></div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2 pt-1">
-          <button type="button" id="copy-shopping-list-btn" class="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition">
-             Copy Unchecked List
+        <!-- Aligned 3-Button Action Row (grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.35fr) minmax(0, 0.85fr); gap: 6px;) -->
+        <div class="grid pt-0.5" style="grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.35fr) minmax(0, 0.85fr); gap: 6px;">
+          <button type="button" id="copy-shopping-list-btn" style="min-height: 40px;" class="min-w-0 py-2 px-1 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10.5px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
+            Copy Unchecked
           </button>
-          <button type="button" id="check-pantry-staples-btn" class="py-2 px-3 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold transition" title="Check off long-lasting pantry bottles/bags and bulk supplements you already have at home">
-            ✓ Have Pantry &amp; Bulk Staples
+          <button type="button" id="check-pantry-staples-btn" style="min-height: 40px;" class="min-w-0 py-2 px-1 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-[10.5px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Check off long-lasting pantry bottles/bags and bulk supplements you already have at home">
+            Check Pantry Staples
           </button>
-          <button type="button" id="reset-shopping-list-btn" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold transition">
+          <button type="button" id="reset-shopping-list-btn" style="min-height: 40px;" class="min-w-0 py-2 px-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[10.5px] font-bold whitespace-nowrap transition inline-flex items-center justify-center text-center">
             Uncheck All
           </button>
         </div>
@@ -2177,7 +2207,8 @@
         restSec: 90,
         restText: '90 seconds rest between sets',
         setsCount: 5,
-        desc: 'Perform five maximum effort sets of strict overhand pull-ups. Focus on quality execution and full range of motion rather than worrying about raw numbers.'
+        desc: 'Do 5 sets of pull-ups. Stop each set when you cannot do another clean rep.',
+        setupNotes: 'Start from a full dead hang with straight arms, pull your chin cleanly over the bar, and lower under control. Rest 90 seconds between sets.'
       },
       {
         dayNum: 2,
@@ -2186,7 +2217,8 @@
         restSec: 30,
         restText: '10 seconds rest per rep in previous set',
         setsCount: 5,
-        desc: 'Start with 1 rep on Set 1, 2 reps on Set 2, 3 reps on Set 3, continuing until you miss a target set. Then finish with 1 final maximum effort set.'
+        desc: 'Add 1 rep each set (1, 2, 3, 4), then finish with 1 max-effort set.',
+        setupNotes: 'Rest 10 seconds per rep completed on the previous set (1 rep = 10s rest, 2 reps = 20s rest). Finish Set 5 with maximum clean reps.'
       },
       {
         dayNum: 3,
@@ -2195,7 +2227,8 @@
         restSec: 60,
         restText: '60 seconds rest between sets',
         setsCount: 9,
-        desc: 'Use your Training Set rep count: 3 sets normal overhand grip, 3 sets close underhand grip (little fingers touching), and 3 sets wide overhand grip.'
+        desc: 'Do 3 sets overhand, 3 sets close underhand, and 3 sets wide grip.',
+        setupNotes: 'Use your fixed Training Set rep count across all 9 sets with 60 seconds rest between sets: Sets 1-3 normal overhand, Sets 4-6 close underhand, Sets 7-9 wide overhand.'
       },
       {
         dayNum: 4,
@@ -2204,7 +2237,8 @@
         restSec: 60,
         restText: '60 seconds rest between sets',
         setsCount: 5,
-        desc: 'Perform as many perfect Training Sets as you can with 60s rest until you fail to complete a full training set. If you hit 9+ sets, raise your Training Set by +1 rep next week.'
+        desc: 'Do as many clean Training Sets as you can with 60 seconds rest.',
+        setupNotes: 'Keep doing sets at your Training Set rep count with 60 seconds rest. When you complete 9+ sets, increase your Training Set by +1 rep next week.'
       },
       {
         dayNum: 5,
@@ -2213,7 +2247,8 @@
         restSec: 90,
         restText: 'Matches selected hardest day',
         setsCount: 5,
-        desc: 'Repeat whichever day (Day 1, 2, 3, or 4) felt the hardest earlier this week.'
+        desc: 'Repeat whichever pull-up session felt hardest earlier this week.',
+        setupNotes: 'Select Day 1, Day 2, Day 3, or Day 4 above to repeat your most challenging pull-up workout of the week.'
       }
     ];
 
@@ -2230,29 +2265,31 @@
     const SUBSCRIPTION_ACTION_CHECKLIST_ITEMS = [
       {
         id: 'cancelCreatineAutoship',
-        title: 'Action 1 (After Order 1 Ships): Cancel Naked Creatine Recurring Autoship',
-        subtext: 'Order 1 (2 x 1.1 LB = 1,000g for $47.98 CAD at 20% off) lasts 200 days (6.67 months). Cancel the recurring Creatine Autoship immediately after delivery because Order 2 only gives 10% off ($53.98 CAD + $20 shipping risk). For Order 2+ (Month 7), buy 1 kg Leanfit Micronized Creatine at Costco ($44.99 CAD regular / $34.99 on sale = $0.18-$0.22/day with $0 shipping).'
+        title: 'Step 1: Cancel Naked Creatine auto-ship after Order 1 arrives (Buy at Costco next time for $44.99)',
+        subtext: 'Order 1 (2 x 1.1 LB = 1,000g for $47.98 CAD at 20% off) lasts 200 days. Cancel auto-ship after delivery and buy 1 kg Creatine at Costco ($44.99 CAD) on Month 7.'
       },
       {
         id: 'dropPeaTo3Containers',
-        title: 'Action 2 (Before Month 6 / Order 3): Drop Naked Pea Autoship from 4 to 3 Containers',
-        subtext: '4 x 5 LB containers (9,072g every 3 months) supply 100.8 days at 90g/day, building a +972g (+10.8-day) buffer per quarter. After Quarter 2 (Month 6), your buffer reaches +1,944g (21.6 days) — switch Quarter 3 from 4 containers ($323.96) down to 3 containers ($242.97) to save $80.99 CAD.'
+        title: 'Step 2: Change Naked Pea auto-ship from 4 tubs to 3 tubs before Month 6 (Save $80.99)',
+        subtext: '4 tubs every 3 months builds a 21-day extra supply by Month 6. Drop Order 3 from 4 tubs ($323.96) to 3 tubs ($242.97) to save $80.99 CAD.'
       }
     ];
 
     const SHOP_LIST_PERIOD_VIEWS = {
       weekly: {
         id: 'weekly',
-        label: 'Weekly Grocery View ($22.10/wk Store • $44.48/wk All-In)',
-        shortLabel: 'Weekly View ($44.48/wk)',
+        label: '1-Week View',
+        subLabel: '$22.10 Store • $44.48 Total',
+        shortLabel: '1-Week View ($22.10 Store • $44.48 Total)',
         storeCost: '$22.10/wk',
         allInCost: '$44.48/wk ($44.38/wk on Costco Creatine)',
         summaryLine: 'Weekly Quantities: 1,260 ml/wk milk ($3.19) • 1,225g/wk tofu ($8.97) • 630g/wk pea protein ($20.00) • 35g/wk creatine ($1.68 Order 1 / $1.57 Costco) • 7 caps/wk Vitamin D3 ($0.70)'
       },
       quarterly: {
         id: 'quarterly',
-        label: '3-Month (90-Day) Cycle View ($284.18 Store • $571.88 All-In)',
-        shortLabel: '3-Month Cycle View ($571.88 / 90 Days)',
+        label: '3-Month View',
+        subLabel: '$284.18 Store • $571.88 Total',
+        shortLabel: '3-Month View ($284.18 Store • $571.88 Total)',
         storeCost: '$284.18 / 90 Days',
         allInCost: '$571.88 / 90 Days ($570.54 on Costco Creatine)',
         summaryLine: '90-Day Totals: 16.2L / 8.57 cartons milk ($41.06) • 15,750g / 45 blocks tofu ($115.33) • 8,100g consumed from 4 x 5 LB Naked Pea ($257.11 consumed / $287.96 Order 1 upfront) • 450g consumed from 1,000g Creatine ($21.59 Order 1 / $20.25 Costco) • 90 caps Vitamin D3 ($9.00)'
@@ -6509,7 +6546,7 @@
         repsLabel: opt.repsLabel,
         shortTitle: opt.shortTitle,
         title: opt.shortTitle,
-        desc: `${opt.label} • Repeat your hardest pull-up session of the week to drive neural and hypertrophy adaptations.`
+        desc: `Repeat your hardest pull-up day this week (${opt.shortTitle.replace('Day 5: Repeats ', '')}).`
       };
     }
 
@@ -8045,16 +8082,16 @@
         if (s === 5 || s === 6) restIndices.push(idx + 1);
       });
       if (restIndices.length === 2) {
-        return `Schedule: Rest Days ${restIndices[0]} & ${restIndices[1]} (Change)`;
+        return `Change Rest Days (${restIndices[0]} & ${restIndices[1]})`;
       }
       if (restIndices.length === 1) {
-        return `Schedule: Rest Day ${restIndices[0]} • 6 Lift Days (Change)`;
+        return `Change Rest Day (${restIndices[0]} • 6 Lift)`;
       }
       if (restIndices.length === 0) {
-        return `Schedule: 7 Lift Days Active (Change)`;
+        return `Change Rest Days (7 Lift)`;
       }
       const [r1, r2] = normalizeRestDaysTuple(restDaysPair);
-      return `Schedule: Rest Days ${r1 + 1} & ${r2 + 1} (Change)`;
+      return `Change Rest Days (${r1 + 1} & ${r2 + 1})`;
     }
 
     function getDayAssignment(week, calendarDayIdx) {
@@ -9429,7 +9466,7 @@
       const sched = getDayGymSchedule(w, d);
       const mealSched = getAdaptiveMealScheduleForDay(w, d);
       const chrono = mealSched.chrono;
-      const shouldShowExpandedCard = Boolean(!state.hasSetInitialGymTime || state.openGymTimePromptCard);
+      const shouldShowExpandedCard = Boolean(state.openGymTimePromptCard);
 
       const containers = [
         { id: 'gym-time-top-banner-workout', suffix: 'workout' },
@@ -9449,9 +9486,7 @@
                   <h3 class="text-xs sm:text-sm font-extrabold text-white mt-1">What time are you going to the gym today?</h3>
                   <p class="text-[11px] text-slate-300 mt-0.5 leading-snug">Your Pre-Gym Shake (Fuel 1), Post-Gym Oats (Fuel 2), Lunch/Dinner (Fuel 3 &amp; 4), and 3,000 ml Water Schedule adjust automatically to your workout time.</p>
                 </div>
-                ${state.hasSetInitialGymTime ? `
-                  <button type="button" data-close-gym-prompt="${cfg.suffix}" class="close-gym-time-prompt-btn shrink-0 px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold border border-slate-700">Close</button>
-                ` : ''}
+                <button type="button" data-close-gym-prompt="${cfg.suffix}" class="close-gym-time-prompt-btn shrink-0 px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold border border-slate-700">Close</button>
               </div>
 
               <div class="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
@@ -9508,15 +9543,29 @@
         } else {
           el.innerHTML = `
             <div class="bg-slate-900/95 border border-sky-500/35 rounded-xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div class="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  data-open-gym-prompt="${cfg.suffix}"
-                  class="open-gym-time-prompt-btn inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 font-extrabold text-[11px] transition"
-                >
-                  <span>Gym Time: [${chrono.gymTime12}] (Change)</span>
-                </button>
-                <span class="text-[10.5px] font-semibold text-slate-300">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <div class="inline-flex items-center rounded-lg bg-slate-950 border border-sky-400/40 overflow-hidden">
+                  <button
+                    type="button"
+                    data-top-step-mins="-15"
+                    class="top-gym-step-btn px-2 py-1 text-[11px] font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition"
+                    title="Shift Gym Time 15 minutes earlier"
+                  >-15m</button>
+                  <button
+                    type="button"
+                    data-open-gym-prompt="${cfg.suffix}"
+                    class="open-gym-time-prompt-btn inline-flex items-center gap-1 px-2.5 py-1 bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 font-extrabold text-[11px] whitespace-nowrap transition"
+                  >
+                    <span>Gym Time: ${chrono.gymTime12} (Change)</span>
+                  </button>
+                  <button
+                    type="button"
+                    data-top-step-mins="15"
+                    class="top-gym-step-btn px-2 py-1 text-[11px] font-extrabold text-emerald-400 hover:bg-slate-800 transition"
+                    title="Shift Gym Time 15 minutes later"
+                  >+15m</button>
+                </div>
+                <span class="text-[11px] font-semibold text-slate-300">
                   Fuel 1: <strong class="text-emerald-300">${chrono.fuel1Time12}</strong> •
                   Fuel 2: <strong class="text-emerald-300">${chrono.fuel2Time12}</strong> •
                   Fuel 3: <strong class="text-amber-300">${chrono.fuel3Time12}</strong> •
@@ -9526,6 +9575,18 @@
             </div>
           `;
         }
+
+        el.querySelectorAll('.top-gym-step-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const delta = parseInt(btn.getAttribute('data-top-step-mins'), 10) || 15;
+            const updated = stepDayGymStartTimeBy15Min(w, d, delta);
+            state.hasSetInitialGymTime = true;
+            saveState();
+            renderWorkoutView();
+            renderVeganView();
+            showToast(`Gym Time set to ${updated.start12} — Next meal: ${updated.nextPostWorkoutTime12}`);
+          });
+        });
 
         el.querySelectorAll('.open-gym-time-prompt-btn').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -9656,19 +9717,20 @@
         const isSyncedMatch = curSched.join(',') === smartInfo.schedule.join(',');
         const isStandardMatch = curSched.join(',') === '0,1,2,3,4,5,6';
 
-        el.className = 'rounded-xl bg-slate-950/90 border border-sky-500/35 px-3 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+        el.className = 'rounded-xl bg-slate-950/90 border border-sky-500/35 p-2.5 space-y-2';
         el.innerHTML = `
           <div class="min-w-0 flex items-center gap-1.5">
             <span class="shrink-0 w-2 h-2 rounded-full ${isSyncedMatch ? 'bg-emerald-400' : 'bg-sky-400'}"></span>
-            <p ${cfg.isPrimaryGym ? 'id="cross-week-continuity-status"' : ''} class="text-[11px] font-bold text-slate-200 leading-snug">
+            <p ${cfg.isPrimaryGym ? 'id="cross-week-continuity-status"' : ''} class="text-xs font-bold text-slate-200 leading-snug">
               ${statusText}
             </p>
           </div>
-          <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+          <div class="grid grid-cols-2 gap-2" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
             <button
               type="button"
               ${cfg.isPrimaryGym ? 'id="cross-week-resync-btn"' : ''}
-              class="cross-week-resync-btn px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition whitespace-nowrap ${
+              style="min-height: 40px;"
+              class="cross-week-resync-btn px-2.5 py-1.5 rounded-xl text-xs font-extrabold border transition whitespace-nowrap inline-flex items-center justify-center text-center ${
                 isSyncedMatch
                   ? 'bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-400/50 text-emerald-200'
                   : 'bg-sky-500/20 hover:bg-sky-500/30 border-sky-400/50 text-sky-200'
@@ -9679,13 +9741,14 @@
             <button
               type="button"
               ${cfg.isPrimaryGym ? 'id="cross-week-reset-standard-btn"' : ''}
-              class="cross-week-reset-standard-btn px-2.5 py-1 rounded-lg text-[10px] font-bold border transition whitespace-nowrap ${
+              style="min-height: 40px;"
+              class="cross-week-reset-standard-btn px-2.5 py-1.5 rounded-xl text-xs font-bold border transition whitespace-nowrap inline-flex items-center justify-center text-center ${
                 isStandardMatch && !isSyncedMatch
                   ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
                   : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300'
               }"
             >
-              Reset to Standard (Upper 1 • Rest 6 &amp; 7)
+              Reset to Standard
             </button>
           </div>
         `;
@@ -11093,25 +11156,41 @@
           if (isMealCheckedForDay(week, dayIdx, slotKey)) loggedMealsCountToday++;
         });
 
+        // Sync Collapsible Schedule, Sync & Stats Drawer state
+        const gymAdminDrawerBtn = document.getElementById('toggle-gym-admin-drawer-btn');
+        const gymAdminDrawerEl = document.getElementById('gym-admin-tools-drawer');
+        const isGymAdminOpen = Boolean(state.openGymAdminDrawer);
+        if (gymAdminDrawerBtn) {
+          gymAdminDrawerBtn.setAttribute('aria-expanded', isGymAdminOpen ? 'true' : 'false');
+          gymAdminDrawerBtn.textContent = isGymAdminOpen ? 'Schedule, Sync & Stats ▲' : 'Schedule, Sync & Stats ▼';
+        }
+        if (gymAdminDrawerEl) {
+          if (isGymAdminOpen) gymAdminDrawerEl.classList.remove('hidden');
+          else gymAdminDrawerEl.classList.add('hidden');
+        }
+
+        const waterLitersLogged = (loggedWaterTodayMl / 1000).toFixed(loggedWaterTodayMl % 1000 === 0 ? 0 : 1);
+        const waterLitersTarget = (targetWaterTodayMl / 1000).toFixed(targetWaterTodayMl % 1000 === 0 ? 0 : 1);
+        const shoeWearObj = calculateShoeWearFromWorkoutRecord();
+
         banner.className = 'bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5';
 
         if (dayAssignment.isRestDay) {
           banner.innerHTML = `
             <div id="rest-day-recovery-card" class="space-y-2.5">
-              <div class="flex flex-wrap items-center gap-1.5">
-                <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Wk ${week} • ${dayObj.dayFull}</span>
-                <span class="text-[9px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full">REST DAY (${dayAssignment.daySub.toUpperCase()})</span>
+              <!-- Row 1: Eyebrow + Rest Day Badge -->
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">WK ${week} • ${dayObj.dayShort}</span>
+                  <span class="text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full whitespace-nowrap">REST DAY</span>
+                </div>
+                <span class="text-xs font-bold text-slate-300 whitespace-nowrap">${dayAssignment.daySub}</span>
               </div>
 
-              <!-- Full-Width Non-Truncated Title Line -->
-              <h2 class="w-full text-base sm:text-lg font-bold text-white leading-snug">Rest &amp; Muscle Recovery Day</h2>
-
-              <!-- Separate Action Row Below Title -->
-              <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
-                <button type="button" id="banner-train-today-instead-btn" aria-expanded="${state.openDayWorkoutPicker ? 'true' : 'false'}" class="text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 border border-emerald-300 transition whitespace-nowrap" title="Choose a workout to train today (with smart next-workout recommendation)">
-                  ${state.openDayWorkoutPicker ? 'Hide Workout Selector ▴' : 'Train Today Instead (Choose Workout)'}
-                </button>
-                <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border transition ${
+              <!-- Row 2: Title on left + Abs On toggle pill on right -->
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="text-base sm:text-lg font-extrabold text-white leading-snug">Rest &amp; Muscle Recovery Day</h2>
+                <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-xs font-extrabold px-2.5 py-1.5 rounded-xl border whitespace-nowrap transition ${
                   hasCrunchToday
                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                     : 'bg-slate-800 text-slate-300 border-slate-700'
@@ -11120,23 +11199,30 @@
                 </button>
               </div>
 
+              <!-- Row 3: Train Today Instead Action Button -->
+              <div class="pt-0.5">
+                <button type="button" id="banner-train-today-instead-btn" aria-expanded="${state.openDayWorkoutPicker ? 'true' : 'false'}" style="min-height: 40px;" class="w-full text-xs font-extrabold px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 border border-emerald-300 transition whitespace-nowrap inline-flex items-center justify-center text-center" title="Choose a workout to train today (with smart next-workout recommendation)">
+                  ${state.openDayWorkoutPicker ? 'Hide Workout Selector ▲' : 'Train Today Instead (Choose Workout)'}
+                </button>
+              </div>
+
               ${state.openDayWorkoutPicker ? buildDayWorkoutPickerHtml(week, dayIdx) : ''}
 
-              <!-- 1. Recovery Status Banner -->
+              <!-- 1. ELI12 Recovery Status Sentence -->
               <div class="rounded-xl bg-emerald-950/40 border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-200 leading-relaxed">
-                Active Recovery &amp; Supercompensation Day — 48h muscle protein synthesis &amp; tendon recovery.
+                Take today off from lifting so your muscles recover and grow stronger.
               </div>
 
               <!-- 2. 3 Daily Recovery Targets (1-Tap Interactive Pills) -->
               <div class="grid grid-cols-1 gap-1.5 pt-0.5">
                 <button type="button" id="banner-water-add-btn" class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/35 text-xs font-extrabold text-sky-200 text-left transition">
-                  <span class="inline-flex items-center gap-1.5">${ICONS.water}<span>Water Target: ${loggedWaterTodayMl.toLocaleString()} / 2,500 ml (+500 ml)</span></span>
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-500/25 text-sky-200 shrink-0">+500 ml</span>
+                  <span class="inline-flex items-center gap-1.5">${ICONS.water}<span>Water: ${waterLitersLogged}/${waterLitersTarget}L (+500 ml)</span></span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-500/25 text-sky-200 shrink-0 whitespace-nowrap">+500 ml</span>
                 </button>
 
                 <button type="button" id="banner-open-vegan-fuel-btn" class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-xs font-extrabold text-amber-200 text-left transition">
-                  <span class="inline-flex items-center gap-1.5">${ICONS.vegan}<span>Muscle Fuel: ${loggedMealsCountToday} / 4 Meals (${dailyKcalTarget.toLocaleString()} kcal • ${dailyProteinTarget}g P)</span></span>
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/25 text-amber-200 shrink-0">Open →</span>
+                  <span class="inline-flex items-center gap-1.5">${ICONS.vegan}<span>Daily Food: ${loggedMealsCountToday} / 4 Meals (${dailyKcalTarget.toLocaleString()} kcal • ${dailyProteinTarget}g P)</span></span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/25 text-amber-200 shrink-0 whitespace-nowrap">Open →</span>
                 </button>
 
                 <button type="button" id="rest-card-walk-pill-btn" class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-xs font-extrabold text-left transition ${
@@ -11144,8 +11230,8 @@
                     ? 'bg-emerald-500/25 border-emerald-400/50 text-emerald-200'
                     : 'bg-slate-950/90 hover:bg-slate-900 border-slate-800 text-slate-200'
                 }">
-                  <span>Light Recovery Walk: 8,000–10,000 Steps (${isWalkChecked ? '✓ Checked Off' : 'Check Off'})</span>
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isWalkChecked ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300'} shrink-0">${isWalkChecked ? '✓ Done' : 'Check Off'}</span>
+                  <span>Recovery Walk: 8,000–10,000 Steps</span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isWalkChecked ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300'} shrink-0 whitespace-nowrap">${isWalkChecked ? '✓ Done' : 'Check Off'}</span>
                 </button>
               </div>
 
@@ -11158,32 +11244,29 @@
           `;
         } else {
           banner.innerHTML = `
-            <div class="space-y-2">
-              <div class="flex flex-wrap items-center gap-1.5">
-                <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Wk ${week} • ${dayObj.dayFull} • ${gymStart12}</span>
-                <span class="text-[9px] font-extrabold bg-sky-500/15 text-sky-300 border border-sky-400/30 px-2 py-0.5 rounded-full">LIFT DAY</span>
-                ${dayAssignment.isBonusRepeat ? `<span class="text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-full">NEXT CYCLE BONUS SESSION</span>` : ''}
-                ${isDayAllDone ? '<span class="text-[9px] font-bold bg-rose-500/15 text-rose-300 border border-rose-400/30 px-2 py-0.5 rounded-full">✓ Complete</span>' : ''}
-                ${isDayPartial ? `<span class="text-[9px] font-bold bg-amber-400/15 text-amber-200 border border-amber-300/30 px-2 py-0.5 rounded-full">${todayDoneSets}/${todayTotalSets}</span>` : ''}
+            <div class="space-y-2.5">
+              <!-- Row 1: WK 3 • DAY 2 • 6:00 AM (LIFT DAY badge) on the left + Progress: 0/25 sets on the right -->
+              <div class="space-y-1.5">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">WK ${week} • ${dayObj.dayShort} • ${gymStart12}</span>
+                    <span class="text-[10px] font-extrabold bg-sky-500/15 text-sky-300 border border-sky-400/30 px-2 py-0.5 rounded-full whitespace-nowrap">LIFT DAY</span>
+                    ${dayAssignment.isBonusRepeat ? `<span class="text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-full whitespace-nowrap">BONUS SESSION</span>` : ''}
+                  </div>
+                  <div class="flex items-center gap-1.5 text-xs">
+                    <span class="font-semibold text-slate-300 whitespace-nowrap">Progress: <strong class="text-white">${todayDoneSets}/${todayTotalSets} sets</strong></span>
+                    <span class="font-mono font-bold text-emerald-400">${dayPct}%</span>
+                  </div>
+                </div>
+                <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
+                  <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-300" style="width: ${dayPct}%"></div>
+                </div>
               </div>
 
-              <!-- Full-Width Non-Truncated Title Line -->
-              <h2 class="w-full text-base sm:text-lg font-bold text-white leading-snug">${dayObj.title}</h2>
-
-              <!-- Separate Action Row Below Title -->
-              <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
-                <button type="button" id="banner-swap-to-rest-btn" class="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-500/35 transition whitespace-nowrap" title="Make today a Rest Day and shift remaining lifting workouts forward without losing logged data">
-                  Swap Today to Rest Day
-                </button>
-                <button type="button" id="banner-change-workout-btn" aria-expanded="${state.openDayWorkoutPicker ? 'true' : 'false'}" class="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 transition whitespace-nowrap" title="Choose any of the 5 workouts or Rest Day for today">
-                  ${state.openDayWorkoutPicker ? 'Hide Workout Selector ▴' : 'Change Today\'s Workout ▾'}
-                </button>
-                ${dayAssignment.isBonusRepeat ? `
-                  <button type="button" id="banner-bonus-advance-week-btn" class="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/45 transition whitespace-nowrap">
-                    Advance to Week ${week + 1} • Day 1 Instead
-                  </button>
-                ` : ''}
-                <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-lg border transition ${
+              <!-- Row 2: Workout Title (Lower Body 1 • Quad Focus) on the left + ✓ Abs On toggle pill aligned on the right -->
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="text-base sm:text-lg font-extrabold text-white leading-snug">${dayObj.title}</h2>
+                <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-xs font-extrabold px-2.5 py-1.5 rounded-xl border whitespace-nowrap transition ${
                   hasCrunchToday
                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                     : 'bg-slate-800 text-slate-300 border-slate-700'
@@ -11192,40 +11275,47 @@
                 </button>
               </div>
 
+              <!-- Row 3 (Symmetrical 2-Column Grid): Swap Today to Rest Day | Change Today's Workout ▼ -->
+              <div class="grid grid-cols-2 gap-2" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                <button type="button" id="banner-swap-to-rest-btn" style="min-height: 40px;" class="text-[11px] font-extrabold px-2 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-500/35 transition whitespace-nowrap inline-flex items-center justify-center text-center" title="Make today a Rest Day and shift remaining lifting workouts forward without losing logged data">
+                  Swap Today to Rest Day
+                </button>
+                <button type="button" id="banner-change-workout-btn" aria-expanded="${state.openDayWorkoutPicker ? 'true' : 'false'}" style="min-height: 40px;" class="text-[11px] font-extrabold px-2 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 transition whitespace-nowrap inline-flex items-center justify-center text-center" title="Choose any of the 5 workouts or Rest Day for today">
+                  ${state.openDayWorkoutPicker ? 'Hide Workouts ▲' : 'Change Today\'s Workout ▼'}
+                </button>
+              </div>
+
+              ${dayAssignment.isBonusRepeat ? `
+                <div>
+                  <button type="button" id="banner-bonus-advance-week-btn" style="min-height: 38px;" class="w-full text-xs font-extrabold px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/45 transition whitespace-nowrap inline-flex items-center justify-center text-center">
+                    Advance to Week ${week + 1} • Day 1 Instead
+                  </button>
+                </div>
+              ` : ''}
+
               ${state.openDayWorkoutPicker ? buildDayWorkoutPickerHtml(week, dayIdx) : ''}
-            </div>
 
-            <!-- Compact Progress Bar -->
-            <div class="space-y-1">
-              <div class="flex items-center justify-between text-[10px]">
-                <span class="font-semibold text-slate-300">Progress: <strong class="text-white">${todayDoneSets}/${todayTotalSets} sets</strong></span>
-                <span class="font-mono font-bold text-emerald-400">${dayPct}%</span>
+              <!-- Row 4 (Symmetrical 3-Column Quick Status Row): Water: 0/3L (+500) | Next Fuel: 7:15 AM | Gear Checklist -->
+              <div class="grid grid-cols-3 gap-1.5 pt-0.5" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
+                <button type="button" id="banner-water-add-btn" style="min-height: 38px;" class="px-1.5 py-1.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 border border-sky-500/35 text-[10.5px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Tap to log +500 ml of water (1 bottle)">
+                  <span>Water: ${waterLitersLogged}/${waterLitersTarget}L (+500)</span>
+                </button>
+                <button type="button" id="banner-open-vegan-fuel-btn" style="min-height: 38px;" class="px-1.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/30 text-[10.5px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
+                  <span>Next Fuel: ${adaptiveMealPreview.nextPostWorkoutTime12}</span>
+                </button>
+                <button type="button" id="banner-open-shoe-gear-btn" style="min-height: 38px;" class="px-1.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[10.5px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Open My Gear & Gym Shoe Lifespan Tracker">
+                  <span>Gear Checklist</span>
+                  <span id="banner-shoe-health-readout" class="hidden">${shoeWearObj.healthPct}%</span>
+                </button>
               </div>
-              <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
-                <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-300" style="width: ${dayPct}%"></div>
-              </div>
-            </div>
 
-            <!-- Compact 1-Line Gym Time & Meal Sync Bar -->
-            <div class="flex flex-wrap items-center justify-between gap-1.5 pt-0.5 text-[10px]">
-              <div class="inline-flex items-center bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
-                <span class="px-1.5 py-1 font-extrabold text-emerald-400">TIME</span>
-                <button type="button" data-banner-step-mins="-15" class="banner-gym-step-btn px-1.5 py-1 font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition">−15m</button>
-                <select id="banner-gym-time-input" aria-label="Select gym time in 15-minute increments" class="bg-slate-950 text-white px-1 py-1 text-[10px] font-extrabold focus:outline-none">
+              <!-- Hidden legacy time controls preserved for programmatic compatibility (visible Gym Time bar is at the top of the tab) -->
+              <div class="hidden">
+                <button type="button" data-banner-step-mins="-15" class="banner-gym-step-btn">-15m</button>
+                <select id="banner-gym-time-input" aria-label="Select gym time in 15-minute increments">
                   ${build15MinGymTimeOptionsHtml(dayGymSched.startTime)}
                 </select>
-                <button type="button" data-banner-step-mins="15" class="banner-gym-step-btn px-1.5 py-1 font-extrabold text-emerald-400 hover:bg-slate-800 transition">+15m</button>
-              </div>
-              <div class="flex flex-wrap items-center gap-1">
-                <button type="button" id="banner-water-add-btn" class="inline-flex items-center gap-1 font-extrabold bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/35 px-2 py-1 rounded-lg transition" title="Tap to log +500 ml of water (1 bottle)">
-                  ${ICONS.water}<span>Water: <strong>${loggedWaterTodayMl.toLocaleString()} / ${targetWaterTodayMl.toLocaleString()} ml</strong> <span class="text-sky-400">+500</span></span>
-                </button>
-                <button type="button" id="banner-open-vegan-fuel-btn" class="font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded-lg transition">
-                  Fuel: <strong>${adaptiveMealPreview.nextPostWorkoutTime12}</strong> →
-                </button>
-                <button type="button" id="banner-open-shoe-gear-btn" class="font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2 py-1 rounded-lg transition" title="Open My Gear & Gym Shoe Lifespan Tracker (Inside Profile)">
-                  Gear <span id="banner-shoe-health-readout">${calculateShoeWearFromWorkoutRecord().healthPct}%</span>
-                </button>
+                <button type="button" data-banner-step-mins="15" class="banner-gym-step-btn">+15m</button>
               </div>
             </div>
             <!-- Hidden quick preset buttons preserved for DOM/handler compatibility -->
@@ -14052,22 +14142,22 @@
               <span class="text-[10px] font-bold text-sky-300 bg-slate-950 border border-slate-800 px-2 py-0.5 rounded-lg">Water Target: 2,500 ml</span>
             </div>
             <div>
-              <h3 class="text-base sm:text-lg font-extrabold text-white leading-snug">Pull-Up Rest &amp; Lat Recovery Day</h3>
+              <h3 class="text-base sm:text-lg font-extrabold text-white leading-snug">Pull-Up Rest &amp; Recovery Day</h3>
               <p class="text-xs text-slate-300 mt-1 leading-relaxed">
-                High-frequency pull-up progression places intense mechanical tension on your <strong>biceps brachii tendons</strong>, <strong>brachialis</strong>, and <strong>latissimus dorsi</strong> fibers. Taking 24 to 48 hours off the bar allows tendon collagen synthesis and neural motor-unit supercompensation so your next session feels explosive and pain-free.
+                Take today off from pull-ups so your arms, lats, and elbows recover for your next workout.
               </p>
             </div>
             <div class="bg-slate-950/85 border border-slate-800 rounded-xl p-3 space-y-1.5 text-xs">
-              <div class="font-extrabold text-emerald-300 uppercase tracking-wider text-[10px]">Rest Day Recovery Checklist</div>
-              <p class="text-slate-300 text-[11px] leading-snug">1. Complete 2x30s passive dead-hangs or scapular decompression only if elbows feel 100% fresh.</p>
-              <p class="text-slate-300 text-[11px] leading-snug">2. Hit your 138g plant protein target and 2,500 ml Rest Day hydration target.</p>
-              <p class="text-slate-300 text-[11px] leading-snug">3. Next scheduled pull-up session: <strong class="text-sky-300">Day ${nextPullupInfo.calendarDayIdx + 1} (${nextSessionData.title})</strong>.</p>
+              <div class="font-extrabold text-emerald-300 text-xs">Rest Day Checklist</div>
+              <p class="text-slate-300 text-xs leading-snug">1. Optional: Do two 30-second relaxed bar hangs if your arms feel fresh.</p>
+              <p class="text-slate-300 text-xs leading-snug">2. Eat 139g protein and drink 2,500 ml water today.</p>
+              <p class="text-slate-300 text-xs leading-snug">3. Next pull-up workout: <strong class="text-sky-300">Day ${nextPullupInfo.calendarDayIdx + 1} (${nextSessionData.title})</strong>.</p>
             </div>
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
-              <button type="button" id="pullup-rest-jump-next-btn" data-jump-day="${nextPullupInfo.calendarDayIdx}" class="flex-1 py-2.5 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold transition shadow-sm text-center">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+              <button type="button" id="pullup-rest-jump-next-btn" data-jump-day="${nextPullupInfo.calendarDayIdx}" style="min-height: 40px;" class="py-2.5 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold transition shadow-sm text-center">
                 Jump to Day ${nextPullupInfo.calendarDayIdx + 1}: ${nextSessionData.title}
               </button>
-              <button type="button" id="pullup-rest-train-today-btn" class="py-2.5 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-xs font-extrabold transition text-center">
+              <button type="button" id="pullup-rest-train-today-btn" style="min-height: 40px;" class="py-2.5 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-xs font-extrabold transition text-center">
                 Train Today Instead (Choose Workout)
               </button>
             </div>
@@ -14252,7 +14342,7 @@
                 <span class="text-[10px] text-emerald-400 font-extrabold">${isPullupImgOpen ? 'Hide' : 'View'}</span>
               </button>
               <div class="${isPullupImgOpen ? 'block' : 'hidden'}" style="display: ${isPullupImgOpen ? 'block' : 'none'};">
-                ${getStepVisualDiagramHtml({ id: exIdForDay, notes: d.desc }, metaForDay, dayIdxForPullup)}
+                ${getStepVisualDiagramHtml({ id: exIdForDay, notes: d.setupNotes || d.desc }, metaForDay, dayIdxForPullup)}
               </div>
               <div class="${isThreeGripsSession ? 'space-y-1.5' : 'grid grid-cols-5 gap-2'}">
                 ${setsRowHtml}
@@ -14504,15 +14594,17 @@
       // UPGRADE 6: Render 1-Tap Gym Time Banner & Prompt Card at top of Muscle Fuel tab
       renderGymTimeTopBanners(week, dayIdx);
 
-      // UPGRADE 7: Sync Collapsible 1-Line 3-Month & 6-Month Bulk Supplement Summary Bar
+      // UPGRADE 7: Sync Collapsible 1-Line 3- & 6-Month Supplement Summary Bar
       const toggleFuelSuppBtn = document.getElementById('toggle-fuel-supplement-summary-btn');
       const toggleFuelSuppLabel = document.getElementById('toggle-fuel-supplement-summary-label');
+      const toggleFuelSuppAction = document.getElementById('toggle-fuel-supplement-summary-action');
       const fuelSuppDetails = document.getElementById('muscle-fuel-supplement-summary-details');
       const isFuelSuppOpen = Boolean(state.showFuelSupplementSummary);
       if (toggleFuelSuppLabel) {
-        toggleFuelSuppLabel.textContent = isFuelSuppOpen
-          ? '3-Month & 6-Month Bulk Supplement Plan ($6.35/d) — Hide ▲'
-          : '3-Month & 6-Month Bulk Supplement Plan ($6.35/d) — Show Details ▼';
+        toggleFuelSuppLabel.textContent = '3- & 6-Month Supplement Plan ($6.35/day)';
+      }
+      if (toggleFuelSuppAction) {
+        toggleFuelSuppAction.textContent = isFuelSuppOpen ? 'Hide ▲' : 'Show ▼';
       }
       if (toggleFuelSuppBtn) {
         toggleFuelSuppBtn.setAttribute('aria-expanded', isFuelSuppOpen ? 'true' : 'false');
@@ -14846,7 +14938,11 @@
 
       const mainPlanHeadingEl = document.getElementById('vegan-main-plan-heading');
       if (mainPlanHeadingEl) {
-        mainPlanHeadingEl.textContent = `Daily Muscle Fuel (${dayPlan.dailyKcal.toLocaleString()} kcal • ${dayPlan.dailyProtein}g P • 173cm / 69kg)`;
+        mainPlanHeadingEl.textContent = 'Daily Food & Water';
+      }
+      const mainPlanSubtitleEl = document.getElementById('vegan-main-plan-subtitle');
+      if (mainPlanSubtitleEl) {
+        mainPlanSubtitleEl.textContent = `${dayPlan.dailyKcal.toLocaleString()} kcal • ${dayPlan.dailyProtein}g Protein (173cm • 69kg)`;
       }
       syncHeaderCostSubtitle();
 
@@ -15606,7 +15702,7 @@
       const kText = document.getElementById('macro-kcal-text');
       const kBar = document.getElementById('macro-kcal-bar');
 
-      if (pText) pText.textContent = `${eatenProtein} / ${effectiveTargetProtein}g`;
+      if (pText) pText.textContent = `${eatenProtein} / ${effectiveTargetProtein} g`;
       if (pBar) pBar.style.width = Math.min(100, Math.round((eatenProtein / effectiveTargetProtein) * 100)) + '%';
       if (kText) kText.textContent = `${eatenKcal.toLocaleString()} / ${effectiveTargetKcal.toLocaleString()} kcal`;
       if (kBar) kBar.style.width = Math.min(100, Math.round((eatenKcal / effectiveTargetKcal) * 100)) + '%';
@@ -15650,7 +15746,7 @@
 
           <!-- Collapsed-by-Default 500ml Schedule & Hydration Note Drawer -->
           <div id="water-schedule-drawer" class="${isWaterSchedOpen ? 'space-y-2 pt-1' : 'hidden'}">
-            <p class="text-[10px] text-slate-400">+ 900 ml ${dayPlan.milkName} in shakes/oats = <strong>${(waterTargetMl + 900).toLocaleString()} ml (${((waterTargetMl + 900) / 1000).toFixed(1)} L)</strong> total hydration</p>
+            <p class="text-[11px] text-slate-300">+ 720 ml water in shakes + 180 ml milk in oats = <strong>${(waterTargetMl + 900).toLocaleString()} ml total</strong></p>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
               ${bottleSlots.map(b => {
                 const reached = waterLoggedMl >= b.ml;
@@ -16063,23 +16159,44 @@
       const quarterlyBtn = document.getElementById('shop-period-quarterly-btn');
       if (weeklyBtn && quarterlyBtn) {
         if (period === 'weekly') {
-          weeklyBtn.className = 'shop-period-btn px-3 py-2 rounded-lg text-[11px] font-extrabold transition bg-emerald-500 text-slate-950 shadow';
-          quarterlyBtn.className = 'shop-period-btn px-3 py-2 rounded-lg text-[11px] font-extrabold transition text-slate-300 hover:text-white';
+          weeklyBtn.className = 'shop-period-btn min-w-0 px-2 py-2 rounded-xl text-xs font-extrabold transition bg-emerald-500 text-slate-950 shadow flex flex-col items-center justify-center text-center leading-tight';
+          weeklyBtn.innerHTML = `<span class="text-xs font-extrabold whitespace-nowrap">1-Week View</span><span class="text-[10px] font-bold opacity-90 whitespace-nowrap mt-0.5">$22.10 Store • $44.48 Total</span>`;
+          quarterlyBtn.className = 'shop-period-btn min-w-0 px-2 py-2 rounded-xl text-xs font-extrabold transition bg-slate-900 text-slate-300 hover:text-white border border-slate-800 flex flex-col items-center justify-center text-center leading-tight';
+          quarterlyBtn.innerHTML = `<span class="text-xs font-extrabold whitespace-nowrap">3-Month View</span><span class="text-[10px] font-semibold opacity-80 whitespace-nowrap mt-0.5">$284.18 Store • $571.88 Total</span>`;
         } else {
-          quarterlyBtn.className = 'shop-period-btn px-3 py-2 rounded-lg text-[11px] font-extrabold transition bg-emerald-500 text-slate-950 shadow';
-          weeklyBtn.className = 'shop-period-btn px-3 py-2 rounded-lg text-[11px] font-extrabold transition text-slate-300 hover:text-white';
+          quarterlyBtn.className = 'shop-period-btn min-w-0 px-2 py-2 rounded-xl text-xs font-extrabold transition bg-emerald-500 text-slate-950 shadow flex flex-col items-center justify-center text-center leading-tight';
+          quarterlyBtn.innerHTML = `<span class="text-xs font-extrabold whitespace-nowrap">3-Month View</span><span class="text-[10px] font-bold opacity-90 whitespace-nowrap mt-0.5">$284.18 Store • $571.88 Total</span>`;
+          weeklyBtn.className = 'shop-period-btn min-w-0 px-2 py-2 rounded-xl text-xs font-extrabold transition bg-slate-900 text-slate-300 hover:text-white border border-slate-800 flex flex-col items-center justify-center text-center leading-tight';
+          weeklyBtn.innerHTML = `<span class="text-xs font-extrabold whitespace-nowrap">1-Week View</span><span class="text-[10px] font-semibold opacity-80 whitespace-nowrap mt-0.5">$22.10 Store • $44.48 Total</span>`;
         }
       }
 
       const periodSummaryBox = document.getElementById('shop-list-period-summary-box');
       if (periodSummaryBox) {
+        const isMathOpen = Boolean(state.openShopCostBreakdown);
         periodSummaryBox.innerHTML = `
-          <div class="flex flex-wrap items-center justify-between gap-1 mb-1">
-            <span class="font-extrabold text-emerald-300 uppercase tracking-wider text-[10px]">${periodConfig.label}</span>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Store: ${periodConfig.storeCost} • All-In: ${periodConfig.allInCost}</span>
+          <button
+            type="button"
+            id="toggle-shop-cost-breakdown-btn"
+            aria-expanded="${isMathOpen ? 'true' : 'false'}"
+            class="w-full px-3 py-2 flex items-center justify-between gap-2 text-left text-xs font-extrabold text-emerald-300 hover:text-emerald-200 transition"
+          >
+            <span class="whitespace-nowrap">${isMathOpen ? 'Hide Cost Breakdown & Order Math ▲' : 'View Cost Breakdown & Order Math ▼'}</span>
+            <span class="text-[11px] font-bold text-slate-400 whitespace-nowrap">${isMathOpen ? 'Hide' : 'Details'}</span>
+          </button>
+          <div id="shop-cost-breakdown-body" class="${isMathOpen ? 'px-3 pb-2.5 pt-2 border-t border-slate-800 space-y-1 text-xs text-slate-300 leading-relaxed' : 'hidden'}">
+            <div class="font-bold text-white">${periodConfig.label} (${periodConfig.subLabel})</div>
+            <p>${periodConfig.summaryLine}</p>
           </div>
-          <p class="text-[11px] text-slate-300 leading-snug">${periodConfig.summaryLine}</p>
         `;
+        const toggleCostBtn = document.getElementById('toggle-shop-cost-breakdown-btn');
+        if (toggleCostBtn) {
+          toggleCostBtn.onclick = () => {
+            state.openShopCostBreakdown = !state.openShopCostBreakdown;
+            saveState();
+            renderShoppingView();
+          };
+        }
       }
 
       const dynamicCategories = getDynamicWeeklyShoppingCategories(state);
@@ -16126,13 +16243,10 @@
         const checkedInAisle = cat.items.filter(it => Boolean(state.checkedGroceries[it.id])).length;
         return `
           <div class="bg-slate-950/80 border border-emerald-500/30 rounded-2xl p-3.5 space-y-2.5">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div class="flex items-center gap-2">
-                <h4 class="text-xs font-extrabold uppercase tracking-wider text-emerald-200">${cat.category}</h4>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">${cat.badge}</span>
-              </div>
-              <button type="button" data-toggle-shop-aisle="${aisleKey}" class="shop-aisle-toggle-btn px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[10px] font-extrabold text-emerald-300 transition">
-                ${isAisleCollapsed ? `Show Aisle (${checkedInAisle}/${cat.items.length}) ▼` : `Collapse Aisle ▲`}
+            <div class="flex items-center justify-between gap-2">
+              <h4 class="text-xs sm:text-sm font-extrabold text-emerald-200 leading-snug">${cat.category}</h4>
+              <button type="button" data-toggle-shop-aisle="${aisleKey}" class="shrink-0 shop-aisle-toggle-btn px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-extrabold text-emerald-300 whitespace-nowrap transition">
+                ${isAisleCollapsed ? `Show (${checkedInAisle}/${cat.items.length}) ▼` : `Hide ▲`}
               </button>
             </div>
             <div class="${isAisleCollapsed ? 'hidden' : 'space-y-1.5'}">
@@ -16217,23 +16331,23 @@
       }
 
       const html = `
-        <!-- MASTER SECTION 1: WEEKLY SUPERMARKET GROCERY LIST (Emerald Fresh-Market Theme) -->
+        <!-- MASTER SECTION 1: Weekly Store Groceries (11 Items • $22.10/wk) -->
         <section id="shop-master-weekly-groceries" class="rounded-2xl border-2 border-emerald-500/50 bg-emerald-950/15 p-3.5 sm:p-4 space-y-3">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <div class="text-[10px] font-black uppercase tracking-wider text-emerald-400">Master Section 1 • Fresh Supermarket Aisles 1–3</div>
-              <h3 class="text-xs sm:text-sm font-extrabold text-white">WEEKLY SUPERMARKET GROCERY LIST (11 Items • $22.10/wk)</h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="text-sm sm:text-base font-extrabold text-white leading-snug">Weekly Store Groceries (11 Items • $22.10/wk)</h3>
+              <button type="button" id="toggle-master-weekly-groceries-btn" aria-expanded="${!hideWeeklyGroceries ? 'true' : 'false'}" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-xs font-extrabold whitespace-nowrap transition">
+                ${hideWeeklyGroceries ? 'Show List ▼' : 'Hide List ▲'}
+              </button>
             </div>
-            <div class="flex flex-wrap items-center gap-1.5">
-              <button type="button" id="toggle-hide-checked-groceries-btn" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition ${
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs text-slate-300">Fresh store items across Aisles 1–3</span>
+              <button type="button" id="toggle-hide-checked-groceries-btn" class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border whitespace-nowrap transition ${
                 hideCheckedGroceries
                   ? 'bg-emerald-500 text-slate-950 border-emerald-300'
                   : 'bg-slate-900 text-emerald-300 border-emerald-500/40 hover:bg-slate-800'
               }">
-                ${hideCheckedGroceries ? '✓ Hide Checked Items' : 'Hide Checked Items'}
-              </button>
-              <button type="button" id="toggle-master-weekly-groceries-btn" aria-expanded="${!hideWeeklyGroceries ? 'true' : 'false'}" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-[10px] font-extrabold transition">
-                ${hideWeeklyGroceries ? 'Show Weekly List (11 items) ▼' : 'Hide Weekly List ▲'}
+                ${hideCheckedGroceries ? '✓ Hide Checked' : 'Hide Checked'}
               </button>
             </div>
           </div>
@@ -16244,15 +16358,12 @@
           </div>
         </section>
 
-        <!-- MASTER SECTION 2: 3-MONTH & 6-MONTH BULK SUPPLEMENTS (Distinct Indigo/Amber Subscription Vault Theme) -->
+        <!-- MASTER SECTION 2: 3- & 6-Month Bulk Supplements (3 Items) -->
         <section id="shop-master-bulk-supplements" class="rounded-2xl border-2 border-indigo-500/55 bg-indigo-950/20 p-3.5 sm:p-4 space-y-3">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <div class="text-[10px] font-black uppercase tracking-wider text-amber-300">Master Section 2 • Quarterly &amp; Semi-Annual Subscription Vault</div>
-              <h3 class="text-xs sm:text-sm font-extrabold text-white">3-MONTH &amp; 6-MONTH BULK SUPPLEMENTS (3 Items • Naked &amp; Costco)</h3>
-            </div>
-            <button type="button" id="toggle-master-bulk-supplements-btn" aria-expanded="${!hideBulkSupplements ? 'true' : 'false'}" class="px-2.5 py-1 rounded-lg bg-indigo-500/25 hover:bg-indigo-500/35 border border-amber-400/50 text-amber-200 text-[10px] font-extrabold transition">
-              ${hideBulkSupplements ? 'Show 3m/6m Supplements (Pea, Creatine, D3) ▼' : 'Hide 3m/6m Supplements ▲'}
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-sm sm:text-base font-extrabold text-white leading-snug">3- &amp; 6-Month Bulk Supplements (3 Items)</h3>
+            <button type="button" id="toggle-master-bulk-supplements-btn" aria-expanded="${!hideBulkSupplements ? 'true' : 'false'}" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-indigo-500/25 hover:bg-indigo-500/35 border border-amber-400/50 text-amber-200 text-xs font-extrabold whitespace-nowrap transition">
+              ${hideBulkSupplements ? 'Show List ▼' : 'Hide List ▲'}
             </button>
           </div>
 
@@ -16260,11 +16371,8 @@
             <!-- Card 1: Post-Order Action Checklist (Amber Warning Card) -->
             <div id="subscription-action-tracker-card" class="bg-amber-950/25 border-2 border-amber-500/50 rounded-xl p-3.5 space-y-2.5">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <div class="text-[10px] font-black uppercase tracking-wider text-amber-300">Card 1 • Post-Order Action Checklist</div>
-                  <h4 class="text-xs sm:text-sm font-extrabold text-white">Cancel Creatine Autoship + Drop Q3 Pea Protein to 3 Containers</h4>
-                </div>
-                <span id="subscription-tracker-progress-badge" class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40">${subChecklistCompleted} / ${SUBSCRIPTION_ACTION_CHECKLIST_ITEMS.length} Actions Done</span>
+                <h4 class="text-xs sm:text-sm font-extrabold text-white">Auto-Ship Reminders (Save Money)</h4>
+                <span id="subscription-tracker-progress-badge" class="text-[11px] font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 whitespace-nowrap">${subChecklistCompleted} / ${SUBSCRIPTION_ACTION_CHECKLIST_ITEMS.length} Done</span>
               </div>
               <div class="space-y-2">
                 ${SUBSCRIPTION_ACTION_CHECKLIST_ITEMS.map(actionItem => {
@@ -16279,7 +16387,7 @@
                         isChecked ? 'bg-emerald-500 text-slate-950' : 'border-2 border-amber-400 text-transparent'
                       }">${isChecked ? '✓' : ''}</span>
                       <div class="space-y-1">
-                        <div class="text-xs font-extrabold ${isChecked ? 'line-through text-emerald-300' : 'text-amber-200'}">${actionItem.title}</div>
+                        <div class="text-xs font-extrabold leading-snug ${isChecked ? 'line-through text-emerald-300' : 'text-amber-200'}">${actionItem.title}</div>
                         <p class="text-[11px] text-slate-300 leading-relaxed">${actionItem.subtext}</p>
                       </div>
                     </button>
@@ -16291,8 +16399,8 @@
             <!-- Card 2: 3-Month Cycle Card -->
             <div class="bg-slate-950/85 border border-indigo-500/45 rounded-xl p-3.5 space-y-2">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="text-[10px] font-black uppercase tracking-wider text-indigo-300">Card 2 • 3-Month (90-Day) Cycle</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-200 border border-indigo-500/40">$287.96 CAD / 90d ($3.20/d)</span>
+                <span class="text-xs font-extrabold text-indigo-200">3-Month Supply (90 Days)</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-200 border border-indigo-500/40 whitespace-nowrap">$287.96 CAD ($3.20/day)</span>
               </div>
               ${renderBulkSupplementItemBtn(peaItem, 'border-indigo-500/40 hover:border-indigo-400')}
             </div>
@@ -16300,8 +16408,8 @@
             <!-- Card 3: 6-Month Cycle Card -->
             <div class="bg-slate-950/85 border border-amber-500/40 rounded-xl p-3.5 space-y-2">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="text-[10px] font-black uppercase tracking-wider text-amber-300">Card 3 • 6-Month (200-Day) Cycle</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40">Creatine ($0.24/d -> $0.22/d) + D3 ($0.07/d)</span>
+                <span class="text-xs font-extrabold text-amber-200">6-Month Supply (200 Days)</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 whitespace-nowrap">Creatine + Vitamin D3</span>
               </div>
               <div class="space-y-2">
                 ${sixMonthItems.map(it => renderBulkSupplementItemBtn(it, 'border-amber-500/35 hover:border-amber-400')).join('')}
@@ -16968,13 +17076,37 @@
       document.getElementById('header-timer-toggle').addEventListener('click', toggleTimer);
       document.getElementById('header-timer-open').addEventListener('click', () => switchTab('timer'));
 
+      // Schedule, Sync & Stats Drawer Toggle Button & Workout Display Settings Button on Gym Tab
+      const toggleGymAdminDrawerBtn = document.getElementById('toggle-gym-admin-drawer-btn');
+      if (toggleGymAdminDrawerBtn) {
+        toggleGymAdminDrawerBtn.addEventListener('click', () => {
+          state.openGymAdminDrawer = !state.openGymAdminDrawer;
+          saveState();
+          renderWorkoutView();
+        });
+      }
+
+      const openWorkoutDisplaySettingsBtn = document.getElementById('open-workout-display-settings-btn');
+      if (openWorkoutDisplaySettingsBtn) {
+        openWorkoutDisplaySettingsBtn.addEventListener('click', () => {
+          const detailsEl = document.getElementById('gym-secondary-settings-drawer');
+          if (detailsEl) {
+            detailsEl.open = !detailsEl.open;
+          }
+        });
+      }
+
       // Rest Day Scheduler Drawer Toggle Buttons & Pull-Up View Mode Toggle Buttons
       ['gym-open-rest-scheduler-btn', 'settings-open-rest-scheduler-btn', 'pullups-open-rest-scheduler-btn'].forEach(btnId => {
         const el = document.getElementById(btnId);
         if (el) {
           el.addEventListener('click', () => {
             state.openRestDayDrawer = !state.openRestDayDrawer;
+            if (state.openRestDayDrawer) {
+              state.openGymAdminDrawer = true;
+            }
             saveState();
+            renderWorkoutView();
             renderRestDaySchedulerDrawers();
           });
         }

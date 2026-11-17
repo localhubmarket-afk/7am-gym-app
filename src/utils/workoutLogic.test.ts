@@ -1841,6 +1841,74 @@ test('Subtest 30: Auto-Cascade Sets, Zeigarnik In-Progress State, Uncrushable Gr
   );
 });
 
+test('Subtest 31: BDA/W3C Cognitive Accessibility & ELI12 Plain-English Visual Hierarchy across All 5 Tabs', async () => {
+  const mod = await import('./workoutLogic');
+
+  // 1. Shop List ELI12 Header, 2-Column View Switcher, 3-Button Row & 2 Hideable Master Sections
+  assert.equal(mod.ELI12_ACCESSIBILITY_SPECS.shopList.title, 'Shopping List');
+  assert.equal(
+    mod.ELI12_ACCESSIBILITY_SPECS.shopList.subtitle,
+    'Check off what you have at home. Copy the rest for the store.'
+  );
+  assert.equal(mod.ELI12_ACCESSIBILITY_SPECS.shopList.viewSwitcher.weeklyTitle, '1-Week View');
+  assert.equal(mod.ELI12_ACCESSIBILITY_SPECS.shopList.viewSwitcher.weeklySub, '$22.10 Store • $44.48 Total');
+  assert.equal(mod.ELI12_ACCESSIBILITY_SPECS.shopList.viewSwitcher.quarterlyTitle, '3-Month View');
+  assert.equal(mod.ELI12_ACCESSIBILITY_SPECS.shopList.viewSwitcher.quarterlySub, '$284.18 Store • $571.88 Total');
+  assert.equal(
+    mod.ELI12_ACCESSIBILITY_SPECS.shopList.viewSwitcher.breakdownToggleClosed,
+    'View Cost Breakdown & Order Math ▼'
+  );
+  assert.deepEqual(mod.ELI12_ACCESSIBILITY_SPECS.shopList.actionButtons, [
+    'Copy Unchecked',
+    'Check Pantry Staples',
+    'Uncheck All'
+  ]);
+  assert.equal(
+    mod.ELI12_ACCESSIBILITY_SPECS.shopList.section1Title,
+    'Weekly Store Groceries (11 Items • $22.10/wk)'
+  );
+  assert.equal(
+    mod.ELI12_ACCESSIBILITY_SPECS.shopList.section2Title,
+    '3- & 6-Month Bulk Supplements (3 Items)'
+  );
+  assert.equal(
+    mod.ELI12_ACCESSIBILITY_SPECS.shopList.steps[0],
+    'Step 1: Cancel Naked Creatine auto-ship after Order 1 arrives (Buy at Costco next time for $44.99)'
+  );
+  assert.equal(
+    mod.ELI12_ACCESSIBILITY_SPECS.shopList.steps[1],
+    'Step 2: Change Naked Pea auto-ship from 4 tubs to 3 tubs before Month 6 (Save $80.99)'
+  );
+
+  // 2. Muscle Fuel ELI12 Header, 2-Row Stacked Macro Cards, 1-Line Supplement Drawer & Option B Water Formula
+  assert.equal(mod.ELI12_ACCESSIBILITY_SPECS.muscleFuel.title, 'Daily Food & Water');
+  assert.equal(mod.ELI12_ACCESSIBILITY_SPECS.muscleFuel.logAllBtn, '✓ Log All 4 Meals');
+  assert.equal(mod.ELI12_ACCESSIBILITY_SPECS.muscleFuel.subtitle, '1,325 kcal • 139g Protein (173cm • 69kg)');
+  assert.equal(
+    mod.getEli12WaterScheduleFormulaText(3000),
+    '+ 720 ml water in shakes + 180 ml milk in oats = 3,900 ml total'
+  );
+
+  // 3. Gym Tab Consolidated Admin Drawer & Active Day Card Layout
+  assert.equal(mod.ELI12_ACCESSIBILITY_SPECS.gymTab.adminDrawerBtnClosed, 'Schedule, Sync & Stats ▼');
+  assert.deepEqual(mod.ELI12_ACCESSIBILITY_SPECS.gymTab.crossWeekButtons, [
+    'Re-Sync from Week 2',
+    'Reset to Standard'
+  ]);
+
+  // 4. Pull-Ups & Rest Timer Title Case Headings & ELI12 1-Sentence Session Instructions
+  assert.equal(mod.ELI12_ACCESSIBILITY_SPECS.pullupsAndTimer.pullupsHeading, 'Overhand Pull-Up Program');
+  assert.equal(
+    mod.ELI12_ACCESSIBILITY_SPECS.pullupsAndTimer.day1Eli12Desc,
+    'Do 5 sets of pull-ups. Stop each set when you cannot do another clean rep.'
+  );
+  assert.equal(
+    mod.ELI12_ACCESSIBILITY_SPECS.pullupsAndTimer.riceTimerAccordionTitle,
+    'Jasmine Rice Timer (10m Cook + 10m Rest) ▼'
+  );
+});
+
+
 
 
 
