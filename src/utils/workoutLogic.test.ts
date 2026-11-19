@@ -2076,7 +2076,7 @@ test('Subtest 33: Strict Pull-Up Pyramid Auto-Increment (1..9), Photo-Protected 
   assert.equal(plainRes.prompted, false);
   assert.equal(plainRes.nextNotesMap.mon_bench, undefined);
 
-  // 3. Dynamic AI Bonus Workout Generator
+  // 3. Dynamic AI Bonus Workout Generator (Updated Prompt + Deduplication + Zero Abs/Core/Pull-Ups)
   assert.deepEqual([...mod.AI_BONUS_WORKOUT_TARGETS], [
     'Chest Focus',
     'Back & Biceps',
@@ -2086,37 +2086,112 @@ test('Subtest 33: Strict Pull-Up Pyramid Auto-Increment (1..9), Photo-Protected 
   ]);
   const promptStr = mod.buildAiBonusWorkoutSystemPrompt('Chest Focus');
   assert.equal(
-    promptStr.includes("creating a 5-exercise hypertrophy workout for the user's selected target: Chest Focus."),
-    true
+    promptStr,
+    'System: You are an elite sports scientist. Generate a custom workout for the target: Chest Focus. You must return ONLY a valid JSON array containing exactly 5 to 7 exercises. Rule 1: ALL EXERCISE NAMES MUST BE UNIQUE. Rule 2: Do NOT include duplicate movement patterns. Rule 3: DO NOT include any abdominal, core, or pull-up exercises under any circumstances. Schema: [{ "name": "Exercise", "sets": 3, "reps": "8-12", "videoUrl": "https..." }]. Output JSON only.'
   );
-  assert.equal(promptStr.includes('Exercise 1 must be a heavy compound (5-8 reps).'), true);
-  assert.equal(promptStr.includes('Exercises 2-4 must be machines/cables (10-15 reps).'), true);
-  assert.equal(promptStr.includes('Exercise 5 must be core or calves.'), true);
 
   const rawJson = JSON.stringify([
-    { name: 'Barbell Incline Bench Press', sets: 4, reps: '5-8', videoUrl: 'https://youtube.com/watch?v=SrqOu55lrYU', instructions: '1. Set bench to 30 degrees. 2. Lower bar to upper chest. 3. Press smoothly to lockout.' },
-    { name: 'Seated Machine Chest Press', sets: 3, reps: '10-12', videoUrl: 'https://youtube.com/watch?v=xUm0BiZCWlQ', instructions: '1. Align handles with mid-chest. 2. Keep shoulders pinned back. 3. Press forward and control return.' },
-    { name: 'Pec Deck Machine Fly', sets: 3, reps: '12-15', videoUrl: 'https://youtube.com/watch?v=Z57CtFmRMxA', instructions: '1. Keep soft bend in elbows. 2. Bring handles together in front of chest. 3. Stretch slowly back.' },
-    { name: 'Low-to-High Cable Fly', sets: 3, reps: '12-15', videoUrl: 'https://youtube.com/watch?v=Iwe6AmxVf7o', instructions: '1. Set pulleys at bottom notch. 2. Sweep handles up and inward. 3. Squeeze upper chest for 1 second.' },
-    { name: 'Cable Rope Crunch', sets: 3, reps: '12-15', videoUrl: 'https://youtube.com/watch?v=2fbujeH3F0E', instructions: '1. Kneel holding rope by ears. 2. Curl ribs down toward hips. 3. Control back up without swaying.' }
+    { name: 'Barbell Incline Bench Press', sets: 4, reps: '5-8', videoUrl: 'https://youtube.com/watch?v=SrqOu55lrYU' },
+    { name: 'Flat Dumbbell Bench Press', sets: 3, reps: '8-10', videoUrl: 'https://youtube.com/watch?v=VmB1G1K7v94' },
+    { name: 'Machine Pec Deck Fly', sets: 3, reps: '12-15', videoUrl: 'https://youtube.com/watch?v=Z57CtFmRMxA' },
+    { name: 'Low-to-High Cable Fly', sets: 3, reps: '12-15', videoUrl: 'https://youtube.com/watch?v=Iwe6AmxVf7o' },
+    { name: 'Cable Rope Crunch', sets: 3, reps: '12-15', videoUrl: 'https://youtube.com/watch?v=2fbujeH3F0E' },
+    { name: 'Overhand Pull-Ups', sets: 3, reps: '8-10', videoUrl: 'https://youtube.com/watch?v=w_yuTRQd6HA' },
+    { name: 'Assisted Chest Dip Machine', sets: 3, reps: '10-12', videoUrl: 'https://youtube.com/watch?v=dX_nSOOJIsE' },
+    { name: 'Overhead Cable Tricep Extension', sets: 3, reps: '10-15', videoUrl: 'https://youtube.com/watch?v=YbX7Wd8jQ-Q' }
   ]);
   const bonusDay = mod.parseAndBuildAiBonusDayObject(rawJson, 'Chest Focus', 1);
   assert.ok(bonusDay);
   assert.equal(bonusDay.isAiGenerated, true);
   assert.equal(bonusDay.target, 'Chest Focus');
-  assert.equal(bonusDay.exercises.length, 5);
+  assert.ok(bonusDay.exercises.length >= 5 && bonusDay.exercises.length <= 7);
   assert.equal(bonusDay.exercises[0].reps, '5-8');
-  assert.equal(bonusDay.exercises[4].name, 'Cable Rope Crunch');
+  assert.equal(bonusDay.exercises.some(ex => /crunch|pull-up|abs|core/i.test(ex.name)), false);
+  // Duplicate chest fly movement pattern must be deduplicated
+  assert.equal(bonusDay.exercises.filter(ex => /fly/i.test(ex.name)).length, 1);
 
   const injected = mod.injectAiBonusWorkoutIntoDay6({}, 1, bonusDay);
   assert.equal(injected['1'].length, 7);
   assert.equal((injected['1'][5] as any).isAiGenerated, true);
-  assert.equal((injected['1'][5] as any).exercises.length, 5);
+  assert.ok((injected['1'][5] as any).exercises.length >= 5 && (injected['1'][5] as any).exercises.length <= 7);
 });
 
+test('Subtest 34: Default-Closed Progressive Disclosure, ELI12 Fuel Summary, Strict 5-7 AI Bonus Sanitizer, and Day 6 Daily Abs / Daily Pull-Ups Toggles', async () => {
+  const mod = await import('./workoutLogic');
 
+  // 1. Default-Closed Progressive Disclosure spec
+  const defaults = mod.getInitialCollapsedAccordionDefaults();
+  assert.equal(defaults.warmupOpen, false);
+  assert.equal(defaults.warmupPart1Open, false);
+  assert.equal(defaults.warmupPart2Open, false);
+  assert.equal(defaults.preFuelDetailsOpen, false);
+  assert.equal(defaults.hideBulkSupplements, true);
+  assert.equal(defaults.openShopCostBreakdown, false);
+  assert.equal(defaults.defaultAllHidden, true);
+  assert.equal(defaults.activeFocusedExId, null);
 
+  // 2. ELI12 Fuel Card Formatting
+  const fuel1 = mod.formatEli12FuelCardSummary('pre_shake', {
+    title: 'Pre-Gym Fast Protein & Creatine Shake',
+    kcal: 140,
+    protein: 32,
+    items: [
+      { name: 'Naked Pea Protein Isolate (90% P)', weight: '35g' },
+      { name: '100% Micronized Creatine Monohydrate', weight: '5g' },
+      { name: 'Cold Water (Shaker Bottle)', weight: '350 ml' }
+    ]
+  });
+  assert.equal(fuel1.title, 'Pre-Workout Shake');
+  assert.equal(fuel1.statsLine, '140 Calories | 32g Protein');
+  assert.equal(fuel1.ingredientsLine, '35g Pea Protein. 5g Creatine. 350ml Water.');
+  assert.equal(fuel1.mathToggleClosedLabel, 'Read the Math ▼');
+  assert.equal(fuel1.mathToggleOpenLabel, 'Hide the Math ▲');
+  assert.equal(fuel1.logButtonLabel, '✓ Log Meal');
 
+  // 3. Sanitizer strictly enforces 5-7 exercises even on noisy/short/oversized AI arrays & cleans all fallback templates
+  const noisy = [
+    { name: 'Kneeling Cable Ab Crunch', sets: 3, reps: '12-15', videoUrl: 'https://youtube.com/1' },
+    { name: 'Kneeling Cable Ab Crunch', sets: 3, reps: '12-15', videoUrl: 'https://youtube.com/2' },
+    { name: 'Hanging Knee Raise', sets: 3, reps: '12-15', videoUrl: 'https://youtube.com/3' },
+    { name: 'Wide-Grip Pull-Ups', sets: 4, reps: '8-10', videoUrl: 'https://youtube.com/4' },
+    { name: 'Barbell Back Squat', sets: 4, reps: '5-8', videoUrl: 'https://youtube.com/5' }
+  ];
+  const cleanedLegs = mod.sanitizeAiBonusExercises(noisy, 'Legs & Calves');
+  assert.ok(cleanedLegs.length >= 5 && cleanedLegs.length <= 7);
+  assert.equal(cleanedLegs.some(ex => mod.isForbiddenBonusExerciseName(ex.name)), false);
 
+  // Every fallback target has 5-7 unique non-ab/non-pullup exercises
+  for (const target of mod.AI_BONUS_WORKOUT_TARGETS) {
+    const fbList = mod.AI_BONUS_WORKOUT_FALLBACKS_CLEAN[target];
+    assert.ok(fbList.length >= 5 && fbList.length <= 7, `Fallback ${target} must have 5-7 exercises`);
+    for (const ex of fbList) {
+      assert.equal(mod.isForbiddenBonusExerciseName(ex.name), false, `${target} has forbidden exercise ${ex.name}`);
+    }
+  }
 
+  // 4. Day 6 [+ Add Daily Abs] (append to bottom) & [+ Add Daily Pull-Ups] (prepend to top) toggles
+  const day6 = mod.parseAndBuildAiBonusDayObject(mod.AI_BONUS_WORKOUT_FALLBACKS_CLEAN['Chest Focus'], 'Chest Focus', 1);
+  assert.ok(day6);
+  const baseCount = day6.exercises.length;
 
+  const afterAddAbs = mod.toggleDay6BonusHabitExercise(day6, 'abs');
+  assert.equal(afterAddAbs.added, true);
+  assert.equal(afterAddAbs.nextDayObj.exercises.length, baseCount + 1);
+  assert.equal(afterAddAbs.nextDayObj.exercises[afterAddAbs.nextDayObj.exercises.length - 1].id, 'cable_ab_crunch');
+
+  const afterAddPullups = mod.toggleDay6BonusHabitExercise(afterAddAbs.nextDayObj, 'pullups');
+  assert.equal(afterAddPullups.added, true);
+  assert.equal(afterAddPullups.nextDayObj.exercises.length, baseCount + 2);
+  assert.equal(afterAddPullups.nextDayObj.exercises[0].id, 'day1_pullups');
+  assert.equal(afterAddPullups.nextDayObj.exercises[afterAddPullups.nextDayObj.exercises.length - 1].id, 'cable_ab_crunch');
+
+  // Toggle both back OFF cleanly
+  const afterRemoveAbs = mod.toggleDay6BonusHabitExercise(afterAddPullups.nextDayObj, 'abs');
+  assert.equal(afterRemoveAbs.added, false);
+  assert.equal(afterRemoveAbs.nextDayObj.exercises.some(ex => ex.id === 'cable_ab_crunch'), false);
+
+  const afterRemovePullups = mod.toggleDay6BonusHabitExercise(afterRemoveAbs.nextDayObj, 'pullups');
+  assert.equal(afterRemovePullups.added, false);
+  assert.equal(afterRemovePullups.nextDayObj.exercises.length, baseCount);
+  assert.equal(afterRemovePullups.nextDayObj.exercises.some(ex => ex.id === 'day1_pullups'), false);
+});

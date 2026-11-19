@@ -7901,7 +7901,7 @@ export type AiBonusWorkoutTarget = (typeof AI_BONUS_WORKOUT_TARGETS)[number];
 
 export function buildAiBonusWorkoutSystemPrompt(selectedTarget: string): string {
   const cleanTarget = String(selectedTarget || 'Full Body').trim();
-  return `System: You are an elite sports scientist creating a 5-exercise hypertrophy workout for the user's selected target: ${cleanTarget}. You must return ONLY a raw JSON array of 5 objects matching this exact schema: [{ "name": "Exercise Name", "sets": 3, "reps": "8-12", "videoUrl": "https://youtube.com/...", "instructions": "3 short step-by-step instructions" }]. Rules: Exercise 1 must be a heavy compound (5-8 reps). Exercises 2-4 must be machines/cables (10-15 reps). Exercise 5 must be core or calves. Do not output markdown, only valid JSON.`;
+  return `System: You are an elite sports scientist. Generate a custom workout for the target: ${cleanTarget}. You must return ONLY a valid JSON array containing exactly 5 to 7 exercises. Rule 1: ALL EXERCISE NAMES MUST BE UNIQUE. Rule 2: Do NOT include duplicate movement patterns. Rule 3: DO NOT include any abdominal, core, or pull-up exercises under any circumstances. Schema: [{ "name": "Exercise", "sets": 3, "reps": "8-12", "videoUrl": "https..." }]. Output JSON only.`;
 }
 
 export interface RawAiBonusExerciseItem {
@@ -7909,7 +7909,7 @@ export interface RawAiBonusExerciseItem {
   sets: number;
   reps: string;
   videoUrl: string;
-  instructions: string;
+  instructions?: string;
 }
 
 export interface FormattedAiBonusExercise {
@@ -7923,6 +7923,8 @@ export interface FormattedAiBonusExercise {
   notes: string;
   instructions: string;
   isAiGenerated: boolean;
+  isBodyweightRepsOnly?: boolean;
+  badge?: string;
 }
 
 export interface CustomAiBonusDayObject {
@@ -7933,6 +7935,122 @@ export interface CustomAiBonusDayObject {
   subtitle: string;
   warmupType: 'upper' | 'lower';
   exercises: FormattedAiBonusExercise[];
+}
+
+export function isForbiddenBonusExerciseName(name: string): boolean {
+  const n = String(name || '').toLowerCase();
+  if (!n) return false;
+  return /\b(ab|abs|abdominal|crunch|crunches|core|plank|planks|dead\s*bug|sit[\s-]*up|sit[\s-]*ups|leg\s*raise|knee\s*raise|woodchopper|wood\s*chop|russian\s*twist|ab\s*wheel|pallof|hollow\s*body|pull[\s-]*up|pull[\s-]*ups|chin[\s-]*up|chin[\s-]*ups)\b/i.test(n);
+}
+
+export function getBonusMovementPatternKey(name: string): string {
+  const n = String(name || '').toLowerCase();
+  if (/(pec\s*deck|chest\s*fly|cable\s*fly|dumbbell\s*fly|\bfly\b)/.test(n) && !/rear\s*delt|reverse/.test(n)) return 'chest_fly';
+  if (/incline.*(bench|chest\s*press|press)/.test(n)) return 'chest_incline_press';
+  if (/(flat|barbell|dumbbell|machine|converging).*(bench|chest\s*press)/.test(n)) return 'chest_flat_press';
+  if (/dip/.test(n)) return 'chest_dip';
+  if (/rear\s*delt|reverse\s*pec|face\s*pull/.test(n)) return 'rear_delt';
+  if (/lateral\s*raise/.test(n)) return 'lateral_raise';
+  if (/overhead\s*press|shoulder\s*press|military\s*press/.test(n)) return 'overhead_press';
+  if (/lat\s*pulldown|pulldown/.test(n)) return 'lat_pulldown';
+  if (/pullover/.test(n)) return 'lat_pullover';
+  if (/chest[\s-]*supported.*row|seated\s*(cable|machine)\s*row/.test(n)) return 'horizontal_row_machine';
+  if (/bent[\s-]*over.*row|barbell.*row|t[\s-]*bar.*row|dumbbell.*row|\brow\b/.test(n)) return 'horizontal_row_free';
+  if (/tricep.*pushdown|rope.*pushdown|pushdown/.test(n)) return 'tricep_pushdown';
+  if (/overhead.*tricep|skull\s*crusher|tricep\s*extension/.test(n)) return 'tricep_overhead';
+  if (/preacher|bicep|hammer\s*curl|cable\s*curl|incline\s*curl|\bcurl\b/.test(n) && !/leg\s*curl|hamstring/.test(n)) return 'bicep_curl';
+  if (/squat/.test(n)) return 'squat';
+  if (/leg\s*press|hack\s*squat/.test(n)) return 'leg_press';
+  if (/leg\s*curl|hamstring\s*curl/.test(n)) return 'leg_curl';
+  if (/leg\s*extension/.test(n)) return 'leg_extension';
+  if (/deadlift|rdl|hip\s*thrust/.test(n)) return 'hip_hinge';
+  if (/calf\s*raise/.test(n)) return 'calf_raise';
+  return n.replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+}
+
+export const AI_BONUS_WORKOUT_FALLBACKS_CLEAN: Record<string, RawAiBonusExerciseItem[]> = {
+  'Chest Focus': [
+    { name: 'Barbell Incline Bench Press', sets: 4, reps: '5-8', videoUrl: 'https://www.youtube.com/watch?v=SrqOu55lrYU', instructions: '1. Set bench to 30 degrees. 2. Lower bar to upper chest. 3. Press smoothly to lockout.' },
+    { name: 'Flat Dumbbell Bench Press', sets: 3, reps: '8-10', videoUrl: 'https://www.youtube.com/watch?v=VmB1G1K7v94', instructions: '1. Pin shoulder blades down. 2. Lower dumbbells outside chest. 3. Press up with control.' },
+    { name: 'Machine Pec Deck Fly', sets: 3, reps: '12-15', videoUrl: 'https://www.youtube.com/watch?v=Z57CtFmRMxA', instructions: '1. Keep arms parallel to floor. 2. Squeeze handles together at center. 3. Open slowly for full stretch.' },
+    { name: 'Assisted Chest Dip Machine', sets: 3, reps: '10-12', videoUrl: 'https://www.youtube.com/watch?v=dX_nSOOJIsE', instructions: '1. Lean torso slightly forward. 2. Lower until shoulders stretch gently. 3. Press back up smoothly.' },
+    { name: 'Overhead Cable Tricep Extension', sets: 3, reps: '10-15', videoUrl: 'https://www.youtube.com/watch?v=YbX7Wd8jQ-Q', instructions: '1. Step forward holding rope overhead. 2. Extend elbows straight ahead. 3. Control return behind head.' },
+    { name: 'Cable Lateral Raise', sets: 3, reps: '12-15', videoUrl: 'https://www.youtube.com/watch?v=PPrzBWZDOhA', instructions: '1. Stand sideways to low pulley. 2. Raise arm to shoulder height. 3. Lower slowly across front.' }
+  ],
+  'Back & Biceps': [
+    { name: 'Barbell Bent-Over Row', sets: 4, reps: '5-8', videoUrl: 'https://www.youtube.com/watch?v=FWJR5Ve8bnQ', instructions: '1. Hinge at hips with flat back. 2. Pull bar to lower ribs. 3. Lower to full lat stretch.' },
+    { name: 'Neutral-Grip Lat Pulldown Machine', sets: 3, reps: '10-12', videoUrl: 'https://www.youtube.com/watch?v=CAwf7n6Luuc', instructions: '1. Lock thighs under pad. 2. Drive elbows down to hips. 3. Control top stretch smoothly.' },
+    { name: 'Chest-Supported Machine Row', sets: 3, reps: '10-12', videoUrl: 'https://www.youtube.com/watch?v=GZbfZ033f74', instructions: '1. Keep chest pressed to pad. 2. Pull handles back and pause. 3. Extend arms fully each rep.' },
+    { name: 'Straight-Arm Cable Lat Pullover', sets: 3, reps: '12-15', videoUrl: 'https://www.youtube.com/watch?v=wcVDItawocI', instructions: '1. Keep elbows slightly bent. 2. Sweep bar down to thighs. 3. Return high for lat stretch.' },
+    { name: 'Reverse Pec Deck Rear Delt Fly', sets: 3, reps: '12-15', videoUrl: 'https://www.youtube.com/watch?v=5YK4bgzXDp0', instructions: '1. Sit facing machine pad. 2. Sweep arms wide without shrugging. 3. Return slowly under control.' },
+    { name: 'Bayesian Cable Bicep Curl', sets: 3, reps: '12-15', videoUrl: 'https://www.youtube.com/watch?v=ykJmrZ5v0Oo', instructions: '1. Face away from low pulley. 2. Curl smoothly without swinging shoulder. 3. Lower to full bicep stretch.' }
+  ],
+  'Legs & Calves': [
+    { name: 'Barbell Back Squat', sets: 4, reps: '5-8', videoUrl: 'https://www.youtube.com/watch?v=ultWZbUMPL8', instructions: '1. Place feet shoulder-width apart. 2. Squat down to parallel. 3. Drive evenly through mid-foot.' },
+    { name: '45-Degree Machine Leg Press', sets: 3, reps: '10-12', videoUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ', instructions: '1. Keep lower back on pad. 2. Lower sled deep with control. 3. Press up without locking knees.' },
+    { name: 'Seated Machine Leg Curl', sets: 3, reps: '10-15', videoUrl: 'https://www.youtube.com/watch?v=1Tq3QdYUuHs', instructions: '1. Lock lap pad over thighs. 2. Curl heels under seat firmly. 3. Extend legs back slowly.' },
+    { name: 'Machine Leg Extension', sets: 3, reps: '12-15', videoUrl: 'https://www.youtube.com/watch?v=YyvSfVjQeL0', instructions: '1. Align knees with pivot. 2. Extend legs to peak squeeze. 3. Lower smoothly for 2 seconds.' },
+    { name: 'Dumbbell Romanian Deadlift', sets: 3, reps: '8-10', videoUrl: 'https://www.youtube.com/watch?v=7j-2w4-P14I', instructions: '1. Push hips back with soft knees. 2. Lower dumbbells past knees. 3. Drive hips forward tall.' },
+    { name: 'Standing Machine Calf Raise', sets: 4, reps: '12-15', videoUrl: 'https://www.youtube.com/watch?v=gwLzBJYoWlI', instructions: '1. Sink heels for 2-second stretch. 2. Press high onto big toes. 3. Pause 1 second at top.' }
+  ],
+  'Shoulders & Arms': [
+    { name: 'Standing Barbell Overhead Press', sets: 4, reps: '5-8', videoUrl: 'https://www.youtube.com/watch?v=2yjwXTZQDDI', instructions: '1. Grip bar outside shoulders. 2. Press straight overhead to lockout. 3. Lower cleanly to upper chest.' },
+    { name: 'Cable Lateral Raise', sets: 3, reps: '12-15', videoUrl: 'https://www.youtube.com/watch?v=PPrzBWZDOhA', instructions: '1. Set pulley at wrist height. 2. Sweep arm out to shoulder level. 3. Lower slowly without dropping.' },
+    { name: 'Reverse Pec Deck Rear Delt Fly', sets: 3, reps: '12-15', videoUrl: 'https://www.youtube.com/watch?v=5YK4bgzXDp0', instructions: '1. Keep chest pressed to pad. 2. Pull handles out wide. 3. Pause briefly at rear contraction.' },
+    { name: 'Cable Rope Tricep Pushdown', sets: 3, reps: '10-15', videoUrl: 'https://www.youtube.com/watch?v=2-LAMcpzODU', instructions: '1. Pin elbows tight to ribs. 2. Push rope down and split ends. 3. Control rise back up.' },
+    { name: 'Overhead Cable Tricep Extension', sets: 3, reps: '10-15', videoUrl: 'https://www.youtube.com/watch?v=YbX7Wd8jQ-Q', instructions: '1. Hold rope overhead leaning forward. 2. Extend forearms straight ahead. 3. Stretch smoothly behind head.' },
+    { name: 'Machine Preacher Bicep Curl', sets: 3, reps: '10-15', videoUrl: 'https://www.youtube.com/watch?v=fIWP-FRFNU0', instructions: '1. Rest arms flush on pad. 2. Curl handles toward shoulders. 3. Lower slowly to near lockout.' }
+  ],
+  'Full Body': [
+    { name: 'Trap Bar Deadlift', sets: 4, reps: '5-8', videoUrl: 'https://www.youtube.com/watch?v=WzvsIU9FW60', instructions: '1. Stand centered inside handles. 2. Push floor away with legs. 3. Hinge down under control.' },
+    { name: 'Machine Incline Chest Press', sets: 3, reps: '10-12', videoUrl: 'https://www.youtube.com/watch?v=xUm_ZglsPdw', instructions: '1. Align handles with upper chest. 2. Press forward cleanly. 3. Lower slowly for deep stretch.' },
+    { name: 'Seated Cable Row', sets: 3, reps: '10-12', videoUrl: 'https://www.youtube.com/watch?v=GZbfZ033f74', instructions: '1. Sit tall with neutral spine. 2. Pull handle to lower ribs. 3. Extend arms fully forward.' },
+    { name: '45-Degree Machine Leg Press', sets: 3, reps: '10-12', videoUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ', instructions: '1. Place feet shoulder-width on sled. 2. Lower deeply with control. 3. Drive smoothly back up.' },
+    { name: 'Cable Lateral Raise', sets: 3, reps: '12-15', videoUrl: 'https://www.youtube.com/watch?v=PPrzBWZDOhA', instructions: '1. Stand sideways to low pulley. 2. Raise arm to shoulder height. 3. Control slow descent.' },
+    { name: 'Seated Machine Calf Raise', sets: 3, reps: '12-15', videoUrl: 'https://www.youtube.com/watch?v=JbyjNymZOt0', instructions: '1. Pause 2 seconds at bottom stretch. 2. Press up onto big toes. 3. Hold peak squeeze 1 second.' }
+  ]
+};
+
+export function sanitizeAiBonusExercises(
+  items: Partial<RawAiBonusExerciseItem>[],
+  selectedTarget: string
+): RawAiBonusExerciseItem[] {
+  const cleanTarget = String(selectedTarget || 'Full Body').trim();
+  const fallbackPool = AI_BONUS_WORKOUT_FALLBACKS_CLEAN[cleanTarget] || AI_BONUS_WORKOUT_FALLBACKS_CLEAN['Full Body'];
+  const seenNames = new Set<string>();
+  const seenPatterns = new Set<string>();
+  const accepted: RawAiBonusExerciseItem[] = [];
+
+  const tryAccept = (raw: Partial<RawAiBonusExerciseItem> | undefined, idx: number) => {
+    if (!raw || typeof raw !== 'object') return;
+    const name = String(raw.name || '').trim();
+    if (!name || isForbiddenBonusExerciseName(name)) return;
+    const normName = name.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const patternKey = getBonusMovementPatternKey(name);
+    if (seenNames.has(normName) || seenPatterns.has(patternKey)) return;
+    seenNames.add(normName);
+    seenPatterns.add(patternKey);
+    const sets = Math.max(1, Math.min(6, Math.floor(Number(raw.sets) || (idx === 0 ? 4 : 3))));
+    const reps = String(raw.reps || (idx === 0 ? '5-8' : '10-15')).trim();
+    const rawUrl = String(raw.videoUrl || '').trim();
+    const videoUrl = /^https?:\/\//i.test(rawUrl)
+      ? rawUrl
+      : `https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' form tutorial')}`;
+    const instructions = String(raw.instructions || '1. Set seat and weight safely. 2. Move slowly with full control. 3. Pause briefly at peak squeeze.').trim();
+    accepted.push({ name, sets, reps, videoUrl, instructions });
+  };
+
+  (Array.isArray(items) ? items : []).forEach((item, idx) => {
+    if (accepted.length < 7) tryAccept(item, idx);
+  });
+
+  if (accepted.length < 5) {
+    fallbackPool.forEach((fb, idx) => {
+      if (accepted.length < 5) tryAccept(fb, accepted.length + idx);
+    });
+  }
+
+  return accepted.slice(0, 7);
 }
 
 export function parseAndBuildAiBonusDayObject(
@@ -7966,25 +8084,20 @@ export function parseAndBuildAiBonusDayObject(
 
   const cleanTarget = String(selectedTarget || 'Full Body').trim();
   const slugTarget = cleanTarget.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-  const exercises: FormattedAiBonusExercise[] = parsed.slice(0, 5).map((raw, idx) => {
-    const item = (raw && typeof raw === 'object' ? raw : {}) as Partial<RawAiBonusExerciseItem>;
-    const name = String(item.name || `Bonus Exercise ${idx + 1}`).trim();
-    const sets = Math.max(1, Math.min(8, Math.floor(Number(item.sets) || 3)));
-    const reps = String(item.reps || (idx === 0 ? '5-8' : '10-15')).trim();
-    const rawUrl = String(item.videoUrl || '').trim();
-    const videoUrl = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//i.test(rawUrl)
-      ? rawUrl
-      : `https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' form tutorial')}`;
+  const sanitized = sanitizeAiBonusExercises(parsed as Partial<RawAiBonusExerciseItem>[], cleanTarget);
+  if (sanitized.length < 5 || sanitized.length > 7) return null;
+
+  const exercises: FormattedAiBonusExercise[] = sanitized.map((item, idx) => {
+    const restSec = idx === 0 ? 120 : 90;
     const instructions = String(item.instructions || '1. Set seat and weight safely. 2. Move slowly with full control. 3. Pause briefly at peak squeeze.').trim();
-    const restSec = idx === 0 ? 120 : (idx === 4 ? 60 : 90);
     return {
       id: `ai_bonus_w${week}_${slugTarget}_${idx + 1}`,
-      name,
-      sets,
-      reps,
+      name: item.name,
+      sets: item.sets,
+      reps: item.reps,
       restSec,
-      restLabel: restSec >= 120 ? '2 min' : (restSec === 90 ? '90s' : '60s'),
-      videoUrl,
+      restLabel: restSec >= 120 ? '2 min' : '90s',
+      videoUrl: item.videoUrl,
       notes: instructions,
       instructions,
       isAiGenerated: true
@@ -7996,9 +8109,151 @@ export function parseAndBuildAiBonusDayObject(
     target: cleanTarget,
     daySub: cleanTarget,
     title: `AI Bonus • ${cleanTarget}`,
-    subtitle: `5-Exercise Hypertrophy Plan (${cleanTarget})`,
+    subtitle: `${exercises.length}-Exercise Hypertrophy Plan (${cleanTarget})`,
     warmupType: cleanTarget.toLowerCase().includes('leg') ? 'lower' : 'upper',
     exercises
+  };
+}
+
+export function toggleDay6BonusHabitExercise(
+  dayObj: CustomAiBonusDayObject,
+  habit: 'abs' | 'pullups'
+): { added: boolean; nextDayObj: CustomAiBonusDayObject } {
+  const currentList = Array.isArray(dayObj.exercises) ? [...dayObj.exercises] : [];
+  if (habit === 'abs') {
+    const hasAbs = currentList.some(ex => ex.id === 'cable_ab_crunch');
+    if (hasAbs) {
+      return {
+        added: false,
+        nextDayObj: { ...dayObj, exercises: currentList.filter(ex => ex.id !== 'cable_ab_crunch') }
+      };
+    }
+    const absEx: FormattedAiBonusExercise = {
+      id: 'cable_ab_crunch',
+      name: 'Cable Abdominal Crunch (Daily Core)',
+      badge: 'Daily Abs • Pre-fills Prev Day',
+      sets: 3,
+      reps: '10-15',
+      restSec: 90,
+      restLabel: '1.5 min',
+      videoUrl: 'https://www.youtube.com/watch?v=aBd6T01PBqw',
+      notes: 'Lock hips stationary, curl ribs toward pelvis, and exhale fully at the bottom.',
+      instructions: 'Lock hips stationary, curl ribs toward pelvis, and exhale fully at the bottom.',
+      isAiGenerated: false
+    };
+    return {
+      added: true,
+      nextDayObj: { ...dayObj, exercises: [...currentList, absEx] }
+    };
+  }
+
+  const hasPullups = currentList.some(ex => ex.id === 'day1_pullups');
+  if (hasPullups) {
+    return {
+      added: false,
+      nextDayObj: { ...dayObj, exercises: currentList.filter(ex => ex.id !== 'day1_pullups') }
+    };
+  }
+  const pullupEx: FormattedAiBonusExercise = {
+    id: 'day1_pullups',
+    name: 'Overhand Pull-Ups (Max Effort)',
+    badge: 'Pull-Ups First • #1',
+    isBodyweightRepsOnly: true,
+    sets: 5,
+    reps: 'Max Reps',
+    restSec: 90,
+    restLabel: '90 sec',
+    videoUrl: 'https://youtu.be/w_yuTRQd6HA',
+    notes: 'Perform 5 sets of maximum strict overhand reps with 90s rest between sets.',
+    instructions: 'Perform 5 sets of maximum strict overhand reps with 90s rest between sets.',
+    isAiGenerated: false
+  };
+  return {
+    added: true,
+    nextDayObj: { ...dayObj, exercises: [pullupEx, ...currentList] }
+  };
+}
+
+export function getInitialCollapsedAccordionDefaults() {
+  return {
+    warmupOpen: false,
+    warmupPart1Open: false,
+    warmupPart2Open: false,
+    preFuelDetailsOpen: false,
+    hideBulkSupplements: true,
+    openShopCostBreakdown: false,
+    openShopItemDetails: {},
+    openSubActionWhy: {},
+    openNotePanels: {},
+    openFuelCards: {},
+    openFuelTips: {},
+    openPrepNoteCards: {},
+    openFuelPlanDrawer: false,
+    openGymAdminDrawer: false,
+    openDayWorkoutPicker: false,
+    openRestDayDrawer: false,
+    openWaterScheduleDrawer: false,
+    defaultAllHidden: true,
+    activeFocusedExId: null
+  };
+}
+
+export function formatEli12FuelCardSummary(
+  slotId: string,
+  mealObj: { title?: string; kcal?: number; protein?: number; items?: Array<{ name?: string; weight?: string }> }
+): {
+  title: string;
+  statsLine: string;
+  ingredientsLine: string;
+  mathToggleClosedLabel: string;
+  mathToggleOpenLabel: string;
+  logButtonLabel: string;
+} {
+  const shortTitles: Record<string, string> = {
+    pre_shake: 'Pre-Workout Shake',
+    post_oats: 'Overnight Protein Oats',
+    lunch: 'Tofu & Rice Bowl',
+    dinner: 'Evening Protein Shake'
+  };
+  const title = shortTitles[slotId] || String(mealObj.title || 'Daily Meal');
+  const kcal = Number(mealObj.kcal) || 0;
+  const protein = Number(mealObj.protein) || 0;
+  const statsLine = `${kcal} Calories | ${protein}g Protein`;
+
+  const shortItemName = (rawName: string): string => {
+    const n = String(rawName || '').toLowerCase();
+    if (n.includes('pea protein')) return 'Pea Protein';
+    if (n.includes('creatine')) return 'Creatine';
+    if (n.includes('water')) return 'Water';
+    if (n.includes('almond') || n.includes('cashew') || n.includes('silk') || n.includes('soy milk')) return 'Plant Milk';
+    if (n.includes('oats')) return 'Oats';
+    if (n.includes('banana')) return 'Banana';
+    if (n.includes('peanut butter')) return 'Peanut Butter';
+    if (n.includes('chia')) return 'Chia Seeds';
+    if (n.includes('tofu')) return 'Tofu';
+    if (n.includes('rice')) return 'Cooked Rice';
+    if (n.includes('broccoli')) return 'Broccoli';
+    if (n.includes('nutritional yeast')) return 'Nutritional Yeast';
+    if (n.includes('sesame oil')) return 'Sesame Oil';
+    if (n.includes('salt')) return 'Iodized Salt';
+    if (n.includes('vitamin d3')) return 'Vitamin D3';
+    return String(rawName || '').replace(/\([^)]*\)/g, '').trim().split(/\s+/).slice(0, 2).join(' ');
+  };
+
+  const parts = (mealObj.items || []).map(it => {
+    const w = String(it.weight || '').replace(/\s+/g, '');
+    const label = shortItemName(it.name || '');
+    return `${w} ${label}.`.trim();
+  });
+  const ingredientsLine = parts.join(' ');
+
+  return {
+    title,
+    statsLine,
+    ingredientsLine,
+    mathToggleClosedLabel: 'Read the Math ▼',
+    mathToggleOpenLabel: 'Hide the Math ▲',
+    logButtonLabel: '✓ Log Meal'
   };
 }
 
@@ -8018,3 +8273,4 @@ export function injectAiBonusWorkoutIntoDay6(
   nextMap[wKey] = existing;
   return nextMap;
 }
+

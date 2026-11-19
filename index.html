@@ -1098,8 +1098,17 @@
       lastGymTimeAutoSync: null,
       showFuelSupplementSummary: false,
       hideWeeklyGroceries: false,
-      hideBulkSupplements: false,
+      hideBulkSupplements: true,
       hideCheckedGroceries: false,
+      openPreFuelDetails: false,
+      openShopCostBreakdown: false,
+      openShopItemDetails: {},
+      openSubActionWhy: {},
+      openFuelCards: {},
+      openFuelTips: {},
+      openFuelPlanDrawer: false,
+      openGymAdminDrawer: false,
+      openWaterScheduleDrawer: false,
       collapsedShopAisles: {},
       currentWeek: 1,
       selectedWeek: 1,
@@ -1118,7 +1127,7 @@
       warmupLogs: {},
       waterIntakeLogs: {},
       recipePrepLogs: {},
-      collapsedRecipeCards: {},
+      collapsedRecipeCards: { recipe_oats_batch: true, recipe_rice_batch: true },
       fuelWeightUnit: 'g',
       activeFuelPreset: 'almond_cashew_pea',
       fuelSwitchScope: 'future',
@@ -1423,12 +1432,35 @@
         merged.subscriptionChecklist.dropPeaTo3Containers = Boolean(merged.subscriptionChecklist.dropPeaTo3Containers);
       }
       merged.hasSetInitialGymTime = Boolean(merged.hasSetInitialGymTime);
-      merged.openGymTimePromptCard = Boolean(merged.openGymTimePromptCard);
-      if (!merged.warmupClosedByDay || typeof merged.warmupClosedByDay !== 'object') merged.warmupClosedByDay = {};
-      merged.showFuelSupplementSummary = Boolean(merged.showFuelSupplementSummary);
+      // Aggressive Progressive Disclosure: EVERY expandable accordion/drawer starts CLOSED on page load
+      merged.openGymTimePromptCard = false;
+      merged.warmupClosedByDay = {};
+      merged.openPreFuelDetails = false;
+      merged.openNotePanels = {};
+      merged.pendingMachineSwapPreviews = {};
+      merged.openImagePanels = {};
+      merged.cardCollapsedState = {};
+      merged.defaultAllHidden = true;
+      merged.activeFocusedExId = null;
+      merged.showFuelSupplementSummary = false;
       merged.hideWeeklyGroceries = Boolean(merged.hideWeeklyGroceries);
-      merged.hideBulkSupplements = Boolean(merged.hideBulkSupplements);
+      merged.hideBulkSupplements = true;
       merged.hideCheckedGroceries = Boolean(merged.hideCheckedGroceries);
+      merged.openShopCostBreakdown = false;
+      merged.openShopItemDetails = {};
+      merged.openSubActionWhy = {};
+      merged.openFuelCards = {};
+      merged.openFuelTips = {};
+      merged.openPrepNoteCards = {};
+      merged.openFuelPlanDrawer = false;
+      merged.openFuelSwapDrawer = false;
+      merged.openGymAdminDrawer = false;
+      merged.openDayWorkoutPicker = false;
+      merged.openRestDayDrawer = false;
+      merged.openRestMobilityDrawer = false;
+      merged.showRestDayMobility = false;
+      merged.openWaterScheduleDrawer = false;
+      merged.collapsedRecipeCards = { recipe_oats_batch: true, recipe_rice_batch: true };
       if (!merged.collapsedShopAisles || typeof merged.collapsedShopAisles !== 'object') merged.collapsedShopAisles = {};
       if (!merged.watchSettings || typeof merged.watchSettings !== 'object') {
         merged.watchSettings = { hrRecoveryAlert: true, targetRecoveryBpm: 120, targetDropBpm: 25, wristAlertsEnabled: Boolean(merged.watchNotificationsEnabled) };
@@ -4964,7 +4996,7 @@
         ? getScheduledDayObject(week, dayIdx)
         : (DAYS_SCHEDULE[dayIdx] || DAYS_SCHEDULE[0]);
       const exercisesToday = [...dayObj.exercises];
-      if (state.crunchDays && state.crunchDays.includes(dayIdx)) {
+      if (state.crunchDays && state.crunchDays.includes(dayIdx) && !dayObj.isAiBonusWorkout && !exercisesToday.some(ex => ex.id === CABLE_CRUNCH_EXERCISE.id)) {
         exercisesToday.push(CABLE_CRUNCH_EXERCISE);
       }
       let doneSetsToday = 0;
@@ -9425,7 +9457,7 @@
         : DAYS_SCHEDULE[dIdx];
       if (!dayObj) return { status: 'none', doneSets: 0, totalSets: 0 };
       const exList = [...dayObj.exercises];
-      if (state.crunchDays.includes(dIdx)) {
+      if (state.crunchDays.includes(dIdx) && !dayObj.isAiBonusWorkout && !exList.some(ex => ex.id === CABLE_CRUNCH_EXERCISE.id)) {
         exList.push(CABLE_CRUNCH_EXERCISE);
       }
       let totalSets = 0;
@@ -10280,10 +10312,9 @@
       const compStatus = typeof getDayCompletionStatus === 'function' ? getDayCompletionStatus(week, dayIdx) : { doneSets: 0 };
       const completedSetsToday = compStatus ? compStatus.doneSets : 0;
 
-      // Auto-open Warm-Up Accordion on Lifting Days when 0 sets are logged so far today and not manually closed
+      // Aggressive Progressive Disclosure: Warm-Up accordion ALWAYS defaults CLOSED on page load
       const closedPref = state.warmupClosedByDay[dayKey];
-      const shouldAutoOpen = !dayAssignment.isRestDay && completedSetsToday === 0 && !closedPref;
-      const isWarmupOpen = closedPref === 'forced_open' || shouldAutoOpen;
+      const isWarmupOpen = closedPref === 'forced_open';
       if (isWarmupOpen) {
         panelEl.classList.remove('hidden');
         if (chevEl) chevEl.textContent = '▲';
@@ -10305,59 +10336,70 @@
         titleEl.textContent = `${curStart12} ${dayObj.warmupType === 'upper' ? 'Upper Body' : 'Lower Body'} Warm-Up (~10 Min)`;
       }
       if (subEl) {
-        subEl.textContent = `${doneDrillsCount}/${drills.length} drills checked • Dedicated demo video per drill + 50%/70%/90% sets`;
+        subEl.textContent = `${doneDrillsCount}/${drills.length} drills checked • Tap to open Part 1 & Part 2`;
       }
 
       panelEl.innerHTML = `
-        <div class="flex items-center justify-between pt-2">
-          <span class="text-xs font-semibold text-emerald-400">Part 1: Dynamic Mobility Drills (${doneDrillsCount}/${drills.length} Done)</span>
-          <a href="${WARMUP_DATA.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-slate-300 bg-slate-900 border border-slate-700 px-2.5 py-1 rounded-lg hover:text-white transition">
-             Full Overview
-          </a>
-        </div>
-        <div class="space-y-1.5">
-          ${drills.map((d, idx) => {
-            const wKey = `w${week}_d${dayIdx}_warmup_${d.id || idx}`;
-            const isDrillDone = Boolean(state.warmupLogs[wKey]);
-            return `
-            <div class="rounded-xl p-2.5 flex items-start justify-between gap-2.5 border transition ${
-              isDrillDone
-                ? 'bg-emerald-950/25 border-emerald-500/40'
-                : 'bg-slate-950/70 border-slate-800/80'
-            }">
-              <label class="flex items-start gap-2.5 cursor-pointer flex-1 min-w-0 select-none">
-                <input
-                  type="checkbox"
-                  data-warmup-key="${wKey}"
-                  data-warmup-name="${d.name}"
-                  aria-label="Mark ${d.name} complete"
-                  ${isDrillDone ? 'checked' : ''}
-                  class="warmup-drill-checkbox mt-0.5 w-4 h-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-400 shrink-0 cursor-pointer"
-                />
-                <div class="min-w-0">
-                  <div class="text-xs font-bold ${isDrillDone ? 'text-emerald-300 line-through' : 'text-white'}">${d.name}</div>
-                  <div class="text-[11px] text-slate-400">${d.notes}</div>
-                </div>
-              </label>
-              <div class="flex items-center gap-1.5 shrink-0">
-                <span class="text-[11px] font-mono font-bold text-amber-300 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-md">${d.reps}</span>
-                <a
-                  href="${d.videoUrl}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Watch ${d.name} demonstration video"
-                  class="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 px-2 py-0.5 rounded-lg transition whitespace-nowrap"
-                >
-                   Video
-                </a>
-              </div>
+        <details id="warmup-part1-accordion" class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <summary class="cursor-pointer select-none flex items-center justify-between gap-2 text-xs font-extrabold text-emerald-400">
+            <span>Part 1: Dynamic Mobility Drills (${doneDrillsCount}/${drills.length} Done)</span>
+            <span class="text-[11px] text-slate-400">▼</span>
+          </summary>
+          <div class="pt-2 space-y-2">
+            <div class="flex justify-end">
+              <a href="${WARMUP_DATA.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-slate-300 bg-slate-900 border border-slate-700 px-2.5 py-1 rounded-lg hover:text-white transition">
+                Full Overview
+              </a>
             </div>
-            `;
-          }).join('')}
-        </div>
-        <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 text-[11px] text-slate-300">
-          <strong class="text-white">Part 2 (Warm-Up Sets):</strong> ${WARMUP_DATA.warmupSetsNote}
-        </div>
+            <div class="space-y-1.5">
+              ${drills.map((d, idx) => {
+                const wKey = `w${week}_d${dayIdx}_warmup_${d.id || idx}`;
+                const isDrillDone = Boolean(state.warmupLogs[wKey]);
+                return `
+                <div class="rounded-xl p-2.5 flex items-start justify-between gap-2.5 border transition ${
+                  isDrillDone
+                    ? 'bg-emerald-950/25 border-emerald-500/40'
+                    : 'bg-slate-950/70 border-slate-800/80'
+                }">
+                  <label class="flex items-start gap-2.5 cursor-pointer flex-1 min-w-0 select-none">
+                    <input
+                      type="checkbox"
+                      data-warmup-key="${wKey}"
+                      data-warmup-name="${d.name}"
+                      aria-label="Mark ${d.name} complete"
+                      ${isDrillDone ? 'checked' : ''}
+                      class="warmup-drill-checkbox mt-0.5 w-4 h-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-400 shrink-0 cursor-pointer"
+                    />
+                    <div class="min-w-0">
+                      <div class="text-xs font-bold ${isDrillDone ? 'text-emerald-300 line-through' : 'text-white'}">${d.name}</div>
+                      <div class="text-[11px] text-slate-400">${d.notes}</div>
+                    </div>
+                  </label>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <span class="text-[11px] font-mono font-bold text-amber-300 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-md">${d.reps}</span>
+                    <a
+                      href="${d.videoUrl}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Watch ${d.name} demonstration video"
+                      class="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 px-2 py-0.5 rounded-lg transition whitespace-nowrap"
+                    >
+                      Video
+                    </a>
+                  </div>
+                </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </details>
+        <details id="warmup-part2-accordion" class="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 text-[11px] text-slate-300">
+          <summary class="cursor-pointer select-none flex items-center justify-between gap-2 text-xs font-extrabold text-white">
+            <span>Part 2: Warm-Up Sets (50% / 70% / 90%)</span>
+            <span class="text-[11px] text-slate-400">▼</span>
+          </summary>
+          <p class="pt-2 leading-relaxed text-slate-300">${WARMUP_DATA.warmupSetsNote}</p>
+        </details>
         <button
           type="button"
           id="warmup-complete-collapse-btn"
@@ -11105,7 +11147,7 @@
       autoMigrateExerciseNotesToMachineSwaps();
 
       const rawDayExercises = [...dayObj.exercises];
-      if (hasCrunchToday && !dayAssignment.isRestDay) {
+      if (hasCrunchToday && !dayAssignment.isRestDay && !dayAssignment.isAiBonusWorkout && !rawDayExercises.some(ex => ex.id === CABLE_CRUNCH_EXERCISE.id)) {
         rawDayExercises.push(CABLE_CRUNCH_EXERCISE);
       }
 
@@ -11144,7 +11186,7 @@
 
       syncPyramidRestHelperToggle();
 
-      // UPGRADE 4 & UPGRADE 3: Pre-Workout Fuel Check-In Prompt + Decoupled Next-Day Prep Prompt on Gym Check-In Bar
+      // UPGRADE 4 & UPGRADE 3: Minimal 1-Line Pre-Gym Fuel Check-In Reminder (Details Default CLOSED)
       const preFuelBanner = document.getElementById('pre-workout-fuel-checkin-banner');
       if (preFuelBanner) {
         const isTrainingDay = !dayAssignment.isRestDay;
@@ -11154,6 +11196,7 @@
         const doneSetsToday = todayDoneSets;
         const totalSetsToday = todayTotalSets;
         const showPreFuelCheck = isTrainingDay && !isFuel1Logged && !isDismissed && doneSetsToday < totalSetsToday;
+        const isPreFuelOpen = Boolean(state.openPreFuelDetails);
         const lowBatchPrompts = getDecoupledLowBatchPrompts();
         const prepBannerHtml = lowBatchPrompts.length > 0 ? buildDecoupledNextDayPrepBannerHtml(false) : '';
 
@@ -11162,20 +11205,31 @@
           preFuelBanner.innerHTML = `
             <div class="space-y-2">
               ${showPreFuelCheck ? `
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div class="flex items-start sm:items-center gap-2 min-w-0">
-                    <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40 shrink-0">${ICONS.preGymFuel}<span>FUEL 1</span></span>
-                    <p class="text-xs font-extrabold text-amber-200 leading-snug">
-                      Pre-Gym Fuel Check: Did you drink your Pre-Workout Shake (36g P)?
+                <div class="space-y-2">
+                  <button
+                    type="button"
+                    id="pre-fuel-checkin-toggle-btn"
+                    aria-expanded="${isPreFuelOpen ? 'true' : 'false'}"
+                    class="w-full flex items-center justify-between gap-2 text-left"
+                  >
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40 shrink-0">${ICONS.preGymFuel}<span>FUEL 1</span></span>
+                      <span class="text-xs font-extrabold text-amber-200 truncate">Pre-Gym Shake Reminder</span>
+                    </div>
+                    <span class="shrink-0 text-[11px] font-extrabold text-amber-300 whitespace-nowrap">${isPreFuelOpen ? 'Hide ▲' : 'Log ▼'}</span>
+                  </button>
+                  <div id="pre-fuel-checkin-details" class="${isPreFuelOpen ? 'flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-amber-500/25' : 'hidden'}">
+                    <p class="text-xs font-semibold text-amber-100 leading-snug">
+                      Did you drink your Pre-Workout Shake today?
                     </p>
-                  </div>
-                  <div class="flex items-center gap-1.5 shrink-0">
-                    <button type="button" id="pre-fuel-checkin-yes-btn" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold whitespace-nowrap shadow-sm transition">
-                      Yes, Log Fuel 1
-                    </button>
-                    <button type="button" id="pre-fuel-checkin-dismiss-btn" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold whitespace-nowrap transition">
-                      Dismiss
-                    </button>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <button type="button" id="pre-fuel-checkin-yes-btn" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold whitespace-nowrap shadow-sm transition">
+                        Yes, Log Fuel 1
+                      </button>
+                      <button type="button" id="pre-fuel-checkin-dismiss-btn" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold whitespace-nowrap transition">
+                        Dismiss
+                      </button>
+                    </div>
                   </div>
                 </div>
               ` : ''}
@@ -11183,21 +11237,30 @@
             </div>
           `;
           bindDecoupledNextDayPrepBannerEvents(preFuelBanner);
+          const togglePreFuelBtn = document.getElementById('pre-fuel-checkin-toggle-btn');
+          if (togglePreFuelBtn) {
+            togglePreFuelBtn.addEventListener('click', () => {
+              state.openPreFuelDetails = !state.openPreFuelDetails;
+              renderWorkoutView();
+            });
+          }
           const yesFuelBtn = document.getElementById('pre-fuel-checkin-yes-btn');
           if (yesFuelBtn) {
             yesFuelBtn.addEventListener('click', () => {
               setMealCheckedForDay(week, dayIdx, 'pre_shake', true);
               state.dismissedPreFuelPrompt[dismissKey] = false;
+              state.openPreFuelDetails = false;
               saveState();
               renderWorkoutView();
               renderVeganView();
-              showToast('Logged Fuel 1: Pre-Gym Fast Protein Shake (170 kcal • 36g P)');
+              showToast('Logged Fuel 1: Pre-Workout Shake');
             });
           }
           const dismissFuelBtn = document.getElementById('pre-fuel-checkin-dismiss-btn');
           if (dismissFuelBtn) {
             dismissFuelBtn.addEventListener('click', () => {
               state.dismissedPreFuelPrompt[dismissKey] = true;
+              state.openPreFuelDetails = false;
               renderWorkoutView();
               saveState();
             });
@@ -12953,7 +13016,59 @@
           });
         }
       } else {
-        listEl.innerHTML = exerciseCardsHtml;
+        let bonusHabitsBarHtml = '';
+        if (dayAssignment.isAiBonusWorkout) {
+          const hasDailyAbsAdded = exercisesToday.some(ex => ex.id === CABLE_CRUNCH_EXERCISE.id);
+          const hasDailyPullupsAdded = exercisesToday.some(ex => ex.id === 'day1_pullups');
+          bonusHabitsBarHtml = `
+            <div id="day6-bonus-habits-bar" class="bg-slate-900/95 border border-indigo-500/40 rounded-2xl p-3 space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-extrabold text-indigo-200">Optional Daily Habits for Bonus Day</span>
+                <span class="text-[11px] font-bold text-slate-400">${exercisesToday.length} exercises</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button
+                  type="button"
+                  id="day6-toggle-daily-abs-btn"
+                  aria-pressed="${hasDailyAbsAdded ? 'true' : 'false'}"
+                  class="px-2.5 py-2.5 rounded-xl text-xs font-extrabold border transition text-center leading-tight ${
+                    hasDailyAbsAdded
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm'
+                      : 'bg-slate-950 hover:bg-slate-800 text-indigo-200 border-indigo-500/45'
+                  }"
+                >
+                  ${hasDailyAbsAdded ? '✓ Daily Abs Added' : '+ Add Daily Abs'}
+                </button>
+                <button
+                  type="button"
+                  id="day6-toggle-daily-pullups-btn"
+                  aria-pressed="${hasDailyPullupsAdded ? 'true' : 'false'}"
+                  class="px-2.5 py-2.5 rounded-xl text-xs font-extrabold border transition text-center leading-tight ${
+                    hasDailyPullupsAdded
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm'
+                      : 'bg-slate-950 hover:bg-slate-800 text-indigo-200 border-indigo-500/45'
+                  }"
+                >
+                  ${hasDailyPullupsAdded ? '✓ Daily Pull-Ups Added' : '+ Add Daily Pull-Ups'}
+                </button>
+              </div>
+            </div>
+          `;
+        }
+        listEl.innerHTML = bonusHabitsBarHtml + exerciseCardsHtml;
+
+        const day6AbsBtn = document.getElementById('day6-toggle-daily-abs-btn');
+        if (day6AbsBtn) {
+          day6AbsBtn.addEventListener('click', () => {
+            toggleDay6BonusHabit('abs');
+          });
+        }
+        const day6PullupsBtn = document.getElementById('day6-toggle-daily-pullups-btn');
+        if (day6PullupsBtn) {
+          day6PullupsBtn.addEventListener('click', () => {
+            toggleDay6BonusHabit('pullups');
+          });
+        }
       }
 
       // Day 5 Hardest-Day 4-Option Selector Listeners on Gym Tab (Synced with Pull-Ups Tab)
@@ -16453,6 +16568,33 @@
           dinner: adaptiveSched?.slots?.dinner?.time12 || '5:30 PM'
         };
 
+        const eli12MealTitles = {
+          pre_shake: 'Pre-Workout Shake',
+          post_oats: 'Overnight Protein Oats',
+          lunch: 'Tofu & Rice Bowl',
+          dinner: 'Evening Protein Shake'
+        };
+
+        const getEli12ShortIngredientName = (rawName) => {
+          const n = String(rawName || '').toLowerCase();
+          if (n.includes('pea protein')) return 'Pea Protein';
+          if (n.includes('creatine')) return 'Creatine';
+          if (n.includes('water')) return 'Water';
+          if (n.includes('almond') || n.includes('cashew') || n.includes('silk') || n.includes('soy milk')) return 'Plant Milk';
+          if (n.includes('oats')) return 'Oats';
+          if (n.includes('banana')) return 'Banana';
+          if (n.includes('peanut butter')) return 'Peanut Butter';
+          if (n.includes('chia')) return 'Chia Seeds';
+          if (n.includes('tofu')) return 'Tofu';
+          if (n.includes('rice')) return 'Cooked Rice';
+          if (n.includes('broccoli')) return 'Broccoli';
+          if (n.includes('nutritional yeast')) return 'Nutritional Yeast';
+          if (n.includes('sesame oil')) return 'Sesame Oil';
+          if (n.includes('salt')) return 'Iodized Salt';
+          if (n.includes('vitamin d3')) return 'Vitamin D3';
+          return String(rawName || '').replace(/\([^)]*\)/g, '').trim().split(/\s+/).slice(0, 2).join(' ');
+        };
+
         mealsEl.innerHTML = VEGAN_MEALS.map((slot, mealIdx) => {
           const mealObj = (dayPlan && dayPlan.meals && dayPlan.meals[slot.slotId]) || slot.options[0];
           const isDone = isMealCheckedForDay(week, dayIdx, slot.slotId);
@@ -16471,8 +16613,20 @@
           const isTipExpanded = Boolean(state.openFuelTips && state.openFuelTips[slot.slotId]);
           const shortTimeStr = defaultTimesBySlot[slot.slotId] || '8:15 AM';
           const topFuelBadgeText = `FUEL ${mealIdx + 1} • ${shortTimeStr}`;
+          const eli12Title = eli12MealTitles[slot.slotId] || mealObj.title || slot.title;
+          const eli12StatsText = `${mealObj.kcal} Calories | ${mealObj.protein}g Protein`;
 
-          // Compact 2-column nutrition-label style ingredient list (no radio/checkbox icons or heavy individual borders)
+          // Build crisp ELI12 short ingredient sentences (max 8-10 words per line)
+          const eli12ShortItems = itemsList.map(it => {
+            const unitWeight = formatIngredientWeightForUnit(it.weight, state.fuelWeightUnit).replace(/\s+(ml|g|oz|lb)/i, '$1');
+            return `${unitWeight} ${getEli12ShortIngredientName(it.label || it.name)}.`;
+          });
+          const eli12IngredientLines = [];
+          for (let i = 0; i < eli12ShortItems.length; i += 3) {
+            eli12IngredientLines.push(eli12ShortItems.slice(i, i + 3).join(' '));
+          }
+
+          // Full interactive scale checklist (kept inside Read the Math drawer so zero features are lost)
           const scannableRowsHtml = itemsList.map(it => {
             const ingDone = isIngredientChecked(week, dayIdx, slot.slotId, it.id);
             const convertedIngWeight = formatIngredientWeightForUnit(it.weight, state.fuelWeightUnit);
@@ -16509,38 +16663,44 @@
 
           return `
             <article data-fuel-card-slot="${slot.slotId}" class="bg-slate-900 border ${isDone ? 'border-emerald-500/50 bg-slate-900/80' : (slotSched.isPostWorkoutTarget ? 'border-emerald-400/70 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/40' : 'border-slate-800')} rounded-2xl p-3.5 space-y-2.5 transition-all">
-              <!-- Row 1: Top Action Bar (Time Badge + + Log Fuel Button) + Full-Width Meal Title Underneath -->
-              <div class="space-y-1.5">
+              <!-- Visible ELI12 Layer: Time Badge + Title + Stats + Short Ingredient Lines + Log Meal -->
+              <div class="space-y-2">
                 <div class="flex items-center justify-between gap-2">
-                  <span data-toggle-fuel-card="${slot.slotId}" class="fuel-card-toggle-btn cursor-pointer text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">${topFuelBadgeText}</span>
+                  <span class="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">${topFuelBadgeText}</span>
                   <button type="button" data-meal-slot="${slot.slotId}" class="meal-check-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition ${
                     isDone
                       ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/30'
                       : (isPartial
                           ? 'bg-amber-400/20 text-amber-200 border border-amber-400/40'
-                          : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700')
+                          : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/40')
                   }">
-                    ${isDone ? '✓ Done' : (isPartial ? `✓ Finish (${doneIngCount}/${itemsList.length})` : '+ Log Fuel')}
+                    ${isDone ? '✓ Done' : (isPartial ? `✓ Finish (${doneIngCount}/${itemsList.length})` : '✓ Log Meal')}
                   </button>
                 </div>
-                <h4 data-toggle-fuel-card="${slot.slotId}" class="fuel-card-toggle-btn cursor-pointer select-none w-full font-bold text-slate-50" style="font-size: 15px; line-height: 1.35;">${mealObj.title || slot.title}</h4>
+
+                <div>
+                  <h4 class="font-bold text-slate-50" style="font-size: 16px; line-height: 1.3;">${eli12Title}</h4>
+                  <p data-fuel-kcal-badge="${slot.slotId}" class="text-xs font-extrabold text-amber-300 mt-0.5">${eli12StatsText}</p>
+                </div>
+
+                <div class="text-xs text-slate-200 space-y-0.5 leading-relaxed">
+                  ${eli12IngredientLines.map(line => `<p>${line}</p>`).join('')}
+                </div>
               </div>
 
-              <!-- Row 2: Aligned Badges (Calories/Protein | Scale Weight | Fridge Jars) + View Recipe & Steps Toggle -->
-              <button type="button" data-toggle-fuel-card="${slot.slotId}" aria-expanded="${isCardExpanded ? 'true' : 'false'}" class="fuel-card-toggle-btn w-full flex flex-wrap items-center justify-between gap-1.5 bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-slate-300 rounded-xl px-2.5 py-2 text-[11px] transition">
-                <div class="flex flex-wrap items-center gap-1.5 min-w-0">
-                  <span data-fuel-kcal-badge="${slot.slotId}" class="px-2 py-0.5 rounded-md bg-amber-950/60 border border-amber-500/40 text-amber-300 font-extrabold whitespace-nowrap">${mealObj.kcal} kcal • ${mealObj.protein}g P</span>
-                  <span data-fuel-scale-badge="${slot.slotId}" class="px-2 py-0.5 rounded-md bg-sky-950/70 border border-sky-400/50 text-sky-200 font-bold whitespace-nowrap">${scaleWeightBadgeText}</span>
-                  ${fridgePortionsBadgeHtml}
-                  ${fuelPrepNotePillHtml}
-                </div>
-                <span class="px-2 py-0.5 rounded-md border ${isCardExpanded ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300' : 'bg-slate-900 border-slate-700 text-sky-300'} font-extrabold whitespace-nowrap shrink-0">
-                  ${isCardExpanded ? 'Hide Recipe & Steps ▴' : 'View Recipe & Steps ▾'}
-                </span>
+              <!-- Collapsible Math & Full Kitchen Tools Toggle (Default CLOSED) -->
+              <button type="button" data-toggle-fuel-card="${slot.slotId}" aria-expanded="${isCardExpanded ? 'true' : 'false'}" class="fuel-card-toggle-btn w-full flex items-center justify-between gap-2 bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-sky-300 rounded-xl px-3 py-2 text-xs font-extrabold transition">
+                <span>${isCardExpanded ? 'Hide the Math ▲' : 'Read the Math ▼'}</span>
+                <span class="text-[11px] font-bold text-slate-400">${isCardExpanded ? 'Scale, checklist & notes open' : 'Scale, checklist & kitchen notes'}</span>
               </button>
 
               <!-- Collapsible Nutrition-Label Ingredient Table & On-Demand Tip / Kitchen Note Toggles -->
               <div class="fuel-card-collapsible-body ${isCardExpanded ? 'space-y-2 pt-1' : 'hidden'}" style="display: ${isCardExpanded ? 'block' : 'none'};">
+                <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <span data-fuel-scale-badge="${slot.slotId}" class="px-2 py-0.5 rounded-md bg-sky-950/70 border border-sky-400/50 text-sky-200 font-bold whitespace-nowrap">${scaleWeightBadgeText}</span>
+                  ${fridgePortionsBadgeHtml}
+                  ${fuelPrepNotePillHtml}
+                </div>
                 <div class="bg-slate-950/75 border border-slate-800/80 rounded-xl px-2.5 py-1 divide-y divide-slate-800/60">
                   ${scannableRowsHtml}
                 </div>
@@ -16772,8 +16932,8 @@
             aria-expanded="${isMathOpen ? 'true' : 'false'}"
             class="w-full px-3 py-2 flex items-center justify-between gap-2 text-left text-xs font-extrabold text-emerald-300 hover:text-emerald-200 transition"
           >
-            <span class="whitespace-nowrap">${isMathOpen ? 'Hide Cost Breakdown & Order Math ▲' : 'View Cost Breakdown & Order Math ▼'}</span>
-            <span class="text-[11px] font-bold text-slate-400 whitespace-nowrap">${isMathOpen ? 'Hide' : 'Details'}</span>
+            <span class="whitespace-nowrap">${isMathOpen ? 'Hide the Math ▲' : 'Read the Math ▼'}</span>
+            <span class="text-[11px] font-bold text-slate-400 whitespace-nowrap">Cost breakdown</span>
           </button>
           <div id="shop-cost-breakdown-body" class="${isMathOpen ? 'px-3 pb-2.5 pt-2 border-t border-slate-800 space-y-1 text-xs text-slate-300 leading-relaxed' : 'hidden'}">
             <div class="font-bold text-white">${periodConfig.label} (${periodConfig.subLabel})</div>
@@ -16834,15 +16994,53 @@
         state.openSubActionWhy = {};
       }
 
+      const eli12ShortShopQty = (it, currentPeriod) => {
+        const cleanMapWeekly = {
+          shop_silk: '1 Carton (1.89L)',
+          shop_tofu: '3.5 Blocks / wk',
+          shop_broccoli: '525g / wk',
+          shop_banana: '2 Bananas / wk',
+          shop_oats: '315g / wk',
+          shop_rice: '385g dry / wk',
+          shop_pb: '168g / wk',
+          shop_chia: '42g / wk',
+          shop_nooch: '84g / wk',
+          shop_iodine: '1 Box (Lasts 1 yr)',
+          shop_sesame: '1 Bottle',
+          shop_isolate: '630g / wk',
+          shop_creatine: '35g / wk',
+          shop_vitd3: '7 Caps / wk'
+        };
+        const cleanMapQuarterly = {
+          shop_silk: '9 Cartons (3 Mos)',
+          shop_tofu: '45 Blocks (3 Mos)',
+          shop_broccoli: '6.75 kg (3 Mos)',
+          shop_banana: '23 Bananas (3 Mos)',
+          shop_oats: '5 Bags (3 Mos)',
+          shop_rice: '5 kg Bag (3 Mos)',
+          shop_pb: '2 Jars (3 Mos)',
+          shop_chia: '1 Bag (3 Mos)',
+          shop_nooch: '1 kg (3 Mos)',
+          shop_iodine: '1 Box (Lasts 1 yr)',
+          shop_sesame: '1 Bottle (3 Mos)',
+          shop_isolate: '4 Tubs (3 Months)',
+          shop_creatine: '1 kg Tub (6 Months)',
+          shop_vitd3: '1 Bottle (6 Months)'
+        };
+        const map = currentPeriod === 'quarterly' ? cleanMapQuarterly : cleanMapWeekly;
+        return map[it.id] || (currentPeriod === 'quarterly' ? (it.quarterlyQty || it.qty) : (it.weeklyQty || it.qty));
+      };
+
       function renderFullWidthShopItemCard(it, isBulkCard, accentBorderClass) {
         if (!it) return '';
         const done = !!state.checkedGroceries[it.id];
         const isDetailsOpen = !!state.openShopItemDetails[it.id];
         const shortTitle = it.shortName || it.name;
-        const leftQtyPill = period === 'quarterly' ? (it.quarterlyQty || it.qty) : (it.weeklyQty || it.qty);
+        const leftQtyPill = eli12ShortShopQty(it, period);
         const rightCostPill = period === 'quarterly' ? (it.quarterlyCost || '$41.06 / 3 mos') : (it.weeklyCost || '$3.19/wk');
         const eli12Sentence = it.eli12Summary || it.note;
-        const fullMath = it.fullMathNotes || it.note;
+        const fullQtyMath = period === 'quarterly' ? (it.quarterlyQty || it.qty) : (it.weeklyQty || it.qty);
+        const fullMath = `${fullQtyMath ? `Quantity math: ${fullQtyMath}. ` : ''}${it.fullMathNotes || it.note}`;
 
         return `
           <div data-shop-card="${it.id}" class="w-full rounded-xl border p-3 space-y-2 transition ${
@@ -16858,13 +17056,13 @@
               <span class="flex-1 min-w-0 break-words ${done ? 'line-through text-slate-400' : 'text-slate-50'}" style="font-size: 15px; font-weight: 700; line-height: 1.35;">${shortTitle}</span>
             </button>
 
-            <!-- Row 2 (Aligned Pill Row Under the Title): Left Pill = Quantity | Right Pill = Cost -->
+            <!-- Row 2 (Aligned Pill Row Under the Title): Short Quantity | Cost -->
             <div class="flex flex-wrap items-center justify-between gap-1.5 pl-8">
               <span class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-md bg-slate-950 border ${isBulkCard ? 'border-indigo-500/45 text-indigo-200' : 'border-emerald-500/35 text-emerald-300'}">${leftQtyPill}</span>
               <span class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-md bg-amber-950/70 border border-amber-500/40 text-amber-300">${rightCostPill}</span>
             </div>
 
-            <!-- Row 3 (1 Short ELI12 Sentence + Read Full Math & Notes Toggle) -->
+            <!-- Row 3 (1 Short ELI12 Sentence + Read the Math Toggle) -->
             <div class="pl-8 space-y-1.5">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <p class="text-xs text-slate-200 leading-snug flex-1 min-w-[180px]">${eli12Sentence}</p>
@@ -16872,9 +17070,9 @@
                   type="button"
                   data-shop-note-toggle="${it.id}"
                   aria-expanded="${isDetailsOpen ? 'true' : 'false'}"
-                  class="shop-item-details-toggle-btn shrink-0 px-2 py-0.5 rounded-md bg-slate-950 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-sky-300 transition"
+                  class="shop-item-details-toggle-btn shrink-0 px-2.5 py-0.5 rounded-md bg-slate-950 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-sky-300 transition"
                 >
-                  ${isDetailsOpen ? 'Hide Full Math & Notes ▲' : 'Read Full Math & Notes ▼'}
+                  ${isDetailsOpen ? 'Hide the Math ▲' : 'Read the Math ▼'}
                 </button>
               </div>
               <div class="${isDetailsOpen ? 'block' : 'hidden'} text-[11px] text-slate-300 bg-slate-950/90 border border-slate-800 rounded-lg p-2.5 leading-relaxed">
@@ -16941,14 +17139,14 @@
       const bulkActionStepsSpec = [
         {
           id: 'cancelCreatineAutoship',
-          shortTitle: 'Step 1: Cancel Naked Creatine auto-ship after Order 1 arrives',
-          eli12Summary: 'Buy Order 1 at 20% off ($47.98), then cancel auto-ship and buy 1 kg at Costco ($44.99).',
+          shortTitle: 'Step 1: Cancel Naked Creatine auto-ship after Order 1',
+          eli12Summary: 'Switch to Costco 1 kg Creatine for Order 2.',
           whyDetails: 'Naked Creatine Order 1 (2 x 1.1 LB = 1,000g) is $47.98 CAD with 20% off and bundles for free shipping. However, Naked drops the renewal discount to 10% ($53.98 CAD + shipping risk), whereas Costco sells 1 kg Leanfit Micronized Creatine for $44.99 CAD regular ($34.99 on sale).'
         },
         {
           id: 'dropPeaTo3Containers',
-          shortTitle: 'Step 2: Change Naked Pea auto-ship from 4 tubs to 3 tubs before Month 6',
-          eli12Summary: '4 tubs give you a +972g buffer every 90 days, so you only need 3 tubs on Order 3 (saves $80.99).',
+          shortTitle: 'Step 2: Drop Naked Pea to 3 tubs before Month 6',
+          eli12Summary: 'You build extra powder and save $80.99 on Order 3.',
           whyDetails: 'You eat 90g/day = 8,100g per 90 days. Ordering 4 tubs (9,072g) on Order 1 ($287.96 CAD) and Order 2 ($323.96 CAD) builds a +1,944g surplus buffer, so on Order 3 (Month 6) you only need 3 tubs ($242.97 CAD), saving $80.99 CAD.'
         }
       ];
@@ -16981,7 +17179,7 @@
           </div>
         </section>
 
-        <!-- MASTER SECTION 2: 3- & 6-Month Bulk Supplements (3 Items) -->
+        <!-- MASTER SECTION 2: 3- & 6-Month Bulk Supplements (3 Items) — Default CLOSED -->
         <section id="shop-master-bulk-supplements" class="rounded-2xl border-2 border-indigo-500/55 bg-indigo-950/20 p-3.5 sm:p-4 space-y-3">
           <div class="flex items-center justify-between gap-2">
             <h3 class="text-sm sm:text-base font-extrabold text-white leading-snug">3- &amp; 6-Month Bulk Supplements (3 Items)</h3>
@@ -16991,7 +17189,7 @@
           </div>
 
           <div id="shop-master-bulk-supplements-body" class="${hideBulkSupplements ? 'hidden' : 'space-y-3'}">
-            <!-- Card 1: Post-Order Action Checklist (Full-Width Stacked ELI12 Checkboxes + Why? Toggle) -->
+            <!-- Card 1: Post-Order Action Checklist (Full-Width Stacked ELI12 Checkboxes + Read the Math Toggle) -->
             <div id="subscription-action-tracker-card" class="bg-amber-950/25 border-2 border-amber-500/50 rounded-xl p-3.5 space-y-2.5">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <h4 class="text-xs sm:text-sm font-extrabold text-white">Auto-Ship Reminders (Save Money)</h4>
@@ -17022,7 +17220,7 @@
                             aria-expanded="${isWhyOpen ? 'true' : 'false'}"
                             class="sub-why-toggle-btn shrink-0 px-2.5 py-0.5 rounded-md bg-slate-900 hover:bg-slate-800 border border-amber-500/40 text-[11px] font-extrabold text-amber-300 transition"
                           >
-                            ${isWhyOpen ? 'Hide Why ▲' : 'Why? ▼'}
+                            ${isWhyOpen ? 'Hide the Math ▲' : 'Read the Math ▼'}
                           </button>
                         </div>
                         <div class="${isWhyOpen ? 'block' : 'hidden'} text-[11px] text-slate-300 bg-slate-950 border border-slate-800 rounded-lg p-2.5 leading-relaxed">
@@ -17193,7 +17391,7 @@
       const sched = getAdaptiveMealScheduleForDay(week, dayIdx);
       const prof = state.userProfile || {};
       const exList = [...dayObj.exercises];
-      if (state.crunchDays.includes(dayIdx)) exList.push(CABLE_CRUNCH_EXERCISE);
+      if (state.crunchDays.includes(dayIdx) && !dayObj.isAiBonusWorkout && !exList.some(ex => ex.id === CABLE_CRUNCH_EXERCISE.id)) exList.push(CABLE_CRUNCH_EXERCISE);
 
       const exSummaries = exList.map((ex, i) => {
         const u = getExerciseUnit(ex.id);
@@ -17438,35 +17636,42 @@
           sets: 4,
           reps: '5-8',
           videoUrl: 'https://www.youtube.com/watch?v=SrqOu55lrYU',
-          instructions: '1. Set bench to 30 degrees and plant feet flat on the floor. 2. Lower bar under control to upper chest with elbows at 45 degrees. 3. Drive smoothly back up while keeping shoulder blades pinned.'
+          instructions: '1. Set bench to 30 degrees. 2. Lower bar to upper chest. 3. Press smoothly to lockout.'
         },
         {
-          name: 'Plate-Loaded Converging Chest Press',
+          name: 'Flat Dumbbell Bench Press',
           sets: 3,
-          reps: '10-12',
-          videoUrl: 'https://www.youtube.com/watch?v=xUm_ZglsPdw',
-          instructions: '1. Adjust seat so handles align with mid-chest. 2. Press forward cleanly without shrugging shoulders. 3. Control a 2-second negative back to a deep pec stretch.'
-        },
-        {
-          name: 'Seated Cable Fly (Mid-Chest)',
-          sets: 3,
-          reps: '12-15',
-          videoUrl: 'https://www.youtube.com/watch?v=Iwe6AmxVf7o',
-          instructions: '1. Set pulleys at chest height with a slight bend in both elbows. 2. Sweep hands together in front of your sternum and squeeze for 1 second. 3. Open slowly until you feel a controlled chest stretch.'
+          reps: '8-10',
+          videoUrl: 'https://www.youtube.com/watch?v=VmB1G1K7v94',
+          instructions: '1. Pin shoulder blades down. 2. Lower dumbbells outside chest. 3. Press up with control.'
         },
         {
           name: 'Machine Pec Deck Fly',
           sets: 3,
           reps: '12-15',
           videoUrl: 'https://www.youtube.com/watch?v=Z57CtFmRMxA',
-          instructions: '1. Adjust seat so arms stay parallel to the floor. 2. Bring handles together using your chest rather than your wrists. 3. Pause briefly at full contraction and return smoothly.'
+          instructions: '1. Keep arms parallel to floor. 2. Bring handles together at center. 3. Open slowly for stretch.'
         },
         {
-          name: 'Kneeling Cable Ab Crunch',
+          name: 'Assisted Chest Dip Machine',
+          sets: 3,
+          reps: '10-12',
+          videoUrl: 'https://www.youtube.com/watch?v=dX_nSOOJIsE',
+          instructions: '1. Lean torso slightly forward. 2. Lower until shoulders stretch gently. 3. Press back up smoothly.'
+        },
+        {
+          name: 'Overhead Cable Tricep Extension',
+          sets: 3,
+          reps: '10-15',
+          videoUrl: 'https://www.youtube.com/watch?v=YbX7Wd8jQ-Q',
+          instructions: '1. Hold rope overhead leaning forward. 2. Extend elbows straight ahead. 3. Stretch smoothly behind head.'
+        },
+        {
+          name: 'Cable Lateral Raise',
           sets: 3,
           reps: '12-15',
-          videoUrl: 'https://www.youtube.com/watch?v=ToJeyhydUxU',
-          instructions: '1. Hold rope handles near your temples with hips stacked over knees. 2. Curl ribs down toward your pelvis while exhaling forcefully. 3. Control the rise back up without pulling with your arms.'
+          videoUrl: 'https://www.youtube.com/watch?v=PPrzBWZDOhA',
+          instructions: '1. Stand sideways to low pulley. 2. Sweep arm to shoulder height. 3. Lower slowly across front.'
         }
       ],
       'Back & Biceps': [
@@ -17475,35 +17680,42 @@
           sets: 4,
           reps: '5-8',
           videoUrl: 'https://www.youtube.com/watch?v=FWJR5Ve8bnQ',
-          instructions: '1. Hinge at the hips to 45 degrees with a flat braced back. 2. Pull the bar to your lower ribs while squeezing your shoulder blades together. 3. Lower under control to a full lat stretch.'
+          instructions: '1. Hinge at hips with flat back. 2. Pull bar to lower ribs. 3. Lower to full lat stretch.'
         },
         {
           name: 'Neutral-Grip Lat Pulldown Machine',
           sets: 3,
           reps: '10-12',
           videoUrl: 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
-          instructions: '1. Lock thighs securely under the pad and grip handles shoulder-width. 2. Drive elbows straight down toward your hips. 3. Let shoulders elevate gently at the top for a complete stretch.'
+          instructions: '1. Lock thighs under pad. 2. Drive elbows straight down. 3. Control stretch at top.'
         },
         {
           name: 'Chest-Supported Machine Row',
           sets: 3,
-          reps: '10-15',
+          reps: '10-12',
           videoUrl: 'https://www.youtube.com/watch?v=GZbfZ033f74',
-          instructions: '1. Press your chest firmly against the pad throughout the set. 2. Pull handles back smoothly and hold the squeeze for 1 second. 3. Extend arms fully on every rep without rounding forward.'
+          instructions: '1. Press chest firmly on pad. 2. Pull handles back and pause. 3. Extend arms fully forward.'
+        },
+        {
+          name: 'Straight-Arm Cable Lat Pullover',
+          sets: 3,
+          reps: '12-15',
+          videoUrl: 'https://www.youtube.com/watch?v=wcVDItawocI',
+          instructions: '1. Keep soft bend in elbows. 2. Sweep bar down to thighs. 3. Return high for lat stretch.'
+        },
+        {
+          name: 'Reverse Pec Deck Rear Delt Fly',
+          sets: 3,
+          reps: '12-15',
+          videoUrl: 'https://www.youtube.com/watch?v=5YK4bgzXDp0',
+          instructions: '1. Sit facing machine pad. 2. Sweep arms wide without shrugging. 3. Control slow return.'
         },
         {
           name: 'Bayesian Cable Bicep Curl',
           sets: 3,
           reps: '12-15',
           videoUrl: 'https://www.youtube.com/watch?v=ykJmrZ5v0Oo',
-          instructions: '1. Face away from a low pulley so the working arm starts slightly behind your torso. 2. Curl smoothly without swinging your shoulder forward. 3. Lower slowly to a full stretched bicep position.'
-        },
-        {
-          name: 'Hanging Knee Raise (Core)',
-          sets: 3,
-          reps: '12-15',
-          videoUrl: 'https://www.youtube.com/watch?v=Pr1ieGZ5atk',
-          instructions: '1. Hang steadily from the bar with shoulders engaged. 2. Curl pelvis and knees upward toward your chest without swinging. 3. Lower slowly back to full extension.'
+          instructions: '1. Face away from low pulley. 2. Curl smoothly without swinging shoulder. 3. Lower to full bicep stretch.'
         }
       ],
       'Legs & Calves': [
@@ -17512,35 +17724,42 @@
           sets: 4,
           reps: '5-8',
           videoUrl: 'https://www.youtube.com/watch?v=ultWZbUMPL8',
-          instructions: '1. Brace your core and place feet shoulder-width with toes angled slightly out. 2. Sit down between your hips until thighs reach parallel or below. 3. Drive evenly through mid-foot back to standing.'
+          instructions: '1. Place feet shoulder-width apart. 2. Squat down to parallel. 3. Drive evenly through mid-foot.'
         },
         {
           name: '45-Degree Machine Leg Press',
           sets: 3,
           reps: '10-12',
           videoUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ',
-          instructions: '1. Place feet mid-to-low on the sled and keep lower back pressed into the pad. 2. Lower sled smoothly until knees reach deep flexion. 3. Push through heels without locking out knees hard.'
+          instructions: '1. Keep lower back on pad. 2. Lower sled deep with control. 3. Press without locking knees.'
         },
         {
           name: 'Seated Machine Leg Curl',
           sets: 3,
           reps: '10-15',
           videoUrl: 'https://www.youtube.com/watch?v=1Tq3QdYUuHs',
-          instructions: '1. Lock the lap pad snugly over your thighs with knees aligned to the pivot. 2. Pull heels tightly under the seat and squeeze hamstrings. 3. Control a slow return to straight legs.'
+          instructions: '1. Lock lap pad over thighs. 2. Pull heels tightly under seat. 3. Return legs straight slowly.'
         },
         {
           name: 'Machine Leg Extension',
           sets: 3,
           reps: '12-15',
           videoUrl: 'https://www.youtube.com/watch?v=YyvSfVjQeL0',
-          instructions: '1. Align knee joint with the machine axis and grip side handles firmly. 2. Extend knees smoothly to full contraction and hold 1 second. 3. Lower under steady 2-second control.'
+          instructions: '1. Align knees with pivot. 2. Extend legs to peak squeeze. 3. Lower slowly for 2 seconds.'
+        },
+        {
+          name: 'Dumbbell Romanian Deadlift',
+          sets: 3,
+          reps: '8-10',
+          videoUrl: 'https://www.youtube.com/watch?v=7j-2w4-P14I',
+          instructions: '1. Push hips back with soft knees. 2. Lower dumbbells past knees. 3. Drive hips forward tall.'
         },
         {
           name: 'Standing Machine Calf Raise',
           sets: 4,
           reps: '12-15',
           videoUrl: 'https://www.youtube.com/watch?v=gwLzBJYoWlI',
-          instructions: '1. Place balls of feet on the platform and sink heels for a full 2-second bottom stretch. 2. Press high onto your big toes and pause 1 second at the top. 3. Avoid bouncing at the bottom of the rep.'
+          instructions: '1. Sink heels for 2-second stretch. 2. Press high onto big toes. 3. Pause 1 second at top.'
         }
       ],
       'Shoulders & Arms': [
@@ -17549,35 +17768,42 @@
           sets: 4,
           reps: '5-8',
           videoUrl: 'https://www.youtube.com/watch?v=2yjwXTZQDDI',
-          instructions: '1. Squeeze glutes and brace abs with hands just outside shoulder width. 2. Press the bar straight overhead and tuck head through at lockout. 3. Lower cleanly back to your upper chest.'
+          instructions: '1. Grip bar outside shoulders. 2. Press straight overhead to lockout. 3. Lower cleanly to upper chest.'
         },
         {
           name: 'Cable Lateral Raise',
           sets: 3,
           reps: '12-15',
           videoUrl: 'https://www.youtube.com/watch?v=PPrzBWZDOhA',
-          instructions: '1. Set pulley at wrist height and stand sideways to the stack. 2. Sweep arm out to shoulder height leading gently with your elbow. 3. Lower slowly across your front without dropping tension.'
+          instructions: '1. Set pulley at wrist height. 2. Sweep arm to shoulder height. 3. Lower slowly across front.'
+        },
+        {
+          name: 'Reverse Pec Deck Rear Delt Fly',
+          sets: 3,
+          reps: '12-15',
+          videoUrl: 'https://www.youtube.com/watch?v=5YK4bgzXDp0',
+          instructions: '1. Keep chest pressed to pad. 2. Pull handles out wide. 3. Pause briefly at rear contraction.'
         },
         {
           name: 'Cable Rope Tricep Pushdown',
           sets: 3,
           reps: '10-15',
           videoUrl: 'https://www.youtube.com/watch?v=2-LAMcpzODU',
-          instructions: '1. Pin elbows tight to your ribs with a slight forward lean. 2. Push rope down and split ends apart at lockout. 3. Control the rise until forearms meet biceps.'
+          instructions: '1. Pin elbows tight to ribs. 2. Push rope down and split ends. 3. Control rise back up.'
+        },
+        {
+          name: 'Overhead Cable Tricep Extension',
+          sets: 3,
+          reps: '10-15',
+          videoUrl: 'https://www.youtube.com/watch?v=YbX7Wd8jQ-Q',
+          instructions: '1. Hold rope overhead leaning forward. 2. Extend forearms straight ahead. 3. Stretch smoothly behind head.'
         },
         {
           name: 'Machine Preacher Bicep Curl',
           sets: 3,
           reps: '10-15',
           videoUrl: 'https://www.youtube.com/watch?v=fIWP-FRFNU0',
-          instructions: '1. Set seat height so armpits rest flush over the top edge of the pad. 2. Curl handles smoothly toward your shoulders without lifting elbows. 3. Lower slowly to near full extension.'
-        },
-        {
-          name: 'Cable Woodchopper (Core)',
-          sets: 3,
-          reps: '12-15',
-          videoUrl: 'https://www.youtube.com/watch?v=pAplQXk3dkU',
-          instructions: '1. Stand sideways to a mid-height cable with straight arms and braced abs. 2. Rotate smoothly through your torso across your body. 3. Control the return without letting the stack slam.'
+          instructions: '1. Rest arms flush on pad. 2. Curl handles toward shoulders. 3. Lower slowly to near lockout.'
         }
       ],
       'Full Body': [
@@ -17586,44 +17812,120 @@
           sets: 4,
           reps: '5-8',
           videoUrl: 'https://www.youtube.com/watch?v=WzvsIU9FW60',
-          instructions: '1. Stand centered inside the handles with feet hip-width and chest tall. 2. Push the floor away with your legs while keeping your spine neutral. 3. Stand tall at lockout and hinge down under control.'
+          instructions: '1. Stand centered inside handles. 2. Push floor away with legs. 3. Hinge down under control.'
         },
         {
           name: 'Machine Incline Chest Press',
           sets: 3,
           reps: '10-12',
           videoUrl: 'https://www.youtube.com/watch?v=xUm_ZglsPdw',
-          instructions: '1. Align handles with upper chest and keep shoulder blades tucked back. 2. Drive smoothly to full arm extension without shrugging. 3. Lower slowly to a deep stretch.'
+          instructions: '1. Align handles with upper chest. 2. Press forward cleanly. 3. Lower slowly for stretch.'
         },
         {
-          name: 'Seated Cable Row (Neutral Grip)',
+          name: 'Seated Cable Row',
           sets: 3,
-          reps: '10-15',
+          reps: '10-12',
           videoUrl: 'https://www.youtube.com/watch?v=GZbfZ033f74',
-          instructions: '1. Sit tall with slight knee bend and braced lower back. 2. Pull handle toward your lower abdomen and squeeze your mid-back. 3. Extend arms fully forward under control.'
+          instructions: '1. Sit tall with neutral spine. 2. Pull handle to lower ribs. 3. Extend arms fully forward.'
         },
         {
-          name: 'Machine Leg Press',
+          name: '45-Degree Machine Leg Press',
           sets: 3,
-          reps: '10-15',
+          reps: '10-12',
           videoUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ',
-          instructions: '1. Position feet shoulder-width in the middle of the footplate. 2. Lower sled slowly until thighs approach your torso without lifting hips. 3. Drive powerfully back up leaving a slight knee bend.'
+          instructions: '1. Place feet shoulder-width on sled. 2. Lower deeply with control. 3. Drive smoothly back up.'
+        },
+        {
+          name: 'Cable Lateral Raise',
+          sets: 3,
+          reps: '12-15',
+          videoUrl: 'https://www.youtube.com/watch?v=PPrzBWZDOhA',
+          instructions: '1. Stand sideways to low pulley. 2. Raise arm to shoulder height. 3. Control slow descent.'
         },
         {
           name: 'Seated Machine Calf Raise',
           sets: 3,
           reps: '12-15',
           videoUrl: 'https://www.youtube.com/watch?v=JbyjNymZOt0',
-          instructions: '1. Rest pad snugly across lower thighs with heels hanging off the block. 2. Pause 2 seconds in the deep bottom stretch on every rep. 3. Press to peak contraction and hold for 1 second.'
+          instructions: '1. Pause 2 seconds at bottom stretch. 2. Press up onto big toes. 3. Hold peak squeeze 1 second.'
         }
       ]
     };
 
-    function buildAiBonusWorkoutSystemPrompt(selectedTarget) {
-      return `System: You are an elite sports scientist creating a 5-exercise hypertrophy workout for the user's selected target: ${selectedTarget}. You must return ONLY a raw JSON array of 5 objects matching this exact schema: [{ "name": "Exercise Name", "sets": 3, "reps": "8-12", "videoUrl": "https://youtube.com/...", "instructions": "3 short step-by-step instructions" }]. Rules: Exercise 1 must be a heavy compound (5-8 reps). Exercises 2-4 must be machines/cables (10-15 reps). Exercise 5 must be core or calves. Do not output markdown, only valid JSON.`;
+    function isForbiddenBonusExerciseName(name) {
+      const n = String(name || '').toLowerCase();
+      if (!n) return false;
+      return /\b(ab|abs|abdominal|crunch|crunches|core|plank|planks|dead\s*bug|sit[\s-]*up|sit[\s-]*ups|leg\s*raise|knee\s*raise|woodchopper|wood\s*chop|russian\s*twist|ab\s*wheel|pallof|hollow\s*body|pull[\s-]*up|pull[\s-]*ups|chin[\s-]*up|chin[\s-]*ups)\b/i.test(n);
     }
 
-    function parseAiBonusWorkoutJson(rawText) {
+    function getBonusMovementPatternKey(name) {
+      const n = String(name || '').toLowerCase();
+      if (/(pec\s*deck|chest\s*fly|cable\s*fly|dumbbell\s*fly|\bfly\b)/.test(n) && !/rear\s*delt|reverse/.test(n)) return 'chest_fly';
+      if (/incline.*(bench|chest\s*press|press)/.test(n)) return 'chest_incline_press';
+      if (/(flat|barbell|dumbbell|machine|converging).*(bench|chest\s*press)/.test(n)) return 'chest_flat_press';
+      if (/dip/.test(n)) return 'chest_dip';
+      if (/rear\s*delt|reverse\s*pec|face\s*pull/.test(n)) return 'rear_delt';
+      if (/lateral\s*raise/.test(n)) return 'lateral_raise';
+      if (/overhead\s*press|shoulder\s*press|military\s*press/.test(n)) return 'overhead_press';
+      if (/lat\s*pulldown|pulldown/.test(n)) return 'lat_pulldown';
+      if (/pullover/.test(n)) return 'lat_pullover';
+      if (/chest[\s-]*supported.*row|seated\s*(cable|machine)\s*row/.test(n)) return 'horizontal_row_machine';
+      if (/bent[\s-]*over.*row|barbell.*row|t[\s-]*bar.*row|dumbbell.*row|\brow\b/.test(n)) return 'horizontal_row_free';
+      if (/tricep.*pushdown|rope.*pushdown|pushdown/.test(n)) return 'tricep_pushdown';
+      if (/overhead.*tricep|skull\s*crusher|tricep\s*extension/.test(n)) return 'tricep_overhead';
+      if (/preacher|bicep|hammer\s*curl|cable\s*curl|incline\s*curl|\bcurl\b/.test(n) && !/leg\s*curl|hamstring/.test(n)) return 'bicep_curl';
+      if (/squat/.test(n)) return 'squat';
+      if (/leg\s*press|hack\s*squat/.test(n)) return 'leg_press';
+      if (/leg\s*curl|hamstring\s*curl/.test(n)) return 'leg_curl';
+      if (/leg\s*extension/.test(n)) return 'leg_extension';
+      if (/deadlift|rdl|hip\s*thrust/.test(n)) return 'hip_hinge';
+      if (/calf\s*raise/.test(n)) return 'calf_raise';
+      return n.replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    }
+
+    function sanitizeAiBonusExercises(items, targetLabel) {
+      const fallbackPool = AI_BONUS_WORKOUT_FALLBACKS[targetLabel] || AI_BONUS_WORKOUT_FALLBACKS['Full Body'];
+      const seenNames = new Set();
+      const seenPatterns = new Set();
+      const accepted = [];
+
+      const tryAccept = (item, idx) => {
+        if (!item || typeof item !== 'object') return;
+        const name = String(item.name || '').trim();
+        if (!name || isForbiddenBonusExerciseName(name)) return;
+        const normName = name.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        const patternKey = getBonusMovementPatternKey(name);
+        if (seenNames.has(normName) || seenPatterns.has(patternKey)) return;
+        seenNames.add(normName);
+        seenPatterns.add(patternKey);
+        const setsNum = Math.max(1, Math.min(6, parseInt(item.sets, 10) || (idx === 0 ? 4 : 3)));
+        const repsStr = String(item.reps || (idx === 0 ? '5-8' : '10-15')).trim();
+        const rawUrl = String(item.videoUrl || '').trim();
+        const videoUrl = /^https?:\/\//i.test(rawUrl)
+          ? rawUrl
+          : `https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' proper form tutorial')}`;
+        const instructions = String(item.instructions || '1. Set stable posture. 2. Control full range of motion. 3. Pause briefly at peak contraction.').trim();
+        accepted.push({ name, sets: setsNum, reps: repsStr, videoUrl, instructions });
+      };
+
+      (Array.isArray(items) ? items : []).forEach((item, idx) => {
+        if (accepted.length < 7) tryAccept(item, idx);
+      });
+
+      if (accepted.length < 5) {
+        fallbackPool.forEach((fb, idx) => {
+          if (accepted.length < 5) tryAccept(fb, accepted.length + idx);
+        });
+      }
+
+      return accepted.slice(0, 7);
+    }
+
+    function buildAiBonusWorkoutSystemPrompt(selectedTarget) {
+      return `System: You are an elite sports scientist. Generate a custom workout for the target: ${selectedTarget}. You must return ONLY a valid JSON array containing exactly 5 to 7 exercises. Rule 1: ALL EXERCISE NAMES MUST BE UNIQUE. Rule 2: Do NOT include duplicate movement patterns. Rule 3: DO NOT include any abdominal, core, or pull-up exercises under any circumstances. Schema: [{ "name": "Exercise", "sets": 3, "reps": "8-12", "videoUrl": "https..." }]. Output JSON only.`;
+    }
+
+    function parseAiBonusWorkoutJson(rawText, targetLabel) {
       if (!rawText || typeof rawText !== 'string') return null;
       let cleaned = rawText.trim();
       cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
@@ -17635,20 +17937,66 @@
       try {
         const parsed = JSON.parse(cleaned);
         if (!Array.isArray(parsed) || parsed.length === 0) return null;
-        const normalized = parsed.slice(0, 5).map((item, idx) => {
-          const name = String((item && item.name) || `Bonus Exercise ${idx + 1}`).trim();
-          const setsNum = Math.max(1, Math.min(6, parseInt(item && item.sets, 10) || (idx === 0 ? 4 : 3)));
-          const repsStr = String((item && item.reps) || (idx === 0 ? '5-8' : '10-15')).trim();
-          const rawUrl = String((item && item.videoUrl) || '').trim();
-          const videoUrl = /^https?:\/\//i.test(rawUrl)
-            ? rawUrl
-            : `https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' proper form tutorial')}`;
-          const instructions = String((item && item.instructions) || '1. Set stable posture. 2. Control full range of motion. 3. Pause briefly at peak contraction.').trim();
-          return { name, sets: setsNum, reps: repsStr, videoUrl, instructions };
-        });
-        return normalized.length === 5 ? normalized : null;
+        const sanitized = sanitizeAiBonusExercises(parsed, targetLabel || 'Full Body');
+        return (sanitized.length >= 5 && sanitized.length <= 7) ? sanitized : null;
       } catch (e) {
         return null;
+      }
+    }
+
+    function toggleDay6BonusHabit(habitType) {
+      const week = state.currentWeek || 1;
+      const wKey = String(week);
+      if (!state.customDayScheduleByWeek || !Array.isArray(state.customDayScheduleByWeek[wKey])) return;
+      const day6Obj = state.customDayScheduleByWeek[wKey][5];
+      if (!day6Obj || typeof day6Obj !== 'object' || !day6Obj.isAiBonusWorkout) return;
+      const curList = Array.isArray(day6Obj.exercises) ? day6Obj.exercises.slice() : [];
+
+      if (habitType === 'abs') {
+        const exists = curList.some(ex => ex.id === CABLE_CRUNCH_EXERCISE.id);
+        if (exists) {
+          day6Obj.exercises = curList.filter(ex => ex.id !== CABLE_CRUNCH_EXERCISE.id);
+          saveState();
+          renderWorkoutView();
+          showToast('Removed Daily Abs from Bonus Day 6');
+        } else {
+          day6Obj.exercises = [...curList, JSON.parse(JSON.stringify(CABLE_CRUNCH_EXERCISE))];
+          saveState();
+          renderWorkoutView();
+          showToast('Added Daily Abs to the bottom of Bonus Day 6');
+        }
+        return;
+      }
+
+      if (habitType === 'pullups') {
+        const exists = curList.some(ex => ex.id === 'day1_pullups');
+        if (exists) {
+          day6Obj.exercises = curList.filter(ex => ex.id !== 'day1_pullups');
+          saveState();
+          renderWorkoutView();
+          renderPullupView();
+          showToast('Removed Daily Pull-Ups from Bonus Day 6');
+        } else {
+          const pullupTemplate = (DAYS_SCHEDULE[0] && DAYS_SCHEDULE[0].exercises && DAYS_SCHEDULE[0].exercises[0])
+            ? JSON.parse(JSON.stringify(DAYS_SCHEDULE[0].exercises[0]))
+            : {
+                id: 'day1_pullups',
+                name: 'Overhand Pull-Ups (Max Effort)',
+                isBodyweightRepsOnly: true,
+                badge: 'Pull-Ups First • #1',
+                sets: 5,
+                reps: 'Max Reps',
+                restSec: 90,
+                restLabel: '90 sec',
+                videoUrl: 'https://youtu.be/w_yuTRQd6HA',
+                notes: 'Perform 5 sets of maximum strict overhand reps with 90s rest between sets.'
+              };
+          day6Obj.exercises = [pullupTemplate, ...curList];
+          saveState();
+          renderWorkoutView();
+          renderPullupView();
+          showToast('Added Daily Pull-Ups to the top of Bonus Day 6');
+        }
       }
     }
 
@@ -17659,11 +18007,11 @@
       targetBtns.forEach(b => { b.disabled = true; b.classList.add('opacity-60'); });
       if (statusEl) {
         statusEl.classList.remove('hidden');
-        statusEl.textContent = `Building 5-exercise ${targetLabel} bonus workout for Day 6 via Gemini 3.8 Flash...`;
+        statusEl.textContent = `Building custom ${targetLabel} bonus workout (5-7 unique exercises) for Day 6 via Gemini 3.8 Flash...`;
       }
 
       const hiddenSystemPrompt = buildAiBonusWorkoutSystemPrompt(targetLabel);
-      const userPrompt = `Generate the 5-exercise hypertrophy workout JSON array for ${targetLabel} now.`;
+      const userPrompt = `Generate a valid JSON array of 5 to 7 unique hypertrophy exercises for ${targetLabel}. No abs, no core, no pull-ups.`;
       let rawJsonText = '';
 
       // 1. Try server-side proxy (/api/gemini) in strict JSON mode
@@ -17706,10 +18054,13 @@
         } catch (e) {}
       }
 
-      let exercisesJson = parseAiBonusWorkoutJson(rawJsonText);
+      let exercisesJson = parseAiBonusWorkoutJson(rawJsonText, targetLabel);
       const usedFallback = !exercisesJson;
       if (!exercisesJson) {
-        exercisesJson = AI_BONUS_WORKOUT_FALLBACKS[targetLabel] || AI_BONUS_WORKOUT_FALLBACKS['Full Body'];
+        exercisesJson = sanitizeAiBonusExercises(
+          AI_BONUS_WORKOUT_FALLBACKS[targetLabel] || AI_BONUS_WORKOUT_FALLBACKS['Full Body'],
+          targetLabel
+        );
       }
 
       const week = state.currentWeek || 1;
@@ -17717,7 +18068,7 @@
       const formattedExercises = exercisesJson.map((item, idx) => {
         const slug = String(item.name || `ex_${idx + 1}`).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 28) || `ex_${idx + 1}`;
         const exId = `ai_bonus_w${week}_d6_${idx + 1}_${slug}`;
-        const restSec = idx === 0 ? 120 : (idx === 4 ? 60 : 75);
+        const restSec = idx === 0 ? 120 : 90;
         const cues = String(item.instructions || '')
           .split(/(?:\s*\d+\.\s+|\n+)/)
           .map(s => s.trim())
@@ -17735,14 +18086,14 @@
           isAiGeneratedBonus: true,
           note: idx === 0
             ? `Heavy Compound • ${item.instructions}`
-            : (idx === 4 ? `Core / Calves Finisher • ${item.instructions}` : `Machine / Cable Hypertrophy • ${item.instructions}`),
-          defaultLoadMode: (idx >= 1 && idx <= 3) ? 'pin_stack' : undefined
+            : `Machine / Cable Hypertrophy • ${item.instructions}`,
+          defaultLoadMode: (idx >= 1) ? 'pin_stack' : undefined
         };
         if (typeof EXERCISE_META !== 'undefined') {
           EXERCISE_META[exId] = {
             name: item.name,
-            equipType: idx === 0 ? 'barbell' : (idx === 4 ? 'cable' : 'machine'),
-            equipLabel: idx === 0 ? 'Compound Lift' : (idx === 4 ? 'Core / Calves' : 'Machine / Cable'),
+            equipType: idx === 0 ? 'barbell' : 'machine',
+            equipLabel: idx === 0 ? 'Compound Lift' : 'Machine / Cable',
             defaultWeightLbs: idx === 0 ? 95 : 50,
             videoUrl: item.videoUrl,
             videoTitle: `${item.name} — Form Guide`,
@@ -17764,7 +18115,7 @@
         daySub: 'AI Bonus',
         target: targetLabel,
         title: `Bonus Day 6 • ${targetLabel}`,
-        subtitle: `5-Exercise Hypertrophy Plan (${targetLabel})`,
+        subtitle: `${formattedExercises.length}-Exercise Hypertrophy Plan (${targetLabel})`,
         shortName: targetLabel,
         muscleGroup: targetLabel,
         selectedTarget: targetLabel,
@@ -17784,11 +18135,8 @@
       state.showRestDayMobility = false;
       state.openRestMobilityDrawer = false;
       state.openDayWorkoutPicker = false;
-      state.activeFocusedExId = formattedExercises[0] ? formattedExercises[0].id : null;
-      if (formattedExercises[0]) {
-        if (!state.cardCollapsedState) state.cardCollapsedState = {};
-        state.cardCollapsedState[getExercisePanelKey(5, formattedExercises[0].id)] = 'expanded';
-      }
+      // Keep generated Day 6 cards closed by default (Progressive Disclosure)
+      state.activeFocusedExId = null;
       saveState();
 
       targetBtns.forEach(b => { b.disabled = false; b.classList.remove('opacity-60'); });
@@ -17808,7 +18156,7 @@
       renderPullupView();
       if (typeof renderVeganView === 'function') renderVeganView();
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      showToast(`Day 6 Bonus Workout created: ${targetLabel} (5 exercises)`);
+      showToast(`Day 6 Bonus Workout created: ${targetLabel} (${formattedExercises.length} exercises)`);
     }
 
     function openGeminiCoachModal() {
@@ -18254,7 +18602,7 @@
           const dayIdx = state.selectedDayIndex;
           const dayObj = getScheduledDayObject(week, dayIdx);
           const exList = [...dayObj.exercises];
-          if (state.crunchDays.includes(dayIdx)) exList.push(CABLE_CRUNCH_EXERCISE);
+          if (state.crunchDays.includes(dayIdx) && !dayObj.isAiBonusWorkout && !exList.some(ex => ex.id === CABLE_CRUNCH_EXERCISE.id)) exList.push(CABLE_CRUNCH_EXERCISE);
           for (const ex of exList) {
             for (let s = 1; s <= ex.sets; s++) {
               const e = getLogEntry(week, dayIdx, ex.id, s);
@@ -18277,7 +18625,7 @@
           const dIdx = state.selectedDayIndex || 0;
           const dayObj = getScheduledDayObject(week, dIdx);
           const exList = [...dayObj.exercises];
-          if (state.crunchDays.includes(dIdx)) exList.push(CABLE_CRUNCH_EXERCISE);
+          if (state.crunchDays.includes(dIdx) && !dayObj.isAiBonusWorkout && !exList.some(ex => ex.id === CABLE_CRUNCH_EXERCISE.id)) exList.push(CABLE_CRUNCH_EXERCISE);
           const anyOpen = exList.some(e => isExerciseImgOpen(dIdx, e.id));
           exList.forEach(e => {
             setExerciseImgOpen(dIdx, e.id, !anyOpen);
