@@ -2147,8 +2147,8 @@ test('Subtest 34: Default-Closed Progressive Disclosure, ELI12 Fuel Summary, Str
   assert.equal(fuel1.title, 'Pre-Workout Shake');
   assert.equal(fuel1.statsLine, '140 Calories | 32g Protein');
   assert.equal(fuel1.ingredientsLine, '35g Pea Protein. 5g Creatine. 350ml Water.');
-  assert.equal(fuel1.mathToggleClosedLabel, 'Read the Math ▼');
-  assert.equal(fuel1.mathToggleOpenLabel, 'Hide the Math ▲');
+  assert.equal(fuel1.mathToggleClosedLabel, 'Read Full Math ▼');
+  assert.equal(fuel1.mathToggleOpenLabel, 'Hide Full Math ▲');
   assert.equal(fuel1.logButtonLabel, '✓ Log Meal');
 
   // 3. Sanitizer strictly enforces 5-7 exercises even on noisy/short/oversized AI arrays & cleans all fallback templates
@@ -2197,4 +2197,21 @@ test('Subtest 34: Default-Closed Progressive Disclosure, ELI12 Fuel Summary, Str
   assert.equal(afterRemovePullups.added, false);
   assert.equal(afterRemovePullups.nextDayObj.exercises.length, baseCount);
   assert.equal(afterRemovePullups.nextDayObj.exercises.some(ex => ex.id === 'day1_pullups'), false);
+});
+
+test('Subtest 35: Redundant Routing Active-Day AI Bonus Injection & Overflow-Visible Stepper Spec', async () => {
+  const mod = await import('./workoutLogic');
+  assert.equal(mod.UNCRUSHABLE_NUMBER_DISPLAY_STYLE.includes('overflow: visible;'), true);
+
+  const day7Bonus = mod.parseAndBuildAiBonusDayObject(mod.AI_BONUS_WORKOUT_FALLBACKS_CLEAN['Legs & Calves'], 'Legs & Calves', 1);
+  assert.ok(day7Bonus);
+  const updatedMap = mod.injectAiBonusWorkoutIntoActiveDay({}, 1, 6, day7Bonus);
+  assert.equal(updatedMap['1'][6], day7Bonus);
+  assert.equal(updatedMap['1'][5], 5);
+
+  const day6Bonus = mod.parseAndBuildAiBonusDayObject(mod.AI_BONUS_WORKOUT_FALLBACKS_CLEAN['Chest Focus'], 'Chest Focus', 1);
+  assert.ok(day6Bonus);
+  const updatedMap2 = mod.injectAiBonusWorkoutIntoActiveDay(updatedMap, 1, 5, day6Bonus);
+  assert.equal(updatedMap2['1'][5], day6Bonus);
+  assert.equal(updatedMap2['1'][6], day7Bonus);
 });

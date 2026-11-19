@@ -121,12 +121,19 @@
       text-align: center;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
+      overflow: visible;
       font-size: 15px;
       font-weight: 700;
       letter-spacing: -0.03em;
       padding: 0;
       background: transparent;
       border: 0;
+    }
+    .weight-stepper .workout-input::placeholder,
+    .reps-stepper .workout-input::placeholder {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: -0.04em;
     }
     @media (max-width: 380px) {
       .set-row-uncrushable-grid {
@@ -8908,6 +8915,25 @@
               ${restOptionHtml}
             </div>
           </div>
+
+          <!-- 3. Location A (Redundant Routing): Generate Custom AI Bonus Workout for Active Day -->
+          <div id="day-picker-ai-bonus-section" class="pt-2.5 border-t border-slate-800 space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-1.5">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <svg class="w-3.5 h-3.5 text-purple-300 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+                <span class="text-[11px] sm:text-xs font-extrabold text-purple-200 leading-tight">Generate Custom AI Bonus Workout</span>
+              </div>
+              <span class="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded bg-purple-500/20 text-purple-200 border border-purple-400/35">Day ${safeDayIdx + 1}</span>
+            </div>
+            <div data-ai-bonus-grid="day-picker" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+              <button type="button" data-bonus-target="Chest Focus" data-target-day-idx="${safeDayIdx}" class="ai-bonus-target-btn day-picker-ai-bonus-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-purple-500/20 border border-slate-700 hover:border-purple-400 text-slate-100 text-[11px] font-extrabold text-center transition">Chest Focus</button>
+              <button type="button" data-bonus-target="Back & Biceps" data-target-day-idx="${safeDayIdx}" class="ai-bonus-target-btn day-picker-ai-bonus-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-purple-500/20 border border-slate-700 hover:border-purple-400 text-slate-100 text-[11px] font-extrabold text-center transition">Back &amp; Biceps</button>
+              <button type="button" data-bonus-target="Legs & Calves" data-target-day-idx="${safeDayIdx}" class="ai-bonus-target-btn day-picker-ai-bonus-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-purple-500/20 border border-slate-700 hover:border-purple-400 text-slate-100 text-[11px] font-extrabold text-center transition">Legs &amp; Calves</button>
+              <button type="button" data-bonus-target="Shoulders & Arms" data-target-day-idx="${safeDayIdx}" class="ai-bonus-target-btn day-picker-ai-bonus-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-purple-500/20 border border-slate-700 hover:border-purple-400 text-slate-100 text-[11px] font-extrabold text-center transition">Shoulders &amp; Arms</button>
+              <button type="button" data-bonus-target="Full Body" data-target-day-idx="${safeDayIdx}" style="grid-column: span 2;" class="ai-bonus-target-btn day-picker-ai-bonus-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-purple-500/20 border border-purple-500/45 hover:border-purple-400 text-purple-200 text-[11px] font-extrabold text-center transition">Full Body</button>
+            </div>
+            <div data-ai-bonus-status="day-picker" class="ai-bonus-gen-status hidden text-[11px] font-bold text-amber-300 bg-amber-500/10 border border-amber-400/35 rounded-lg px-2.5 py-1.5"></div>
+          </div>
         </div>
       `;
     }
@@ -8948,6 +8974,15 @@
               applyWorkoutOrRestChoiceToDay(week, dayIdx, slotNum);
             }
           }
+        });
+      });
+
+      containerEl.querySelectorAll('.day-picker-ai-bonus-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-bonus-target');
+          const rawDayIdx = parseInt(btn.getAttribute('data-target-day-idx'), 10);
+          const resolvedDayIdx = isNaN(rawDayIdx) ? dayIdx : rawDayIdx;
+          if (target) generateAiBonusWorkoutForActiveDay(target, resolvedDayIdx);
         });
       });
     }
@@ -12491,8 +12526,8 @@
                   <span class="truncate"> ${isImgOpen ? 'Hide Form & Setup' : 'Form & Setup'}</span>
                   <span class="text-[10px] text-emerald-400 font-extrabold shrink-0">${isImgOpen ? '▲' : '▼'}</span>
                 </button>
-                <button type="button" data-rest-sec="${ex.restSec}" data-ex-name="${ex.name}" class="quick-rest-btn shrink-0 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 text-[11px] font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 whitespace-nowrap transition">
-                   ${ex.restLabel}
+                <button type="button" data-rest-sec="${ex.restSec || 90}" data-ex-name="${ex.name}" class="quick-rest-btn shrink-0 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 text-[11px] font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 whitespace-nowrap transition">
+                   ${ex.restLabel || ((ex.restSec || 90) >= 120 ? '2 min' : ((ex.restSec || 90) === 60 ? '60 sec' : '1.5 min'))}
                 </button>
                 <a href="${ex.videoUrl}" data-ex-video-btn="${ex.id}" target="_blank" rel="noopener noreferrer" class="shrink-0 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 whitespace-nowrap transition">
                    Video
@@ -13123,13 +13158,13 @@
         const day6AbsBtn = document.getElementById('day6-toggle-daily-abs-btn');
         if (day6AbsBtn) {
           day6AbsBtn.addEventListener('click', () => {
-            toggleDay6BonusHabit('abs');
+            toggleDay6BonusHabit('abs', dayIdx);
           });
         }
         const day6PullupsBtn = document.getElementById('day6-toggle-daily-pullups-btn');
         if (day6PullupsBtn) {
           day6PullupsBtn.addEventListener('click', () => {
-            toggleDay6BonusHabit('pullups');
+            toggleDay6BonusHabit('pullups', dayIdx);
           });
         }
       }
@@ -16753,7 +16788,7 @@
 
               <!-- Collapsible Math & Full Kitchen Tools Toggle (Default CLOSED) -->
               <button type="button" data-toggle-fuel-card="${slot.slotId}" aria-expanded="${isCardExpanded ? 'true' : 'false'}" class="fuel-card-toggle-btn w-full flex items-center justify-between gap-2 bg-slate-950/80 hover:bg-slate-950 border border-slate-800/90 text-sky-300 rounded-xl px-3 py-2 text-xs font-extrabold transition">
-                <span>${isCardExpanded ? 'Hide the Math ▲' : 'Read the Math ▼'}</span>
+                <span>${isCardExpanded ? 'Hide Full Math ▲' : 'Read Full Math ▼'}</span>
                 <span class="text-[11px] font-bold text-slate-400">${isCardExpanded ? 'Scale, checklist & notes open' : 'Scale, checklist & kitchen notes'}</span>
               </button>
 
@@ -16995,7 +17030,7 @@
             aria-expanded="${isMathOpen ? 'true' : 'false'}"
             class="w-full px-3 py-2 flex items-center justify-between gap-2 text-left text-xs font-extrabold text-emerald-300 hover:text-emerald-200 transition"
           >
-            <span class="whitespace-nowrap">${isMathOpen ? 'Hide the Math ▲' : 'Read the Math ▼'}</span>
+            <span class="whitespace-nowrap">${isMathOpen ? 'Hide Full Math ▲' : 'Read Full Math ▼'}</span>
             <span class="text-[11px] font-bold text-slate-400 whitespace-nowrap">Cost breakdown</span>
           </button>
           <div id="shop-cost-breakdown-body" class="${isMathOpen ? 'px-3 pb-2.5 pt-2 border-t border-slate-800 space-y-1 text-xs text-slate-300 leading-relaxed' : 'hidden'}">
@@ -17135,7 +17170,7 @@
                   aria-expanded="${isDetailsOpen ? 'true' : 'false'}"
                   class="shop-item-details-toggle-btn shrink-0 px-2.5 py-0.5 rounded-md bg-slate-950 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-sky-300 transition"
                 >
-                  ${isDetailsOpen ? 'Hide the Math ▲' : 'Read the Math ▼'}
+                  ${isDetailsOpen ? 'Hide Full Math ▲' : 'Read Full Math ▼'}
                 </button>
               </div>
               <div class="${isDetailsOpen ? 'block' : 'hidden'} text-[11px] text-slate-300 bg-slate-950/90 border border-slate-800 rounded-lg p-2.5 leading-relaxed">
@@ -17283,7 +17318,7 @@
                             aria-expanded="${isWhyOpen ? 'true' : 'false'}"
                             class="sub-why-toggle-btn shrink-0 px-2.5 py-0.5 rounded-md bg-slate-900 hover:bg-slate-800 border border-amber-500/40 text-[11px] font-extrabold text-amber-300 transition"
                           >
-                            ${isWhyOpen ? 'Hide the Math ▲' : 'Read the Math ▼'}
+                            ${isWhyOpen ? 'Hide Full Math ▲' : 'Read Full Math ▼'}
                           </button>
                         </div>
                         <div class="${isWhyOpen ? 'block' : 'hidden'} text-[11px] text-slate-300 bg-slate-950 border border-slate-800 rounded-lg p-2.5 leading-relaxed">
@@ -18007,26 +18042,30 @@
       }
     }
 
-    function toggleDay6BonusHabit(habitType) {
+    function toggleDay6BonusHabit(habitType, explicitDayIdx) {
       const week = state.currentWeek || 1;
       const wKey = String(week);
       if (!state.customDayScheduleByWeek || !Array.isArray(state.customDayScheduleByWeek[wKey])) return;
-      const day6Obj = state.customDayScheduleByWeek[wKey][5];
-      if (!day6Obj || typeof day6Obj !== 'object' || !day6Obj.isAiBonusWorkout) return;
-      const curList = Array.isArray(day6Obj.exercises) ? day6Obj.exercises.slice() : [];
+      const resolvedDayIdx = (typeof explicitDayIdx === 'number' && !isNaN(explicitDayIdx))
+        ? Math.max(0, Math.min(6, explicitDayIdx))
+        : Math.max(0, Math.min(6, Number(state.selectedDayIndex ?? 5)));
+      const bonusDayObj = state.customDayScheduleByWeek[wKey][resolvedDayIdx];
+      if (!bonusDayObj || typeof bonusDayObj !== 'object' || !bonusDayObj.isAiBonusWorkout) return;
+      const curList = Array.isArray(bonusDayObj.exercises) ? bonusDayObj.exercises.slice() : [];
+      const dayNumLabel = `Day ${resolvedDayIdx + 1}`;
 
       if (habitType === 'abs') {
         const exists = curList.some(ex => ex.id === CABLE_CRUNCH_EXERCISE.id);
         if (exists) {
-          day6Obj.exercises = curList.filter(ex => ex.id !== CABLE_CRUNCH_EXERCISE.id);
+          bonusDayObj.exercises = curList.filter(ex => ex.id !== CABLE_CRUNCH_EXERCISE.id);
           saveState();
           renderWorkoutView();
-          showToast('Removed Daily Abs from Bonus Day 6');
+          showToast(`Removed Daily Abs from Bonus ${dayNumLabel}`);
         } else {
-          day6Obj.exercises = [...curList, JSON.parse(JSON.stringify(CABLE_CRUNCH_EXERCISE))];
+          bonusDayObj.exercises = [...curList, JSON.parse(JSON.stringify(CABLE_CRUNCH_EXERCISE))];
           saveState();
           renderWorkoutView();
-          showToast('Added Daily Abs to the bottom of Bonus Day 6');
+          showToast(`Added Daily Abs to the bottom of Bonus ${dayNumLabel}`);
         }
         return;
       }
@@ -18034,11 +18073,11 @@
       if (habitType === 'pullups') {
         const exists = curList.some(ex => ex.id === 'day1_pullups');
         if (exists) {
-          day6Obj.exercises = curList.filter(ex => ex.id !== 'day1_pullups');
+          bonusDayObj.exercises = curList.filter(ex => ex.id !== 'day1_pullups');
           saveState();
           renderWorkoutView();
           renderPullupView();
-          showToast('Removed Daily Pull-Ups from Bonus Day 6');
+          showToast(`Removed Daily Pull-Ups from Bonus ${dayNumLabel}`);
         } else {
           const pullupTemplate = (DAYS_SCHEDULE[0] && DAYS_SCHEDULE[0].exercises && DAYS_SCHEDULE[0].exercises[0])
             ? JSON.parse(JSON.stringify(DAYS_SCHEDULE[0].exercises[0]))
@@ -18054,24 +18093,28 @@
                 videoUrl: 'https://youtu.be/w_yuTRQd6HA',
                 notes: 'Perform 5 sets of maximum strict overhand reps with 90s rest between sets.'
               };
-          day6Obj.exercises = [pullupTemplate, ...curList];
+          bonusDayObj.exercises = [pullupTemplate, ...curList];
           saveState();
           renderWorkoutView();
           renderPullupView();
-          showToast('Added Daily Pull-Ups to the top of Bonus Day 6');
+          showToast(`Added Daily Pull-Ups to the top of Bonus ${dayNumLabel}`);
         }
       }
     }
 
-    async function generateAiBonusWorkoutForDay6(selectedTarget) {
+    async function generateAiBonusWorkoutForActiveDay(selectedTarget, explicitDayIdx) {
       const targetLabel = String(selectedTarget || 'Full Body').trim();
-      const statusEl = document.getElementById('ai-bonus-gen-status');
+      const targetDayIdx = (typeof explicitDayIdx === 'number' && !isNaN(explicitDayIdx))
+        ? Math.max(0, Math.min(6, explicitDayIdx))
+        : Math.max(0, Math.min(6, Number(state.selectedDayIndex !== undefined ? state.selectedDayIndex : 5)));
+      const targetDayNum = targetDayIdx + 1;
+      const statusEls = document.querySelectorAll('.ai-bonus-gen-status, #ai-bonus-gen-status');
       const targetBtns = document.querySelectorAll('.ai-bonus-target-btn');
       targetBtns.forEach(b => { b.disabled = true; b.classList.add('opacity-60'); });
-      if (statusEl) {
-        statusEl.classList.remove('hidden');
-        statusEl.textContent = `Building custom ${targetLabel} bonus workout (5-7 unique exercises) for Day 6 via Gemini 3.8 Flash...`;
-      }
+      statusEls.forEach(el => {
+        el.classList.remove('hidden');
+        el.textContent = `Building custom ${targetLabel} bonus workout (5-7 unique exercises) for Day ${targetDayNum} via Gemini 3.8 Flash...`;
+      });
 
       const hiddenSystemPrompt = buildAiBonusWorkoutSystemPrompt(targetLabel);
       const userPrompt = `Generate a valid JSON array of 5 to 7 unique hypertrophy exercises for ${targetLabel}. No abs, no core, no pull-ups.`;
@@ -18130,8 +18173,9 @@
       const wKey = String(week);
       const formattedExercises = exercisesJson.map((item, idx) => {
         const slug = String(item.name || `ex_${idx + 1}`).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 28) || `ex_${idx + 1}`;
-        const exId = `ai_bonus_w${week}_d6_${idx + 1}_${slug}`;
+        const exId = `ai_bonus_w${week}_d${targetDayNum}_${idx + 1}_${slug}`;
         const restSec = idx === 0 ? 120 : 90;
+        const restLabel = restSec >= 120 ? '2 min' : '1.5 min';
         const cues = String(item.instructions || '')
           .split(/(?:\s*\d+\.\s+|\n+)/)
           .map(s => s.trim())
@@ -18144,6 +18188,7 @@
           sets: item.sets,
           reps: item.reps,
           restSec,
+          restLabel,
           videoUrl: item.videoUrl,
           instructions: item.instructions,
           isAiGeneratedBonus: true,
@@ -18171,13 +18216,13 @@
       });
 
       const bonusDayObject = {
-        id: `ai_bonus_day6_w${week}`,
+        id: `ai_bonus_day${targetDayNum}_w${week}`,
         isCustomGeneratedDay: true,
         isAiBonusWorkout: true,
         isRestDay: false,
         daySub: 'AI Bonus',
         target: targetLabel,
-        title: `Bonus Day 6 • ${targetLabel}`,
+        title: `Bonus Day ${targetDayNum} • ${targetLabel}`,
         subtitle: `${formattedExercises.length}-Exercise Hypertrophy Plan (${targetLabel})`,
         shortName: targetLabel,
         muscleGroup: targetLabel,
@@ -18189,26 +18234,24 @@
       };
 
       const baseSched = getCustomDayScheduleForWeek(week).slice();
-      baseSched[5] = bonusDayObject;
+      baseSched[targetDayIdx] = bonusDayObject;
       if (!state.customDayScheduleByWeek || typeof state.customDayScheduleByWeek !== 'object') {
         state.customDayScheduleByWeek = {};
       }
       state.customDayScheduleByWeek[wKey] = baseSched;
-      state.selectedDayIndex = 5;
+      state.selectedDayIndex = targetDayIdx;
       state.showRestDayMobility = false;
       state.openRestMobilityDrawer = false;
       state.openDayWorkoutPicker = false;
-      // Keep generated Day 6 cards closed by default (Progressive Disclosure)
+      // Keep generated exercise cards closed by default (Progressive Disclosure)
       state.activeFocusedExId = null;
       saveState();
 
       targetBtns.forEach(b => { b.disabled = false; b.classList.remove('opacity-60'); });
-      if (statusEl) {
-        statusEl.classList.add('hidden');
-        statusEl.textContent = '';
-      }
-      const targetsPanel = document.getElementById('ai-bonus-targets-panel');
-      if (targetsPanel) targetsPanel.classList.add('hidden');
+      statusEls.forEach(el => {
+        el.classList.add('hidden');
+        el.textContent = '';
+      });
       const modal = document.getElementById('gemini-ai-modal');
       if (modal) modal.classList.add('hidden');
 
@@ -18219,12 +18262,19 @@
       renderPullupView();
       if (typeof renderVeganView === 'function') renderVeganView();
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      showToast(`Day 6 Bonus Workout created: ${targetLabel} (${formattedExercises.length} exercises)`);
+      showToast(`Day ${targetDayNum} Bonus Workout created: ${targetLabel} (${formattedExercises.length} exercises)`);
+    }
+
+    function generateAiBonusWorkoutForDay6(selectedTarget, explicitDayIdx) {
+      return generateAiBonusWorkoutForActiveDay(selectedTarget, explicitDayIdx);
     }
 
     function openGeminiCoachModal() {
       const m = document.getElementById('gemini-ai-modal');
       if (m) {
+        const activeDayNum = Math.max(0, Math.min(6, Number(state.selectedDayIndex ?? 0))) + 1;
+        const badgeEl = document.getElementById('coach-ai-bonus-active-day-label');
+        if (badgeEl) badgeEl.textContent = `Day ${activeDayNum}`;
         m.classList.remove('hidden');
         renderGeminiChatMessages();
       }
@@ -20379,10 +20429,10 @@
           toggleAiBonusBtn.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
         });
       }
-      document.querySelectorAll('.ai-bonus-target-btn').forEach(btn => {
+      document.querySelectorAll('#gemini-ai-modal .ai-bonus-target-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const target = btn.getAttribute('data-bonus-target');
-          if (target) generateAiBonusWorkoutForDay6(target);
+          if (target) generateAiBonusWorkoutForActiveDay(target, state.selectedDayIndex);
         });
       });
 
@@ -21096,31 +21146,6 @@
         <button type="button" id="close-gemini-ai-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
       </div>
 
-      <!-- Dynamic AI Bonus Workout Generator (Day 6 Structured JSON Schema Engine) -->
-      <div class="shrink-0 bg-slate-950/90 border border-emerald-500/40 rounded-xl p-2.5 space-y-2">
-        <button
-          type="button"
-          id="toggle-ai-bonus-generator-btn"
-          aria-expanded="false"
-          aria-controls="ai-bonus-targets-panel"
-          class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 text-xs font-extrabold tracking-tight shadow-md shadow-emerald-500/20 transition flex items-center justify-between gap-2"
-        >
-          <span>Generate Bonus Workout (Day 6)</span>
-          <span class="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-950/20 text-slate-950">5 Exercises</span>
-        </button>
-        <div id="ai-bonus-targets-panel" class="hidden space-y-2 pt-0.5">
-          <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Choose Your Day 6 Target Muscle Group:</div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-            <button type="button" data-bonus-target="Chest Focus" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-slate-100 text-[11px] font-extrabold text-center transition">Chest Focus</button>
-            <button type="button" data-bonus-target="Back & Biceps" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-slate-100 text-[11px] font-extrabold text-center transition">Back &amp; Biceps</button>
-            <button type="button" data-bonus-target="Legs & Calves" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-slate-100 text-[11px] font-extrabold text-center transition">Legs &amp; Calves</button>
-            <button type="button" data-bonus-target="Shoulders & Arms" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-slate-100 text-[11px] font-extrabold text-center transition">Shoulders &amp; Arms</button>
-            <button type="button" data-bonus-target="Full Body" style="grid-column: span 2;" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-emerald-500/45 hover:border-emerald-400 text-emerald-200 text-[11px] font-extrabold text-center transition">Full Body</button>
-          </div>
-          <div id="ai-bonus-gen-status" class="hidden text-[11px] font-bold text-amber-300 bg-amber-500/10 border border-amber-400/35 rounded-lg px-2.5 py-1.5"></div>
-        </div>
-      </div>
-
       <!-- 1-Tap Smart Coaching Chips (Zero Typing Required in the Gym!) -->
       <div class="space-y-1 shrink-0">
         <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">1-Tap Gym, Fuel Plan &amp; Swap Prompts:</span>
@@ -21134,7 +21159,7 @@
       </div>
 
       <!-- Chat Messages Scroll Area -->
-      <div id="gemini-chat-messages" class="flex-1 min-h-[180px] max-h-[280px] overflow-y-auto bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2.5 text-xs">
+      <div id="gemini-chat-messages" class="flex-1 min-h-[150px] max-h-[240px] overflow-y-auto bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2.5 text-xs">
         <!-- Populated dynamically by JS -->
       </div>
 
@@ -21146,6 +21171,26 @@
         </button>
       </div>
 
+      <!-- Location B (Redundant Routing): Quick-Action AI Workout Generator Below Chat Input -->
+      <div id="coach-ai-bonus-section" class="shrink-0 bg-slate-950/90 border border-emerald-500/40 rounded-xl p-2.5 space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-1.5">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <svg class="w-3.5 h-3.5 text-emerald-300 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            <span class="text-[11px] sm:text-xs font-extrabold text-emerald-300 leading-tight">Generate Custom AI Bonus Workout</span>
+          </div>
+          <span id="coach-ai-bonus-active-day-label" class="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-200 border border-emerald-400/35">Active Day</span>
+        </div>
+        <div id="ai-bonus-targets-panel" data-ai-bonus-grid="coach-modal" class="space-y-2">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <button type="button" data-bonus-target="Chest Focus" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-slate-100 text-[11px] font-extrabold text-center transition">Chest Focus</button>
+            <button type="button" data-bonus-target="Back & Biceps" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-slate-100 text-[11px] font-extrabold text-center transition">Back &amp; Biceps</button>
+            <button type="button" data-bonus-target="Legs & Calves" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-slate-100 text-[11px] font-extrabold text-center transition">Legs &amp; Calves</button>
+            <button type="button" data-bonus-target="Shoulders & Arms" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-slate-100 text-[11px] font-extrabold text-center transition">Shoulders &amp; Arms</button>
+            <button type="button" data-bonus-target="Full Body" style="grid-column: span 2;" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-emerald-500/45 hover:border-emerald-400 text-emerald-200 text-[11px] font-extrabold text-center transition">Full Body</button>
+          </div>
+          <div id="ai-bonus-gen-status" data-ai-bonus-status="coach-modal" class="ai-bonus-gen-status hidden text-[11px] font-bold text-amber-300 bg-amber-500/10 border border-amber-400/35 rounded-lg px-2.5 py-1.5"></div>
+        </div>
+      </div>
 
     </div>
   </div>

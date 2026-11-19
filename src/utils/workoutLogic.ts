@@ -6991,7 +6991,7 @@ export const UNCRUSHABLE_STEPPER_BTN_STYLE =
   'flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;';
 
 export const UNCRUSHABLE_NUMBER_DISPLAY_STYLE =
-  'flex-grow: 1; min-width: 0; width: 100%; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 15px; font-weight: 700;';
+  'flex-grow: 1; min-width: 0; width: 100%; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: visible; font-size: 15px; font-weight: 700;';
 
 // ============================================================================
 // UPGRADE 4: 1-TAP DELETE NOTE HELPER
@@ -8257,10 +8257,29 @@ export function formatEli12FuelCardSummary(
     title,
     statsLine,
     ingredientsLine,
-    mathToggleClosedLabel: 'Read the Math ▼',
-    mathToggleOpenLabel: 'Hide the Math ▲',
+    mathToggleClosedLabel: 'Read Full Math ▼',
+    mathToggleOpenLabel: 'Hide Full Math ▲',
     logButtonLabel: '✓ Log Meal'
   };
+}
+
+export function injectAiBonusWorkoutIntoActiveDay(
+  customDayScheduleByWeek: Record<string, Array<number | CustomAiBonusDayObject>> | undefined,
+  week: number,
+  activeDayIdx: number,
+  bonusDayObj: CustomAiBonusDayObject
+): Record<string, Array<number | CustomAiBonusDayObject>> {
+  const wKey = String(Math.max(1, Math.floor(Number(week) || 1)));
+  const safeIdx = Math.max(0, Math.min(6, Math.floor(Number(activeDayIdx) || 0)));
+  const nextMap: Record<string, Array<number | CustomAiBonusDayObject>> = {
+    ...(customDayScheduleByWeek || {})
+  };
+  const existing = Array.isArray(nextMap[wKey]) && nextMap[wKey].length === 7
+    ? [...nextMap[wKey]]
+    : [0, 1, 2, 3, 4, 5, 6];
+  existing[safeIdx] = bonusDayObj;
+  nextMap[wKey] = existing;
+  return nextMap;
 }
 
 export function injectAiBonusWorkoutIntoDay6(
@@ -8268,15 +8287,6 @@ export function injectAiBonusWorkoutIntoDay6(
   week: number,
   bonusDayObj: CustomAiBonusDayObject
 ): Record<string, Array<number | CustomAiBonusDayObject>> {
-  const wKey = String(Math.max(1, Math.floor(Number(week) || 1)));
-  const nextMap: Record<string, Array<number | CustomAiBonusDayObject>> = {
-    ...(customDayScheduleByWeek || {})
-  };
-  const existing = Array.isArray(nextMap[wKey]) && nextMap[wKey].length === 7
-    ? [...nextMap[wKey]]
-    : [0, 1, 2, 3, 4, 5, 6];
-  existing[5] = bonusDayObj;
-  nextMap[wKey] = existing;
-  return nextMap;
+  return injectAiBonusWorkoutIntoActiveDay(customDayScheduleByWeek, week, 5, bonusDayObj);
 }
 
