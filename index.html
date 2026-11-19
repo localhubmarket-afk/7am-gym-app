@@ -248,6 +248,9 @@
 
         <!-- Collapsible Schedule, Sync & Stats Drawer (Progressive Disclosure — Symmetrical 2-Column Grid) -->
         <div id="gym-admin-tools-drawer" class="hidden pt-2.5 border-t border-slate-800/80 space-y-2.5">
+          <!-- Moved Active-Day Actions (Swap to Rest, Change Workout, Abs On, Gear Checklist, Water & Next Fuel) -->
+          <div id="gym-admin-today-actions-slot" class="space-y-2 pb-2 border-b border-slate-800/80"></div>
+
           <div class="grid grid-cols-2 gap-2" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
             <button type="button" id="gym-open-rest-scheduler-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Customize weekly Rest Days without losing logged sets">
               Change Rest Days (6 &amp; 7)
@@ -6634,20 +6637,12 @@
 
     function computePyramidCascadingSetSuggestions(completedSetIdx, loggedReps, prevBestMax, totalSets) {
       const safeTotalSets = Math.max(5, Math.min(9, parseInt(totalSets, 10) || 5));
-      const maxBuildSet = safeTotalSets - 1;
       const k = Math.max(1, Math.min(safeTotalSets, parseInt(completedSetIdx, 10) || 1));
       const n = Math.max(1, parseInt(loggedReps, 10) || k);
-      const maxSuggest = Math.max(4, safeTotalSets, parseInt(prevBestMax, 10) || getPullupPreviousBestMax());
       const suggestedRepsBySet = {};
-      if (k >= 1 && k < maxBuildSet) {
-        let cur = n;
-        for (let nextSet = k + 1; nextSet <= maxBuildSet; nextSet++) {
-          cur += 1;
-          suggestedRepsBySet[nextSet] = String(cur);
-        }
-        suggestedRepsBySet[safeTotalSets] = String(maxSuggest);
-      } else if (k === maxBuildSet) {
-        suggestedRepsBySet[safeTotalSets] = String(maxSuggest);
+      for (let nextSet = k + 1; nextSet <= safeTotalSets; nextSet++) {
+        // Strict Pyramid Auto-Increment: Set k target reps strictly equals k (e.g., Set 6 = 6, Set 8 = 8, Set 9 = 9)
+        suggestedRepsBySet[nextSet] = String(nextSet);
       }
       return {
         restSec: Math.max(10, n * 10),
@@ -7793,14 +7788,14 @@
       const key = getPullupCustomSetKey(safeWeek, safeDay);
       state.pullupCustomSetCounts[key] = next;
 
-      // Pre-populate newly added Pyramid sets with ascending target reps (Set 1..N-1 = 1..N-1, Set N = Max)
+      // Pre-populate all unlogged Pyramid sets with strict ascending target reps (Set k = k, e.g., Set 6 = 6, Set 8 = 8, Set 9 = 9)
       if (next > current && isPullupSessionPyramidMode(safeDay, safeWeek)) {
         for (let s = 1; s <= next; s++) {
           const mapInfo = PULLUP_DAY_TO_EX_ID[safeDay];
           const wKey = mapInfo ? `w${safeWeek}_${mapInfo.dayIdx}_${mapInfo.exId}_${s}` : '';
           const existingW = wKey && state.workoutLogs ? state.workoutLogs[wKey] : null;
           if (!existingW || !existingW.done) {
-            const targetRep = s < next ? String(s) : String(Math.max(next, getPullupPreviousBestMax()));
+            const targetRep = String(s);
             syncPullupStateBothWays(safeWeek, safeDay, s, { reps: targetRep, done: false });
           }
         }
@@ -7861,11 +7856,10 @@
 
     function getPullupDefaultReps(dayNum, setIdx, week) {
       const safeWeek = week || state.currentWeek || 1;
-      const totalSets = getEffectivePullupSetsCount(safeWeek, dayNum);
+      const safeSet = Math.max(1, parseInt(setIdx, 10) || 1);
       if (isPullupSessionPyramidMode(dayNum, safeWeek)) {
-        return setIdx < totalSets
-          ? String(setIdx)
-          : String(Math.max(totalSets, getPullupPreviousBestMax()));
+        // Strict Pyramid Auto-Increment: Set k strictly equals k (Set 1 = 1 .. Set 6 = 6 .. Set 9 = 9)
+        return String(safeSet);
       }
       if (dayNum === 3 || dayNum === 4) {
         return String(state.pullupTrainingSetReps || 3);
@@ -7882,9 +7876,9 @@
 
     function getPullupSetRestSec(dayNum, setIdx, repsVal, fallbackSec, week) {
       const safeWeek = week || state.currentWeek || 1;
-      const totalSets = getEffectivePullupSetsCount(safeWeek, dayNum);
+      const safeSet = Math.max(1, parseInt(setIdx, 10) || 1);
       if (isPullupSessionPyramidMode(dayNum, safeWeek)) {
-        const r = parseInt(repsVal, 10) || (setIdx < totalSets ? setIdx : Math.max(totalSets, getPullupPreviousBestMax()));
+        const r = parseInt(repsVal, 10) || safeSet;
         return Math.max(10, r * 10);
       }
       if (dayNum === 5) {
@@ -8043,6 +8037,10 @@
       return norm;
     }
 
+    function isCustomGeneratedDayObject(slotVal) {
+      return Boolean(slotVal && typeof slotVal === 'object' && Array.isArray(slotVal.exercises) && slotVal.exercises.length > 0);
+    }
+
     function getCustomDayScheduleForWeek(week) {
       const safeWeek = Math.max(1, Math.floor(Number(week) || 1));
       const wKey = String(safeWeek);
@@ -8053,7 +8051,10 @@
         Array.isArray(state.customDayScheduleByWeek[wKey]) &&
         state.customDayScheduleByWeek[wKey].length === 7
       ) {
-        return state.customDayScheduleByWeek[wKey].map(v => Math.max(0, Math.min(6, Math.floor(Number(v) || 0))));
+        return state.customDayScheduleByWeek[wKey].map(v => {
+          if (isCustomGeneratedDayObject(v)) return v;
+          return Math.max(0, Math.min(6, Math.floor(Number(v) || 0)));
+        });
       }
       const hasExplicitWeekRest = Boolean(
         state &&
@@ -8114,7 +8115,7 @@
       let lastLiftDayIdx = null;
       for (let i = 6; i >= 0; i--) {
         const slot = prevSchedule[i];
-        if (slot >= 0 && slot <= 4) {
+        if (typeof slot === 'number' && slot >= 0 && slot <= 4) {
           lastLiftSlot = slot;
           lastLiftDayIdx = i;
           break;
@@ -8128,7 +8129,7 @@
       let trailingLiftStreak = 0;
       for (let i = 6; i >= 0; i--) {
         const slot = prevSchedule[i];
-        if (slot >= 0 && slot <= 4) {
+        if ((typeof slot === 'number' && slot >= 0 && slot <= 4) || isCustomGeneratedDayObject(slot)) {
           trailingLiftStreak++;
         } else {
           break;
@@ -8287,7 +8288,24 @@
     function getDayAssignment(week, calendarDayIdx) {
       const dIdx = Math.max(0, Math.min(6, Math.floor(Number(calendarDayIdx) || 0)));
       const sched = getCustomDayScheduleForWeek(week);
-      const rawSlot = Math.max(0, Math.min(6, sched[dIdx] !== undefined ? sched[dIdx] : dIdx));
+      const rawEntry = sched[dIdx];
+
+      if (isCustomGeneratedDayObject(rawEntry)) {
+        return {
+          calendarDayIdx: dIdx,
+          dayNumber: dIdx + 1,
+          templateSlotIndex: 5,
+          daySub: rawEntry.daySub || rawEntry.target || 'AI Bonus',
+          isRestDay: false,
+          pullupSessionNum: null,
+          isBonusRepeat: true,
+          isAiBonusWorkout: true,
+          customWorkout: rawEntry,
+          logSlotKey: `d${dIdx}_ai_bonus`
+        };
+      }
+
+      const rawSlot = Math.max(0, Math.min(6, rawEntry !== undefined ? rawEntry : dIdx));
       const isRest = (rawSlot === 5 || rawSlot === 6);
 
       if (isRest) {
@@ -8343,6 +8361,44 @@
     function getScheduledDayObject(week, calendarDayIdx) {
       const safeWeek = Math.max(1, parseInt(week, 10) || state.currentWeek || 1);
       const assign = getDayAssignment(safeWeek, calendarDayIdx);
+      if (assign.isAiBonusWorkout && assign.customWorkout) {
+        const cw = assign.customWorkout;
+        const aiExercises = Array.isArray(cw.exercises) ? cw.exercises.map((ex, idx) => {
+          const exId = ex.id || `ai_bonus_w${safeWeek}_${idx + 1}`;
+          if (!EXERCISE_META[exId]) {
+            const stepLines = String(ex.instructions || ex.notes || '')
+              .split(/(?:\n|(?=\b\d+\.\s))/)
+              .map(s => s.trim())
+              .filter(Boolean);
+            EXERCISE_META[exId] = {
+              equipType: idx === 0 ? 'barbell' : (idx === 4 ? 'cable' : 'machine'),
+              equipLabel: idx === 0 ? 'Compound Lift' : (idx === 4 ? 'Core / Calves' : 'Machine / Cable'),
+              defaultWeightLbs: idx === 0 ? 95 : 50,
+              steps: stepLines.length >= 2 ? stepLines : [
+                ex.instructions || 'Set up safely and control every rep.',
+                'Pause briefly at full contraction.',
+                'Lower slowly over 2 to 3 seconds.'
+              ]
+            };
+          }
+          return Object.assign({}, ex, { id: exId });
+        }) : [];
+        return {
+          dayShort: `Day ${assign.dayNumber}`,
+          dayFull: `Day ${assign.dayNumber}`,
+          daySub: cw.daySub || cw.target || 'AI Bonus',
+          title: cw.title || `AI Bonus • ${cw.target || 'Hypertrophy'}`,
+          subtitle: cw.subtitle || `5-Exercise Hypertrophy Plan (${cw.target || 'Bonus'})`,
+          warmupType: cw.warmupType || (String(cw.target || '').toLowerCase().includes('leg') ? 'lower' : 'upper'),
+          exercises: aiExercises,
+          templateSlotIndex: 5,
+          isRestDay: false,
+          pullupDay: 0,
+          isBonusRepeat: true,
+          isAiBonusWorkout: true,
+          logSlotKey: assign.logSlotKey || `d${calendarDayIdx}_ai_bonus`
+        };
+      }
       const base = DAYS_SCHEDULE[assign.templateSlotIndex] || DAYS_SCHEDULE[0];
       const mappedExercises = Array.isArray(base.exercises)
         ? base.exercises.map(ex => {
@@ -11388,6 +11444,63 @@
         const waterLitersTarget = (targetWaterTodayMl / 1000).toFixed(targetWaterTodayMl % 1000 === 0 ? 0 : 1);
         const shoeWearObj = calculateShoeWearFromWorkoutRecord();
 
+        // Populate Active-Day Actions inside the collapsible Schedule, Sync & Stats Drawer (Aggressive Progressive Disclosure — Zero Deleted Features!)
+        const gymAdminTodayActionsSlot = document.getElementById('gym-admin-today-actions-slot');
+        if (gymAdminTodayActionsSlot) {
+          gymAdminTodayActionsSlot.innerHTML = `
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Today&apos;s Workout &amp; Quick Controls (${dayObj.dayShort})</div>
+            <div class="grid grid-cols-2 gap-2" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+              ${dayAssignment.isRestDay ? `
+                <button type="button" id="admin-train-today-btn" aria-expanded="${state.openDayWorkoutPicker ? 'true' : 'false'}" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-400/45 text-[11px] font-extrabold transition whitespace-nowrap inline-flex items-center justify-center text-center">
+                  ${state.openDayWorkoutPicker ? 'Hide Workouts ▲' : 'Change Today&apos;s Workout ▼'}
+                </button>
+              ` : `
+                <button type="button" id="banner-swap-to-rest-btn" style="min-height: 40px;" class="text-[11px] font-extrabold px-2 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-500/35 transition whitespace-nowrap inline-flex items-center justify-center text-center" title="Make today a Rest Day and shift remaining lifting workouts forward without losing logged data">
+                  Swap Today to Rest Day
+                </button>
+                <button type="button" id="banner-change-workout-btn" aria-expanded="${state.openDayWorkoutPicker ? 'true' : 'false'}" style="min-height: 40px;" class="text-[11px] font-extrabold px-2 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 transition whitespace-nowrap inline-flex items-center justify-center text-center" title="Choose any of the 5 workouts or Rest Day for today">
+                  ${state.openDayWorkoutPicker ? 'Hide Workouts ▲' : 'Change Today&apos;s Workout ▼'}
+                </button>
+              `}
+              <button type="button" id="toggle-crunch-day-btn" style="min-height: 40px;" class="text-[11px] font-extrabold px-2 py-2 rounded-xl border whitespace-nowrap transition inline-flex items-center justify-center text-center ${
+                hasCrunchToday
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : 'bg-slate-800 text-slate-300 border-slate-700'
+              }">
+                ${hasCrunchToday ? '✓ Abs On' : '+ Optional Abs'}
+              </button>
+              <button type="button" id="banner-open-shoe-gear-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Open My Gear &amp; Gym Shoe Lifespan Tracker">
+                <span>Gear Checklist</span>
+                <span id="banner-shoe-health-readout" class="hidden">${shoeWearObj.healthPct}%</span>
+              </button>
+              ${!dayAssignment.isRestDay ? `
+                <button type="button" id="banner-water-add-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 border border-sky-500/35 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Tap to log +500 ml of water (1 bottle)">
+                  <span>Water: ${waterLitersLogged}/${waterLitersTarget}L (+500)</span>
+                </button>
+                <button type="button" id="banner-open-vegan-fuel-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/30 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
+                  <span>Next Fuel: ${adaptiveMealPreview.nextPostWorkoutTime12}</span>
+                </button>
+              ` : ''}
+            </div>
+            ${dayAssignment.isBonusRepeat && !dayAssignment.isRestDay ? `
+              <div>
+                <button type="button" id="banner-bonus-advance-week-btn" style="min-height: 38px;" class="w-full text-xs font-extrabold px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/45 transition whitespace-nowrap inline-flex items-center justify-center text-center">
+                  Advance to Week ${week + 1} • Day 1 Instead
+                </button>
+              </div>
+            ` : ''}
+            ${!dayAssignment.isRestDay && state.openDayWorkoutPicker ? buildDayWorkoutPickerHtml(week, dayIdx) : ''}
+          `;
+          bindDayWorkoutPickerEvents(gymAdminTodayActionsSlot, week, dayIdx);
+          const adminTrainTodayBtn = document.getElementById('admin-train-today-btn');
+          if (adminTrainTodayBtn) {
+            adminTrainTodayBtn.addEventListener('click', () => {
+              state.openDayWorkoutPicker = !state.openDayWorkoutPicker;
+              renderWorkoutView();
+            });
+          }
+        }
+
         banner.className = 'bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5';
 
         if (dayAssignment.isRestDay) {
@@ -11396,22 +11509,14 @@
               <!-- Row 1: Eyebrow + Rest Day Badge -->
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex flex-wrap items-center gap-1.5">
-                  <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">WK ${week} • ${dayObj.dayShort}</span>
-                  <span class="text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full whitespace-nowrap">REST DAY</span>
+                  <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">WK ${week} • ${dayObj.dayShort.toUpperCase()}</span>
                 </div>
-                <span class="text-xs font-bold text-slate-300 whitespace-nowrap">${dayAssignment.daySub}</span>
+                <span class="text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full whitespace-nowrap">REST DAY</span>
               </div>
 
-              <!-- Row 2: Title on left + Abs On toggle pill on right -->
+              <!-- Row 2: Title -->
               <div class="flex items-center justify-between gap-2">
                 <h2 class="text-base sm:text-lg font-extrabold text-white leading-snug">Rest &amp; Muscle Recovery Day</h2>
-                <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-xs font-extrabold px-2.5 py-1.5 rounded-xl border whitespace-nowrap transition ${
-                  hasCrunchToday
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                    : 'bg-slate-800 text-slate-300 border-slate-700'
-                }">
-                  ${hasCrunchToday ? '✓ Abs On' : '+ Optional Abs'}
-                </button>
               </div>
 
               <!-- Row 3: Train Today Instead Action Button -->
@@ -11459,84 +11564,40 @@
           `;
         } else {
           banner.innerHTML = `
-            <div class="space-y-2.5">
-              <!-- Row 1: WK 3 • DAY 2 • 6:00 AM (LIFT DAY badge) on the left + Progress: 0/25 sets on the right -->
-              <div class="space-y-1.5">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <div class="flex flex-wrap items-center gap-1.5">
-                    <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">WK ${week} • ${dayObj.dayShort} • ${gymStart12}</span>
-                    <span class="text-[10px] font-extrabold bg-sky-500/15 text-sky-300 border border-sky-400/30 px-2 py-0.5 rounded-full whitespace-nowrap">LIFT DAY</span>
-                    ${dayAssignment.isBonusRepeat ? `<span class="text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-full whitespace-nowrap">BONUS SESSION</span>` : ''}
-                  </div>
-                  <div class="flex items-center gap-1.5 text-xs">
-                    <span class="font-semibold text-slate-300 whitespace-nowrap">Progress: <strong class="text-white">${todayDoneSets}/${todayTotalSets} sets</strong></span>
-                    <span class="font-mono font-bold text-emerald-400">${dayPct}%</span>
-                  </div>
+            <div class="space-y-2">
+              <!-- Row 1: WK 1 • DAY 2 • 7:00 AM (Left) | LIFT DAY badge (Right) -->
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">WK ${week} • ${dayObj.dayShort.toUpperCase()} • ${gymStart12}</span>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  ${dayObj.isAiBonusWorkout ? `<span class="text-[10px] font-extrabold bg-purple-500/20 text-purple-200 border border-purple-400/45 px-2 py-0.5 rounded-full whitespace-nowrap">AI BONUS</span>` : (dayAssignment.isBonusRepeat ? `<span class="text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-full whitespace-nowrap">BONUS</span>` : '')}
+                  <span class="text-[10px] font-extrabold bg-sky-500/15 text-sky-300 border border-sky-400/30 px-2 py-0.5 rounded-full whitespace-nowrap">LIFT DAY</span>
                 </div>
-                <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
+              </div>
+
+              <!-- Row 2: Workout Title -->
+              <h2 class="text-base sm:text-lg font-extrabold text-white leading-snug">${dayObj.title}</h2>
+
+              <!-- Row 3: Progress: X/Y sets bar -->
+              <div class="space-y-1.5 pt-0.5">
+                <div class="flex items-center justify-between gap-2 text-xs">
+                  <span class="font-semibold text-slate-300 whitespace-nowrap">Progress: <strong class="text-white">${todayDoneSets}/${todayTotalSets} sets</strong></span>
+                  <span class="font-mono font-bold text-emerald-400">${dayPct}%</span>
+                </div>
+                <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
                   <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-300" style="width: ${dayPct}%"></div>
                 </div>
               </div>
 
-              <!-- Row 2: Workout Title (Lower Body 1 • Quad Focus) on the left + ✓ Abs On toggle pill aligned on the right -->
-              <div class="flex items-center justify-between gap-2">
-                <h2 class="text-base sm:text-lg font-extrabold text-white leading-snug">${dayObj.title}</h2>
-                <button type="button" id="toggle-crunch-day-btn" class="shrink-0 text-xs font-extrabold px-2.5 py-1.5 rounded-xl border whitespace-nowrap transition ${
-                  hasCrunchToday
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                    : 'bg-slate-800 text-slate-300 border-slate-700'
-                }">
-                  ${hasCrunchToday ? '✓ Abs On' : '+ Abs'}
-                </button>
-              </div>
-
-              <!-- Row 3 (Symmetrical 2-Column Grid): Swap Today to Rest Day | Change Today's Workout ▼ -->
-              <div class="grid grid-cols-2 gap-2" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
-                <button type="button" id="banner-swap-to-rest-btn" style="min-height: 40px;" class="text-[11px] font-extrabold px-2 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-500/35 transition whitespace-nowrap inline-flex items-center justify-center text-center" title="Make today a Rest Day and shift remaining lifting workouts forward without losing logged data">
-                  Swap Today to Rest Day
-                </button>
-                <button type="button" id="banner-change-workout-btn" aria-expanded="${state.openDayWorkoutPicker ? 'true' : 'false'}" style="min-height: 40px;" class="text-[11px] font-extrabold px-2 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 transition whitespace-nowrap inline-flex items-center justify-center text-center" title="Choose any of the 5 workouts or Rest Day for today">
-                  ${state.openDayWorkoutPicker ? 'Hide Workouts ▲' : 'Change Today\'s Workout ▼'}
-                </button>
-              </div>
-
-              ${dayAssignment.isBonusRepeat ? `
-                <div>
-                  <button type="button" id="banner-bonus-advance-week-btn" style="min-height: 38px;" class="w-full text-xs font-extrabold px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/45 transition whitespace-nowrap inline-flex items-center justify-center text-center">
-                    Advance to Week ${week + 1} • Day 1 Instead
-                  </button>
-                </div>
-              ` : ''}
-
-              ${state.openDayWorkoutPicker ? buildDayWorkoutPickerHtml(week, dayIdx) : ''}
-
-              <!-- Row 4 (Symmetrical 3-Column Quick Status Row): Water: 0/3L (+500) | Next Fuel: 7:15 AM | Gear Checklist -->
-              <div class="grid grid-cols-3 gap-1.5 pt-0.5" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
-                <button type="button" id="banner-water-add-btn" style="min-height: 38px;" class="px-1.5 py-1.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 border border-sky-500/35 text-[10.5px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Tap to log +500 ml of water (1 bottle)">
-                  <span>Water: ${waterLitersLogged}/${waterLitersTarget}L (+500)</span>
-                </button>
-                <button type="button" id="banner-open-vegan-fuel-btn" style="min-height: 38px;" class="px-1.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/30 text-[10.5px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
-                  <span>Next Fuel: ${adaptiveMealPreview.nextPostWorkoutTime12}</span>
-                </button>
-                <button type="button" id="banner-open-shoe-gear-btn" style="min-height: 38px;" class="px-1.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[10.5px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Open My Gear & Gym Shoe Lifespan Tracker">
-                  <span>Gear Checklist</span>
-                  <span id="banner-shoe-health-readout" class="hidden">${shoeWearObj.healthPct}%</span>
-                </button>
-              </div>
-
-              <!-- Hidden legacy time controls preserved for programmatic compatibility (visible Gym Time bar is at the top of the tab) -->
+              <!-- Hidden legacy time controls preserved for programmatic compatibility -->
               <div class="hidden">
                 <button type="button" data-banner-step-mins="-15" class="banner-gym-step-btn">-15m</button>
                 <select id="banner-gym-time-input" aria-label="Select gym time in 15-minute increments">
                   ${build15MinGymTimeOptionsHtml(dayGymSched.startTime)}
                 </select>
                 <button type="button" data-banner-step-mins="15" class="banner-gym-step-btn">+15m</button>
+                <button type="button" id="banner-pullup-timer-btn" data-pullup-sec="90"></button>
+                <button type="button" data-gym-preset="07:00" class="banner-gym-preset-btn"></button>
               </div>
-            </div>
-            <!-- Hidden quick preset buttons preserved for DOM/handler compatibility -->
-            <div class="hidden">
-              <button type="button" id="banner-pullup-timer-btn" data-pullup-sec="90"></button>
-              <button type="button" data-gym-preset="07:00" class="banner-gym-preset-btn"></button>
             </div>
           `;
         }
@@ -11726,10 +11787,11 @@
           : 30;
 
         // UPGRADE 4: Exercise Note & Photo State
-        const exNote = (state.exerciseNotes && state.exerciseNotes[ex.id]) || { text: '', photoDataUrl: '', updatedWeek: week, updatedAt: '' };
+        const exNote = (state.exerciseNotes && state.exerciseNotes[ex.id]) || { text: '', photo: '', photoDataUrl: '', updatedWeek: week, updatedAt: '' };
         const noteTextClean = String(exNote.text || '').trim();
+        const notePhotoSrc = String(exNote.photo || exNote.photoDataUrl || '').trim();
         const hasNoteText = noteTextClean.length > 0;
-        const hasNotePhoto = Boolean(exNote.photoDataUrl && String(exNote.photoDataUrl).trim().length > 0);
+        const hasNotePhoto = notePhotoSrc.length > 0;
         const hasAnyNote = hasNoteText || hasNotePhoto;
         const isNotePanelOpen = Boolean(state.openNotePanels && state.openNotePanels[ex.id]);
         const notePreviewStr = hasNoteText
@@ -11845,10 +11907,12 @@
             suggestedWeightVal = rawLoggedWeight !== ''
               ? rawLoggedWeight
               : ((priorLoggedTodayEntry.weight !== undefined && priorLoggedTodayEntry.weight !== '') ? String(priorLoggedTodayEntry.weight) : String(defaultTotalPlaceholder));
-            if (existing && existing.reps !== undefined && existing.reps !== '') {
+            if (isPyramidPullupEx) {
+              suggestedRepsVal = (existing && existing.reps !== undefined && existing.reps !== '')
+                ? String(existing.reps)
+                : String(s);
+            } else if (existing && existing.reps !== undefined && existing.reps !== '') {
               suggestedRepsVal = String(existing.reps);
-            } else if (isPyramidPullupEx) {
-              suggestedRepsVal = s < 5 ? String(s) : String(getPullupPreviousBestMax());
             } else {
               suggestedRepsVal = (priorLoggedTodayEntry.reps !== undefined && priorLoggedTodayEntry.reps !== '') ? String(priorLoggedTodayEntry.reps) : String(defaultNumericReps);
             }
@@ -11856,7 +11920,7 @@
             suggestedWeightVal = rawLoggedWeight !== '' ? rawLoggedWeight : (prevWeekCarryWeight !== '' ? prevWeekCarryWeight : String(defaultTotalPlaceholder));
             suggestedRepsVal = (existing && existing.reps !== undefined && existing.reps !== '')
               ? String(existing.reps)
-              : (isPyramidPullupEx ? String(defaultNumericReps) : ((prevSuggestion.reps !== undefined && prevSuggestion.reps !== '') ? String(prevSuggestion.reps) : ''));
+              : (isPyramidPullupEx ? String(s) : ((prevSuggestion.reps !== undefined && prevSuggestion.reps !== '') ? String(prevSuggestion.reps) : ''));
             const prevSrc = prevSuggestion.sourceLabel || 'Prev Wk';
             const prevWPart = (!isBodyweightRepsOnly && !isTimedHold && prevWeekCarryWeight && prevWeekCarryWeight !== '0')
               ? `${prevWeekCarryWeight} ${exUnit} × `
@@ -11867,7 +11931,7 @@
             suggestedWeightVal = rawLoggedWeight;
             suggestedRepsVal = (existing && existing.reps !== undefined && existing.reps !== '')
               ? String(existing.reps)
-              : (isPyramidPullupEx ? String(defaultNumericReps) : '');
+              : (isPyramidPullupEx ? String(s) : '');
           }
 
           const weightPlaceholder = prevWeekCarryWeight !== '' ? prevWeekCarryWeight : String(defaultTotalPlaceholder);
@@ -12581,48 +12645,236 @@
                 ${PULLUP_EX_ID_TO_DAY[ex.id] ? getPullupExpansionControlBarHtml(week, PULLUP_EX_ID_TO_DAY[ex.id], ex.sets, ex.baseSetsCount || (PULLUP_EX_ID_TO_DAY[ex.id] === 3 ? 9 : 5), 'gym') : ''}
               </div>
 
-              <!-- UPGRADE 4, 5 & 6: Collapsible Exercise Notes, Dual Camera/Gallery Photo Buttons & AI Machine Swap -->
-              <div class="pt-1 border-t border-slate-800/80 space-y-2">
-                <div class="flex items-center gap-1.5">
+              <!-- PERMANENT 2-COLUMN AI MACHINE SWAP GRID (Exposed Directly Underneath Set Rows on Every Card) -->
+              <div data-exposed-machine-swap-grid="${ex.id}" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
+                ${ex.isSwappedMachine ? `
                   <button
                     type="button"
-                    data-note-toggle-ex="${ex.id}"
-                    aria-expanded="${isNotePanelOpen ? 'true' : 'false'}"
-                    class="toggle-ex-note-btn flex-1 min-w-0 py-2 px-3 rounded-xl border text-xs font-extrabold flex items-center justify-between gap-2 transition ${
-                      hasAnyNote
-                        ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-400/40 text-amber-200'
-                        : 'bg-slate-950/85 hover:bg-slate-900 border-slate-800 text-slate-300 hover:text-white'
-                    }"
+                    data-ai-swap-check-ex="${ex.id}"
+                    data-orig-ex-id="${ex.originalId || ex.id}"
+                    data-slot-key="${ex.slotKey || ''}"
+                    data-ai-swap-mode="quick"
+                    style="min-height: 40px;"
+                    class="ai-check-swap-ex-btn w-full py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-sky-400/50 text-sky-200 text-[11px] font-extrabold leading-tight text-center inline-flex items-center justify-center transition"
+                    title="Change machine subtype or select a different machine video"
                   >
-                    <span data-note-toggle-label="${ex.id}" class="truncate text-left">
-                      ${hasAnyNote ? ` View/Edit Note: "${notePreviewStr}"${hasNotePhoto ? ' ' : ''}` : '+ Add Machine Note / Photo'}
-                    </span>
-                    <span class="text-[10px] font-bold shrink-0 ${hasAnyNote ? 'text-amber-300' : 'text-slate-400'}">${isNotePanelOpen ? '▴ Hide' : '▾ Open'}</span>
+                    Change Machine Type
                   </button>
-                  ${ex.isSwappedMachine ? `
-                    <button
-                      type="button"
-                      data-ai-swap-check-ex="${ex.id}"
-                      data-orig-ex-id="${ex.originalId || ex.id}"
-                      data-slot-key="${ex.slotKey || ''}"
-                      class="ai-check-swap-ex-btn shrink-0 py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-sky-400/40 text-sky-300 text-xs font-extrabold whitespace-nowrap transition"
-                      title="Change machine subtype or select a different machine video"
-                    >
-                      Change Machine Type
-                    </button>
-                  ` : `
-                    <button
-                      type="button"
-                      data-ai-swap-check-ex="${ex.id}"
-                      data-orig-ex-id="${ex.originalId || ex.id}"
-                      data-slot-key="${ex.slotKey || ''}"
-                      class="ai-check-swap-ex-btn shrink-0 py-2 px-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold whitespace-nowrap transition"
-                      title="Check machine match and switch to machine form & video"
-                    >
-                      Switch to Machine Form &amp; Video
-                    </button>
-                  `}
+                ` : `
+                  <button
+                    type="button"
+                    data-ai-swap-check-ex="${ex.id}"
+                    data-orig-ex-id="${ex.originalId || ex.id}"
+                    data-slot-key="${ex.slotKey || ''}"
+                    data-ai-swap-mode="quick"
+                    style="min-height: 40px;"
+                    class="ai-check-swap-ex-btn w-full py-2 px-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/60 text-emerald-200 text-[11px] font-extrabold leading-tight text-center inline-flex items-center justify-center transition"
+                    title="Check machine match and switch to machine form &amp; video"
+                  >
+                    Switch to Machine Form &amp; Video
+                  </button>
+                `}
+                <button
+                  type="button"
+                  data-ai-swap-check-ex="${ex.id}"
+                  data-orig-ex-id="${ex.originalId || ex.id}"
+                  data-slot-key="${ex.slotKey || ''}"
+                  data-ai-swap-mode="photo_check"
+                  style="min-height: 40px;"
+                  class="ai-check-swap-ex-btn w-full py-2 px-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/50 text-sky-200 text-[11px] font-extrabold leading-tight text-center inline-flex items-center justify-center transition"
+                  title="Scan a machine photo or check exercise swap options with AI"
+                >
+                  + AI Check &amp; Swap Exercise
+                </button>
+              </div>
+
+              ${pendingSwapPreview ? `
+                <!-- 3-Step AI Vision Progress Bar & Confirmation Card (Always Visible Directly Below Swap Buttons) -->
+                <div class="space-y-2 pt-1">
+                  <div data-ai-vision-pipeline="${ex.id}" class="bg-slate-900 border border-sky-500/40 rounded-xl p-2.5 space-y-1.5">
+                    <div class="flex items-center justify-between gap-2 text-[10px] font-extrabold text-sky-300">
+                      <span data-ai-vision-step-text="${ex.id}">1. Scanning machine photo and seat setup... -&gt; 2. Checking machine type and finding matching video... -&gt; 3. Attaching verified machine form video &amp; setup cues...</span>
+                      <span class="text-emerald-300 shrink-0">3/3 Verified</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                      <div data-ai-vision-step-fill="${ex.id}" class="h-full bg-gradient-to-r from-sky-400 to-emerald-400 transition-all duration-200" style="width: 100%"></div>
+                    </div>
+                  </div>
+                  <div data-ai-swap-preview-card="${ex.id}" class="bg-emerald-950/75 border-2 border-emerald-400/70 rounded-xl p-3 space-y-2.5 shadow-md">
+                    <div class="text-xs font-extrabold text-emerald-200 leading-snug">
+                      ${pendingSwapPreview.confirmationHeadline}
+                    </div>
+                    ${pendingSwapPreview.availableOptions && pendingSwapPreview.availableOptions.length > 1 ? `
+                      <div class="space-y-1">
+                        <div class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Select Your Gym Machine Subtype (${pendingSwapPreview.availableOptions.length} Verified Options):</div>
+                        <div class="grid grid-cols-1 gap-1.5">
+                          ${pendingSwapPreview.availableOptions.map((mOpt, mIdx) => {
+                            const isSelOpt = mIdx === (pendingSwapPreview.optionIndex || 0);
+                            return `
+                              <button
+                                type="button"
+                                data-machine-opt-ex="${ex.id}"
+                                data-machine-opt-idx="${mIdx}"
+                                aria-pressed="${isSelOpt ? 'true' : 'false'}"
+                                class="select-machine-opt-btn text-left px-2.5 py-2 rounded-xl border text-[11px] font-extrabold transition ${
+                                  isSelOpt
+                                    ? 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-sm'
+                                    : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-700'
+                                }"
+                              >
+                                ${isSelOpt ? '✓ ' : ''}Subtype ${String.fromCharCode(65 + mIdx)}: ${mOpt.name}
+                              </button>
+                            `;
+                          }).join('')}
+                        </div>
+                      </div>
+                    ` : ''}
+                    <div class="space-y-1">
+                      <div class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Machine Weight Loading Mode (0 lbs Bar):</div>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        <button
+                          type="button"
+                          data-preview-load-ex="${ex.id}"
+                          data-preview-load-val="plate_2sides"
+                          aria-pressed="${pendingSwapPreview.loadMode !== 'pin_stack' ? 'true' : 'false'}"
+                          class="select-preview-load-btn px-2.5 py-1.5 rounded-xl border text-[11px] font-extrabold text-left transition ${
+                            pendingSwapPreview.loadMode !== 'pin_stack'
+                              ? 'bg-emerald-400 text-slate-950 border-emerald-300 shadow-sm'
+                              : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                          }"
+                        >
+                          ${pendingSwapPreview.loadMode !== 'pin_stack' ? '✓ ' : ''}Plate-Loaded Machine (2 Sides • No Bar)
+                        </button>
+                        <button
+                          type="button"
+                          data-preview-load-ex="${ex.id}"
+                          data-preview-load-val="pin_stack"
+                          aria-pressed="${pendingSwapPreview.loadMode === 'pin_stack' ? 'true' : 'false'}"
+                          class="select-preview-load-btn px-2.5 py-1.5 rounded-xl border text-[11px] font-extrabold text-left transition ${
+                            pendingSwapPreview.loadMode === 'pin_stack'
+                              ? 'bg-emerald-400 text-slate-950 border-emerald-300 shadow-sm'
+                              : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                          }"
+                        >
+                          ${pendingSwapPreview.loadMode === 'pin_stack' ? '✓ ' : ''}Pin / Cable Stack Machine (Total Weight Only)
+                        </button>
+                      </div>
+                    </div>
+                    <div class="space-y-1">
+                      <div class="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">Swap Scope:</div>
+                      <div class="grid grid-cols-2 gap-1.5">
+                        <button
+                          type="button"
+                          data-swap-scope-ex="${ex.id}"
+                          data-swap-scope-val="all"
+                          aria-pressed="${pendingSwapPreview.scope !== 'today' ? 'true' : 'false'}"
+                          class="select-swap-scope-btn px-2.5 py-1.5 rounded-xl border text-[11px] font-extrabold transition ${
+                            pendingSwapPreview.scope !== 'today'
+                              ? 'bg-sky-400 text-slate-950 border-sky-300 shadow-sm'
+                              : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                          }"
+                        >
+                          ${pendingSwapPreview.scope !== 'today' ? '✓ ' : ''}Apply to All Days (Recommended)
+                        </button>
+                        <button
+                          type="button"
+                          data-swap-scope-ex="${ex.id}"
+                          data-swap-scope-val="today"
+                          aria-pressed="${pendingSwapPreview.scope === 'today' ? 'true' : 'false'}"
+                          class="select-swap-scope-btn px-2.5 py-1.5 rounded-xl border text-[11px] font-extrabold transition ${
+                            pendingSwapPreview.scope === 'today'
+                              ? 'bg-sky-400 text-slate-950 border-sky-300 shadow-sm'
+                              : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                          }"
+                        >
+                          ${pendingSwapPreview.scope === 'today' ? '✓ ' : ''}Apply to Today Only
+                        </button>
+                      </div>
+                    </div>
+                    <div class="bg-slate-950/90 border border-slate-800 rounded-lg p-2.5 space-y-1.5 text-[11px]">
+                      <div class="font-extrabold text-white">How to Use This Machine: ${pendingSwapPreview.suggestedMachineExercise}</div>
+                      <div class="text-sky-300 font-bold">Target Muscles: ${pendingSwapPreview.targetMuscles}</div>
+                      <div class="text-slate-300 leading-snug">${pendingSwapPreview.simpleSteps || pendingSwapPreview.definitionAndCues}</div>
+                      <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
+                        <span class="font-mono font-bold text-emerald-300">Recommended Rest: ${pendingSwapPreview.restLabel} (${pendingSwapPreview.restSec}s)</span>
+                        <div class="flex flex-wrap items-center gap-2">
+                          <a href="${pendingSwapPreview.primaryVideoUrl || pendingSwapPreview.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-emerald-300 hover:text-emerald-200 underline font-extrabold">Primary Machine Video</a>
+                          <a href="${pendingSwapPreview.altVideoUrl || pendingSwapPreview.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:text-sky-200 underline font-extrabold">Alt Machine Video</a>
+                          ${pendingSwapPreview.altVideoUrl2 ? `<a href="${pendingSwapPreview.altVideoUrl2}" target="_blank" rel="noopener noreferrer" class="text-amber-300 hover:text-amber-200 underline font-extrabold">Alt Video 2</a>` : ''}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="bg-slate-950/90 border border-sky-500/35 rounded-lg p-2.5 space-y-2 text-[11px]">
+                      <div class="flex flex-wrap items-center justify-between gap-1.5">
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Live YouTube Video Results / Custom URL</span>
+                        <button type="button" data-live-yt-search-ex="${ex.id}" class="live-yt-search-btn px-2 py-0.5 rounded bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 text-[10px] font-extrabold transition">
+                          Search YouTube Live
+                        </button>
+                      </div>
+                      ${pendingSwapPreview.liveVideoResults && pendingSwapPreview.liveVideoResults.length ? `
+                        <div class="space-y-1">
+                          ${pendingSwapPreview.liveVideoResults.map((vid) => {
+                            const isChosenVid = (pendingSwapPreview.videoUrl || pendingSwapPreview.primaryVideoUrl) === vid.url;
+                            return `
+                              <button
+                                type="button"
+                                data-pick-live-vid-ex="${ex.id}"
+                                data-pick-live-vid-url="${vid.url}"
+                                class="pick-live-vid-btn w-full text-left px-2 py-1.5 rounded-lg border text-[10px] font-bold flex items-center justify-between gap-2 transition ${
+                                  isChosenVid
+                                    ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200'
+                                    : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300'
+                                }"
+                              >
+                                <span class="truncate">${isChosenVid ? '✓ ' : ''}${vid.title} (${vid.channel})</span>
+                                <span class="text-sky-300 shrink-0">${vid.source || 'Use Video'}</span>
+                              </button>
+                            `;
+                          }).join('')}
+                        </div>
+                      ` : ''}
+                      <div class="flex items-center gap-1.5">
+                        <input
+                          type="url"
+                          data-custom-video-url-ex="${ex.id}"
+                          value="${pendingSwapPreview.customVideoUrl || ''}"
+                          placeholder="Or paste exact YouTube machine tutorial URL..."
+                          class="custom-machine-video-input flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400"
+                        />
+                      </div>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-end gap-2">
+                      <button type="button" data-cancel-ai-swap="${ex.id}" class="cancel-ai-swap-btn px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold transition">
+                        Cancel
+                      </button>
+                      <button type="button" data-save-shared-machine="${ex.id}" data-orig-ex-id="${ex.originalId || ex.id}" data-slot-key="${ex.slotKey || ''}" data-alt-slot-key="${ex.altSlotKey || ''}" class="save-shared-machine-btn px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-extrabold shadow-sm transition">
+                        Save to Shared Machine Database &amp; Replace Card
+                      </button>
+                      <button type="button" data-confirm-ai-swap="${ex.id}" data-orig-ex-id="${ex.originalId || ex.id}" data-slot-key="${ex.slotKey || ''}" data-alt-slot-key="${ex.altSlotKey || ''}" class="confirm-ai-swap-btn px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-sm transition">
+                        Confirm &amp; Replace Card
+                      </button>
+                    </div>
+                  </div>
                 </div>
+              ` : ''}
+
+              <!-- Collapsible Exercise Notes & Camera/Gallery Photo Drawer -->
+              <div class="pt-1.5 border-t border-slate-800/80 space-y-2">
+                <button
+                  type="button"
+                  data-note-toggle-ex="${ex.id}"
+                  aria-expanded="${isNotePanelOpen ? 'true' : 'false'}"
+                  class="toggle-ex-note-btn w-full py-2 px-3 rounded-xl border text-xs font-extrabold flex items-center justify-between gap-2 transition ${
+                    hasAnyNote
+                      ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-400/40 text-amber-200'
+                      : 'bg-slate-950/85 hover:bg-slate-900 border-slate-800 text-slate-300 hover:text-white'
+                  }"
+                >
+                  <span data-note-toggle-label="${ex.id}" class="truncate text-left">
+                    ${hasAnyNote ? `View/Edit Note: "${notePreviewStr}"` : '+ Add Machine / Seat Note'}
+                  </span>
+                  <span class="text-[10px] font-bold shrink-0 ${hasAnyNote ? 'text-amber-300' : 'text-slate-400'}">${isNotePanelOpen ? '▲ Hide' : '▼ Open'}</span>
+                </button>
 
                 <div id="ex-note-panel-${ex.id}" class="${isNotePanelOpen ? 'bg-slate-950/90 border border-slate-800 rounded-xl p-3 space-y-2.5' : 'hidden'}">
                   <div>
@@ -12660,201 +12912,17 @@
                         <span>Upload Photo</span>
                         <input type="file" accept="image/*" data-note-photo-ex="${ex.id}" class="ex-note-photo-input hidden" />
                       </label>
-                      <button
-                        type="button"
-                        data-ai-swap-check-ex="${ex.id}"
-                        data-orig-ex-id="${ex.originalId || ex.id}"
-                        data-slot-key="${ex.slotKey || ''}"
-                        class="ai-check-swap-ex-btn px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-xs font-extrabold transition"
-                      >
-                        AI Check &amp; Swap Exercise
-                      </button>
                     </div>
                     ${hasNotePhoto ? `
                       <button type="button" data-note-remove-photo="${ex.id}" class="ex-note-remove-photo-btn px-2.5 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/35 text-rose-300 text-xs font-bold transition">
-                         Remove Photo
+                        Remove Photo
                       </button>
                     ` : ''}
                   </div>
 
                   ${hasNotePhoto ? `
                     <div class="pt-1">
-                      <img src="${exNote.photoDataUrl}" alt="${ex.name} machine setting photo" class="max-h-40 rounded-xl border border-slate-700 object-cover" />
-                    </div>
-                  ` : ''}
-
-                  ${pendingSwapPreview ? `
-                    <!-- 3-Step AI Vision Progress Bar (Auto-Closes When Confirmed or Cancelled) -->
-                    <div data-ai-vision-pipeline="${ex.id}" class="bg-slate-900 border border-sky-500/40 rounded-xl p-2.5 space-y-1.5">
-                      <div class="flex items-center justify-between gap-2 text-[10px] font-extrabold text-sky-300">
-                        <span data-ai-vision-step-text="${ex.id}">1. Scanning machine photo and seat setup... -&gt; 2. Checking machine type and finding matching video... -&gt; 3. Attaching verified machine form video &amp; setup cues...</span>
-                        <span class="text-emerald-300 shrink-0">3/3 Verified</span>
-                      </div>
-                      <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                        <div data-ai-vision-step-fill="${ex.id}" class="h-full bg-gradient-to-r from-sky-400 to-emerald-400 transition-all duration-200" style="width: 100%"></div>
-                      </div>
-                    </div>
-                    <div data-ai-swap-preview-card="${ex.id}" class="bg-emerald-950/75 border-2 border-emerald-400/70 rounded-xl p-3 space-y-2.5 shadow-md">
-                      <div class="text-xs font-extrabold text-emerald-200 leading-snug">
-                        ${pendingSwapPreview.confirmationHeadline}
-                      </div>
-
-                      ${pendingSwapPreview.availableOptions && pendingSwapPreview.availableOptions.length > 1 ? `
-                        <div class="space-y-1">
-                          <div class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Select Your Gym Machine Subtype (${pendingSwapPreview.availableOptions.length} Verified Options):</div>
-                          <div class="grid grid-cols-1 gap-1.5">
-                            ${pendingSwapPreview.availableOptions.map((mOpt, mIdx) => {
-                              const isSelOpt = mIdx === (pendingSwapPreview.optionIndex || 0);
-                              return `
-                                <button
-                                  type="button"
-                                  data-machine-opt-ex="${ex.id}"
-                                  data-machine-opt-idx="${mIdx}"
-                                  aria-pressed="${isSelOpt ? 'true' : 'false'}"
-                                  class="select-machine-opt-btn text-left px-2.5 py-2 rounded-xl border text-[11px] font-extrabold transition ${
-                                    isSelOpt
-                                      ? 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-sm'
-                                      : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-700'
-                                  }"
-                                >
-                                  ${isSelOpt ? '✓ ' : ''}Subtype ${String.fromCharCode(65 + mIdx)}: ${mOpt.name}
-                                </button>
-                              `;
-                            }).join('')}
-                          </div>
-                        </div>
-                      ` : ''}
-
-                      <div class="space-y-1">
-                        <div class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Machine Weight Loading Mode (0 lbs Bar):</div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                          <button
-                            type="button"
-                            data-preview-load-ex="${ex.id}"
-                            data-preview-load-val="plate_2sides"
-                            aria-pressed="${pendingSwapPreview.loadMode !== 'pin_stack' ? 'true' : 'false'}"
-                            class="select-preview-load-btn px-2.5 py-1.5 rounded-xl border text-[11px] font-extrabold text-left transition ${
-                              pendingSwapPreview.loadMode !== 'pin_stack'
-                                ? 'bg-emerald-400 text-slate-950 border-emerald-300 shadow-sm'
-                                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
-                            }"
-                          >
-                            ${pendingSwapPreview.loadMode !== 'pin_stack' ? '✓ ' : ''}Plate-Loaded Machine (2 Sides • No Bar)
-                          </button>
-                          <button
-                            type="button"
-                            data-preview-load-ex="${ex.id}"
-                            data-preview-load-val="pin_stack"
-                            aria-pressed="${pendingSwapPreview.loadMode === 'pin_stack' ? 'true' : 'false'}"
-                            class="select-preview-load-btn px-2.5 py-1.5 rounded-xl border text-[11px] font-extrabold text-left transition ${
-                              pendingSwapPreview.loadMode === 'pin_stack'
-                                ? 'bg-emerald-400 text-slate-950 border-emerald-300 shadow-sm'
-                                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
-                            }"
-                          >
-                            ${pendingSwapPreview.loadMode === 'pin_stack' ? '✓ ' : ''}Pin / Cable Stack Machine (Total Weight Only)
-                          </button>
-                        </div>
-                      </div>
-
-                      <div class="space-y-1">
-                        <div class="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">Swap Scope:</div>
-                        <div class="grid grid-cols-2 gap-1.5">
-                          <button
-                            type="button"
-                            data-swap-scope-ex="${ex.id}"
-                            data-swap-scope-val="all"
-                            aria-pressed="${pendingSwapPreview.scope !== 'today' ? 'true' : 'false'}"
-                            class="select-swap-scope-btn px-2.5 py-1.5 rounded-xl border text-[11px] font-extrabold transition ${
-                              pendingSwapPreview.scope !== 'today'
-                                ? 'bg-sky-400 text-slate-950 border-sky-300 shadow-sm'
-                                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
-                            }"
-                          >
-                            ${pendingSwapPreview.scope !== 'today' ? '✓ ' : ''}Apply to All Days (Recommended)
-                          </button>
-                          <button
-                            type="button"
-                            data-swap-scope-ex="${ex.id}"
-                            data-swap-scope-val="today"
-                            aria-pressed="${pendingSwapPreview.scope === 'today' ? 'true' : 'false'}"
-                            class="select-swap-scope-btn px-2.5 py-1.5 rounded-xl border text-[11px] font-extrabold transition ${
-                              pendingSwapPreview.scope === 'today'
-                                ? 'bg-sky-400 text-slate-950 border-sky-300 shadow-sm'
-                                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
-                            }"
-                          >
-                            ${pendingSwapPreview.scope === 'today' ? '✓ ' : ''}Apply to Today Only
-                          </button>
-                        </div>
-                      </div>
-
-                      <div class="bg-slate-950/90 border border-slate-800 rounded-lg p-2.5 space-y-1.5 text-[11px]">
-                        <div class="font-extrabold text-white">How to Use This Machine: ${pendingSwapPreview.suggestedMachineExercise}</div>
-                        <div class="text-sky-300 font-bold">Target Muscles: ${pendingSwapPreview.targetMuscles}</div>
-                        <div class="text-slate-300 leading-snug">${pendingSwapPreview.simpleSteps || pendingSwapPreview.definitionAndCues}</div>
-                        <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
-                          <span class="font-mono font-bold text-emerald-300">Recommended Rest: ${pendingSwapPreview.restLabel} (${pendingSwapPreview.restSec}s)</span>
-                          <div class="flex flex-wrap items-center gap-2">
-                            <a href="${pendingSwapPreview.primaryVideoUrl || pendingSwapPreview.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-emerald-300 hover:text-emerald-200 underline font-extrabold">Primary Machine Video</a>
-                            <a href="${pendingSwapPreview.altVideoUrl || pendingSwapPreview.videoUrl}" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:text-sky-200 underline font-extrabold">Alt Machine Video</a>
-                            ${pendingSwapPreview.altVideoUrl2 ? `<a href="${pendingSwapPreview.altVideoUrl2}" target="_blank" rel="noopener noreferrer" class="text-amber-300 hover:text-amber-200 underline font-extrabold">Alt Video 2</a>` : ''}
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Live YouTube Search Results & Custom Video URL Selector -->
-                      <div class="bg-slate-950/90 border border-sky-500/35 rounded-lg p-2.5 space-y-2 text-[11px]">
-                        <div class="flex flex-wrap items-center justify-between gap-1.5">
-                          <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Live YouTube Video Results / Custom URL</span>
-                          <button type="button" data-live-yt-search-ex="${ex.id}" class="live-yt-search-btn px-2 py-0.5 rounded bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 text-[10px] font-extrabold transition">
-                            Search YouTube Live
-                          </button>
-                        </div>
-                        ${pendingSwapPreview.liveVideoResults && pendingSwapPreview.liveVideoResults.length ? `
-                          <div class="space-y-1">
-                            ${pendingSwapPreview.liveVideoResults.map((vid, vIdx) => {
-                              const isChosenVid = (pendingSwapPreview.videoUrl || pendingSwapPreview.primaryVideoUrl) === vid.url;
-                              return `
-                                <button
-                                  type="button"
-                                  data-pick-live-vid-ex="${ex.id}"
-                                  data-pick-live-vid-url="${vid.url}"
-                                  class="pick-live-vid-btn w-full text-left px-2 py-1.5 rounded-lg border text-[10px] font-bold flex items-center justify-between gap-2 transition ${
-                                    isChosenVid
-                                      ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200'
-                                      : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300'
-                                  }"
-                                >
-                                  <span class="truncate">${isChosenVid ? '✓ ' : ''}${vid.title} (${vid.channel})</span>
-                                  <span class="text-sky-300 shrink-0">${vid.source || 'Use Video'}</span>
-                                </button>
-                              `;
-                            }).join('')}
-                          </div>
-                        ` : ''}
-                        <div class="flex items-center gap-1.5">
-                          <input
-                            type="url"
-                            data-custom-video-url-ex="${ex.id}"
-                            value="${pendingSwapPreview.customVideoUrl || ''}"
-                            placeholder="Or paste exact YouTube machine tutorial URL..."
-                            class="custom-machine-video-input flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400"
-                          />
-                        </div>
-                      </div>
-
-                      <div class="flex flex-wrap items-center justify-end gap-2">
-                        <button type="button" data-cancel-ai-swap="${ex.id}" class="cancel-ai-swap-btn px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold transition">
-                          Cancel
-                        </button>
-                        <button type="button" data-save-shared-machine="${ex.id}" data-orig-ex-id="${ex.originalId || ex.id}" data-slot-key="${ex.slotKey || ''}" data-alt-slot-key="${ex.altSlotKey || ''}" class="save-shared-machine-btn px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-extrabold shadow-sm transition">
-                          Save to Shared Machine Database &amp; Replace Card
-                        </button>
-                        <button type="button" data-confirm-ai-swap="${ex.id}" data-orig-ex-id="${ex.originalId || ex.id}" data-slot-key="${ex.slotKey || ''}" data-alt-slot-key="${ex.altSlotKey || ''}" class="confirm-ai-swap-btn px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-sm transition">
-                          Confirm &amp; Replace Card
-                        </button>
-                      </div>
+                      <img src="${notePhotoSrc}" alt="${ex.name} machine setting photo" class="max-h-40 rounded-xl border border-slate-700 object-cover" />
                     </div>
                   ` : ''}
                 </div>
@@ -12918,10 +12986,11 @@
         btn.addEventListener('click', async () => {
           const exId = btn.getAttribute('data-ai-swap-check-ex');
           const origExId = btn.getAttribute('data-orig-ex-id') || exId;
+          const swapMode = btn.getAttribute('data-ai-swap-mode') || 'quick';
           const exObj = exercisesToday.find(e => e.id === exId) || { id: origExId, originalId: origExId, name: origExId };
           const noteInput = document.getElementById(`ex-note-input-${exId}`);
           const customNote = noteInput ? noteInput.value : ((state.exerciseNotes && state.exerciseNotes[exId] && state.exerciseNotes[exId].text) || '');
-          const photoDataUrl = (state.exerciseNotes && state.exerciseNotes[exId] && state.exerciseNotes[exId].photoDataUrl) || '';
+          const photoDataUrl = (state.exerciseNotes && state.exerciseNotes[exId] && (state.exerciseNotes[exId].photo || state.exerciseNotes[exId].photoDataUrl)) || '';
           const prevPending = state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[exId];
           const swapProposal = verifyAndBuildMachineExerciseSwap(
             exObj,
@@ -12931,7 +13000,10 @@
           );
           if (!state.pendingMachineSwapPreviews) state.pendingMachineSwapPreviews = {};
           state.pendingMachineSwapPreviews[exId] = swapProposal;
-          state.openNotePanels[exId] = true;
+          if (swapMode === 'photo_check') {
+            if (!state.openNotePanels) state.openNotePanels = {};
+            state.openNotePanels[exId] = true;
+          }
           saveState();
           renderWorkoutView();
           runDeliberateAiVisionPipeline(exId, swapProposal.originalExerciseName);
@@ -13320,18 +13392,30 @@
         });
       });
 
-      // UPGRADE 4 Listeners: Collapsible Exercise Notes, 1-Tap Delete Note & Photo Upload/Removal
+      // UPGRADE 4 Listeners: Collapsible Exercise Notes, Photo-Protected Delete Note & Photo Upload/Removal
       function handleDeleteExerciseNote(exId) {
         if (!exId) return;
         if (!state.exerciseNotes) state.exerciseNotes = {};
-        const prev = state.exerciseNotes[exId] || { text: '', photoDataUrl: '' };
-        if (prev.photoDataUrl) {
-          state.exerciseNotes[exId] = {
-            text: '',
-            photoDataUrl: prev.photoDataUrl,
-            updatedWeek: week,
-            updatedAt: new Date().toISOString()
-          };
+        const prev = state.exerciseNotes[exId] || { text: '', photo: '', photoDataUrl: '' };
+        const existingPhoto = prev.photo || prev.photoDataUrl || '';
+        let toastMsg = 'Deleted exercise note';
+        if (existingPhoto) {
+          const keepPhoto = window.confirm(
+            'This exercise has an attached machine photo. Do you want to delete the text note but keep the photo?'
+          );
+          if (keepPhoto) {
+            state.exerciseNotes[exId] = {
+              text: '',
+              photo: existingPhoto,
+              photoDataUrl: existingPhoto,
+              updatedWeek: week,
+              updatedAt: new Date().toISOString()
+            };
+            toastMsg = 'Deleted text note — Machine photo kept safely';
+          } else {
+            delete state.exerciseNotes[exId];
+            toastMsg = 'Deleted exercise note and attached photo';
+          }
         } else {
           delete state.exerciseNotes[exId];
         }
@@ -13339,7 +13423,7 @@
         if (inpEl) inpEl.value = '';
         saveState();
         renderWorkoutView();
-        showToast('Deleted exercise note');
+        showToast(toastMsg);
       }
 
       listEl.querySelectorAll('.delete-ex-note-btn').forEach(btn => {
@@ -13372,18 +13456,20 @@
         inp.addEventListener('input', () => {
           const exId = inp.getAttribute('data-note-input-ex');
           if (!state.exerciseNotes) state.exerciseNotes = {};
-          const prev = state.exerciseNotes[exId] || { text: '', photoDataUrl: '' };
+          const prev = state.exerciseNotes[exId] || { text: '', photo: '', photoDataUrl: '' };
+          const existingPhoto = prev.photo || prev.photoDataUrl || '';
           const textVal = inp.value;
           state.exerciseNotes[exId] = {
             text: textVal,
-            photoDataUrl: prev.photoDataUrl || '',
+            photo: existingPhoto,
+            photoDataUrl: existingPhoto,
             updatedWeek: week,
             updatedAt: new Date().toISOString()
           };
           saveState();
 
           const clean = String(textVal || '').trim();
-          const hasPhoto = Boolean(prev.photoDataUrl);
+          const hasPhoto = Boolean(existingPhoto);
           const hasAny = clean.length > 0 || hasPhoto;
           const delBtn = listEl.querySelector(`.delete-ex-note-btn[data-delete-note-ex="${exId}"]`);
           if (delBtn) {
@@ -13435,9 +13521,10 @@
           if (!file || !exId) return;
           compressExercisePhotoFileToDataUrl(file, async (dataUrl) => {
             if (!state.exerciseNotes) state.exerciseNotes = {};
-            const prev = state.exerciseNotes[exId] || { text: '', photoDataUrl: '' };
+            const prev = state.exerciseNotes[exId] || { text: '', photo: '', photoDataUrl: '' };
             state.exerciseNotes[exId] = {
               text: prev.text || '',
+              photo: dataUrl,
               photoDataUrl: dataUrl,
               updatedWeek: week,
               updatedAt: new Date().toISOString()
@@ -13465,6 +13552,7 @@
         rmBtn.addEventListener('click', () => {
           const exId = rmBtn.getAttribute('data-note-remove-photo');
           if (!state.exerciseNotes || !state.exerciseNotes[exId]) return;
+          state.exerciseNotes[exId].photo = '';
           state.exerciseNotes[exId].photoDataUrl = '';
           saveState();
           renderWorkoutView();
@@ -13530,8 +13618,10 @@
             }
           }
           if (newRepsStr !== undefined && newRepsStr !== null) {
-            const cascadedRepVal = (pyramidCascade && pyramidCascade.suggestedRepsBySet && pyramidCascade.suggestedRepsBySet[kNext] !== undefined)
-              ? String(pyramidCascade.suggestedRepsBySet[kNext])
+            const cascadedRepVal = isPyramidMode
+              ? ((pyramidCascade && pyramidCascade.suggestedRepsBySet && pyramidCascade.suggestedRepsBySet[kNext] !== undefined)
+                  ? String(pyramidCascade.suggestedRepsBySet[kNext])
+                  : String(kNext))
               : String(newRepsStr);
             state.workoutLogs[nextKey].reps = cascadedRepVal;
             const rInp = listEl.querySelector(`input.workout-input[data-log-key="${nextKey}"][data-field="reps"]`);
@@ -14053,13 +14143,13 @@
               const existingNext = getLogEntry(week, dayIdx, exId, kNext);
               const hasPyramidSuggestion = Boolean(pyramidCascade && pyramidCascade.suggestedRepsBySet && pyramidCascade.suggestedRepsBySet[kNext] !== undefined);
               if (!existingNext || !existingNext.done || hasPyramidSuggestion) {
-                const nextSuggestedReps = hasPyramidSuggestion
-                  ? pyramidCascade.suggestedRepsBySet[kNext]
+                const nextSuggestedReps = isPyramidMode
+                  ? (hasPyramidSuggestion ? pyramidCascade.suggestedRepsBySet[kNext] : String(kNext))
                   : String(loggedR);
                 state.workoutLogs[nextKey] = Object.assign({}, existingNext || {}, {
                   weight: String(loggedW),
                   reps: String(nextSuggestedReps),
-                  done: hasPyramidSuggestion ? false : false,
+                  done: false,
                   unit: exUnit
                 });
                 if (week === 1) {
@@ -14685,7 +14775,7 @@
                 <div class="min-w-0 max-w-[200px] mx-auto w-full">
                   <div class="flex items-center bg-slate-900 border border-slate-700/90 rounded-lg overflow-hidden">
                     <button type="button" data-pullup-step-day="${d.dayNum}" data-set-idx="${s}" data-delta="-1" class="pullup-rep-step-btn w-8 h-9 sm:w-9 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease Pull-Up Day ${d.dayNum} ${rowLabel} Reps">−</button>
-                    <input type="number" inputmode="numeric" placeholder="${defaultRepPlaceholder}" value="${syncedEntry.reps || ''}" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" aria-label="Pull-Up Day ${d.dayNum} ${rowLabel} Reps" class="pullup-rep-input w-full bg-transparent py-1 text-white placeholder-slate-500 focus:outline-none" style="min-width: 52px; font-size: 15px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums;" />
+                    <input type="number" inputmode="numeric" placeholder="${defaultRepPlaceholder}" value="${(syncedEntry.reps !== '' && syncedEntry.reps !== undefined) ? syncedEntry.reps : (isPyramidSession ? String(s) : '')}" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" aria-label="Pull-Up Day ${d.dayNum} ${rowLabel} Reps" class="pullup-rep-input w-full bg-transparent py-1 text-white placeholder-slate-500 focus:outline-none" style="min-width: 52px; font-size: 15px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums;" />
                     <button type="button" data-pullup-step-day="${d.dayNum}" data-set-idx="${s}" data-delta="1" class="pullup-rep-step-btn w-8 h-9 sm:w-9 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase Pull-Up Day ${d.dayNum} ${rowLabel} Reps">+</button>
                   </div>
                 </div>
@@ -14921,7 +15011,7 @@
           const totalSetsForDay = getEffectivePullupSetsCount(week, dayNum, dSpec ? dSpec.setsCount : 5);
           const fallbackDefaultNum = !isNaN(parseInt(defaultReps, 10))
             ? String(parseInt(defaultReps, 10))
-            : (isPyramidSession ? String(Math.min(totalSetsForDay - 1, setIdx)) : String(state.pullupTrainingSetReps || 5));
+            : (isPyramidSession ? String(setIdx) : String(state.pullupTrainingSetReps || 5));
           const finalReps = (cur.reps !== undefined && cur.reps !== '')
             ? cur.reps
             : fallbackDefaultNum;
@@ -14934,7 +15024,7 @@
               for (let kNext = setIdx + 1; kNext <= totalSetsForDay; kNext++) {
                 const existingNext = getLogEntry(week, assignedCalIdx, mapInfo.exId, kNext);
                 if (!existingNext || !existingNext.done || cascadeMap[kNext] !== undefined) {
-                  const suggestedNextReps = cascadeMap[kNext] !== undefined ? cascadeMap[kNext] : String(Math.min(totalSetsForDay - 1, kNext));
+                  const suggestedNextReps = cascadeMap[kNext] !== undefined ? cascadeMap[kNext] : String(kNext);
                   syncPullupStateBothWays(week, dayNum, kNext, { reps: suggestedNextReps, done: existingNext ? !!existingNext.done : false });
                 }
               }
@@ -17341,6 +17431,386 @@
       renderGeminiChatMessages();
     }
 
+    const AI_BONUS_WORKOUT_FALLBACKS = {
+      'Chest Focus': [
+        {
+          name: 'Barbell Incline Bench Press',
+          sets: 4,
+          reps: '5-8',
+          videoUrl: 'https://www.youtube.com/watch?v=SrqOu55lrYU',
+          instructions: '1. Set bench to 30 degrees and plant feet flat on the floor. 2. Lower bar under control to upper chest with elbows at 45 degrees. 3. Drive smoothly back up while keeping shoulder blades pinned.'
+        },
+        {
+          name: 'Plate-Loaded Converging Chest Press',
+          sets: 3,
+          reps: '10-12',
+          videoUrl: 'https://www.youtube.com/watch?v=xUm_ZglsPdw',
+          instructions: '1. Adjust seat so handles align with mid-chest. 2. Press forward cleanly without shrugging shoulders. 3. Control a 2-second negative back to a deep pec stretch.'
+        },
+        {
+          name: 'Seated Cable Fly (Mid-Chest)',
+          sets: 3,
+          reps: '12-15',
+          videoUrl: 'https://www.youtube.com/watch?v=Iwe6AmxVf7o',
+          instructions: '1. Set pulleys at chest height with a slight bend in both elbows. 2. Sweep hands together in front of your sternum and squeeze for 1 second. 3. Open slowly until you feel a controlled chest stretch.'
+        },
+        {
+          name: 'Machine Pec Deck Fly',
+          sets: 3,
+          reps: '12-15',
+          videoUrl: 'https://www.youtube.com/watch?v=Z57CtFmRMxA',
+          instructions: '1. Adjust seat so arms stay parallel to the floor. 2. Bring handles together using your chest rather than your wrists. 3. Pause briefly at full contraction and return smoothly.'
+        },
+        {
+          name: 'Kneeling Cable Ab Crunch',
+          sets: 3,
+          reps: '12-15',
+          videoUrl: 'https://www.youtube.com/watch?v=ToJeyhydUxU',
+          instructions: '1. Hold rope handles near your temples with hips stacked over knees. 2. Curl ribs down toward your pelvis while exhaling forcefully. 3. Control the rise back up without pulling with your arms.'
+        }
+      ],
+      'Back & Biceps': [
+        {
+          name: 'Barbell Bent-Over Row',
+          sets: 4,
+          reps: '5-8',
+          videoUrl: 'https://www.youtube.com/watch?v=FWJR5Ve8bnQ',
+          instructions: '1. Hinge at the hips to 45 degrees with a flat braced back. 2. Pull the bar to your lower ribs while squeezing your shoulder blades together. 3. Lower under control to a full lat stretch.'
+        },
+        {
+          name: 'Neutral-Grip Lat Pulldown Machine',
+          sets: 3,
+          reps: '10-12',
+          videoUrl: 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
+          instructions: '1. Lock thighs securely under the pad and grip handles shoulder-width. 2. Drive elbows straight down toward your hips. 3. Let shoulders elevate gently at the top for a complete stretch.'
+        },
+        {
+          name: 'Chest-Supported Machine Row',
+          sets: 3,
+          reps: '10-15',
+          videoUrl: 'https://www.youtube.com/watch?v=GZbfZ033f74',
+          instructions: '1. Press your chest firmly against the pad throughout the set. 2. Pull handles back smoothly and hold the squeeze for 1 second. 3. Extend arms fully on every rep without rounding forward.'
+        },
+        {
+          name: 'Bayesian Cable Bicep Curl',
+          sets: 3,
+          reps: '12-15',
+          videoUrl: 'https://www.youtube.com/watch?v=ykJmrZ5v0Oo',
+          instructions: '1. Face away from a low pulley so the working arm starts slightly behind your torso. 2. Curl smoothly without swinging your shoulder forward. 3. Lower slowly to a full stretched bicep position.'
+        },
+        {
+          name: 'Hanging Knee Raise (Core)',
+          sets: 3,
+          reps: '12-15',
+          videoUrl: 'https://www.youtube.com/watch?v=Pr1ieGZ5atk',
+          instructions: '1. Hang steadily from the bar with shoulders engaged. 2. Curl pelvis and knees upward toward your chest without swinging. 3. Lower slowly back to full extension.'
+        }
+      ],
+      'Legs & Calves': [
+        {
+          name: 'Barbell Back Squat',
+          sets: 4,
+          reps: '5-8',
+          videoUrl: 'https://www.youtube.com/watch?v=ultWZbUMPL8',
+          instructions: '1. Brace your core and place feet shoulder-width with toes angled slightly out. 2. Sit down between your hips until thighs reach parallel or below. 3. Drive evenly through mid-foot back to standing.'
+        },
+        {
+          name: '45-Degree Machine Leg Press',
+          sets: 3,
+          reps: '10-12',
+          videoUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ',
+          instructions: '1. Place feet mid-to-low on the sled and keep lower back pressed into the pad. 2. Lower sled smoothly until knees reach deep flexion. 3. Push through heels without locking out knees hard.'
+        },
+        {
+          name: 'Seated Machine Leg Curl',
+          sets: 3,
+          reps: '10-15',
+          videoUrl: 'https://www.youtube.com/watch?v=1Tq3QdYUuHs',
+          instructions: '1. Lock the lap pad snugly over your thighs with knees aligned to the pivot. 2. Pull heels tightly under the seat and squeeze hamstrings. 3. Control a slow return to straight legs.'
+        },
+        {
+          name: 'Machine Leg Extension',
+          sets: 3,
+          reps: '12-15',
+          videoUrl: 'https://www.youtube.com/watch?v=YyvSfVjQeL0',
+          instructions: '1. Align knee joint with the machine axis and grip side handles firmly. 2. Extend knees smoothly to full contraction and hold 1 second. 3. Lower under steady 2-second control.'
+        },
+        {
+          name: 'Standing Machine Calf Raise',
+          sets: 4,
+          reps: '12-15',
+          videoUrl: 'https://www.youtube.com/watch?v=gwLzBJYoWlI',
+          instructions: '1. Place balls of feet on the platform and sink heels for a full 2-second bottom stretch. 2. Press high onto your big toes and pause 1 second at the top. 3. Avoid bouncing at the bottom of the rep.'
+        }
+      ],
+      'Shoulders & Arms': [
+        {
+          name: 'Standing Barbell Overhead Press',
+          sets: 4,
+          reps: '5-8',
+          videoUrl: 'https://www.youtube.com/watch?v=2yjwXTZQDDI',
+          instructions: '1. Squeeze glutes and brace abs with hands just outside shoulder width. 2. Press the bar straight overhead and tuck head through at lockout. 3. Lower cleanly back to your upper chest.'
+        },
+        {
+          name: 'Cable Lateral Raise',
+          sets: 3,
+          reps: '12-15',
+          videoUrl: 'https://www.youtube.com/watch?v=PPrzBWZDOhA',
+          instructions: '1. Set pulley at wrist height and stand sideways to the stack. 2. Sweep arm out to shoulder height leading gently with your elbow. 3. Lower slowly across your front without dropping tension.'
+        },
+        {
+          name: 'Cable Rope Tricep Pushdown',
+          sets: 3,
+          reps: '10-15',
+          videoUrl: 'https://www.youtube.com/watch?v=2-LAMcpzODU',
+          instructions: '1. Pin elbows tight to your ribs with a slight forward lean. 2. Push rope down and split ends apart at lockout. 3. Control the rise until forearms meet biceps.'
+        },
+        {
+          name: 'Machine Preacher Bicep Curl',
+          sets: 3,
+          reps: '10-15',
+          videoUrl: 'https://www.youtube.com/watch?v=fIWP-FRFNU0',
+          instructions: '1. Set seat height so armpits rest flush over the top edge of the pad. 2. Curl handles smoothly toward your shoulders without lifting elbows. 3. Lower slowly to near full extension.'
+        },
+        {
+          name: 'Cable Woodchopper (Core)',
+          sets: 3,
+          reps: '12-15',
+          videoUrl: 'https://www.youtube.com/watch?v=pAplQXk3dkU',
+          instructions: '1. Stand sideways to a mid-height cable with straight arms and braced abs. 2. Rotate smoothly through your torso across your body. 3. Control the return without letting the stack slam.'
+        }
+      ],
+      'Full Body': [
+        {
+          name: 'Trap Bar Deadlift',
+          sets: 4,
+          reps: '5-8',
+          videoUrl: 'https://www.youtube.com/watch?v=WzvsIU9FW60',
+          instructions: '1. Stand centered inside the handles with feet hip-width and chest tall. 2. Push the floor away with your legs while keeping your spine neutral. 3. Stand tall at lockout and hinge down under control.'
+        },
+        {
+          name: 'Machine Incline Chest Press',
+          sets: 3,
+          reps: '10-12',
+          videoUrl: 'https://www.youtube.com/watch?v=xUm_ZglsPdw',
+          instructions: '1. Align handles with upper chest and keep shoulder blades tucked back. 2. Drive smoothly to full arm extension without shrugging. 3. Lower slowly to a deep stretch.'
+        },
+        {
+          name: 'Seated Cable Row (Neutral Grip)',
+          sets: 3,
+          reps: '10-15',
+          videoUrl: 'https://www.youtube.com/watch?v=GZbfZ033f74',
+          instructions: '1. Sit tall with slight knee bend and braced lower back. 2. Pull handle toward your lower abdomen and squeeze your mid-back. 3. Extend arms fully forward under control.'
+        },
+        {
+          name: 'Machine Leg Press',
+          sets: 3,
+          reps: '10-15',
+          videoUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ',
+          instructions: '1. Position feet shoulder-width in the middle of the footplate. 2. Lower sled slowly until thighs approach your torso without lifting hips. 3. Drive powerfully back up leaving a slight knee bend.'
+        },
+        {
+          name: 'Seated Machine Calf Raise',
+          sets: 3,
+          reps: '12-15',
+          videoUrl: 'https://www.youtube.com/watch?v=JbyjNymZOt0',
+          instructions: '1. Rest pad snugly across lower thighs with heels hanging off the block. 2. Pause 2 seconds in the deep bottom stretch on every rep. 3. Press to peak contraction and hold for 1 second.'
+        }
+      ]
+    };
+
+    function buildAiBonusWorkoutSystemPrompt(selectedTarget) {
+      return `System: You are an elite sports scientist creating a 5-exercise hypertrophy workout for the user's selected target: ${selectedTarget}. You must return ONLY a raw JSON array of 5 objects matching this exact schema: [{ "name": "Exercise Name", "sets": 3, "reps": "8-12", "videoUrl": "https://youtube.com/...", "instructions": "3 short step-by-step instructions" }]. Rules: Exercise 1 must be a heavy compound (5-8 reps). Exercises 2-4 must be machines/cables (10-15 reps). Exercise 5 must be core or calves. Do not output markdown, only valid JSON.`;
+    }
+
+    function parseAiBonusWorkoutJson(rawText) {
+      if (!rawText || typeof rawText !== 'string') return null;
+      let cleaned = rawText.trim();
+      cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      const firstBracket = cleaned.indexOf('[');
+      const lastBracket = cleaned.lastIndexOf(']');
+      if (firstBracket !== -1 && lastBracket > firstBracket) {
+        cleaned = cleaned.slice(firstBracket, lastBracket + 1);
+      }
+      try {
+        const parsed = JSON.parse(cleaned);
+        if (!Array.isArray(parsed) || parsed.length === 0) return null;
+        const normalized = parsed.slice(0, 5).map((item, idx) => {
+          const name = String((item && item.name) || `Bonus Exercise ${idx + 1}`).trim();
+          const setsNum = Math.max(1, Math.min(6, parseInt(item && item.sets, 10) || (idx === 0 ? 4 : 3)));
+          const repsStr = String((item && item.reps) || (idx === 0 ? '5-8' : '10-15')).trim();
+          const rawUrl = String((item && item.videoUrl) || '').trim();
+          const videoUrl = /^https?:\/\//i.test(rawUrl)
+            ? rawUrl
+            : `https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' proper form tutorial')}`;
+          const instructions = String((item && item.instructions) || '1. Set stable posture. 2. Control full range of motion. 3. Pause briefly at peak contraction.').trim();
+          return { name, sets: setsNum, reps: repsStr, videoUrl, instructions };
+        });
+        return normalized.length === 5 ? normalized : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function generateAiBonusWorkoutForDay6(selectedTarget) {
+      const targetLabel = String(selectedTarget || 'Full Body').trim();
+      const statusEl = document.getElementById('ai-bonus-gen-status');
+      const targetBtns = document.querySelectorAll('.ai-bonus-target-btn');
+      targetBtns.forEach(b => { b.disabled = true; b.classList.add('opacity-60'); });
+      if (statusEl) {
+        statusEl.classList.remove('hidden');
+        statusEl.textContent = `Building 5-exercise ${targetLabel} bonus workout for Day 6 via Gemini 3.8 Flash...`;
+      }
+
+      const hiddenSystemPrompt = buildAiBonusWorkoutSystemPrompt(targetLabel);
+      const userPrompt = `Generate the 5-exercise hypertrophy workout JSON array for ${targetLabel} now.`;
+      let rawJsonText = '';
+
+      // 1. Try server-side proxy (/api/gemini) in strict JSON mode
+      try {
+        const res = await fetch('/api/gemini', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'gemini-3.8-flash',
+            prompt: userPrompt,
+            systemInstruction: hiddenSystemPrompt,
+            responseMimeType: 'application/json',
+            enableGoogleSearch: false
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.reply) rawJsonText = data.reply;
+        }
+      } catch (e) {}
+
+      // 2. If local API key is configured, call Gemini 3.8 Flash REST endpoint with JSON response_mime_type
+      if (!rawJsonText && state.geminiApiKeyLocal) {
+        try {
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(state.geminiApiKeyLocal)}`;
+          const res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: hiddenSystemPrompt }] },
+              contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+              generationConfig: { response_mime_type: 'application/json' }
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const part = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (part) rawJsonText = part;
+          }
+        } catch (e) {}
+      }
+
+      let exercisesJson = parseAiBonusWorkoutJson(rawJsonText);
+      const usedFallback = !exercisesJson;
+      if (!exercisesJson) {
+        exercisesJson = AI_BONUS_WORKOUT_FALLBACKS[targetLabel] || AI_BONUS_WORKOUT_FALLBACKS['Full Body'];
+      }
+
+      const week = state.currentWeek || 1;
+      const wKey = String(week);
+      const formattedExercises = exercisesJson.map((item, idx) => {
+        const slug = String(item.name || `ex_${idx + 1}`).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 28) || `ex_${idx + 1}`;
+        const exId = `ai_bonus_w${week}_d6_${idx + 1}_${slug}`;
+        const restSec = idx === 0 ? 120 : (idx === 4 ? 60 : 75);
+        const cues = String(item.instructions || '')
+          .split(/(?:\s*\d+\.\s+|\n+)/)
+          .map(s => s.trim())
+          .filter(Boolean)
+          .slice(0, 3);
+        const exObj = {
+          id: exId,
+          originalId: exId,
+          name: item.name,
+          sets: item.sets,
+          reps: item.reps,
+          restSec,
+          videoUrl: item.videoUrl,
+          instructions: item.instructions,
+          isAiGeneratedBonus: true,
+          note: idx === 0
+            ? `Heavy Compound • ${item.instructions}`
+            : (idx === 4 ? `Core / Calves Finisher • ${item.instructions}` : `Machine / Cable Hypertrophy • ${item.instructions}`),
+          defaultLoadMode: (idx >= 1 && idx <= 3) ? 'pin_stack' : undefined
+        };
+        if (typeof EXERCISE_META !== 'undefined') {
+          EXERCISE_META[exId] = {
+            name: item.name,
+            equipType: idx === 0 ? 'barbell' : (idx === 4 ? 'cable' : 'machine'),
+            equipLabel: idx === 0 ? 'Compound Lift' : (idx === 4 ? 'Core / Calves' : 'Machine / Cable'),
+            defaultWeightLbs: idx === 0 ? 95 : 50,
+            videoUrl: item.videoUrl,
+            videoTitle: `${item.name} — Form Guide`,
+            muscles: targetLabel,
+            tip: item.instructions,
+            steps: cues.length ? cues : [item.instructions],
+            setupCues: cues.length ? cues : [item.instructions],
+            formSvgKey: 'default'
+          };
+        }
+        return exObj;
+      });
+
+      const bonusDayObject = {
+        id: `ai_bonus_day6_w${week}`,
+        isCustomGeneratedDay: true,
+        isAiBonusWorkout: true,
+        isRestDay: false,
+        daySub: 'AI Bonus',
+        target: targetLabel,
+        title: `Bonus Day 6 • ${targetLabel}`,
+        subtitle: `5-Exercise Hypertrophy Plan (${targetLabel})`,
+        shortName: targetLabel,
+        muscleGroup: targetLabel,
+        selectedTarget: targetLabel,
+        warmupType: targetLabel.toLowerCase().includes('leg') ? 'lower' : 'upper',
+        generatedAt: new Date().toISOString(),
+        source: usedFallback ? 'coach_template' : 'gemini_3_8_flash',
+        exercises: formattedExercises
+      };
+
+      const baseSched = getCustomDayScheduleForWeek(week).slice();
+      baseSched[5] = bonusDayObject;
+      if (!state.customDayScheduleByWeek || typeof state.customDayScheduleByWeek !== 'object') {
+        state.customDayScheduleByWeek = {};
+      }
+      state.customDayScheduleByWeek[wKey] = baseSched;
+      state.selectedDayIndex = 5;
+      state.showRestDayMobility = false;
+      state.openRestMobilityDrawer = false;
+      state.openDayWorkoutPicker = false;
+      state.activeFocusedExId = formattedExercises[0] ? formattedExercises[0].id : null;
+      if (formattedExercises[0]) {
+        if (!state.cardCollapsedState) state.cardCollapsedState = {};
+        state.cardCollapsedState[getExercisePanelKey(5, formattedExercises[0].id)] = 'expanded';
+      }
+      saveState();
+
+      targetBtns.forEach(b => { b.disabled = false; b.classList.remove('opacity-60'); });
+      if (statusEl) {
+        statusEl.classList.add('hidden');
+        statusEl.textContent = '';
+      }
+      const targetsPanel = document.getElementById('ai-bonus-targets-panel');
+      if (targetsPanel) targetsPanel.classList.add('hidden');
+      const modal = document.getElementById('gemini-ai-modal');
+      if (modal) modal.classList.add('hidden');
+
+      if (typeof switchTab === 'function') {
+        switchTab('workout');
+      }
+      renderWorkoutView();
+      renderPullupView();
+      if (typeof renderVeganView === 'function') renderVeganView();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showToast(`Day 6 Bonus Workout created: ${targetLabel} (5 exercises)`);
+    }
+
     function openGeminiCoachModal() {
       const m = document.getElementById('gemini-ai-modal');
       if (m) {
@@ -19490,6 +19960,21 @@
         });
       });
 
+      const toggleAiBonusBtn = document.getElementById('toggle-ai-bonus-generator-btn');
+      const aiBonusTargetsPanel = document.getElementById('ai-bonus-targets-panel');
+      if (toggleAiBonusBtn && aiBonusTargetsPanel) {
+        toggleAiBonusBtn.addEventListener('click', () => {
+          const isHidden = aiBonusTargetsPanel.classList.toggle('hidden');
+          toggleAiBonusBtn.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
+        });
+      }
+      document.querySelectorAll('.ai-bonus-target-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-bonus-target');
+          if (target) generateAiBonusWorkoutForDay6(target);
+        });
+      });
+
       // Diet Framing Toggle (Plant-Based vs Flex Budget Cost Breakdown)
       const plantDietBtn = document.getElementById('diet-mode-plant-btn');
       const flexDietBtn = document.getElementById('diet-mode-flex-btn');
@@ -20200,6 +20685,31 @@
         <button type="button" id="close-gemini-ai-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
       </div>
 
+      <!-- Dynamic AI Bonus Workout Generator (Day 6 Structured JSON Schema Engine) -->
+      <div class="shrink-0 bg-slate-950/90 border border-emerald-500/40 rounded-xl p-2.5 space-y-2">
+        <button
+          type="button"
+          id="toggle-ai-bonus-generator-btn"
+          aria-expanded="false"
+          aria-controls="ai-bonus-targets-panel"
+          class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 text-xs font-extrabold tracking-tight shadow-md shadow-emerald-500/20 transition flex items-center justify-between gap-2"
+        >
+          <span>Generate Bonus Workout (Day 6)</span>
+          <span class="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-950/20 text-slate-950">5 Exercises</span>
+        </button>
+        <div id="ai-bonus-targets-panel" class="hidden space-y-2 pt-0.5">
+          <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Choose Your Day 6 Target Muscle Group:</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <button type="button" data-bonus-target="Chest Focus" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-slate-100 text-[11px] font-extrabold text-center transition">Chest Focus</button>
+            <button type="button" data-bonus-target="Back & Biceps" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-slate-100 text-[11px] font-extrabold text-center transition">Back &amp; Biceps</button>
+            <button type="button" data-bonus-target="Legs & Calves" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-slate-100 text-[11px] font-extrabold text-center transition">Legs &amp; Calves</button>
+            <button type="button" data-bonus-target="Shoulders & Arms" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-slate-100 text-[11px] font-extrabold text-center transition">Shoulders &amp; Arms</button>
+            <button type="button" data-bonus-target="Full Body" style="grid-column: span 2;" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-emerald-500/45 hover:border-emerald-400 text-emerald-200 text-[11px] font-extrabold text-center transition">Full Body</button>
+          </div>
+          <div id="ai-bonus-gen-status" class="hidden text-[11px] font-bold text-amber-300 bg-amber-500/10 border border-amber-400/35 rounded-lg px-2.5 py-1.5"></div>
+        </div>
+      </div>
+
       <!-- 1-Tap Smart Coaching Chips (Zero Typing Required in the Gym!) -->
       <div class="space-y-1 shrink-0">
         <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">1-Tap Gym, Fuel Plan &amp; Swap Prompts:</span>
@@ -20208,7 +20718,7 @@
           <button type="button" data-ai-prompt="Ingredient Sold Out / Swap Meal" class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-amber-500/40 hover:border-amber-400 text-[10px] font-bold text-amber-300 transition"> Ingredient Sold Out / Swap Meal</button>
           <button type="button" data-ai-prompt="Analyze my workout today and tell me the exact weight and reps to hit on my next session for progressive overload." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-purple-200 transition"> Next Week Overload</button>
           <button type="button" data-ai-prompt="Based on my gym time today, give me my exact pre-workout shake and post-workout meal schedule in grams." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-slate-200 transition"> Adapt My Meal Timing</button>
-          <button type="button" data-ai-prompt="Give me a specific biomechanics cue and rest strategy to add +2 reps to my Overhand Pull-Ups." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-sky-300 transition"> Pull-Up Plateau Buster</button>
+          <button type="button" data-ai-prompt="Give me a specific form cue and rest strategy to add +2 reps to my Overhand Pull-Ups." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[10px] font-bold text-sky-300 transition"> Pull-Up Plateau Buster</button>
         </div>
       </div>
 

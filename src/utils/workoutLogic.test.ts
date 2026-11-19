@@ -2005,6 +2005,115 @@ test('Subtest 32: Full-Width Stacked Shop/Fuel Cards (ELI12), Pull-Up Pyramid Up
   assert.equal(stateDone.primaryButtonLabel, '✓ Done');
 });
 
+test('Subtest 33: Strict Pull-Up Pyramid Auto-Increment (1..9), Photo-Protected Delete Note, and Dynamic AI Bonus Workout JSON Generator', async () => {
+  const mod = await import('./workoutLogic');
+
+  // 1. Strict Pull-Up Pyramid Auto-Increment & Single Max Effort Anchor
+  const set1of5 = mod.getStrictPyramidSetSpec(1, 5);
+  assert.equal(set1of5.targetReps, '1');
+  assert.equal(set1of5.isMaxEffortAnchor, false);
+  assert.equal(set1of5.setLabel, 'Set 1');
+
+  const set5of5 = mod.getStrictPyramidSetSpec(5, 5);
+  assert.equal(set5of5.targetReps, '5');
+  assert.equal(set5of5.isMaxEffortAnchor, true);
+  assert.equal(set5of5.setLabel, 'Set 5 (Max)');
+
+  const set5of7 = mod.getStrictPyramidSetSpec(5, 7);
+  assert.equal(set5of7.targetReps, '5');
+  assert.equal(set5of7.isMaxEffortAnchor, false);
+  assert.equal(set5of7.setLabel, 'Set 5');
+
+  const set6of7 = mod.getStrictPyramidSetSpec(6, 7);
+  assert.equal(set6of7.targetReps, '6');
+  assert.equal(set6of7.isMaxEffortAnchor, false);
+  assert.equal(set6of7.setLabel, 'Set 6');
+
+  const set7of7 = mod.getStrictPyramidSetSpec(7, 7);
+  assert.equal(set7of7.targetReps, '7');
+  assert.equal(set7of7.isMaxEffortAnchor, true);
+  assert.equal(set7of7.setLabel, 'Set 7 (Max)');
+
+  const set8of9 = mod.getStrictPyramidSetSpec(8, 9);
+  assert.equal(set8of9.targetReps, '8');
+  assert.equal(set8of9.isMaxEffortAnchor, false);
+
+  const set9of9 = mod.getStrictPyramidSetSpec(9, 9);
+  assert.equal(set9of9.targetReps, '9');
+  assert.equal(set9of9.isMaxEffortAnchor, true);
+  assert.equal(set9of9.setLabel, 'Set 9 (Max)');
+
+  // 2. Loss-Aversion Photo Protection on Delete Note
+  const noteWithPhoto = {
+    tue_calf_raise: {
+      text: 'Standing calf machine pin 8',
+      photo: 'data:image/jpeg;base64,ABC123',
+      photoDataUrl: 'data:image/jpeg;base64,ABC123'
+    }
+  };
+  let seenPrompt = '';
+  const keptRes = mod.resolveDeleteExerciseNoteWithPhotoProtection(noteWithPhoto, 'tue_calf_raise', (msg: string) => {
+    seenPrompt = msg;
+    return true;
+  });
+  assert.equal(keptRes.prompted, true);
+  assert.equal(
+    seenPrompt,
+    'This exercise has an attached machine photo. Do you want to delete the text note but keep the photo?'
+  );
+  assert.equal(keptRes.keptPhoto, true);
+  assert.equal(keptRes.nextNotesMap.tue_calf_raise?.text, '');
+  assert.equal(keptRes.nextNotesMap.tue_calf_raise?.photo, 'data:image/jpeg;base64,ABC123');
+  assert.equal(keptRes.nextNotesMap.tue_calf_raise?.photoDataUrl, 'data:image/jpeg;base64,ABC123');
+
+  const wipedRes = mod.resolveDeleteExerciseNoteWithPhotoProtection(noteWithPhoto, 'tue_calf_raise', () => false);
+  assert.equal(wipedRes.prompted, true);
+  assert.equal(wipedRes.keptPhoto, false);
+  assert.equal(wipedRes.nextNotesMap.tue_calf_raise, undefined);
+
+  const textOnlyNote = { mon_bench: { text: 'Bench notch 2' } };
+  const plainRes = mod.resolveDeleteExerciseNoteWithPhotoProtection(textOnlyNote, 'mon_bench', () => true);
+  assert.equal(plainRes.prompted, false);
+  assert.equal(plainRes.nextNotesMap.mon_bench, undefined);
+
+  // 3. Dynamic AI Bonus Workout Generator
+  assert.deepEqual([...mod.AI_BONUS_WORKOUT_TARGETS], [
+    'Chest Focus',
+    'Back & Biceps',
+    'Legs & Calves',
+    'Shoulders & Arms',
+    'Full Body'
+  ]);
+  const promptStr = mod.buildAiBonusWorkoutSystemPrompt('Chest Focus');
+  assert.equal(
+    promptStr.includes("creating a 5-exercise hypertrophy workout for the user's selected target: Chest Focus."),
+    true
+  );
+  assert.equal(promptStr.includes('Exercise 1 must be a heavy compound (5-8 reps).'), true);
+  assert.equal(promptStr.includes('Exercises 2-4 must be machines/cables (10-15 reps).'), true);
+  assert.equal(promptStr.includes('Exercise 5 must be core or calves.'), true);
+
+  const rawJson = JSON.stringify([
+    { name: 'Barbell Incline Bench Press', sets: 4, reps: '5-8', videoUrl: 'https://youtube.com/watch?v=SrqOu55lrYU', instructions: '1. Set bench to 30 degrees. 2. Lower bar to upper chest. 3. Press smoothly to lockout.' },
+    { name: 'Seated Machine Chest Press', sets: 3, reps: '10-12', videoUrl: 'https://youtube.com/watch?v=xUm0BiZCWlQ', instructions: '1. Align handles with mid-chest. 2. Keep shoulders pinned back. 3. Press forward and control return.' },
+    { name: 'Pec Deck Machine Fly', sets: 3, reps: '12-15', videoUrl: 'https://youtube.com/watch?v=Z57CtFmRMxA', instructions: '1. Keep soft bend in elbows. 2. Bring handles together in front of chest. 3. Stretch slowly back.' },
+    { name: 'Low-to-High Cable Fly', sets: 3, reps: '12-15', videoUrl: 'https://youtube.com/watch?v=Iwe6AmxVf7o', instructions: '1. Set pulleys at bottom notch. 2. Sweep handles up and inward. 3. Squeeze upper chest for 1 second.' },
+    { name: 'Cable Rope Crunch', sets: 3, reps: '12-15', videoUrl: 'https://youtube.com/watch?v=2fbujeH3F0E', instructions: '1. Kneel holding rope by ears. 2. Curl ribs down toward hips. 3. Control back up without swaying.' }
+  ]);
+  const bonusDay = mod.parseAndBuildAiBonusDayObject(rawJson, 'Chest Focus', 1);
+  assert.ok(bonusDay);
+  assert.equal(bonusDay.isAiGenerated, true);
+  assert.equal(bonusDay.target, 'Chest Focus');
+  assert.equal(bonusDay.exercises.length, 5);
+  assert.equal(bonusDay.exercises[0].reps, '5-8');
+  assert.equal(bonusDay.exercises[4].name, 'Cable Rope Crunch');
+
+  const injected = mod.injectAiBonusWorkoutIntoDay6({}, 1, bonusDay);
+  assert.equal(injected['1'].length, 7);
+  assert.equal((injected['1'][5] as any).isAiGenerated, true);
+  assert.equal((injected['1'][5] as any).exercises.length, 5);
+});
+
 
 
 

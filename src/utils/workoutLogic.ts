@@ -7821,10 +7821,200 @@ export function getTimedHoldSetUiSpec(
   };
 }
 
+// ============================================================================
+// PULL-UP PYRAMID STRICT AUTO-INCREMENT, PHOTO-PROTECTED NOTE DELETE,
+// EXPOSED 2-COL MACHINE SWAP, SLEEK HEADER & AI BONUS WORKOUT GENERATOR
+// ============================================================================
 
+export function getStrictPyramidSetSpec(setIndexOneBased: number, totalSets: number): {
+  setIndex: number;
+  targetReps: string;
+  isMaxEffortAnchor: boolean;
+  setLabel: string;
+} {
+  const safeTotal = Math.max(5, Math.min(9, Math.floor(Number(totalSets) || 5)));
+  const safeIdx = Math.max(1, Math.min(safeTotal, Math.floor(Number(setIndexOneBased) || 1)));
+  const isMax = safeIdx === safeTotal;
+  return {
+    setIndex: safeIdx,
+    targetReps: String(safeIdx),
+    isMaxEffortAnchor: isMax,
+    setLabel: isMax ? `Set ${safeIdx} (Max)` : `Set ${safeIdx}`
+  };
+}
 
+export const DELETE_NOTE_PHOTO_CONFIRM_MESSAGE =
+  'This exercise has an attached machine photo. Do you want to delete the text note but keep the photo?';
 
+export interface ExerciseNoteRecord {
+  text?: string;
+  photo?: string;
+  photoDataUrl?: string;
+  updatedWeek?: number;
+  updatedAt?: string;
+}
 
+export function resolveDeleteExerciseNoteWithPhotoProtection(
+  notesMap: Record<string, ExerciseNoteRecord | undefined>,
+  exKey: string,
+  confirmKeepPhotoFn?: (message: string) => boolean
+): {
+  prompted: boolean;
+  keptPhoto: boolean;
+  nextNotesMap: Record<string, ExerciseNoteRecord | undefined>;
+} {
+  const nextMap: Record<string, ExerciseNoteRecord | undefined> = { ...(notesMap || {}) };
+  const prev = nextMap[exKey];
+  if (!prev) {
+    return { prompted: false, keptPhoto: false, nextNotesMap: nextMap };
+  }
+  const existingPhoto = prev.photo || prev.photoDataUrl || '';
+  if (!existingPhoto) {
+    delete nextMap[exKey];
+    return { prompted: false, keptPhoto: false, nextNotesMap: nextMap };
+  }
+  const keepPhoto = typeof confirmKeepPhotoFn === 'function'
+    ? Boolean(confirmKeepPhotoFn(DELETE_NOTE_PHOTO_CONFIRM_MESSAGE))
+    : true;
+  if (keepPhoto) {
+    nextMap[exKey] = {
+      ...prev,
+      text: '',
+      photo: existingPhoto,
+      photoDataUrl: existingPhoto
+    };
+    return { prompted: true, keptPhoto: true, nextNotesMap: nextMap };
+  }
+  delete nextMap[exKey];
+  return { prompted: true, keptPhoto: false, nextNotesMap: nextMap };
+}
 
+export const AI_BONUS_WORKOUT_TARGETS = [
+  'Chest Focus',
+  'Back & Biceps',
+  'Legs & Calves',
+  'Shoulders & Arms',
+  'Full Body'
+] as const;
 
+export type AiBonusWorkoutTarget = (typeof AI_BONUS_WORKOUT_TARGETS)[number];
 
+export function buildAiBonusWorkoutSystemPrompt(selectedTarget: string): string {
+  const cleanTarget = String(selectedTarget || 'Full Body').trim();
+  return `System: You are an elite sports scientist creating a 5-exercise hypertrophy workout for the user's selected target: ${cleanTarget}. You must return ONLY a raw JSON array of 5 objects matching this exact schema: [{ "name": "Exercise Name", "sets": 3, "reps": "8-12", "videoUrl": "https://youtube.com/...", "instructions": "3 short step-by-step instructions" }]. Rules: Exercise 1 must be a heavy compound (5-8 reps). Exercises 2-4 must be machines/cables (10-15 reps). Exercise 5 must be core or calves. Do not output markdown, only valid JSON.`;
+}
+
+export interface RawAiBonusExerciseItem {
+  name: string;
+  sets: number;
+  reps: string;
+  videoUrl: string;
+  instructions: string;
+}
+
+export interface FormattedAiBonusExercise {
+  id: string;
+  name: string;
+  sets: number;
+  reps: string;
+  restSec: number;
+  restLabel: string;
+  videoUrl: string;
+  notes: string;
+  instructions: string;
+  isAiGenerated: boolean;
+}
+
+export interface CustomAiBonusDayObject {
+  isAiGenerated: true;
+  target: string;
+  daySub: string;
+  title: string;
+  subtitle: string;
+  warmupType: 'upper' | 'lower';
+  exercises: FormattedAiBonusExercise[];
+}
+
+export function parseAndBuildAiBonusDayObject(
+  rawJsonOrArray: string | RawAiBonusExerciseItem[],
+  selectedTarget: string,
+  week = 1
+): CustomAiBonusDayObject | null {
+  let parsed: unknown = rawJsonOrArray;
+  if (typeof rawJsonOrArray === 'string') {
+    const cleaned = rawJsonOrArray
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      const startIdx = cleaned.indexOf('[');
+      const endIdx = cleaned.lastIndexOf(']');
+      if (startIdx >= 0 && endIdx > startIdx) {
+        try {
+          parsed = JSON.parse(cleaned.slice(startIdx, endIdx + 1));
+        } catch {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    }
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0) return null;
+
+  const cleanTarget = String(selectedTarget || 'Full Body').trim();
+  const slugTarget = cleanTarget.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  const exercises: FormattedAiBonusExercise[] = parsed.slice(0, 5).map((raw, idx) => {
+    const item = (raw && typeof raw === 'object' ? raw : {}) as Partial<RawAiBonusExerciseItem>;
+    const name = String(item.name || `Bonus Exercise ${idx + 1}`).trim();
+    const sets = Math.max(1, Math.min(8, Math.floor(Number(item.sets) || 3)));
+    const reps = String(item.reps || (idx === 0 ? '5-8' : '10-15')).trim();
+    const rawUrl = String(item.videoUrl || '').trim();
+    const videoUrl = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//i.test(rawUrl)
+      ? rawUrl
+      : `https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' form tutorial')}`;
+    const instructions = String(item.instructions || '1. Set seat and weight safely. 2. Move slowly with full control. 3. Pause briefly at peak squeeze.').trim();
+    const restSec = idx === 0 ? 120 : (idx === 4 ? 60 : 90);
+    return {
+      id: `ai_bonus_w${week}_${slugTarget}_${idx + 1}`,
+      name,
+      sets,
+      reps,
+      restSec,
+      restLabel: restSec >= 120 ? '2 min' : (restSec === 90 ? '90s' : '60s'),
+      videoUrl,
+      notes: instructions,
+      instructions,
+      isAiGenerated: true
+    };
+  });
+
+  return {
+    isAiGenerated: true,
+    target: cleanTarget,
+    daySub: cleanTarget,
+    title: `AI Bonus • ${cleanTarget}`,
+    subtitle: `5-Exercise Hypertrophy Plan (${cleanTarget})`,
+    warmupType: cleanTarget.toLowerCase().includes('leg') ? 'lower' : 'upper',
+    exercises
+  };
+}
+
+export function injectAiBonusWorkoutIntoDay6(
+  customDayScheduleByWeek: Record<string, Array<number | CustomAiBonusDayObject>> | undefined,
+  week: number,
+  bonusDayObj: CustomAiBonusDayObject
+): Record<string, Array<number | CustomAiBonusDayObject>> {
+  const wKey = String(Math.max(1, Math.floor(Number(week) || 1)));
+  const nextMap: Record<string, Array<number | CustomAiBonusDayObject>> = {
+    ...(customDayScheduleByWeek || {})
+  };
+  const existing = Array.isArray(nextMap[wKey]) && nextMap[wKey].length === 7
+    ? [...nextMap[wKey]]
+    : [0, 1, 2, 3, 4, 5, 6];
+  existing[5] = bonusDayObj;
+  nextMap[wKey] = existing;
+  return nextMap;
+}

@@ -34,7 +34,13 @@ export default async function handler(req, res) {
       ? body.contents
       : [{ role: 'user', parts: userParts }];
 
-    const enableGoogleSearch = body.enableGoogleSearch !== false;
+    const requestedResponseMimeType =
+      body.responseMimeType ||
+      body.response_mime_type ||
+      (body.generationConfig && (body.generationConfig.responseMimeType || body.generationConfig.response_mime_type)) ||
+      '';
+    const isJsonMode = requestedResponseMimeType === 'application/json';
+    const enableGoogleSearch = !isJsonMode && body.enableGoogleSearch !== false;
     const modelsToTry = Array.from(new Set([requestedModel, 'gemini-3.8-flash', 'gemini-4-hydrogen']));
     let lastErr = null;
 
@@ -45,7 +51,10 @@ export default async function handler(req, res) {
           ? (typeof systemInstruction === 'object' ? systemInstruction : { parts: [{ text: String(systemInstruction) }] })
           : undefined,
         contents: contentsPayload,
-        tools: enableGoogleSearch ? [{ googleSearch: {} }] : undefined
+        tools: enableGoogleSearch ? [{ googleSearch: {} }] : undefined,
+        generationConfig: isJsonMode
+          ? { response_mime_type: 'application/json' }
+          : (body.generationConfig || undefined)
       };
       let response = await fetch(url, {
         method: 'POST',
