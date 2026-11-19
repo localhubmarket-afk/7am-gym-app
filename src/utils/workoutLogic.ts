@@ -6982,10 +6982,16 @@ export function getExerciseProgressVisualState(
 // UPGRADE 3: UNCRUSHABLE SET ROW GRID GEOMETRY CONSTANTS
 // ============================================================================
 export const UNCRUSHABLE_SET_ROW_GRID_STYLE =
-  'grid-template-columns: 48px minmax(112px, 1.3fr) minmax(92px, 1fr) 76px; gap: 6px; align-items: center;';
+  'grid-template-columns: 48px minmax(105px, 1.2fr) minmax(95px, 1fr) 76px; gap: 6px; align-items: center; overflow: hidden;';
+
+export const UNCRUSHABLE_STEPPER_WRAPPER_STYLE =
+  'display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.95); border-radius: 8px; padding: 2px 4px;';
+
+export const UNCRUSHABLE_STEPPER_BTN_STYLE =
+  'flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;';
 
 export const UNCRUSHABLE_NUMBER_DISPLAY_STYLE =
-  'min-width: 52px; font-size: 15px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: visible;';
+  'flex-grow: 1; min-width: 0; width: 100%; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 15px; font-weight: 700;';
 
 // ============================================================================
 // UPGRADE 4: 1-TAP DELETE NOTE HELPER

@@ -1771,12 +1771,15 @@ test('Subtest 30: Auto-Cascade Sets, Zeigarnik In-Progress State, Uncrushable Gr
   assert.equal(state2.stateCode, 2);
   assert.equal(state2.headerBadgeText, 'Done');
 
-  // 3. Uncrushable Set Row Grid Geometry constants
+  // 3. Uncrushable Set Row Grid Geometry constants (Hotfix: prevent cut-off "+" buttons)
   assert.equal(
-    mod.UNCRUSHABLE_SET_ROW_GRID_STYLE.includes('grid-template-columns: 48px minmax(112px, 1.3fr) minmax(92px, 1fr) 76px'),
+    mod.UNCRUSHABLE_SET_ROW_GRID_STYLE.includes('grid-template-columns: 48px minmax(105px, 1.2fr) minmax(95px, 1fr) 76px; gap: 6px; align-items: center; overflow: hidden;'),
     true
   );
-  assert.equal(mod.UNCRUSHABLE_NUMBER_DISPLAY_STYLE.includes('min-width: 52px; font-size: 15px;'), true);
+  assert.equal(mod.UNCRUSHABLE_STEPPER_WRAPPER_STYLE.includes('display: flex; align-items: center; justify-content: space-between;'), true);
+  assert.equal(mod.UNCRUSHABLE_STEPPER_BTN_STYLE.includes('flex-shrink: 0; width: 32px; height: 32px;'), true);
+  assert.equal(mod.UNCRUSHABLE_NUMBER_DISPLAY_STYLE.includes('flex-grow: 1; min-width: 0;'), true);
+  assert.equal(mod.UNCRUSHABLE_NUMBER_DISPLAY_STYLE.includes('min-width: 52px'), false);
 
   // 4. 1-Tap Delete Note helper
   const notesMap: Record<string, any> = {

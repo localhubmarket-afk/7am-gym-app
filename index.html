@@ -76,6 +76,69 @@
     .hidden {
       display: none !important;
     }
+
+    /* Global Set Row 4-Column Grid & Unclipped Weight/Reps Steppers */
+    .set-row-uncrushable-grid {
+      display: grid;
+      grid-template-columns: 48px minmax(105px, 1.2fr) minmax(95px, 1fr) 76px;
+      gap: 6px;
+      align-items: center;
+      overflow: hidden;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .weight-stepper,
+    .reps-stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 8px;
+      padding: 2px 4px;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .weight-stepper .step-adj-btn,
+    .reps-stepper .step-adj-btn {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      padding: 0;
+      line-height: 1;
+    }
+    .weight-stepper .workout-input,
+    .reps-stepper .workout-input {
+      flex-grow: 1;
+      flex-shrink: 1;
+      min-width: 0;
+      width: 100%;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      padding: 0;
+      background: transparent;
+      border: 0;
+    }
+    @media (max-width: 380px) {
+      .set-row-uncrushable-grid {
+        grid-template-columns: 42px minmax(100px, 1.2fr) minmax(90px, 1fr) 68px;
+        gap: 4px;
+      }
+      .weight-stepper .step-adj-btn,
+      .reps-stepper .step-adj-btn {
+        width: 28px;
+        height: 30px;
+      }
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-28 overflow-x-hidden w-full max-w-full selection:bg-emerald-500 selection:text-slate-950">
@@ -178,7 +241,7 @@
   </div>
 
   <!-- Main Content Container (Sits cleanly below fixed top header with dynamic ResizeObserver spacer) -->
-  <main id="main-content-container" class="max-w-xl w-full mx-auto px-3 sm:px-4 pt-24 space-y-2.5 overflow-x-hidden" style="padding-bottom: 110px;">
+  <main id="main-content-container" class="max-w-xl w-full mx-auto px-1.5 sm:px-4 pt-24 space-y-2.5 overflow-x-hidden" style="padding-bottom: 110px;">
 
     <!-- 5-Minute Forgotten Last Set Reminder Banner ("Did you finish your workout?") -->
     <div id="forgotten-set-reminder-banner" role="region" aria-label="Unfinished Workout Reminder" class="hidden bg-amber-950/90 border-2 border-amber-400/80 rounded-2xl p-3.5 space-y-2.5 shadow-xl">
@@ -12165,7 +12228,7 @@
             `;
           } else if (isBodyweightRepsOnly) {
             setsHtml += `
-              <div class="py-2 px-2.5 rounded-xl transition-all ${
+              <div class="py-2 px-1.5 sm:px-2.5 rounded-xl transition-all ${
                 isDone
                   ? 'bg-emerald-950/20 border border-emerald-500/35'
                   : 'bg-slate-950/75 border border-slate-800/80'
@@ -12176,10 +12239,10 @@
                     <span class="text-xs font-extrabold leading-tight block ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
                   </div>
                   <div class="min-w-0 max-w-[200px] mx-auto w-full">
-                    <div class="flex items-center bg-slate-900 border border-slate-700/90 rounded-lg overflow-hidden">
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn w-8 h-9 sm:w-9 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
-                      <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full bg-transparent py-1 text-white placeholder-slate-500 focus:outline-none" style="min-width: 52px; font-size: 15px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: visible;" />
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn w-8 h-9 sm:w-9 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
+                    <div class="reps-stepper border border-slate-700/90">
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
+                      <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input text-white placeholder-slate-500 focus:outline-none" />
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn text-sm font-extrabold text-slate-200 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
                     </div>
                   </div>
                   <div class="flex items-center justify-end shrink-0">
@@ -12198,14 +12261,14 @@
             `;
           } else {
             setsHtml += `
-              <div class="py-2 px-2.5 rounded-xl transition-all ${
+              <div class="py-2 px-1 sm:px-2.5 rounded-xl transition-all ${
                 isDone
                   ? 'bg-emerald-950/20 border border-emerald-500/35'
                   : (isSelectedInCalc
                       ? 'bg-slate-950/90 border border-sky-400/50'
                       : 'bg-slate-950/75 border border-slate-800/80')
               }">
-                <div class="set-row-uncrushable-grid" style="display: grid; grid-template-columns: 48px minmax(112px, 1.3fr) minmax(92px, 1fr) 76px; gap: 6px; align-items: center;">
+                <div class="set-row-uncrushable-grid">
                   ${prevWeekHintHtml}
                   <div class="min-w-0">
                     <span class="text-xs font-extrabold whitespace-nowrap ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
@@ -12216,17 +12279,17 @@
                     ` : ''}
                   </div>
                   <div class="min-w-0">
-                    <div class="flex items-center bg-slate-900 border ${isBarbellEx ? 'border-amber-500/40' : 'border-slate-700/90'} rounded-lg overflow-hidden">
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-${weightStep}" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Weight">−</button>
-                      <input type="number" step="${weightStep}" min="0" inputmode="decimal" placeholder="${weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input w-full bg-transparent py-1 text-white placeholder-slate-500 focus:outline-none" style="min-width: 52px; font-size: 15px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: visible;" />
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="${weightStep}" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Weight">+</button>
+                    <div class="weight-stepper ring-1 ring-inset ${isBarbellEx ? 'ring-amber-500/40' : 'ring-slate-700/90'}">
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-${weightStep}" class="step-adj-btn text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Weight">−</button>
+                      <input type="number" step="${weightStep}" min="0" inputmode="decimal" placeholder="${weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input text-white placeholder-slate-500 focus:outline-none" />
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="${weightStep}" class="step-adj-btn text-sm font-extrabold text-slate-200 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Weight">+</button>
                     </div>
                   </div>
                   <div class="min-w-0">
-                    <div class="flex items-center bg-slate-900 border border-slate-700/90 rounded-lg overflow-hidden">
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
-                      <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input w-full bg-transparent py-1 text-white placeholder-slate-500 focus:outline-none" style="min-width: 52px; font-size: 15px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: visible;" />
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn w-7 h-9 sm:w-8 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
+                    <div class="reps-stepper ring-1 ring-inset ring-slate-700/90">
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
+                      <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input text-white placeholder-slate-500 focus:outline-none" />
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn text-sm font-extrabold text-slate-200 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
                     </div>
                   </div>
                   <div class="flex items-center justify-end shrink-0">
@@ -12306,7 +12369,7 @@
                   : (isExComplete
                       ? 'border border-emerald-500/35 bg-slate-900/65 opacity-85 hover:opacity-100'
                       : 'border border-slate-800 bg-slate-900/80 hover:border-slate-700'))
-          } rounded-2xl p-3.5 sm:p-4 space-y-2.5 scroll-mt-28 transition-all">
+          } rounded-2xl px-1.5 py-3 sm:p-4 space-y-2.5 scroll-mt-28 transition-all">
             ${ex.isSwappedMachine ? `
               <div class="flex flex-wrap items-center justify-between gap-2 bg-emerald-950/60 border border-emerald-400/50 rounded-xl px-3 py-2">
                 <div class="flex items-center gap-1.5 min-w-0">
@@ -12697,11 +12760,11 @@
                   <div class="col-span-3 text-right">1-Tap Log</div>
                 </div>
                 ` : `
-                <div class="grid grid-cols-12 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  <div class="col-span-2">Set</div>
-                  <div class="col-span-4 text-center ${isBarbellEx ? (isMachineEx ? 'text-emerald-300' : 'text-amber-300') : ''}">Weight (${exUnit.toUpperCase()})</div>
-                  <div class="col-span-3 text-center">Reps</div>
-                  <div class="col-span-3 text-right">1-Tap Log</div>
+                <div class="set-row-uncrushable-grid px-1 sm:px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <div>Set</div>
+                  <div class="text-center ${isBarbellEx ? (isMachineEx ? 'text-emerald-300' : 'text-amber-300') : ''}">Weight (${exUnit.toUpperCase()})</div>
+                  <div class="text-center">Reps</div>
+                  <div class="text-right">1-Tap Log</div>
                 </div>
                 `)}
                 ${setsHtml}
