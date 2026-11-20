@@ -659,10 +659,10 @@
           </div>
         </details>
 
-        <!-- Collapsible Rice Cooking Timer (Clean Sequential 2-Phase Label on 1 Line) -->
+        <!-- Collapsible State-Bound Diet Cooking Timer (Defaults CLOSED; Adapts to state.diet) -->
         <details id="timer-rice-cooking-details" class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-left">
           <summary class="cursor-pointer flex items-center justify-between gap-1.5 text-xs sm:text-sm font-bold text-sky-400 hover:text-sky-300 select-none">
-            <span class="truncate">Jasmine Rice Timer (12m Cook + 10m Cooldown)</span>
+            <span id="dynamic-diet-cooking-timer-summary-title" class="truncate">Jasmine Rice Timer (12m Cook + 10m Cooldown)</span>
             <span class="shrink-0">▼</span>
           </summary>
           <div id="timer-rice-stage-container" class="pt-2.5 space-y-2">
@@ -901,9 +901,15 @@
         </div>
 
         <!-- Row 2 (Title): Shopping List (clean 20px bold heading) & Row 3 (1-Line ELI12 Subtitle) -->
-        <div class="space-y-1">
-          <h2 id="shopping-main-heading" class="text-xl font-extrabold text-white leading-tight">Shopping List</h2>
-          <p class="text-xs text-slate-300 leading-relaxed">Check off what you have at home. Copy the rest for the store.</p>
+        <div class="space-y-1.5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="shopping-main-heading" class="text-xl font-extrabold text-slate-50 leading-tight">Shopping List</h2>
+            <span id="shopping-active-diet-badge" class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-lg bg-indigo-500/20 border border-indigo-400/50 text-indigo-200 whitespace-nowrap">Diet: Vegan</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">Check off what you have at home. Tap Swap Brand/Quality on any item to update your weekly total.</p>
+          <div id="shop-diet-quick-pills" class="grid grid-cols-6 gap-1.5 pt-0.5" style="grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px;" role="group" aria-label="Active Diet Shopping Filter">
+            <!-- Populated dynamically by renderShoppingView() -->
+          </div>
         </div>
 
         <!-- Symmetrical 2-Column View Switcher (No "In)" Wrapping) -->
@@ -1268,6 +1274,9 @@
       convertedExercises: {},
       workoutLogs: JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_LOGS)),
       pullupLogs: JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_PULLUPS)),
+      diet: 'Vegan',
+      shopBrandOverrides: {},
+      forceShowRiceTimerInKeto: false,
       cloudDbUrl: ''
     };
     /*__BAKED_STATE_END__*/
@@ -1489,6 +1498,16 @@
       }
       if (!merged.dietPreference || typeof merged.dietPreference !== 'string') {
         merged.dietPreference = (merged.programWizardConfig && merged.programWizardConfig.diet) || 'vegan';
+      }
+      if (!merged.diet || typeof merged.diet !== 'string') {
+        const dpLow = String(merged.dietPreference || 'vegan').toLowerCase();
+        merged.diet = dpLow === 'keto' ? 'Keto' : (dpLow === 'vegetarian' ? 'Vegetarian' : (dpLow === 'gluten_free' ? 'Gluten-Free' : (dpLow === 'any' ? 'Any' : 'Vegan')));
+      }
+      if (!merged.shopBrandOverrides || typeof merged.shopBrandOverrides !== 'object') {
+        merged.shopBrandOverrides = {};
+      }
+      if (typeof merged.forceShowRiceTimerInKeto !== 'boolean') {
+        merged.forceShowRiceTimerInKeto = false;
       }
       if (!merged.flexMealOverridesByDay || typeof merged.flexMealOverridesByDay !== 'object') {
         merged.flexMealOverridesByDay = {};
@@ -3738,10 +3757,280 @@
 
     const WEEKLY_SHOPPING_CATEGORIES = SHOPPING_AISLES;
 
+    function normalizeAppDietState(rawDiet) {
+      const s = String(rawDiet || (state && (state.diet || state.dietPreference)) || 'vegan').toLowerCase().trim();
+      if (s === 'keto' || s.includes('keto') || s.includes('low carb')) {
+        return { id: 'keto', display: 'Keto', label: 'Keto (Low Carb)' };
+      }
+      if (s === 'vegetarian' || s === 'veggie') {
+        return { id: 'vegetarian', display: 'Vegetarian', label: 'Vegetarian' };
+      }
+      if (s === 'gluten_free' || s === 'gluten-free' || s.includes('gluten')) {
+        return { id: 'gluten_free', display: 'Gluten-Free', label: 'Gluten-Free' };
+      }
+      if (s === 'any' || s.includes('any food') || s.includes('cheapest')) {
+        return { id: 'any', display: 'Any', label: 'Any Food (Cheapest)' };
+      }
+      return { id: 'vegan', display: 'Vegan', label: 'Vegan' };
+    }
+
+    function parseShopDollar(raw) {
+      if (typeof raw === 'number' && Number.isFinite(raw)) return Math.max(0, raw);
+      const str = String(raw || '').replace(/,/g, '');
+      const m = str.match(/\$?\s*(\d+(?:\.\d+)?)/);
+      return m ? Math.max(0, parseFloat(m[1])) : 0;
+    }
+
+    function getDietShoppingItemPatchesInline(rawDiet) {
+      const norm = normalizeAppDietState(rawDiet);
+      if (norm.id === 'vegan') return {};
+      if (norm.id === 'keto') {
+        return {
+          shop_tofu: {
+            shortName: '2. Pasture Eggs (18-Pack) & Chicken Thighs (Keto)',
+            name: '2. Pasture Eggs & Boneless Chicken Thighs (Low-Carb Protein)',
+            weeklyQty: '1,200g/wk + 18 Eggs',
+            quarterlyQty: '15.4 kg / 90 days',
+            weeklyCost: '$10.50/wk',
+            quarterlyCost: '$135.00 / 3 mos',
+            eli12Summary: 'High-protein, zero-carb base for Fuel 3 lunch bowls.',
+            fullMathNotes: 'Replaces high-carb sides with lean protein + healthy fats (~$10.50/wk).'
+          },
+          shop_banana: {
+            shortName: '4. Fresh Hass Avocados (Bag of 5 • Keto)',
+            name: '4. Fresh Hass Avocados (Low-Carb Healthy Fats)',
+            weeklyQty: '5 Avocados/wk (~700g)',
+            quarterlyQty: '64 Avocados / 90 days',
+            weeklyCost: '$4.50/wk',
+            quarterlyCost: '$57.86 / 3 mos',
+            eli12Summary: 'Replaces bananas with creamy potassium and zero sugar.',
+            fullMathNotes: 'Half an avocado daily keeps carbs under 25g/day while boosting satiety ($4.50/wk).'
+          },
+          shop_oats: {
+            shortName: '5. Almond Flour & Hemp Hearts (Low-Carb Base)',
+            name: '5. Blanched Almond Flour & Shelled Hemp Hearts (Keto)',
+            weeklyQty: '280g/wk (40g/day)',
+            quarterlyQty: '3,600g / 90 days',
+            weeklyCost: '$4.90/wk',
+            quarterlyCost: '$63.00 / 3 mos',
+            eli12Summary: 'Replaces oats for a 4g-net-carb breakfast bowl.',
+            fullMathNotes: '40g/day blended with chia seeds & unsweetened almond milk for keto Fuel 2 ($4.90/wk).'
+          },
+          shop_rice: {
+            shortName: '6. Riced Cauliflower & Zucchini Medley (Keto)',
+            name: '6. Frozen Riced Cauliflower & Zucchini Medley (Low-Carb)',
+            weeklyQty: '1,050g/wk (150g/day)',
+            quarterlyQty: '13.5 kg / 90 days',
+            weeklyCost: '$3.40/wk',
+            quarterlyCost: '$43.71 / 3 mos',
+            eli12Summary: 'Steam 8m with broccoli using the Low-Carb Veggie Timer.',
+            fullMathNotes: '150g/day replaces jasmine rice to cut 40g net carbs from Fuel 3 ($3.40/wk).'
+          },
+          shop_isolate: {
+            shortName: '12. Zero-Carb Whey or Pea Isolate (5 lb Tub • Keto)',
+            name: '12. Zero-Carb Protein Isolate — Unflavored (Keto Friendly)',
+            weeklyQty: '630g/wk (90g/day)',
+            quarterlyQty: '8,100g / 90 days (4 Tubs)',
+            weeklyCost: '$22.40/wk',
+            quarterlyCost: '$287.96 / 3 mos',
+            eli12Summary: '90g/day across Fuel 1 and Fuel 4 with under 2g net carbs.',
+            fullMathNotes: 'Maintains 139g daily protein target without spiking blood sugar ($22.40/wk).'
+          }
+        };
+      }
+      if (norm.id === 'vegetarian') {
+        return {
+          shop_silk: {
+            shortName: '1. High-Protein Filtered Milk or Almond Milk (1.89L)',
+            name: '1. High-Protein Filtered Milk or Unsweetened Almond Milk',
+            weeklyQty: '1,260 ml/wk (180 ml/day)',
+            quarterlyQty: '16.2 L / 90 days',
+            weeklyCost: '$4.20/wk',
+            quarterlyCost: '$54.00 / 3 mos',
+            eli12Summary: 'Use 180 ml/day in Overnight Oats for extra dairy protein.',
+            fullMathNotes: '180 ml/day in Fuel 2 Overnight Oats ($4.20/wk).'
+          },
+          shop_tofu: {
+            shortName: '2. 0% Plain Greek Yogurt + Large Eggs (Vegetarian)',
+            name: '2. 0% Plain Greek Yogurt (750g) & Large Eggs (12-Pack)',
+            weeklyQty: '1,500g Yogurt + 12 Eggs/wk',
+            quarterlyQty: '19.3 kg + 154 Eggs / 90d',
+            weeklyCost: '$9.40/wk',
+            quarterlyCost: '$120.86 / 3 mos',
+            eli12Summary: 'Easy vegetarian protein swap for daily lunch and snacks.',
+            fullMathNotes: 'Delivers ~24g high-leucine protein per serving alongside jasmine rice & broccoli ($9.40/wk).'
+          },
+          shop_isolate: {
+            shortName: '12. Whey or Pea Protein Isolate (5 lb Tub)',
+            name: '12. Unflavored Whey or Pea Protein Isolate (5 lb / 2,268g)',
+            weeklyQty: '630g/wk (90g/day)',
+            quarterlyQty: '8,100g / 90 days (4 Tubs)',
+            weeklyCost: '$21.50/wk',
+            quarterlyCost: '$276.43 / 3 mos',
+            eli12Summary: 'Use 90g/day across shakes and oats.',
+            fullMathNotes: 'Vegetarian whey or pea isolate keeps daily protein steady at 139g/day ($21.50/wk).'
+          }
+        };
+      }
+      if (norm.id === 'gluten_free') {
+        return {
+          shop_oats: {
+            shortName: '5. Certified Gluten-Free Rolled Oats (907g bag)',
+            name: '5. Certified Gluten-Free Protein Oats (100% Purity Protocol)',
+            weeklyQty: '315g/wk (45g/day)',
+            quarterlyQty: '4,050g / 90 days (4.5 bags)',
+            weeklyCost: '$3.49/wk',
+            quarterlyCost: '$44.87 / 3 mos',
+            eli12Summary: 'Certified gluten-free oats — 180g per 4-day oats batch.',
+            fullMathNotes: 'Purity-tested gluten-free oats prevent cross-contamination ($3.49/wk).'
+          },
+          shop_rice: {
+            shortName: '6. Naturally Gluten-Free White Jasmine Rice',
+            name: '6. Naturally Gluten-Free White Jasmine Rice',
+            weeklyQty: '385g dry/wk (55g/day)',
+            quarterlyQty: '4,950g dry / 90 days',
+            weeklyCost: '$1.16/wk',
+            quarterlyCost: '$14.85 / 3 mos',
+            eli12Summary: 'Naturally 100% gluten-free. Cook 220g dry every 4 days.',
+            fullMathNotes: 'Rinse 3x and simmer 12m for 4 gluten-free bowls ($1.16/wk).'
+          },
+          shop_nooch: {
+            shortName: '9. Certified GF Nutritional Yeast Flakes',
+            name: '9. Certified Gluten-Free Fortified Nutritional Yeast',
+            weeklyQty: '84g/wk (12g/day)',
+            quarterlyQty: '1,080g / 90 days',
+            weeklyCost: '$1.45/wk',
+            quarterlyCost: '$18.64 / 3 mos',
+            eli12Summary: 'Certified GF flakes for B12, savory flavor, and +6g protein.',
+            fullMathNotes: '12g/day sprinkled on Fuel 3 bowl ($1.45/wk).'
+          }
+        };
+      }
+      return {
+        shop_silk: {
+          shortName: '1. Skim or 2% Milk (2L Carton — Budget)',
+          name: '1. Skim or 2% Dairy Milk (2L Carton)',
+          weeklyQty: '1,260 ml/wk (180 ml/day)',
+          quarterlyQty: '16.2 L / 90 days',
+          weeklyCost: '$3.10/wk',
+          quarterlyCost: '$39.86 / 3 mos',
+          eli12Summary: 'Lowest-cost milk for Fuel 2 Overnight Oats.',
+          fullMathNotes: '180 ml/day adds 6g extra dairy protein to breakfast oats ($3.10/wk).'
+        },
+        shop_tofu: {
+          shortName: '2. Budget Chicken Breast & Large Eggs Pack',
+          name: '2. Club-Pack Chicken Breast & Eggs (Cheapest Protein)',
+          weeklyQty: '1,100g/wk + 12 Eggs',
+          quarterlyQty: '14.1 kg / 90 days',
+          weeklyCost: '$9.80/wk',
+          quarterlyCost: '$126.00 / 3 mos',
+          eli12Summary: 'Batch-cook chicken or eggs for Fuel 3 jasmine rice bowls.',
+          fullMathNotes: 'High-protein, budget-friendly animal protein for daily Fuel 3 bowls ($9.80/wk).'
+        },
+        shop_isolate: {
+          shortName: '12. Bulk Whey or Pea Protein Tub (5 lb — Cheapest)',
+          name: '12. Bulk Whey or Pea Protein Blend (5 lb / 2,268g Tub)',
+          weeklyQty: '630g/wk (90g/day)',
+          quarterlyQty: '8,100g / 90 days (4 Tubs)',
+          weeklyCost: '$20.50/wk',
+          quarterlyCost: '$263.57 / 3 mos',
+          eli12Summary: 'Lowest cost per gram of protein for Fuel 1 and Fuel 4.',
+          fullMathNotes: '90g/day across shakes and oats ($20.50/wk).'
+        }
+      };
+    }
+
+    function getPremiumBrandPresetForItem(item) {
+      const baseWeekly = parseShopDollar((item && (item.baseWeeklyCost || item.weeklyCost)) || 2.5) || 2.5;
+      const presets = {
+        shop_silk: { brandName: 'Organic Barista / High-Protein Milk (1.89L)', weeklyPrice: +(baseWeekly + 2.3).toFixed(2), note: 'Organic clean-label carton with zero gums or fillers.' },
+        shop_tofu: { brandName: 'Organic Sprouted / Pasture-Raised Premium', weeklyPrice: +(baseWeekly + 3.5).toFixed(2), note: 'Higher quality organic or pasture-raised main protein.' },
+        shop_broccoli: { brandName: 'Organic Local Broccoli Crowns', weeklyPrice: +(baseWeekly + 1.75).toFixed(2), note: 'Certified organic fresh florets.' },
+        shop_banana: { brandName: 'Organic Fair-Trade Produce', weeklyPrice: +(baseWeekly + 0.85).toFixed(2), note: 'Certified organic upgrade.' },
+        shop_oats: { brandName: 'Organic Sprouted Gluten-Free Oats', weeklyPrice: +(baseWeekly + 1.9).toFixed(2), note: 'Sprouted organic whole-grain upgrade.' },
+        shop_rice: { brandName: 'Organic Aged Thai Hom Mali Jasmine Rice', weeklyPrice: +(baseWeekly + 1.15).toFixed(2), note: 'Single-origin aromatic organic grain upgrade.' },
+        shop_pb: { brandName: 'Organic Valencia Stone-Ground Peanut Butter', weeklyPrice: +(baseWeekly + 1.35).toFixed(2), note: 'Organic Valencia peanuts, zero palm oil.' },
+        shop_chia: { brandName: 'Organic Black Reserve Chia Seeds', weeklyPrice: +(baseWeekly + 0.55).toFixed(2), note: 'Lab-tested organic whole chia seeds.' },
+        shop_nooch: { brandName: 'Organic Premium Nutritional Yeast Flakes', weeklyPrice: +(baseWeekly + 0.95).toFixed(2), note: 'Premium flaky nutritional yeast.' },
+        shop_iodine: { brandName: 'Organic Sea Kelp + Iodized Mineral Salt', weeklyPrice: +(baseWeekly + 0.35).toFixed(2), note: 'Trace-mineral iodized salt upgrade.' },
+        shop_sesame: { brandName: 'Cold-Pressed Organic Toasted Sesame Oil', weeklyPrice: +(baseWeekly + 0.45).toFixed(2), note: 'First cold-pressed dark glass bottle.' },
+        shop_isolate: { brandName: 'Third-Party Certified Organic Isolate (5 lb)', weeklyPrice: +(baseWeekly + 6.5).toFixed(2), note: 'Lab-tested organic protein tub.' },
+        shop_creatine: { brandName: 'Creapure German Micronized Creatine (1 kg)', weeklyPrice: +(baseWeekly + 0.9).toFixed(2), note: '99.99% pure German Creapure monohydrate.' },
+        shop_vitd3: { brandName: 'Organic Lichen Vitamin D3 + K2 Drops', weeklyPrice: +(baseWeekly + 0.65).toFixed(2), note: 'Easy-absorb D3 + K2 combo.' }
+      };
+      if (item && presets[item.id]) return presets[item.id];
+      const baseLabel = String((item && (item.baseShortName || item.shortName || item.name)) || 'Item').replace(/^\d+\.\s*/, '');
+      return {
+        brandName: `Organic Premium ${baseLabel}`,
+        weeklyPrice: +(baseWeekly * 1.45).toFixed(2),
+        note: 'Organic / top-tier brand swap.'
+      };
+    }
+
+    function computeDynamicShoppingTotals(categories, brandOverrides) {
+      const overrides = brandOverrides || (state && state.shopBrandOverrides) || {};
+      let storeWeeklyTotal = 0;
+      let bulkWeeklyTotal = 0;
+      let swappedCount = 0;
+      const itemPricing = {};
+
+      (categories || []).forEach((cat, idx) => {
+        const isBulk = idx === 3 || (cat.category && cat.category.indexOf('Aisle 4') !== -1);
+        (cat.items || []).forEach(it => {
+          const baseWeekly = parseShopDollar(it.baseWeeklyCost || it.weeklyCost);
+          const ov = overrides[it.id];
+          const hasOverride = Boolean(ov && Number.isFinite(Number(ov.weeklyPrice)) && Number(ov.weeklyPrice) >= 0);
+          const effectiveWeekly = hasOverride ? +Number(ov.weeklyPrice).toFixed(2) : baseWeekly;
+          const effectiveQuarterly = hasOverride
+            ? +(effectiveWeekly * (90 / 7)).toFixed(2)
+            : (parseShopDollar(it.baseQuarterlyCost || it.quarterlyCost) || +(effectiveWeekly * (90 / 7)).toFixed(2));
+          if (hasOverride) swappedCount++;
+          if (isBulk) bulkWeeklyTotal += effectiveWeekly;
+          else storeWeeklyTotal += effectiveWeekly;
+          itemPricing[it.id] = {
+            weeklyPrice: effectiveWeekly,
+            quarterlyPrice: effectiveQuarterly,
+            baseWeeklyPrice: baseWeekly,
+            deltaWeekly: +(effectiveWeekly - baseWeekly).toFixed(2),
+            isSwapped: hasOverride,
+            brandName: hasOverride ? String(ov.brandName || '').trim() : ''
+          };
+        });
+      });
+
+      storeWeeklyTotal = +storeWeeklyTotal.toFixed(2);
+      bulkWeeklyTotal = +bulkWeeklyTotal.toFixed(2);
+      const weeklyTotal = +(storeWeeklyTotal + bulkWeeklyTotal).toFixed(2);
+      const storeQuarterlyTotal = +(storeWeeklyTotal * (90 / 7)).toFixed(2);
+      const bulkQuarterlyTotal = +(bulkWeeklyTotal * (90 / 7)).toFixed(2);
+      const quarterlyTotal = +(storeQuarterlyTotal + bulkQuarterlyTotal).toFixed(2);
+      const dailyTotal = +(weeklyTotal / 7).toFixed(2);
+
+      return {
+        storeWeeklyTotal,
+        bulkWeeklyTotal,
+        weeklyTotal,
+        storeQuarterlyTotal,
+        bulkQuarterlyTotal,
+        quarterlyTotal,
+        dailyTotal,
+        swappedCount,
+        itemPricing
+      };
+    }
+
     function syncHeaderCostSubtitle() {
       const subEl = document.getElementById('header-subtitle');
       if (!subEl) return;
       const isCostcoCreatine = Boolean(state && state.subscriptionChecklist && state.subscriptionChecklist.cancelCreatineAutoship);
+      const activeDiet = normalizeAppDietState(state && (state.diet || state.dietPreference));
+      const hasBrandOverrides = Boolean(state && state.shopBrandOverrides && Object.keys(state.shopBrandOverrides).length > 0);
+      if (activeDiet.id !== 'vegan' || hasBrandOverrides) {
+        const dynCats = getDynamicWeeklyShoppingCategories(state);
+        const totals = computeDynamicShoppingTotals(dynCats, state && state.shopBrandOverrides);
+        subEl.textContent = `Full-Body • $${totals.dailyTotal.toFixed(2)}/d`;
+        return;
+      }
       subEl.textContent = isCostcoCreatine ? 'Full-Body • $6.34/d' : 'Full-Body • $6.35/d';
     }
 
@@ -3792,9 +4081,45 @@
         }
       }
 
+      // State-Bound Diet Shopping Patches (Adapts SHOPPING_AISLES to state.diet)
+      const dietPatches = getDietShoppingItemPatchesInline(s.diet || s.dietPreference || 'vegan');
+      const brandOverrides = (s.shopBrandOverrides && typeof s.shopBrandOverrides === 'object') ? s.shopBrandOverrides : {};
       const period = s.shopListPeriod === 'quarterly' ? 'quarterly' : 'weekly';
+
       cats.forEach(c => {
         (c.items || []).forEach(it => {
+          const patch = dietPatches[it.id];
+          if (patch) {
+            it.isDietPatched = true;
+            it.shortName = patch.shortName;
+            it.name = patch.name;
+            it.weeklyQty = patch.weeklyQty;
+            it.quarterlyQty = patch.quarterlyQty;
+            it.weeklyCost = patch.weeklyCost;
+            it.quarterlyCost = patch.quarterlyCost;
+            it.eli12Summary = patch.eli12Summary;
+            it.fullMathNotes = patch.fullMathNotes;
+            it.note = patch.fullMathNotes;
+          } else {
+            it.isDietPatched = false;
+          }
+          it.baseShortName = it.shortName || it.name;
+          it.baseWeeklyCost = it.weeklyCost;
+          it.baseQuarterlyCost = it.quarterlyCost;
+
+          const ov = brandOverrides[it.id];
+          if (ov && Number.isFinite(Number(ov.weeklyPrice))) {
+            const wPrice = +Number(ov.weeklyPrice).toFixed(2);
+            const qPrice = +(wPrice * (90 / 7)).toFixed(2);
+            it.isBrandSwapped = true;
+            it.swappedBrandName = String(ov.brandName || '').trim();
+            it.weeklyCost = `$${wPrice.toFixed(2)}/wk`;
+            it.quarterlyCost = `$${qPrice.toFixed(2)} / 3 mos`;
+          } else {
+            it.isBrandSwapped = false;
+            it.swappedBrandName = '';
+          }
+
           it.qty = period === 'quarterly' ? (it.quarterlyQty || it.qty) : (it.weeklyQty || it.qty);
         });
       });
@@ -4563,7 +4888,50 @@
       return state.riceMixAlertEnabled !== false;
     }
 
-    function getTwoPhaseRiceTimerStages() {
+    function isKetoVeggieTimerMode(contextPrefix) {
+      if (contextPrefix === 'batch-2') return false;
+      const norm = normalizeAppDietState(state && (state.diet || state.dietPreference));
+      return norm.id === 'keto' && !Boolean(state && state.forceShowRiceTimerInKeto);
+    }
+
+    function getDietCookingTimerSummaryTitle() {
+      const norm = normalizeAppDietState(state && (state.diet || state.dietPreference));
+      if (norm.id === 'keto' && !Boolean(state && state.forceShowRiceTimerInKeto)) {
+        return 'Low-Carb Veggie Timer (8m Steam + 3m Drain)';
+      }
+      if (norm.id === 'vegetarian') return 'Jasmine Rice & Egg Prep Timer (12m Cook + 10m Rest)';
+      if (norm.id === 'gluten_free') return 'GF Jasmine Rice Timer (12m Cook + 10m Cooldown)';
+      if (norm.id === 'any') return 'Bulk Rice & Meal Prep Timer (12m Cook + 10m Rest)';
+      return 'Jasmine Rice Timer (12m Cook + 10m Cooldown)';
+    }
+
+    function getTwoPhaseRiceTimerStages(contextPrefix) {
+      if (isKetoVeggieTimerMode(contextPrefix)) {
+        return [
+          {
+            stage: 1,
+            phaseKey: 'cook',
+            phaseBadge: 'PHASE 1 • STEAM',
+            buttonLabel: 'Start 8m Veggie Steam Timer',
+            runningLabel: 'Steaming Veggies (8m) — Running',
+            doneLabel: '✓ 8m Steam Done',
+            seconds: 480,
+            actionText: 'Steam broccoli & riced cauliflower covered on medium heat. Quick toss at 4m.',
+            completionBanner: 'STEAMING DONE! Take veggies off heat and tap Start 3m Drain & Cool.'
+          },
+          {
+            stage: 2,
+            phaseKey: 'cooldown',
+            phaseBadge: 'PHASE 2 • DRAIN & COOL',
+            buttonLabel: 'Start 3m Drain & Cool Timer',
+            runningLabel: 'Draining & Cooling (3m) — Running',
+            doneLabel: '✓ 3m Drain Done',
+            seconds: 180,
+            actionText: 'Leave lid off for 3m so low-carb veggies stay crisp before portioning 4 meals.',
+            completionBanner: 'LOW-CARB VEGGIES READY! Portion into 4 crisp keto containers.'
+          }
+        ];
+      }
       const cookMins = getRiceCookMinutes();
       return [
         {
@@ -4591,41 +4959,55 @@
       ];
     }
 
-    function getIdleOrRunningRiceTimerBadgeText() {
+    function getIdleOrRunningRiceTimerBadgeText(contextPrefix) {
+      const isKetoMode = isKetoVeggieTimerMode(contextPrefix);
       const activeStage = state.activeRiceTimerStage ? Number(state.activeRiceTimerStage) : null;
-      const cookMins = getRiceCookMinutes();
+      const cookMins = isKetoMode ? 8 : getRiceCookMinutes();
       if (activeStage === 1 || activeStage === 2) {
         const abs = Math.max(0, Math.floor(Number(state.timerSeconds) || 0));
-        return `${formatTime(abs)} ${activeStage === 1 ? 'Cook' : 'Cooldown'}`;
+        return `${formatTime(abs)} ${activeStage === 1 ? (isKetoMode ? 'Steam' : 'Cook') : (isKetoMode ? 'Drain' : 'Cooldown')}`;
       }
       if (Number(state.lastSelectedRiceStage) === 2 || state.riceCookPhaseCompleted) {
-        return '10:00 Cooldown';
+        return isKetoMode ? '03:00 Drain' : '10:00 Cooldown';
       }
-      return `${cookMins}:00 Cook`;
+      return isKetoMode ? '08:00 Steam' : `${cookMins}:00 Cook`;
     }
 
-    function computeRiceMixCountdownText() {
+    function computeRiceMixCountdownText(contextPrefix) {
+      const isKetoMode = isKetoVeggieTimerMode(contextPrefix);
       const activeStage = state.activeRiceTimerStage ? Number(state.activeRiceTimerStage) : null;
-      const totalCookSec = getRiceCookMinutes() * 60;
+      const totalCookSec = isKetoMode ? 480 : (getRiceCookMinutes() * 60);
+      const intervalSec = isKetoMode ? 240 : 90;
       if (activeStage !== 1 || !timerRunning) {
-        return '01:30';
+        return formatTime(intervalSec);
       }
       const rem = Math.max(0, Math.min(totalCookSec, Math.floor(Number(state.timerSeconds) || 0)));
       const elapsed = totalCookSec - rem;
-      const mod90 = elapsed % 90;
-      const untilNext = rem === 0 ? 0 : (mod90 === 0 && elapsed > 0 ? 90 : 90 - mod90);
+      const modInt = elapsed % intervalSec;
+      const untilNext = rem === 0 ? 0 : (modInt === 0 && elapsed > 0 ? intervalSec : intervalSec - modInt);
       return formatTime(untilNext);
     }
 
     function updateRiceTimerLiveReadouts() {
-      const badgeText = getIdleOrRunningRiceTimerBadgeText();
-      document.querySelectorAll('.live-rice-timer-readout').forEach(el => {
-        el.textContent = badgeText;
-      });
-      const nextMixStr = computeRiceMixCountdownText();
-      document.querySelectorAll('.live-rice-next-mix-readout').forEach(el => {
-        el.textContent = `Next Mix/Stir in: ${nextMixStr}`;
-      });
+      const restTimerRoot = document.getElementById('timer-rice-stage-container');
+      const batchRoot = document.getElementById('batch-2-rice-timer-mount');
+      if (restTimerRoot) {
+        const isKeto = isKetoVeggieTimerMode('rest-timer');
+        const badgeText = getIdleOrRunningRiceTimerBadgeText('rest-timer');
+        const nextMixStr = computeRiceMixCountdownText('rest-timer');
+        restTimerRoot.querySelectorAll('.live-rice-timer-readout').forEach(el => { el.textContent = badgeText; });
+        restTimerRoot.querySelectorAll('.live-rice-next-mix-readout').forEach(el => {
+          el.textContent = isKeto ? `Next Veggie Toss in: ${nextMixStr}` : `Next Mix/Stir in: ${nextMixStr}`;
+        });
+      }
+      if (batchRoot) {
+        const badgeText = getIdleOrRunningRiceTimerBadgeText('batch-2');
+        const nextMixStr = computeRiceMixCountdownText('batch-2');
+        batchRoot.querySelectorAll('.live-rice-timer-readout').forEach(el => { el.textContent = badgeText; });
+        batchRoot.querySelectorAll('.live-rice-next-mix-readout').forEach(el => {
+          el.textContent = `Next Mix/Stir in: ${nextMixStr}`;
+        });
+      }
     }
 
     function syncStickyHeaderVisibility() {
@@ -4657,11 +5039,13 @@
       if (isPrepped) state.batchInventory.ricePrepDay = null;
     }
 
-    function startRiceTimerStage(stageNum) {
-      const stages = getTwoPhaseRiceTimerStages();
+    function startRiceTimerStage(stageNum, contextPrefix) {
+      const ctx = contextPrefix || (isKetoVeggieTimerMode('rest-timer') ? 'rest-timer' : 'batch-2');
+      const stages = getTwoPhaseRiceTimerStages(ctx);
       const stageSpec = stages.find(s => s.stage === Number(stageNum));
       if (!stageSpec) return;
       state.activeRiceTimerStage = stageSpec.stage;
+      state.activeCookingTimerContext = ctx;
       state.lastSelectedRiceStage = stageSpec.stage;
       state.lastRiceMixAlertElapsedSec = null;
       state.riceTimerAlertBanner = '';
@@ -4672,15 +5056,17 @@
       } else if (stageSpec.stage === 2) {
         state.riceCooldownPhaseCompleted = false;
       }
-      startTimer(stageSpec.seconds, `Rice Phase ${stageSpec.stage}/2: ${stageSpec.buttonLabel}`);
+      const prefixLabel = isKetoVeggieTimerMode(ctx) ? 'Veggie Phase' : 'Rice Phase';
+      startTimer(stageSpec.seconds, `${prefixLabel} ${stageSpec.stage}/2: ${stageSpec.buttonLabel}`);
       syncStickyHeaderVisibility();
       renderRiceCookingTimerWidgets();
       saveState();
-      showToast(`Started ${stageSpec.buttonLabel} (${formatTime(stageSpec.seconds)})`);
+      showToast(`Started ${stageSpec.buttonLabel.replace(/^Start\s+/i, '')} (${formatTime(stageSpec.seconds)})`);
     }
 
     function triggerRiceTimerStageComplete(stageNum) {
-      const stages = getTwoPhaseRiceTimerStages();
+      const ctx = state.activeCookingTimerContext || 'rest-timer';
+      const stages = getTwoPhaseRiceTimerStages(ctx);
       const stageSpec = stages.find(s => s.stage === Number(stageNum));
       if (!stageSpec) return;
       state.riceTimerAlertBanner = stageSpec.completionBanner;
@@ -4693,7 +5079,9 @@
         state.riceCooldownPhaseCompleted = false;
       } else if (Number(stageNum) === 2) {
         state.riceCooldownPhaseCompleted = true;
-        syncRiceBatchInventoryAndSteps(true);
+        if (!isKetoVeggieTimerMode(ctx)) {
+          syncRiceBatchInventoryAndSteps(true);
+        }
       }
       const lbl = document.getElementById('timer-context-label');
       if (lbl) lbl.textContent = state.timerContextLabel;
@@ -4719,14 +5107,16 @@
     }
 
     function buildRiceCookingTimerCardHtml(contextPrefix) {
-      const stages = getTwoPhaseRiceTimerStages();
+      const isKetoMode = isKetoVeggieTimerMode(contextPrefix);
+      const normDiet = normalizeAppDietState(state && (state.diet || state.dietPreference));
+      const stages = getTwoPhaseRiceTimerStages(contextPrefix);
       const activeStage = state.activeRiceTimerStage ? Number(state.activeRiceTimerStage) : null;
       const alertBanner = state.riceBannerDismissed ? '' : (state.riceTimerAlertBanner || '');
       const activeSpec = stages.find(s => s.stage === activeStage) || null;
       const cookMins = getRiceCookMinutes();
       const mixEnabled = isRiceMixAlertEnabled();
-      const badgeTimeText = getIdleOrRunningRiceTimerBadgeText();
-      const nextMixStr = computeRiceMixCountdownText();
+      const badgeTimeText = getIdleOrRunningRiceTimerBadgeText(contextPrefix);
+      const nextMixStr = computeRiceMixCountdownText(contextPrefix);
       const riceStepsDone = ['rice_step_1', 'rice_step_2', 'rice_step_3', 'rice_step_4'].every(sid => Boolean(state.recipePrepLogs && state.recipePrepLogs[sid]));
       const bowlsLeft = (state.batchInventory && typeof state.batchInventory.riceBowlsRemaining === 'number') ? state.batchInventory.riceBowlsRemaining : 4;
       const isRecipeOpen = Boolean(state.openRiceTimerRecipe);
@@ -4799,19 +5189,31 @@
         `;
       }).join('');
 
+      const dynamicBadgeLabel = isKetoMode
+        ? '2-Phase Low-Carb Veggie Timer'
+        : (normDiet.id === 'gluten_free'
+            ? '2-Phase GF Jasmine Rice Timer'
+            : (normDiet.id === 'vegetarian'
+                ? '2-Phase Rice & Egg Prep Timer'
+                : (normDiet.id === 'any' ? '2-Phase Bulk Rice Timer' : '2-Phase Jasmine Rice Timer')));
+      const dynamicSubLine = isKetoMode
+        ? '4-day keto batch: 300g broccoli + riced cauliflower • Syncs live with top sticky timer bar'
+        : '220g rinsed dry rice + 330 ml water • Syncs live with top sticky timer bar & Batch 2/2';
+
       return `
-        <div class="bg-slate-950/90 border border-sky-500/40 rounded-xl p-3 space-y-2.5" data-rice-widget="${contextPrefix}">
+        <div class="bg-slate-950/90 border border-sky-500/40 rounded-xl p-3 space-y-2.5" data-rice-widget="${contextPrefix}" data-diet-timer-mode="${isKetoMode ? 'keto_veggie' : 'rice'}">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
               <div class="flex flex-wrap items-center gap-1.5">
-                <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40">2-Phase Jasmine Rice Timer</span>
+                <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40">${dynamicBadgeLabel}</span>
+                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-200 border border-indigo-400/45">Diet: ${normDiet.display}</span>
                 ${activeStage === 2 || highlightCooldownNext
-                  ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-200 border border-indigo-400/45">Phase 2/2 • Cooldown Off Heat</span>`
-                  : `<span class="live-rice-next-mix-readout text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Next Mix/Stir in: ${nextMixStr}</span>`
+                  ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-200 border border-indigo-400/45">${isKetoMode ? 'Phase 2/2 • Drain & Cool' : 'Phase 2/2 • Cooldown Off Heat'}</span>`
+                  : `<span class="live-rice-next-mix-readout text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">${isKetoMode ? `Next Veggie Toss in: ${nextMixStr}` : `Next Mix/Stir in: ${nextMixStr}`}</span>`
                 }
-                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded ${riceStepsDone ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40' : 'bg-slate-900 text-sky-300 border border-slate-700'}">${bowlsLeft}/4 Bowls in Fridge</span>
+                ${!isKetoMode ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded ${riceStepsDone ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40' : 'bg-slate-900 text-sky-300 border border-slate-700'}">${bowlsLeft}/4 Bowls in Fridge</span>` : ''}
               </div>
-              <p class="text-[11px] text-slate-400 mt-1">220g rinsed dry rice + 330 ml water • Syncs live with top sticky timer bar &amp; Batch 2/2</p>
+              <p class="text-[11px] text-slate-400 mt-1">${dynamicSubLine}</p>
             </div>
             <div class="flex items-center gap-1.5">
               <span class="live-rice-timer-readout font-mono text-xs sm:text-sm font-extrabold px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400 whitespace-nowrap">${badgeTimeText}</span>
@@ -4820,29 +5222,41 @@
               ` : ''}
             </div>
           </div>
-
-          <!-- Cook Duration Selector (12 Min Default vs 10 Min) + 1.5m Mix Alert Toggle -->
-          <div class="flex flex-wrap items-center justify-between gap-1.5 pt-0.5">
-            <div class="inline-flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
-              <button
-                type="button"
-                data-rice-cook-mins="12"
-                class="rice-cook-mins-btn px-2 py-1 rounded-md text-[10px] font-extrabold transition ${
-                  cookMins === 12
-                    ? 'bg-sky-400 text-slate-950 shadow-sm'
-                    : 'text-slate-300 hover:text-white'
-                }"
-              >12 Min Cook (Default)</button>
-              <button
-                type="button"
-                data-rice-cook-mins="10"
-                class="rice-cook-mins-btn px-2 py-1 rounded-md text-[10px] font-extrabold transition ${
-                  cookMins === 10
-                    ? 'bg-sky-400 text-slate-950 shadow-sm'
-                    : 'text-slate-300 hover:text-white'
-                }"
-              >10 Min Cook</button>
+          ${normDiet.id === 'keto' && contextPrefix === 'rest-timer' ? `
+            <div class="flex items-center justify-between gap-2 bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 py-1.5">
+              <span class="text-[11px] text-slate-300">${isKetoMode ? 'Showing Keto Low-Carb Veggie Timer' : 'Showing Jasmine Rice Timer override'}</span>
+              <button type="button" class="toggle-keto-rice-override-btn px-2 py-1 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-600 text-[10px] font-extrabold text-sky-300 whitespace-nowrap">
+                ${isKetoMode ? '⇄ Use Jasmine Rice Timer' : '⇄ Back to Keto Veggie Timer'}
+              </button>
             </div>
+          ` : ''}
+
+          <!-- Cook Duration Selector (Rice Mode) + Mix/Toss Alert Toggle -->
+          <div class="flex flex-wrap items-center justify-between gap-1.5 pt-0.5">
+            ${isKetoMode ? `
+              <span class="text-[10px] font-extrabold px-2 py-1 rounded-lg bg-slate-900 border border-slate-800 text-cyan-200">8m Steam • 3m Drain (Crisp Keto Batch)</span>
+            ` : `
+              <div class="inline-flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
+                <button
+                  type="button"
+                  data-rice-cook-mins="12"
+                  class="rice-cook-mins-btn px-2 py-1 rounded-md text-[10px] font-extrabold transition ${
+                    cookMins === 12
+                      ? 'bg-sky-400 text-slate-950 shadow-sm'
+                      : 'text-slate-300 hover:text-white'
+                  }"
+                >12 Min Cook (Default)</button>
+                <button
+                  type="button"
+                  data-rice-cook-mins="10"
+                  class="rice-cook-mins-btn px-2 py-1 rounded-md text-[10px] font-extrabold transition ${
+                    cookMins === 10
+                      ? 'bg-sky-400 text-slate-950 shadow-sm'
+                      : 'text-slate-300 hover:text-white'
+                  }"
+                >10 Min Cook</button>
+              </div>
+            `}
             <button
               type="button"
               class="rice-mix-alert-toggle-btn px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition ${
@@ -4850,61 +5264,63 @@
                   ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
                   : 'bg-slate-900 border-slate-700 text-slate-400'
               }"
-            >Mix Alert Every 1.5m: ${mixEnabled ? 'ON' : 'OFF'}</button>
+            >${isKetoMode ? 'Toss Alert at 4m' : 'Mix Alert Every 1.5m'}: ${mixEnabled ? 'ON' : 'OFF'}</button>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             ${buttonsHtml}
           </div>
 
-          <!-- Video Tutorial Button, View Full Rice Recipe Toggle & 1-Tap Sync with Batch 2/2 (4 Bowls in Fridge) -->
-          <div class="flex flex-wrap items-center justify-between gap-2 pt-0.5">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <a
-                href="https://www.youtube.com/watch?v=dVKVb1NFP8s"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="rice-tutorial-video-link inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/50 text-rose-200 text-[11px] font-extrabold transition"
-              >
-                <span>Watch Stovetop Jasmine Rice Tutorial</span>
-              </a>
+          ${!isKetoMode ? `
+            <!-- Video Tutorial Button, View Full Rice Recipe Toggle & 1-Tap Sync with Batch 2/2 (4 Bowls in Fridge) -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <a
+                  href="https://www.youtube.com/watch?v=dVKVb1NFP8s"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="rice-tutorial-video-link inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/50 text-rose-200 text-[11px] font-extrabold transition"
+                >
+                  <span>Watch Stovetop Jasmine Rice Tutorial</span>
+                </a>
+                <button
+                  type="button"
+                  aria-expanded="${isRecipeOpen ? 'true' : 'false'}"
+                  class="toggle-rice-full-recipe-btn px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-sky-400/45 text-sky-200 text-[11px] font-extrabold transition"
+                >
+                  ${isRecipeOpen ? 'Hide Full Rice Recipe ▴' : 'View Full Rice Recipe ▾'}
+                </button>
+              </div>
               <button
                 type="button"
-                aria-expanded="${isRecipeOpen ? 'true' : 'false'}"
-                class="toggle-rice-full-recipe-btn px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-sky-400/45 text-sky-200 text-[11px] font-extrabold transition"
+                class="rice-timer-mark-prepped-btn px-3 py-1.5 rounded-xl text-[11px] font-extrabold border transition ${
+                  riceStepsDone && bowlsLeft === 4
+                    ? 'bg-emerald-500 text-slate-950 border-emerald-300'
+                    : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border-emerald-400/50'
+                }"
               >
-                ${isRecipeOpen ? 'Hide Full Rice Recipe ▴' : 'View Full Rice Recipe ▾'}
+                ${riceStepsDone && bowlsLeft === 4 ? '✓ 4 Bowls Ready in Fridge' : 'Mark 4 Bowls Ready (Sync Batch 2/2)'}
               </button>
             </div>
-            <button
-              type="button"
-              class="rice-timer-mark-prepped-btn px-3 py-1.5 rounded-xl text-[11px] font-extrabold border transition ${
-                riceStepsDone && bowlsLeft === 4
-                  ? 'bg-emerald-500 text-slate-950 border-emerald-300'
-                  : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border-emerald-400/50'
-              }"
-            >
-              ${riceStepsDone && bowlsLeft === 4 ? '✓ 4 Bowls Ready in Fridge' : 'Mark 4 Bowls Ready (Sync Batch 2/2)'}
-            </button>
-          </div>
 
-          <!-- Full Jasmine Rice Batch Recipe (4 Bowls • 600g Cooked) — Hidden by Default Behind View Full Rice Recipe -->
-          <div class="rice-full-recipe-panel ${isRecipeOpen ? 'bg-slate-900/95 border border-slate-800 rounded-xl p-2.5 space-y-1.5 text-left' : 'hidden'}" style="display: ${isRecipeOpen ? 'block' : 'none'};">
-            <div class="flex flex-wrap items-center justify-between gap-1">
-              <span class="text-[11px] font-extrabold text-sky-300">Full Jasmine Rice Batch Recipe (4 Bowls • 600g Cooked)</span>
-              <span class="text-[10px] font-bold text-emerald-300">150g cooked / bowl</span>
+            <!-- Full Jasmine Rice Batch Recipe (4 Bowls • 600g Cooked) — Hidden by Default Behind View Full Rice Recipe -->
+            <div class="rice-full-recipe-panel ${isRecipeOpen ? 'bg-slate-900/95 border border-slate-800 rounded-xl p-2.5 space-y-1.5 text-left' : 'hidden'}" style="display: ${isRecipeOpen ? 'block' : 'none'};">
+              <div class="flex flex-wrap items-center justify-between gap-1">
+                <span class="text-[11px] font-extrabold text-sky-300">Full Jasmine Rice Batch Recipe (4 Bowls • 600g Cooked)</span>
+                <span class="text-[10px] font-bold text-emerald-300">150g cooked / bowl</span>
+              </div>
+              <p class="text-[11px] text-slate-200 leading-snug">
+                <strong class="text-amber-300">Ingredients:</strong> 220g dry white jasmine rice (rinsed 3x until water runs clear), 330 ml cold water (1:1.5 rice-to-water ratio), optional pinch of salt.
+              </p>
+              <div class="text-[11px] text-slate-300 space-y-0.5 leading-snug">
+                <div><strong class="text-sky-300">Method:</strong></div>
+                <div>1. Combine rinsed rice + 330 ml water in pot and bring to a boil.</div>
+                <div>2. Reduce to lowest heat, cover, and simmer 10–12 min, stirring every 1.5 min when the timer chimes.</div>
+                <div>3. Turn off heat and let rest covered for 10 min cool-down/steam.</div>
+                <div>4. Weigh into 4 bowls (150g cooked rice each).</div>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-200 leading-snug">
-              <strong class="text-amber-300">Ingredients:</strong> 220g dry white jasmine rice (rinsed 3x until water runs clear), 330 ml cold water (1:1.5 rice-to-water ratio), optional pinch of salt.
-            </p>
-            <div class="text-[11px] text-slate-300 space-y-0.5 leading-snug">
-              <div><strong class="text-sky-300">Method:</strong></div>
-              <div>1. Combine rinsed rice + 330 ml water in pot and bring to a boil.</div>
-              <div>2. Reduce to lowest heat, cover, and simmer 10–12 min, stirring every 1.5 min when the timer chimes.</div>
-              <div>3. Turn off heat and let rest covered for 10 min cool-down/steam.</div>
-              <div>4. Weigh into 4 bowls (150g cooked rice each).</div>
-            </div>
-          </div>
+          ` : ''}
 
           ${activeSpec && !alertBanner && !state.riceBannerDismissed ? `
             <div class="rounded-lg px-3 py-2 bg-sky-950/60 border border-sky-400/40 text-sky-200 text-[11px] font-bold flex flex-wrap items-center justify-between gap-2">
@@ -4925,11 +5341,13 @@
 
     function bindRiceCookingTimerEvents(rootEl) {
       if (!rootEl) return;
+      const widgetEl = rootEl.querySelector('[data-rice-widget]');
+      const widgetCtx = widgetEl ? widgetEl.getAttribute('data-rice-widget') : 'rest-timer';
       rootEl.querySelectorAll('.rice-stage-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           const stNum = parseInt(btn.getAttribute('data-rice-stage') || '1', 10);
-          startRiceTimerStage(stNum);
+          startRiceTimerStage(stNum, widgetCtx);
         });
       });
       rootEl.querySelectorAll('.toggle-rice-full-recipe-btn').forEach(btn => {
@@ -4971,6 +5389,14 @@
           showToast('Synced 4 Jasmine Rice bowls ready in fridge with Batch 2/2.');
         });
       });
+      rootEl.querySelectorAll('.toggle-keto-rice-override-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          state.forceShowRiceTimerInKeto = !Boolean(state.forceShowRiceTimerInKeto);
+          saveState();
+          renderRiceCookingTimerWidgets();
+        });
+      });
       rootEl.querySelectorAll('.rice-timer-clear-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -4980,6 +5406,10 @@
     }
 
     function renderRiceCookingTimerWidgets() {
+      const summaryTitleEl = document.getElementById('dynamic-diet-cooking-timer-summary-title');
+      if (summaryTitleEl) {
+        summaryTitleEl.textContent = getDietCookingTimerSummaryTitle();
+      }
       const restTimerRiceContainer = document.getElementById('timer-rice-stage-container');
       if (restTimerRiceContainer) {
         restTimerRiceContainer.innerHTML = buildRiceCookingTimerCardHtml('rest-timer');
@@ -4999,18 +5429,22 @@
         const nextSec = Math.max(0, Math.ceil(remainingMs / 1000));
         if (nextSec !== state.timerSeconds) {
           state.timerSeconds = nextSec;
-          // Automatic 1.5-Minute (90s) Mix/Stir Alert during Stage 1 Rice Cooking
+          // Automatic Interval Alert during Stage 1 Cooking (90s Rice Mix / 240s Keto Veggie Toss)
           if (Number(state.activeRiceTimerStage) === 1 && isRiceMixAlertEnabled()) {
-            const totalCookSec = getRiceCookMinutes() * 60;
+            const isKetoActive = isKetoVeggieTimerMode(state.activeCookingTimerContext || 'rest-timer');
+            const totalCookSec = isKetoActive ? 480 : (getRiceCookMinutes() * 60);
+            const intervalSec = isKetoActive ? 240 : 90;
             const elapsedSec = totalCookSec - nextSec;
             if (
               elapsedSec > 0 &&
               elapsedSec < totalCookSec &&
-              elapsedSec % 90 === 0 &&
+              elapsedSec % intervalSec === 0 &&
               state.lastRiceMixAlertElapsedSec !== elapsedSec
             ) {
               state.lastRiceMixAlertElapsedSec = elapsedSec;
-              state.riceTimerAlertBanner = 'MIX / STIR RICE NOW! (1.5m interval — prevents sticking)';
+              state.riceTimerAlertBanner = isKetoActive
+                ? 'TOSS VEGGIES NOW! (4m halfway mark — keeps broccoli crisp)'
+                : 'MIX / STIR RICE NOW! (1.5m interval — prevents sticking)';
               playTimerChime();
               triggerWatchWristTimerNotification(1);
               syncStickyHeaderVisibility();
@@ -17711,34 +18145,92 @@
     // =========================================================================
     // 9. NAVIGATION & GLOBAL EVENT LISTENERS
     // =========================================================================
+    function setActiveDietFromUI(dietId) {
+      const norm = normalizeAppDietState(dietId);
+      state.dietPreference = norm.id;
+      state.diet = norm.display;
+      if (!state.programWizardConfig || typeof state.programWizardConfig !== 'object') {
+        state.programWizardConfig = { daysPerWeek: 5, primaryFocus: 'balanced', difficulty: 'medium', diet: norm.id };
+      } else {
+        state.programWizardConfig.diet = norm.id;
+      }
+      saveState();
+      syncHeaderCostSubtitle();
+      renderRiceCookingTimerWidgets();
+      renderShoppingView();
+      if (typeof renderVeganView === 'function') renderVeganView();
+      showToast(`Diet updated to ${norm.label}. Timers and Shop List synced.`);
+    }
+
     function renderShoppingView() {
       const container = document.getElementById('weekly-shopping-categories');
       if (!container) return;
 
+      const dynamicCategories = getDynamicWeeklyShoppingCategories(state);
+      const shopTotals = computeDynamicShoppingTotals(dynamicCategories, state.shopBrandOverrides);
+      const normDiet = normalizeAppDietState(state && (state.diet || state.dietPreference));
+
       syncHeaderCostSubtitle();
+
+      const eyebrowEl = document.getElementById('shopping-eyebrow-summary');
+      if (eyebrowEl) {
+        eyebrowEl.textContent = `1,325 kcal • 139g Protein • $${shopTotals.dailyTotal.toFixed(2)}/day`;
+      }
+      const dietBadgeEl = document.getElementById('shopping-active-diet-badge');
+      if (dietBadgeEl) {
+        dietBadgeEl.textContent = shopTotals.swappedCount > 0
+          ? `Diet: ${normDiet.display} • ${shopTotals.swappedCount} Swapped`
+          : `Diet: ${normDiet.display}`;
+      }
+      const dietPillsEl = document.getElementById('shop-diet-quick-pills');
+      if (dietPillsEl) {
+        const dietChoices = [
+          { id: 'any', label: 'Any Food', span: 'col-span-2' },
+          { id: 'vegan', label: 'Vegan', span: 'col-span-2' },
+          { id: 'vegetarian', label: 'Vegetarian', span: 'col-span-2' },
+          { id: 'keto', label: 'Keto (Low Carb)', span: 'col-span-3' },
+          { id: 'gluten_free', label: 'Gluten-Free', span: 'col-span-3' }
+        ];
+        dietPillsEl.innerHTML = dietChoices.map(dc => {
+          const isAct = normDiet.id === dc.id;
+          return `<button type="button" data-shop-diet-pill="${dc.id}" aria-pressed="${isAct ? 'true' : 'false'}" class="shop-diet-pill-btn ${dc.span} w-full px-2 py-1.5 rounded-lg text-[11px] font-bold border text-center whitespace-nowrap transition ${
+            isAct
+              ? 'bg-emerald-600/30 border-emerald-400 text-emerald-100'
+              : 'bg-slate-950 border-slate-700 text-slate-300 hover:text-slate-100'
+          }">${dc.label}</button>`;
+        }).join('');
+        dietPillsEl.querySelectorAll('.shop-diet-pill-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            setActiveDietFromUI(btn.getAttribute('data-shop-diet-pill'));
+          });
+        });
+      }
 
       const period = state.shopListPeriod === 'quarterly' ? 'quarterly' : 'weekly';
       const periodConfig = SHOP_LIST_PERIOD_VIEWS[period] || SHOP_LIST_PERIOD_VIEWS.weekly;
 
       const weeklyBtn = document.getElementById('shop-period-weekly-btn');
       const quarterlyBtn = document.getElementById('shop-period-quarterly-btn');
+      const weeklySubStr = `$${shopTotals.storeWeeklyTotal.toFixed(2)} Store • $${shopTotals.weeklyTotal.toFixed(2)} Total`;
+      const quarterlySubStr = `$${shopTotals.storeQuarterlyTotal.toFixed(2)} Store • $${shopTotals.quarterlyTotal.toFixed(2)} Total`;
       if (weeklyBtn && quarterlyBtn) {
         if (period === 'weekly') {
           weeklyBtn.className = 'shop-period-btn min-w-0 px-2 py-2 rounded-xl text-xs font-extrabold transition bg-emerald-500 text-slate-950 shadow flex flex-col items-center justify-center text-center leading-tight';
-          weeklyBtn.innerHTML = `<span class="text-xs font-extrabold whitespace-nowrap">1-Week View</span><span class="text-[10px] font-bold opacity-90 whitespace-nowrap mt-0.5">$22.10 Store • $44.48 Total</span>`;
+          weeklyBtn.innerHTML = `<span class="text-xs font-extrabold whitespace-nowrap">1-Week View</span><span class="text-[10px] font-bold opacity-90 whitespace-nowrap mt-0.5">${weeklySubStr}</span>`;
           quarterlyBtn.className = 'shop-period-btn min-w-0 px-2 py-2 rounded-xl text-xs font-extrabold transition bg-slate-900 text-slate-300 hover:text-white border border-slate-800 flex flex-col items-center justify-center text-center leading-tight';
-          quarterlyBtn.innerHTML = `<span class="text-xs font-extrabold whitespace-nowrap">3-Month View</span><span class="text-[10px] font-semibold opacity-80 whitespace-nowrap mt-0.5">$284.18 Store • $571.88 Total</span>`;
+          quarterlyBtn.innerHTML = `<span class="text-xs font-extrabold whitespace-nowrap">3-Month View</span><span class="text-[10px] font-semibold opacity-80 whitespace-nowrap mt-0.5">${quarterlySubStr}</span>`;
         } else {
           quarterlyBtn.className = 'shop-period-btn min-w-0 px-2 py-2 rounded-xl text-xs font-extrabold transition bg-emerald-500 text-slate-950 shadow flex flex-col items-center justify-center text-center leading-tight';
-          quarterlyBtn.innerHTML = `<span class="text-xs font-extrabold whitespace-nowrap">3-Month View</span><span class="text-[10px] font-bold opacity-90 whitespace-nowrap mt-0.5">$284.18 Store • $571.88 Total</span>`;
+          quarterlyBtn.innerHTML = `<span class="text-xs font-extrabold whitespace-nowrap">3-Month View</span><span class="text-[10px] font-bold opacity-90 whitespace-nowrap mt-0.5">${quarterlySubStr}</span>`;
           weeklyBtn.className = 'shop-period-btn min-w-0 px-2 py-2 rounded-xl text-xs font-extrabold transition bg-slate-900 text-slate-300 hover:text-white border border-slate-800 flex flex-col items-center justify-center text-center leading-tight';
-          weeklyBtn.innerHTML = `<span class="text-xs font-extrabold whitespace-nowrap">1-Week View</span><span class="text-[10px] font-semibold opacity-80 whitespace-nowrap mt-0.5">$22.10 Store • $44.48 Total</span>`;
+          weeklyBtn.innerHTML = `<span class="text-xs font-extrabold whitespace-nowrap">1-Week View</span><span class="text-[10px] font-semibold opacity-80 whitespace-nowrap mt-0.5">${weeklySubStr}</span>`;
         }
       }
 
       const periodSummaryBox = document.getElementById('shop-list-period-summary-box');
       if (periodSummaryBox) {
         const isMathOpen = Boolean(state.openShopCostBreakdown);
+        const dynamicBreakdownLine = `Diet: ${normDiet.label}. Weekly Store: $${shopTotals.storeWeeklyTotal.toFixed(2)} + Bulk Supplements: $${shopTotals.bulkWeeklyTotal.toFixed(2)} = $${shopTotals.weeklyTotal.toFixed(2)}/wk ($${shopTotals.dailyTotal.toFixed(2)}/day).${shopTotals.swappedCount > 0 ? ` Includes ${shopTotals.swappedCount} custom/premium brand swap(s).` : ''}`;
         periodSummaryBox.innerHTML = `
           <button
             type="button"
@@ -17751,7 +18243,8 @@
           </button>
           <div id="shop-cost-breakdown-body" class="${isMathOpen ? 'px-3 pb-2.5 pt-2 border-t border-slate-800 space-y-1 text-xs text-slate-300 leading-relaxed' : 'hidden'}">
             <div class="font-bold text-white">${periodConfig.label} (${periodConfig.subLabel})</div>
-            <p>${periodConfig.summaryLine}</p>
+            <p>${dynamicBreakdownLine}</p>
+            <p class="text-[11px] text-slate-400">${periodConfig.summaryLine}</p>
           </div>
         `;
         const toggleCostBtn = document.getElementById('toggle-shop-cost-breakdown-btn');
@@ -17764,7 +18257,6 @@
         }
       }
 
-      const dynamicCategories = getDynamicWeeklyShoppingCategories(state);
       const allBuiltIn = [];
       dynamicCategories.forEach(cat => {
         cat.items.forEach(it => allBuiltIn.push(it));
@@ -17809,6 +18301,9 @@
       }
 
       const eli12ShortShopQty = (it, currentPeriod) => {
+        if (it && it.isDietPatched) {
+          return currentPeriod === 'quarterly' ? (it.quarterlyQty || it.qty) : (it.weeklyQty || it.qty);
+        }
         const cleanMapWeekly = {
           shop_silk: '1,260 ml/wk (1 Carton • 1.89L)',
           shop_tofu: '1,225g/wk (3.5 Blocks)',
@@ -17849,6 +18344,7 @@
         if (!it) return '';
         const done = !!state.checkedGroceries[it.id];
         const isDetailsOpen = !!state.openShopItemDetails[it.id];
+        const isSwapped = Boolean(it.isBrandSwapped);
         const shortTitle = it.shortName || it.name;
         const leftQtyPill = eli12ShortShopQty(it, period);
         const rightCostPill = period === 'quarterly' ? (it.quarterlyCost || '$41.06 / 3 mos') : (it.weeklyCost || '$3.19/wk');
@@ -17857,10 +18353,12 @@
         const fullMath = `${fullQtyMath ? `Quantity math: ${fullQtyMath}. ` : ''}${it.fullMathNotes || it.note}`;
 
         return `
-          <div data-shop-card="${it.id}" class="w-full rounded-xl border p-3 space-y-2 transition ${
+          <div data-shop-card="${it.id}" data-brand-swapped="${isSwapped ? 'true' : 'false'}" class="w-full rounded-xl border p-3 space-y-2 transition ${
             done
               ? 'bg-emerald-950/35 border-emerald-500/45 opacity-80'
-              : (isBulkCard ? `bg-slate-950/90 ${accentBorderClass || 'border-indigo-500/40'}` : 'bg-slate-900/95 border-slate-800 hover:border-emerald-500/40')
+              : (isSwapped
+                  ? 'bg-indigo-950/35 border-indigo-400/60'
+                  : (isBulkCard ? `bg-slate-950/90 ${accentBorderClass || 'border-indigo-500/40'}` : 'bg-slate-900/95 border-slate-800 hover:border-emerald-500/40'))
           }">
             <!-- Row 1 (Full Width): 22x22 Checkbox + Short Clear Item Name -->
             <button type="button" data-shop-id="${it.id}" class="shop-item-btn w-full text-left flex items-start gap-2.5">
@@ -17870,21 +18368,42 @@
               <span class="flex-1 min-w-0 break-words ${done ? 'line-through text-slate-400' : 'text-slate-50'}" style="font-size: 15px; font-weight: 700; line-height: 1.35;">${shortTitle}</span>
             </button>
 
+            ${isSwapped && it.swappedBrandName ? `
+              <div class="pl-7">
+                <span class="inline-block text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/20 border border-indigo-400/50 text-indigo-100">Premium Swap: ${it.swappedBrandName}</span>
+              </div>
+            ` : ''}
+
             <!-- Row 2 (Aligned Pill Row Under the Title): Total Weight / Volume | Cost -->
             <div class="flex flex-wrap items-center justify-between gap-1.5 pl-7">
               <span data-shop-weight-pill="${it.id}" class="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-slate-950 border whitespace-nowrap ${isBulkCard ? 'border-indigo-500/45 text-indigo-200' : 'border-emerald-500/35 text-emerald-300'}">${leftQtyPill}</span>
-              <span data-shop-cost-pill="${it.id}" class="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-amber-950/70 border border-amber-500/40 text-amber-300 whitespace-nowrap">${rightCostPill}</span>
+              <span data-shop-cost-pill="${it.id}" class="text-[11px] font-extrabold px-2 py-0.5 rounded-md border whitespace-nowrap ${
+                isSwapped
+                  ? 'bg-indigo-600/30 border-indigo-400/70 text-indigo-100'
+                  : 'bg-amber-950/70 border-amber-500/40 text-amber-300'
+              }">${rightCostPill}</span>
             </div>
 
-            <!-- Row 3 (1 Short ELI12 Sentence + Read the Math Toggle) -->
-            <div class="pl-8 space-y-1.5">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <p class="text-xs text-slate-200 leading-snug flex-1 min-w-[180px]">${eli12Sentence}</p>
+            <!-- Row 3 (1 Short ELI12 Sentence + Symmetrical 2-Column Swap Brand/Quality & Read Full Math Row) -->
+            <div class="pl-7 space-y-2">
+              <p class="text-xs text-slate-200 leading-snug">${eli12Sentence}</p>
+              <div class="grid gap-1.5" style="grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 6px;">
+                <button
+                  type="button"
+                  data-shop-brand-swap="${it.id}"
+                  class="shop-brand-swap-btn w-full px-1.5 py-1.5 rounded-md border text-[10.5px] font-bold text-center whitespace-nowrap transition ${
+                    isSwapped
+                      ? 'bg-indigo-600/30 hover:bg-indigo-600/40 border-indigo-400/60 text-indigo-100'
+                      : 'bg-slate-950 hover:bg-slate-800 border-amber-500/45 text-amber-200'
+                  }"
+                >
+                  ⇄ Swap Brand/Quality
+                </button>
                 <button
                   type="button"
                   data-shop-note-toggle="${it.id}"
                   aria-expanded="${isDetailsOpen ? 'true' : 'false'}"
-                  class="shop-item-details-toggle-btn shrink-0 px-2.5 py-0.5 rounded-md bg-slate-950 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-sky-300 transition"
+                  class="shop-item-details-toggle-btn w-full px-1.5 py-1.5 rounded-md bg-slate-950 hover:bg-slate-800 border border-slate-700 text-[10.5px] font-bold text-sky-300 text-center whitespace-nowrap transition"
                 >
                   ${isDetailsOpen ? 'Hide Full Math ▲' : 'Read Full Math ▼'}
                 </button>
@@ -17965,12 +18484,13 @@
         }
       ];
 
+      const weeklyItemCount = weeklyAisleCategories.reduce((acc, c) => acc + ((c.items && c.items.length) || 0), 0);
       const html = `
-        <!-- MASTER SECTION 1: Weekly Store Groceries (11 Items • $22.10/wk) -->
+        <!-- MASTER SECTION 1: Weekly Store Groceries (Dynamic Recalculated Total) -->
         <section id="shop-master-weekly-groceries" class="rounded-2xl border-2 border-emerald-500/50 bg-emerald-950/15 p-3.5 sm:p-4 space-y-3">
           <div class="space-y-2">
             <div class="flex items-center justify-between gap-2">
-              <h3 class="text-sm sm:text-base font-extrabold text-white leading-snug">Weekly Store Groceries (11 Items • $22.10/wk)</h3>
+              <h3 id="shop-weekly-groceries-heading" class="text-sm sm:text-base font-extrabold text-white leading-snug">Weekly Store Groceries (${weeklyItemCount} Items • $${shopTotals.storeWeeklyTotal.toFixed(2)}/wk)</h3>
               <button type="button" id="toggle-master-weekly-groceries-btn" aria-expanded="${!hideWeeklyGroceries ? 'true' : 'false'}" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-xs font-extrabold whitespace-nowrap transition">
                 ${hideWeeklyGroceries ? 'Show List ▼' : 'Hide List ▲'}
               </button>
@@ -18116,6 +18636,18 @@
           state.checkedGroceries[id] = !state.checkedGroceries[id];
           saveState();
           renderShoppingView();
+        });
+      });
+
+      container.querySelectorAll('.shop-brand-swap-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const itemId = btn.getAttribute('data-shop-brand-swap');
+          if (!itemId) return;
+          const targetItem = allBuiltIn.find(x => x.id === itemId);
+          if (targetItem && typeof openShopBrandSwapModal === 'function') {
+            openShopBrandSwapModal(targetItem);
+          }
         });
       });
 
@@ -19790,14 +20322,24 @@
         const promptText = [
           'You are an expert strength coach building a 7-day gym program in strict JSON.',
           `User Choices: Days Per Week = ${daysPerWeek}, Primary Focus = ${primaryFocus.toUpperCase()}, Difficulty = ${difficulty.toUpperCase()}, Diet = ${PROGRAM_WIZARD_DIET_TAGS[diet] || 'VEGAN'}.`,
-          directive,
-          dietDirective,
+          `Rule 1 (Difficulty): ${directive}`,
+          `Rule 2 (Diet): ${dietDirective} Align meals and SHOPPING_AISLES guidance strictly to this diet.`,
+          'Rule 3 (Strict UI Schema): Format every single exercise inside each day\'s exercises array using this exact JSON schema so the UI never crashes:',
+          '[{ "name": "Exercise Name", "sets": 3, "reps": "8-12", "restTimer": "90s", "videoUrl": "https://youtube.com/...", "instructions": "Short setup text" }]',
           'Return ONLY a valid JSON object with shape: { "days": [ ...7 items... ] }.',
           `Include exactly ${daysPerWeek} lift days (isRest: false) and ${7 - daysPerWeek} rest days (isRest: true).`,
-          'Each lift day must have: { "isRest": false, "daySub": "Short Label", "title": "Day Title", "subtitle": "Short ELI12 Subtitle", "warmupType": "upper" | "lower", "exercises": [ 5 unique exercises ] }.',
-          'Each exercise must have: { "name": "Exercise Name", "sets": number, "reps": "8-12", "rest": 90, "equipType": "machine"|"cable"|"barbell"|"dumbbell"|"bodyweight", "instructions": "2 short plain-English steps" }.',
+          'Each lift day must have: { "isRest": false, "daySub": "Short Label", "title": "Day Title", "subtitle": "Short ELI12 Subtitle", "warmupType": "upper" | "lower", "exercises": [ 5 unique exercises matching the strict UI schema ] }.',
           'Rules: No duplicate exercises on the same day. Plain ELI12 English. Zero emojis. Use simple everyday words only.'
         ].join('\n');
+
+        function parseWizardRestSec(rawRest) {
+          if (typeof rawRest === 'number' && Number.isFinite(rawRest)) return Math.max(45, Math.min(240, Math.round(rawRest)));
+          const str = String(rawRest || '').trim().toLowerCase();
+          const mMin = str.match(/^(\d+(?:\.\d+)?)\s*(m|min|mins)$/);
+          if (mMin) return Math.max(45, Math.min(240, Math.round(parseFloat(mMin[1]) * 60)));
+          const mSec = str.match(/(\d+)/);
+          return mSec ? Math.max(45, Math.min(240, parseInt(mSec[1], 10))) : (difficulty === 'hard' ? 120 : 90);
+        }
 
         let builtSchedule = null;
         try {
@@ -19840,13 +20382,20 @@
                       else sCount = Math.min(4, Math.max(3, sCount));
                       const eqType = difficulty === 'easy'
                         ? (String(ex.equipType || '').toLowerCase() === 'cable' ? 'cable' : 'machine')
-                        : (['machine', 'cable', 'barbell', 'dumbbell', 'bodyweight'].includes(String(ex.equipType || '').toLowerCase()) ? String(ex.equipType).toLowerCase() : 'machine');
+                        : (['machine', 'cable', 'barbell', 'dumbbell', 'bodyweight'].includes(String(ex.equipType || '').toLowerCase()) ? String(ex.equipType).toLowerCase() : (difficulty === 'hard' ? 'barbell' : 'machine'));
+                      const restSeconds = parseWizardRestSec(ex.restTimer !== undefined ? ex.restTimer : ex.rest);
+                      const rawVid = String(ex.videoUrl || '').trim();
+                      const safeVideoUrl = /^https?:\/\//i.test(rawVid)
+                        ? rawVid
+                        : `https://www.youtube.com/results?search_query=${encodeURIComponent(cleanName + ' proper form')}`;
                       cleanedExercises.push({
                         id: `wiz_ai_${difficulty}_d${dIdx + 1}_e${exIdx + 1}`,
                         name: cleanName,
                         sets: sCount,
-                        reps: String(ex.reps || (difficulty === 'hard' ? '5-8' : '10-12')),
-                        rest: Math.max(45, Math.min(240, parseInt(ex.rest, 10) || 90)),
+                        reps: String(ex.reps || (difficulty === 'hard' ? '5-8' : '8-12')),
+                        restTimer: `${restSeconds}s`,
+                        rest: restSeconds,
+                        videoUrl: safeVideoUrl,
                         equipType: eqType,
                         equipLabel: eqType === 'barbell' ? 'Barbell Compound' : (eqType === 'cable' ? 'Cable' : (eqType === 'dumbbell' ? 'Dumbbell' : 'Machine')),
                         instructions: String(ex.instructions || 'Set up safely and control every rep.')
@@ -19901,30 +20450,158 @@
           state.weeklyRestDays[wKey] = [restIndices[0], restIndices[1]];
         }
         state.manualScheduleOverrideByWeek[wKey] = true;
-        state.dietPreference = diet;
+        const normDiet = normalizeAppDietState(diet);
+        state.dietPreference = normDiet.id;
+        state.diet = normDiet.display;
+        state.forceShowRiceTimerInKeto = false;
         state.programWizardConfig = {
           daysPerWeek,
           primaryFocus,
           difficulty,
-          diet,
+          diet: normDiet.id,
           updatedAt: new Date().toISOString()
         };
         state.selectedDayIndex = 0;
         saveState();
         renderWorkoutView();
         renderPullupView();
+        renderRiceCookingTimerWidgets();
         renderVeganView();
+        renderShoppingView();
 
         if (runProgramWizardSubmitBtn) {
           runProgramWizardSubmitBtn.disabled = false;
           runProgramWizardSubmitBtn.textContent = 'Build My Custom Weekly Program';
         }
         if (programWizardModal) programWizardModal.classList.add('hidden');
-        showToast(`Week ${week} updated: ${daysPerWeek} Days • ${primaryFocus.toUpperCase()} • ${difficulty.toUpperCase()} • ${PROGRAM_WIZARD_DIET_TAGS[diet] || 'VEGAN'}`);
+        showToast(`Week ${week} updated: ${daysPerWeek} Days • ${primaryFocus.toUpperCase()} • ${difficulty.toUpperCase()} • ${normDiet.display}`);
       }
 
       if (runProgramWizardSubmitBtn) {
         runProgramWizardSubmitBtn.addEventListener('click', () => { runProgramSetupWizard(); });
+      }
+
+      // UPGRADE 17: SHOP LIST — "SWAP BRAND / QUALITY" MODAL LOGIC (LIVE WEEKLY TOTAL RECALCULATION)
+      const shopBrandSwapModal = document.getElementById('shop-brand-swap-modal');
+      const closeShopBrandSwapModalBtn = document.getElementById('close-shop-brand-swap-modal-btn');
+      const shopBrandItemNameEl = document.getElementById('shop-brand-swap-item-name');
+      const shopBrandBudgetEl = document.getElementById('shop-brand-budget-baseline');
+      const shopBrandPresetNameEl = document.getElementById('shop-brand-preset-name');
+      const shopBrandPresetPriceEl = document.getElementById('shop-brand-preset-price');
+      const shopBrandPresetNoteEl = document.getElementById('shop-brand-preset-note');
+      const applyShopBrandPresetBtn = document.getElementById('apply-shop-brand-preset-btn');
+      const shopBrandCustomNameInput = document.getElementById('shop-brand-custom-name-input');
+      const shopBrandCustomPriceInput = document.getElementById('shop-brand-custom-price-input');
+      const shopBrandDeltaPreviewEl = document.getElementById('shop-brand-delta-preview');
+      const resetShopBrandSwapBtn = document.getElementById('reset-shop-brand-swap-btn');
+      const saveShopBrandSwapBtn = document.getElementById('save-shop-brand-swap-btn');
+
+      let activeShopBrandSwapItem = null;
+      let activeShopBrandPreset = null;
+
+      function updateShopBrandDeltaPreview() {
+        if (!activeShopBrandSwapItem || !shopBrandDeltaPreviewEl) return;
+        const basePrice = parseShopDollar(activeShopBrandSwapItem.baseWeeklyCost || activeShopBrandSwapItem.weeklyCost);
+        const rawVal = parseFloat(shopBrandCustomPriceInput ? shopBrandCustomPriceInput.value : '');
+        const nextPrice = Number.isFinite(rawVal) && rawVal >= 0 ? rawVal : basePrice;
+        const delta = +(nextPrice - basePrice).toFixed(2);
+        const sign = delta >= 0 ? '+' : '-';
+        shopBrandDeltaPreviewEl.textContent = `${sign}$${Math.abs(delta).toFixed(2)}/wk`;
+      }
+
+      window.openShopBrandSwapModal = function openShopBrandSwapModal(item) {
+        if (!shopBrandSwapModal || !item) return;
+        activeShopBrandSwapItem = item;
+        activeShopBrandPreset = getPremiumBrandPresetForItem(item);
+        const basePrice = parseShopDollar(item.baseWeeklyCost || item.weeklyCost);
+        const existing = (state.shopBrandOverrides && state.shopBrandOverrides[item.id]) || null;
+
+        if (shopBrandItemNameEl) shopBrandItemNameEl.textContent = item.baseShortName || item.shortName || item.name;
+        if (shopBrandBudgetEl) shopBrandBudgetEl.textContent = `$${basePrice.toFixed(2)}/wk`;
+        if (shopBrandPresetNameEl) shopBrandPresetNameEl.textContent = activeShopBrandPreset.brandName;
+        if (shopBrandPresetPriceEl) shopBrandPresetPriceEl.textContent = `$${activeShopBrandPreset.weeklyPrice.toFixed(2)}/wk`;
+        if (shopBrandPresetNoteEl) shopBrandPresetNoteEl.textContent = activeShopBrandPreset.note;
+
+        if (shopBrandCustomNameInput) {
+          shopBrandCustomNameInput.value = existing ? (existing.brandName || '') : activeShopBrandPreset.brandName;
+        }
+        if (shopBrandCustomPriceInput) {
+          shopBrandCustomPriceInput.value = existing
+            ? Number(existing.weeklyPrice).toFixed(2)
+            : activeShopBrandPreset.weeklyPrice.toFixed(2);
+        }
+        updateShopBrandDeltaPreview();
+        shopBrandSwapModal.classList.remove('hidden');
+      };
+
+      function closeShopBrandSwapModal() {
+        if (shopBrandSwapModal) shopBrandSwapModal.classList.add('hidden');
+        activeShopBrandSwapItem = null;
+      }
+
+      if (closeShopBrandSwapModalBtn) {
+        closeShopBrandSwapModalBtn.addEventListener('click', closeShopBrandSwapModal);
+      }
+      if (shopBrandSwapModal) {
+        shopBrandSwapModal.addEventListener('click', (e) => {
+          if (e.target === shopBrandSwapModal) closeShopBrandSwapModal();
+        });
+      }
+      if (shopBrandCustomPriceInput) {
+        shopBrandCustomPriceInput.addEventListener('input', updateShopBrandDeltaPreview);
+      }
+      if (applyShopBrandPresetBtn) {
+        applyShopBrandPresetBtn.addEventListener('click', () => {
+          if (!activeShopBrandSwapItem || !activeShopBrandPreset) return;
+          if (!state.shopBrandOverrides || typeof state.shopBrandOverrides !== 'object') {
+            state.shopBrandOverrides = {};
+          }
+          state.shopBrandOverrides[activeShopBrandSwapItem.id] = {
+            tier: 'premium',
+            brandName: activeShopBrandPreset.brandName,
+            weeklyPrice: activeShopBrandPreset.weeklyPrice,
+            note: activeShopBrandPreset.note
+          };
+          saveState();
+          renderShoppingView();
+          closeShopBrandSwapModal();
+          showToast(`Swapped to ${activeShopBrandPreset.brandName} ($${activeShopBrandPreset.weeklyPrice.toFixed(2)}/wk). Weekly total updated.`);
+        });
+      }
+      if (saveShopBrandSwapBtn) {
+        saveShopBrandSwapBtn.addEventListener('click', () => {
+          if (!activeShopBrandSwapItem) return;
+          const customName = String(shopBrandCustomNameInput ? shopBrandCustomNameInput.value : '').trim() || (activeShopBrandPreset ? activeShopBrandPreset.brandName : 'Premium Swap');
+          const parsedPrice = parseFloat(shopBrandCustomPriceInput ? shopBrandCustomPriceInput.value : '');
+          if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+            showToast('Enter a valid weekly price (0 or higher).');
+            return;
+          }
+          if (!state.shopBrandOverrides || typeof state.shopBrandOverrides !== 'object') {
+            state.shopBrandOverrides = {};
+          }
+          state.shopBrandOverrides[activeShopBrandSwapItem.id] = {
+            tier: 'custom',
+            brandName: customName.slice(0, 80),
+            weeklyPrice: +parsedPrice.toFixed(2)
+          };
+          saveState();
+          renderShoppingView();
+          closeShopBrandSwapModal();
+          showToast(`Saved ${customName} ($${parsedPrice.toFixed(2)}/wk). Weekly total updated.`);
+        });
+      }
+      if (resetShopBrandSwapBtn) {
+        resetShopBrandSwapBtn.addEventListener('click', () => {
+          if (!activeShopBrandSwapItem) return;
+          if (state.shopBrandOverrides && state.shopBrandOverrides[activeShopBrandSwapItem.id]) {
+            delete state.shopBrandOverrides[activeShopBrandSwapItem.id];
+          }
+          saveState();
+          renderShoppingView();
+          closeShopBrandSwapModal();
+          showToast('Reset item back to Budget price. Weekly total updated.');
+        });
       }
 
       // UPGRADE 15: FREESTYLE DAY — "SWAP FROM HISTORY" MODAL LOGIC
@@ -22611,6 +23288,63 @@
       />
 
       <div id="history-swap-list" class="space-y-2 overflow-y-auto pr-0.5 flex-1"></div>
+    </div>
+  </div>
+
+  <!-- MODAL 6: Shop List — Swap Brand / Quality & Recalculate Weekly Total -->
+  <div id="shop-brand-swap-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="shop-brand-swap-title">
+    <div class="bg-slate-900 border border-indigo-400/50 rounded-2xl max-w-md w-full p-4 space-y-3.5 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
+        <div>
+          <h3 id="shop-brand-swap-title" class="text-base font-extrabold text-slate-50">⇄ Swap Brand / Quality</h3>
+          <p id="shop-brand-swap-item-name" class="text-xs text-slate-300 mt-0.5">Override budget price with a premium or custom brand.</p>
+        </div>
+        <button type="button" id="close-shop-brand-swap-modal-btn" aria-label="Close" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
+      </div>
+
+      <!-- Budget Baseline Strip -->
+      <div class="rounded-xl bg-slate-950 border border-slate-800 p-3 flex items-center justify-between gap-2 text-xs">
+        <span class="text-slate-300 font-semibold">Budget Baseline:</span>
+        <span id="shop-brand-budget-baseline" class="font-extrabold text-emerald-300">$0.00/wk</span>
+      </div>
+
+      <!-- 1-Tap Recommended Premium Swap Card -->
+      <div class="rounded-xl bg-indigo-950/35 border border-indigo-400/50 p-3 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-200">Recommended Premium Swap</span>
+          <span id="shop-brand-preset-price" class="text-xs font-extrabold text-amber-300">$0.00/wk</span>
+        </div>
+        <div id="shop-brand-preset-name" class="text-xs font-bold text-slate-100">Organic Premium Option</div>
+        <p id="shop-brand-preset-note" class="text-[11px] text-slate-300 leading-snug"></p>
+        <button type="button" id="apply-shop-brand-preset-btn" class="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-slate-50 text-xs font-extrabold transition">
+          Use Recommended Premium Swap
+        </button>
+      </div>
+
+      <!-- Custom Brand & Weekly Price Form -->
+      <div class="space-y-2.5 pt-1 border-t border-slate-800">
+        <div class="text-xs font-extrabold text-slate-100">Or Enter Your Own Brand &amp; Price</div>
+        <div class="space-y-1">
+          <label for="shop-brand-custom-name-input" class="block text-[11px] font-bold text-slate-300">Brand / Quality Name</label>
+          <input id="shop-brand-custom-name-input" type="text" placeholder="e.g., Organic Sprouted Tofu" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-400" />
+        </div>
+        <div class="space-y-1">
+          <label for="shop-brand-custom-price-input" class="block text-[11px] font-bold text-slate-300">Weekly Price ($/wk)</label>
+          <div class="flex items-center gap-2">
+            <input id="shop-brand-custom-price-input" type="number" step="0.05" min="0" placeholder="12.47" class="flex-1 rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-xs font-bold text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-400" />
+            <span id="shop-brand-delta-preview" class="text-[11px] font-extrabold px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-amber-200 whitespace-nowrap">+$0.00/wk</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 pt-1" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+        <button type="button" id="reset-shop-brand-swap-btn" class="py-2.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold transition">
+          ↺ Reset to Budget
+        </button>
+        <button type="button" id="save-shop-brand-swap-btn" class="py-2.5 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-50 text-xs font-extrabold transition">
+          Save &amp; Recalculate
+        </button>
+      </div>
     </div>
   </div>
 

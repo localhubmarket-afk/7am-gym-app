@@ -2500,3 +2500,104 @@ test('Subtest 39: Diet Preference Onboarding Injection, Flex Meal AI Food Vision
   assert.equal(totals.eatenProtein, 67); // 32 (shake) + 35 (flex lunch)
   assert.equal(totals.eatenKcal, 1440); // 140 + 850 + 150 + 300
 });
+
+test('Subtest 40: Dynamic Diet Ecosystem — Strict Wizard Schema, State-Bound Cooking Timers, Diet-Bound Shopping List & Premium Brand Swap Live Totalizer', async () => {
+  const mod = await import('./workoutLogic');
+
+  // 1. Strict Wizard JSON Exercise Schema Normalization
+  assert.ok(mod.STRICT_WIZARD_EXERCISE_SCHEMA_LINE.includes('"restTimer": "90s"'));
+  assert.ok(mod.STRICT_WIZARD_EXERCISE_SCHEMA_LINE.includes('"videoUrl": "https://youtube.com/..."'));
+  assert.equal(mod.parseRestTimerSeconds('90s'), 90);
+  assert.equal(mod.parseRestTimerSeconds('2m'), 120);
+  assert.equal(mod.parseRestTimerSeconds(75), 75);
+
+  const easyEx = mod.normalizeWizardExerciseStrict(
+    {
+      name: 'Seated Chest Press Machine',
+      sets: 5,
+      reps: '10-12',
+      restTimer: '75s',
+      videoUrl: 'https://youtube.com/watch?v=abc',
+      instructions: 'Keep shoulders pinned back.'
+    },
+    'easy',
+    'wiz_easy_1'
+  );
+  assert.ok(easyEx);
+  assert.equal(easyEx.sets, 3); // Easy caps sets at 3
+  assert.equal(easyEx.rest, 75);
+  assert.equal(easyEx.restTimer, '75s');
+  assert.equal(easyEx.videoUrl, 'https://youtube.com/watch?v=abc');
+  assert.equal(easyEx.equipType, 'machine');
+
+  const hardEx = mod.normalizeWizardExerciseStrict(
+    { name: 'Barbell Squat', sets: 2, reps: '5-6', restTimer: '150s', equipType: 'barbell' },
+    'hard',
+    'wiz_hard_1'
+  );
+  assert.ok(hardEx);
+  assert.equal(hardEx.sets, 4); // Hard enforces 4-5 sets
+  assert.equal(hardEx.rest, 150);
+  assert.ok(hardEx.videoUrl.startsWith('https://www.youtube.com/'));
+
+  // 2. State-Bound Dynamic Cooking Timer on Rest Timer Tab
+  const veganTimer = mod.getDietCookingTimerConfig('Vegan');
+  assert.equal(veganTimer.mode, 'rice');
+  assert.equal(veganTimer.dietDisplay, 'Vegan');
+  assert.equal(veganTimer.phase1Seconds, 720); // 12m Cook
+  assert.equal(veganTimer.phase2Seconds, 600); // 10m Rest
+  assert.ok(veganTimer.summaryTitle.includes('Jasmine Rice Timer'));
+
+  const ketoTimer = mod.getDietCookingTimerConfig('Keto');
+  assert.equal(ketoTimer.mode, 'keto_veggie');
+  assert.equal(ketoTimer.dietDisplay, 'Keto');
+  assert.equal(ketoTimer.phase1Seconds, 480); // 8m Steam
+  assert.equal(ketoTimer.phase2Seconds, 180); // 3m Drain
+  assert.ok(ketoTimer.summaryTitle.includes('Low-Carb Veggie Timer'));
+
+  // 3. State-Bound Shopping List Patches per Diet
+  assert.deepEqual(mod.getDietShoppingItemPatches('Vegan'), {});
+  const ketoPatches = mod.getDietShoppingItemPatches('Keto');
+  assert.ok(ketoPatches.shop_rice.shortName.includes('Riced Cauliflower'));
+  assert.ok(ketoPatches.shop_banana.shortName.includes('Avocados'));
+  assert.ok(ketoPatches.shop_oats.shortName.includes('Almond Flour'));
+
+  const anyPatches = mod.getDietShoppingItemPatches('Any');
+  assert.ok(anyPatches.shop_tofu.shortName.includes('Chicken'));
+
+  // 4. Premium Brand/Quality Swap & Automatic Weekly/3-Month/Daily Total Recalculation
+  const sampleCategories = [
+    {
+      category: 'Aisle 1: Produce',
+      items: [
+        { id: 'shop_silk', weeklyCost: '$3.19/wk', quarterlyCost: '$41.06 / 3 mos' },
+        { id: 'shop_tofu', weeklyCost: '$8.97/wk', quarterlyCost: '$115.33 / 3 mos' }
+      ]
+    },
+    {
+      category: 'Aisle 4: Bulk Supplements',
+      items: [
+        { id: 'shop_isolate', weeklyCost: '$22.40/wk', quarterlyCost: '$287.96 / 3 mos' }
+      ]
+    }
+  ];
+  const baseTotals = mod.computeShoppingTotalsWithBrandOverrides(sampleCategories, {});
+  assert.equal(baseTotals.storeWeeklyTotal, 12.16);
+  assert.equal(baseTotals.bulkWeeklyTotal, 22.4);
+  assert.equal(baseTotals.weeklyTotal, 34.56);
+  assert.equal(baseTotals.swappedCount, 0);
+
+  const premiumTofu = mod.getPremiumBrandPresetForShopItem({ id: 'shop_tofu', weeklyCost: '$8.97/wk' });
+  assert.equal(premiumTofu.weeklyPrice, 12.47); // +$3.50/wk
+
+  const swappedTotals = mod.computeShoppingTotalsWithBrandOverrides(sampleCategories, {
+    shop_tofu: { tier: 'premium', brandName: premiumTofu.brandName, weeklyPrice: premiumTofu.weeklyPrice }
+  });
+  assert.equal(swappedTotals.swappedCount, 1);
+  assert.equal(swappedTotals.storeWeeklyTotal, 15.66); // 12.16 + 3.50
+  assert.equal(swappedTotals.weeklyTotal, 38.06); // 34.56 + 3.50
+  assert.equal(swappedTotals.itemPricing.shop_tofu.deltaWeekly, 3.5);
+  assert.equal(swappedTotals.itemPricing.shop_tofu.isSwapped, true);
+  assert.equal(swappedTotals.dailyTotal, +(38.06 / 7).toFixed(2));
+});
+

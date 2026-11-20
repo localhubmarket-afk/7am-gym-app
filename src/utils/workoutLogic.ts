@@ -8939,3 +8939,472 @@ export function computeDailyFuelTotalsWithFlexAndQuickAdd(params: {
     flexMealsLoggedCount
   };
 }
+
+// =========================================================================
+// UPGRADE 17: DYNAMIC DIET ECOSYSTEM (TIMERS, SHOPPING LIST, BRAND SWAPS & STRICT WIZARD SCHEMA)
+// =========================================================================
+
+export type CanonicalDietDisplay = 'Any' | 'Vegan' | 'Vegetarian' | 'Keto' | 'Gluten-Free';
+
+export function normalizeDietState(rawDiet?: string | null): {
+  id: DietPreferenceId;
+  display: CanonicalDietDisplay;
+  label: string;
+} {
+  const s = String(rawDiet || 'vegan').toLowerCase().trim();
+  if (s === 'keto' || s.includes('keto') || s.includes('low carb')) {
+    return { id: 'keto', display: 'Keto', label: 'Keto (Low Carb)' };
+  }
+  if (s === 'vegetarian' || s === 'veggie') {
+    return { id: 'vegetarian', display: 'Vegetarian', label: 'Vegetarian' };
+  }
+  if (s === 'gluten_free' || s === 'gluten-free' || s.includes('gluten')) {
+    return { id: 'gluten_free', display: 'Gluten-Free', label: 'Gluten-Free' };
+  }
+  if (s === 'any' || s.includes('any food') || s.includes('cheapest')) {
+    return { id: 'any', display: 'Any', label: 'Any Food (Cheapest)' };
+  }
+  return { id: 'vegan', display: 'Vegan', label: 'Vegan' };
+}
+
+export const STRICT_WIZARD_EXERCISE_SCHEMA_LINE =
+  '[{ "name": "Exercise Name", "sets": 3, "reps": "8-12", "restTimer": "90s", "videoUrl": "https://youtube.com/...", "instructions": "Short setup text" }]';
+
+export function parseRestTimerSeconds(rawVal: unknown, fallbackSec = 90): number {
+  if (typeof rawVal === 'number' && Number.isFinite(rawVal)) {
+    return Math.max(30, Math.min(240, Math.round(rawVal)));
+  }
+  const str = String(rawVal || '').trim().toLowerCase();
+  if (!str) return fallbackSec;
+  const minMatch = str.match(/^(\d+(?:\.\d+)?)\s*(m|min|mins|minutes)$/);
+  if (minMatch) {
+    return Math.max(30, Math.min(240, Math.round(parseFloat(minMatch[1]) * 60)));
+  }
+  const secMatch = str.match(/(\d+)/);
+  if (secMatch) {
+    return Math.max(30, Math.min(240, parseInt(secMatch[1], 10)));
+  }
+  return fallbackSec;
+}
+
+export interface StrictWizardExercise {
+  id: string;
+  name: string;
+  sets: number;
+  reps: string;
+  restTimer: string;
+  rest: number;
+  videoUrl: string;
+  instructions: string;
+  equipType: 'machine' | 'cable' | 'barbell' | 'dumbbell' | 'bodyweight';
+}
+
+export function normalizeWizardExerciseStrict(
+  raw: Record<string, unknown>,
+  difficulty: 'easy' | 'medium' | 'hard',
+  fallbackId: string
+): StrictWizardExercise | null {
+  const cleanName = String((raw && raw.name) || '').trim();
+  if (!cleanName) return null;
+  let setsCount = parseInt(String(raw.sets ?? ''), 10);
+  if (!Number.isFinite(setsCount)) {
+    setsCount = difficulty === 'easy' ? 3 : (difficulty === 'hard' ? 4 : 3);
+  }
+  if (difficulty === 'easy') setsCount = Math.min(3, Math.max(2, setsCount));
+  else if (difficulty === 'hard') setsCount = Math.min(5, Math.max(4, setsCount));
+  else setsCount = Math.min(4, Math.max(3, setsCount));
+
+  const restSec = parseRestTimerSeconds(raw.restTimer ?? raw.rest, difficulty === 'hard' ? 120 : 90);
+  const rawEquip = String(raw.equipType || '').toLowerCase().trim();
+  const equipType: StrictWizardExercise['equipType'] =
+    difficulty === 'easy'
+      ? (rawEquip === 'cable' ? 'cable' : 'machine')
+      : (['machine', 'cable', 'barbell', 'dumbbell', 'bodyweight'].includes(rawEquip)
+          ? (rawEquip as StrictWizardExercise['equipType'])
+          : (difficulty === 'hard' ? 'barbell' : 'machine'));
+
+  const rawVideo = String(raw.videoUrl || '').trim();
+  const videoUrl = /^https?:\/\//i.test(rawVideo)
+    ? rawVideo
+    : `https://www.youtube.com/results?search_query=${encodeURIComponent(cleanName + ' proper form')}`;
+
+  return {
+    id: fallbackId,
+    name: cleanName,
+    sets: setsCount,
+    reps: String(raw.reps || (difficulty === 'hard' ? '5-8' : '8-12')).trim(),
+    restTimer: `${restSec}s`,
+    rest: restSec,
+    videoUrl,
+    instructions: String(raw.instructions || 'Set up safely and control every rep.').trim(),
+    equipType
+  };
+}
+
+export interface DietCookingTimerConfig {
+  dietId: DietPreferenceId;
+  dietDisplay: CanonicalDietDisplay;
+  mode: 'rice' | 'keto_veggie';
+  summaryTitle: string;
+  badgeLabel: string;
+  subtitle: string;
+  phase1Label: string;
+  phase1Seconds: number;
+  phase1ActionText: string;
+  phase1DoneBanner: string;
+  phase2Label: string;
+  phase2Seconds: number;
+  phase2ActionText: string;
+  phase2DoneBanner: string;
+  intervalAlertSeconds: number;
+  intervalAlertBanner: string;
+}
+
+export function getDietCookingTimerConfig(rawDiet?: string | null): DietCookingTimerConfig {
+  const norm = normalizeDietState(rawDiet);
+  if (norm.id === 'keto') {
+    return {
+      dietId: 'keto',
+      dietDisplay: 'Keto',
+      mode: 'keto_veggie',
+      summaryTitle: 'Low-Carb Veggie Timer (8m Steam + 3m Drain)',
+      badgeLabel: '2-Phase Low-Carb Veggie Timer',
+      subtitle: '4-day keto batch: 300g broccoli + zucchini florets • Syncs with top sticky timer bar',
+      phase1Label: '1. Steam Low-Carb Veggies (8m • Toss at 4m)',
+      phase1Seconds: 480,
+      phase1ActionText: 'Steam covered on medium heat. Quick toss halfway at 4m for crisp texture.',
+      phase1DoneBanner: 'STEAMING DONE! Turn off heat & tap Phase 2: 3-Min Drain & Cool',
+      phase2Label: '2. Drain & Steam-Off Cool (3m)',
+      phase2Seconds: 180,
+      phase2ActionText: 'Lid off for 3 min so veggies stay crisp, not soggy, before boxing 4 meals.',
+      phase2DoneBanner: 'LOW-CARB VEGGIES READY! Portion into 4 crisp keto containers.',
+      intervalAlertSeconds: 240,
+      intervalAlertBanner: 'TOSS VEGGIES NOW! (4m halfway mark — keeps broccoli crisp)'
+    };
+  }
+
+  const labelByDiet: Record<Exclude<DietPreferenceId, 'keto'>, { summary: string; badge: string; sub: string }> = {
+    vegan: {
+      summary: 'Jasmine Rice Timer (12m Cook + 10m Cooldown)',
+      badge: '2-Phase Jasmine Rice Timer',
+      sub: '220g rinsed dry rice + 330 ml water • Syncs live with top sticky timer bar & Batch 2/2'
+    },
+    vegetarian: {
+      summary: 'Jasmine Rice & Egg Prep Timer (12m Cook + 10m Rest)',
+      badge: '2-Phase Rice & Egg Prep Timer',
+      sub: '220g rinsed rice (12m simmer) + soft/hard-boiled eggs • Syncs with top timer bar'
+    },
+    gluten_free: {
+      summary: 'GF Jasmine Rice Timer (12m Cook + 10m Cooldown)',
+      badge: '2-Phase GF Jasmine Rice Timer',
+      sub: 'Naturally gluten-free jasmine rice (220g dry + 330 ml water) • Syncs with Batch 2/2'
+    },
+    any: {
+      summary: 'Bulk Rice & Meal Prep Timer (12m Cook + 10m Rest)',
+      badge: '2-Phase Bulk Rice Timer',
+      sub: '220g rinsed dry rice + 330 ml water for 4 protein bowls • Syncs with top timer bar'
+    }
+  };
+
+  const spec = labelByDiet[norm.id as Exclude<DietPreferenceId, 'keto'>] || labelByDiet.vegan;
+  return {
+    dietId: norm.id,
+    dietDisplay: norm.display,
+    mode: 'rice',
+    summaryTitle: spec.summary,
+    badgeLabel: spec.badge,
+    subtitle: spec.sub,
+    phase1Label: '1. Cook Rice (10–12m • Mix Every 1.5m)',
+    phase1Seconds: 720,
+    phase1ActionText: 'Covered low simmer. Stir every 1.5 min when chime sounds.',
+    phase1DoneBanner: 'COOKING DONE! Remove from heat & tap Stage 2: 10-Min Cool-Down',
+    phase2Label: '2. Cool-Down & Steam Rest (10m)',
+    phase2Seconds: 600,
+    phase2ActionText: 'Off heat with lid closed for 10 min before weighing 4 x 150g bowls.',
+    phase2DoneBanner: 'RICE READY! Portion into 4 x 150g bowls (600g total)',
+    intervalAlertSeconds: 90,
+    intervalAlertBanner: 'MIX / STIR RICE NOW! (1.5m interval — prevents sticking)'
+  };
+}
+
+export interface DietShopItemPatch {
+  shortName: string;
+  name: string;
+  weeklyQty: string;
+  quarterlyQty: string;
+  weeklyCost: string;
+  quarterlyCost: string;
+  eli12Summary: string;
+  fullMathNotes: string;
+}
+
+export function getDietShoppingItemPatches(rawDiet?: string | null): Record<string, DietShopItemPatch> {
+  const norm = normalizeDietState(rawDiet);
+  if (norm.id === 'vegan') return {};
+  if (norm.id === 'keto') {
+    return {
+      shop_tofu: {
+        shortName: '2. Pasture Eggs (18-Pack) & Chicken Thighs (Keto)',
+        name: '2. Pasture Eggs & Boneless Chicken Thighs (Low-Carb Protein)',
+        weeklyQty: '1,200g/wk + 18 Eggs',
+        quarterlyQty: '15.4 kg / 90 days',
+        weeklyCost: '$10.50/wk',
+        quarterlyCost: '$135.00 / 3 mos',
+        eli12Summary: 'High-protein, zero-carb base for Fuel 3 lunch bowls.',
+        fullMathNotes: 'Replaces high-carb sides with lean protein + healthy fats (~$10.50/wk).'
+      },
+      shop_banana: {
+        shortName: '4. Fresh Hass Avocados (Bag of 5 • Keto)',
+        name: '4. Fresh Hass Avocados (Low-Carb Healthy Fats)',
+        weeklyQty: '5 Avocados/wk (~700g)',
+        quarterlyQty: '64 Avocados / 90 days',
+        weeklyCost: '$4.50/wk',
+        quarterlyCost: '$57.86 / 3 mos',
+        eli12Summary: 'Replaces bananas with creamy potassium and zero sugar.',
+        fullMathNotes: 'Half an avocado daily keeps carbs under 25g/day while boosting satiety ($4.50/wk).'
+      },
+      shop_oats: {
+        shortName: '5. Almond Flour & Hemp Hearts (Low-Carb Base)',
+        name: '5. Blanched Almond Flour & Shelled Hemp Hearts (Keto)',
+        weeklyQty: '280g/wk (40g/day)',
+        quarterlyQty: '3,600g / 90 days',
+        weeklyCost: '$4.90/wk',
+        quarterlyCost: '$63.00 / 3 mos',
+        eli12Summary: 'Replaces oats for a 4g-net-carb breakfast bowl.',
+        fullMathNotes: '40g/day blended with chia seeds & unsweetened almond milk for keto Fuel 2 ($4.90/wk).'
+      },
+      shop_rice: {
+        shortName: '6. Riced Cauliflower & Zucchini Medley (Keto)',
+        name: '6. Frozen Riced Cauliflower & Zucchini Medley (Low-Carb)',
+        weeklyQty: '1,050g/wk (150g/day)',
+        quarterlyQty: '13.5 kg / 90 days',
+        weeklyCost: '$3.40/wk',
+        quarterlyCost: '$43.71 / 3 mos',
+        eli12Summary: 'Steam 8m with broccoli using the Low-Carb Veggie Timer.',
+        fullMathNotes: '150g/day replaces jasmine rice to cut 40g net carbs from Fuel 3 ($3.40/wk).'
+      },
+      shop_isolate: {
+        shortName: '12. Zero-Carb Whey or Pea Isolate (5 lb Tub • Keto)',
+        name: '12. Zero-Carb Protein Isolate — Unflavored (Keto Friendly)',
+        weeklyQty: '630g/wk (90g/day)',
+        quarterlyQty: '8,100g / 90 days (4 Tubs)',
+        weeklyCost: '$22.40/wk',
+        quarterlyCost: '$287.96 / 3 mos',
+        eli12Summary: '90g/day across Fuel 1 and Fuel 4 with under 2g net carbs.',
+        fullMathNotes: 'Maintains 139g daily protein target without spiking blood sugar ($22.40/wk).'
+      }
+    };
+  }
+  if (norm.id === 'vegetarian') {
+    return {
+      shop_silk: {
+        shortName: '1. High-Protein Filtered Milk or Almond Milk (1.89L)',
+        name: '1. High-Protein Filtered Milk or Unsweetened Almond Milk',
+        weeklyQty: '1,260 ml/wk (180 ml/day)',
+        quarterlyQty: '16.2 L / 90 days',
+        weeklyCost: '$4.20/wk',
+        quarterlyCost: '$54.00 / 3 mos',
+        eli12Summary: 'Use 180 ml/day in Overnight Oats for extra dairy protein.',
+        fullMathNotes: '180 ml/day in Fuel 2 Overnight Oats ($4.20/wk).'
+      },
+      shop_tofu: {
+        shortName: '2. 0% Plain Greek Yogurt + Large Eggs (Vegetarian)',
+        name: '2. 0% Plain Greek Yogurt (750g) & Large Eggs (12-Pack)',
+        weeklyQty: '1,500g Yogurt + 12 Eggs/wk',
+        quarterlyQty: '19.3 kg + 154 Eggs / 90d',
+        weeklyCost: '$9.40/wk',
+        quarterlyCost: '$120.86 / 3 mos',
+        eli12Summary: 'Easy vegetarian protein swap for daily lunch and snacks.',
+        fullMathNotes: 'Delivers ~24g high-leucine protein per serving alongside jasmine rice & broccoli ($9.40/wk).'
+      },
+      shop_isolate: {
+        shortName: '12. Whey or Pea Protein Isolate (5 lb Tub)',
+        name: '12. Unflavored Whey or Pea Protein Isolate (5 lb / 2,268g)',
+        weeklyQty: '630g/wk (90g/day)',
+        quarterlyQty: '8,100g / 90 days (4 Tubs)',
+        weeklyCost: '$21.50/wk',
+        quarterlyCost: '$276.43 / 3 mos',
+        eli12Summary: 'Use 90g/day across shakes and oats.',
+        fullMathNotes: 'Vegetarian whey or pea isolate keeps daily protein steady at 139g/day ($21.50/wk).'
+      }
+    };
+  }
+  if (norm.id === 'gluten_free') {
+    return {
+      shop_oats: {
+        shortName: '5. Certified Gluten-Free Rolled Oats (907g bag)',
+        name: '5. Certified Gluten-Free Protein Oats (100% Purity Protocol)',
+        weeklyQty: '315g/wk (45g/day)',
+        quarterlyQty: '4,050g / 90 days (4.5 bags)',
+        weeklyCost: '$3.49/wk',
+        quarterlyCost: '$44.87 / 3 mos',
+        eli12Summary: 'Certified gluten-free oats — 180g per 4-day oats batch.',
+        fullMathNotes: 'Purity-tested gluten-free oats prevent cross-contamination ($3.49/wk).'
+      },
+      shop_rice: {
+        shortName: '6. Naturally Gluten-Free White Jasmine Rice',
+        name: '6. Naturally Gluten-Free White Jasmine Rice',
+        weeklyQty: '385g dry/wk (55g/day)',
+        quarterlyQty: '4,950g dry / 90 days',
+        weeklyCost: '$1.16/wk',
+        quarterlyCost: '$14.85 / 3 mos',
+        eli12Summary: 'Naturally 100% gluten-free. Cook 220g dry every 4 days.',
+        fullMathNotes: 'Rinse 3x and simmer 12m for 4 gluten-free bowls ($1.16/wk).'
+      },
+      shop_nooch: {
+        shortName: '9. Certified GF Nutritional Yeast Flakes',
+        name: '9. Certified Gluten-Free Fortified Nutritional Yeast',
+        weeklyQty: '84g/wk (12g/day)',
+        quarterlyQty: '1,080g / 90 days',
+        weeklyCost: '$1.45/wk',
+        quarterlyCost: '$18.64 / 3 mos',
+        eli12Summary: 'Certified GF flakes for B12, savory flavor, and +6g protein.',
+        fullMathNotes: '12g/day sprinkled on Fuel 3 bowl ($1.45/wk).'
+      }
+    };
+  }
+  // 'any' — Any Food (Cheapest)
+  return {
+    shop_silk: {
+      shortName: '1. Skim or 2% Milk (2L Carton — Budget)',
+      name: '1. Skim or 2% Dairy Milk (2L Carton)',
+      weeklyQty: '1,260 ml/wk (180 ml/day)',
+      quarterlyQty: '16.2 L / 90 days',
+      weeklyCost: '$3.10/wk',
+      quarterlyCost: '$39.86 / 3 mos',
+      eli12Summary: 'Lowest-cost milk for Fuel 2 Overnight Oats.',
+      fullMathNotes: '180 ml/day adds 6g extra dairy protein to breakfast oats ($3.10/wk).'
+    },
+    shop_tofu: {
+      shortName: '2. Budget Chicken Breast & Large Eggs Pack',
+      name: '2. Club-Pack Chicken Breast & Eggs (Cheapest Protein)',
+      weeklyQty: '1,100g/wk + 12 Eggs',
+      quarterlyQty: '14.1 kg / 90 days',
+      weeklyCost: '$9.80/wk',
+      quarterlyCost: '$126.00 / 3 mos',
+      eli12Summary: 'Batch-cook chicken or eggs for Fuel 3 jasmine rice bowls.',
+      fullMathNotes: 'High-protein, budget-friendly animal protein for daily Fuel 3 bowls ($9.80/wk).'
+    },
+    shop_isolate: {
+      shortName: '12. Bulk Whey or Pea Protein Tub (5 lb — Cheapest)',
+      name: '12. Bulk Whey or Pea Protein Blend (5 lb / 2,268g Tub)',
+      weeklyQty: '630g/wk (90g/day)',
+      quarterlyQty: '8,100g / 90 days (4 Tubs)',
+      weeklyCost: '$20.50/wk',
+      quarterlyCost: '$263.57 / 3 mos',
+      eli12Summary: 'Lowest cost per gram of protein for Fuel 1 and Fuel 4.',
+      fullMathNotes: '90g/day across shakes and oats ($20.50/wk).'
+    }
+  };
+}
+
+export function parseDollarAmount(raw: unknown): number {
+  if (typeof raw === 'number' && Number.isFinite(raw)) return Math.max(0, raw);
+  const str = String(raw || '').replace(/,/g, '');
+  const m = str.match(/\$?\s*(\d+(?:\.\d+)?)/);
+  return m ? Math.max(0, parseFloat(m[1])) : 0;
+}
+
+export interface ShopBrandOverride {
+  tier: 'premium' | 'custom';
+  brandName: string;
+  weeklyPrice: number;
+  note?: string;
+}
+
+export function getPremiumBrandPresetForShopItem(item: {
+  id: string;
+  shortName?: string;
+  name?: string;
+  weeklyCost?: string;
+}): { brandName: string; weeklyPrice: number; note: string } {
+  const baseWeekly = parseDollarAmount(item.weeklyCost) || 2.5;
+  const presets: Record<string, { brandName: string; weeklyPrice: number; note: string }> = {
+    shop_silk: { brandName: 'Organic Barista / High-Protein Milk (1.89L)', weeklyPrice: +(baseWeekly + 2.3).toFixed(2), note: 'Organic clean-label carton with zero gums or fillers.' },
+    shop_tofu: { brandName: 'Organic Sprouted / Pasture-Raised Premium', weeklyPrice: +(baseWeekly + 3.5).toFixed(2), note: 'Higher quality organic or pasture-raised main protein.' },
+    shop_broccoli: { brandName: 'Organic Local Broccoli Crowns', weeklyPrice: +(baseWeekly + 1.75).toFixed(2), note: 'Certified organic fresh florets.' },
+    shop_banana: { brandName: 'Organic Fair-Trade Produce', weeklyPrice: +(baseWeekly + 0.85).toFixed(2), note: 'Certified organic upgrade.' },
+    shop_oats: { brandName: 'Organic Sprouted Gluten-Free Oats', weeklyPrice: +(baseWeekly + 1.9).toFixed(2), note: 'Sprouted organic whole-grain upgrade.' },
+    shop_rice: { brandName: 'Organic Aged Thai Hom Mali Jasmine Rice', weeklyPrice: +(baseWeekly + 1.15).toFixed(2), note: 'Single-origin aromatic organic grain upgrade.' },
+    shop_pb: { brandName: 'Organic Valencia Stone-Ground Peanut Butter', weeklyPrice: +(baseWeekly + 1.35).toFixed(2), note: 'Organic Valencia peanuts, zero palm oil.' },
+    shop_chia: { brandName: 'Organic Black Reserve Chia Seeds', weeklyPrice: +(baseWeekly + 0.55).toFixed(2), note: 'Lab-tested organic whole chia seeds.' },
+    shop_nooch: { brandName: 'Organic Non-Fortified / Premium Yeast Flakes', weeklyPrice: +(baseWeekly + 0.95).toFixed(2), note: 'Premium flaky nutritional yeast.' },
+    shop_iodine: { brandName: 'Organic Sea Kelp + Iodized Mineral Salt', weeklyPrice: +(baseWeekly + 0.35).toFixed(2), note: 'Trace-mineral iodized salt upgrade.' },
+    shop_sesame: { brandName: 'Cold-Pressed Organic Toasted Sesame Oil', weeklyPrice: +(baseWeekly + 0.45).toFixed(2), note: 'First cold-pressed dark glass bottle.' },
+    shop_isolate: { brandName: 'Third-Party Certified Organic Isolate (5 lb)', weeklyPrice: +(baseWeekly + 6.5).toFixed(2), note: 'NSF / heavy-metal tested organic protein tub.' },
+    shop_creatine: { brandName: 'Creapure German Micronized Creatine (1 kg)', weeklyPrice: +(baseWeekly + 0.9).toFixed(2), note: '99.99% pure German Creapure monohydrate.' },
+    shop_vitd3: { brandName: 'Organic Lichen Vitamin D3 + K2 Drops', weeklyPrice: +(baseWeekly + 0.65).toFixed(2), note: 'Bioavailable D3 + K2 combo.' }
+  };
+  if (presets[item.id]) return presets[item.id];
+  const baseLabel = String(item.shortName || item.name || 'Item').replace(/^\d+\.\s*/, '');
+  return {
+    brandName: `Organic Premium ${baseLabel}`,
+    weeklyPrice: +(baseWeekly * 1.45).toFixed(2),
+    note: 'Organic / top-tier brand swap.'
+  };
+}
+
+export function computeShoppingTotalsWithBrandOverrides(
+  categories: Array<{ category: string; items: Array<{ id: string; weeklyCost?: string; quarterlyCost?: string }> }>,
+  brandOverrides?: Record<string, ShopBrandOverride | undefined>
+): {
+  storeWeeklyTotal: number;
+  bulkWeeklyTotal: number;
+  weeklyTotal: number;
+  storeQuarterlyTotal: number;
+  bulkQuarterlyTotal: number;
+  quarterlyTotal: number;
+  dailyTotal: number;
+  swappedCount: number;
+  itemPricing: Record<string, { weeklyPrice: number; quarterlyPrice: number; baseWeeklyPrice: number; deltaWeekly: number; isSwapped: boolean }>;
+} {
+  const overrides = brandOverrides || {};
+  let storeWeeklyTotal = 0;
+  let bulkWeeklyTotal = 0;
+  let swappedCount = 0;
+  const itemPricing: Record<string, { weeklyPrice: number; quarterlyPrice: number; baseWeeklyPrice: number; deltaWeekly: number; isSwapped: boolean }> = {};
+
+  categories.forEach((cat, idx) => {
+    const isBulk = idx === 3 || (cat.category && cat.category.indexOf('Aisle 4') !== -1);
+    (cat.items || []).forEach(it => {
+      const baseWeekly = parseDollarAmount(it.weeklyCost);
+      const ov = overrides[it.id];
+      const hasOverride = Boolean(ov && Number.isFinite(Number(ov.weeklyPrice)) && Number(ov.weeklyPrice) >= 0);
+      const effectiveWeekly = hasOverride ? +Number(ov!.weeklyPrice).toFixed(2) : baseWeekly;
+      const effectiveQuarterly = hasOverride
+        ? +(effectiveWeekly * (90 / 7)).toFixed(2)
+        : (parseDollarAmount(it.quarterlyCost) || +(effectiveWeekly * (90 / 7)).toFixed(2));
+      if (hasOverride) swappedCount++;
+      if (isBulk) bulkWeeklyTotal += effectiveWeekly;
+      else storeWeeklyTotal += effectiveWeekly;
+      itemPricing[it.id] = {
+        weeklyPrice: effectiveWeekly,
+        quarterlyPrice: effectiveQuarterly,
+        baseWeeklyPrice: baseWeekly,
+        deltaWeekly: +(effectiveWeekly - baseWeekly).toFixed(2),
+        isSwapped: hasOverride
+      };
+    });
+  });
+
+  storeWeeklyTotal = +storeWeeklyTotal.toFixed(2);
+  bulkWeeklyTotal = +bulkWeeklyTotal.toFixed(2);
+  const weeklyTotal = +(storeWeeklyTotal + bulkWeeklyTotal).toFixed(2);
+  const storeQuarterlyTotal = +(storeWeeklyTotal * (90 / 7)).toFixed(2);
+  const bulkQuarterlyTotal = +(bulkWeeklyTotal * (90 / 7)).toFixed(2);
+  const quarterlyTotal = +(storeQuarterlyTotal + bulkQuarterlyTotal).toFixed(2);
+  const dailyTotal = +(weeklyTotal / 7).toFixed(2);
+
+  return {
+    storeWeeklyTotal,
+    bulkWeeklyTotal,
+    weeklyTotal,
+    storeQuarterlyTotal,
+    bulkQuarterlyTotal,
+    quarterlyTotal,
+    dailyTotal,
+    swappedCount,
+    itemPricing
+  };
+}
+
