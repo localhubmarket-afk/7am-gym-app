@@ -2601,3 +2601,83 @@ test('Subtest 40: Dynamic Diet Ecosystem — Strict Wizard Schema, State-Bound C
   assert.equal(swappedTotals.dailyTotal, +(38.06 / 7).toFixed(2));
 });
 
+test('Subtest 41: Multi-Select Base Diet & Intolerances, Error Prevention Confirmation Modal, Combined Patches & Dismissible Chrononutrition Alert', async () => {
+  const mod = await import('./workoutLogic');
+
+  // 1. Base Diet & Intolerances Normalization + Legacy Migration
+  assert.deepEqual(mod.BASE_DIET_OPTIONS, ['Omnivore (Cheapest)', 'Vegan', 'Vegetarian', 'Keto']);
+  assert.deepEqual(mod.DIETARY_INTOLERANCE_OPTIONS, ['Gluten-Free', 'Nut-Free', 'Soy-Free']);
+  assert.equal(mod.normalizeBaseDiet('any'), 'Omnivore (Cheapest)');
+  assert.equal(mod.normalizeBaseDiet('Omnivore (Cheapest)'), 'Omnivore (Cheapest)');
+  assert.equal(mod.normalizeBaseDiet('keto'), 'Keto');
+  assert.equal(mod.normalizeBaseDiet('vegetarian'), 'Vegetarian');
+  assert.equal(mod.normalizeBaseDiet('gluten_free'), 'Vegan');
+  assert.deepEqual(mod.normalizeIntolerances([], 'gluten_free'), ['Gluten-Free']);
+  assert.deepEqual(mod.normalizeIntolerances(['Soy-Free', 'Gluten-Free', 'Gluten-Free']), ['Gluten-Free', 'Soy-Free']);
+
+  // 2. Compact Shop List Header Link Formatting
+  assert.equal(mod.formatCompactShopDietHeaderLink('Vegan', []), '⚙️ Diet: Vegan (Change)');
+  assert.equal(mod.formatCompactShopDietHeaderLink('Vegan', ['Gluten-Free']), '⚙️ Diet: Vegan + GF (Change)');
+  assert.equal(mod.formatCompactShopDietHeaderLink('Keto', ['Gluten-Free', 'Nut-Free']), '⚙️ Diet: Keto + 2 (Change)');
+
+  // 3. Error Prevention Confirmation Interception Rules
+  const sameCheck = mod.shouldPromptDietChangeConfirmation('Vegan', ['Gluten-Free'], 'Vegan', ['Gluten-Free']);
+  assert.equal(sameCheck.requiresConfirm, false);
+
+  const addIntolCheck = mod.shouldPromptDietChangeConfirmation('Vegan', [], 'Vegan', ['Gluten-Free']);
+  assert.equal(addIntolCheck.requiresConfirm, false);
+
+  const changeBaseCheck = mod.shouldPromptDietChangeConfirmation('Vegan', [], 'Keto', []);
+  assert.equal(changeBaseCheck.requiresConfirm, true);
+  assert.equal(changeBaseCheck.reason, 'base_diet_changed');
+  assert.equal(
+    changeBaseCheck.warningText,
+    'Change diet to Keto? Your shopping list and meal timers will update to match.'
+  );
+
+  const uncheckIntolCheck = mod.shouldPromptDietChangeConfirmation('Vegan', ['Gluten-Free', 'Nut-Free'], 'Vegan', ['Nut-Free']);
+  assert.equal(uncheckIntolCheck.requiresConfirm, true);
+  assert.equal(uncheckIntolCheck.reason, 'intolerance_removed');
+  assert.equal(
+    uncheckIntolCheck.warningText,
+    'Change diet to Vegan + Nut-Free? Your shopping list and meal timers will update to match.'
+  );
+
+  // 4. Gemini System Prompt Injection with Both baseDiet and intolerances
+  const promptLine = mod.buildGeminiDietAndIntolerancePromptLine('Vegan', ['Gluten-Free', 'Soy-Free']);
+  assert.ok(promptLine.includes('Base Diet: [Vegan]'));
+  assert.ok(promptLine.includes('Dietary Intolerances: [Gluten-Free, Soy-Free]'));
+
+  // 5. Combined Base Diet + Multi-Intolerance Shopping Patches
+  const veganGfNutSoy = mod.getCombinedDietAndIntoleranceShoppingPatches('Vegan', ['Gluten-Free', 'Nut-Free', 'Soy-Free']);
+  assert.ok(veganGfNutSoy.shop_oats.shortName.includes('Gluten-Free'));
+  assert.ok(veganGfNutSoy.shop_pb.shortName.includes('Sunflower Seed Butter'));
+  assert.ok(veganGfNutSoy.shop_tofu.shortName.includes('Soy-Free'));
+  assert.ok(veganGfNutSoy.shop_silk.shortName.includes('Nut-Free & Soy-Free'));
+
+  const ketoNutFree = mod.getCombinedDietAndIntoleranceShoppingPatches('Keto', ['Nut-Free']);
+  assert.ok(ketoNutFree.shop_oats.shortName.includes('Hemp Hearts')); // No almond flour when Nut-Free!
+  assert.ok(ketoNutFree.shop_pb.shortName.includes('Sunflower Seed Butter'));
+
+  // 6. State-Bound Dismissible Chrononutrition Alert Visibility
+  assert.equal(
+    mod.shouldShowChronoGapAlert({ isFuel1Fuel2Swapped: false, isFuel2Logged: false, isManuallyDismissed: false }),
+    false
+  );
+  assert.equal(
+    mod.shouldShowChronoGapAlert({ isFuel1Fuel2Swapped: true, isFuel2Logged: false, isManuallyDismissed: false }),
+    true
+  );
+  // Instantly disappears when Fuel 2 (Oats) is logged
+  assert.equal(
+    mod.shouldShowChronoGapAlert({ isFuel1Fuel2Swapped: true, isFuel2Logged: true, isManuallyDismissed: false }),
+    false
+  );
+  // Instantly disappears when user clicks [x] Dismiss
+  assert.equal(
+    mod.shouldShowChronoGapAlert({ isFuel1Fuel2Swapped: true, isFuel2Logged: false, isManuallyDismissed: true }),
+    false
+  );
+});
+
+

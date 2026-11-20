@@ -900,16 +900,18 @@
           </span>
         </div>
 
-        <!-- Row 2 (Title): Shopping List (clean 20px bold heading) & Row 3 (1-Line ELI12 Subtitle) -->
-        <div class="space-y-1.5">
+        <!-- Row 2 (Title): Shopping List + Compact Muted Diet Link (Opens Diet/Intolerance Modal) -->
+        <div class="space-y-1">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <h2 id="shopping-main-heading" class="text-xl font-extrabold text-slate-50 leading-tight">Shopping List</h2>
-            <span id="shopping-active-diet-badge" class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-lg bg-indigo-500/20 border border-indigo-400/50 text-indigo-200 whitespace-nowrap">Diet: Vegan</span>
+            <button
+              type="button"
+              id="open-shop-diet-modal-btn"
+              class="text-xs font-semibold text-slate-300 hover:text-cyan-300 underline underline-offset-2 decoration-slate-500 whitespace-nowrap transition"
+              title="Open Diet and Intolerance settings"
+            >⚙️ Diet: Vegan (Change)</button>
           </div>
           <p class="text-xs text-slate-300 leading-relaxed">Check off what you have at home. Tap Swap Brand/Quality on any item to update your weekly total.</p>
-          <div id="shop-diet-quick-pills" class="grid grid-cols-6 gap-1.5 pt-0.5" style="grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px;" role="group" aria-label="Active Diet Shopping Filter">
-            <!-- Populated dynamically by renderShoppingView() -->
-          </div>
         </div>
 
         <!-- Symmetrical 2-Column View Switcher (No "In)" Wrapping) -->
@@ -1176,14 +1178,19 @@
       gymScheduleByDay: {},
       wakeUpTimeByDay: {},
       historyExerciseSwaps: {},
+      baseDiet: 'Vegan',
+      intolerances: [],
       dietPreference: 'vegan',
+      dismissedChronoAlertsByDay: {},
       flexMealOverridesByDay: {},
       quickAddCaloriesByDay: {},
       programWizardConfig: {
         daysPerWeek: 5,
         primaryFocus: 'balanced',
         difficulty: 'medium',
-        diet: 'vegan'
+        diet: 'vegan',
+        baseDiet: 'Vegan',
+        intolerances: []
       },
       checkedEssentials: {},
       checkedGroceries: {},
@@ -1494,14 +1501,28 @@
         merged.historyExerciseSwaps = {};
       }
       if (!merged.programWizardConfig || typeof merged.programWizardConfig !== 'object') {
-        merged.programWizardConfig = { daysPerWeek: 5, primaryFocus: 'balanced', difficulty: 'medium', diet: 'vegan' };
+        merged.programWizardConfig = { daysPerWeek: 5, primaryFocus: 'balanced', difficulty: 'medium', diet: 'vegan', baseDiet: 'Vegan', intolerances: [] };
       }
       if (!merged.dietPreference || typeof merged.dietPreference !== 'string') {
         merged.dietPreference = (merged.programWizardConfig && merged.programWizardConfig.diet) || 'vegan';
       }
-      if (!merged.diet || typeof merged.diet !== 'string') {
-        const dpLow = String(merged.dietPreference || 'vegan').toLowerCase();
-        merged.diet = dpLow === 'keto' ? 'Keto' : (dpLow === 'vegetarian' ? 'Vegetarian' : (dpLow === 'gluten_free' ? 'Gluten-Free' : (dpLow === 'any' ? 'Any' : 'Vegan')));
+      if (!merged.baseDiet || typeof merged.baseDiet !== 'string') {
+        const rawLegacyDiet = String(merged.diet || merged.dietPreference || 'Vegan').toLowerCase().trim();
+        if (rawLegacyDiet.includes('keto')) merged.baseDiet = 'Keto';
+        else if (rawLegacyDiet.includes('vegetarian') || rawLegacyDiet === 'veggie') merged.baseDiet = 'Vegetarian';
+        else if (rawLegacyDiet === 'any' || rawLegacyDiet.includes('omnivore') || rawLegacyDiet.includes('cheapest')) merged.baseDiet = 'Omnivore (Cheapest)';
+        else merged.baseDiet = 'Vegan';
+      }
+      if (!Array.isArray(merged.intolerances)) {
+        const legStr = String(merged.diet || merged.dietPreference || '').toLowerCase();
+        merged.intolerances = legStr.includes('gluten') ? ['Gluten-Free'] : [];
+      } else {
+        const allowedInts = ['Gluten-Free', 'Nut-Free', 'Soy-Free'];
+        merged.intolerances = allowedInts.filter(opt => merged.intolerances.includes(opt));
+      }
+      merged.diet = merged.baseDiet;
+      if (!merged.dismissedChronoAlertsByDay || typeof merged.dismissedChronoAlertsByDay !== 'object') {
+        merged.dismissedChronoAlertsByDay = {};
       }
       if (!merged.shopBrandOverrides || typeof merged.shopBrandOverrides !== 'object') {
         merged.shopBrandOverrides = {};
@@ -3757,20 +3778,79 @@
 
     const WEEKLY_SHOPPING_CATEGORIES = SHOPPING_AISLES;
 
+    const BASE_DIET_OPTIONS_INLINE = ['Omnivore (Cheapest)', 'Vegan', 'Vegetarian', 'Keto'];
+    const DIETARY_INTOLERANCE_OPTIONS_INLINE = ['Gluten-Free', 'Nut-Free', 'Soy-Free'];
+
+    function normalizeAppBaseDiet(rawDiet) {
+      const s = String(rawDiet || (state && (state.baseDiet || state.diet || state.dietPreference)) || 'Vegan').toLowerCase().trim();
+      if (s === 'keto' || s.includes('keto') || s.includes('low carb')) return 'Keto';
+      if (s === 'vegetarian' || s === 'veggie') return 'Vegetarian';
+      if (s === 'any' || s.includes('omnivore') || s.includes('any food') || s.includes('cheapest')) return 'Omnivore (Cheapest)';
+      return 'Vegan';
+    }
+
+    function normalizeAppIntolerances(rawList, legacyRawDiet) {
+      const found = new Set();
+      const arr = Array.isArray(rawList) ? rawList : [];
+      arr.forEach(item => {
+        const s = String(item || '').toLowerCase().trim();
+        if (s.includes('gluten') || s === 'gf') found.add('Gluten-Free');
+        else if (s.includes('nut')) found.add('Nut-Free');
+        else if (s.includes('soy')) found.add('Soy-Free');
+      });
+      if (arr.length === 0 && legacyRawDiet) {
+        const leg = String(legacyRawDiet).toLowerCase();
+        if (leg.includes('gluten')) found.add('Gluten-Free');
+      }
+      return DIETARY_INTOLERANCE_OPTIONS_INLINE.filter(opt => found.has(opt));
+    }
+
+    function formatAppDietSummary(baseDiet, intolerances) {
+      const base = normalizeAppBaseDiet(baseDiet);
+      const ints = normalizeAppIntolerances(intolerances);
+      return ints.length > 0 ? `${base} + ${ints.join(', ')}` : base;
+    }
+
+    function formatShopDietHeaderLink(baseDiet, intolerances) {
+      const base = normalizeAppBaseDiet(baseDiet);
+      const shortBase = base === 'Omnivore (Cheapest)' ? 'Omnivore' : base;
+      const ints = normalizeAppIntolerances(intolerances);
+      if (ints.length === 0) return `⚙️ Diet: ${shortBase} (Change)`;
+      if (ints.length === 1) {
+        const shortInt = ints[0] === 'Gluten-Free' ? 'GF' : ints[0];
+        return `⚙️ Diet: ${shortBase} + ${shortInt} (Change)`;
+      }
+      return `⚙️ Diet: ${shortBase} + ${ints.length} (Change)`;
+    }
+
+    function shouldConfirmAppDietChange(prevBase, prevInts, nextBase, nextInts) {
+      const pBase = normalizeAppBaseDiet(prevBase);
+      const nBase = normalizeAppBaseDiet(nextBase);
+      const pInts = normalizeAppIntolerances(prevInts);
+      const nInts = normalizeAppIntolerances(nextInts);
+      const targetLabel = formatAppDietSummary(nBase, nInts);
+      const warningText = `Change diet to ${targetLabel}? Your shopping list and meal timers will update to match.`;
+      if (pBase !== nBase) {
+        return { requiresConfirm: true, reason: 'base_diet_changed', targetLabel, warningText };
+      }
+      if (pInts.some(item => !nInts.includes(item))) {
+        return { requiresConfirm: true, reason: 'intolerance_removed', targetLabel, warningText };
+      }
+      return { requiresConfirm: false, reason: 'none', targetLabel, warningText };
+    }
+
+    function buildGeminiDietPromptDirective(baseDiet, intolerances) {
+      const base = normalizeAppBaseDiet(baseDiet);
+      const ints = normalizeAppIntolerances(intolerances);
+      const intStr = ints.length > 0 ? ints.join(', ') : 'None';
+      return `Base Diet: [${base}]. Dietary Intolerances: [${intStr}]. Strictly respect both constraints for all meal structures, food swaps, and SHOPPING_AISLES guidance.`;
+    }
+
     function normalizeAppDietState(rawDiet) {
-      const s = String(rawDiet || (state && (state.diet || state.dietPreference)) || 'vegan').toLowerCase().trim();
-      if (s === 'keto' || s.includes('keto') || s.includes('low carb')) {
-        return { id: 'keto', display: 'Keto', label: 'Keto (Low Carb)' };
-      }
-      if (s === 'vegetarian' || s === 'veggie') {
-        return { id: 'vegetarian', display: 'Vegetarian', label: 'Vegetarian' };
-      }
-      if (s === 'gluten_free' || s === 'gluten-free' || s.includes('gluten')) {
-        return { id: 'gluten_free', display: 'Gluten-Free', label: 'Gluten-Free' };
-      }
-      if (s === 'any' || s.includes('any food') || s.includes('cheapest')) {
-        return { id: 'any', display: 'Any', label: 'Any Food (Cheapest)' };
-      }
+      const base = normalizeAppBaseDiet(rawDiet);
+      if (base === 'Keto') return { id: 'keto', display: 'Keto', label: 'Keto' };
+      if (base === 'Vegetarian') return { id: 'vegetarian', display: 'Vegetarian', label: 'Vegetarian' };
+      if (base === 'Omnivore (Cheapest)') return { id: 'any', display: 'Omnivore (Cheapest)', label: 'Omnivore (Cheapest)' };
       return { id: 'vegan', display: 'Vegan', label: 'Vegan' };
     }
 
@@ -3781,9 +3861,15 @@
       return m ? Math.max(0, parseFloat(m[1])) : 0;
     }
 
-    function getDietShoppingItemPatchesInline(rawDiet) {
-      const norm = normalizeAppDietState(rawDiet);
-      if (norm.id === 'vegan') return {};
+    function getDietShoppingItemPatchesInline(rawDiet, rawIntolerances) {
+      const base = normalizeAppBaseDiet(rawDiet);
+      const ints = normalizeAppIntolerances(
+        rawIntolerances !== undefined ? rawIntolerances : (state && state.intolerances),
+        rawDiet
+      );
+      const norm = normalizeAppDietState(base);
+      const basePatches = (function() {
+        if (norm.id === 'vegan') return {};
       if (norm.id === 'keto') {
         return {
           shop_tofu: {
@@ -3872,40 +3958,6 @@
           }
         };
       }
-      if (norm.id === 'gluten_free') {
-        return {
-          shop_oats: {
-            shortName: '5. Certified Gluten-Free Rolled Oats (907g bag)',
-            name: '5. Certified Gluten-Free Protein Oats (100% Purity Protocol)',
-            weeklyQty: '315g/wk (45g/day)',
-            quarterlyQty: '4,050g / 90 days (4.5 bags)',
-            weeklyCost: '$3.49/wk',
-            quarterlyCost: '$44.87 / 3 mos',
-            eli12Summary: 'Certified gluten-free oats — 180g per 4-day oats batch.',
-            fullMathNotes: 'Purity-tested gluten-free oats prevent cross-contamination ($3.49/wk).'
-          },
-          shop_rice: {
-            shortName: '6. Naturally Gluten-Free White Jasmine Rice',
-            name: '6. Naturally Gluten-Free White Jasmine Rice',
-            weeklyQty: '385g dry/wk (55g/day)',
-            quarterlyQty: '4,950g dry / 90 days',
-            weeklyCost: '$1.16/wk',
-            quarterlyCost: '$14.85 / 3 mos',
-            eli12Summary: 'Naturally 100% gluten-free. Cook 220g dry every 4 days.',
-            fullMathNotes: 'Rinse 3x and simmer 12m for 4 gluten-free bowls ($1.16/wk).'
-          },
-          shop_nooch: {
-            shortName: '9. Certified GF Nutritional Yeast Flakes',
-            name: '9. Certified Gluten-Free Fortified Nutritional Yeast',
-            weeklyQty: '84g/wk (12g/day)',
-            quarterlyQty: '1,080g / 90 days',
-            weeklyCost: '$1.45/wk',
-            quarterlyCost: '$18.64 / 3 mos',
-            eli12Summary: 'Certified GF flakes for B12, savory flavor, and +6g protein.',
-            fullMathNotes: '12g/day sprinkled on Fuel 3 bowl ($1.45/wk).'
-          }
-        };
-      }
       return {
         shop_silk: {
           shortName: '1. Skim or 2% Milk (2L Carton — Budget)',
@@ -3938,6 +3990,119 @@
           fullMathNotes: '90g/day across shakes and oats ($20.50/wk).'
         }
       };
+      })();
+
+      const merged = Object.assign({}, basePatches);
+
+      if (ints.includes('Gluten-Free')) {
+        if (base === 'Keto') {
+          if (merged.shop_oats) {
+            merged.shop_oats = Object.assign({}, merged.shop_oats, {
+              shortName: '5. Certified GF Almond Flour & Hemp Hearts (Keto • GF)'
+            });
+          }
+          if (merged.shop_rice) {
+            merged.shop_rice = Object.assign({}, merged.shop_rice, {
+              shortName: '6. Riced Cauliflower & Zucchini Medley (Keto • GF)'
+            });
+          }
+        } else {
+          merged.shop_oats = {
+            shortName: '5. Certified Gluten-Free Rolled Oats (907g bag)',
+            name: '5. Certified Gluten-Free Protein Oats (100% Purity Protocol)',
+            weeklyQty: '315g/wk (45g/day)',
+            quarterlyQty: '4,050g / 90 days (4.5 bags)',
+            weeklyCost: '$3.49/wk',
+            quarterlyCost: '$44.87 / 3 mos',
+            eli12Summary: 'Certified gluten-free oats — 180g per 4-day oats batch.',
+            fullMathNotes: 'Purity-tested gluten-free oats prevent cross-contamination ($3.49/wk).'
+          };
+          merged.shop_rice = {
+            shortName: '6. Naturally Gluten-Free White Jasmine Rice',
+            name: '6. Naturally Gluten-Free White Jasmine Rice',
+            weeklyQty: '385g dry/wk (55g/day)',
+            quarterlyQty: '4,950g dry / 90 days',
+            weeklyCost: '$1.16/wk',
+            quarterlyCost: '$14.85 / 3 mos',
+            eli12Summary: 'Naturally 100% gluten-free. Cook 220g dry every 4 days.',
+            fullMathNotes: 'Rinse 3x and simmer 12m for 4 gluten-free bowls ($1.16/wk).'
+          };
+        }
+        merged.shop_nooch = {
+          shortName: '9. Certified GF Nutritional Yeast Flakes',
+          name: '9. Certified Gluten-Free Fortified Nutritional Yeast',
+          weeklyQty: '84g/wk (12g/day)',
+          quarterlyQty: '1,080g / 90 days',
+          weeklyCost: '$1.45/wk',
+          quarterlyCost: '$18.64 / 3 mos',
+          eli12Summary: 'Certified GF flakes for B12, savory flavor, and +6g protein.',
+          fullMathNotes: '12g/day sprinkled on Fuel 3 bowl ($1.45/wk).'
+        };
+      }
+
+      if (ints.includes('Nut-Free')) {
+        merged.shop_silk = {
+          shortName: '1. Unsweetened Oat or Soy Milk — 1.89L (Nut-Free)',
+          name: '1. Unsweetened Fortified Oat or Soy Milk (100% Nut-Free)',
+          weeklyQty: '1,260 ml/wk (180 ml/day)',
+          quarterlyQty: '16.2 L / 90 days',
+          weeklyCost: '$3.49/wk',
+          quarterlyCost: '$44.87 / 3 mos',
+          eli12Summary: 'Nut-free milk swap for Fuel 2 breakfast bowls.',
+          fullMathNotes: 'Replaces almond/cashew milk with 100% nut-free milk ($3.49/wk).'
+        };
+        merged.shop_pb = {
+          shortName: '7. Roasted Sunflower Seed Butter (Nut-Free)',
+          name: '7. Unsweetened Roasted Sunflower Seed Butter (100% Nut-Free)',
+          weeklyQty: '168g/wk (24g/day)',
+          quarterlyQty: '2,160g / 90 days',
+          weeklyCost: '$2.45/wk',
+          quarterlyCost: '$31.50 / 3 mos',
+          eli12Summary: 'Nut-free healthy fat swap for Fuel 4 night shake.',
+          fullMathNotes: '24g/day delivers the same healthy fats and Vitamin D absorption with zero nuts ($2.45/wk).'
+        };
+        if (base === 'Keto') {
+          merged.shop_oats = {
+            shortName: '5. Shelled Hemp Hearts & Golden Flax Meal (Keto • Nut-Free)',
+            name: '5. Shelled Hemp Hearts & Ground Golden Flaxseed (Nut-Free Keto)',
+            weeklyQty: '280g/wk (40g/day)',
+            quarterlyQty: '3,600g / 90 days',
+            weeklyCost: '$4.80/wk',
+            quarterlyCost: '$61.71 / 3 mos',
+            eli12Summary: 'Replaces almond flour with a 100% nut-free keto breakfast base.',
+            fullMathNotes: '40g/day high-omega-3 low-carb base with zero tree nuts ($4.80/wk).'
+          };
+        }
+      }
+
+      if (ints.includes('Soy-Free')) {
+        if (base === 'Vegan') {
+          merged.shop_tofu = {
+            shortName: '2. Chickpea / Pumpkin Seed Tofu & Lentils (Soy-Free)',
+            name: '2. Soy-Free Chickpea Tofu & Cooked Green Lentils (High-Protein)',
+            weeklyQty: '1,225g/wk (175g/day)',
+            quarterlyQty: '15.75 kg / 90 days',
+            weeklyCost: '$9.60/wk',
+            quarterlyCost: '$123.43 / 3 mos',
+            eli12Summary: '100% soy-free vegan protein swap for daily Fuel 3 bowls.',
+            fullMathNotes: 'Delivers ~22g plant protein per lunch bowl with zero soy ($9.60/wk).'
+          };
+        }
+        if (ints.includes('Nut-Free')) {
+          merged.shop_silk = {
+            shortName: '1. Unsweetened Oat Milk — 1.89L (Nut-Free & Soy-Free)',
+            name: '1. Unsweetened Fortified Oat Milk (Nut-Free & Soy-Free)',
+            weeklyQty: '1,260 ml/wk (180 ml/day)',
+            quarterlyQty: '16.2 L / 90 days',
+            weeklyCost: '$3.59/wk',
+            quarterlyCost: '$46.16 / 3 mos',
+            eli12Summary: '100% nut-free and soy-free milk for daily breakfast bowls.',
+            fullMathNotes: 'Safe for both nut and soy intolerances ($3.59/wk).'
+          };
+        }
+      }
+
+      return merged;
     }
 
     function getPremiumBrandPresetForItem(item) {
@@ -4023,9 +4188,10 @@
       const subEl = document.getElementById('header-subtitle');
       if (!subEl) return;
       const isCostcoCreatine = Boolean(state && state.subscriptionChecklist && state.subscriptionChecklist.cancelCreatineAutoship);
-      const activeDiet = normalizeAppDietState(state && (state.diet || state.dietPreference));
+      const activeDiet = normalizeAppDietState(state && (state.baseDiet || state.diet || state.dietPreference));
+      const activeInts = normalizeAppIntolerances(state && state.intolerances);
       const hasBrandOverrides = Boolean(state && state.shopBrandOverrides && Object.keys(state.shopBrandOverrides).length > 0);
-      if (activeDiet.id !== 'vegan' || hasBrandOverrides) {
+      if (activeDiet.id !== 'vegan' || activeInts.length > 0 || hasBrandOverrides) {
         const dynCats = getDynamicWeeklyShoppingCategories(state);
         const totals = computeDynamicShoppingTotals(dynCats, state && state.shopBrandOverrides);
         subEl.textContent = `Full-Body • $${totals.dailyTotal.toFixed(2)}/d`;
@@ -4081,8 +4247,11 @@
         }
       }
 
-      // State-Bound Diet Shopping Patches (Adapts SHOPPING_AISLES to state.diet)
-      const dietPatches = getDietShoppingItemPatchesInline(s.diet || s.dietPreference || 'vegan');
+      // State-Bound Diet & Intolerance Shopping Patches (Adapts SHOPPING_AISLES to state.baseDiet + state.intolerances)
+      const dietPatches = getDietShoppingItemPatchesInline(
+        s.baseDiet || s.diet || s.dietPreference || 'Vegan',
+        s.intolerances || []
+      );
       const brandOverrides = (s.shopBrandOverrides && typeof s.shopBrandOverrides === 'object') ? s.shopBrandOverrides : {};
       const period = s.shopListPeriod === 'quarterly' ? 'quarterly' : 'weekly';
 
@@ -4890,17 +5059,19 @@
 
     function isKetoVeggieTimerMode(contextPrefix) {
       if (contextPrefix === 'batch-2') return false;
-      const norm = normalizeAppDietState(state && (state.diet || state.dietPreference));
+      const norm = normalizeAppDietState(state && (state.baseDiet || state.diet || state.dietPreference));
       return norm.id === 'keto' && !Boolean(state && state.forceShowRiceTimerInKeto);
     }
 
     function getDietCookingTimerSummaryTitle() {
-      const norm = normalizeAppDietState(state && (state.diet || state.dietPreference));
+      const norm = normalizeAppDietState(state && (state.baseDiet || state.diet || state.dietPreference));
+      const intolerances = normalizeAppIntolerances(state && state.intolerances);
+      const isGf = intolerances.includes('Gluten-Free') || norm.id === 'gluten_free';
       if (norm.id === 'keto' && !Boolean(state && state.forceShowRiceTimerInKeto)) {
         return 'Low-Carb Veggie Timer (8m Steam + 3m Drain)';
       }
+      if (isGf) return 'GF Jasmine Rice Timer (12m Cook + 10m Cooldown)';
       if (norm.id === 'vegetarian') return 'Jasmine Rice & Egg Prep Timer (12m Cook + 10m Rest)';
-      if (norm.id === 'gluten_free') return 'GF Jasmine Rice Timer (12m Cook + 10m Cooldown)';
       if (norm.id === 'any') return 'Bulk Rice & Meal Prep Timer (12m Cook + 10m Rest)';
       return 'Jasmine Rice Timer (12m Cook + 10m Cooldown)';
     }
@@ -5108,7 +5279,11 @@
 
     function buildRiceCookingTimerCardHtml(contextPrefix) {
       const isKetoMode = isKetoVeggieTimerMode(contextPrefix);
-      const normDiet = normalizeAppDietState(state && (state.diet || state.dietPreference));
+      const activeBaseDiet = normalizeAppBaseDiet(state && (state.baseDiet || state.diet || state.dietPreference));
+      const activeIntolerances = normalizeAppIntolerances(state && state.intolerances);
+      const normDiet = normalizeAppDietState(activeBaseDiet);
+      const activeDietDisplaySummary = formatAppDietSummary(activeBaseDiet, activeIntolerances);
+      const isGfActive = activeIntolerances.includes('Gluten-Free') || normDiet.id === 'gluten_free';
       const stages = getTwoPhaseRiceTimerStages(contextPrefix);
       const activeStage = state.activeRiceTimerStage ? Number(state.activeRiceTimerStage) : null;
       const alertBanner = state.riceBannerDismissed ? '' : (state.riceTimerAlertBanner || '');
@@ -5191,7 +5366,7 @@
 
       const dynamicBadgeLabel = isKetoMode
         ? '2-Phase Low-Carb Veggie Timer'
-        : (normDiet.id === 'gluten_free'
+        : (isGfActive
             ? '2-Phase GF Jasmine Rice Timer'
             : (normDiet.id === 'vegetarian'
                 ? '2-Phase Rice & Egg Prep Timer'
@@ -5206,7 +5381,7 @@
             <div>
               <div class="flex flex-wrap items-center gap-1.5">
                 <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40">${dynamicBadgeLabel}</span>
-                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-200 border border-indigo-400/45">Diet: ${normDiet.display}</span>
+                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-200 border border-indigo-400/45">Diet: ${activeDietDisplaySummary}</span>
                 ${activeStage === 2 || highlightCooldownNext
                   ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-200 border border-indigo-400/45">${isKetoMode ? 'Phase 2/2 • Drain & Cool' : 'Phase 2/2 • Cooldown Off Heat'}</span>`
                   : `<span class="live-rice-next-mix-readout text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">${isKetoMode ? `Next Veggie Toss in: ${nextMixStr}` : `Next Mix/Stir in: ${nextMixStr}`}</span>`
@@ -10666,9 +10841,10 @@
                   <span>🕒 Gym Time: ${chrono.gymTime12}</span>
                 </button>
               </div>
-              ${chrono.isFuel1Fuel2Swapped ? `
-                <div id="fuel-wake-gap-swap-alert" role="status" class="rounded-xl px-3 py-2 text-xs font-semibold leading-relaxed text-amber-100" style="background: rgba(217, 119, 6, 0.15); border: 1px solid #d97706;">
-                  ${WAKE_GAP_SWAP_ALERT_TEXT}
+              ${(chrono.isFuel1Fuel2Swapped && !isMealCheckedForDay(w, d, 'post_oats') && !(state.dismissedChronoAlertsByDay && state.dismissedChronoAlertsByDay[`w${w}_d${d}`])) ? `
+                <div id="fuel-wake-gap-swap-alert" role="status" class="rounded-xl px-3 py-2 text-xs font-semibold leading-relaxed text-amber-100 flex items-start justify-between gap-2" style="background: rgba(217, 119, 6, 0.15); border: 1px solid #d97706;">
+                  <span class="flex-1 min-w-0">${WAKE_GAP_SWAP_ALERT_TEXT}</span>
+                  <button type="button" id="dismiss-fuel-chrono-alert-btn" aria-label="Dismiss chrononutrition alert" class="shrink-0 px-2 py-0.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-amber-500/50 text-amber-200 text-[11px] font-bold whitespace-nowrap transition">[x] Dismiss</button>
                 </div>
               ` : ''}
               <div class="flex flex-wrap items-center justify-between gap-1.5">
@@ -10703,6 +10879,19 @@
           if (fuelGymBtn) {
             fuelGymBtn.addEventListener('click', () => {
               if (typeof window.openGymTimeSelectorModal === 'function') window.openGymTimeSelectorModal(w, d, 'gym');
+            });
+          }
+          const dismissFuelChronoBtn = el.querySelector('#dismiss-fuel-chrono-alert-btn');
+          if (dismissFuelChronoBtn) {
+            dismissFuelChronoBtn.addEventListener('click', () => {
+              if (!state.dismissedChronoAlertsByDay || typeof state.dismissedChronoAlertsByDay !== 'object') {
+                state.dismissedChronoAlertsByDay = {};
+              }
+              state.dismissedChronoAlertsByDay[`w${w}_d${d}`] = true;
+              saveState();
+              renderWorkoutView();
+              renderVeganView();
+              showToast('Chrononutrition alert dismissed for today.');
             });
           }
         }
@@ -12349,9 +12538,14 @@
             </button>
           </div>
         `;
-        const wakeGapSwapBannerHtml = adaptiveMealPreview.isFuel1Fuel2Swapped ? `
-          <div id="gym-wake-gap-swap-alert" role="status" class="rounded-xl px-3 py-2 text-xs font-semibold leading-relaxed text-amber-100" style="background: rgba(217, 119, 6, 0.15); border: 1px solid #d97706;">
-            ${WAKE_GAP_SWAP_ALERT_TEXT}
+        const isFuel2LoggedToday = isMealCheckedForDay(week, dayIdx, 'post_oats');
+        const chronoAlertDayKey = `w${week}_d${dayIdx}`;
+        const isChronoAlertDismissedToday = Boolean(state.dismissedChronoAlertsByDay && state.dismissedChronoAlertsByDay[chronoAlertDayKey]);
+        const showWakeGapAlertToday = Boolean(adaptiveMealPreview.isFuel1Fuel2Swapped && !isFuel2LoggedToday && !isChronoAlertDismissedToday);
+        const wakeGapSwapBannerHtml = showWakeGapAlertToday ? `
+          <div id="gym-wake-gap-swap-alert" role="status" class="rounded-xl px-3 py-2 text-xs font-semibold leading-relaxed text-amber-100 flex items-start justify-between gap-2" style="background: rgba(217, 119, 6, 0.15); border: 1px solid #d97706;">
+            <span class="flex-1 min-w-0">${WAKE_GAP_SWAP_ALERT_TEXT}</span>
+            <button type="button" id="dismiss-gym-chrono-alert-btn" aria-label="Dismiss chrononutrition alert" class="shrink-0 px-2 py-0.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-amber-500/50 text-amber-200 text-[11px] font-bold whitespace-nowrap transition">[x] Dismiss</button>
           </div>
         ` : '';
 
@@ -12572,6 +12766,20 @@
             if (typeof window.openGymTimeSelectorModal === 'function') {
               window.openGymTimeSelectorModal(week, dayIdx, 'gym');
             }
+          });
+        }
+
+        const dismissGymChronoBtn = document.getElementById('dismiss-gym-chrono-alert-btn');
+        if (dismissGymChronoBtn) {
+          dismissGymChronoBtn.addEventListener('click', () => {
+            if (!state.dismissedChronoAlertsByDay || typeof state.dismissedChronoAlertsByDay !== 'object') {
+              state.dismissedChronoAlertsByDay = {};
+            }
+            state.dismissedChronoAlertsByDay[`w${week}_d${dayIdx}`] = true;
+            saveState();
+            renderWorkoutView();
+            if (typeof renderVeganView === 'function') renderVeganView();
+            showToast('Chrononutrition alert dismissed for today.');
           });
         }
 
@@ -18145,21 +18353,36 @@
     // =========================================================================
     // 9. NAVIGATION & GLOBAL EVENT LISTENERS
     // =========================================================================
-    function setActiveDietFromUI(dietId) {
-      const norm = normalizeAppDietState(dietId);
+    function applyDietAndIntolerancesToState(nextBaseDiet, nextIntolerances, opts) {
+      const base = normalizeAppBaseDiet(nextBaseDiet);
+      const ints = normalizeAppIntolerances(nextIntolerances);
+      const norm = normalizeAppDietState(base);
+      state.baseDiet = base;
+      state.intolerances = ints;
+      state.diet = base;
       state.dietPreference = norm.id;
-      state.diet = norm.display;
       if (!state.programWizardConfig || typeof state.programWizardConfig !== 'object') {
-        state.programWizardConfig = { daysPerWeek: 5, primaryFocus: 'balanced', difficulty: 'medium', diet: norm.id };
+        state.programWizardConfig = { daysPerWeek: 5, primaryFocus: 'balanced', difficulty: 'medium', diet: norm.id, baseDiet: base, intolerances: ints };
       } else {
         state.programWizardConfig.diet = norm.id;
+        state.programWizardConfig.baseDiet = base;
+        state.programWizardConfig.intolerances = ints;
       }
+      state.forceShowRiceTimerInKeto = false;
       saveState();
       syncHeaderCostSubtitle();
       renderRiceCookingTimerWidgets();
       renderShoppingView();
       if (typeof renderVeganView === 'function') renderVeganView();
-      showToast(`Diet updated to ${norm.label}. Timers and Shop List synced.`);
+      if (!opts || !opts.silent) {
+        showToast(`Diet updated to ${formatAppDietSummary(base, ints)}. Timers and Shop List synced.`);
+      }
+    }
+
+    function setActiveDietFromUI(dietId, intolerancesOpt) {
+      const base = normalizeAppBaseDiet(dietId);
+      const ints = intolerancesOpt !== undefined ? normalizeAppIntolerances(intolerancesOpt) : normalizeAppIntolerances(state.intolerances);
+      applyDietAndIntolerancesToState(base, ints);
     }
 
     function renderShoppingView() {
@@ -18168,7 +18391,10 @@
 
       const dynamicCategories = getDynamicWeeklyShoppingCategories(state);
       const shopTotals = computeDynamicShoppingTotals(dynamicCategories, state.shopBrandOverrides);
-      const normDiet = normalizeAppDietState(state && (state.diet || state.dietPreference));
+      const activeBaseDiet = normalizeAppBaseDiet(state && (state.baseDiet || state.diet || state.dietPreference));
+      const activeIntolerances = normalizeAppIntolerances(state && state.intolerances);
+      const normDiet = normalizeAppDietState(activeBaseDiet);
+      const activeDietSummary = formatAppDietSummary(activeBaseDiet, activeIntolerances);
 
       syncHeaderCostSubtitle();
 
@@ -18176,34 +18402,14 @@
       if (eyebrowEl) {
         eyebrowEl.textContent = `1,325 kcal • 139g Protein • $${shopTotals.dailyTotal.toFixed(2)}/day`;
       }
-      const dietBadgeEl = document.getElementById('shopping-active-diet-badge');
-      if (dietBadgeEl) {
-        dietBadgeEl.textContent = shopTotals.swappedCount > 0
-          ? `Diet: ${normDiet.display} • ${shopTotals.swappedCount} Swapped`
-          : `Diet: ${normDiet.display}`;
-      }
-      const dietPillsEl = document.getElementById('shop-diet-quick-pills');
-      if (dietPillsEl) {
-        const dietChoices = [
-          { id: 'any', label: 'Any Food', span: 'col-span-2' },
-          { id: 'vegan', label: 'Vegan', span: 'col-span-2' },
-          { id: 'vegetarian', label: 'Vegetarian', span: 'col-span-2' },
-          { id: 'keto', label: 'Keto (Low Carb)', span: 'col-span-3' },
-          { id: 'gluten_free', label: 'Gluten-Free', span: 'col-span-3' }
-        ];
-        dietPillsEl.innerHTML = dietChoices.map(dc => {
-          const isAct = normDiet.id === dc.id;
-          return `<button type="button" data-shop-diet-pill="${dc.id}" aria-pressed="${isAct ? 'true' : 'false'}" class="shop-diet-pill-btn ${dc.span} w-full px-2 py-1.5 rounded-lg text-[11px] font-bold border text-center whitespace-nowrap transition ${
-            isAct
-              ? 'bg-emerald-600/30 border-emerald-400 text-emerald-100'
-              : 'bg-slate-950 border-slate-700 text-slate-300 hover:text-slate-100'
-          }">${dc.label}</button>`;
-        }).join('');
-        dietPillsEl.querySelectorAll('.shop-diet-pill-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            setActiveDietFromUI(btn.getAttribute('data-shop-diet-pill'));
-          });
-        });
+      const openShopDietBtn = document.getElementById('open-shop-diet-modal-btn');
+      if (openShopDietBtn) {
+        openShopDietBtn.textContent = formatShopDietHeaderLink(activeBaseDiet, activeIntolerances);
+        openShopDietBtn.onclick = () => {
+          if (typeof window.openDietIntoleranceSelectorModal === 'function') {
+            window.openDietIntoleranceSelectorModal();
+          }
+        };
       }
 
       const period = state.shopListPeriod === 'quarterly' ? 'quarterly' : 'weekly';
@@ -18230,7 +18436,7 @@
       const periodSummaryBox = document.getElementById('shop-list-period-summary-box');
       if (periodSummaryBox) {
         const isMathOpen = Boolean(state.openShopCostBreakdown);
-        const dynamicBreakdownLine = `Diet: ${normDiet.label}. Weekly Store: $${shopTotals.storeWeeklyTotal.toFixed(2)} + Bulk Supplements: $${shopTotals.bulkWeeklyTotal.toFixed(2)} = $${shopTotals.weeklyTotal.toFixed(2)}/wk ($${shopTotals.dailyTotal.toFixed(2)}/day).${shopTotals.swappedCount > 0 ? ` Includes ${shopTotals.swappedCount} custom/premium brand swap(s).` : ''}`;
+        const dynamicBreakdownLine = `Diet: ${activeDietSummary}. Weekly Store: $${shopTotals.storeWeeklyTotal.toFixed(2)} + Bulk Supplements: $${shopTotals.bulkWeeklyTotal.toFixed(2)} = $${shopTotals.weeklyTotal.toFixed(2)}/wk ($${shopTotals.dailyTotal.toFixed(2)}/day).${shopTotals.swappedCount > 0 ? ` Includes ${shopTotals.swappedCount} custom/premium brand swap(s).` : ''}`;
         periodSummaryBox.innerHTML = `
           <button
             type="button"
@@ -18918,15 +19124,9 @@
 
       const modelName = 'gemini-3.8-flash';
       state.geminiModel = modelName;
-      const activeDietTagMap = {
-        any: 'ANY FOOD (CHEAPEST)',
-        vegan: 'VEGAN',
-        vegetarian: 'VEGETARIAN',
-        keto: 'KETO (LOW CARB)',
-        gluten_free: 'GLUTEN-FREE'
-      };
-      const activeDietKey = String((state.programWizardConfig && state.programWizardConfig.diet) || state.dietPreference || 'vegan').toLowerCase();
-      const activeDietDirective = `Diet: [${activeDietTagMap[activeDietKey] || 'VEGAN'}]. Ensure all recommended meal structures align with this diet.`;
+      const activeBaseDiet = normalizeAppBaseDiet(state && (state.baseDiet || state.diet || state.dietPreference));
+      const activeIntolerances = normalizeAppIntolerances(state && state.intolerances);
+      const activeDietDirective = buildGeminiDietPromptDirective(activeBaseDiet, activeIntolerances);
       const systemInstruction = `You are a Senior Strength & Conditioning Coach, Heuristic UX Advisor, and Low-Budget High-Protein Nutritionist powered by Google ${modelName}. ${activeDietDirective} Keep answers concise (3-4 bullet points max), practical, and tailored to this athlete's live state: ${JSON.stringify(ctx)}. Never mention PDF, exercise alternatives, or espresso.`;
 
       let replyText = '';
@@ -19971,6 +20171,9 @@
         const finalWake = wakeHHMMStr || (wakeInputEl ? wakeInputEl.value : getDayWakeUpTime(w, d)) || '06:30';
         setManualDayWakeUpTime(w, d, finalWake);
         setManualDayGymStartTime(w, d, finalGym);
+        if (state.dismissedChronoAlertsByDay && typeof state.dismissedChronoAlertsByDay === 'object') {
+          delete state.dismissedChronoAlertsByDay[`w${w}_d${d}`];
+        }
         state.hasSetInitialGymTime = true;
         saveState();
         renderWorkoutView();
@@ -20066,17 +20269,181 @@
       };
 
       const PROGRAM_WIZARD_DIET_TAGS = {
-        any: 'ANY FOOD (CHEAPEST)',
-        vegan: 'VEGAN',
-        vegetarian: 'VEGETARIAN',
-        keto: 'KETO (LOW CARB)',
-        gluten_free: 'GLUTEN-FREE'
+        'Omnivore (Cheapest)': 'OMNIVORE (CHEAPEST)',
+        Vegan: 'VEGAN',
+        Vegetarian: 'VEGETARIAN',
+        Keto: 'KETO (LOW CARB)'
       };
 
-      function getWizardDietPromptLine(dietKey) {
-        const clean = String(dietKey || 'vegan').toLowerCase();
-        const tag = PROGRAM_WIZARD_DIET_TAGS[clean] || 'VEGAN';
-        return `Diet: [${tag}]. Ensure all recommended meal structures align with this diet.`;
+      function getWizardDietPromptLine(baseDietVal, intolerancesArr) {
+        return buildGeminiDietPromptDirective(baseDietVal, intolerancesArr);
+      }
+
+      // UPGRADE 18: ERROR PREVENTION — DIET CHANGE CONFIRMATION MODAL (ADHD-SAFE BUTTON HIERARCHY)
+      const dietConfirmModal = document.getElementById('diet-change-confirm-modal');
+      const dietConfirmTextEl = document.getElementById('diet-change-confirm-text');
+      const dietConfirmCancelBtn = document.getElementById('diet-change-cancel-btn');
+      const dietConfirmProceedBtn = document.getElementById('diet-change-proceed-btn');
+      let pendingDietConfirmCallbacks = null;
+
+      function openDietChangeConfirmModal(warningText, onConfirm, onCancel) {
+        if (!dietConfirmModal) {
+          if (typeof onConfirm === 'function') onConfirm();
+          return;
+        }
+        if (dietConfirmTextEl) dietConfirmTextEl.textContent = warningText;
+        pendingDietConfirmCallbacks = { onConfirm, onCancel };
+        dietConfirmModal.classList.remove('hidden');
+        if (dietConfirmCancelBtn && typeof dietConfirmCancelBtn.focus === 'function') {
+          setTimeout(() => { try { dietConfirmCancelBtn.focus(); } catch (e) {} }, 30);
+        }
+      }
+
+      function resolveDietChangeConfirmModal(didConfirm) {
+        if (dietConfirmModal) dietConfirmModal.classList.add('hidden');
+        const cbs = pendingDietConfirmCallbacks;
+        pendingDietConfirmCallbacks = null;
+        if (didConfirm) {
+          if (cbs && typeof cbs.onConfirm === 'function') cbs.onConfirm();
+        } else {
+          if (cbs && typeof cbs.onCancel === 'function') cbs.onCancel();
+        }
+      }
+
+      if (dietConfirmCancelBtn) {
+        dietConfirmCancelBtn.addEventListener('click', () => resolveDietChangeConfirmModal(false));
+      }
+      if (dietConfirmProceedBtn) {
+        dietConfirmProceedBtn.addEventListener('click', () => resolveDietChangeConfirmModal(true));
+      }
+      if (dietConfirmModal) {
+        dietConfirmModal.addEventListener('click', (e) => {
+          if (e.target === dietConfirmModal) resolveDietChangeConfirmModal(false);
+        });
+      }
+
+      // UPGRADE 18: REUSABLE DIET & INTOLERANCE SELECTOR MODAL (OPENED FROM SHOP LIST HEADER & SETTINGS)
+      const dietSelectorModal = document.getElementById('diet-intolerance-selector-modal');
+      const closeDietSelectorBtn = document.getElementById('close-diet-selector-modal-btn');
+      const saveDietSelectorBtn = document.getElementById('save-diet-selector-modal-btn');
+      const openSettingsDietBtn = document.getElementById('open-settings-diet-modal-btn');
+
+      let modalDraftBaseDiet = normalizeAppBaseDiet(state.baseDiet || state.diet || state.dietPreference);
+      let modalDraftIntolerances = normalizeAppIntolerances(state.intolerances);
+
+      function syncDietSelectorModalUI() {
+        document.querySelectorAll('.diet-modal-base-pill').forEach(btn => {
+          const v = btn.getAttribute('data-modal-base-diet') || 'Vegan';
+          const active = normalizeAppBaseDiet(v) === modalDraftBaseDiet;
+          btn.className = active
+            ? 'diet-modal-base-pill py-2.5 px-2.5 rounded-xl border text-xs font-extrabold transition bg-cyan-500/20 text-cyan-100 border-cyan-400 shadow-sm text-center'
+            : 'diet-modal-base-pill py-2.5 px-2.5 rounded-xl border text-xs font-bold transition bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-700 text-center';
+          btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        document.querySelectorAll('.diet-modal-intol-pill').forEach(btn => {
+          const v = btn.getAttribute('data-modal-intol') || '';
+          const checked = modalDraftIntolerances.includes(v);
+          btn.className = checked
+            ? 'diet-modal-intol-pill py-2 px-2 rounded-xl border text-xs font-extrabold transition bg-emerald-600/25 text-emerald-100 border-emerald-400 shadow-sm inline-flex items-center justify-center gap-1.5'
+            : 'diet-modal-intol-pill py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-950 hover:bg-slate-800 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1.5';
+          btn.setAttribute('aria-pressed', checked ? 'true' : 'false');
+          const boxEl = btn.querySelector('.intol-check-box');
+          if (boxEl) boxEl.textContent = checked ? '✓' : '☐';
+        });
+        const summaryEl = document.getElementById('diet-selector-live-summary');
+        if (summaryEl) {
+          summaryEl.textContent = `Active selection: ${formatAppDietSummary(modalDraftBaseDiet, modalDraftIntolerances)}`;
+        }
+      }
+
+      document.querySelectorAll('.diet-modal-base-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetBase = normalizeAppBaseDiet(btn.getAttribute('data-modal-base-diet') || 'Vegan');
+          if (targetBase === modalDraftBaseDiet) return;
+          const prevBase = modalDraftBaseDiet;
+          const prevInts = modalDraftIntolerances.slice();
+          const check = shouldConfirmAppDietChange(prevBase, prevInts, targetBase, prevInts);
+          if (check.requiresConfirm) {
+            openDietChangeConfirmModal(
+              check.warningText,
+              () => {
+                modalDraftBaseDiet = targetBase;
+                applyDietAndIntolerancesToState(modalDraftBaseDiet, modalDraftIntolerances);
+                syncDietSelectorModalUI();
+                syncProgramWizardFromState();
+              },
+              () => {
+                modalDraftBaseDiet = prevBase;
+                syncDietSelectorModalUI();
+              }
+            );
+          } else {
+            modalDraftBaseDiet = targetBase;
+            applyDietAndIntolerancesToState(modalDraftBaseDiet, modalDraftIntolerances);
+            syncDietSelectorModalUI();
+            syncProgramWizardFromState();
+          }
+        });
+      });
+
+      document.querySelectorAll('.diet-modal-intol-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = btn.getAttribute('data-modal-intol') || '';
+          if (!item) return;
+          const prevBase = modalDraftBaseDiet;
+          const prevInts = modalDraftIntolerances.slice();
+          const isRemoving = prevInts.includes(item);
+          const nextInts = isRemoving
+            ? prevInts.filter(x => x !== item)
+            : normalizeAppIntolerances(prevInts.concat([item]));
+          const check = shouldConfirmAppDietChange(prevBase, prevInts, prevBase, nextInts);
+          if (check.requiresConfirm) {
+            openDietChangeConfirmModal(
+              check.warningText,
+              () => {
+                modalDraftIntolerances = nextInts;
+                applyDietAndIntolerancesToState(modalDraftBaseDiet, modalDraftIntolerances);
+                syncDietSelectorModalUI();
+                syncProgramWizardFromState();
+              },
+              () => {
+                modalDraftIntolerances = prevInts;
+                syncDietSelectorModalUI();
+              }
+            );
+          } else {
+            modalDraftIntolerances = nextInts;
+            applyDietAndIntolerancesToState(modalDraftBaseDiet, modalDraftIntolerances);
+            syncDietSelectorModalUI();
+            syncProgramWizardFromState();
+          }
+        });
+      });
+
+      window.openDietIntoleranceSelectorModal = function() {
+        if (syncSettingsModal) syncSettingsModal.classList.add('hidden');
+        if (!dietSelectorModal) return;
+        modalDraftBaseDiet = normalizeAppBaseDiet(state.baseDiet || state.diet || state.dietPreference);
+        modalDraftIntolerances = normalizeAppIntolerances(state.intolerances);
+        syncDietSelectorModalUI();
+        dietSelectorModal.classList.remove('hidden');
+      };
+
+      if (openSettingsDietBtn) {
+        openSettingsDietBtn.addEventListener('click', () => window.openDietIntoleranceSelectorModal());
+      }
+      if (closeDietSelectorBtn && dietSelectorModal) {
+        closeDietSelectorBtn.addEventListener('click', () => dietSelectorModal.classList.add('hidden'));
+      }
+      if (saveDietSelectorBtn && dietSelectorModal) {
+        saveDietSelectorBtn.addEventListener('click', () => {
+          dietSelectorModal.classList.add('hidden');
+        });
+      }
+      if (dietSelectorModal) {
+        dietSelectorModal.addEventListener('click', (e) => {
+          if (e.target === dietSelectorModal) dietSelectorModal.classList.add('hidden');
+        });
       }
 
       const programWizardModal = document.getElementById('program-setup-wizard-modal');
@@ -20088,7 +20455,14 @@
       let wizardSelectedDays = (state.programWizardConfig && state.programWizardConfig.daysPerWeek) || 5;
       let wizardSelectedFocus = String((state.programWizardConfig && state.programWizardConfig.primaryFocus) || 'balanced').toLowerCase();
       let wizardSelectedDifficulty = String((state.programWizardConfig && state.programWizardConfig.difficulty) || 'medium').toLowerCase();
-      let wizardSelectedDiet = String((state.programWizardConfig && state.programWizardConfig.diet) || state.dietPreference || 'vegan').toLowerCase();
+      let wizardSelectedBaseDiet = normalizeAppBaseDiet(state.baseDiet || (state.programWizardConfig && state.programWizardConfig.baseDiet) || state.dietPreference || 'Vegan');
+      let wizardSelectedIntolerances = normalizeAppIntolerances(state.intolerances || (state.programWizardConfig && state.programWizardConfig.intolerances) || []);
+
+      function syncProgramWizardFromState() {
+        wizardSelectedBaseDiet = normalizeAppBaseDiet(state.baseDiet || state.diet || state.dietPreference || 'Vegan');
+        wizardSelectedIntolerances = normalizeAppIntolerances(state.intolerances || []);
+        syncProgramWizardPillsUI();
+      }
 
       function syncProgramWizardPillsUI() {
         document.querySelectorAll('.wizard-days-pill').forEach(btn => {
@@ -20116,18 +20490,27 @@
           btn.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
         document.querySelectorAll('.wizard-diet-pill').forEach(btn => {
-          const v = btn.getAttribute('data-wizard-diet') || 'vegan';
-          const active = v === wizardSelectedDiet;
-          const isFullWidth = v === 'any';
+          const v = normalizeAppBaseDiet(btn.getAttribute('data-wizard-diet') || 'Vegan');
+          const active = v === wizardSelectedBaseDiet;
           btn.className = active
-            ? `wizard-diet-pill ${isFullWidth ? 'col-span-2 ' : ''}py-2 px-2.5 rounded-xl border text-xs font-extrabold transition bg-amber-600/25 text-amber-100 border-amber-500 shadow-sm`
-            : `wizard-diet-pill ${isFullWidth ? 'col-span-2 ' : ''}py-2 px-2.5 rounded-xl border text-xs font-bold transition bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-700`;
+            ? 'wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-extrabold transition bg-amber-600/25 text-amber-100 border-amber-500 shadow-sm text-center'
+            : 'wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-bold transition bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-700 text-center';
           btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        document.querySelectorAll('.wizard-intol-pill').forEach(btn => {
+          const v = btn.getAttribute('data-wizard-intol') || '';
+          const checked = wizardSelectedIntolerances.includes(v);
+          btn.className = checked
+            ? 'wizard-intol-pill py-2 px-2 rounded-xl border text-xs font-extrabold transition bg-emerald-600/25 text-emerald-100 border-emerald-400 shadow-sm inline-flex items-center justify-center gap-1'
+            : 'wizard-intol-pill py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-950 hover:bg-slate-800 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1';
+          btn.setAttribute('aria-pressed', checked ? 'true' : 'false');
+          const boxEl = btn.querySelector('.intol-check-box');
+          if (boxEl) boxEl.textContent = checked ? '✓' : '☐';
         });
         const previewNoteEl = document.getElementById('program-wizard-rule-preview');
         if (previewNoteEl) {
           const diffLine = PROGRAM_WIZARD_DIFFICULTY_DIRECTIVES[wizardSelectedDifficulty] || PROGRAM_WIZARD_DIFFICULTY_DIRECTIVES.medium;
-          const dietLine = getWizardDietPromptLine(wizardSelectedDiet);
+          const dietLine = getWizardDietPromptLine(wizardSelectedBaseDiet, wizardSelectedIntolerances);
           previewNoteEl.textContent = `${diffLine} ${dietLine}`;
         }
       }
@@ -20152,15 +20535,66 @@
       });
       document.querySelectorAll('.wizard-diet-pill').forEach(btn => {
         btn.addEventListener('click', () => {
-          wizardSelectedDiet = btn.getAttribute('data-wizard-diet') || 'vegan';
-          syncProgramWizardPillsUI();
+          const targetBase = normalizeAppBaseDiet(btn.getAttribute('data-wizard-diet') || 'Vegan');
+          if (targetBase === wizardSelectedBaseDiet) return;
+          const prevBase = wizardSelectedBaseDiet;
+          const prevInts = wizardSelectedIntolerances.slice();
+          const check = shouldConfirmAppDietChange(prevBase, prevInts, targetBase, prevInts);
+          if (check.requiresConfirm) {
+            openDietChangeConfirmModal(
+              check.warningText,
+              () => {
+                wizardSelectedBaseDiet = targetBase;
+                applyDietAndIntolerancesToState(wizardSelectedBaseDiet, wizardSelectedIntolerances);
+                syncProgramWizardPillsUI();
+              },
+              () => {
+                wizardSelectedBaseDiet = prevBase;
+                syncProgramWizardPillsUI();
+              }
+            );
+          } else {
+            wizardSelectedBaseDiet = targetBase;
+            syncProgramWizardPillsUI();
+          }
+        });
+      });
+      document.querySelectorAll('.wizard-intol-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = btn.getAttribute('data-wizard-intol') || '';
+          if (!item) return;
+          const prevBase = wizardSelectedBaseDiet;
+          const prevInts = wizardSelectedIntolerances.slice();
+          const isRemoving = prevInts.includes(item);
+          const nextInts = isRemoving
+            ? prevInts.filter(x => x !== item)
+            : normalizeAppIntolerances(prevInts.concat([item]));
+          const check = shouldConfirmAppDietChange(prevBase, prevInts, prevBase, nextInts);
+          if (check.requiresConfirm) {
+            openDietChangeConfirmModal(
+              check.warningText,
+              () => {
+                wizardSelectedIntolerances = nextInts;
+                applyDietAndIntolerancesToState(wizardSelectedBaseDiet, wizardSelectedIntolerances);
+                syncProgramWizardPillsUI();
+              },
+              () => {
+                wizardSelectedIntolerances = prevInts;
+                syncProgramWizardPillsUI();
+              }
+            );
+          } else {
+            wizardSelectedIntolerances = nextInts;
+            applyDietAndIntolerancesToState(wizardSelectedBaseDiet, wizardSelectedIntolerances);
+            syncProgramWizardPillsUI();
+          }
         });
       });
 
       window.openProgramSetupWizardModal = function() {
         if (syncSettingsModal) syncSettingsModal.classList.add('hidden');
         if (!programWizardModal) return;
-        syncProgramWizardPillsUI();
+        syncProgramWizardFromState();
         if (programWizardStatusEl) {
           programWizardStatusEl.textContent = '';
           programWizardStatusEl.classList.add('hidden');
@@ -20306,24 +20740,26 @@
         const daysPerWeek = Math.max(3, Math.min(6, Number(wizardSelectedDays) || 5));
         const primaryFocus = wizardSelectedFocus || 'balanced';
         const difficulty = wizardSelectedDifficulty === 'easy' || wizardSelectedDifficulty === 'hard' ? wizardSelectedDifficulty : 'medium';
-        const diet = wizardSelectedDiet || 'vegan';
+        const baseDiet = normalizeAppBaseDiet(wizardSelectedBaseDiet);
+        const intolerances = normalizeAppIntolerances(wizardSelectedIntolerances);
+        const dietSummaryLabel = formatAppDietSummary(baseDiet, intolerances);
         const directive = PROGRAM_WIZARD_DIFFICULTY_DIRECTIVES[difficulty];
-        const dietDirective = getWizardDietPromptLine(diet);
+        const dietDirective = getWizardDietPromptLine(baseDiet, intolerances);
 
         if (runProgramWizardSubmitBtn) {
           runProgramWizardSubmitBtn.disabled = true;
           runProgramWizardSubmitBtn.textContent = 'Building Your Custom Plan...';
         }
         if (programWizardStatusEl) {
-          programWizardStatusEl.textContent = `Generating ${daysPerWeek}-day ${primaryFocus} plan (${difficulty.toUpperCase()} • ${PROGRAM_WIZARD_DIET_TAGS[diet] || 'VEGAN'})...`;
+          programWizardStatusEl.textContent = `Generating ${daysPerWeek}-day ${primaryFocus} plan (${difficulty.toUpperCase()} • ${dietSummaryLabel})...`;
           programWizardStatusEl.classList.remove('hidden');
         }
 
         const promptText = [
           'You are an expert strength coach building a 7-day gym program in strict JSON.',
-          `User Choices: Days Per Week = ${daysPerWeek}, Primary Focus = ${primaryFocus.toUpperCase()}, Difficulty = ${difficulty.toUpperCase()}, Diet = ${PROGRAM_WIZARD_DIET_TAGS[diet] || 'VEGAN'}.`,
+          `User Choices: Days Per Week = ${daysPerWeek}, Primary Focus = ${primaryFocus.toUpperCase()}, Difficulty = ${difficulty.toUpperCase()}, Base Diet = ${baseDiet}, Intolerances = ${JSON.stringify(intolerances)}.`,
           `Rule 1 (Difficulty): ${directive}`,
-          `Rule 2 (Diet): ${dietDirective} Align meals and SHOPPING_AISLES guidance strictly to this diet.`,
+          `Rule 2 (Diet & Intolerances): ${dietDirective}`,
           'Rule 3 (Strict UI Schema): Format every single exercise inside each day\'s exercises array using this exact JSON schema so the UI never crashes:',
           '[{ "name": "Exercise Name", "sets": 3, "reps": "8-12", "restTimer": "90s", "videoUrl": "https://youtube.com/...", "instructions": "Short setup text" }]',
           'Return ONLY a valid JSON object with shape: { "days": [ ...7 items... ] }.',
@@ -20450,15 +20886,19 @@
           state.weeklyRestDays[wKey] = [restIndices[0], restIndices[1]];
         }
         state.manualScheduleOverrideByWeek[wKey] = true;
-        const normDiet = normalizeAppDietState(diet);
+        const normDiet = normalizeAppDietState(baseDiet);
+        state.baseDiet = baseDiet;
+        state.intolerances = intolerances;
         state.dietPreference = normDiet.id;
-        state.diet = normDiet.display;
+        state.diet = baseDiet;
         state.forceShowRiceTimerInKeto = false;
         state.programWizardConfig = {
           daysPerWeek,
           primaryFocus,
           difficulty,
           diet: normDiet.id,
+          baseDiet,
+          intolerances,
           updatedAt: new Date().toISOString()
         };
         state.selectedDayIndex = 0;
@@ -20474,7 +20914,7 @@
           runProgramWizardSubmitBtn.textContent = 'Build My Custom Weekly Program';
         }
         if (programWizardModal) programWizardModal.classList.add('hidden');
-        showToast(`Week ${week} updated: ${daysPerWeek} Days • ${primaryFocus.toUpperCase()} • ${difficulty.toUpperCase()} • ${normDiet.display}`);
+        showToast(`Week ${week} updated: ${daysPerWeek} Days • ${primaryFocus.toUpperCase()} • ${difficulty.toUpperCase()} • ${dietSummaryLabel}`);
       }
 
       if (runProgramWizardSubmitBtn) {
@@ -23152,10 +23592,15 @@
         <button type="button" id="close-sync-settings-modal-btn" aria-label="Close" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
       </div>
 
-      <!-- Prominent Program Setup Wizard CTA -->
-      <button type="button" id="open-program-wizard-btn" class="w-full py-2.5 px-3 rounded-xl border border-amber-500/70 bg-amber-600/20 hover:bg-amber-600/30 text-amber-100 text-xs font-extrabold transition flex items-center justify-center gap-2 shadow-sm">
-        <span>⚙️ Run Program Setup Wizard</span>
-      </button>
+      <!-- Prominent Program Setup Wizard CTA + Diet & Intolerances Shortcut -->
+      <div class="space-y-2">
+        <button type="button" id="open-program-wizard-btn" class="w-full py-2.5 px-3 rounded-xl border border-amber-500/70 bg-amber-600/20 hover:bg-amber-600/30 text-amber-100 text-xs font-extrabold transition flex items-center justify-center gap-2 shadow-sm">
+          <span>⚙️ Run Program Setup Wizard</span>
+        </button>
+        <button type="button" id="open-settings-diet-modal-btn" class="w-full py-2 px-3 rounded-xl border border-cyan-500/50 bg-slate-950 hover:bg-slate-800 text-cyan-200 text-xs font-bold transition flex items-center justify-center gap-2">
+          <span>⚙️ Diet &amp; Intolerances</span>
+        </button>
+      </div>
 
       <!-- Cross-Week Continuity Banner & Re-Sync Week Controls -->
       <div id="cross-week-continuity-banner" class="rounded-xl bg-slate-950/90 border border-slate-800 p-2.5"></div>
@@ -23205,7 +23650,7 @@
       <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
         <div>
           <h3 id="program-wizard-title" class="text-base font-extrabold text-slate-100">⚙️ Program Setup Wizard</h3>
-          <p class="text-xs text-slate-300 mt-0.5">Answer 4 quick questions to build your custom week.</p>
+          <p class="text-xs text-slate-300 mt-0.5">Answer 5 quick questions to build your custom week.</p>
         </div>
         <button type="button" id="close-program-wizard-modal-btn" aria-label="Close" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
       </div>
@@ -23242,22 +23687,31 @@
         </div>
       </div>
 
-      <!-- Question 4: What do you eat? (Symmetrical 5-Pill Grid) -->
+      <!-- Question 4: What is your base diet? (Single-Select 2x2 Grid) -->
       <div class="space-y-1.5">
-        <div class="text-xs font-extrabold text-slate-100">4. What do you eat?</div>
-        <div class="grid grid-cols-2 gap-1.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;">
-          <button type="button" data-wizard-diet="any" class="wizard-diet-pill col-span-2 py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Any Food (Cheapest)</button>
-          <button type="button" data-wizard-diet="vegan" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500">Vegan</button>
-          <button type="button" data-wizard-diet="vegetarian" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Vegetarian</button>
-          <button type="button" data-wizard-diet="keto" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Keto (Low Carb)</button>
-          <button type="button" data-wizard-diet="gluten_free" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Gluten-Free</button>
+        <div class="text-xs font-extrabold text-slate-100">4. What is your base diet?</div>
+        <div class="grid grid-cols-2 gap-1.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;" role="group" aria-label="Base Diet Selection">
+          <button type="button" data-wizard-diet="Omnivore (Cheapest)" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Omnivore (Cheapest)</button>
+          <button type="button" data-wizard-diet="Vegan" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500">Vegan</button>
+          <button type="button" data-wizard-diet="Vegetarian" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Vegetarian</button>
+          <button type="button" data-wizard-diet="Keto" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Keto</button>
+        </div>
+      </div>
+
+      <!-- Question 5: Any intolerances? (Multi-Select Checkbox Pills) -->
+      <div class="space-y-1.5">
+        <div class="text-xs font-extrabold text-slate-100">5. Any intolerances?</div>
+        <div class="grid grid-cols-3 gap-1.5" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;" role="group" aria-label="Dietary Intolerances Selection">
+          <button type="button" data-wizard-intol="Gluten-Free" aria-pressed="false" class="wizard-intol-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1"><span class="intol-check-box" aria-hidden="true">☐</span><span>Gluten-Free</span></button>
+          <button type="button" data-wizard-intol="Nut-Free" aria-pressed="false" class="wizard-intol-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1"><span class="intol-check-box" aria-hidden="true">☐</span><span>Nut-Free</span></button>
+          <button type="button" data-wizard-intol="Soy-Free" aria-pressed="false" class="wizard-intol-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1"><span class="intol-check-box" aria-hidden="true">☐</span><span>Soy-Free</span></button>
         </div>
       </div>
 
       <!-- Strict AI Rule Preview -->
       <div class="rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-[11px] text-slate-300 leading-relaxed">
         <div class="font-extrabold text-slate-100 mb-0.5">Active AI Rules:</div>
-        <div id="program-wizard-rule-preview">Difficulty: MEDIUM. Use a standard mix of free-weights and machines. 3 to 4 sets per exercise. Diet: [VEGAN]. Ensure all recommended meal structures align with this diet.</div>
+        <div id="program-wizard-rule-preview">Difficulty: MEDIUM. Use a standard mix of free-weights and machines. 3 to 4 sets per exercise. Base Diet: [Vegan]. Dietary Intolerances: [None].</div>
       </div>
 
       <div id="program-wizard-status" class="hidden rounded-xl border border-amber-500/50 bg-amber-600/15 px-3 py-2 text-xs font-bold text-amber-100"></div>
@@ -23343,6 +23797,77 @@
         </button>
         <button type="button" id="save-shop-brand-swap-btn" class="py-2.5 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-50 text-xs font-extrabold transition">
           Save &amp; Recalculate
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 7: Diet & Intolerance Selector Modal (Opened from Shop List Header Link & Settings) -->
+  <div id="diet-intolerance-selector-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="diet-selector-modal-title">
+    <div class="rounded-2xl max-w-md w-full p-4 space-y-3.5 shadow-2xl max-h-[90vh] overflow-y-auto border border-cyan-500/45" style="background: #0f172a; color: #f8fafc; letter-spacing: 0.02em; line-height: 1.5; font-family: system-ui, sans-serif;">
+      <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
+        <div>
+          <h3 id="diet-selector-modal-title" class="text-base font-extrabold text-slate-50">⚙️ Diet &amp; Intolerances</h3>
+          <p class="text-xs text-slate-300 mt-0.5">Pick your base diet and any foods to avoid.</p>
+        </div>
+        <button type="button" id="close-diet-selector-modal-btn" aria-label="Close" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
+      </div>
+
+      <!-- Base Diet (Single Select) -->
+      <div class="space-y-1.5">
+        <div class="text-xs font-extrabold text-slate-50">What is your base diet?</div>
+        <div class="grid grid-cols-2 gap-1.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;" role="group" aria-label="Base Diet Selector">
+          <button type="button" data-modal-base-diet="Omnivore (Cheapest)" class="diet-modal-base-pill py-2.5 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Omnivore (Cheapest)</button>
+          <button type="button" data-modal-base-diet="Vegan" class="diet-modal-base-pill py-2.5 px-2.5 rounded-xl border text-xs font-extrabold bg-cyan-500/20 text-cyan-100 border-cyan-400">Vegan</button>
+          <button type="button" data-modal-base-diet="Vegetarian" class="diet-modal-base-pill py-2.5 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Vegetarian</button>
+          <button type="button" data-modal-base-diet="Keto" class="diet-modal-base-pill py-2.5 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Keto</button>
+        </div>
+      </div>
+
+      <!-- Dietary Intolerances (Multi-Select Checkbox Pills) -->
+      <div class="space-y-1.5">
+        <div class="text-xs font-extrabold text-slate-50">Any intolerances?</div>
+        <div class="grid grid-cols-3 gap-1.5" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;" role="group" aria-label="Dietary Intolerances">
+          <button type="button" data-modal-intol="Gluten-Free" aria-pressed="false" class="diet-modal-intol-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1.5"><span class="intol-check-box" aria-hidden="true">☐</span><span>Gluten-Free</span></button>
+          <button type="button" data-modal-intol="Nut-Free" aria-pressed="false" class="diet-modal-intol-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1.5"><span class="intol-check-box" aria-hidden="true">☐</span><span>Nut-Free</span></button>
+          <button type="button" data-modal-intol="Soy-Free" aria-pressed="false" class="diet-modal-intol-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1.5"><span class="intol-check-box" aria-hidden="true">☐</span><span>Soy-Free</span></button>
+        </div>
+      </div>
+
+      <div id="diet-selector-live-summary" class="rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200">
+        Active selection: Vegan
+      </div>
+
+      <button type="button" id="save-diet-selector-modal-btn" class="w-full py-2.5 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-extrabold transition">
+        Done
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 8: Error Prevention — Diet Change Confirmation Modal (ADHD-Safe Button Hierarchy) -->
+  <div id="diet-change-confirm-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="alertdialog" aria-modal="true" aria-labelledby="diet-confirm-title" aria-describedby="diet-change-confirm-text">
+    <div class="rounded-2xl max-w-sm w-full p-4 space-y-4 shadow-2xl border border-amber-500/60" style="background: #0f172a; color: #f8fafc; letter-spacing: 0.02em; line-height: 1.5; font-family: system-ui, sans-serif;">
+      <div class="space-y-1.5">
+        <h3 id="diet-confirm-title" class="text-base font-extrabold text-slate-50">Confirm Diet Change</h3>
+        <p id="diet-change-confirm-text" class="text-sm text-slate-200 leading-relaxed">
+          Change diet to Keto? Your shopping list and meal timers will update to match.
+        </p>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+        <button
+          type="button"
+          id="diet-change-cancel-btn"
+          class="w-full py-2.5 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-extrabold shadow-md transition"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="diet-change-proceed-btn"
+          class="w-full py-2.5 px-3 rounded-xl text-xs font-bold transition hover:bg-amber-950/40"
+          style="border: 1px solid #d97706; color: #d97706; background: transparent;"
+        >
+          Yes, Change Diet
         </button>
       </div>
     </div>

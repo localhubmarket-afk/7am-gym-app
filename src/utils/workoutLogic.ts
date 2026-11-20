@@ -9408,3 +9408,246 @@ export function computeShoppingTotalsWithBrandOverrides(
   };
 }
 
+// ============================================================================
+// UPGRADE 18: MULTI-SELECT DIET & INTOLERANCE ENGINE, ERROR-PREVENTION CONFIRMATION & DISMISSIBLE CHRONONUTRITION ALERT
+// ============================================================================
+
+export type BaseDietString = 'Omnivore (Cheapest)' | 'Vegan' | 'Vegetarian' | 'Keto';
+export type DietaryIntolerance = 'Gluten-Free' | 'Nut-Free' | 'Soy-Free';
+
+export const BASE_DIET_OPTIONS: BaseDietString[] = [
+  'Omnivore (Cheapest)',
+  'Vegan',
+  'Vegetarian',
+  'Keto'
+];
+
+export const DIETARY_INTOLERANCE_OPTIONS: DietaryIntolerance[] = [
+  'Gluten-Free',
+  'Nut-Free',
+  'Soy-Free'
+];
+
+export function normalizeBaseDiet(raw: unknown): BaseDietString {
+  const s = String(raw || 'Vegan').toLowerCase().trim();
+  if (s === 'keto' || s.includes('keto') || s.includes('low carb')) return 'Keto';
+  if (s === 'vegetarian' || s === 'veggie') return 'Vegetarian';
+  if (s === 'any' || s.includes('omnivore') || s.includes('any food') || s.includes('cheapest')) {
+    return 'Omnivore (Cheapest)';
+  }
+  return 'Vegan';
+}
+
+export function normalizeIntolerances(
+  raw: unknown,
+  legacyRawDiet?: unknown
+): DietaryIntolerance[] {
+  const found = new Set<DietaryIntolerance>();
+  const list = Array.isArray(raw) ? raw : [];
+  list.forEach(item => {
+    const s = String(item || '').toLowerCase().trim();
+    if (s.includes('gluten') || s === 'gf') found.add('Gluten-Free');
+    else if (s.includes('nut')) found.add('Nut-Free');
+    else if (s.includes('soy')) found.add('Soy-Free');
+  });
+  if (list.length === 0 && legacyRawDiet) {
+    const leg = String(legacyRawDiet).toLowerCase();
+    if (leg.includes('gluten')) found.add('Gluten-Free');
+  }
+  return DIETARY_INTOLERANCE_OPTIONS.filter(opt => found.has(opt));
+}
+
+export function formatDietSummaryLabel(
+  baseDiet: unknown,
+  intolerances?: unknown
+): string {
+  const base = normalizeBaseDiet(baseDiet);
+  const ints = normalizeIntolerances(intolerances);
+  if (ints.length === 0) return base;
+  return `${base} + ${ints.join(', ')}`;
+}
+
+export function formatCompactShopDietHeaderLink(
+  baseDiet: unknown,
+  intolerances?: unknown
+): string {
+  const base = normalizeBaseDiet(baseDiet);
+  const shortBase = base === 'Omnivore (Cheapest)' ? 'Omnivore' : base;
+  const ints = normalizeIntolerances(intolerances);
+  if (ints.length === 0) return `⚙️ Diet: ${shortBase} (Change)`;
+  if (ints.length === 1) {
+    const shortInt = ints[0] === 'Gluten-Free' ? 'GF' : ints[0];
+    return `⚙️ Diet: ${shortBase} + ${shortInt} (Change)`;
+  }
+  return `⚙️ Diet: ${shortBase} + ${ints.length} (Change)`;
+}
+
+export function shouldPromptDietChangeConfirmation(
+  prevBaseDiet: unknown,
+  prevIntolerances: unknown,
+  nextBaseDiet: unknown,
+  nextIntolerances: unknown
+): {
+  requiresConfirm: boolean;
+  reason: 'base_diet_changed' | 'intolerance_removed' | 'none';
+  targetLabel: string;
+  warningText: string;
+} {
+  const prevBase = normalizeBaseDiet(prevBaseDiet);
+  const nextBase = normalizeBaseDiet(nextBaseDiet);
+  const prevInts = normalizeIntolerances(prevIntolerances);
+  const nextInts = normalizeIntolerances(nextIntolerances);
+  const targetLabel = formatDietSummaryLabel(nextBase, nextInts);
+  const warningText = `Change diet to ${targetLabel}? Your shopping list and meal timers will update to match.`;
+
+  if (prevBase !== nextBase) {
+    return {
+      requiresConfirm: true,
+      reason: 'base_diet_changed',
+      targetLabel,
+      warningText
+    };
+  }
+  const removedAny = prevInts.some(item => !nextInts.includes(item));
+  if (removedAny) {
+    return {
+      requiresConfirm: true,
+      reason: 'intolerance_removed',
+      targetLabel,
+      warningText
+    };
+  }
+  return {
+    requiresConfirm: false,
+    reason: 'none',
+    targetLabel,
+    warningText
+  };
+}
+
+export function buildGeminiDietAndIntolerancePromptLine(
+  baseDiet: unknown,
+  intolerances?: unknown
+): string {
+  const base = normalizeBaseDiet(baseDiet);
+  const ints = normalizeIntolerances(intolerances);
+  const intStr = ints.length > 0 ? ints.join(', ') : 'None';
+  return `Base Diet: [${base}]. Dietary Intolerances: [${intStr}]. Strictly respect both constraints for all meal structures, food swaps, and SHOPPING_AISLES guidance.`;
+}
+
+export function getCombinedDietAndIntoleranceShoppingPatches(
+  baseDiet: unknown,
+  intolerances?: unknown
+): Record<string, DietShoppingPatch> {
+  const base = normalizeBaseDiet(baseDiet);
+  const ints = normalizeIntolerances(intolerances);
+  const baseLegacyKey =
+    base === 'Omnivore (Cheapest)'
+      ? 'any'
+      : base === 'Keto'
+        ? 'keto'
+        : base === 'Vegetarian'
+          ? 'vegetarian'
+          : 'vegan';
+
+  const merged: Record<string, DietShoppingPatch> = Object.assign(
+    {},
+    getDietShoppingItemPatches(baseLegacyKey)
+  );
+
+  if (ints.includes('Gluten-Free')) {
+    Object.assign(merged, getDietShoppingItemPatches('gluten_free'));
+    if (base === 'Keto') {
+      // Keep Keto low-carb breakfast & lunch swaps, just mark them Gluten-Free
+      const ketoBase = getDietShoppingItemPatches('keto');
+      if (ketoBase.shop_oats) {
+        merged.shop_oats = Object.assign({}, ketoBase.shop_oats, {
+          shortName: '5. Certified GF Almond Flour & Hemp Hearts (Keto • GF)'
+        });
+      }
+      if (ketoBase.shop_rice) {
+        merged.shop_rice = Object.assign({}, ketoBase.shop_rice, {
+          shortName: '6. Riced Cauliflower & Zucchini Medley (Keto • GF)'
+        });
+      }
+    }
+  }
+
+  if (ints.includes('Nut-Free')) {
+    merged.shop_silk = {
+      shortName: '1. Unsweetened Oat or Soy Milk — 1.89L (Nut-Free)',
+      name: '1. Unsweetened Fortified Oat or Soy Milk (100% Nut-Free)',
+      weeklyQty: '1,260 ml/wk (180 ml/day)',
+      quarterlyQty: '16.2 L / 90 days',
+      weeklyCost: '$3.49/wk',
+      quarterlyCost: '$44.87 / 3 mos',
+      eli12Summary: 'Nut-free milk swap for Fuel 2 breakfast bowls.',
+      fullMathNotes: 'Replaces almond/cashew milk with 100% nut-free milk ($3.49/wk).'
+    };
+    merged.shop_pb = {
+      shortName: '7. Roasted Sunflower Seed Butter (Nut-Free)',
+      name: '7. Unsweetened Roasted Sunflower Seed Butter (100% Nut-Free)',
+      weeklyQty: '168g/wk (24g/day)',
+      quarterlyQty: '2,160g / 90 days',
+      weeklyCost: '$2.45/wk',
+      quarterlyCost: '$31.50 / 3 mos',
+      eli12Summary: 'Nut-free healthy fat swap for Fuel 4 night shake.',
+      fullMathNotes: '24g/day delivers the same healthy fats and Vitamin D absorption with zero nuts ($2.45/wk).'
+    };
+    if (base === 'Keto') {
+      merged.shop_oats = {
+        shortName: '5. Shelled Hemp Hearts & Golden Flax Meal (Keto • Nut-Free)',
+        name: '5. Shelled Hemp Hearts & Ground Golden Flaxseed (Nut-Free Keto)',
+        weeklyQty: '280g/wk (40g/day)',
+        quarterlyQty: '3,600g / 90 days',
+        weeklyCost: '$4.80/wk',
+        quarterlyCost: '$61.71 / 3 mos',
+        eli12Summary: 'Replaces almond flour with a 100% nut-free keto breakfast base.',
+        fullMathNotes: '40g/day high-omega-3 low-carb base with zero tree nuts ($4.80/wk).'
+      };
+    }
+  }
+
+  if (ints.includes('Soy-Free')) {
+    if (base === 'Vegan') {
+      merged.shop_tofu = {
+        shortName: '2. Chickpea / Pumpkin Seed Tofu & Lentils (Soy-Free)',
+        name: '2. Soy-Free Chickpea Tofu & Cooked Green Lentils (High-Protein)',
+        weeklyQty: '1,225g/wk (175g/day)',
+        quarterlyQty: '15.75 kg / 90 days',
+        weeklyCost: '$9.60/wk',
+        quarterlyCost: '$123.43 / 3 mos',
+        eli12Summary: '100% soy-free vegan protein swap for daily Fuel 3 bowls.',
+        fullMathNotes: 'Delivers ~22g plant protein per lunch bowl with zero soy ($9.60/wk).'
+      };
+    }
+    if (ints.includes('Nut-Free')) {
+      merged.shop_silk = {
+        shortName: '1. Unsweetened Oat Milk — 1.89L (Nut-Free & Soy-Free)',
+        name: '1. Unsweetened Fortified Oat Milk (Nut-Free & Soy-Free)',
+        weeklyQty: '1,260 ml/wk (180 ml/day)',
+        quarterlyQty: '16.2 L / 90 days',
+        weeklyCost: '$3.59/wk',
+        quarterlyCost: '$46.16 / 3 mos',
+        eli12Summary: '100% nut-free and soy-free milk for daily breakfast bowls.',
+        fullMathNotes: 'Safe for both nut and soy intolerances ($3.59/wk).'
+      };
+    }
+  }
+
+  return merged;
+}
+
+export function shouldShowChronoGapAlert(opts: {
+  isFuel1Fuel2Swapped: boolean;
+  isFuel2Logged: boolean;
+  isManuallyDismissed: boolean;
+}): boolean {
+  return Boolean(
+    opts.isFuel1Fuel2Swapped &&
+      !opts.isFuel2Logged &&
+      !opts.isManuallyDismissed
+  );
+}
+
+
