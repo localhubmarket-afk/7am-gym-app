@@ -2425,5 +2425,78 @@ test('Subtest 38: Neurodivergent COGA/BDA Palette, AI Difficulty Wizard, Wake-Up
   assert.equal(historyList[1].name, 'Barbell Bench Press');
 });
 
+test('Subtest 39: Diet Preference Onboarding Injection, Flex Meal AI Food Vision Parser, and Zero-Friction Quick Add Calorie Engine', async () => {
+  const mod = await import('./workoutLogic');
 
+  // 1. 5 ELI12 Dietary Preference Pills + Hidden Prompt Injection
+  assert.deepEqual(
+    mod.DIET_PREFERENCE_OPTIONS.map(o => o.label),
+    ['Any Food (Cheapest)', 'Vegan', 'Vegetarian', 'Keto (Low Carb)', 'Gluten-Free']
+  );
+  assert.equal(
+    mod.buildDietPromptInjection('vegan'),
+    'Diet: [VEGAN]. Ensure all recommended meal structures align with this diet.'
+  );
+  assert.equal(
+    mod.buildDietPromptInjection('keto'),
+    'Diet: [KETO (LOW CARB)]. Ensure all recommended meal structures align with this diet.'
+  );
+  assert.equal(
+    mod.buildDietPromptInjection('any'),
+    'Diet: [ANY FOOD (CHEAPEST)]. Ensure all recommended meal structures align with this diet.'
+  );
 
+  // 2. Flex Meal AI Vision Hidden Prompt & JSON Parser
+  assert.equal(
+    mod.FLEX_FOOD_VISION_PROMPT,
+    'System: Estimate the calories and protein in this food image or menu item. Return ONLY a valid JSON object matching this schema: { "foodName": "Burger and Fries", "calories": 850, "protein": 35 }. Do not output markdown, only valid JSON.'
+  );
+  const parsedClean = mod.parseFlexFoodVisionJson('{"foodName":"Burger and Fries","calories":850,"protein":35}');
+  assert.equal(parsedClean.ok, true);
+  assert.equal(parsedClean.estimate.foodName, 'Burger and Fries');
+  assert.equal(parsedClean.estimate.calories, 850);
+  assert.equal(parsedClean.estimate.protein, 35);
+  assert.equal(parsedClean.estimate.isFlexMeal, true);
+
+  const parsedFenced = mod.parseFlexFoodVisionJson('```json\n{"foodName":"Teriyaki Salmon Bowl","calories":690,"protein":42}\n```');
+  assert.equal(parsedFenced.ok, true);
+  assert.equal(parsedFenced.estimate.calories, 690);
+  assert.equal(parsedFenced.estimate.protein, 42);
+
+  const parsedBad = mod.parseFlexFoodVisionJson('not valid json');
+  assert.equal(parsedBad.ok, false);
+  assert.equal(parsedBad.estimate.isFlexMeal, true);
+  assert.ok(parsedBad.estimate.calories > 0);
+
+  // 3. 4 Quick Add Drinks & Treats Options (Zero Macro Friction)
+  assert.deepEqual(
+    mod.QUICK_ADD_TREAT_OPTIONS.map(q => ({ label: q.label, calories: q.calories })),
+    [
+      { label: '🍺 Light Drink (150 kcal)', calories: 150 },
+      { label: '🍻 Heavy Drink / Cocktail (250 kcal)', calories: 250 },
+      { label: '🍪 Small Treat (300 kcal)', calories: 300 },
+      { label: '🍔 Big Meal Out (1,000 kcal)', calories: 1000 }
+    ]
+  );
+
+  // 4. Daily Totalizer: Flex Meal replaces Fuel 3 Tofu Bowl + Quick Add adds calories without touching protein
+  const totals = mod.computeDailyFuelTotalsWithFlexAndQuickAdd({
+    baseMeals: [
+      { slotId: 'pre_shake', kcal: 140, protein: 32, checked: true },
+      { slotId: 'post_oats', kcal: 395, protein: 26, checked: false },
+      { slotId: 'lunch', kcal: 540, protein: 39, checked: false },
+      { slotId: 'dinner', kcal: 250, protein: 42, checked: false }
+    ],
+    flexOverrides: {
+      lunch: { foodName: 'Burger and Fries', calories: 850, protein: 35, isFlexMeal: true }
+    },
+    quickAdds: [
+      { id: 'qa1', optionId: 'light_drink', label: 'Light Drink', calories: 150 },
+      { id: 'qa2', optionId: 'small_treat', label: 'Small Treat', calories: 300 }
+    ]
+  });
+  assert.equal(totals.flexMealsLoggedCount, 1);
+  assert.equal(totals.quickAddKcal, 450);
+  assert.equal(totals.eatenProtein, 67); // 32 (shake) + 35 (flex lunch)
+  assert.equal(totals.eatenKcal, 1440); // 140 + 850 + 150 + 300
+});

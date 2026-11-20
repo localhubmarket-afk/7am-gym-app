@@ -8800,6 +8800,142 @@ export function collectUniqueExercisesFromHistory(
   return Array.from(seen.values());
 }
 
+// ============================================================================
+// UPGRADE 16: OFF-PLAN / FLEX LOGGING ENGINE (AI FOOD VISION & QUICK ADD)
+//             + ONBOARDING DIETARY PREFERENCE SELECTOR
+// ============================================================================
 
+export type DietPreferenceId = 'any' | 'vegan' | 'vegetarian' | 'keto' | 'gluten_free';
 
+export interface DietPreferenceOption {
+  id: DietPreferenceId;
+  label: string;
+  promptTag: string;
+}
 
+export const DIET_PREFERENCE_OPTIONS: readonly DietPreferenceOption[] = [
+  { id: 'any', label: 'Any Food (Cheapest)', promptTag: 'ANY FOOD (CHEAPEST)' },
+  { id: 'vegan', label: 'Vegan', promptTag: 'VEGAN' },
+  { id: 'vegetarian', label: 'Vegetarian', promptTag: 'VEGETARIAN' },
+  { id: 'keto', label: 'Keto (Low Carb)', promptTag: 'KETO (LOW CARB)' },
+  { id: 'gluten_free', label: 'Gluten-Free', promptTag: 'GLUTEN-FREE' }
+] as const;
+
+export function buildDietPromptInjection(dietId?: string | null): string {
+  const key = String(dietId || 'vegan').toLowerCase().trim() as DietPreferenceId;
+  const matched = DIET_PREFERENCE_OPTIONS.find(d => d.id === key) || DIET_PREFERENCE_OPTIONS[1];
+  return `Diet: [${matched.promptTag}]. Ensure all recommended meal structures align with this diet.`;
+}
+
+export const FLEX_FOOD_VISION_PROMPT =
+  'System: Estimate the calories and protein in this food image or menu item. Return ONLY a valid JSON object matching this schema: { "foodName": "Burger and Fries", "calories": 850, "protein": 35 }. Do not output markdown, only valid JSON.';
+
+export interface FlexMealEstimate {
+  foodName: string;
+  calories: number;
+  protein: number;
+  isFlexMeal: true;
+  estimatedAt?: string;
+}
+
+export function parseFlexFoodVisionJson(
+  rawText: string
+): { ok: boolean; estimate: FlexMealEstimate } {
+  const cleaned = String(rawText || '')
+    .replace(/```json\s*/gi, '')
+    .replace(/```/g, '')
+    .trim();
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (match) {
+    try {
+      const parsed = JSON.parse(match[0]);
+      const name = String(parsed.foodName || parsed.name || '').trim();
+      const rawCal = Number(parsed.calories ?? parsed.kcal);
+      const rawProt = Number(parsed.protein ?? parsed.proteinGrams);
+      if (name && Number.isFinite(rawCal) && rawCal > 0) {
+        return {
+          ok: true,
+          estimate: {
+            foodName: name.slice(0, 80),
+            calories: Math.max(50, Math.min(3500, Math.round(rawCal))),
+            protein: Math.max(0, Math.min(250, Math.round(Number.isFinite(rawProt) ? rawProt : 0))),
+            isFlexMeal: true
+          }
+        };
+      }
+    } catch {
+      // fall through to safe fallback
+    }
+  }
+  return {
+    ok: false,
+    estimate: {
+      foodName: 'Restaurant Meal (Estimated)',
+      calories: 700,
+      protein: 30,
+      isFlexMeal: true
+    }
+  };
+}
+
+export interface QuickAddTreatOption {
+  id: 'light_drink' | 'heavy_drink' | 'small_treat' | 'big_meal_out';
+  label: string;
+  shortName: string;
+  calories: number;
+}
+
+export const QUICK_ADD_TREAT_OPTIONS: readonly QuickAddTreatOption[] = [
+  { id: 'light_drink', label: '🍺 Light Drink (150 kcal)', shortName: 'Light Drink', calories: 150 },
+  { id: 'heavy_drink', label: '🍻 Heavy Drink / Cocktail (250 kcal)', shortName: 'Heavy Drink / Cocktail', calories: 250 },
+  { id: 'small_treat', label: '🍪 Small Treat (300 kcal)', shortName: 'Small Treat', calories: 300 },
+  { id: 'big_meal_out', label: '🍔 Big Meal Out (1,000 kcal)', shortName: 'Big Meal Out', calories: 1000 }
+] as const;
+
+export interface QuickAddLogEntry {
+  id: string;
+  optionId: QuickAddTreatOption['id'];
+  label: string;
+  calories: number;
+}
+
+export function computeDailyFuelTotalsWithFlexAndQuickAdd(params: {
+  baseMeals: Array<{ slotId: string; kcal: number; protein: number; checked: boolean }>;
+  flexOverrides?: Record<string, FlexMealEstimate | undefined>;
+  quickAdds?: QuickAddLogEntry[];
+}): {
+  eatenKcal: number;
+  eatenProtein: number;
+  quickAddKcal: number;
+  flexMealsLoggedCount: number;
+} {
+  let eatenKcal = 0;
+  let eatenProtein = 0;
+  let flexMealsLoggedCount = 0;
+  const overrides = params.flexOverrides || {};
+
+  for (const meal of params.baseMeals) {
+    const flex = overrides[meal.slotId];
+    if (flex && flex.isFlexMeal) {
+      eatenKcal += Math.round(Number(flex.calories) || 0);
+      eatenProtein += Math.round(Number(flex.protein) || 0);
+      flexMealsLoggedCount++;
+    } else if (meal.checked) {
+      eatenKcal += Math.round(Number(meal.kcal) || 0);
+      eatenProtein += Number(meal.protein) || 0;
+    }
+  }
+
+  let quickAddKcal = 0;
+  for (const qa of params.quickAdds || []) {
+    quickAddKcal += Math.max(0, Math.round(Number(qa.calories) || 0));
+  }
+  eatenKcal += quickAddKcal;
+
+  return {
+    eatenKcal: Math.round(eatenKcal),
+    eatenProtein: +eatenProtein.toFixed(1),
+    quickAddKcal,
+    flexMealsLoggedCount
+  };
+}

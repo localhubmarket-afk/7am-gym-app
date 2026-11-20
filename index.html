@@ -860,6 +860,32 @@
           <div id="grocery-list-container" class="hidden"></div>
         </div>
       </details>
+
+      <!-- Collapsed-by-Default Quick Add Drinks or Treats Accordion (Zero-Friction Calorie Accountability) -->
+      <details id="quick-add-treats-accordion" class="bg-slate-900 border border-slate-700 rounded-2xl p-3.5 text-xs">
+        <summary class="cursor-pointer font-extrabold text-slate-100 hover:text-amber-200 flex items-center justify-between gap-2 select-none">
+          <span>+ Quick Add Drinks or Treats ▼</span>
+          <span id="quick-add-summary-badge" class="text-[11px] font-bold text-slate-300">0 kcal added</span>
+        </summary>
+        <div class="mt-3 pt-3 border-t border-slate-800 space-y-2.5">
+          <p class="text-[11px] text-slate-300 leading-relaxed">Tap once to add calories straight to your Daily Calories bar. No macros needed.</p>
+          <div id="quick-add-treats-grid" class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+            <button type="button" data-quick-add-id="light_drink" data-quick-add-label="Light Drink" data-quick-add-kcal="150" style="min-height: 48px; border-color: #334155;" class="quick-add-treat-btn px-2.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 border text-slate-100 text-xs font-bold text-left transition flex items-center justify-center text-center leading-snug">
+              🍺 Light Drink (150 kcal)
+            </button>
+            <button type="button" data-quick-add-id="heavy_drink" data-quick-add-label="Heavy Drink / Cocktail" data-quick-add-kcal="250" style="min-height: 48px; border-color: #334155;" class="quick-add-treat-btn px-2.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 border text-slate-100 text-xs font-bold text-left transition flex items-center justify-center text-center leading-snug">
+              🍻 Heavy Drink / Cocktail (250 kcal)
+            </button>
+            <button type="button" data-quick-add-id="small_treat" data-quick-add-label="Small Treat" data-quick-add-kcal="300" style="min-height: 48px; border-color: #334155;" class="quick-add-treat-btn px-2.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 border text-slate-100 text-xs font-bold text-left transition flex items-center justify-center text-center leading-snug">
+              🍪 Small Treat (300 kcal)
+            </button>
+            <button type="button" data-quick-add-id="big_meal_out" data-quick-add-label="Big Meal Out" data-quick-add-kcal="1000" style="min-height: 48px; border-color: #334155;" class="quick-add-treat-btn px-2.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 border text-slate-100 text-xs font-bold text-left transition flex items-center justify-center text-center leading-snug">
+              🍔 Big Meal Out (1,000 kcal)
+            </button>
+          </div>
+          <div id="quick-add-logged-list" class="space-y-1.5"></div>
+        </div>
+      </details>
     </section>
 
     <!-- ==================== VIEW 5: WEEKLY MUSCLE FUEL SHOPPING LIST ==================== -->
@@ -1144,10 +1170,14 @@
       gymScheduleByDay: {},
       wakeUpTimeByDay: {},
       historyExerciseSwaps: {},
+      dietPreference: 'vegan',
+      flexMealOverridesByDay: {},
+      quickAddCaloriesByDay: {},
       programWizardConfig: {
         daysPerWeek: 5,
-        primaryFocus: 'Balanced',
-        difficulty: 'Medium'
+        primaryFocus: 'balanced',
+        difficulty: 'medium',
+        diet: 'vegan'
       },
       checkedEssentials: {},
       checkedGroceries: {},
@@ -1455,7 +1485,16 @@
         merged.historyExerciseSwaps = {};
       }
       if (!merged.programWizardConfig || typeof merged.programWizardConfig !== 'object') {
-        merged.programWizardConfig = { daysPerWeek: 5, primaryFocus: 'Balanced', difficulty: 'Medium' };
+        merged.programWizardConfig = { daysPerWeek: 5, primaryFocus: 'balanced', difficulty: 'medium', diet: 'vegan' };
+      }
+      if (!merged.dietPreference || typeof merged.dietPreference !== 'string') {
+        merged.dietPreference = (merged.programWizardConfig && merged.programWizardConfig.diet) || 'vegan';
+      }
+      if (!merged.flexMealOverridesByDay || typeof merged.flexMealOverridesByDay !== 'object') {
+        merged.flexMealOverridesByDay = {};
+      }
+      if (!merged.quickAddCaloriesByDay || typeof merged.quickAddCaloriesByDay !== 'object') {
+        merged.quickAddCaloriesByDay = {};
       }
       if (!merged.manualScheduleOverrideByWeek || typeof merged.manualScheduleOverrideByWeek !== 'object') {
         merged.manualScheduleOverrideByWeek = {};
@@ -16847,14 +16886,26 @@
         });
       }
 
-      // Calculate Checked Macros for Selected Day (Supports Per-Ingredient & Per-Meal Green Checkmarks & Historical Snapshots!)
+      // Calculate Checked Macros for Selected Day (Supports Flex Meal Overrides, Quick Add Calories & Historical Snapshots!)
+      if (!state.flexMealOverridesByDay || typeof state.flexMealOverridesByDay !== 'object') state.flexMealOverridesByDay = {};
+      if (!state.quickAddCaloriesByDay || typeof state.quickAddCaloriesByDay !== 'object') state.quickAddCaloriesByDay = {};
+      const activeFuelDayKey = `w${week}_d${dayIdx}`;
+      const dayFlexOverrides = state.flexMealOverridesByDay[activeFuelDayKey] || {};
+      const dayQuickAdds = Array.isArray(state.quickAddCaloriesByDay[activeFuelDayKey]) ? state.quickAddCaloriesByDay[activeFuelDayKey] : [];
+      const quickAddKcalToday = dayQuickAdds.reduce((acc, q) => acc + Math.max(0, Math.round(Number(q && q.calories) || 0)), 0);
+
       let eatenProtein = 0;
       let eatenKcal = 0;
       let todayMealsDone = 0;
       VEGAN_MEALS.forEach(slot => {
         const mealObj = (dayPlan && dayPlan.meals && dayPlan.meals[slot.slotId]) || slot.options[0];
         const items = (mealObj && mealObj.items) || [];
-        if (isMealCheckedForDay(week, dayIdx, slot.slotId)) {
+        const flexOverride = dayFlexOverrides[slot.slotId];
+        if (flexOverride && flexOverride.isFlexMeal) {
+          eatenProtein += Number(flexOverride.protein) || 0;
+          eatenKcal += Number(flexOverride.calories) || 0;
+          todayMealsDone++;
+        } else if (isMealCheckedForDay(week, dayIdx, slot.slotId)) {
           eatenProtein += mealObj.protein;
           eatenKcal += mealObj.kcal;
           todayMealsDone++;
@@ -16867,6 +16918,7 @@
           });
         }
       });
+      eatenKcal += quickAddKcalToday;
       eatenProtein = +eatenProtein.toFixed(1);
       eatenKcal = Math.round(eatenKcal);
       const effectiveTargetProtein = state.mealMode === 'recomp_6pack' ? dayPlan.dailyProtein : target.protein;
@@ -17088,10 +17140,20 @@
           return String(rawName || '').replace(/\([^)]*\)/g, '').trim().split(/\s+/).slice(0, 2).join(' ');
         };
 
+        const escFlexHtml = (val) => String(val == null ? '' : val)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+
         mealsEl.innerHTML = orderedMealSlots.map((slot, mealIdx) => {
           const mealObj = (dayPlan && dayPlan.meals && dayPlan.meals[slot.slotId]) || slot.options[0];
-          const isDone = isMealCheckedForDay(week, dayIdx, slot.slotId);
-          const isPartial = isMealPartiallyCheckedForDay(week, dayIdx, slot.slotId);
+          const flexOverride = dayFlexOverrides[slot.slotId] || null;
+          const isFlexMeal = Boolean(flexOverride && flexOverride.isFlexMeal);
+          const isScanningFlex = window.__scanningFlexMealSlot === `${activeFuelDayKey}_${slot.slotId}`;
+          const isFlexEligibleSlot = slot.slotId === 'lunch' || slot.slotId === 'dinner';
+          const isDone = isFlexMeal || isMealCheckedForDay(week, dayIdx, slot.slotId);
+          const isPartial = !isFlexMeal && isMealPartiallyCheckedForDay(week, dayIdx, slot.slotId);
           const slotSched = (adaptiveSched && adaptiveSched.slots && adaptiveSched.slots[slot.slotId]) || {
             headerText: slot.time,
             roleBadge: `FUEL ${mealIdx + 1}`,
@@ -17110,8 +17172,12 @@
             ? (slot.slotId === 'post_oats' ? 'EAT 1ST • ' : 'DRINK 2ND • ')
             : '';
           const topFuelBadgeText = `${swappedOrderTag}${fuelNumberLabel} • ${shortTimeStr}`;
-          const eli12Title = eli12MealTitles[slot.slotId] || mealObj.title || slot.title;
-          const eli12StatsText = `${mealObj.kcal} Calories | ${mealObj.protein}g Protein`;
+          const eli12Title = isFlexMeal
+            ? escFlexHtml(flexOverride.foodName)
+            : (eli12MealTitles[slot.slotId] || mealObj.title || slot.title);
+          const eli12StatsText = isFlexMeal
+            ? `${flexOverride.calories} Calories | ${flexOverride.protein}g Protein`
+            : `${mealObj.kcal} Calories | ${mealObj.protein}g Protein`;
 
           // Build crisp ELI12 short ingredient sentences (max 8-10 words per line)
           const eli12ShortItems = itemsList.map(it => {
@@ -17169,37 +17235,84 @@
                 ? `<span class="px-2 py-0.5 rounded-md ${batchInvForCards.riceBowlsRemaining <= 1 ? 'bg-amber-500/20 border border-amber-400/50 text-amber-200' : 'bg-emerald-950/70 border border-emerald-500/40 text-emerald-300'} font-bold whitespace-nowrap">${batchInvForCards.riceBowlsRemaining}/4 Bowls</span>`
                 : '');
 
+          const cardThemeStyle = isFlexMeal
+            ? 'background-color: rgba(67, 56, 202, 0.22); border-color: #6366f1;'
+            : (isDone ? 'border-color: #059669;' : 'border-color: #334155;');
+
           return `
-            <article data-fuel-card-slot="${slot.slotId}" class="bg-slate-900 border ${isDone ? 'border-emerald-500/50 bg-slate-900/80' : (slotSched.isPostWorkoutTarget ? 'border-emerald-400/70 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/40' : 'border-slate-800')} rounded-2xl p-3.5 space-y-2.5 transition-all">
-              <!-- Visible ELI12 Layer: Time Badge + Title + Stats + Row 2 Total Weight/Cost Pills + Short Ingredient Lines -->
+            <article data-fuel-card-slot="${slot.slotId}" data-flex-logged="${isFlexMeal ? 'true' : 'false'}" style="${cardThemeStyle}" class="bg-slate-900 border rounded-2xl p-3.5 space-y-2.5 transition-all">
+              <!-- Visible ELI12 Layer: Time Badge + Title + Stats + Symmetrical Action Grid -->
               <div class="space-y-2">
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">${topFuelBadgeText}</span>
-                  <button type="button" data-meal-slot="${slot.slotId}" class="meal-check-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition ${
-                    isDone
-                      ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/30'
-                      : (isPartial
-                          ? 'bg-amber-400/20 text-amber-200 border border-amber-400/40'
-                          : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/40')
-                  }">
-                    ${isDone ? '✓ Done' : (isPartial ? `✓ Finish (${doneIngCount}/${itemsList.length})` : '✓ Log Meal')}
-                  </button>
+                  <span class="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md ${
+                    isFlexMeal
+                      ? 'bg-indigo-500/25 text-indigo-100 border border-indigo-400/50'
+                      : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                  } whitespace-nowrap">${isFlexMeal ? `FLEX MEAL • ${fuelNumberLabel}` : topFuelBadgeText}</span>
+                  ${!isFlexEligibleSlot ? `
+                    <button type="button" data-meal-slot="${slot.slotId}" class="meal-check-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition ${
+                      isDone
+                        ? 'neuro-btn-done shadow-sm'
+                        : (isPartial
+                            ? 'bg-amber-600/20 text-amber-100 border border-amber-500/60'
+                            : 'bg-emerald-700/25 hover:bg-emerald-700/35 text-emerald-200 border border-emerald-600/50')
+                    }">
+                      ${isDone ? '✓ Done' : (isPartial ? `✓ Finish (${doneIngCount}/${itemsList.length})` : '✓ Log Fuel')}
+                    </button>
+                  ` : (isFlexMeal ? `
+                    <button type="button" data-restore-flex-slot="${slot.slotId}" class="restore-flex-meal-btn shrink-0 px-2.5 py-1 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-indigo-400/40 text-indigo-200 text-[11px] font-bold whitespace-nowrap transition">
+                      ↺ Restore Plan
+                    </button>
+                  ` : '')}
                 </div>
+
+                ${isFlexEligibleSlot ? `
+                  <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+                    <button type="button" data-meal-slot="${slot.slotId}" style="min-height: 40px;" class="meal-check-btn w-full px-2.5 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center ${
+                      isFlexMeal
+                        ? 'bg-indigo-600/35 text-indigo-100 border border-indigo-400/60'
+                        : (isDone
+                            ? 'neuro-btn-done shadow-sm'
+                            : (isPartial
+                                ? 'bg-amber-600/20 text-amber-100 border border-amber-500/60'
+                                : 'bg-emerald-700/25 hover:bg-emerald-700/35 text-emerald-200 border border-emerald-600/50'))
+                    }">
+                      ${isFlexMeal ? '✓ Flex Logged' : (isDone ? '✓ Done' : (isPartial ? `✓ Finish (${doneIngCount}/${itemsList.length})` : '✓ Log Fuel'))}
+                    </button>
+                    <label style="min-height: 40px;" class="flex-food-snap-btn w-full px-2.5 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center cursor-pointer bg-indigo-950/80 hover:bg-indigo-900/80 text-indigo-100 border border-indigo-400/50">
+                      <span>📷 Snap Food or Menu</span>
+                      <input type="file" accept="image/*" capture="environment" data-flex-snap-slot="${slot.slotId}" class="flex-food-snap-input hidden" />
+                    </label>
+                  </div>
+                ` : ''}
+
+                ${isScanningFlex ? `
+                  <div data-flex-loading-slot="${slot.slotId}" class="rounded-xl border border-amber-500/60 bg-amber-600/15 px-3 py-2 text-xs font-extrabold text-amber-100 flex items-center justify-between gap-2">
+                    <span>AI guessing calories...</span>
+                    <span class="text-[11px] text-amber-200">Gemini Vision</span>
+                  </div>
+                ` : ''}
 
                 <div>
                   <h4 class="font-bold text-slate-50" style="font-size: 16px; line-height: 1.3;">${eli12Title}</h4>
-                  <p data-fuel-kcal-badge="${slot.slotId}" class="text-xs font-extrabold text-amber-300 mt-0.5">${eli12StatsText}</p>
+                  <p data-fuel-kcal-badge="${slot.slotId}" class="text-xs font-extrabold ${isFlexMeal ? 'text-indigo-200' : 'text-amber-300'} mt-0.5">${eli12StatsText}</p>
                 </div>
 
-                <!-- Row 2 Aligned Pill Row: Total Meal Weight / Volume (Left) | Cost (Right) -->
-                <div class="flex flex-wrap items-center justify-between gap-1.5">
-                  <span data-fuel-weight-pill="${slot.slotId}" class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-md bg-slate-950 border border-emerald-500/35 text-emerald-300 whitespace-nowrap">${mealTotalWeightPillText}</span>
-                  <span data-fuel-cost-pill="${slot.slotId}" class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-md bg-amber-950/70 border border-amber-500/40 text-amber-300 whitespace-nowrap">${mealCostPillText}</span>
-                </div>
+                ${isFlexMeal ? `
+                  <div class="rounded-xl border border-indigo-400/40 bg-slate-950/60 px-3 py-2 text-xs text-indigo-100 leading-relaxed">
+                    Flex Meal replaced your standard plan for this slot. Snap another photo anytime or tap Restore Plan.
+                  </div>
+                ` : `
+                  <!-- Row 2 Aligned Pill Row: Total Meal Weight / Volume (Left) | Cost (Right) -->
+                  <div class="flex flex-wrap items-center justify-between gap-1.5">
+                    <span data-fuel-weight-pill="${slot.slotId}" class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-md bg-slate-950 border border-emerald-500/35 text-emerald-300 whitespace-nowrap">${mealTotalWeightPillText}</span>
+                    <span data-fuel-cost-pill="${slot.slotId}" class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-md bg-amber-950/70 border border-amber-500/40 text-amber-300 whitespace-nowrap">${mealCostPillText}</span>
+                  </div>
 
-                <div class="text-xs text-slate-200 space-y-0.5 leading-relaxed">
-                  ${eli12IngredientLines.map(line => `<p>${line}</p>`).join('')}
-                </div>
+                  <div class="text-xs text-slate-200 space-y-0.5 leading-relaxed">
+                    ${eli12IngredientLines.map(line => `<p>${line}</p>`).join('')}
+                  </div>
+                `}
               </div>
 
               <!-- Collapsible Math & Full Kitchen Tools Toggle (Default CLOSED) -->
@@ -17371,7 +17484,194 @@
             renderWorkoutView();
           });
         });
+
+        // UPGRADE 16: Flex Meal AI Food Vision Scanner (Fuel 3 & Fuel 4)
+        const FLEX_FOOD_VISION_PROMPT = 'System: Estimate the calories and protein in this food image or menu item. Return ONLY a valid JSON object matching this schema: { "foodName": "Burger and Fries", "calories": 850, "protein": 35 }. Do not output markdown, only valid JSON.';
+
+        mealsEl.querySelectorAll('.flex-food-snap-input').forEach(inp => {
+          inp.addEventListener('change', (e) => {
+            const file = e.target && e.target.files && e.target.files[0];
+            const slotId = inp.getAttribute('data-flex-snap-slot');
+            if (!file || !slotId) return;
+            window.__scanningFlexMealSlot = `${activeFuelDayKey}_${slotId}`;
+            renderVeganView();
+
+            const runVisionWithDataUrl = async (dataUrl) => {
+              const mimeMatch = String(dataUrl || '').match(/^data:(image\/[a-zA-Z0-9+-]+);base64,/);
+              const mimeType = mimeMatch ? mimeMatch[1] : (file.type || 'image/jpeg');
+              let estimate = null;
+              try {
+                const resp = await fetch('/api/gemini', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    model: 'gemini-3.8-flash',
+                    enableGoogleSearch: false,
+                    responseMimeType: 'application/json',
+                    imageBase64: dataUrl,
+                    mimeType,
+                    prompt: FLEX_FOOD_VISION_PROMPT
+                  })
+                });
+                if (resp && resp.ok) {
+                  const data = await resp.json();
+                  const rawTxt = String((data && (data.text || data.reply)) || '').replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+                  const m = rawTxt.match(/\{[\s\S]*\}/);
+                  if (m) {
+                    const parsed = JSON.parse(m[0]);
+                    const fName = String(parsed.foodName || parsed.name || '').trim();
+                    const cal = Number(parsed.calories ?? parsed.kcal);
+                    const prot = Number(parsed.protein ?? parsed.proteinGrams);
+                    if (fName && Number.isFinite(cal) && cal > 0) {
+                      estimate = {
+                        foodName: fName.slice(0, 80),
+                        calories: Math.max(50, Math.min(3500, Math.round(cal))),
+                        protein: Math.max(0, Math.min(250, Math.round(Number.isFinite(prot) ? prot : 0))),
+                        isFlexMeal: true,
+                        estimatedAt: new Date().toISOString()
+                      };
+                    }
+                  }
+                }
+              } catch (err) {
+                // Graceful fallback estimate if API is offline or unconfigured
+              }
+
+              if (!estimate) {
+                estimate = {
+                  foodName: slotId === 'lunch' ? 'Restaurant Lunch (Flex Estimate)' : 'Restaurant Dinner (Flex Estimate)',
+                  calories: 720,
+                  protein: 34,
+                  isFlexMeal: true,
+                  estimatedAt: new Date().toISOString()
+                };
+              }
+
+              if (!state.flexMealOverridesByDay || typeof state.flexMealOverridesByDay !== 'object') {
+                state.flexMealOverridesByDay = {};
+              }
+              if (!state.flexMealOverridesByDay[activeFuelDayKey]) {
+                state.flexMealOverridesByDay[activeFuelDayKey] = {};
+              }
+              state.flexMealOverridesByDay[activeFuelDayKey][slotId] = estimate;
+              setMealCheckedForDay(week, dayIdx, slotId, true);
+              window.__scanningFlexMealSlot = null;
+              saveState();
+              renderVeganView();
+              renderWorkoutView();
+              showToast(`Flex Meal logged: ${estimate.foodName} (${estimate.calories} kcal • ${estimate.protein}g P)`);
+            };
+
+            if (typeof compressExercisePhotoFileToDataUrl === 'function') {
+              compressExercisePhotoFileToDataUrl(file, (compressedUrl) => {
+                if (compressedUrl) {
+                  runVisionWithDataUrl(compressedUrl);
+                } else {
+                  const reader = new FileReader();
+                  reader.onload = () => runVisionWithDataUrl(String(reader.result || ''));
+                  reader.readAsDataURL(file);
+                }
+              });
+            } else {
+              const reader = new FileReader();
+              reader.onload = () => runVisionWithDataUrl(String(reader.result || ''));
+              reader.readAsDataURL(file);
+            }
+          });
+        });
+
+        mealsEl.querySelectorAll('.restore-flex-meal-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const slotId = btn.getAttribute('data-restore-flex-slot');
+            if (!slotId) return;
+            if (state.flexMealOverridesByDay && state.flexMealOverridesByDay[activeFuelDayKey]) {
+              delete state.flexMealOverridesByDay[activeFuelDayKey][slotId];
+            }
+            setMealCheckedForDay(week, dayIdx, slotId, false);
+            saveState();
+            renderVeganView();
+            renderWorkoutView();
+            showToast('Restored standard plan meal.');
+          });
+        });
       }
+
+      // UPGRADE 16: Wire Quick Add Drinks or Treats Accordion (Zero-Friction Calorie Accountability)
+      const quickAddSummaryBadge = document.getElementById('quick-add-summary-badge');
+      const quickAddLoggedListEl = document.getElementById('quick-add-logged-list');
+      if (quickAddSummaryBadge) {
+        quickAddSummaryBadge.textContent = quickAddKcalToday > 0
+          ? `+${quickAddKcalToday.toLocaleString()} kcal added`
+          : '0 kcal added';
+        quickAddSummaryBadge.className = quickAddKcalToday > 0
+          ? 'text-[11px] font-extrabold text-amber-200'
+          : 'text-[11px] font-bold text-slate-300';
+      }
+      if (quickAddLoggedListEl) {
+        if (dayQuickAdds.length === 0) {
+          quickAddLoggedListEl.innerHTML = '';
+        } else {
+          const escQa = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          quickAddLoggedListEl.innerHTML = `
+            <div class="pt-2 border-t border-slate-800 space-y-1.5">
+              <div class="flex items-center justify-between text-[11px]">
+                <span class="font-bold text-slate-200">Added Today (${dayQuickAdds.length} • +${quickAddKcalToday.toLocaleString()} kcal)</span>
+                <button type="button" id="quick-add-clear-day-btn" class="text-[11px] font-bold text-slate-300 hover:text-rose-300 underline">Clear All</button>
+              </div>
+              <div class="space-y-1">
+                ${dayQuickAdds.map((entry, idx) => `
+                  <div class="flex items-center justify-between gap-2 rounded-lg bg-slate-950 border border-slate-800 px-2.5 py-1.5 text-[11px]">
+                    <span class="font-semibold text-slate-100">${escQa(entry.label)} • <strong class="text-amber-200">+${entry.calories} kcal</strong></span>
+                    <button type="button" data-remove-quick-add-idx="${idx}" class="quick-add-remove-btn text-[10px] font-bold text-slate-300 hover:text-rose-300 px-1.5 py-0.5 rounded bg-slate-800">Undo</button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+          quickAddLoggedListEl.querySelectorAll('.quick-add-remove-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const rIdx = parseInt(btn.getAttribute('data-remove-quick-add-idx') || '-1', 10);
+              if (rIdx >= 0 && Array.isArray(state.quickAddCaloriesByDay[activeFuelDayKey])) {
+                state.quickAddCaloriesByDay[activeFuelDayKey].splice(rIdx, 1);
+                saveState();
+                renderVeganView();
+              }
+            });
+          });
+          const clearQaBtn = document.getElementById('quick-add-clear-day-btn');
+          if (clearQaBtn) {
+            clearQaBtn.addEventListener('click', () => {
+              state.quickAddCaloriesByDay[activeFuelDayKey] = [];
+              saveState();
+              renderVeganView();
+              showToast('Cleared quick-added drinks and treats for today.');
+            });
+          }
+        }
+      }
+      document.querySelectorAll('.quick-add-treat-btn').forEach(btn => {
+        btn.onclick = () => {
+          const optId = btn.getAttribute('data-quick-add-id') || 'small_treat';
+          const optLabel = btn.getAttribute('data-quick-add-label') || 'Quick Treat';
+          const optKcal = parseInt(btn.getAttribute('data-quick-add-kcal') || '150', 10) || 150;
+          if (!state.quickAddCaloriesByDay || typeof state.quickAddCaloriesByDay !== 'object') {
+            state.quickAddCaloriesByDay = {};
+          }
+          if (!Array.isArray(state.quickAddCaloriesByDay[activeFuelDayKey])) {
+            state.quickAddCaloriesByDay[activeFuelDayKey] = [];
+          }
+          state.quickAddCaloriesByDay[activeFuelDayKey].push({
+            id: `qa_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+            optionId: optId,
+            label: optLabel,
+            calories: optKcal
+          });
+          saveState();
+          renderVeganView();
+          showToast(`Added +${optKcal.toLocaleString()} kcal (${optLabel}) to Daily Calories`);
+        };
+      });
 
       // Render Grocery List
       const grocEl = document.getElementById('grocery-list-container');
@@ -18086,7 +18386,16 @@
 
       const modelName = 'gemini-3.8-flash';
       state.geminiModel = modelName;
-      const systemInstruction = `You are a Senior Strength & Conditioning Coach, Heuristic UX Advisor, and Low-Budget High-Protein Nutritionist powered by Google ${modelName}. Keep answers concise (3-4 bullet points max), practical, and tailored to this athlete's live state: ${JSON.stringify(ctx)}. Never mention PDF, exercise alternatives, or espresso.`;
+      const activeDietTagMap = {
+        any: 'ANY FOOD (CHEAPEST)',
+        vegan: 'VEGAN',
+        vegetarian: 'VEGETARIAN',
+        keto: 'KETO (LOW CARB)',
+        gluten_free: 'GLUTEN-FREE'
+      };
+      const activeDietKey = String((state.programWizardConfig && state.programWizardConfig.diet) || state.dietPreference || 'vegan').toLowerCase();
+      const activeDietDirective = `Diet: [${activeDietTagMap[activeDietKey] || 'VEGAN'}]. Ensure all recommended meal structures align with this diet.`;
+      const systemInstruction = `You are a Senior Strength & Conditioning Coach, Heuristic UX Advisor, and Low-Budget High-Protein Nutritionist powered by Google ${modelName}. ${activeDietDirective} Keep answers concise (3-4 bullet points max), practical, and tailored to this athlete's live state: ${JSON.stringify(ctx)}. Never mention PDF, exercise alternatives, or espresso.`;
 
       let replyText = '';
       // 1. Try Vercel Serverless API (/api/gemini) first
@@ -19224,6 +19533,20 @@
         hard: 'Difficulty: HARD. Prioritize complex, heavy free-weight barbell compound lifts (e.g., Barbell Squat, Deadlift). 4 to 5 sets per exercise.'
       };
 
+      const PROGRAM_WIZARD_DIET_TAGS = {
+        any: 'ANY FOOD (CHEAPEST)',
+        vegan: 'VEGAN',
+        vegetarian: 'VEGETARIAN',
+        keto: 'KETO (LOW CARB)',
+        gluten_free: 'GLUTEN-FREE'
+      };
+
+      function getWizardDietPromptLine(dietKey) {
+        const clean = String(dietKey || 'vegan').toLowerCase();
+        const tag = PROGRAM_WIZARD_DIET_TAGS[clean] || 'VEGAN';
+        return `Diet: [${tag}]. Ensure all recommended meal structures align with this diet.`;
+      }
+
       const programWizardModal = document.getElementById('program-setup-wizard-modal');
       const openProgramWizardBtn = document.getElementById('open-program-wizard-btn');
       const closeProgramWizardBtn = document.getElementById('close-program-wizard-modal-btn');
@@ -19231,8 +19554,9 @@
       const programWizardStatusEl = document.getElementById('program-wizard-status');
 
       let wizardSelectedDays = (state.programWizardConfig && state.programWizardConfig.daysPerWeek) || 5;
-      let wizardSelectedFocus = (state.programWizardConfig && state.programWizardConfig.primaryFocus) || 'balanced';
-      let wizardSelectedDifficulty = (state.programWizardConfig && state.programWizardConfig.difficulty) || 'medium';
+      let wizardSelectedFocus = String((state.programWizardConfig && state.programWizardConfig.primaryFocus) || 'balanced').toLowerCase();
+      let wizardSelectedDifficulty = String((state.programWizardConfig && state.programWizardConfig.difficulty) || 'medium').toLowerCase();
+      let wizardSelectedDiet = String((state.programWizardConfig && state.programWizardConfig.diet) || state.dietPreference || 'vegan').toLowerCase();
 
       function syncProgramWizardPillsUI() {
         document.querySelectorAll('.wizard-days-pill').forEach(btn => {
@@ -19255,13 +19579,24 @@
           const v = btn.getAttribute('data-wizard-diff') || 'medium';
           const active = v === wizardSelectedDifficulty;
           btn.className = active
-            ? 'wizard-diff-pill py-2 px-2 rounded-xl border text-xs font-extrabold transition bg-amber-600/25 text-amber-100 border-amber-500 shadow-sm'
-            : 'wizard-diff-pill py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-700';
+            ? 'wizard-diff-pill py-2 px-3 rounded-xl border text-xs font-extrabold transition bg-amber-600/25 text-amber-100 border-amber-500 shadow-sm text-left'
+            : 'wizard-diff-pill py-2 px-3 rounded-xl border text-xs font-bold transition bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-700 text-left';
+          btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        document.querySelectorAll('.wizard-diet-pill').forEach(btn => {
+          const v = btn.getAttribute('data-wizard-diet') || 'vegan';
+          const active = v === wizardSelectedDiet;
+          const isFullWidth = v === 'any';
+          btn.className = active
+            ? `wizard-diet-pill ${isFullWidth ? 'col-span-2 ' : ''}py-2 px-2.5 rounded-xl border text-xs font-extrabold transition bg-amber-600/25 text-amber-100 border-amber-500 shadow-sm`
+            : `wizard-diet-pill ${isFullWidth ? 'col-span-2 ' : ''}py-2 px-2.5 rounded-xl border text-xs font-bold transition bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-700`;
           btn.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
         const previewNoteEl = document.getElementById('program-wizard-rule-preview');
         if (previewNoteEl) {
-          previewNoteEl.textContent = PROGRAM_WIZARD_DIFFICULTY_DIRECTIVES[wizardSelectedDifficulty] || PROGRAM_WIZARD_DIFFICULTY_DIRECTIVES.medium;
+          const diffLine = PROGRAM_WIZARD_DIFFICULTY_DIRECTIVES[wizardSelectedDifficulty] || PROGRAM_WIZARD_DIFFICULTY_DIRECTIVES.medium;
+          const dietLine = getWizardDietPromptLine(wizardSelectedDiet);
+          previewNoteEl.textContent = `${diffLine} ${dietLine}`;
         }
       }
 
@@ -19280,6 +19615,12 @@
       document.querySelectorAll('.wizard-diff-pill').forEach(btn => {
         btn.addEventListener('click', () => {
           wizardSelectedDifficulty = btn.getAttribute('data-wizard-diff') || 'medium';
+          syncProgramWizardPillsUI();
+        });
+      });
+      document.querySelectorAll('.wizard-diet-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          wizardSelectedDiet = btn.getAttribute('data-wizard-diet') || 'vegan';
           syncProgramWizardPillsUI();
         });
       });
@@ -19433,21 +19774,24 @@
         const daysPerWeek = Math.max(3, Math.min(6, Number(wizardSelectedDays) || 5));
         const primaryFocus = wizardSelectedFocus || 'balanced';
         const difficulty = wizardSelectedDifficulty === 'easy' || wizardSelectedDifficulty === 'hard' ? wizardSelectedDifficulty : 'medium';
+        const diet = wizardSelectedDiet || 'vegan';
         const directive = PROGRAM_WIZARD_DIFFICULTY_DIRECTIVES[difficulty];
+        const dietDirective = getWizardDietPromptLine(diet);
 
         if (runProgramWizardSubmitBtn) {
           runProgramWizardSubmitBtn.disabled = true;
           runProgramWizardSubmitBtn.textContent = 'Building Your Custom Plan...';
         }
         if (programWizardStatusEl) {
-          programWizardStatusEl.textContent = `Generating ${daysPerWeek}-day ${primaryFocus} plan (${difficulty.toUpperCase()})...`;
+          programWizardStatusEl.textContent = `Generating ${daysPerWeek}-day ${primaryFocus} plan (${difficulty.toUpperCase()} • ${PROGRAM_WIZARD_DIET_TAGS[diet] || 'VEGAN'})...`;
           programWizardStatusEl.classList.remove('hidden');
         }
 
         const promptText = [
           'You are an expert strength coach building a 7-day gym program in strict JSON.',
-          `User Choices: Days Per Week = ${daysPerWeek}, Primary Focus = ${primaryFocus.toUpperCase()}, Difficulty = ${difficulty.toUpperCase()}.`,
+          `User Choices: Days Per Week = ${daysPerWeek}, Primary Focus = ${primaryFocus.toUpperCase()}, Difficulty = ${difficulty.toUpperCase()}, Diet = ${PROGRAM_WIZARD_DIET_TAGS[diet] || 'VEGAN'}.`,
           directive,
+          dietDirective,
           'Return ONLY a valid JSON object with shape: { "days": [ ...7 items... ] }.',
           `Include exactly ${daysPerWeek} lift days (isRest: false) and ${7 - daysPerWeek} rest days (isRest: true).`,
           'Each lift day must have: { "isRest": false, "daySub": "Short Label", "title": "Day Title", "subtitle": "Short ELI12 Subtitle", "warmupType": "upper" | "lower", "exercises": [ 5 unique exercises ] }.',
@@ -19557,10 +19901,12 @@
           state.weeklyRestDays[wKey] = [restIndices[0], restIndices[1]];
         }
         state.manualScheduleOverrideByWeek[wKey] = true;
+        state.dietPreference = diet;
         state.programWizardConfig = {
           daysPerWeek,
           primaryFocus,
           difficulty,
+          diet,
           updatedAt: new Date().toISOString()
         };
         state.selectedDayIndex = 0;
@@ -19574,7 +19920,7 @@
           runProgramWizardSubmitBtn.textContent = 'Build My Custom Weekly Program';
         }
         if (programWizardModal) programWizardModal.classList.add('hidden');
-        showToast(`Week ${week} updated: ${daysPerWeek} Days • ${primaryFocus.toUpperCase()} • ${difficulty.toUpperCase()}`);
+        showToast(`Week ${week} updated: ${daysPerWeek} Days • ${primaryFocus.toUpperCase()} • ${difficulty.toUpperCase()} • ${PROGRAM_WIZARD_DIET_TAGS[diet] || 'VEGAN'}`);
       }
 
       if (runProgramWizardSubmitBtn) {
@@ -22126,7 +22472,7 @@
           <h3 id="sync-settings-modal-title" class="text-base font-extrabold text-white">🔄 Sync &amp; Settings</h3>
           <p class="text-xs text-slate-300 mt-0.5">Run the Program Setup Wizard, re-sync your week, or adjust display options.</p>
         </div>
-        <button type="button" id="close-sync-settings-modal-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
+        <button type="button" id="close-sync-settings-modal-btn" aria-label="Close" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
       </div>
 
       <!-- Prominent Program Setup Wizard CTA -->
@@ -22182,9 +22528,9 @@
       <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
         <div>
           <h3 id="program-wizard-title" class="text-base font-extrabold text-slate-100">⚙️ Program Setup Wizard</h3>
-          <p class="text-xs text-slate-300 mt-0.5">Answer 3 quick questions to build your custom week.</p>
+          <p class="text-xs text-slate-300 mt-0.5">Answer 4 quick questions to build your custom week.</p>
         </div>
-        <button type="button" id="close-program-wizard-modal-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
+        <button type="button" id="close-program-wizard-modal-btn" aria-label="Close" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
       </div>
 
       <!-- Question 1: Days Per Week -->
@@ -22219,10 +22565,22 @@
         </div>
       </div>
 
+      <!-- Question 4: What do you eat? (Symmetrical 5-Pill Grid) -->
+      <div class="space-y-1.5">
+        <div class="text-xs font-extrabold text-slate-100">4. What do you eat?</div>
+        <div class="grid grid-cols-2 gap-1.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;">
+          <button type="button" data-wizard-diet="any" class="wizard-diet-pill col-span-2 py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Any Food (Cheapest)</button>
+          <button type="button" data-wizard-diet="vegan" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500">Vegan</button>
+          <button type="button" data-wizard-diet="vegetarian" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Vegetarian</button>
+          <button type="button" data-wizard-diet="keto" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Keto (Low Carb)</button>
+          <button type="button" data-wizard-diet="gluten_free" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Gluten-Free</button>
+        </div>
+      </div>
+
       <!-- Strict AI Rule Preview -->
       <div class="rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-[11px] text-slate-300 leading-relaxed">
-        <div class="font-extrabold text-slate-100 mb-0.5">Active Difficulty Rule:</div>
-        <div id="program-wizard-rule-preview">Difficulty: MEDIUM. Use a standard mix of free-weights and machines. 3 to 4 sets per exercise.</div>
+        <div class="font-extrabold text-slate-100 mb-0.5">Active AI Rules:</div>
+        <div id="program-wizard-rule-preview">Difficulty: MEDIUM. Use a standard mix of free-weights and machines. 3 to 4 sets per exercise. Diet: [VEGAN]. Ensure all recommended meal structures align with this diet.</div>
       </div>
 
       <div id="program-wizard-status" class="hidden rounded-xl border border-amber-500/50 bg-amber-600/15 px-3 py-2 text-xs font-bold text-amber-100"></div>
