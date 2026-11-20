@@ -7339,7 +7339,7 @@ export const ELI12_ACCESSIBILITY_SPECS = {
     pullupsHeading: 'Overhand Pull-Up Program',
     pullupsActionButtons: ['Form Video', 'Program Rules'],
     day1Eli12Desc: 'Do 5 sets of pull-ups. Stop each set when you cannot do another clean rep.',
-    riceTimerAccordionTitle: 'Jasmine Rice Timer (10m Cook + 10m Rest) ▼',
+    riceTimerAccordionTitle: 'Jasmine Rice Timer (12m Cook + 10m Cooldown) ▼',
     pyramidHelperAccordionTitle: 'Pull-Up Pyramid Rest Helper (10s × Reps) ▼'
   }
 } as const;
@@ -8289,4 +8289,166 @@ export function injectAiBonusWorkoutIntoDay6(
 ): Record<string, Array<number | CustomAiBonusDayObject>> {
   return injectAiBonusWorkoutIntoActiveDay(customDayScheduleByWeek, week, 5, bonusDayObj);
 }
+
+// ============================================================================
+// UPGRADE 13: GYM HEADER BUTTON HIERARCHY, SEQUENTIAL 2-PHASE JASMINE RICE
+// TIMER, & EXPOSED TOTAL WEIGHT/VOLUME PILLS ON SHOP LIST & MUSCLE FUEL CARDS
+// ============================================================================
+
+export const SCHEDULE_SYNC_OUTLINE_BUTTON_SPEC = {
+  placement: 'active-day-header-row-far-right',
+  removedFromWeekRow: true,
+  inlineStyle:
+    'border: 1px solid rgba(14, 165, 233, 0.4); color: #38bdf8; background: transparent; padding: 4px 10px; border-radius: 6px; font-size: 13px;',
+  closedLabel: 'Schedule, Sync & Stats ▼',
+  openLabel: 'Schedule, Sync & Stats ▲'
+} as const;
+
+export interface SequentialRiceTimerState {
+  cookMinutes: 10 | 12;
+  activePhase: 1 | 2 | null;
+  cookPhaseCompleted: boolean;
+  cooldownPhaseCompleted: boolean;
+}
+
+export interface SequentialRiceButtonPresentation {
+  cookButtonLabel: string;
+  cookButtonState: 'idle' | 'running' | 'done';
+  cooldownButtonLabel: string;
+  cooldownButtonState: 'idle' | 'ready-next' | 'running' | 'done';
+  highlightCooldownNext: boolean;
+}
+
+export function advanceSequentialRicePhase(
+  prev: SequentialRiceTimerState,
+  event: 'start_cook' | 'complete_cook' | 'start_cooldown' | 'complete_cooldown'
+): SequentialRiceTimerState {
+  if (event === 'start_cook') {
+    return {
+      ...prev,
+      activePhase: 1,
+      cookPhaseCompleted: false,
+      cooldownPhaseCompleted: false
+    };
+  }
+  if (event === 'complete_cook') {
+    return {
+      ...prev,
+      activePhase: null,
+      cookPhaseCompleted: true,
+      cooldownPhaseCompleted: false
+    };
+  }
+  if (event === 'start_cooldown') {
+    return {
+      ...prev,
+      activePhase: 2,
+      cooldownPhaseCompleted: false
+    };
+  }
+  return {
+    ...prev,
+    activePhase: null,
+    cooldownPhaseCompleted: true
+  };
+}
+
+export function getSequentialRiceButtonPresentation(
+  st: SequentialRiceTimerState
+): SequentialRiceButtonPresentation {
+  const mins = st.cookMinutes === 10 ? 10 : 12;
+  const cookRunning = st.activePhase === 1;
+  const cooldownRunning = st.activePhase === 2;
+  const cookDone = Boolean(st.cookPhaseCompleted && !cookRunning);
+  const cooldownDone = Boolean(st.cooldownPhaseCompleted && !cooldownRunning);
+  const highlightCooldownNext = Boolean(st.cookPhaseCompleted && !st.cooldownPhaseCompleted && !cooldownRunning);
+
+  return {
+    cookButtonLabel: cookRunning
+      ? `Cooking (${mins}m) — Running`
+      : cookDone
+        ? `✓ ${mins}m Cook Done`
+        : `Start ${mins}m Cook Timer`,
+    cookButtonState: cookRunning ? 'running' : cookDone ? 'done' : 'idle',
+    cooldownButtonLabel: cooldownRunning
+      ? 'Cooling Down (10m) — Running'
+      : cooldownDone
+        ? '✓ 10m Cooldown Done'
+        : 'Start 10m Cooldown Timer',
+    cooldownButtonState: cooldownRunning
+      ? 'running'
+      : cooldownDone
+        ? 'done'
+        : highlightCooldownNext
+          ? 'ready-next'
+          : 'idle',
+    highlightCooldownNext
+  };
+}
+
+export const EXPOSED_SHOP_WEIGHT_PILLS: Record<
+  'weekly' | 'quarterly',
+  Record<string, string>
+> = {
+  weekly: {
+    shop_silk: '1,260 ml/wk (1 Carton • 1.89L)',
+    shop_tofu: '1,225g/wk (3.5 Blocks)',
+    shop_broccoli: '525g/wk',
+    shop_banana: '210g/wk (2 Bananas)',
+    shop_oats: '315g/wk',
+    shop_rice: '385g dry/wk',
+    shop_pb: '168g/wk',
+    shop_chia: '42g/wk',
+    shop_nooch: '84g/wk',
+    shop_iodine: '10.5g/wk (1 kg Box)',
+    shop_sesame: '35g/wk (1 Bottle)',
+    shop_isolate: '630g/wk',
+    shop_creatine: '35g/wk',
+    shop_vitd3: '7 Caps/wk'
+  },
+  quarterly: {
+    shop_silk: '16.2L / 90d (9 Cartons)',
+    shop_tofu: '15,750g / 90d (45 Blocks)',
+    shop_broccoli: '6,750g / 90d (6.75 kg)',
+    shop_banana: '2,700g / 90d (23 Bananas)',
+    shop_oats: '4,050g / 90d (4.5 Bags)',
+    shop_rice: '4,950g dry / 90d (5 kg)',
+    shop_pb: '2,160g / 90d (2.2 Jars)',
+    shop_chia: '540g / 90d (1 Bag)',
+    shop_nooch: '1,080g / 90d (1.1 kg)',
+    shop_iodine: '135g / 90d (1 kg Box)',
+    shop_sesame: '450g / 90d (1 Bottle)',
+    shop_isolate: '9,072g / 90d (4 Tubs)',
+    shop_creatine: '1,000g / 200d (1 kg Tub)',
+    shop_vitd3: '180 Caps / 6m (1 Bottle)'
+  }
+};
+
+export function getExposedShopWeightPill(
+  itemId: string,
+  period: 'weekly' | 'quarterly'
+): string {
+  return EXPOSED_SHOP_WEIGHT_PILLS[period][itemId] || '';
+}
+
+export function getFuelCardRow2Pills(
+  slotId: 'pre_shake' | 'post_oats' | 'lunch' | 'dinner',
+  scaleBadgeText: string,
+  isCostcoCreatine = false
+): { weightPill: string; costPill: string } {
+  const weightPill = scaleBadgeText
+    ? scaleBadgeText.replace(/^Scale:\s*/i, 'Total: ')
+    : 'Total: 390g';
+  const costMap: Record<'pre_shake' | 'post_oats' | 'lunch' | 'dinner', string> = {
+    pre_shake: isCostcoCreatine ? '$1.34 / meal' : '$1.35 / meal',
+    post_oats: '$1.37 / meal',
+    lunch: '$2.01 / meal',
+    dinner: '$1.62 / meal'
+  };
+  return {
+    weightPill,
+    costPill: costMap[slotId]
+  };
+}
+
 

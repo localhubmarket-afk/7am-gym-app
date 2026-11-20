@@ -285,7 +285,7 @@
 
       <!-- Streamlined 7-Day Cycle & Progressive Week Selector Card -->
       <div id="gym-week-day-selector-card" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
-        <!-- Row 1: Week 1 | Week 2 | Week 3 pills on the left + single Schedule, Sync & Stats button on the right -->
+        <!-- Row 1: Pure Week Selector Tabs (Week 1 | Week 2 | Week 3) -->
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex flex-wrap items-center gap-1.5 min-w-0">
             <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400 whitespace-nowrap">Week:</span>
@@ -298,92 +298,11 @@
               <option value="2">Week 2</option>
             </select>
           </div>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              id="toggle-gym-admin-drawer-btn"
-              aria-expanded="false"
-              class="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-sky-400/50 text-sky-200 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center"
-            >
-              Schedule, Sync &amp; Stats ▼
-            </button>
-            <span class="hidden sm:inline text-[10px] bg-slate-950 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-full font-semibold" id="crunch-weekly-badge">Done / Partial</span>
-          </div>
+          <span class="hidden sm:inline text-[10px] bg-slate-950 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-full font-semibold" id="crunch-weekly-badge">Done / Partial</span>
         </div>
 
         <!-- Row 2: The 7 aligned day buttons (DAY 1 to DAY 7) -->
         <div class="grid grid-cols-7 gap-1.5" id="day-selector-grid">
-          <!-- Populated dynamically by JS -->
-        </div>
-
-        <!-- Collapsible Schedule, Sync & Stats Drawer (Progressive Disclosure — Symmetrical 2-Column Grid) -->
-        <div id="gym-admin-tools-drawer" class="hidden pt-2.5 border-t border-slate-800/80 space-y-2.5">
-          <!-- Moved Active-Day Actions (Swap to Rest, Change Workout, Abs On, Gear Checklist, Water & Next Fuel) -->
-          <div id="gym-admin-today-actions-slot" class="space-y-2 pb-2 border-b border-slate-800/80"></div>
-
-          <div class="grid grid-cols-2 gap-2" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
-            <button type="button" id="gym-open-rest-scheduler-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Customize weekly Rest Days without losing logged sets">
-              Change Rest Days (6 &amp; 7)
-            </button>
-            <button type="button" id="gym-open-dashboard-pill-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-300 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Open Progress &amp; Analytics Dashboard">
-              Stats / Dashboard
-            </button>
-            <button type="button" id="quick-next-week-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-300 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Finish current week, unlock next week &amp; carry forward weights as placeholders">
-              Finish Week -&gt; Next
-            </button>
-            <button type="button" id="open-workout-display-settings-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
-              Workout &amp; Display Settings
-            </button>
-          </div>
-
-          <!-- Cross-Week Continuity Banner & 1-Tap Controls (Visible in Week 2+) -->
-          <div id="cross-week-continuity-banner" class="hidden"></div>
-
-          <!-- Collapsible Secondary Settings Drawer (Progressive Disclosure — Keeps Screen Clean!) -->
-          <details id="gym-secondary-settings-drawer" class="pt-1 border-t border-slate-800/70 text-xs">
-            <summary class="cursor-pointer text-xs font-semibold text-slate-300 hover:text-white flex items-center justify-between py-1">
-              <span>Workout &amp; Display Settings</span>
-              <span class="text-[11px] text-emerald-400">Tap to open ▼</span>
-            </summary>
-            <div class="pt-2.5 space-y-2.5">
-              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                <select id="weight-unit-select" aria-label="Weight unit" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-xl px-2.5 py-2 font-semibold focus:outline-none focus:border-emerald-500">
-                  <option value="lbs">Default: lbs</option>
-                  <option value="kg">Default: kg</option>
-                </select>
-                <button type="button" id="settings-open-rest-scheduler-btn" class="px-2.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
-                  Change Rest Days (6 &amp; 7)
-                </button>
-                <button type="button" id="finish-week-btn" class="px-2.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
-                  Finish Week -&gt; Next
-                </button>
-              </div>
-              <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
-                <span class="text-slate-300 font-medium">Daily Abs Schedule:</span>
-                <div class="grid grid-cols-2 gap-1.5" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
-                  <button type="button" id="crunch-preset-lift" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 whitespace-nowrap transition">
-                    Every Day (Days 1–7)
-                  </button>
-                  <button type="button" id="crunch-preset-spaced" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 whitespace-nowrap transition">
-                    5 Lift Days (Days 1–5)
-                  </button>
-                </div>
-              </div>
-              <select id="exercise-jump-select" aria-label="Jump to exercise or machine" class="hidden"></select>
-              <div class="grid grid-cols-2 gap-2 w-full pt-1 border-t border-slate-800/70" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
-                <button type="button" id="toggle-focus-collapse-btn" style="min-height: 40px;" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition inline-flex items-center justify-center text-center" title="Automatically collapse finished exercises to save screen space">
-                  Default Hidden: ON
-                </button>
-                <button type="button" id="toggle-all-images-btn" style="min-height: 40px;" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition inline-flex items-center justify-center text-center">
-                  Show/Hide All Diagrams
-                </button>
-              </div>
-            </div>
-          </details>
-        </div>
-
-        <!-- Inline Rest Day Scheduler Drawer (Gym Tab) -->
-        <div id="rest-day-scheduler-drawer" class="hidden bg-slate-950/95 border border-amber-400/50 rounded-xl p-3 space-y-2.5">
           <!-- Populated dynamically by JS -->
         </div>
       </div>
@@ -393,9 +312,80 @@
         <!-- Populated dynamically by JS -->
       </div>
 
-      <!-- Day Summary Banner -->
+      <!-- Day Summary Banner (Active Day Header Row holds Schedule, Sync & Stats Outline Button on Far Right) -->
       <div id="day-banner" class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-4 space-y-3">
         <!-- Populated by JS -->
+      </div>
+
+      <!-- Collapsible Schedule, Sync & Stats Drawer (Expands directly below Active Day Header) -->
+      <div id="gym-admin-tools-drawer" class="hidden bg-slate-900/95 border border-sky-500/35 rounded-2xl p-3 space-y-2.5 shadow-lg shadow-slate-950/50">
+        <!-- Moved Active-Day Actions (Swap to Rest, Change Workout, Abs On, Gear Checklist, Water & Next Fuel) -->
+        <div id="gym-admin-today-actions-slot" class="space-y-2 pb-2 border-b border-slate-800/80"></div>
+
+        <div class="grid grid-cols-2 gap-2" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+          <button type="button" id="gym-open-rest-scheduler-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Customize weekly Rest Days without losing logged sets">
+            Change Rest Days (6 &amp; 7)
+          </button>
+          <button type="button" id="gym-open-dashboard-pill-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-300 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Open Progress &amp; Analytics Dashboard">
+            Stats / Dashboard
+          </button>
+          <button type="button" id="quick-next-week-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-300 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Finish current week, unlock next week &amp; carry forward weights as placeholders">
+            Finish Week -&gt; Next
+          </button>
+          <button type="button" id="open-workout-display-settings-btn" style="min-height: 40px;" class="px-2 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
+            Workout &amp; Display Settings
+          </button>
+        </div>
+
+        <!-- Cross-Week Continuity Banner & 1-Tap Controls (Visible in Week 2+) -->
+        <div id="cross-week-continuity-banner" class="hidden"></div>
+
+        <!-- Collapsible Secondary Settings Drawer (Progressive Disclosure — Keeps Screen Clean!) -->
+        <details id="gym-secondary-settings-drawer" class="pt-1 border-t border-slate-800/70 text-xs">
+          <summary class="cursor-pointer text-xs font-semibold text-slate-300 hover:text-white flex items-center justify-between py-1">
+            <span>Workout &amp; Display Settings</span>
+            <span class="text-[11px] text-emerald-400">Tap to open ▼</span>
+          </summary>
+          <div class="pt-2.5 space-y-2.5">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <select id="weight-unit-select" aria-label="Weight unit" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-xl px-2.5 py-2 font-semibold focus:outline-none focus:border-emerald-500">
+                <option value="lbs">Default: lbs</option>
+                <option value="kg">Default: kg</option>
+              </select>
+              <button type="button" id="settings-open-rest-scheduler-btn" class="px-2.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
+                Change Rest Days (6 &amp; 7)
+              </button>
+              <button type="button" id="finish-week-btn" class="px-2.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
+                Finish Week -&gt; Next
+              </button>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span class="text-slate-300 font-medium">Daily Abs Schedule:</span>
+              <div class="grid grid-cols-2 gap-1.5" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                <button type="button" id="crunch-preset-lift" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 whitespace-nowrap transition">
+                  Every Day (Days 1–7)
+                </button>
+                <button type="button" id="crunch-preset-spaced" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 whitespace-nowrap transition">
+                  5 Lift Days (Days 1–5)
+                </button>
+              </div>
+            </div>
+            <select id="exercise-jump-select" aria-label="Jump to exercise or machine" class="hidden"></select>
+            <div class="grid grid-cols-2 gap-2 w-full pt-1 border-t border-slate-800/70" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+              <button type="button" id="toggle-focus-collapse-btn" style="min-height: 40px;" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition inline-flex items-center justify-center text-center" title="Automatically collapse finished exercises to save screen space">
+                Default Hidden: ON
+              </button>
+              <button type="button" id="toggle-all-images-btn" style="min-height: 40px;" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition inline-flex items-center justify-center text-center">
+                Show/Hide All Diagrams
+              </button>
+            </div>
+          </div>
+        </details>
+
+        <!-- Inline Rest Day Scheduler Drawer (Gym Tab) -->
+        <div id="rest-day-scheduler-drawer" class="hidden bg-slate-950/95 border border-amber-400/50 rounded-xl p-3 space-y-2.5">
+          <!-- Populated dynamically by JS -->
+        </div>
       </div>
 
       <!-- Collapsible Warm-Up Routine Card (Sits Directly Above Exercise #1/9, Hidden on Rest Days) -->
@@ -672,10 +662,11 @@
           </div>
         </details>
 
-        <!-- Collapsible Rice Cooking Timer (Clean Title Case on 1 Line — No "DOWN)" Orphan Wrap) -->
+        <!-- Collapsible Rice Cooking Timer (Clean Sequential 2-Phase Label on 1 Line) -->
         <details id="timer-rice-cooking-details" class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-left">
-          <summary class="cursor-pointer flex items-center justify-between text-sm font-bold text-sky-400 hover:text-sky-300 select-none">
-            <span class="whitespace-nowrap">Jasmine Rice Timer (10m Cook + 10m Rest) ▼</span>
+          <summary class="cursor-pointer flex items-center justify-between gap-1.5 text-xs sm:text-sm font-bold text-sky-400 hover:text-sky-300 select-none">
+            <span class="truncate">Jasmine Rice Timer (12m Cook + 10m Cooldown)</span>
+            <span class="shrink-0">▼</span>
           </summary>
           <div id="timer-rice-stage-container" class="pt-2.5 space-y-2">
             <!-- Populated dynamically by renderRiceCookingTimerWidgets() -->
@@ -1209,6 +1200,8 @@
       prepNotes: {},
       openPrepNoteCards: {},
       activeRiceTimerStage: null,
+      riceCookPhaseCompleted: false,
+      riceCooldownPhaseCompleted: false,
       riceTimerAlertBanner: '',
       exerciseUnitPrefs: {},
       barbellConfig: {
@@ -4523,17 +4516,25 @@
       return [
         {
           stage: 1,
-          buttonLabel: '1. Cook Rice (10–12m • Mix Every 1.5m)',
+          phaseKey: 'cook',
+          phaseBadge: 'PHASE 1 • STOVETOP',
+          buttonLabel: `Start ${cookMins}m Cook Timer`,
+          runningLabel: `Cooking (${cookMins}m) — Running`,
+          doneLabel: `✓ ${cookMins}m Cook Done`,
           seconds: cookMins * 60,
-          actionText: `Cook ${cookMins}m (220g rice + 330 ml water) • Stir every 1.5m (90s) to prevent sticking.`,
-          completionBanner: 'COOKING DONE! Remove from heat & tap Stage 2: 10-Min Cool-Down'
+          actionText: `Simmer ${cookMins}m (220g rice + 330 ml water) • Stir every 1.5m.`,
+          completionBanner: `COOKING DONE! Take pot off heat and tap Start 10m Cooldown Timer.`
         },
         {
           stage: 2,
-          buttonLabel: '2. Cool-Down & Steam Rest (10m)',
+          phaseKey: 'cooldown',
+          phaseBadge: 'PHASE 2 • OFF HEAT',
+          buttonLabel: 'Start 10m Cooldown Timer',
+          runningLabel: 'Cooling Down (10m) — Running',
+          doneLabel: '✓ 10m Cooldown Done',
           seconds: 600,
-          actionText: 'Rest & cool down off the burner for 10m before portioning.',
-          completionBanner: 'RICE READY! Portion into 4 x 150g bowls (600g total)'
+          actionText: 'Take pot off heat, keep lid closed, and rest 10m before portioning.',
+          completionBanner: 'RICE READY! Portion into 4 x 150g bowls (600g total).'
         }
       ];
     }
@@ -4543,10 +4544,10 @@
       const cookMins = getRiceCookMinutes();
       if (activeStage === 1 || activeStage === 2) {
         const abs = Math.max(0, Math.floor(Number(state.timerSeconds) || 0));
-        return `${formatTime(abs)} ${activeStage === 1 ? 'Cook' : 'Cool-Down'}`;
+        return `${formatTime(abs)} ${activeStage === 1 ? 'Cook' : 'Cooldown'}`;
       }
-      if (Number(state.lastSelectedRiceStage) === 2) {
-        return '10:00 Cool-Down';
+      if (Number(state.lastSelectedRiceStage) === 2 || state.riceCookPhaseCompleted) {
+        return '10:00 Cooldown';
       }
       return `${cookMins}:00 Cook`;
     }
@@ -4613,9 +4614,16 @@
       state.lastRiceMixAlertElapsedSec = null;
       state.riceTimerAlertBanner = '';
       state.riceBannerDismissed = false;
-      startTimer(stageSpec.seconds, `Rice Stage ${stageSpec.stage}/2: ${stageSpec.buttonLabel}`);
+      if (stageSpec.stage === 1) {
+        state.riceCookPhaseCompleted = false;
+        state.riceCooldownPhaseCompleted = false;
+      } else if (stageSpec.stage === 2) {
+        state.riceCooldownPhaseCompleted = false;
+      }
+      startTimer(stageSpec.seconds, `Rice Phase ${stageSpec.stage}/2: ${stageSpec.buttonLabel}`);
       syncStickyHeaderVisibility();
       renderRiceCookingTimerWidgets();
+      saveState();
       showToast(`Started ${stageSpec.buttonLabel} (${formatTime(stageSpec.seconds)})`);
     }
 
@@ -4628,7 +4636,11 @@
       state.activeRiceTimerStage = null;
       state.lastSelectedRiceStage = stageSpec.stage === 1 ? 2 : 1;
       state.timerContextLabel = stageSpec.completionBanner;
-      if (Number(stageNum) === 2) {
+      if (Number(stageNum) === 1) {
+        state.riceCookPhaseCompleted = true;
+        state.riceCooldownPhaseCompleted = false;
+      } else if (Number(stageNum) === 2) {
+        state.riceCooldownPhaseCompleted = true;
         syncRiceBatchInventoryAndSteps(true);
       }
       const lbl = document.getElementById('timer-context-label');
@@ -4666,24 +4678,71 @@
       const riceStepsDone = ['rice_step_1', 'rice_step_2', 'rice_step_3', 'rice_step_4'].every(sid => Boolean(state.recipePrepLogs && state.recipePrepLogs[sid]));
       const bowlsLeft = (state.batchInventory && typeof state.batchInventory.riceBowlsRemaining === 'number') ? state.batchInventory.riceBowlsRemaining : 4;
       const isRecipeOpen = Boolean(state.openRiceTimerRecipe);
+      const isCookDone = Boolean(state.riceCookPhaseCompleted);
+      const isCooldownDone = Boolean(state.riceCooldownPhaseCompleted);
+      const highlightCooldownNext = Boolean(isCookDone && !isCooldownDone && activeStage !== 2);
 
       const buttonsHtml = stages.map(st => {
+        const isCookBtn = st.stage === 1;
         const isCurrentRunning = (activeStage === st.stage && timerRunning);
-        const isCurrentSelected = (activeStage === st.stage);
+        const isPhaseDone = isCookBtn ? (isCookDone && activeStage !== 1) : (isCooldownDone && activeStage !== 2);
+        const isHighlightedNext = (!isCookBtn && highlightCooldownNext);
+
+        let btnClasses = '';
+        let badgeClasses = '';
+        let badgeLabel = st.phaseBadge;
+        let primaryLabel = st.buttonLabel;
+        let subTextClass = 'text-slate-300';
+        let phaseStateAttr = 'idle';
+
+        if (isCurrentRunning) {
+          phaseStateAttr = 'running';
+          primaryLabel = st.runningLabel;
+          btnClasses = isCookBtn
+            ? 'bg-cyan-400 text-slate-950 border-cyan-200 shadow-lg shadow-cyan-500/30'
+            : 'bg-indigo-400 text-slate-950 border-indigo-200 shadow-lg shadow-indigo-500/30';
+          badgeClasses = 'bg-slate-950/20 text-slate-950 border-slate-950/30';
+          badgeLabel = 'RUNNING NOW';
+          subTextClass = 'text-slate-900 font-semibold';
+        } else if (isPhaseDone) {
+          phaseStateAttr = 'done';
+          primaryLabel = st.doneLabel;
+          btnClasses = 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border-emerald-400/60';
+          badgeClasses = 'bg-emerald-500/25 text-emerald-200 border-emerald-400/50';
+          badgeLabel = 'COMPLETE';
+          subTextClass = 'text-emerald-200/80';
+        } else if (isHighlightedNext) {
+          phaseStateAttr = 'ready-next';
+          primaryLabel = st.buttonLabel;
+          btnClasses = 'bg-indigo-500 hover:bg-indigo-400 text-white border-indigo-200 ring-2 ring-indigo-300/80 shadow-lg shadow-indigo-500/40';
+          badgeClasses = 'bg-white/20 text-white border-white/40';
+          badgeLabel = 'NEXT STEP • TAKE OFF HEAT';
+          subTextClass = 'text-indigo-50 font-semibold';
+        } else if (isCookBtn) {
+          // Phase 1 default: Cyan styling
+          phaseStateAttr = 'idle';
+          btnClasses = 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border-cyan-400/60';
+          badgeClasses = 'bg-cyan-950/70 text-cyan-300 border-cyan-400/40';
+          subTextClass = 'text-cyan-100/80';
+        } else {
+          // Phase 2 default: Muted Indigo styling
+          phaseStateAttr = 'idle';
+          btnClasses = 'bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-200/90 border-indigo-400/35';
+          badgeClasses = 'bg-indigo-950/70 text-indigo-300 border-indigo-400/35';
+          subTextClass = 'text-indigo-200/75';
+        }
+
         return `
           <button
             type="button"
             data-rice-stage="${st.stage}"
-            class="rice-stage-btn px-3 py-2 rounded-xl text-xs font-extrabold border transition flex flex-col items-start gap-0.5 text-left ${
-              isCurrentRunning
-                ? 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-md shadow-emerald-500/20'
-                : (isCurrentSelected
-                    ? 'bg-sky-500/25 text-sky-200 border-sky-400/60'
-                    : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-700')
-            }"
+            data-rice-phase="${st.phaseKey}"
+            data-rice-phase-state="${phaseStateAttr}"
+            class="rice-stage-btn px-3 py-2.5 rounded-xl text-xs font-extrabold border transition flex flex-col items-start gap-1 text-left ${btnClasses}"
           >
-            <span>${st.buttonLabel}</span>
-            <span class="text-[10px] font-normal ${isCurrentRunning ? 'text-slate-900 font-semibold' : 'text-slate-400'}">${st.actionText}</span>
+            <span class="text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded border ${badgeClasses}">${badgeLabel}</span>
+            <span class="text-[13px] font-extrabold leading-tight">${primaryLabel}</span>
+            <span class="text-[10px] font-normal leading-snug ${subTextClass}">${st.actionText}</span>
           </button>
         `;
       }).join('');
@@ -4694,8 +4753,8 @@
             <div>
               <div class="flex flex-wrap items-center gap-1.5">
                 <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/40">2-Phase Jasmine Rice Timer</span>
-                ${activeStage === 2
-                  ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-sky-500/15 text-sky-200 border border-sky-400/35">Stage 2/2 • Cool-Down Rest</span>`
+                ${activeStage === 2 || highlightCooldownNext
+                  ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-200 border border-indigo-400/45">Phase 2/2 • Cooldown Off Heat</span>`
                   : `<span class="live-rice-next-mix-readout text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Next Mix/Stir in: ${nextMixStr}</span>`
                 }
                 <span class="text-[10px] font-extrabold px-2 py-0.5 rounded ${riceStepsDone ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40' : 'bg-slate-900 text-sky-300 border border-slate-700'}">${bowlsLeft}/4 Bowls in Fridge</span>
@@ -11588,18 +11647,25 @@
           if (isMealCheckedForDay(week, dayIdx, slotKey)) loggedMealsCountToday++;
         });
 
-        // Sync Collapsible Schedule, Sync & Stats Drawer state
-        const gymAdminDrawerBtn = document.getElementById('toggle-gym-admin-drawer-btn');
+        // Sync Collapsible Schedule, Sync & Stats Drawer visibility
         const gymAdminDrawerEl = document.getElementById('gym-admin-tools-drawer');
         const isGymAdminOpen = Boolean(state.openGymAdminDrawer);
-        if (gymAdminDrawerBtn) {
-          gymAdminDrawerBtn.setAttribute('aria-expanded', isGymAdminOpen ? 'true' : 'false');
-          gymAdminDrawerBtn.textContent = isGymAdminOpen ? 'Schedule, Sync & Stats ▲' : 'Schedule, Sync & Stats ▼';
-        }
         if (gymAdminDrawerEl) {
           if (isGymAdminOpen) gymAdminDrawerEl.classList.remove('hidden');
           else gymAdminDrawerEl.classList.add('hidden');
         }
+
+        const scheduleSyncOutlineBtnHtml = `
+          <button
+            type="button"
+            id="toggle-gym-admin-drawer-btn"
+            aria-expanded="${isGymAdminOpen ? 'true' : 'false'}"
+            style="border: 1px solid rgba(14, 165, 233, 0.4); color: #38bdf8; background: transparent; padding: 4px 10px; border-radius: 6px; font-size: 13px;"
+            class="font-bold whitespace-nowrap transition hover:bg-sky-500/10 inline-flex items-center justify-center shrink-0"
+          >
+            ${isGymAdminOpen ? 'Schedule, Sync &amp; Stats ▲' : 'Schedule, Sync &amp; Stats ▼'}
+          </button>
+        `;
 
         const waterLitersLogged = (loggedWaterTodayMl / 1000).toFixed(loggedWaterTodayMl % 1000 === 0 ? 0 : 1);
         const waterLitersTarget = (targetWaterTodayMl / 1000).toFixed(targetWaterTodayMl % 1000 === 0 ? 0 : 1);
@@ -11667,17 +11733,16 @@
         if (dayAssignment.isRestDay) {
           banner.innerHTML = `
             <div id="rest-day-recovery-card" class="space-y-2.5">
-              <!-- Row 1: Eyebrow + Rest Day Badge -->
+              <!-- Row 1: Active Day Header Row — WK X • DAY X (Left) | Schedule, Sync & Stats Outline Button (Far Right) -->
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <div class="flex flex-wrap items-center gap-1.5">
-                  <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">WK ${week} • ${dayObj.dayShort.toUpperCase()}</span>
-                </div>
-                <span class="text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full whitespace-nowrap">REST DAY</span>
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400 whitespace-nowrap">WK ${week} • ${dayObj.dayShort.toUpperCase()}</span>
+                ${scheduleSyncOutlineBtnHtml}
               </div>
 
-              <!-- Row 2: Title -->
+              <!-- Row 2: Title + Rest Day Badge -->
               <div class="flex items-center justify-between gap-2">
                 <h2 class="text-base sm:text-lg font-extrabold text-white leading-snug">Rest &amp; Muscle Recovery Day</h2>
+                <span class="text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">REST DAY</span>
               </div>
 
               <!-- Row 3: Train Today Instead Action Button -->
@@ -11726,17 +11791,20 @@
         } else {
           banner.innerHTML = `
             <div class="space-y-2">
-              <!-- Row 1: WK 1 • DAY 2 • 7:00 AM (Left) | LIFT DAY badge (Right) -->
+              <!-- Row 1: Active Day Header Row — WK X • DAY X • 7:00 AM (Left) | Schedule, Sync & Stats Outline Button (Far Right) -->
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400 whitespace-nowrap">WK ${week} • ${dayObj.dayShort.toUpperCase()} • ${gymStart12}</span>
+                ${scheduleSyncOutlineBtnHtml}
+              </div>
+
+              <!-- Row 2: Workout Title + Lift/Bonus Badge -->
               <div class="flex items-center justify-between gap-2">
-                <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">WK ${week} • ${dayObj.dayShort.toUpperCase()} • ${gymStart12}</span>
-                <div class="flex items-center gap-1.5 shrink-0">
+                <h2 class="text-base sm:text-lg font-extrabold text-white leading-snug">${dayObj.title}</h2>
+                <div class="flex items-center gap-1 shrink-0">
                   ${dayObj.isAiBonusWorkout ? `<span class="text-[10px] font-extrabold bg-purple-500/20 text-purple-200 border border-purple-400/45 px-2 py-0.5 rounded-full whitespace-nowrap">AI BONUS</span>` : (dayAssignment.isBonusRepeat ? `<span class="text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-full whitespace-nowrap">BONUS</span>` : '')}
                   <span class="text-[10px] font-extrabold bg-sky-500/15 text-sky-300 border border-sky-400/30 px-2 py-0.5 rounded-full whitespace-nowrap">LIFT DAY</span>
                 </div>
               </div>
-
-              <!-- Row 2: Workout Title -->
-              <h2 class="text-base sm:text-lg font-extrabold text-white leading-snug">${dayObj.title}</h2>
 
               <!-- Row 3: Progress: X/Y sets bar -->
               <div class="space-y-1.5 pt-0.5">
@@ -11761,6 +11829,15 @@
               </div>
             </div>
           `;
+        }
+
+        const activeBannerAdminToggleBtn = document.getElementById('toggle-gym-admin-drawer-btn');
+        if (activeBannerAdminToggleBtn) {
+          activeBannerAdminToggleBtn.addEventListener('click', () => {
+            state.openGymAdminDrawer = !state.openGymAdminDrawer;
+            saveState();
+            renderWorkoutView();
+          });
         }
 
         bindDayWorkoutPickerEvents(banner, week, dayIdx);
@@ -16743,6 +16820,17 @@
           }).join('');
 
           const scaleWeightBadgeText = getFuelCardScaleBadgeText(slot.slotId, state.fuelWeightUnit);
+          const mealTotalWeightPillText = scaleWeightBadgeText
+            ? scaleWeightBadgeText.replace(/^Scale:\s*/i, 'Total: ')
+            : 'Total: 390g';
+          const isCostcoCreatineMeal = Boolean(state && state.subscriptionChecklist && state.subscriptionChecklist.cancelCreatineAutoship);
+          const mealCostBySlot = {
+            pre_shake: isCostcoCreatineMeal ? '$1.34 / meal' : '$1.35 / meal',
+            post_oats: '$1.37 / meal',
+            lunch: '$2.01 / meal',
+            dinner: '$1.62 / meal'
+          };
+          const mealCostPillText = mealCostBySlot[slot.slotId] || '$1.50 / meal';
           const fuelPrepNotePillHtml = getPrepNoteReminderPillHtml(slot.slotId);
 
           const noteObj = (state.prepNotes && state.prepNotes[slot.slotId]) || { text: '', photoDataUrl: '', updatedAt: '' };
@@ -16761,7 +16849,7 @@
 
           return `
             <article data-fuel-card-slot="${slot.slotId}" class="bg-slate-900 border ${isDone ? 'border-emerald-500/50 bg-slate-900/80' : (slotSched.isPostWorkoutTarget ? 'border-emerald-400/70 ring-1 ring-emerald-500/25 shadow-lg shadow-emerald-950/40' : 'border-slate-800')} rounded-2xl p-3.5 space-y-2.5 transition-all">
-              <!-- Visible ELI12 Layer: Time Badge + Title + Stats + Short Ingredient Lines + Log Meal -->
+              <!-- Visible ELI12 Layer: Time Badge + Title + Stats + Row 2 Total Weight/Cost Pills + Short Ingredient Lines -->
               <div class="space-y-2">
                 <div class="flex items-center justify-between gap-2">
                   <span class="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">${topFuelBadgeText}</span>
@@ -16779,6 +16867,12 @@
                 <div>
                   <h4 class="font-bold text-slate-50" style="font-size: 16px; line-height: 1.3;">${eli12Title}</h4>
                   <p data-fuel-kcal-badge="${slot.slotId}" class="text-xs font-extrabold text-amber-300 mt-0.5">${eli12StatsText}</p>
+                </div>
+
+                <!-- Row 2 Aligned Pill Row: Total Meal Weight / Volume (Left) | Cost (Right) -->
+                <div class="flex flex-wrap items-center justify-between gap-1.5">
+                  <span data-fuel-weight-pill="${slot.slotId}" class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-md bg-slate-950 border border-emerald-500/35 text-emerald-300 whitespace-nowrap">${mealTotalWeightPillText}</span>
+                  <span data-fuel-cost-pill="${slot.slotId}" class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-md bg-amber-950/70 border border-amber-500/40 text-amber-300 whitespace-nowrap">${mealCostPillText}</span>
                 </div>
 
                 <div class="text-xs text-slate-200 space-y-0.5 leading-relaxed">
@@ -17094,36 +17188,36 @@
 
       const eli12ShortShopQty = (it, currentPeriod) => {
         const cleanMapWeekly = {
-          shop_silk: '1 Carton (1.89L)',
-          shop_tofu: '3.5 Blocks / wk',
-          shop_broccoli: '525g / wk',
-          shop_banana: '2 Bananas / wk',
-          shop_oats: '315g / wk',
-          shop_rice: '385g dry / wk',
-          shop_pb: '168g / wk',
-          shop_chia: '42g / wk',
-          shop_nooch: '84g / wk',
-          shop_iodine: '1 Box (Lasts 1 yr)',
-          shop_sesame: '1 Bottle',
-          shop_isolate: '630g / wk',
-          shop_creatine: '35g / wk',
-          shop_vitd3: '7 Caps / wk'
+          shop_silk: '1,260 ml/wk (1 Carton • 1.89L)',
+          shop_tofu: '1,225g/wk (3.5 Blocks)',
+          shop_broccoli: '525g/wk',
+          shop_banana: '210g/wk (2 Bananas)',
+          shop_oats: '315g/wk',
+          shop_rice: '385g dry/wk',
+          shop_pb: '168g/wk',
+          shop_chia: '42g/wk',
+          shop_nooch: '84g/wk',
+          shop_iodine: '10.5g/wk (1 kg Box)',
+          shop_sesame: '35g/wk (1 Bottle)',
+          shop_isolate: '630g/wk',
+          shop_creatine: '35g/wk',
+          shop_vitd3: '7 Caps/wk'
         };
         const cleanMapQuarterly = {
-          shop_silk: '9 Cartons (3 Mos)',
-          shop_tofu: '45 Blocks (3 Mos)',
-          shop_broccoli: '6.75 kg (3 Mos)',
-          shop_banana: '23 Bananas (3 Mos)',
-          shop_oats: '5 Bags (3 Mos)',
-          shop_rice: '5 kg Bag (3 Mos)',
-          shop_pb: '2 Jars (3 Mos)',
-          shop_chia: '1 Bag (3 Mos)',
-          shop_nooch: '1 kg (3 Mos)',
-          shop_iodine: '1 Box (Lasts 1 yr)',
-          shop_sesame: '1 Bottle (3 Mos)',
-          shop_isolate: '4 Tubs (3 Months)',
-          shop_creatine: '1 kg Tub (6 Months)',
-          shop_vitd3: '1 Bottle (6 Months)'
+          shop_silk: '16.2L / 90d (9 Cartons)',
+          shop_tofu: '15,750g / 90d (45 Blocks)',
+          shop_broccoli: '6,750g / 90d (6.75 kg)',
+          shop_banana: '2,700g / 90d (23 Bananas)',
+          shop_oats: '4,050g / 90d (4.5 Bags)',
+          shop_rice: '4,950g dry / 90d (5 kg)',
+          shop_pb: '2,160g / 90d (2.2 Jars)',
+          shop_chia: '540g / 90d (1 Bag)',
+          shop_nooch: '1,080g / 90d (1.1 kg)',
+          shop_iodine: '135g / 90d (1 kg Box)',
+          shop_sesame: '450g / 90d (1 Bottle)',
+          shop_isolate: '9,072g / 90d (4 Tubs)',
+          shop_creatine: '1,000g / 200d (1 kg Tub)',
+          shop_vitd3: '180 Caps / 6m (1 Bottle)'
         };
         const map = currentPeriod === 'quarterly' ? cleanMapQuarterly : cleanMapWeekly;
         return map[it.id] || (currentPeriod === 'quarterly' ? (it.quarterlyQty || it.qty) : (it.weeklyQty || it.qty));
@@ -17154,10 +17248,10 @@
               <span class="flex-1 min-w-0 break-words ${done ? 'line-through text-slate-400' : 'text-slate-50'}" style="font-size: 15px; font-weight: 700; line-height: 1.35;">${shortTitle}</span>
             </button>
 
-            <!-- Row 2 (Aligned Pill Row Under the Title): Short Quantity | Cost -->
-            <div class="flex flex-wrap items-center justify-between gap-1.5 pl-8">
-              <span class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-md bg-slate-950 border ${isBulkCard ? 'border-indigo-500/45 text-indigo-200' : 'border-emerald-500/35 text-emerald-300'}">${leftQtyPill}</span>
-              <span class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-md bg-amber-950/70 border border-amber-500/40 text-amber-300">${rightCostPill}</span>
+            <!-- Row 2 (Aligned Pill Row Under the Title): Total Weight / Volume | Cost -->
+            <div class="flex flex-wrap items-center justify-between gap-1.5 pl-7">
+              <span data-shop-weight-pill="${it.id}" class="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-slate-950 border whitespace-nowrap ${isBulkCard ? 'border-indigo-500/45 text-indigo-200' : 'border-emerald-500/35 text-emerald-300'}">${leftQtyPill}</span>
+              <span data-shop-cost-pill="${it.id}" class="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-amber-950/70 border border-amber-500/40 text-amber-300 whitespace-nowrap">${rightCostPill}</span>
             </div>
 
             <!-- Row 3 (1 Short ELI12 Sentence + Read the Math Toggle) -->

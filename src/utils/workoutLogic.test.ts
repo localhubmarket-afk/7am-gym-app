@@ -1907,7 +1907,7 @@ test('Subtest 31: BDA/W3C Cognitive Accessibility & ELI12 Plain-English Visual H
   );
   assert.equal(
     mod.ELI12_ACCESSIBILITY_SPECS.pullupsAndTimer.riceTimerAccordionTitle,
-    'Jasmine Rice Timer (10m Cook + 10m Rest) ▼'
+    'Jasmine Rice Timer (12m Cook + 10m Cooldown) ▼'
   );
 });
 
@@ -2215,3 +2215,76 @@ test('Subtest 35: Redundant Routing Active-Day AI Bonus Injection & Overflow-Vis
   assert.equal(updatedMap2['1'][5], day6Bonus);
   assert.equal(updatedMap2['1'][6], day7Bonus);
 });
+
+test('Subtest 36: Gym Header Outline Button, Sequential 2-Phase Rice Timer, and Exposed Total Weight Pills', async () => {
+  const mod = await import('./workoutLogic');
+
+  // 1. Schedule, Sync & Stats outline button placement spec
+  assert.equal(mod.SCHEDULE_SYNC_OUTLINE_BUTTON_SPEC.placement, 'active-day-header-row-far-right');
+  assert.equal(mod.SCHEDULE_SYNC_OUTLINE_BUTTON_SPEC.removedFromWeekRow, true);
+  assert.equal(
+    mod.SCHEDULE_SYNC_OUTLINE_BUTTON_SPEC.inlineStyle.includes('border: 1px solid rgba(14, 165, 233, 0.4);'),
+    true
+  );
+
+  // 2. Sequential 2-phase Jasmine Rice Timer state machine
+  let rice = {
+    cookMinutes: 12 as const,
+    activePhase: null as 1 | 2 | null,
+    cookPhaseCompleted: false,
+    cooldownPhaseCompleted: false
+  };
+  let ui = mod.getSequentialRiceButtonPresentation(rice);
+  assert.equal(ui.cookButtonLabel, 'Start 12m Cook Timer');
+  assert.equal(ui.cooldownButtonLabel, 'Start 10m Cooldown Timer');
+  assert.equal(ui.highlightCooldownNext, false);
+
+  rice = mod.advanceSequentialRicePhase(rice, 'start_cook');
+  ui = mod.getSequentialRiceButtonPresentation(rice);
+  assert.equal(ui.cookButtonState, 'running');
+  assert.equal(ui.cooldownButtonState, 'idle');
+
+  rice = mod.advanceSequentialRicePhase(rice, 'complete_cook');
+  ui = mod.getSequentialRiceButtonPresentation(rice);
+  assert.equal(ui.cookButtonLabel, '✓ 12m Cook Done');
+  assert.equal(ui.cookButtonState, 'done');
+  assert.equal(ui.cooldownButtonState, 'ready-next');
+  assert.equal(ui.highlightCooldownNext, true);
+
+  rice = mod.advanceSequentialRicePhase(rice, 'start_cooldown');
+  ui = mod.getSequentialRiceButtonPresentation(rice);
+  assert.equal(ui.cooldownButtonState, 'running');
+  assert.equal(ui.highlightCooldownNext, false);
+
+  rice = mod.advanceSequentialRicePhase(rice, 'complete_cooldown');
+  ui = mod.getSequentialRiceButtonPresentation(rice);
+  assert.equal(ui.cooldownButtonLabel, '✓ 10m Cooldown Done');
+  assert.equal(ui.cooldownButtonState, 'done');
+
+  // 3. Exposed Shop List total weight/volume pills on both weekly and 90-day views (14 items each)
+  const weeklyIds = Object.keys(mod.EXPOSED_SHOP_WEIGHT_PILLS.weekly);
+  const quarterlyIds = Object.keys(mod.EXPOSED_SHOP_WEIGHT_PILLS.quarterly);
+  assert.equal(weeklyIds.length, 14);
+  assert.equal(quarterlyIds.length, 14);
+  assert.equal(mod.getExposedShopWeightPill('shop_silk', 'weekly'), '1,260 ml/wk (1 Carton • 1.89L)');
+  assert.equal(mod.getExposedShopWeightPill('shop_silk', 'quarterly'), '16.2L / 90d (9 Cartons)');
+  assert.equal(mod.getExposedShopWeightPill('shop_tofu', 'quarterly'), '15,750g / 90d (45 Blocks)');
+  assert.equal(mod.getExposedShopWeightPill('shop_isolate', 'quarterly'), '9,072g / 90d (4 Tubs)');
+
+  // 4. Muscle Fuel Row 2 pills sum cleanly to $6.35/day (or $6.34/day Costco Creatine) and expose total weight
+  const f1 = mod.getFuelCardRow2Pills('pre_shake', 'Scale: 390g', false);
+  const f2 = mod.getFuelCardRow2Pills('post_oats', 'Scale: 279g', false);
+  const f3 = mod.getFuelCardRow2Pills('lunch', 'Scale: 419g', false);
+  const f4 = mod.getFuelCardRow2Pills('dinner', 'Scale: 411g', false);
+  assert.equal(f1.weightPill, 'Total: 390g');
+  assert.equal(f1.costPill, '$1.35 / meal');
+  assert.equal(f2.weightPill, 'Total: 279g');
+  assert.equal(f3.weightPill, 'Total: 419g');
+  assert.equal(f4.weightPill, 'Total: 411g');
+  const sumDaily = [f1, f2, f3, f4].reduce(
+    (acc, p) => acc + parseFloat(p.costPill.replace(/[^0-9.]/g, '')),
+    0
+  );
+  assert.equal(sumDaily.toFixed(2), '6.35');
+});
+
