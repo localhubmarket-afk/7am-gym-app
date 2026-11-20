@@ -7119,13 +7119,13 @@ export function getSyncedChronoSchedule(
   // - Fuel 1 (Pre-Gym Shake + Creatine): T_gym - 25 min
   // - Warm-Up & Gym Session: T_gym
   // - Fuel 2 (Post-Gym Overnight Oats): T_gym + 75 min
-  // - Fuel 3 (Tofu, Rice & Broccoli Bowl): T_gym + 360 min (+6 hours)
-  // - Fuel 4 (Evening Shake & PB + Vitamin D3): T_gym + 630 min (+10.5 hours)
+  // - Fuel 3 (Tofu, Rice & Broccoli Bowl): T_gym + 300 min (+5 hours)
+  // - Fuel 4 (Evening Shake & PB + Vitamin D3): T_gym + 570 min (+9.5 hours)
   const fuel1Minutes = normalizeMinutesOfDay(gymTimeMinutes - 25);
   const warmupMinutes = gymTimeMinutes;
   const fuel2Minutes = normalizeMinutesOfDay(gymTimeMinutes + 75);
-  const fuel3Minutes = normalizeMinutesOfDay(gymTimeMinutes + 360);
-  const fuel4Minutes = normalizeMinutesOfDay(gymTimeMinutes + 630);
+  const fuel3Minutes = normalizeMinutesOfDay(gymTimeMinutes + 300);
+  const fuel4Minutes = normalizeMinutesOfDay(gymTimeMinutes + 570);
 
   const gymTime12 = formatMinutesOfDayTo12Hr(gymTimeMinutes);
   const gymEndTime12 = formatMinutesOfDayTo12Hr(gymEndTimeMinutes);
@@ -7136,14 +7136,14 @@ export function getSyncedChronoSchedule(
   const fuel4Time12 = formatMinutesOfDayTo12Hr(fuel4Minutes);
 
   // Water Schedule (6 x 500 ml):
-  // -30m Pre-Gym, +30m Intra-Gym, +90m Post-Gym, +4h (240m) Midday, +7.5h (450m) Afternoon, +10.5h (630m) Evening
+  // -30m Pre-Gym, +30m Intra-Gym, +90m Post-Gym, +4h (240m) Midday, +7h (420m) Afternoon, +9.5h (570m) Evening
   const waterCheckpointsSpec = [
     { ml: 500, offsetMinutes: -30, shortTag: 'Pre-Gym' },
     { ml: 1000, offsetMinutes: 30, shortTag: 'Intra-Gym' },
     { ml: 1500, offsetMinutes: 90, shortTag: 'Post-Gym' },
     { ml: 2000, offsetMinutes: 240, shortTag: 'Midday' },
-    { ml: 2500, offsetMinutes: 450, shortTag: 'Afternoon' },
-    { ml: 3000, offsetMinutes: 630, shortTag: 'Evening' }
+    { ml: 2500, offsetMinutes: 420, shortTag: 'Afternoon' },
+    { ml: 3000, offsetMinutes: 570, shortTag: 'Evening' }
   ];
 
   const waterSchedule: SyncedWaterCheckpoint[] = waterCheckpointsSpec.map(spec => {
@@ -8450,5 +8450,35 @@ export function getFuelCardRow2Pills(
     costPill: costMap[slotId]
   };
 }
+
+// ============================================================================
+// UPGRADE 14: INTERACTIVE AUTO-SYNCING GYM TIME PILL & 3-ZONE ADHD-FRIENDLY
+// CONTEXTUAL GROUPING (DECONSTRUCTING THE 10-BUTTON MEGA-DRAWER)
+// ============================================================================
+
+export const GYM_CONTEXTUAL_ZONES_SPEC = {
+  removedMegaDrawerLabel: 'Schedule, Sync & Stats',
+  interactiveGymTimeButtonFormat: (time12: string) => `🕒 Gym Time: ${time12} ▼`,
+  zoneA: {
+    gridColumns: 3,
+    buttons: ['📅 Week Schedule', '🔄 Sync & Settings', '📊 Stats']
+  },
+  zoneB: {
+    gridColumns: 2,
+    buttons: ['Swap Today to Rest Day', "Change Today's Workout ▼"]
+  },
+  zoneC: {
+    pills: ['💧 Water: 0/3L (+500ml)', '✓ Abs On', '🎒 Gear Checklist'],
+    nextFuelMovedToMuscleFuelTab: true
+  },
+  chrononutritionOffsetsMinutes: {
+    fuel1: -25,
+    fuel2: 75,
+    fuel3: 300,
+    fuel4: 570
+  },
+  warmupDefaultClosedOnLoad: true
+} as const;
+
 
 

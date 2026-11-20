@@ -1799,8 +1799,8 @@ test('Subtest 30: Auto-Cascade Sets, Zeigarnik In-Progress State, Uncrushable Gr
   assert.equal(sched7am.fuel1Time12, '6:35 AM');
   assert.equal(sched7am.warmupHeaderUpper, '7:00 AM UPPER BODY WARM-UP');
   assert.equal(sched7am.fuel2Time12, '8:15 AM');
-  assert.equal(sched7am.fuel3Time12, '1:00 PM');
-  assert.equal(sched7am.fuel4Time12, '5:30 PM');
+  assert.equal(sched7am.fuel3Time12, '12:00 PM');
+  assert.equal(sched7am.fuel4Time12, '4:30 PM');
   assert.equal(sched7am.waterSchedule.length, 6);
   assert.equal(sched7am.waterSchedule[0].time12, '6:30 AM');
   assert.equal(sched7am.waterSchedule[1].time12, '7:30 AM');
@@ -1810,8 +1810,8 @@ test('Subtest 30: Auto-Cascade Sets, Zeigarnik In-Progress State, Uncrushable Gr
   assert.equal(sched8am.fuel1Time12, '7:35 AM');
   assert.equal(sched8am.warmupHeaderUpper, '8:00 AM UPPER BODY WARM-UP');
   assert.equal(sched8am.fuel2Time12, '9:15 AM');
-  assert.equal(sched8am.fuel3Time12, '2:00 PM');
-  assert.equal(sched8am.fuel4Time12, '6:30 PM');
+  assert.equal(sched8am.fuel3Time12, '1:00 PM');
+  assert.equal(sched8am.fuel4Time12, '5:30 PM');
 
   const liveSyncCheck = mod.checkAutoSyncGymTimeOnLiveWorkout('07:00', '08:02');
   assert.equal(liveSyncCheck.shouldAutoSync, true);
@@ -2287,4 +2287,39 @@ test('Subtest 36: Gym Header Outline Button, Sequential 2-Phase Rice Timer, and 
   );
   assert.equal(sumDaily.toFixed(2), '6.35');
 });
+
+test('Subtest 37: Interactive Gym Time Sync (11:00 AM -> -25m, +75m, +5h, +9.5h) and 3-Zone Contextual Grouping', async () => {
+  const mod = await import('./workoutLogic');
+
+  // 1. Chrononutrition sync for 11:00 AM gym session
+  const sched11am = mod.getSyncedChronoSchedule('11:00');
+  assert.equal(sched11am.gymTime12, '11:00 AM');
+  assert.equal(sched11am.fuel1Time12, '10:35 AM');
+  assert.equal(sched11am.fuel2Time12, '12:15 PM');
+  assert.equal(sched11am.fuel3Time12, '4:00 PM');
+  assert.equal(sched11am.fuel4Time12, '8:30 PM');
+
+  // 2. Interactive Gym Time pill label & 3-Zone structure
+  assert.equal(
+    mod.GYM_CONTEXTUAL_ZONES_SPEC.interactiveGymTimeButtonFormat('11:00 AM'),
+    '🕒 Gym Time: 11:00 AM ▼'
+  );
+  assert.deepEqual(mod.GYM_CONTEXTUAL_ZONES_SPEC.zoneA.buttons, [
+    '📅 Week Schedule',
+    '🔄 Sync & Settings',
+    '📊 Stats'
+  ]);
+  assert.deepEqual(mod.GYM_CONTEXTUAL_ZONES_SPEC.zoneB.buttons, [
+    'Swap Today to Rest Day',
+    "Change Today's Workout ▼"
+  ]);
+  assert.deepEqual(mod.GYM_CONTEXTUAL_ZONES_SPEC.zoneC.pills, [
+    '💧 Water: 0/3L (+500ml)',
+    '✓ Abs On',
+    '🎒 Gear Checklist'
+  ]);
+  assert.equal(mod.GYM_CONTEXTUAL_ZONES_SPEC.zoneC.nextFuelMovedToMuscleFuelTab, true);
+  assert.equal(mod.GYM_CONTEXTUAL_ZONES_SPEC.warmupDefaultClosedOnLoad, true);
+});
+
 
