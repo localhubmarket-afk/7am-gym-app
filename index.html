@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#020617" />
+  <meta name="theme-color" content="#0f172a" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -42,7 +42,11 @@
   </script>
   <style>
     html, body {
-      font-family: 'Inter', sans-serif;
+      font-family: system-ui, -apple-system, sans-serif;
+      letter-spacing: 0.02em;
+      line-height: 1.5;
+      background-color: #0f172a;
+      color: #f8fafc;
       -webkit-tap-highlight-color: transparent;
       overflow-x: hidden;
       overflow-y: auto;
@@ -52,6 +56,29 @@
       -webkit-overflow-scrolling: touch;
       max-width: 100vw;
       width: 100%;
+    }
+    /* Neurodivergent COGA / BDA Calm Surface & Glare-Reduction Tokens (Never pure #000000 or pure #ffffff) */
+    .bg-slate-950 {
+      background-color: #0f172a !important;
+    }
+    .bg-slate-900 {
+      background-color: #1e293b !important;
+    }
+    .text-white {
+      color: #f8fafc !important;
+    }
+    .neuro-card-unstarted {
+      border: 1px solid #334155;
+      background-color: #1e293b;
+    }
+    .neuro-card-active {
+      background: rgba(217, 119, 6, 0.15) !important;
+      border: 2px solid #d97706 !important;
+    }
+    .neuro-btn-done {
+      background-color: #059669 !important;
+      color: #ecfdf5 !important;
+      border-color: #059669 !important;
     }
     select {
       max-width: 100%;
@@ -148,7 +175,7 @@
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen pb-28 overflow-x-hidden w-full max-w-full selection:bg-emerald-500 selection:text-slate-950">
+<body class="bg-[#0f172a] text-[#f8fafc] min-h-screen pb-28 overflow-x-hidden w-full max-w-full selection:bg-emerald-600 selection:text-[#ecfdf5]">
 
   <!-- Sticky Top App Header & Always-Visible Pinned Rest Timer HUD -->
   <header id="main-sticky-header" class="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/90 shadow-xl shadow-slate-950/80" style="position: fixed; top: 0; left: 0; right: 0; z-index: 50;">
@@ -306,8 +333,8 @@
           <button
             type="button"
             id="zone-a-week-schedule-btn"
-            style="min-height: 38px;"
-            class="px-1.5 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-amber-400/45 text-amber-200 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center"
+            style="min-height: 38px; border-color: #334155; letter-spacing: 0;"
+            class="px-1 py-1.5 rounded-xl bg-[#0f172a] hover:bg-slate-800 border text-amber-200 text-[9.5px] sm:text-[11px] font-bold whitespace-nowrap transition inline-flex items-center justify-center text-center overflow-hidden"
             title="Change Rest Days or Finish Week"
           >
             📅 Week Schedule
@@ -315,20 +342,20 @@
           <button
             type="button"
             id="zone-a-sync-settings-btn"
-            style="min-height: 38px;"
-            class="px-1.5 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-sky-400/45 text-sky-200 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center"
-            title="Re-Sync Week and Display Settings"
+            style="min-height: 38px; border-color: #334155; letter-spacing: 0;"
+            class="px-1 py-1.5 rounded-xl bg-[#0f172a] hover:bg-slate-800 border text-sky-200 text-[9.5px] sm:text-[11px] font-bold whitespace-nowrap transition inline-flex items-center justify-center text-center overflow-hidden"
+            title="Re-Sync Week, Setup Wizard and Display Settings"
           >
             🔄 Sync &amp; Settings
           </button>
           <button
             type="button"
             id="gym-open-dashboard-pill-btn"
-            style="min-height: 38px;"
-            class="px-1.5 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-emerald-400/45 text-emerald-300 text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center"
+            style="min-height: 38px; border-color: #334155; letter-spacing: 0;"
+            class="px-1 py-1.5 rounded-xl bg-[#0f172a] hover:bg-slate-800 border text-emerald-200 text-[9.5px] sm:text-[11px] font-bold whitespace-nowrap transition inline-flex items-center justify-center text-center overflow-hidden"
             title="Open Progress &amp; Analytics Dashboard"
           >
-            📊 Stats
+            📊 Stats &amp; Dashboard
           </button>
         </div>
 
@@ -1115,6 +1142,13 @@
       hiddenMealChecklists: {},
       openMealFormulas: {},
       gymScheduleByDay: {},
+      wakeUpTimeByDay: {},
+      historyExerciseSwaps: {},
+      programWizardConfig: {
+        daysPerWeek: 5,
+        primaryFocus: 'Balanced',
+        difficulty: 'Medium'
+      },
       checkedEssentials: {},
       checkedGroceries: {},
       customShoppingItems: [],
@@ -1413,6 +1447,15 @@
       }
       if (!merged.customDayScheduleByWeek || typeof merged.customDayScheduleByWeek !== 'object') {
         merged.customDayScheduleByWeek = {};
+      }
+      if (!merged.wakeUpTimeByDay || typeof merged.wakeUpTimeByDay !== 'object') {
+        merged.wakeUpTimeByDay = {};
+      }
+      if (!merged.historyExerciseSwaps || typeof merged.historyExerciseSwaps !== 'object') {
+        merged.historyExerciseSwaps = {};
+      }
+      if (!merged.programWizardConfig || typeof merged.programWizardConfig !== 'object') {
+        merged.programWizardConfig = { daysPerWeek: 5, primaryFocus: 'Balanced', difficulty: 'Medium' };
       }
       if (!merged.manualScheduleOverrideByWeek || typeof merged.manualScheduleOverrideByWeek !== 'object') {
         merged.manualScheduleOverrideByWeek = {};
@@ -7511,16 +7554,96 @@
       return didChange;
     }
 
+    function collectUniqueExercisesFromHistory() {
+      const seen = new Map();
+      const addEx = (ex, sourceLabel) => {
+        if (!ex || !ex.name) return;
+        const cleanName = String(ex.name).replace(/^[A-Z]\d+[\.\:\-\)]\s*/i, '').trim();
+        const normKey = cleanName.toLowerCase().replace(/\s+/g, ' ');
+        if (!normKey || seen.has(normKey)) return;
+        const exId = String(ex.originalId || ex.id || normKey.replace(/[^a-z0-9]+/g, '_'));
+        const meta = (typeof EXERCISE_META !== 'undefined' && EXERCISE_META[exId]) || null;
+        seen.set(normKey, {
+          id: exId,
+          name: cleanName,
+          sets: Number(ex.sets) || 3,
+          reps: String(ex.reps || '8-12'),
+          restSec: Number(ex.restSec || ex.restSeconds) || 90,
+          restLabel: ex.restLabel || ((Number(ex.restSec) || 90) >= 120 ? '2 min' : '1.5 min'),
+          videoUrl: String(ex.videoUrl || ex.video || (meta && meta.videoUrl) || `https://www.youtube.com/results?search_query=${encodeURIComponent(cleanName + ' proper form tutorial')}`),
+          notes: String(ex.notes || ex.instructions || (meta && meta.tip) || ''),
+          sourceLabel: sourceLabel || 'History'
+        });
+      };
+
+      const schedMap = (state && state.customDayScheduleByWeek && typeof state.customDayScheduleByWeek === 'object')
+        ? state.customDayScheduleByWeek
+        : {};
+      Object.keys(schedMap).forEach(wKey => {
+        const arr = schedMap[wKey];
+        if (!Array.isArray(arr)) return;
+        arr.forEach((entry, idx) => {
+          if (entry && typeof entry === 'object' && Array.isArray(entry.exercises)) {
+            const lbl = entry.title || entry.daySub || `Week ${wKey} Day ${idx + 1}`;
+            entry.exercises.forEach(ex => addEx(ex, lbl));
+          } else if (typeof entry === 'number' && entry >= 0 && entry < 5 && DAYS_SCHEDULE[entry]) {
+            const tpl = DAYS_SCHEDULE[entry];
+            const lbl = tpl.daySub || tpl.title || `Day ${entry + 1}`;
+            (tpl.exercises || []).forEach(ex => addEx(ex, lbl));
+          }
+        });
+      });
+
+      // Include assigned standard split exercises so history picker is always populated on Day 1 too
+      for (let i = 0; i < Math.min(5, DAYS_SCHEDULE.length); i++) {
+        const tpl = DAYS_SCHEDULE[i];
+        if (!tpl || !Array.isArray(tpl.exercises)) continue;
+        const lbl = tpl.daySub || tpl.title || `Day ${i + 1}`;
+        tpl.exercises.forEach(ex => addEx(ex, lbl));
+      }
+      return Array.from(seen.values());
+    }
+
     function getEffectiveExercise(week, dayIdx, exIdx, rawEx) {
       if (!rawEx || typeof rawEx !== 'object') return rawEx;
       if (!state.exerciseSwaps || typeof state.exerciseSwaps !== 'object') state.exerciseSwaps = {};
       if (!state.revertedMachineSwaps || typeof state.revertedMachineSwaps !== 'object') state.revertedMachineSwaps = {};
       if (!state.sharedMachineDatabase || typeof state.sharedMachineDatabase !== 'object') state.sharedMachineDatabase = {};
+      if (!state.historyExerciseSwaps || typeof state.historyExerciseSwaps !== 'object') state.historyExerciseSwaps = {};
 
       const canonicalId = String(rawEx.originalId || rawEx.id || '').trim();
       const cleanOriginalName = String(rawEx.originalName || rawEx.name || '').replace(/^[A-Z]\d+[\.\:\-\)]\s*/i, '').trim();
       const slotKey = `w${week}_d${dayIdx}_e${exIdx}`;
       const altSlotKey = `w${week}_d${dayIdx}_${canonicalId}`;
+
+      const historySwap = state.historyExerciseSwaps[slotKey] || state.historyExerciseSwaps[altSlotKey] || null;
+      if (historySwap && historySwap.name) {
+        const matchedCatHist = matchExerciseToUniversalMachineSwaps({ id: historySwap.id || canonicalId, name: historySwap.name });
+        const defaultOptIdxHist = getDefaultUniversalOptionIndexForExercise({ id: historySwap.id || canonicalId, name: historySwap.name }, matchedCatHist);
+        return {
+          ...rawEx,
+          id: canonicalId,
+          originalId: canonicalId,
+          originalName: cleanOriginalName,
+          originalVideoUrl: rawEx.videoUrl || rawEx.video || '',
+          name: historySwap.name,
+          sets: Number(historySwap.sets) || rawEx.sets || 3,
+          reps: historySwap.reps || rawEx.reps || '8-12',
+          restSec: Number(historySwap.restSec) || rawEx.restSec || 90,
+          restLabel: historySwap.restLabel || rawEx.restLabel || '1.5 min',
+          videoUrl: historySwap.videoUrl || rawEx.videoUrl,
+          video: historySwap.videoUrl || rawEx.videoUrl,
+          notes: historySwap.notes || rawEx.notes || '',
+          isSwapped: false,
+          isSwappedMachine: false,
+          isHistorySwapped: true,
+          historySourceLabel: historySwap.sourceLabel || 'History',
+          availableMachineOptions: matchedCatHist.options,
+          selectedOptionIdx: defaultOptIdxHist,
+          slotKey,
+          altSlotKey
+        };
+      }
 
       const noteObj =
         (state.exerciseNotes && (state.exerciseNotes[canonicalId] || state.exerciseNotes[slotKey] || state.exerciseNotes[altSlotKey])) ||
@@ -8501,10 +8624,12 @@
               .split(/(?:\n|(?=\b\d+\.\s))/)
               .map(s => s.trim())
               .filter(Boolean);
+            const fallbackEquipType = ex.equipType || (idx === 0 ? 'barbell' : (idx === 4 ? 'cable' : 'machine'));
+            const fallbackEquipLabel = ex.equipLabel || (fallbackEquipType === 'machine' ? 'Machine' : (fallbackEquipType === 'cable' ? 'Cable' : (fallbackEquipType === 'barbell' ? 'Barbell Compound' : 'Free Weight')));
             EXERCISE_META[exId] = {
-              equipType: idx === 0 ? 'barbell' : (idx === 4 ? 'cable' : 'machine'),
-              equipLabel: idx === 0 ? 'Compound Lift' : (idx === 4 ? 'Core / Calves' : 'Machine / Cable'),
-              defaultWeightLbs: idx === 0 ? 95 : 50,
+              equipType: fallbackEquipType,
+              equipLabel: fallbackEquipLabel,
+              defaultWeightLbs: typeof ex.defaultWeightLbs === 'number' ? ex.defaultWeightLbs : (fallbackEquipType === 'barbell' ? 95 : 50),
               steps: stepLines.length >= 2 ? stepLines : [
                 ex.instructions || 'Set up safely and control every rep.',
                 'Pause briefly at full contraction.',
@@ -9643,13 +9768,48 @@
       return h12 + ":" + String(m).padStart(2, "0") + " " + ampm;
     }
 
-    function getSyncedChronoSchedule(gymTimeMinutes, warmupType) {
+    const WAKE_GAP_SWAP_ALERT_TEXT =
+      'Gap is over 2.5 hours. Eat your solid Oats (Fuel 2) now so they digest. Drink your Pre-Workout Shake (Fuel 1) 30 minutes before lifting.';
+
+    function getDayWakeUpTime(week, dayIdx) {
+      if (!state.wakeUpTimeByDay || typeof state.wakeUpTimeByDay !== 'object') {
+        state.wakeUpTimeByDay = {};
+      }
+      const key = `w${week}_d${dayIdx}`;
+      const saved = state.wakeUpTimeByDay[key];
+      if (saved && /^\d{1,2}:\d{2}$/.test(String(saved))) {
+        return minutesToHHMM(parseHHMMToMinutes(saved));
+      }
+      return '06:30';
+    }
+
+    function setManualDayWakeUpTime(week, dayIdx, wakeHHMM) {
+      if (!state.wakeUpTimeByDay || typeof state.wakeUpTimeByDay !== 'object') {
+        state.wakeUpTimeByDay = {};
+      }
+      const key = `w${week}_d${dayIdx}`;
+      state.wakeUpTimeByDay[key] = minutesToHHMM(parseHHMMToMinutes(wakeHHMM || '06:30'));
+    }
+
+    function getSyncedChronoSchedule(gymTimeMinutes, warmupType, wakeUpMinutesOpt) {
       const baseMins = ((Math.round(Number(gymTimeMinutes) || 420) % 1440) + 1440) % 1440;
-      const fuel1Minutes = ((baseMins - 25) % 1440 + 1440) % 1440;
-      const fuel2Minutes = (baseMins + 75) % 1440;
-      const fuel3Minutes = (baseMins + 300) % 1440;
+      const wakeMins = (typeof wakeUpMinutesOpt === 'number' && !isNaN(wakeUpMinutesOpt))
+        ? ((Math.round(wakeUpMinutesOpt) % 1440) + 1440) % 1440
+        : ((baseMins - 30) % 1440 + 1440) % 1440;
+      let gapMinutes = baseMins - wakeMins;
+      if (gapMinutes < 0) gapMinutes = 0;
+      const isFuel1Fuel2Swapped = gapMinutes >= 150;
+
+      const fuel1Minutes = ((baseMins - 30) % 1440 + 1440) % 1440;
+      const fuel2Minutes = isFuel1Fuel2Swapped
+        ? (wakeMins + 30) % 1440
+        : (baseMins + 75) % 1440;
+      const fuel3Minutes = isFuel1Fuel2Swapped
+        ? (baseMins + 75) % 1440
+        : (baseMins + 300) % 1440;
       const fuel4Minutes = (baseMins + 570) % 1440;
       const gymTime12 = formatMinutesTo12Hr(baseMins);
+      const wakeUpTime12 = formatMinutesTo12Hr(wakeMins);
       const warmupLabel = (warmupType === 'lower' ? 'LOWER BODY' : 'UPPER BODY') + ' WARM-UP';
 
       const waterOffsets = [
@@ -9662,6 +9822,19 @@
       ];
 
       return {
+        wakeUpMinutes: wakeMins,
+        wakeUpTime24: minutesToHHMM(wakeMins),
+        wakeUpTime12,
+        wakeTime12: wakeUpTime12,
+        gapMinutes,
+        gapHours: Number((gapMinutes / 60).toFixed(1)),
+        wakeToGymGapHours: Number((gapMinutes / 60).toFixed(1)),
+        isFuel1Fuel2Swapped,
+        shouldSwapFuel1And2: isFuel1Fuel2Swapped,
+        alertBannerText: isFuel1Fuel2Swapped ? WAKE_GAP_SWAP_ALERT_TEXT : '',
+        mealOrder: isFuel1Fuel2Swapped
+          ? ['post_oats', 'pre_shake', 'lunch', 'dinner']
+          : ['pre_shake', 'post_oats', 'lunch', 'dinner'],
         gymTimeMinutes: baseMins,
         gymTime24: minutesToHHMM(baseMins),
         gymTime12,
@@ -9811,61 +9984,81 @@
     function getAdaptiveMealScheduleForDay(week, dayIdx) {
       const sched = getDayGymSchedule(week, dayIdx);
       const startMins = parseHHMMToMinutes(sched.startTime);
+      const wakeHHMM = getDayWakeUpTime(week, dayIdx);
+      const wakeMins = parseHHMMToMinutes(wakeHHMM);
       const endMins = parseHHMMToMinutes(sched.endTime || minutesToHHMM(startMins + 60));
       const dayObj = typeof getScheduledDayObject === 'function' ? getScheduledDayObject(week, dayIdx) : { warmupType: 'upper' };
-      const chrono = getSyncedChronoSchedule(startMins, dayObj && dayObj.warmupType === 'lower' ? 'lower' : 'upper');
+      const chrono = getSyncedChronoSchedule(startMins, dayObj && dayObj.warmupType === 'lower' ? 'lower' : 'upper', wakeMins);
       const start12 = chrono.gymTime12;
+      const wake12 = chrono.wakeUpTime12;
       const end12 = formatMinutesTo12Hr(endMins);
       const preShakeStr = chrono.fuel1Time12;
       const oatsStr = chrono.fuel2Time12;
       const m2Str = chrono.fuel3Time12;
       const m3Str = chrono.fuel4Time12;
-      const period = startMins < 660 ? "morning" : (startMins < 870 ? "midday" : (startMins < 1020 ? "afternoon" : "evening"));
-      const periodLabel = period === "morning" ? "Morning Gym" : (period === "midday" ? "Midday Gym" : (period === "afternoon" ? "Afternoon Gym" : "Evening Gym"));
+      const isSwapped = Boolean(chrono.isFuel1Fuel2Swapped);
+      const period = isSwapped ? "midday" : (startMins < 660 ? "morning" : (startMins < 870 ? "midday" : (startMins < 1020 ? "afternoon" : "evening")));
+      const periodLabel = isSwapped
+        ? "Swapped Fuel Mode (2.5h+ Gap)"
+        : (period === "morning" ? "Morning Gym" : (period === "midday" ? "Midday Gym" : (period === "afternoon" ? "Afternoon Gym" : "Evening Gym")));
 
       return {
         period,
+        wake12,
         start12,
         end12,
         preShakeStr,
         oatsStr,
         m2Str,
         m3Str,
+        isFuel1Fuel2Swapped: isSwapped,
+        alertBannerText: chrono.alertBannerText,
+        mealOrder: chrono.mealOrder,
         chrono,
         waterCheckpoints: chrono.waterCheckpoints,
-        shakeFirst: true,
+        shakeFirst: !isSwapped,
         periodTitle: `${periodLabel} (${start12} – ${end12})`,
-        periodAdvice: `Drink Fuel 1 (${preShakeStr}) 25m before gym, eat Fuel 2 Overnight Oats at ${oatsStr}, Fuel 3 Bowl at ${m2Str}, and Fuel 4 Evening Shake at ${m3Str}.`,
-        nextPostWorkoutSlot: "post_oats",
-        nextPostWorkoutTime12: oatsStr,
+        periodAdvice: isSwapped
+          ? WAKE_GAP_SWAP_ALERT_TEXT
+          : `Drink Fuel 1 (${preShakeStr}) 30m before gym, eat Fuel 2 Overnight Oats at ${oatsStr}, Fuel 3 Bowl at ${m2Str}, and Fuel 4 Evening Shake at ${m3Str}.`,
+        nextPostWorkoutSlot: isSwapped ? "lunch" : "post_oats",
+        nextPostWorkoutTime12: isSwapped ? oatsStr : oatsStr,
         slots: {
           pre_shake: {
             time12: preShakeStr,
-            headerText: `FUEL 1 • PRE-GYM SHAKE (${preShakeStr})`,
-            roleBadge: "Pre-Gym Amino Boost (-25m)",
+            headerText: `FUEL 1 • PRE-WORKOUT SHAKE (${preShakeStr})`,
+            roleBadge: "Pre-Workout Shake (-30m)",
             isPostWorkoutTarget: false,
-            contextTip: `Drink 25 mins before your ${start12} workout for fast amino acids with zero stomach bulk.`
+            contextTip: `Drink 30 mins before your ${start12} workout for fast amino acids with zero stomach bulk.`
           },
           post_oats: {
             time12: oatsStr,
-            headerText: `FUEL 2 • POST-GYM OVERNIGHT OATS (${oatsStr})`,
-            roleBadge: "Post-Gym Glycogen (+75m)",
-            isPostWorkoutTarget: true,
-            contextTip: `Eat at ${oatsStr} (75 mins after ${start12} gym start) to replenish muscle glycogen.`
+            headerText: isSwapped
+              ? `FUEL 2 • SOLID OATS FIRST (${oatsStr})`
+              : `FUEL 2 • POST-GYM OVERNIGHT OATS (${oatsStr})`,
+            roleBadge: isSwapped ? "Eat First (Digests Before Gym)" : "Post-Gym Oats (+75m)",
+            isPostWorkoutTarget: !isSwapped,
+            contextTip: isSwapped
+              ? `Eat your solid Oats at ${oatsStr} (right after waking at ${wake12}) so they digest fully before lifting at ${start12}.`
+              : `Eat at ${oatsStr} (75 mins after ${start12} gym start) to refuel muscle glycogen.`
           },
           post: {
             time12: `${preShakeStr} & ${oatsStr}`,
-            headerText: `FUEL 1 • PRE-GYM SHAKE (${preShakeStr})`,
-            roleBadge: "Pre + Post Gym",
+            headerText: isSwapped ? `FUEL 2 • SOLID OATS (${oatsStr})` : `FUEL 1 • PRE-GYM SHAKE (${preShakeStr})`,
+            roleBadge: isSwapped ? "Oats First -> Shake Pre-Gym" : "Pre + Post Gym",
             isPostWorkoutTarget: true,
-            contextTip: `Drink your Pre-Gym Shake at ${preShakeStr}, then eat your Overnight Oats jar at ${oatsStr}.`
+            contextTip: isSwapped
+              ? WAKE_GAP_SWAP_ALERT_TEXT
+              : `Drink your Pre-Workout Shake at ${preShakeStr}, then eat your Overnight Oats jar at ${oatsStr}.`
           },
           lunch: {
             time12: m2Str,
-            headerText: `FUEL 3 • SAVOURY TOFU & JASMINE RICE BOWL (${m2Str})`,
-            roleBadge: "Midday Micronutrients (+5h)",
-            isPostWorkoutTarget: false,
-            contextTip: `Whole-food bowl at ${m2Str} (+5 hours from ${start12} gym start): 175g tofu + 150g rice + 75g broccoli + 12g yeast + 5g sesame oil + 1.5g iodized salt.`
+            headerText: isSwapped
+              ? `FUEL 3 • POST-GYM TOFU & RICE BOWL (${m2Str})`
+              : `FUEL 3 • SAVOURY TOFU & JASMINE RICE BOWL (${m2Str})`,
+            roleBadge: isSwapped ? "Post-Gym Meal (+75m)" : "Midday Bowl (+5h)",
+            isPostWorkoutTarget: isSwapped,
+            contextTip: `Whole-food bowl at ${m2Str}: 175g tofu + 150g rice + 75g broccoli + 12g yeast + 5g sesame oil + 1.5g iodized salt.`
           },
           dinner: {
             time12: m3Str,
@@ -9979,46 +10172,66 @@
             </div>
           `;
         } else {
-          // Muscle Fuel tab top bar: Interactive Gym Time pill + Next Fuel reminder strictly on Muscle Fuel tab
+          // Muscle Fuel tab top bar: Both [☀️ Woke Up] and [🕒 Gym Time] buttons + ELI12 2.5h+ Swap Alert Banner + Next Fuel pill
           el.innerHTML = `
-            <div class="bg-slate-900/95 border border-cyan-500/35 rounded-xl px-3 py-2.5 space-y-2 text-xs">
-              <div class="flex flex-wrap items-center justify-between gap-1.5">
-                <div class="inline-flex items-center rounded-full bg-slate-950 border border-cyan-400/50 overflow-hidden">
-                  <button
-                    type="button"
-                    data-top-step-mins="-15"
-                    class="top-gym-step-btn px-2 py-1 text-[11px] font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition"
-                    title="Shift Gym Time 15 minutes earlier"
-                  >-15m</button>
-                  <button
-                    type="button"
-                    data-open-gym-prompt="${cfg.suffix}"
-                    class="open-gym-time-prompt-btn inline-flex items-center gap-1 px-2.5 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 font-extrabold text-[11px] whitespace-nowrap transition"
-                  >
-                    <span>🕒 Gym Time: ${chrono.gymTime12} ▼</span>
-                  </button>
-                  <button
-                    type="button"
-                    data-top-step-mins="15"
-                    class="top-gym-step-btn px-2 py-1 text-[11px] font-extrabold text-emerald-400 hover:bg-slate-800 transition"
-                    title="Shift Gym Time 15 minutes later"
-                  >+15m</button>
-                </div>
-                <span id="fuel-tab-next-fuel-pill" class="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-200 text-[11px] font-extrabold whitespace-nowrap">
-                  Next Fuel: ${mealSched.nextPostWorkoutTime12}
-                </span>
+            <div class="bg-[#1e293b] border border-cyan-500/35 rounded-xl px-3 py-2.5 space-y-2 text-xs">
+              <div class="grid grid-cols-2 gap-1.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;">
+                <button
+                  type="button"
+                  id="fuel-wakeup-time-pill-btn"
+                  class="px-2 py-1.5 rounded-full bg-amber-600/15 hover:bg-amber-600/25 border border-amber-500/60 text-amber-200 text-[11px] font-bold whitespace-nowrap transition inline-flex items-center justify-center gap-1"
+                  title="Tap to change your Wake-Up Time"
+                >
+                  <span>☀️ Woke Up: ${chrono.wakeUpTime12}</span>
+                </button>
+                <button
+                  type="button"
+                  id="fuel-gym-time-pill-btn"
+                  class="px-2 py-1.5 rounded-full bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/65 text-cyan-200 text-[11px] font-bold whitespace-nowrap transition inline-flex items-center justify-center gap-1"
+                  title="Tap to change your Gym Time"
+                >
+                  <span>🕒 Gym Time: ${chrono.gymTime12}</span>
+                </button>
               </div>
-              <div class="text-[11px] font-semibold text-slate-300 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <span>Fuel 1: <strong class="text-emerald-300">${chrono.fuel1Time12}</strong></span>
-                <span>•</span>
-                <span>Fuel 2: <strong class="text-emerald-300">${chrono.fuel2Time12}</strong></span>
-                <span>•</span>
-                <span>Fuel 3: <strong class="text-amber-300">${chrono.fuel3Time12}</strong></span>
-                <span>•</span>
-                <span>Fuel 4: <strong class="text-purple-300">${chrono.fuel4Time12}</strong></span>
+              ${chrono.isFuel1Fuel2Swapped ? `
+                <div id="fuel-wake-gap-swap-alert" role="status" class="rounded-xl px-3 py-2 text-xs font-semibold leading-relaxed text-amber-100" style="background: rgba(217, 119, 6, 0.15); border: 1px solid #d97706;">
+                  ${WAKE_GAP_SWAP_ALERT_TEXT}
+                </div>
+              ` : ''}
+              <div class="flex flex-wrap items-center justify-between gap-1.5">
+                <div class="text-[11px] font-semibold text-slate-300 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  ${chrono.isFuel1Fuel2Swapped ? `
+                    <span>1st Oats (Fuel 2): <strong class="text-amber-300">${chrono.fuel2Time12}</strong></span>
+                    <span>•</span>
+                    <span>2nd Shake (Fuel 1): <strong class="text-emerald-300">${chrono.fuel1Time12}</strong></span>
+                  ` : `
+                    <span>Fuel 1: <strong class="text-emerald-300">${chrono.fuel1Time12}</strong></span>
+                    <span>•</span>
+                    <span>Fuel 2: <strong class="text-emerald-300">${chrono.fuel2Time12}</strong></span>
+                  `}
+                  <span>•</span>
+                  <span>Fuel 3: <strong class="text-amber-300">${chrono.fuel3Time12}</strong></span>
+                  <span>•</span>
+                  <span>Fuel 4: <strong class="text-purple-300">${chrono.fuel4Time12}</strong></span>
+                </div>
+                <span id="fuel-tab-next-fuel-pill" class="px-2.5 py-1 rounded-full bg-emerald-600/20 border border-emerald-500/45 text-emerald-200 text-[11px] font-bold whitespace-nowrap">
+                  Next Fuel: ${chrono.isFuel1Fuel2Swapped ? chrono.fuel2Time12 : chrono.fuel1Time12}
+                </span>
               </div>
             </div>
           `;
+          const fuelWakeBtn = el.querySelector('#fuel-wakeup-time-pill-btn');
+          if (fuelWakeBtn) {
+            fuelWakeBtn.addEventListener('click', () => {
+              if (typeof window.openGymTimeSelectorModal === 'function') window.openGymTimeSelectorModal(w, d, 'wakeup');
+            });
+          }
+          const fuelGymBtn = el.querySelector('#fuel-gym-time-pill-btn');
+          if (fuelGymBtn) {
+            fuelGymBtn.addEventListener('click', () => {
+              if (typeof window.openGymTimeSelectorModal === 'function') window.openGymTimeSelectorModal(w, d, 'gym');
+            });
+          }
         }
 
         el.querySelectorAll('.top-gym-step-btn').forEach(btn => {
@@ -11640,17 +11853,34 @@
           if (isMealCheckedForDay(week, dayIdx, slotKey)) loggedMealsCountToday++;
         });
 
-        const interactiveGymTimePillHtml = `
-          <button
-            type="button"
-            id="banner-gym-time-pill-btn"
-            aria-haspopup="dialog"
-            class="px-3 py-1 rounded-full bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/70 text-cyan-200 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center gap-1 shrink-0 shadow-sm shadow-cyan-950/40"
-            title="Tap to change your gym time and auto-sync all 4 meals and water"
-          >
-            <span>🕒 Gym Time: ${gymStart12} ▼</span>
-          </button>
+        const wakeUp12 = adaptiveMealPreview.wake12 || formatMinutesTo12Hr(parseHHMMToMinutes(getDayWakeUpTime(week, dayIdx)));
+        const interactiveDualTimeRowHtml = `
+          <div class="grid grid-cols-2 gap-1.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;">
+            <button
+              type="button"
+              id="banner-wakeup-time-pill-btn"
+              aria-haspopup="dialog"
+              class="px-2 py-1.5 rounded-full bg-amber-600/15 hover:bg-amber-600/25 border border-amber-500/60 text-amber-200 text-[11px] font-bold whitespace-nowrap transition inline-flex items-center justify-center gap-1"
+              title="Tap to change your Wake-Up Time"
+            >
+              <span>☀️ Woke Up: ${wakeUp12}</span>
+            </button>
+            <button
+              type="button"
+              id="banner-gym-time-pill-btn"
+              aria-haspopup="dialog"
+              class="px-2 py-1.5 rounded-full bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/70 text-cyan-200 text-[11px] font-bold whitespace-nowrap transition inline-flex items-center justify-center gap-1"
+              title="Tap to change your Gym Time and auto-sync all 4 meals"
+            >
+              <span>🕒 Gym Time: ${gymStart12}</span>
+            </button>
+          </div>
         `;
+        const wakeGapSwapBannerHtml = adaptiveMealPreview.isFuel1Fuel2Swapped ? `
+          <div id="gym-wake-gap-swap-alert" role="status" class="rounded-xl px-3 py-2 text-xs font-semibold leading-relaxed text-amber-100" style="background: rgba(217, 119, 6, 0.15); border: 1px solid #d97706;">
+            ${WAKE_GAP_SWAP_ALERT_TEXT}
+          </div>
+        ` : '';
 
         const waterLitersLogged = (loggedWaterTodayMl / 1000).toFixed(loggedWaterTodayMl % 1000 === 0 ? 0 : 1);
         const waterLitersTarget = (targetWaterTodayMl / 1000).toFixed(targetWaterTodayMl % 1000 === 0 ? 0 : 1);
@@ -11767,16 +11997,17 @@
         if (dayAssignment.isRestDay) {
           banner.innerHTML = `
             <div id="rest-day-recovery-card" class="space-y-2.5">
-              <!-- Row 1: Active Day Header Row — WK X • DAY X (Left) | Interactive Gym Time Pill (Far Right) -->
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400 whitespace-nowrap">WK ${week} • ${dayObj.dayShort.toUpperCase()}</span>
-                ${interactiveGymTimePillHtml}
-              </div>
-
-              <!-- Row 2: Title + Rest Day Badge -->
+              <!-- Row 1: Active Day Header Row -->
               <div class="flex items-center justify-between gap-2">
-                <h2 class="text-base sm:text-lg font-extrabold text-white leading-snug">Rest &amp; Muscle Recovery Day</h2>
+                <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400 whitespace-nowrap">WK ${week} • ${dayObj.dayShort.toUpperCase()}</span>
                 <span class="text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">REST DAY</span>
+              </div>
+              ${interactiveDualTimeRowHtml}
+              ${wakeGapSwapBannerHtml}
+
+              <!-- Row 2: Title -->
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="text-base sm:text-lg font-extrabold text-[#f8fafc] leading-snug">Rest &amp; Muscle Recovery Day</h2>
               </div>
 
               <!-- ELI12 Recovery Status Sentence -->
@@ -11794,10 +12025,10 @@
                 <button type="button" id="rest-card-walk-pill-btn" class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-xs font-extrabold text-left transition ${
                   isWalkChecked
                     ? 'bg-emerald-500/25 border-emerald-400/50 text-emerald-200'
-                    : 'bg-slate-950/90 hover:bg-slate-900 border-slate-800 text-slate-200'
+                    : 'bg-[#0f172a] hover:bg-slate-800 border-[#334155] text-slate-200'
                 }">
                   <span>Recovery Walk: 8,000–10,000 Steps</span>
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isWalkChecked ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300'} shrink-0 whitespace-nowrap">${isWalkChecked ? '✓ Done' : 'Check Off'}</span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isWalkChecked ? 'neuro-btn-done' : 'bg-slate-800 text-slate-300'} shrink-0 whitespace-nowrap">${isWalkChecked ? '✓ Done' : 'Check Off'}</span>
                 </button>
               </div>
 
@@ -11812,29 +12043,30 @@
         } else {
           banner.innerHTML = `
             <div class="space-y-2">
-              <!-- Row 1: Active Day Header Row — WK X • DAY X (Left) | Interactive Gym Time Pill (Far Right) -->
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400 whitespace-nowrap">WK ${week} • ${dayObj.dayShort.toUpperCase()}</span>
-                ${interactiveGymTimePillHtml}
-              </div>
-
-              <!-- Row 2: Workout Title + Lift/Bonus Badge -->
+              <!-- Row 1: Active Day Header Row -->
               <div class="flex items-center justify-between gap-2">
-                <h2 class="text-base sm:text-lg font-extrabold text-white leading-snug">${dayObj.title}</h2>
+                <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400 whitespace-nowrap">WK ${week} • ${dayObj.dayShort.toUpperCase()}</span>
                 <div class="flex items-center gap-1 shrink-0">
-                  ${dayObj.isAiBonusWorkout ? `<span class="text-[10px] font-extrabold bg-purple-500/20 text-purple-200 border border-purple-400/45 px-2 py-0.5 rounded-full whitespace-nowrap">AI BONUS</span>` : (dayAssignment.isBonusRepeat ? `<span class="text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-full whitespace-nowrap">BONUS</span>` : '')}
+                  ${dayObj.isAiBonusWorkout ? `<span class="text-[10px] font-extrabold bg-purple-500/20 text-purple-200 border border-purple-400/45 px-2 py-0.5 rounded-full whitespace-nowrap">AI PLAN</span>` : (dayAssignment.isBonusRepeat ? `<span class="text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-full whitespace-nowrap">BONUS</span>` : '')}
                   <span class="text-[10px] font-extrabold bg-sky-500/15 text-sky-300 border border-sky-400/30 px-2 py-0.5 rounded-full whitespace-nowrap">LIFT DAY</span>
                 </div>
+              </div>
+              ${interactiveDualTimeRowHtml}
+              ${wakeGapSwapBannerHtml}
+
+              <!-- Row 2: Workout Title -->
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="text-base sm:text-lg font-extrabold text-[#f8fafc] leading-snug">${dayObj.title}</h2>
               </div>
 
               <!-- Row 3: Progress: X/Y sets bar -->
               <div class="space-y-1.5 pt-0.5">
                 <div class="flex items-center justify-between gap-2 text-xs">
-                  <span class="font-semibold text-slate-300 whitespace-nowrap">Progress: <strong class="text-white">${todayDoneSets}/${todayTotalSets} sets</strong></span>
+                  <span class="font-semibold text-slate-300 whitespace-nowrap">Progress: <strong class="text-[#f8fafc]">${todayDoneSets}/${todayTotalSets} sets</strong></span>
                   <span class="font-mono font-bold text-emerald-400">${dayPct}%</span>
                 </div>
-                <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
-                  <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-300" style="width: ${dayPct}%"></div>
+                <div class="w-full bg-[#0f172a] h-2 rounded-full overflow-hidden border border-[#334155]">
+                  <div class="bg-[#059669] h-full transition-all duration-300" style="width: ${dayPct}%"></div>
                 </div>
               </div>
 
@@ -11852,11 +12084,20 @@
           `;
         }
 
+        const wakeUpPillBtn = document.getElementById('banner-wakeup-time-pill-btn');
+        if (wakeUpPillBtn) {
+          wakeUpPillBtn.addEventListener('click', () => {
+            if (typeof window.openGymTimeSelectorModal === 'function') {
+              window.openGymTimeSelectorModal(week, dayIdx, 'wakeup');
+            }
+          });
+        }
+
         const gymTimePillBtn = document.getElementById('banner-gym-time-pill-btn');
         if (gymTimePillBtn) {
           gymTimePillBtn.addEventListener('click', () => {
             if (typeof window.openGymTimeSelectorModal === 'function') {
-              window.openGymTimeSelectorModal(week, dayIdx);
+              window.openGymTimeSelectorModal(week, dayIdx, 'gym');
             }
           });
         }
@@ -12246,14 +12487,14 @@
             const isRowActiveAmber = !isDone && (isSetHoldRunning || isSetHoldPaused);
 
             setsHtml += `
-              <div data-timed-set-row="${logKey}" data-timed-state="${isDone ? 'logged_done' : (isRowActiveAmber ? 'running' : (isSetHoldCompleted ? 'completed_ready_to_log' : 'not_started'))}" style="${isRowActiveAmber ? 'border: 2px solid #f59e0b; background: rgba(245, 158, 11, 0.18);' : ''}" class="py-2.5 px-3 rounded-xl transition-all space-y-2 ${
+              <div data-timed-set-row="${logKey}" data-timed-state="${isDone ? 'logged_done' : (isRowActiveAmber ? 'running' : (isSetHoldCompleted ? 'completed_ready_to_log' : 'not_started'))}" style="${isRowActiveAmber ? 'border: 2px solid #d97706; background: rgba(217, 119, 6, 0.15);' : (!isDone && !isSetHoldCompleted ? 'border: 1px solid #334155;' : '')}" class="py-2.5 px-3 rounded-xl transition-all space-y-2 ${
                 isDone
-                  ? 'bg-emerald-950/25 border border-emerald-500/45'
+                  ? 'bg-emerald-950/25 border border-[#059669]/55'
                   : (isRowActiveAmber
-                      ? 'shadow-lg shadow-amber-950/40'
+                      ? 'shadow-lg shadow-amber-950/30'
                       : (isSetHoldCompleted
                           ? 'bg-sky-950/35 border-2 border-sky-400/80 shadow-md shadow-sky-950/30'
-                          : 'bg-slate-950/80 border border-slate-800/85'))
+                          : 'bg-[#0f172a]'))
               }">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                   <div class="flex flex-wrap items-center gap-2 min-w-0">
@@ -12428,9 +12669,9 @@
                   <div class="flex items-center justify-end shrink-0">
                     <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${setRestSeconds}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn w-full h-9 sm:h-10 px-2 rounded-lg text-xs font-extrabold whitespace-nowrap transition ${
                       isDone
-                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                        ? 'neuro-btn-done shadow-sm'
                         : (isCurrentTargetSet
-                            ? 'bg-sky-400 hover:bg-sky-300 text-slate-950 shadow-sm'
+                            ? 'bg-amber-600/20 hover:bg-amber-600/30 text-amber-100 border border-amber-500/70 shadow-sm'
                             : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700')
                     }">
                       ${isDone ? '✓ Done' : '✓ Log'}
@@ -12494,15 +12735,26 @@
         const pendingSwapPreview = (state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[ex.id]) || null;
 
         return `
-          <article id="ex-card-${ex.id}" data-ex-progress-state="${isExComplete ? 'completed' : (isExInProgress ? 'in_progress' : 'not_started')}" style="${isExInProgress ? 'border: 2px solid #f59e0b; background: rgba(245, 158, 11, 0.08);' : ''}" class="${
+          <article id="ex-card-${ex.id}" data-ex-progress-state="${isExComplete ? 'completed' : (isExInProgress ? 'in_progress' : 'not_started')}" style="${isExInProgress ? 'border: 2px solid #d97706; background: rgba(217, 119, 6, 0.15);' : (!isActiveCard && !isExComplete ? 'border: 1px solid #334155;' : '')}" class="${
             isExInProgress
-              ? 'border-2 border-amber-500 bg-slate-900 shadow-lg shadow-amber-950/30'
+              ? 'shadow-lg shadow-amber-950/25'
               : (isActiveCard
-                  ? 'border-2 border-sky-400 bg-slate-900 shadow-lg shadow-sky-950/50'
+                  ? 'border-2 border-sky-400 bg-[#1e293b] shadow-lg shadow-sky-950/40'
                   : (isExComplete
-                      ? 'border border-emerald-500/35 bg-slate-900/65 opacity-85 hover:opacity-100'
-                      : 'border border-slate-800 bg-slate-900/80 hover:border-slate-700'))
+                      ? 'border border-[#059669]/55 bg-[#1e293b]/80 opacity-90 hover:opacity-100'
+                      : 'bg-[#1e293b] hover:border-slate-500'))
           } rounded-2xl px-1.5 py-3 sm:p-4 space-y-2.5 scroll-mt-28 transition-all">
+            ${ex.isHistorySwapped ? `
+              <div class="flex flex-wrap items-center justify-between gap-2 bg-sky-950/50 border border-sky-400/45 rounded-xl px-3 py-2">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="px-2 py-0.5 rounded bg-sky-400 text-[#0f172a] text-[10px] font-extrabold uppercase shrink-0">History Swap</span>
+                  <span class="text-[11px] font-bold text-sky-200 truncate">Swapped from ${ex.originalName}</span>
+                </div>
+                <button type="button" data-revert-history-slot="${ex.slotKey || ''}" data-revert-history-alt="${ex.altSlotKey || ''}" class="revert-history-swap-btn px-2.5 py-1 rounded-lg bg-[#0f172a] hover:bg-slate-800 border border-sky-400/50 text-sky-200 text-[11px] font-bold whitespace-nowrap transition">
+                  Revert to Original
+                </button>
+              </div>
+            ` : ''}
             ${ex.isSwappedMachine ? `
               <div class="flex flex-wrap items-center justify-between gap-2 bg-emerald-950/60 border border-emerald-400/50 rounded-xl px-3 py-2">
                 <div class="flex items-center gap-1.5 min-w-0">
@@ -12904,43 +13156,56 @@
                 ${PULLUP_EX_ID_TO_DAY[ex.id] ? getPullupExpansionControlBarHtml(week, PULLUP_EX_ID_TO_DAY[ex.id], ex.sets, ex.baseSetsCount || (PULLUP_EX_ID_TO_DAY[ex.id] === 3 ? 9 : 5), 'gym') : ''}
               </div>
 
-              <!-- PERMANENT 2-COLUMN AI MACHINE SWAP GRID (Exposed Directly Underneath Set Rows on Every Card) -->
-              <div data-exposed-machine-swap-grid="${ex.id}" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
-                ${ex.isSwappedMachine ? `
+              <!-- PERMANENT EXERCISE SWAP GRID: Green AI Machine Swap + Swap from History + AI Check & Swap (Zero Options Deleted) -->
+              <div data-exposed-machine-swap-grid="${ex.id}" class="space-y-2 mt-3">
+                <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+                  ${ex.isSwappedMachine ? `
+                    <button
+                      type="button"
+                      data-ai-swap-check-ex="${ex.id}"
+                      data-orig-ex-id="${ex.originalId || ex.id}"
+                      data-slot-key="${ex.slotKey || ''}"
+                      data-ai-swap-mode="quick"
+                      style="min-height: 40px;"
+                      class="ai-check-swap-ex-btn w-full py-2 px-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border border-sky-400/50 text-sky-200 text-[11px] font-bold leading-tight text-center inline-flex items-center justify-center transition"
+                      title="Change machine subtype or select a different machine video"
+                    >
+                      Change Machine Type
+                    </button>
+                  ` : `
+                    <button
+                      type="button"
+                      data-ai-swap-check-ex="${ex.id}"
+                      data-orig-ex-id="${ex.originalId || ex.id}"
+                      data-slot-key="${ex.slotKey || ''}"
+                      data-ai-swap-mode="quick"
+                      style="min-height: 40px;"
+                      class="ai-check-swap-ex-btn w-full py-2 px-2 rounded-xl bg-[#059669]/20 hover:bg-[#059669]/30 border border-[#059669]/65 text-emerald-200 text-[11px] font-bold leading-tight text-center inline-flex items-center justify-center transition"
+                      title="Check machine match and switch to machine form &amp; video"
+                    >
+                      Switch to Machine Form
+                    </button>
+                  `}
                   <button
                     type="button"
-                    data-ai-swap-check-ex="${ex.id}"
-                    data-orig-ex-id="${ex.originalId || ex.id}"
-                    data-slot-key="${ex.slotKey || ''}"
-                    data-ai-swap-mode="quick"
+                    data-history-swap-ex="${ex.id}"
+                    data-history-swap-slot="${ex.slotKey || ''}"
+                    data-history-swap-name="${String(ex.name || '').replace(/"/g, '&quot;')}"
                     style="min-height: 40px;"
-                    class="ai-check-swap-ex-btn w-full py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-sky-400/50 text-sky-200 text-[11px] font-extrabold leading-tight text-center inline-flex items-center justify-center transition"
-                    title="Change machine subtype or select a different machine video"
+                    class="swap-from-history-btn w-full py-2 px-2 rounded-xl bg-amber-600/15 hover:bg-amber-600/25 border border-amber-500/60 text-amber-200 text-[11px] font-bold leading-tight text-center inline-flex items-center justify-center transition"
+                    title="Replace this exercise with any exercise from your workout history"
                   >
-                    Change Machine Type
+                    ⇄ Swap from History
                   </button>
-                ` : `
-                  <button
-                    type="button"
-                    data-ai-swap-check-ex="${ex.id}"
-                    data-orig-ex-id="${ex.originalId || ex.id}"
-                    data-slot-key="${ex.slotKey || ''}"
-                    data-ai-swap-mode="quick"
-                    style="min-height: 40px;"
-                    class="ai-check-swap-ex-btn w-full py-2 px-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/60 text-emerald-200 text-[11px] font-extrabold leading-tight text-center inline-flex items-center justify-center transition"
-                    title="Check machine match and switch to machine form &amp; video"
-                  >
-                    Switch to Machine Form &amp; Video
-                  </button>
-                `}
+                </div>
                 <button
                   type="button"
                   data-ai-swap-check-ex="${ex.id}"
                   data-orig-ex-id="${ex.originalId || ex.id}"
                   data-slot-key="${ex.slotKey || ''}"
                   data-ai-swap-mode="photo_check"
-                  style="min-height: 40px;"
-                  class="ai-check-swap-ex-btn w-full py-2 px-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/50 text-sky-200 text-[11px] font-extrabold leading-tight text-center inline-flex items-center justify-center transition"
+                  style="min-height: 36px;"
+                  class="ai-check-swap-ex-btn w-full py-1.5 px-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/50 text-sky-200 text-[11px] font-bold leading-tight text-center inline-flex items-center justify-center transition"
                   title="Scan a machine photo or check exercise swap options with AI"
                 >
                   + AI Check &amp; Swap Exercise
@@ -13289,6 +13554,32 @@
           setMachineLoadMode(exId, modeVal);
           renderWorkoutView();
           showToast(modeVal === 'pin_stack' ? 'Switched to Pin / Cable Stack Machine (Total Weight Only)' : 'Switched to Plate-Loaded Machine (2 Sides • No Bar)');
+        });
+      });
+
+      // Freestyle Swap from History Listeners (Open modal listing unique exercises from customDayScheduleByWeek)
+      listEl.querySelectorAll('.swap-from-history-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const slotKey = btn.getAttribute('data-history-swap-slot') || '';
+          const exId = btn.getAttribute('data-history-swap-ex') || '';
+          const exName = btn.getAttribute('data-history-swap-name') || 'Current Exercise';
+          if (typeof window.openSwapFromHistoryModal === 'function') {
+            window.openSwapFromHistoryModal(slotKey, exId, exName);
+          }
+        });
+      });
+
+      listEl.querySelectorAll('.revert-history-swap-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const slotKey = btn.getAttribute('data-revert-history-slot') || '';
+          const altKey = btn.getAttribute('data-revert-history-alt') || '';
+          if (state.historyExerciseSwaps) {
+            if (slotKey) delete state.historyExerciseSwaps[slotKey];
+            if (altKey) delete state.historyExerciseSwaps[altKey];
+          }
+          saveState();
+          renderWorkoutView();
+          showToast('Restored original exercise');
         });
       });
 
@@ -16758,11 +17049,17 @@
       const mealsEl = document.getElementById('vegan-meals-container');
       if (mealsEl) {
         const defaultTimesBySlot = {
-          pre_shake: adaptiveSched?.preShakeStr || '6:35 AM',
+          pre_shake: adaptiveSched?.preShakeStr || '6:30 AM',
           post_oats: adaptiveSched?.oatsStr || '8:15 AM',
           lunch: adaptiveSched?.slots?.lunch?.time12 || '12:00 PM',
           dinner: adaptiveSched?.slots?.dinner?.time12 || '4:30 PM'
         };
+
+        const orderedMealSlots = Array.isArray(adaptiveSched?.mealOrder)
+          ? adaptiveSched.mealOrder
+              .map(slotId => VEGAN_MEALS.find(m => m.slotId === slotId))
+              .filter(Boolean)
+          : VEGAN_MEALS;
 
         const eli12MealTitles = {
           pre_shake: 'Pre-Workout Shake',
@@ -16791,7 +17088,7 @@
           return String(rawName || '').replace(/\([^)]*\)/g, '').trim().split(/\s+/).slice(0, 2).join(' ');
         };
 
-        mealsEl.innerHTML = VEGAN_MEALS.map((slot, mealIdx) => {
+        mealsEl.innerHTML = orderedMealSlots.map((slot, mealIdx) => {
           const mealObj = (dayPlan && dayPlan.meals && dayPlan.meals[slot.slotId]) || slot.options[0];
           const isDone = isMealCheckedForDay(week, dayIdx, slot.slotId);
           const isPartial = isMealPartiallyCheckedForDay(week, dayIdx, slot.slotId);
@@ -16808,7 +17105,11 @@
           const isCardExpanded = Boolean(state.openFuelCards && state.openFuelCards[slot.slotId]);
           const isTipExpanded = Boolean(state.openFuelTips && state.openFuelTips[slot.slotId]);
           const shortTimeStr = defaultTimesBySlot[slot.slotId] || '8:15 AM';
-          const topFuelBadgeText = `FUEL ${mealIdx + 1} • ${shortTimeStr}`;
+          const fuelNumberLabel = slot.slotId === 'pre_shake' ? 'FUEL 1' : (slot.slotId === 'post_oats' ? 'FUEL 2' : (slot.slotId === 'lunch' ? 'FUEL 3' : 'FUEL 4'));
+          const swappedOrderTag = (adaptiveSched && adaptiveSched.isFuel1Fuel2Swapped && (slot.slotId === 'post_oats' || slot.slotId === 'pre_shake'))
+            ? (slot.slotId === 'post_oats' ? 'EAT 1ST • ' : 'DRINK 2ND • ')
+            : '';
+          const topFuelBadgeText = `${swappedOrderTag}${fuelNumberLabel} • ${shortTimeStr}`;
           const eli12Title = eli12MealTitles[slot.slotId] || mealObj.title || slot.title;
           const eli12StatsText = `${mealObj.kcal} Calories | ${mealObj.protein}g Protein`;
 
@@ -18738,66 +19039,126 @@
         });
       }
 
-      // Interactive Gym Time Modal Logic (Updates Meal/Water Chrononutrition Globally)
-      function refreshGymTimeModalPreview(hhmmStr) {
+      // Interactive Wake-Up & Gym Time Modal Logic (Updates Meal/Water Chrononutrition Globally)
+      function refreshGymTimeModalPreview(gymHHMMStr, wakeHHMMStr) {
         const previewEl = document.getElementById('gym-time-modal-meal-preview');
-        const inputEl = document.getElementById('gym-time-modal-input');
-        if (inputEl && hhmmStr) inputEl.value = hhmmStr;
-        const mins = parseHHMMToMinutes(hhmmStr || (inputEl ? inputEl.value : '07:00'));
-        const chrono = getSyncedChronoSchedule(mins, 'upper');
+        const gymInputEl = document.getElementById('gym-time-modal-input');
+        const wakeInputEl = document.getElementById('wakeup-time-modal-input');
+        const gapBadgeEl = document.getElementById('gym-time-modal-gap-badge');
+        const swapAlertEl = document.getElementById('gym-time-modal-swap-alert');
+
+        if (gymInputEl && gymHHMMStr) gymInputEl.value = gymHHMMStr;
+        if (wakeInputEl && wakeHHMMStr) wakeInputEl.value = wakeHHMMStr;
+
+        const gymHHMM = gymHHMMStr || (gymInputEl ? gymInputEl.value : '07:00') || '07:00';
+        const wakeHHMM = wakeHHMMStr || (wakeInputEl ? wakeInputEl.value : '06:30') || '06:30';
+        const gymMins = parseHHMMToMinutes(gymHHMM);
+        const wakeMins = parseHHMMToMinutes(wakeHHMM);
+        const chrono = getSyncedChronoSchedule(gymMins, 'upper', wakeMins);
+        const gapHoursLabel = `${Math.max(0, chrono.wakeToGymGapHours || 0).toFixed(1)}h gap`;
+
+        if (gapBadgeEl) {
+          gapBadgeEl.textContent = chrono.shouldSwapFuel1And2
+            ? `Gap: ${gapHoursLabel} (Over 2.5h -> Oats First, Shake Before Gym)`
+            : `Gap: ${gapHoursLabel} (Under 2.5h -> Standard Shake First)`;
+          gapBadgeEl.className = chrono.shouldSwapFuel1And2
+            ? 'rounded-xl px-3 py-2 text-xs font-extrabold border border-amber-500/60 bg-amber-600/15 text-amber-200'
+            : 'rounded-xl px-3 py-2 text-xs font-bold border border-slate-700 bg-slate-950 text-slate-200';
+        }
+        if (swapAlertEl) {
+          if (chrono.shouldSwapFuel1And2) {
+            swapAlertEl.textContent = WAKE_GAP_SWAP_ALERT_TEXT;
+            swapAlertEl.classList.remove('hidden');
+          } else {
+            swapAlertEl.classList.add('hidden');
+          }
+        }
         if (previewEl) {
+          const firstCard = chrono.shouldSwapFuel1And2
+            ? `<div class="bg-slate-950 border border-amber-500/50 rounded-lg px-2.5 py-1.5">
+                 <div class="text-[10px] text-amber-200 font-bold">1st: Solid Oats (Fuel 2)</div>
+                 <div class="font-extrabold text-amber-100">${chrono.fuel2Time12}</div>
+               </div>
+               <div class="bg-slate-950 border border-sky-500/50 rounded-lg px-2.5 py-1.5">
+                 <div class="text-[10px] text-sky-200 font-bold">2nd: Pre-Shake (Fuel 1)</div>
+                 <div class="font-extrabold text-sky-100">${chrono.fuel1Time12}</div>
+               </div>`
+            : `<div class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5">
+                 <div class="text-[10px] text-slate-300">1st: Fuel 1 Shake (-30m)</div>
+                 <div class="font-extrabold text-emerald-300">${chrono.fuel1Time12}</div>
+               </div>
+               <div class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5">
+                 <div class="text-[10px] text-slate-300">2nd: Fuel 2 Oats (+75m)</div>
+                 <div class="font-extrabold text-emerald-300">${chrono.fuel2Time12}</div>
+               </div>`;
           previewEl.innerHTML = `
             <div class="grid grid-cols-2 gap-1.5 text-[11px]" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));">
-              <div class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                <div class="text-[10px] text-slate-400">Fuel 1 (-25m)</div>
-                <div class="font-extrabold text-emerald-300">${chrono.fuel1Time12}</div>
+              ${firstCard}
+              <div class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5">
+                <div class="text-[10px] text-slate-300">3rd: Fuel 3 Lunch</div>
+                <div class="font-extrabold text-amber-200">${chrono.fuel3Time12}</div>
               </div>
-              <div class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                <div class="text-[10px] text-slate-400">Fuel 2 (+75m)</div>
-                <div class="font-extrabold text-emerald-300">${chrono.fuel2Time12}</div>
-              </div>
-              <div class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                <div class="text-[10px] text-slate-400">Fuel 3 (+5h)</div>
-                <div class="font-extrabold text-amber-300">${chrono.fuel3Time12}</div>
-              </div>
-              <div class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                <div class="text-[10px] text-slate-400">Fuel 4 (+9.5h)</div>
-                <div class="font-extrabold text-purple-300">${chrono.fuel4Time12}</div>
+              <div class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5">
+                <div class="text-[10px] text-slate-300">4th: Fuel 4 Dinner</div>
+                <div class="font-extrabold text-slate-200">${chrono.fuel4Time12}</div>
               </div>
             </div>
           `;
         }
         document.querySelectorAll('.gym-time-modal-preset-btn').forEach(b => {
           const pVal = b.getAttribute('data-modal-gym-hhmm');
-          const isMatch = pVal === minutesToHHMM(mins);
+          const isMatch = pVal === minutesToHHMM(gymMins);
           b.className = isMatch
-            ? 'gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-extrabold transition bg-cyan-400 text-slate-950 border-cyan-200 shadow-sm'
-            : 'gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-800';
+            ? 'gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-extrabold transition bg-sky-500/25 text-sky-100 border-sky-400 shadow-sm'
+            : 'gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-700';
+        });
+        document.querySelectorAll('.wakeup-time-modal-preset-btn').forEach(b => {
+          const pVal = b.getAttribute('data-modal-wake-hhmm');
+          const isMatch = pVal === minutesToHHMM(wakeMins);
+          b.className = isMatch
+            ? 'wakeup-time-modal-preset-btn py-1.5 px-2 rounded-xl border text-xs font-extrabold transition bg-amber-600/25 text-amber-100 border-amber-500 shadow-sm'
+            : 'wakeup-time-modal-preset-btn py-1.5 px-2 rounded-xl border text-xs font-bold transition bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-700';
         });
       }
 
-      function applyGymTimeFromModal(hhmmStr) {
+      function applyGymTimeFromModal(gymHHMMStr, wakeHHMMStr) {
         const w = state.selectedWeek || state.currentWeek || 1;
         const d = state.selectedDayIndex || 0;
-        setManualDayGymStartTime(w, d, hhmmStr || '07:00');
+        const gymInputEl = document.getElementById('gym-time-modal-input');
+        const wakeInputEl = document.getElementById('wakeup-time-modal-input');
+        const finalGym = gymHHMMStr || (gymInputEl ? gymInputEl.value : '07:00') || '07:00';
+        const finalWake = wakeHHMMStr || (wakeInputEl ? wakeInputEl.value : getDayWakeUpTime(w, d)) || '06:30';
+        setManualDayWakeUpTime(w, d, finalWake);
+        setManualDayGymStartTime(w, d, finalGym);
         state.hasSetInitialGymTime = true;
         saveState();
         renderWorkoutView();
         renderVeganView();
         if (gymTimeModal) gymTimeModal.classList.add('hidden');
         const updatedChrono = getAdaptiveMealScheduleForDay(w, d).chrono;
-        showToast(`Gym Time: ${updatedChrono.gymTime12} • All 4 Meals Synced`);
+        showToast(
+          updatedChrono.shouldSwapFuel1And2
+            ? `Woke Up ${updatedChrono.wakeTime12} • Gym ${updatedChrono.gymTime12} (Oats & Shake Swapped)`
+            : `Woke Up ${updatedChrono.wakeTime12} • Gym ${updatedChrono.gymTime12} • Meals Synced`
+        );
       }
 
-      window.openGymTimeSelectorModal = function(weekNum, dayNum) {
+      window.openGymTimeSelectorModal = function(weekNum, dayNum, focusField) {
         if (!gymTimeModal) return;
         const w = weekNum || state.selectedWeek || state.currentWeek || 1;
         const d = typeof dayNum === 'number' ? dayNum : (state.selectedDayIndex || 0);
         const sched = getDayGymSchedule(w, d);
+        const wakeHHMM = getDayWakeUpTime(w, d);
         const dayTitleEl = document.getElementById('gym-time-modal-day-label');
         if (dayTitleEl) dayTitleEl.textContent = `Week ${w} • Day ${d + 1}`;
-        refreshGymTimeModalPreview(sched.startTime || '07:00');
+        refreshGymTimeModalPreview(sched.startTime || '07:00', wakeHHMM || '06:30');
         gymTimeModal.classList.remove('hidden');
+        const targetInput = focusField === 'wakeup'
+          ? document.getElementById('wakeup-time-modal-input')
+          : document.getElementById('gym-time-modal-input');
+        if (targetInput && typeof targetInput.focus === 'function') {
+          setTimeout(() => { try { targetInput.focus(); } catch (e) {} }, 40);
+        }
       };
 
       const closeGymTimeModalBtn = document.getElementById('close-gym-time-modal-btn');
@@ -18810,30 +19171,536 @@
         });
       }
       const gymTimeModalInput = document.getElementById('gym-time-modal-input');
+      const wakeUpTimeModalInput = document.getElementById('wakeup-time-modal-input');
       if (gymTimeModalInput) {
-        gymTimeModalInput.addEventListener('input', () => refreshGymTimeModalPreview(gymTimeModalInput.value));
-        gymTimeModalInput.addEventListener('change', () => refreshGymTimeModalPreview(gymTimeModalInput.value));
+        gymTimeModalInput.addEventListener('input', () => refreshGymTimeModalPreview(gymTimeModalInput.value, wakeUpTimeModalInput ? wakeUpTimeModalInput.value : undefined));
+        gymTimeModalInput.addEventListener('change', () => refreshGymTimeModalPreview(gymTimeModalInput.value, wakeUpTimeModalInput ? wakeUpTimeModalInput.value : undefined));
+      }
+      if (wakeUpTimeModalInput) {
+        wakeUpTimeModalInput.addEventListener('input', () => refreshGymTimeModalPreview(gymTimeModalInput ? gymTimeModalInput.value : undefined, wakeUpTimeModalInput.value));
+        wakeUpTimeModalInput.addEventListener('change', () => refreshGymTimeModalPreview(gymTimeModalInput ? gymTimeModalInput.value : undefined, wakeUpTimeModalInput.value));
       }
       document.querySelectorAll('.gym-time-modal-step-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const delta = parseInt(btn.getAttribute('data-modal-step-mins') || '15', 10);
           const curVal = (gymTimeModalInput && gymTimeModalInput.value) ? gymTimeModalInput.value : '07:00';
           const nextMins = Math.max(300, Math.min(1365, roundTo15Minutes(parseHHMMToMinutes(curVal) + delta)));
-          refreshGymTimeModalPreview(minutesToHHMM(nextMins));
+          refreshGymTimeModalPreview(minutesToHHMM(nextMins), wakeUpTimeModalInput ? wakeUpTimeModalInput.value : undefined);
+        });
+      });
+      document.querySelectorAll('.wakeup-time-modal-step-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const delta = parseInt(btn.getAttribute('data-modal-wake-step-mins') || '15', 10);
+          const curVal = (wakeUpTimeModalInput && wakeUpTimeModalInput.value) ? wakeUpTimeModalInput.value : '06:30';
+          const nextMins = Math.max(240, Math.min(840, roundTo15Minutes(parseHHMMToMinutes(curVal) + delta)));
+          refreshGymTimeModalPreview(gymTimeModalInput ? gymTimeModalInput.value : undefined, minutesToHHMM(nextMins));
+        });
+      });
+      document.querySelectorAll('.wakeup-time-modal-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const hhmm = btn.getAttribute('data-modal-wake-hhmm') || '06:30';
+          refreshGymTimeModalPreview(gymTimeModalInput ? gymTimeModalInput.value : undefined, hhmm);
         });
       });
       document.querySelectorAll('.gym-time-modal-preset-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const hhmm = btn.getAttribute('data-modal-gym-hhmm') || '07:00';
-          applyGymTimeFromModal(hhmm);
+          refreshGymTimeModalPreview(hhmm, wakeUpTimeModalInput ? wakeUpTimeModalInput.value : undefined);
         });
       });
       const gymTimeModalSaveBtn = document.getElementById('gym-time-modal-save-btn');
       if (gymTimeModalSaveBtn) {
         gymTimeModalSaveBtn.addEventListener('click', () => {
-          const hhmm = (gymTimeModalInput && gymTimeModalInput.value) ? gymTimeModalInput.value : '07:00';
-          applyGymTimeFromModal(hhmm);
+          const gymVal = (gymTimeModalInput && gymTimeModalInput.value) ? gymTimeModalInput.value : '07:00';
+          const wakeVal = (wakeUpTimeModalInput && wakeUpTimeModalInput.value) ? wakeUpTimeModalInput.value : '06:30';
+          applyGymTimeFromModal(gymVal, wakeVal);
         });
+      }
+
+      // UPGRADE 15: STRICT AI DIFFICULTY ENGINE & PROGRAM SETUP WIZARD
+      const PROGRAM_WIZARD_DIFFICULTY_DIRECTIVES = {
+        easy: 'Difficulty: EASY. You MUST select strictly machine-based or cable-based exercises (e.g., Leg Press instead of Squat). Max 3 sets per exercise to prevent fatigue.',
+        medium: 'Difficulty: MEDIUM. Use a standard mix of free-weights and machines. 3 to 4 sets per exercise.',
+        hard: 'Difficulty: HARD. Prioritize complex, heavy free-weight barbell compound lifts (e.g., Barbell Squat, Deadlift). 4 to 5 sets per exercise.'
+      };
+
+      const programWizardModal = document.getElementById('program-setup-wizard-modal');
+      const openProgramWizardBtn = document.getElementById('open-program-wizard-btn');
+      const closeProgramWizardBtn = document.getElementById('close-program-wizard-modal-btn');
+      const runProgramWizardSubmitBtn = document.getElementById('run-program-wizard-submit-btn');
+      const programWizardStatusEl = document.getElementById('program-wizard-status');
+
+      let wizardSelectedDays = (state.programWizardConfig && state.programWizardConfig.daysPerWeek) || 5;
+      let wizardSelectedFocus = (state.programWizardConfig && state.programWizardConfig.primaryFocus) || 'balanced';
+      let wizardSelectedDifficulty = (state.programWizardConfig && state.programWizardConfig.difficulty) || 'medium';
+
+      function syncProgramWizardPillsUI() {
+        document.querySelectorAll('.wizard-days-pill').forEach(btn => {
+          const v = parseInt(btn.getAttribute('data-wizard-days') || '5', 10);
+          const active = v === wizardSelectedDays;
+          btn.className = active
+            ? 'wizard-days-pill py-2 px-2 rounded-xl border text-xs font-extrabold transition bg-amber-600/25 text-amber-100 border-amber-500 shadow-sm'
+            : 'wizard-days-pill py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-700';
+          btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        document.querySelectorAll('.wizard-focus-pill').forEach(btn => {
+          const v = btn.getAttribute('data-wizard-focus') || 'balanced';
+          const active = v === wizardSelectedFocus;
+          btn.className = active
+            ? 'wizard-focus-pill py-2 px-2 rounded-xl border text-xs font-extrabold transition bg-amber-600/25 text-amber-100 border-amber-500 shadow-sm'
+            : 'wizard-focus-pill py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-700';
+          btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        document.querySelectorAll('.wizard-diff-pill').forEach(btn => {
+          const v = btn.getAttribute('data-wizard-diff') || 'medium';
+          const active = v === wizardSelectedDifficulty;
+          btn.className = active
+            ? 'wizard-diff-pill py-2 px-2 rounded-xl border text-xs font-extrabold transition bg-amber-600/25 text-amber-100 border-amber-500 shadow-sm'
+            : 'wizard-diff-pill py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-700';
+          btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        const previewNoteEl = document.getElementById('program-wizard-rule-preview');
+        if (previewNoteEl) {
+          previewNoteEl.textContent = PROGRAM_WIZARD_DIFFICULTY_DIRECTIVES[wizardSelectedDifficulty] || PROGRAM_WIZARD_DIFFICULTY_DIRECTIVES.medium;
+        }
+      }
+
+      document.querySelectorAll('.wizard-days-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          wizardSelectedDays = Math.max(3, Math.min(6, parseInt(btn.getAttribute('data-wizard-days') || '5', 10)));
+          syncProgramWizardPillsUI();
+        });
+      });
+      document.querySelectorAll('.wizard-focus-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          wizardSelectedFocus = btn.getAttribute('data-wizard-focus') || 'balanced';
+          syncProgramWizardPillsUI();
+        });
+      });
+      document.querySelectorAll('.wizard-diff-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          wizardSelectedDifficulty = btn.getAttribute('data-wizard-diff') || 'medium';
+          syncProgramWizardPillsUI();
+        });
+      });
+
+      window.openProgramSetupWizardModal = function() {
+        if (syncSettingsModal) syncSettingsModal.classList.add('hidden');
+        if (!programWizardModal) return;
+        syncProgramWizardPillsUI();
+        if (programWizardStatusEl) {
+          programWizardStatusEl.textContent = '';
+          programWizardStatusEl.classList.add('hidden');
+        }
+        programWizardModal.classList.remove('hidden');
+      };
+
+      if (openProgramWizardBtn) {
+        openProgramWizardBtn.addEventListener('click', () => window.openProgramSetupWizardModal());
+      }
+      if (closeProgramWizardBtn && programWizardModal) {
+        closeProgramWizardBtn.addEventListener('click', () => programWizardModal.classList.add('hidden'));
+      }
+      if (programWizardModal) {
+        programWizardModal.addEventListener('click', (e) => {
+          if (e.target === programWizardModal) programWizardModal.classList.add('hidden');
+        });
+      }
+
+      function buildLocalWizardFallbackWeek(daysPerWeek, primaryFocus, difficulty) {
+        const diff = difficulty === 'easy' || difficulty === 'hard' ? difficulty : 'medium';
+        const setsCount = diff === 'easy' ? 3 : (diff === 'hard' ? 4 : 3);
+        const repsLabel = diff === 'easy' ? '10-12' : (diff === 'hard' ? '5-8' : '8-12');
+        const restSecs = diff === 'easy' ? 75 : (diff === 'hard' ? 150 : 90);
+        const focusLabel = primaryFocus.charAt(0).toUpperCase() + primaryFocus.slice(1);
+        const pools = {
+          easy: {
+            chest: [
+              { name: 'Seated Chest Press Machine', equipType: 'machine', equipLabel: 'Machine', defaultWeightLbs: 70, videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ', instructions: 'Set seat so handles line up with mid chest. Push smoothly and lower with control.' },
+              { name: 'Incline Chest Press Machine', equipType: 'machine', equipLabel: 'Machine', defaultWeightLbs: 60, videoUrl: 'https://www.youtube.com/watch?v=sqNwDkUU_Ps', instructions: 'Keep shoulder blades flat against the pad and drive handles up steadily.' },
+              { name: 'Pec Deck Machine Fly', equipType: 'machine', equipLabel: 'Machine', defaultWeightLbs: 60, videoUrl: 'https://www.youtube.com/watch?v=Z57CtFmRMxA', instructions: 'Keep elbows slightly bent and squeeze pads together in front of your chest.' },
+              { name: 'Cable Overhead Tricep Extension', equipType: 'cable', equipLabel: 'Cable', defaultWeightLbs: 35, videoUrl: 'https://www.youtube.com/watch?v=2-LAMcpzODU', instructions: 'Keep elbows steady by your head and extend the rope all the way up.' },
+              { name: 'Cable Lateral Raise', equipType: 'cable', equipLabel: 'Cable', defaultWeightLbs: 15, videoUrl: 'https://www.youtube.com/watch?v=PPrzBWZDOhA', instructions: 'Sweep handle out to shoulder height with a slight bend in your elbow.' }
+            ],
+            legs: [
+              { name: '45-Degree Leg Press Machine', equipType: 'machine', equipLabel: 'Machine', defaultWeightLbs: 140, videoUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ', instructions: 'Place feet shoulder-width on the sled. Lower slowly until knees reach 90 degrees.' },
+              { name: 'Seated Leg Curl Machine', equipType: 'machine', equipLabel: 'Machine', defaultWeightLbs: 70, videoUrl: 'https://www.youtube.com/watch?v=Orxowest56U', instructions: 'Lock the lap pad down snugly and curl heels under the seat with control.' },
+              { name: 'Leg Extension Machine', equipType: 'machine', equipLabel: 'Machine', defaultWeightLbs: 75, videoUrl: 'https://www.youtube.com/watch?v=YyvSfVjQeL0', instructions: 'Line your knee joint up with the machine pivot and squeeze your quads at the top.' },
+              { name: 'Hip Abduction Machine', equipType: 'machine', equipLabel: 'Machine', defaultWeightLbs: 80, videoUrl: 'https://www.youtube.com/watch?v=G_8LItOiZ0Q', instructions: 'Sit tall and push knees outward smoothly, pausing briefly at the widest point.' },
+              { name: 'Seated Calf Raise Machine', equipType: 'machine', equipLabel: 'Machine', defaultWeightLbs: 65, videoUrl: 'https://www.youtube.com/watch?v=JbyjNymZOt0', instructions: 'Lower heels into a full stretch, then press all the way up onto your toes.' }
+            ],
+            back: [
+              { name: 'Wide-Grip Cable Lat Pulldown', equipType: 'cable', equipLabel: 'Cable', defaultWeightLbs: 85, videoUrl: 'https://www.youtube.com/watch?v=CAwf7n6Luuc', instructions: 'Pull the bar down to your upper chest while driving elbows toward your hips.' },
+              { name: 'Seated Cable Row', equipType: 'cable', equipLabel: 'Cable', defaultWeightLbs: 85, videoUrl: 'https://www.youtube.com/watch?v=GZbfZ033f74', instructions: 'Sit tall, pull handle to your belly button, and squeeze your shoulder blades.' },
+              { name: 'Chest-Supported Row Machine', equipType: 'machine', equipLabel: 'Machine', defaultWeightLbs: 75, videoUrl: 'https://www.youtube.com/watch?v=H75im9fAUMc', instructions: 'Keep chest pressed against the pad and pull elbows straight back.' },
+              { name: 'Cable Face Pull', equipType: 'cable', equipLabel: 'Cable', defaultWeightLbs: 35, videoUrl: 'https://www.youtube.com/watch?v=rep-qVOkqgk', instructions: 'Pull the rope toward your forehead and rotate thumbs backward at the end.' },
+              { name: 'Cable Bicep Curl', equipType: 'cable', equipLabel: 'Cable', defaultWeightLbs: 35, videoUrl: 'https://www.youtube.com/watch?v=NFzTWp2qpiE', instructions: 'Keep elbows pinned to your sides and curl the bar smoothly toward your shoulders.' }
+            ]
+          },
+          medium: {
+            chest: [
+              { name: 'Incline Dumbbell Bench Press', equipType: 'dumbbell', equipLabel: 'Dumbbell', defaultWeightLbs: 45, videoUrl: 'https://www.youtube.com/watch?v=8iPEnn-ltC8', instructions: 'Set bench to 30 degrees. Lower dumbbells to upper chest and press up steadily.' },
+              { name: 'Seated Chest Press Machine', equipType: 'machine', equipLabel: 'Machine', defaultWeightLbs: 90, videoUrl: 'https://www.youtube.com/watch?v=xUm0BiZCWlQ', instructions: 'Drive handles smoothly forward without shrugging shoulders.' },
+              { name: 'Cable Chest Fly', equipType: 'cable', equipLabel: 'Cable', defaultWeightLbs: 25, videoUrl: 'https://www.youtube.com/watch?v=Iwe6AmxVf7o', instructions: 'Step forward into a split stance and bring handles together with soft elbows.' },
+              { name: 'Dumbbell Lateral Raise', equipType: 'dumbbell', equipLabel: 'Dumbbell', defaultWeightLbs: 15, videoUrl: 'https://www.youtube.com/watch?v=3VcKaXpzqRo', instructions: 'Lift dumbbells out to your sides to shoulder height and lower slowly.' },
+              { name: 'Cable Rope Tricep Pushdown', equipType: 'cable', equipLabel: 'Cable', defaultWeightLbs: 45, videoUrl: 'https://www.youtube.com/watch?v=2-LAMcpzODU', instructions: 'Keep elbows tucked at your sides and spread the rope apart at the bottom.' }
+            ],
+            legs: [
+              { name: 'Hack Squat Machine', equipType: 'machine', equipLabel: 'Machine', defaultWeightLbs: 135, videoUrl: 'https://www.youtube.com/watch?v=0tn5K9NlCfo', instructions: 'Keep lower back flat against the pad and drive up through your whole foot.' },
+              { name: 'Dumbbell Romanian Deadlift', equipType: 'dumbbell', equipLabel: 'Dumbbell', defaultWeightLbs: 50, videoUrl: 'https://www.youtube.com/watch?v=7j-2w4-P14I', instructions: 'Push hips straight back with soft knees until hamstrings stretch, then stand tall.' },
+              { name: 'Bulgarian Split Squat', equipType: 'dumbbell', equipLabel: 'Dumbbell', defaultWeightLbs: 30, videoUrl: 'https://www.youtube.com/watch?v=2C-uNgKwPLE', instructions: 'Drop back knee straight down under control and press through front heel.' },
+              { name: 'Seated Leg Curl Machine', equipType: 'machine', equipLabel: 'Machine', defaultWeightLbs: 85, videoUrl: 'https://www.youtube.com/watch?v=Orxowest56U', instructions: 'Control every inch back up after squeezing your hamstrings.' },
+              { name: 'Standing Calf Raise Machine', equipType: 'machine', equipLabel: 'Machine', defaultWeightLbs: 110, videoUrl: 'https://www.youtube.com/watch?v=gwLzBJYoWlI', instructions: 'Pause for 1 second at the bottom stretch and 1 second at the top.' }
+            ],
+            back: [
+              { name: 'Weighted Pull-Up / Lat Pulldown', equipType: 'cable', equipLabel: 'Cable / Bar', defaultWeightLbs: 105, videoUrl: 'https://www.youtube.com/watch?v=CAwf7n6Luuc', instructions: 'Pull chest toward the bar and control the full stretch at the top.' },
+              { name: 'One-Arm Dumbbell Row', equipType: 'dumbbell', equipLabel: 'Dumbbell', defaultWeightLbs: 55, videoUrl: 'https://www.youtube.com/watch?v=pYcpY20QaE8', instructions: 'Brace one hand on the bench and pull the dumbbell toward your hip.' },
+              { name: 'Seated Cable Row', equipType: 'cable', equipLabel: 'Cable', defaultWeightLbs: 100, videoUrl: 'https://www.youtube.com/watch?v=GZbfZ033f74', instructions: 'Keep torso upright and squeeze shoulder blades together.' },
+              { name: 'Rear Delt Cable Face Pull', equipType: 'cable', equipLabel: 'Cable', defaultWeightLbs: 40, videoUrl: 'https://www.youtube.com/watch?v=rep-qVOkqgk', instructions: 'Pull rope toward eyes with high elbows and pause.' },
+              { name: 'Incline Dumbbell Curl', equipType: 'dumbbell', equipLabel: 'Dumbbell', defaultWeightLbs: 25, videoUrl: 'https://www.youtube.com/watch?v=soxrZlIl35U', instructions: 'Let elbows hang straight down and curl without swinging.' }
+            ]
+          },
+          hard: {
+            chest: [
+              { name: 'Barbell Flat Bench Press', equipType: 'barbell', equipLabel: 'Barbell Compound', defaultWeightLbs: 155, videoUrl: 'https://www.youtube.com/watch?v=rT7DgCr-3pg', instructions: 'Plant feet firmly, arch upper back slightly, lower bar to mid chest, and press explosively.' },
+              { name: 'Barbell Incline Bench Press', equipType: 'barbell', equipLabel: 'Barbell Compound', defaultWeightLbs: 135, videoUrl: 'https://www.youtube.com/watch?v=SrqOu55lrYU', instructions: 'Control bar down to upper chest on a 30-degree bench and drive straight up.' },
+              { name: 'Standing Barbell Overhead Press', equipType: 'barbell', equipLabel: 'Barbell Compound', defaultWeightLbs: 95, videoUrl: 'https://www.youtube.com/watch?v=2yjwXTZQDDI', instructions: 'Brace abs and glutes tightly, press bar straight overhead, and lock out cleanly.' },
+              { name: 'Weighted Parallel Bar Dip', equipType: 'bodyweight', equipLabel: 'Heavy Compound', defaultWeightLbs: 25, videoUrl: 'https://www.youtube.com/watch?v=2z8JmcrW-As', instructions: 'Lean slightly forward, lower to 90 degrees at elbows, and press back up.' },
+              { name: 'Close-Grip Barbell Bench Press', equipType: 'barbell', equipLabel: 'Barbell Compound', defaultWeightLbs: 135, videoUrl: 'https://www.youtube.com/watch?v=nEF0bv2FW94', instructions: 'Keep hands shoulder-width and elbows tucked close to hit triceps hard.' }
+            ],
+            legs: [
+              { name: 'Barbell Back Squat', equipType: 'barbell', equipLabel: 'Barbell Compound', defaultWeightLbs: 185, videoUrl: 'https://www.youtube.com/watch?v=ultWZbUMPL8', instructions: 'Brace core deeply, sit down between hips to parallel or below, and drive up.' },
+              { name: 'Conventional Barbell Deadlift', equipType: 'barbell', equipLabel: 'Barbell Compound', defaultWeightLbs: 225, videoUrl: 'https://www.youtube.com/watch?v=op9kVnSso6Q', instructions: 'Keep bar over mid-foot, lock lats down, push floor away, and stand tall.' },
+              { name: 'Barbell Romanian Deadlift', equipType: 'barbell', equipLabel: 'Barbell Compound', defaultWeightLbs: 155, videoUrl: 'https://www.youtube.com/watch?v=JCXUYuzwNrM', instructions: 'Hinge hips backward keeping bar close to thighs until deep hamstring stretch.' },
+              { name: 'Barbell Front Squat', equipType: 'barbell', equipLabel: 'Barbell Compound', defaultWeightLbs: 135, videoUrl: 'https://www.youtube.com/watch?v=m4ytaCJZpl0', instructions: 'Keep elbows high and torso upright as you descend and drive up.' },
+              { name: 'Heavy Standing Barbell Calf Raise', equipType: 'barbell', equipLabel: 'Barbell Compound', defaultWeightLbs: 135, videoUrl: 'https://www.youtube.com/watch?v=gwLzBJYoWlI', instructions: 'Full stretch at bottom and hard squeeze at top of every rep.' }
+            ],
+            back: [
+              { name: 'Pendlay Barbell Row', equipType: 'barbell', equipLabel: 'Barbell Compound', defaultWeightLbs: 135, videoUrl: 'https://www.youtube.com/watch?v=h4nkoayPFWw', instructions: 'Start each rep from the floor with flat back and row explosively to lower chest.' },
+              { name: 'Weighted Chin-Up', equipType: 'bodyweight', equipLabel: 'Heavy Compound', defaultWeightLbs: 25, videoUrl: 'https://www.youtube.com/watch?v=brhRXlOhsAM', instructions: 'Full dead hang at bottom, pull chin clearly above the bar.' },
+              { name: 'Barbell Bent-Over Row', equipType: 'barbell', equipLabel: 'Barbell Compound', defaultWeightLbs: 145, videoUrl: 'https://www.youtube.com/watch?v=FWJR5Ve8bnQ', instructions: 'Hinge 45 degrees and pull bar smoothly toward your belly button.' },
+              { name: 'Barbell Shrug', equipType: 'barbell', equipLabel: 'Barbell Compound', defaultWeightLbs: 185, videoUrl: 'https://www.youtube.com/watch?v=NAqCVe2mwzM', instructions: 'Lift shoulders straight up toward ears and hold for 1 second.' },
+              { name: 'EZ-Bar Barbell Curl', equipType: 'barbell', equipLabel: 'Barbell', defaultWeightLbs: 75, videoUrl: 'https://www.youtube.com/watch?v=kwG2ipFRgfo', instructions: 'Keep elbows steady and lower the bar slowly for 3 seconds.' }
+            ]
+          }
+        };
+
+        const focusRotation = primaryFocus === 'chest'
+          ? ['chest', 'back', 'legs', 'chest', 'back', 'chest']
+          : (primaryFocus === 'legs'
+              ? ['legs', 'chest', 'legs', 'back', 'legs', 'chest']
+              : (primaryFocus === 'back'
+                  ? ['back', 'chest', 'legs', 'back', 'legs', 'back']
+                  : ['chest', 'legs', 'back', 'chest', 'legs', 'back']));
+
+        const schedule = [];
+        let restCounter = 0;
+        for (let d = 0; d < 7; d++) {
+          if (d < daysPerWeek) {
+            const cat = focusRotation[d % focusRotation.length];
+            const exTemplateList = pools[diff][cat] || pools[diff].chest;
+            const catTitle = cat === 'chest' ? 'Push / Chest' : (cat === 'legs' ? 'Legs & Glutes' : 'Pull / Back');
+            schedule.push({
+              daySub: `${catTitle.split(' ')[0]} ${d + 1}`,
+              target: `${focusLabel} • ${diff.toUpperCase()}`,
+              title: `Day ${d + 1} • ${catTitle} (${diff.toUpperCase()})`,
+              subtitle: `${daysPerWeek}-Day ${focusLabel} Focus • ${diff === 'easy' ? 'Machines & Cables Only (Max 3 Sets)' : (diff === 'hard' ? 'Heavy Barbell Compounds (4-5 Sets)' : 'Balanced Free Weights & Machines (3-4 Sets)')}`,
+              warmupType: cat === 'legs' ? 'lower' : 'upper',
+              isWizardGenerated: true,
+              exercises: exTemplateList.map((ex, idx) => ({
+                id: `wiz_${diff}_${cat}_d${d + 1}_e${idx + 1}`,
+                name: ex.name,
+                sets: setsCount,
+                reps: repsLabel,
+                rest: restSecs,
+                equipType: ex.equipType,
+                equipLabel: ex.equipLabel,
+                defaultWeightLbs: ex.defaultWeightLbs,
+                videoUrl: ex.videoUrl,
+                instructions: ex.instructions
+              }))
+            });
+          } else {
+            schedule.push(restCounter === 0 ? 5 : 6);
+            restCounter++;
+          }
+        }
+        return schedule;
+      }
+
+      async function runProgramSetupWizard() {
+        const week = state.selectedWeek || state.currentWeek || 1;
+        const daysPerWeek = Math.max(3, Math.min(6, Number(wizardSelectedDays) || 5));
+        const primaryFocus = wizardSelectedFocus || 'balanced';
+        const difficulty = wizardSelectedDifficulty === 'easy' || wizardSelectedDifficulty === 'hard' ? wizardSelectedDifficulty : 'medium';
+        const directive = PROGRAM_WIZARD_DIFFICULTY_DIRECTIVES[difficulty];
+
+        if (runProgramWizardSubmitBtn) {
+          runProgramWizardSubmitBtn.disabled = true;
+          runProgramWizardSubmitBtn.textContent = 'Building Your Custom Plan...';
+        }
+        if (programWizardStatusEl) {
+          programWizardStatusEl.textContent = `Generating ${daysPerWeek}-day ${primaryFocus} plan (${difficulty.toUpperCase()})...`;
+          programWizardStatusEl.classList.remove('hidden');
+        }
+
+        const promptText = [
+          'You are an expert strength coach building a 7-day gym program in strict JSON.',
+          `User Choices: Days Per Week = ${daysPerWeek}, Primary Focus = ${primaryFocus.toUpperCase()}, Difficulty = ${difficulty.toUpperCase()}.`,
+          directive,
+          'Return ONLY a valid JSON object with shape: { "days": [ ...7 items... ] }.',
+          `Include exactly ${daysPerWeek} lift days (isRest: false) and ${7 - daysPerWeek} rest days (isRest: true).`,
+          'Each lift day must have: { "isRest": false, "daySub": "Short Label", "title": "Day Title", "subtitle": "Short ELI12 Subtitle", "warmupType": "upper" | "lower", "exercises": [ 5 unique exercises ] }.',
+          'Each exercise must have: { "name": "Exercise Name", "sets": number, "reps": "8-12", "rest": 90, "equipType": "machine"|"cable"|"barbell"|"dumbbell"|"bodyweight", "instructions": "2 short plain-English steps" }.',
+          'Rules: No duplicate exercises on the same day. Plain ELI12 English. Zero emojis. Use simple everyday words only.'
+        ].join('\n');
+
+        let builtSchedule = null;
+        try {
+          const resp = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'gemini-3.8-flash',
+              enableGoogleSearch: false,
+              responseMimeType: 'application/json',
+              prompt: promptText
+            })
+          });
+          if (resp && resp.ok) {
+            const data = await resp.json();
+            const rawText = String((data && (data.text || data.reply)) || '').trim();
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              if (parsed && Array.isArray(parsed.days) && parsed.days.length === 7) {
+                const candidate = [];
+                let restCnt = 0;
+                let liftCnt = 0;
+                parsed.days.forEach((dObj, dIdx) => {
+                  const isRest = Boolean(dObj && dObj.isRest) || !Array.isArray(dObj && dObj.exercises) || dObj.exercises.length === 0;
+                  if (isRest) {
+                    candidate.push(restCnt === 0 ? 5 : 6);
+                    restCnt++;
+                  } else {
+                    liftCnt++;
+                    const seenNames = new Set();
+                    const cleanedExercises = [];
+                    dObj.exercises.slice(0, 6).forEach((ex, exIdx) => {
+                      const cleanName = String((ex && ex.name) || '').trim();
+                      if (!cleanName || seenNames.has(cleanName.toLowerCase())) return;
+                      seenNames.add(cleanName.toLowerCase());
+                      let sCount = parseInt(ex.sets, 10) || (difficulty === 'easy' ? 3 : (difficulty === 'hard' ? 4 : 3));
+                      if (difficulty === 'easy') sCount = Math.min(3, Math.max(2, sCount));
+                      else if (difficulty === 'hard') sCount = Math.min(5, Math.max(4, sCount));
+                      else sCount = Math.min(4, Math.max(3, sCount));
+                      const eqType = difficulty === 'easy'
+                        ? (String(ex.equipType || '').toLowerCase() === 'cable' ? 'cable' : 'machine')
+                        : (['machine', 'cable', 'barbell', 'dumbbell', 'bodyweight'].includes(String(ex.equipType || '').toLowerCase()) ? String(ex.equipType).toLowerCase() : 'machine');
+                      cleanedExercises.push({
+                        id: `wiz_ai_${difficulty}_d${dIdx + 1}_e${exIdx + 1}`,
+                        name: cleanName,
+                        sets: sCount,
+                        reps: String(ex.reps || (difficulty === 'hard' ? '5-8' : '10-12')),
+                        rest: Math.max(45, Math.min(240, parseInt(ex.rest, 10) || 90)),
+                        equipType: eqType,
+                        equipLabel: eqType === 'barbell' ? 'Barbell Compound' : (eqType === 'cable' ? 'Cable' : (eqType === 'dumbbell' ? 'Dumbbell' : 'Machine')),
+                        instructions: String(ex.instructions || 'Set up safely and control every rep.')
+                      });
+                    });
+                    if (cleanedExercises.length >= 3) {
+                      candidate.push({
+                        daySub: String(dObj.daySub || `Day ${dIdx + 1}`).slice(0, 18),
+                        target: `${primaryFocus} • ${difficulty.toUpperCase()}`,
+                        title: String(dObj.title || `Day ${dIdx + 1} Workout (${difficulty.toUpperCase()})`),
+                        subtitle: String(dObj.subtitle || `${daysPerWeek}-Day ${primaryFocus} Plan`),
+                        warmupType: dObj.warmupType === 'lower' ? 'lower' : 'upper',
+                        isWizardGenerated: true,
+                        exercises: cleanedExercises
+                      });
+                    } else {
+                      candidate.push(restCnt === 0 ? 5 : 6);
+                      restCnt++;
+                    }
+                  }
+                });
+                if (candidate.length === 7 && liftCnt >= 3) {
+                  builtSchedule = candidate;
+                }
+              }
+            }
+          }
+        } catch (err) {
+          // Fallback to deterministic difficulty-enforced local program
+        }
+
+        if (!builtSchedule) {
+          builtSchedule = buildLocalWizardFallbackWeek(daysPerWeek, primaryFocus, difficulty);
+        }
+
+        const wKey = String(week);
+        if (!state.customDayScheduleByWeek || typeof state.customDayScheduleByWeek !== 'object') {
+          state.customDayScheduleByWeek = {};
+        }
+        if (!state.weeklyRestDays || typeof state.weeklyRestDays !== 'object') {
+          state.weeklyRestDays = { default: [5, 6] };
+        }
+        if (!state.manualScheduleOverrideByWeek || typeof state.manualScheduleOverrideByWeek !== 'object') {
+          state.manualScheduleOverrideByWeek = {};
+        }
+        state.customDayScheduleByWeek[wKey] = builtSchedule;
+        const restIndices = [];
+        builtSchedule.forEach((slot, idx) => {
+          if (slot === 5 || slot === 6) restIndices.push(idx);
+        });
+        if (restIndices.length >= 2) {
+          state.weeklyRestDays[wKey] = [restIndices[0], restIndices[1]];
+        }
+        state.manualScheduleOverrideByWeek[wKey] = true;
+        state.programWizardConfig = {
+          daysPerWeek,
+          primaryFocus,
+          difficulty,
+          updatedAt: new Date().toISOString()
+        };
+        state.selectedDayIndex = 0;
+        saveState();
+        renderWorkoutView();
+        renderPullupView();
+        renderVeganView();
+
+        if (runProgramWizardSubmitBtn) {
+          runProgramWizardSubmitBtn.disabled = false;
+          runProgramWizardSubmitBtn.textContent = 'Build My Custom Weekly Program';
+        }
+        if (programWizardModal) programWizardModal.classList.add('hidden');
+        showToast(`Week ${week} updated: ${daysPerWeek} Days • ${primaryFocus.toUpperCase()} • ${difficulty.toUpperCase()}`);
+      }
+
+      if (runProgramWizardSubmitBtn) {
+        runProgramWizardSubmitBtn.addEventListener('click', () => { runProgramSetupWizard(); });
+      }
+
+      // UPGRADE 15: FREESTYLE DAY — "SWAP FROM HISTORY" MODAL LOGIC
+      const swapHistoryModal = document.getElementById('swap-from-history-modal');
+      const closeSwapHistoryModalBtn = document.getElementById('close-swap-history-modal-btn');
+      const swapHistorySearchInput = document.getElementById('history-swap-search-input');
+      const swapHistoryListEl = document.getElementById('history-swap-list');
+      const swapHistoryCurrentSubEl = document.getElementById('swap-history-current-ex-label');
+
+      let activeHistorySwapContext = null;
+
+      function renderSwapHistoryModalList(queryStr) {
+        if (!swapHistoryListEl) return;
+        const escHtml = (val) => String(val == null ? '' : val)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+        const q = String(queryStr || '').trim().toLowerCase();
+        const allItems = collectUniqueExercisesFromHistory();
+        const filtered = allItems.filter(item => {
+          if (!q) return true;
+          return (
+            String(item.name || '').toLowerCase().includes(q) ||
+            String(item.sourceLabel || item.sourceDayLabel || '').toLowerCase().includes(q) ||
+            String(item.equipLabel || '').toLowerCase().includes(q)
+          );
+        });
+
+        if (filtered.length === 0) {
+          swapHistoryListEl.innerHTML = `
+            <div class="rounded-xl border border-slate-700 bg-slate-950 p-3 text-xs text-slate-300 text-center">
+              No saved exercises matched "${escHtml(queryStr)}". Try a shorter word like Press, Row, or Leg.
+            </div>
+          `;
+          return;
+        }
+
+        swapHistoryListEl.innerHTML = filtered.map((item, idx) => {
+          const isCurrent = activeHistorySwapContext && item.name.toLowerCase() === String(activeHistorySwapContext.currentExName || '').toLowerCase();
+          const daySrc = item.sourceLabel || item.sourceDayLabel || 'Saved Program';
+          return `
+            <button
+              type="button"
+              data-history-swap-pick-idx="${idx}"
+              class="history-swap-pick-btn w-full text-left rounded-xl p-3 border transition ${
+                isCurrent
+                  ? 'border-amber-500/70 bg-amber-600/15 text-slate-100'
+                  : 'border-slate-700 bg-slate-950 hover:bg-slate-800 text-slate-100'
+              }"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="text-xs font-extrabold text-slate-100 leading-snug">${escHtml(item.name)}</div>
+                  <div class="text-[11px] text-slate-300 mt-0.5">${item.sets || 3} sets • ${escHtml(item.reps || '8-12')} reps • ${escHtml(daySrc)}</div>
+                </div>
+                <span class="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-lg border ${
+                  isCurrent
+                    ? 'border-amber-500/60 bg-amber-600/20 text-amber-200'
+                    : 'border-emerald-600/50 bg-emerald-700/20 text-emerald-200'
+                }">
+                  ${isCurrent ? 'Current' : '⇄ Use'}
+                </span>
+              </div>
+            </button>
+          `;
+        }).join('');
+
+        swapHistoryListEl.querySelectorAll('.history-swap-pick-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const pickIdx = parseInt(btn.getAttribute('data-history-swap-pick-idx') || '-1', 10);
+            const chosen = filtered[pickIdx];
+            if (!chosen || !activeHistorySwapContext) return;
+            const slotKey = activeHistorySwapContext.slotKey;
+            if (!state.historyExerciseSwaps || typeof state.historyExerciseSwaps !== 'object') {
+              state.historyExerciseSwaps = {};
+            }
+            if (state.exerciseSwaps && state.exerciseSwaps[slotKey]) {
+              delete state.exerciseSwaps[slotKey];
+            }
+            state.historyExerciseSwaps[slotKey] = Object.assign({}, chosen, {
+              swappedAt: new Date().toISOString()
+            });
+            if (chosen.id && !EXERCISE_META[chosen.id]) {
+              EXERCISE_META[chosen.id] = {
+                equipType: chosen.equipType || 'machine',
+                equipLabel: chosen.equipLabel || 'Saved Lift',
+                defaultWeightLbs: chosen.defaultWeightLbs || 50,
+                steps: chosen.instructions
+                  ? [chosen.instructions, 'Control the full range of motion.']
+                  : ['Set up safely and control every rep.', 'Pause briefly at the top and lower slowly.']
+              };
+            }
+            saveState();
+            if (swapHistoryModal) swapHistoryModal.classList.add('hidden');
+            renderWorkoutView();
+            showToast(`Swapped to ${chosen.name}`);
+          });
+        });
+      }
+
+      window.openSwapFromHistoryModal = function(slotKey, currentExId, currentExName) {
+        if (!swapHistoryModal) return;
+        activeHistorySwapContext = { slotKey, currentExId, currentExName };
+        if (swapHistoryCurrentSubEl) {
+          swapHistoryCurrentSubEl.textContent = `Replacing: ${currentExName || 'Current Exercise'}`;
+        }
+        if (swapHistorySearchInput) swapHistorySearchInput.value = '';
+        renderSwapHistoryModalList('');
+        swapHistoryModal.classList.remove('hidden');
+      };
+
+      if (closeSwapHistoryModalBtn && swapHistoryModal) {
+        closeSwapHistoryModalBtn.addEventListener('click', () => swapHistoryModal.classList.add('hidden'));
+      }
+      if (swapHistoryModal) {
+        swapHistoryModal.addEventListener('click', (e) => {
+          if (e.target === swapHistoryModal) swapHistoryModal.classList.add('hidden');
+        });
+      }
+      if (swapHistorySearchInput) {
+        swapHistorySearchInput.addEventListener('input', () => renderSwapHistoryModalList(swapHistorySearchInput.value));
       }
 
       // Rest Day Scheduler Drawer Toggle Buttons & Pull-Up View Mode Toggle Buttons
@@ -21146,55 +22013,78 @@
   <!-- Hidden legacy FAB ID preserved for DOM compatibility; Coach AI is accessed cleanly from the top header & HUD without blocking cards -->
   <button id="fab-gemini-ai-btn" type="button" class="hidden"> Coach AI</button>
 
-  <!-- MODAL 1: Interactive Gym Time Selector Modal (Chrononutrition Auto-Sync) -->
+  <!-- MODAL 1: Interactive Wake-Up & Gym Time Selector Modal (Chrononutrition Auto-Sync) -->
   <div id="gym-time-selector-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="gym-time-modal-title">
-    <div class="bg-slate-900 border border-cyan-500/50 rounded-2xl max-w-md w-full p-4 space-y-3 shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 space-y-3 shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
         <div>
-          <span id="gym-time-modal-day-label" class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">Week 1 • Day 1</span>
-          <h3 id="gym-time-modal-title" class="text-base font-extrabold text-white mt-1">Change Gym Time</h3>
-          <p class="text-xs text-slate-300 mt-0.5">Pick your start time. All 4 meals and water times update automatically.</p>
+          <span id="gym-time-modal-day-label" class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-200 border border-sky-400/40">Week 1 • Day 1</span>
+          <h3 id="gym-time-modal-title" class="text-base font-extrabold text-slate-100 mt-1">Wake-Up &amp; Gym Time</h3>
+          <p class="text-xs text-slate-300 mt-0.5">Set when you wake up and when you lift. Your meals adjust automatically.</p>
         </div>
-        <button type="button" id="close-gym-time-modal-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
+        <button type="button" id="close-gym-time-modal-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
       </div>
 
-      <!-- Native Time Picker + Quick -15m / +15m Buttons -->
-      <div class="flex items-center justify-between gap-2 bg-slate-950 border border-slate-800 rounded-xl p-2.5">
-        <button type="button" data-modal-step-mins="-15" class="gym-time-modal-step-btn px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-extrabold transition">-15m</button>
-        <input
-          type="time"
-          id="gym-time-modal-input"
-          value="07:00"
-          aria-label="Choose gym start time"
-          class="bg-slate-900 border border-cyan-400/60 rounded-lg px-3 py-1.5 text-sm font-extrabold text-white text-center focus:outline-none focus:border-cyan-300 [color-scheme:dark]"
-        />
-        <button type="button" data-modal-step-mins="15" class="gym-time-modal-step-btn px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 text-xs font-extrabold transition">+15m</button>
-      </div>
-
-      <!-- 3-Column Quick Presets Grid -->
+      <!-- Wake-Up Time Picker -->
       <div class="space-y-1.5">
-        <div class="text-[11px] font-bold text-slate-400">Quick Pick (Tap to Apply):</div>
+        <label for="wakeup-time-modal-input" class="block text-xs font-extrabold text-amber-200">☀️ Woke Up Time</label>
+        <div class="flex items-center justify-between gap-2 bg-slate-950 border border-slate-700 rounded-xl p-2">
+          <button type="button" data-modal-wake-step-mins="-15" class="wakeup-time-modal-step-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-extrabold transition">-15m</button>
+          <input
+            type="time"
+            id="wakeup-time-modal-input"
+            value="06:30"
+            aria-label="Choose wake-up time"
+            class="bg-slate-900 border border-amber-500/60 rounded-lg px-3 py-1.5 text-sm font-extrabold text-slate-100 text-center focus:outline-none focus:border-amber-400 [color-scheme:dark]"
+          />
+          <button type="button" data-modal-wake-step-mins="15" class="wakeup-time-modal-step-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-200 text-xs font-extrabold transition">+15m</button>
+        </div>
         <div class="grid grid-cols-3 gap-1.5" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));">
-          <button type="button" data-modal-gym-hhmm="06:00" class="gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-800">6:00 AM</button>
-          <button type="button" data-modal-gym-hhmm="07:00" class="gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-800">7:00 AM</button>
-          <button type="button" data-modal-gym-hhmm="08:00" class="gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-800">8:00 AM</button>
-          <button type="button" data-modal-gym-hhmm="09:00" class="gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-800">9:00 AM</button>
-          <button type="button" data-modal-gym-hhmm="10:00" class="gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-800">10:00 AM</button>
-          <button type="button" data-modal-gym-hhmm="11:00" class="gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-800">11:00 AM</button>
-          <button type="button" data-modal-gym-hhmm="12:00" class="gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-800">12:00 PM</button>
-          <button type="button" data-modal-gym-hhmm="17:00" class="gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-800">5:00 PM</button>
-          <button type="button" data-modal-gym-hhmm="18:00" class="gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-800">6:00 PM</button>
+          <button type="button" data-modal-wake-hhmm="06:00" class="wakeup-time-modal-preset-btn py-1.5 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">6:00 AM</button>
+          <button type="button" data-modal-wake-hhmm="06:30" class="wakeup-time-modal-preset-btn py-1.5 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">6:30 AM</button>
+          <button type="button" data-modal-wake-hhmm="07:00" class="wakeup-time-modal-preset-btn py-1.5 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">7:00 AM</button>
+          <button type="button" data-modal-wake-hhmm="07:30" class="wakeup-time-modal-preset-btn py-1.5 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">7:30 AM</button>
+          <button type="button" data-modal-wake-hhmm="08:00" class="wakeup-time-modal-preset-btn py-1.5 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">8:00 AM</button>
+          <button type="button" data-modal-wake-hhmm="08:30" class="wakeup-time-modal-preset-btn py-1.5 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">8:30 AM</button>
         </div>
       </div>
+
+      <!-- Gym Start Time Picker -->
+      <div class="space-y-1.5 pt-1 border-t border-slate-800">
+        <label for="gym-time-modal-input" class="block text-xs font-extrabold text-sky-200">🕒 Gym Start Time</label>
+        <div class="flex items-center justify-between gap-2 bg-slate-950 border border-slate-700 rounded-xl p-2">
+          <button type="button" data-modal-step-mins="-15" class="gym-time-modal-step-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-extrabold transition">-15m</button>
+          <input
+            type="time"
+            id="gym-time-modal-input"
+            value="07:00"
+            aria-label="Choose gym start time"
+            class="bg-slate-900 border border-sky-400/60 rounded-lg px-3 py-1.5 text-sm font-extrabold text-slate-100 text-center focus:outline-none focus:border-sky-300 [color-scheme:dark]"
+          />
+          <button type="button" data-modal-step-mins="15" class="gym-time-modal-step-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 text-xs font-extrabold transition">+15m</button>
+        </div>
+        <div class="grid grid-cols-3 gap-1.5" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));">
+          <button type="button" data-modal-gym-hhmm="06:30" class="gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">6:30 AM</button>
+          <button type="button" data-modal-gym-hhmm="07:00" class="gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">7:00 AM</button>
+          <button type="button" data-modal-gym-hhmm="08:00" class="gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">8:00 AM</button>
+          <button type="button" data-modal-gym-hhmm="10:00" class="gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">10:00 AM</button>
+          <button type="button" data-modal-gym-hhmm="11:00" class="gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">11:00 AM</button>
+          <button type="button" data-modal-gym-hhmm="17:00" class="gym-time-modal-preset-btn py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">5:00 PM</button>
+        </div>
+      </div>
+
+      <!-- Live Wake-to-Gym Gap & Swap Alert -->
+      <div id="gym-time-modal-gap-badge" class="rounded-xl px-3 py-2 text-xs font-bold border border-slate-700 bg-slate-950 text-slate-200"></div>
+      <div id="gym-time-modal-swap-alert" class="hidden rounded-xl px-3 py-2.5 text-xs font-semibold leading-relaxed border border-amber-500/60 bg-amber-600/15 text-amber-100"></div>
 
       <!-- Live Synced Meal Preview -->
       <div class="space-y-1.5">
-        <div class="text-[11px] font-bold text-slate-400">Synced Meal Times:</div>
+        <div class="text-[11px] font-bold text-slate-300">Synced Meal Order:</div>
         <div id="gym-time-modal-meal-preview"></div>
       </div>
 
-      <button type="button" id="gym-time-modal-save-btn" class="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-md transition">
-        Save Gym Time &amp; Sync Meals
+      <button type="button" id="gym-time-modal-save-btn" class="w-full py-2.5 rounded-xl neuro-btn-done text-xs font-extrabold shadow-md transition">
+        Save Times &amp; Sync Meals
       </button>
     </div>
   </div>
@@ -21228,16 +22118,21 @@
     </div>
   </div>
 
-  <!-- MODAL 3: Zone A — Sync & Settings Modal (Re-Sync Week + Workout & Display Settings) -->
+  <!-- MODAL 3: Zone A — Sync & Settings Modal (Program Setup Wizard + Re-Sync Week + Workout & Display Settings) -->
   <div id="sync-settings-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="sync-settings-modal-title">
     <div class="bg-slate-900 border border-sky-400/45 rounded-2xl max-w-md w-full p-4 space-y-3 shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
         <div>
           <h3 id="sync-settings-modal-title" class="text-base font-extrabold text-white">🔄 Sync &amp; Settings</h3>
-          <p class="text-xs text-slate-300 mt-0.5">Re-sync your week schedule and choose your weight units and display options.</p>
+          <p class="text-xs text-slate-300 mt-0.5">Run the Program Setup Wizard, re-sync your week, or adjust display options.</p>
         </div>
         <button type="button" id="close-sync-settings-modal-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
       </div>
+
+      <!-- Prominent Program Setup Wizard CTA -->
+      <button type="button" id="open-program-wizard-btn" class="w-full py-2.5 px-3 rounded-xl border border-amber-500/70 bg-amber-600/20 hover:bg-amber-600/30 text-amber-100 text-xs font-extrabold transition flex items-center justify-center gap-2 shadow-sm">
+        <span>⚙️ Run Program Setup Wizard</span>
+      </button>
 
       <!-- Cross-Week Continuity Banner & Re-Sync Week Controls -->
       <div id="cross-week-continuity-banner" class="rounded-xl bg-slate-950/90 border border-slate-800 p-2.5"></div>
@@ -21278,6 +22173,86 @@
           </button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: Program Setup Wizard Modal (Strict AI Difficulty Engine) -->
+  <div id="program-setup-wizard-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="program-wizard-title">
+    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl max-w-md w-full p-4 space-y-3.5 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
+        <div>
+          <h3 id="program-wizard-title" class="text-base font-extrabold text-slate-100">⚙️ Program Setup Wizard</h3>
+          <p class="text-xs text-slate-300 mt-0.5">Answer 3 quick questions to build your custom week.</p>
+        </div>
+        <button type="button" id="close-program-wizard-modal-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
+      </div>
+
+      <!-- Question 1: Days Per Week -->
+      <div class="space-y-1.5">
+        <div class="text-xs font-extrabold text-slate-100">1. Days Per Week?</div>
+        <div class="grid grid-cols-4 gap-1.5" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));">
+          <button type="button" data-wizard-days="3" class="wizard-days-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">3 Days</button>
+          <button type="button" data-wizard-days="4" class="wizard-days-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">4 Days</button>
+          <button type="button" data-wizard-days="5" class="wizard-days-pill py-2 px-2 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500">5 Days</button>
+          <button type="button" data-wizard-days="6" class="wizard-days-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">6 Days</button>
+        </div>
+      </div>
+
+      <!-- Question 2: Primary Focus -->
+      <div class="space-y-1.5">
+        <div class="text-xs font-extrabold text-slate-100">2. Primary Focus?</div>
+        <div class="grid grid-cols-4 gap-1.5" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));">
+          <button type="button" data-wizard-focus="balanced" class="wizard-focus-pill py-2 px-2 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500">Balanced</button>
+          <button type="button" data-wizard-focus="chest" class="wizard-focus-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Chest</button>
+          <button type="button" data-wizard-focus="legs" class="wizard-focus-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Legs</button>
+          <button type="button" data-wizard-focus="back" class="wizard-focus-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Back</button>
+        </div>
+      </div>
+
+      <!-- Question 3: Difficulty -->
+      <div class="space-y-1.5">
+        <div class="text-xs font-extrabold text-slate-100">3. Difficulty?</div>
+        <div class="grid grid-cols-1 gap-1.5" style="display: grid; grid-template-columns: minmax(0, 1fr);">
+          <button type="button" data-wizard-diff="easy" class="wizard-diff-pill py-2 px-3 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700 text-left">Easy (Beginner) — Machines &amp; Cables Only, Max 3 Sets</button>
+          <button type="button" data-wizard-diff="medium" class="wizard-diff-pill py-2 px-3 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500 text-left">Medium (Standard) — Free Weights &amp; Machines, 3-4 Sets</button>
+          <button type="button" data-wizard-diff="hard" class="wizard-diff-pill py-2 px-3 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700 text-left">Hard (Advanced) — Heavy Barbell Compounds, 4-5 Sets</button>
+        </div>
+      </div>
+
+      <!-- Strict AI Rule Preview -->
+      <div class="rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-[11px] text-slate-300 leading-relaxed">
+        <div class="font-extrabold text-slate-100 mb-0.5">Active Difficulty Rule:</div>
+        <div id="program-wizard-rule-preview">Difficulty: MEDIUM. Use a standard mix of free-weights and machines. 3 to 4 sets per exercise.</div>
+      </div>
+
+      <div id="program-wizard-status" class="hidden rounded-xl border border-amber-500/50 bg-amber-600/15 px-3 py-2 text-xs font-bold text-amber-100"></div>
+
+      <button type="button" id="run-program-wizard-submit-btn" class="w-full py-2.5 px-4 rounded-xl neuro-btn-done text-xs font-extrabold shadow-md transition">
+        Build My Custom Weekly Program
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 5: Freestyle Day — Swap from History Modal -->
+  <div id="swap-from-history-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="swap-history-modal-title">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 space-y-3 shadow-2xl max-h-[88vh] flex flex-col">
+      <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5 shrink-0">
+        <div>
+          <h3 id="swap-history-modal-title" class="text-base font-extrabold text-slate-100">⇄ Swap from History</h3>
+          <p id="swap-history-current-ex-label" class="text-xs text-slate-300 mt-0.5">Pick any exercise from your saved plan.</p>
+        </div>
+        <button type="button" id="close-swap-history-modal-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
+      </div>
+
+      <input
+        type="search"
+        id="history-swap-search-input"
+        placeholder="Search saved exercises (e.g., Leg Press, Row)..."
+        aria-label="Search saved exercises"
+        class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-amber-500 shrink-0"
+      />
+
+      <div id="history-swap-list" class="space-y-2 overflow-y-auto pr-0.5 flex-1"></div>
     </div>
   </div>
 

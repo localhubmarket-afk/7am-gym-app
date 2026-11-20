@@ -2322,4 +2322,108 @@ test('Subtest 37: Interactive Gym Time Sync (11:00 AM -> -25m, +75m, +5h, +9.5h)
   assert.equal(mod.GYM_CONTEXTUAL_ZONES_SPEC.warmupDefaultClosedOnLoad, true);
 });
 
+test('Subtest 38: Neurodivergent COGA/BDA Palette, AI Difficulty Wizard, Wake-Up vs Gym Time 2.5h Fuel Swap & Swap-From-History Collector', async () => {
+  const mod = await import('./workoutLogic');
+
+  // 1. Neurodivergent color & typography tokens (No pure black #000000 or pure white #ffffff)
+  assert.equal(mod.NEURODIVERGENT_PALETTE_SPEC.backgroundMain, '#0f172a');
+  assert.equal(mod.NEURODIVERGENT_PALETTE_SPEC.backgroundSurface, '#1e293b');
+  assert.equal(mod.NEURODIVERGENT_PALETTE_SPEC.textPrimary, '#f8fafc');
+  assert.equal(mod.NEURODIVERGENT_PALETTE_SPEC.typography.letterSpacing, '0.02em');
+  assert.equal(mod.NEURODIVERGENT_PALETTE_SPEC.typography.lineHeight, '1.5');
+  assert.equal(mod.NEURODIVERGENT_PALETTE_SPEC.states.unstartedBorder, '#334155');
+  assert.equal(mod.NEURODIVERGENT_PALETTE_SPEC.states.activeAmberBg, 'rgba(217, 119, 6, 0.15)');
+  assert.equal(mod.NEURODIVERGENT_PALETTE_SPEC.states.activeAmberBorder, '#d97706');
+  assert.equal(mod.NEURODIVERGENT_PALETTE_SPEC.states.completedBg, '#059669');
+  assert.deepEqual(mod.NEURODIVERGENT_PALETTE_SPEC.zoneAButtons, [
+    '📅 Week Schedule',
+    '🔄 Sync & Settings',
+    '📊 Stats & Dashboard'
+  ]);
+
+  // 2. Strict AI Difficulty Prompt Injection & Deterministic Schedule
+  const easyPrompt = mod.buildProgramSetupWizardPrompt(4, 'Legs', 'Easy');
+  assert.equal(
+    easyPrompt.includes('Difficulty: EASY. You MUST select strictly machine-based or cable-based exercises (e.g., Leg Press instead of Squat). Max 3 sets per exercise to prevent fatigue.'),
+    true
+  );
+  const medPrompt = mod.buildProgramSetupWizardPrompt(5, 'Balanced', 'Medium');
+  assert.equal(
+    medPrompt.includes('Difficulty: MEDIUM. Use a standard mix of free-weights and machines. 3 to 4 sets per exercise.'),
+    true
+  );
+  const hardPrompt = mod.buildProgramSetupWizardPrompt(6, 'Back', 'Hard');
+  assert.equal(
+    hardPrompt.includes('Difficulty: HARD. Prioritize complex, heavy free-weight barbell compound lifts (e.g., Barbell Squat, Deadlift). 4 to 5 sets per exercise.'),
+    true
+  );
+
+  const easyWeek = mod.buildDeterministicWizardWeekSchedule(4, 'Legs', 'Easy', 1);
+  assert.equal(easyWeek.length, 7);
+  const easyLiftDays = easyWeek.filter((d: any) => typeof d === 'object' && !d.isRestDay);
+  assert.equal(easyLiftDays.length, 4);
+  easyLiftDays.forEach((d: any) => {
+    d.exercises.forEach((ex: any) => {
+      assert.ok(ex.sets <= 3, `Easy difficulty must cap at 3 sets, got ${ex.sets}`);
+      assert.equal(/machine|cable|pec deck/i.test(ex.name), true, `Easy exercise must be machine/cable: ${ex.name}`);
+    });
+  });
+
+  const hardWeek = mod.buildDeterministicWizardWeekSchedule(5, 'Legs', 'Hard', 1);
+  const hardFirstLift = hardWeek.find((d: any) => typeof d === 'object' && !d.isRestDay) as any;
+  assert.equal(hardFirstLift.exercises[0].name, 'Barbell Back Squat');
+  assert.ok(hardFirstLift.exercises[0].sets >= 4 && hardFirstLift.exercises[0].sets <= 5);
+
+  // 3. Wake-Up vs. Gym Time Chrononutrition Gap Engine (< 2.5h standard vs >= 2.5h auto-swap)
+  const standardSched = mod.evaluateWakeGymChronoSchedule('06:30', '07:00');
+  assert.equal(standardSched.gapMinutes, 30);
+  assert.equal(standardSched.isFuel1Fuel2Swapped, false);
+  assert.deepEqual(standardSched.mealOrder, ['pre_shake', 'post_oats', 'lunch', 'dinner']);
+  assert.equal(standardSched.fuel1ShakeTime12, '6:30 AM');
+  assert.equal(standardSched.fuel2OatsTime12, '8:15 AM');
+  assert.equal(standardSched.alertBannerText, '');
+
+  const swappedSched = mod.evaluateWakeGymChronoSchedule('07:30', '11:00');
+  assert.equal(swappedSched.gapMinutes, 210);
+  assert.equal(swappedSched.gapHours, 3.5);
+  assert.equal(swappedSched.isFuel1Fuel2Swapped, true);
+  assert.deepEqual(swappedSched.mealOrder, ['post_oats', 'pre_shake', 'lunch', 'dinner']);
+  assert.equal(swappedSched.fuel2OatsTime12, '8:00 AM');
+  assert.equal(swappedSched.fuel1ShakeTime12, '10:30 AM');
+  assert.equal(swappedSched.fuel3BowlTime12, '12:15 PM');
+  assert.equal(swappedSched.fuel4ShakeTime12, '8:30 PM');
+  assert.equal(
+    swappedSched.alertBannerText,
+    'Gap is over 2.5 hours. Eat your solid Oats (Fuel 2) now so they digest. Drink your Pre-Workout Shake (Fuel 1) 30 minutes before lifting.'
+  );
+
+  // 4. Unique Historical Exercise Collector from customDayScheduleByWeek
+  const historyList = mod.collectUniqueExercisesFromHistory(
+    {
+      '1': [
+        {
+          title: 'Bonus Chest',
+          exercises: [
+            { id: 'ex_a', name: 'Incline Machine Press', sets: 3, reps: '10-12', restSec: 90, videoUrl: 'https://youtube.com/a' },
+            { id: 'ex_b', name: 'Incline Machine Press', sets: 4, reps: '8-10', restSec: 90, videoUrl: 'https://youtube.com/a2' }
+          ]
+        },
+        0
+      ]
+    },
+    [
+      {
+        daySub: 'Upper 1',
+        exercises: [
+          { id: 'ex_bench', name: 'Barbell Bench Press', sets: 3, reps: '8-10', restSec: 120, videoUrl: 'https://youtube.com/bench' }
+        ]
+      }
+    ]
+  );
+  assert.equal(historyList.length, 2);
+  assert.equal(historyList[0].name, 'Incline Machine Press');
+  assert.equal(historyList[1].name, 'Barbell Bench Press');
+});
+
+
 

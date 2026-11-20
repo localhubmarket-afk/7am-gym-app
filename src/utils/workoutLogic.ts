@@ -8480,5 +8480,326 @@ export const GYM_CONTEXTUAL_ZONES_SPEC = {
   warmupDefaultClosedOnLoad: true
 } as const;
 
+// ============================================================================
+// UPGRADE 15: NEURODIVERGENT COGA/BDA PALETTE, STRICT AI DIFFICULTY WIZARD,
+// WAKE-UP VS. GYM TIME CHRONONUTRITION SWAP ENGINE & FREESTYLE SWAP FROM HISTORY
+// ============================================================================
+
+export const NEURODIVERGENT_PALETTE_SPEC = {
+  backgroundMain: '#0f172a',
+  backgroundSurface: '#1e293b',
+  textPrimary: '#f8fafc',
+  textSecondary: '#f1f5f9',
+  forbiddenPureBlack: '#000000',
+  forbiddenPureWhite: '#ffffff',
+  typography: {
+    letterSpacing: '0.02em',
+    lineHeight: '1.5',
+    fontFamily: 'system-ui, -apple-system, sans-serif'
+  },
+  states: {
+    unstartedBorder: '#334155',
+    activeAmberBg: 'rgba(217, 119, 6, 0.15)',
+    activeAmberBorder: '#d97706',
+    completedBg: '#059669',
+    completedText: '#ecfdf5'
+  },
+  zoneAButtons: ['📅 Week Schedule', '🔄 Sync & Settings', '📊 Stats & Dashboard']
+} as const;
+
+export type ProgramWizardDays = 3 | 4 | 5 | 6;
+export type ProgramWizardFocus = 'Balanced' | 'Chest' | 'Legs' | 'Back';
+export type ProgramWizardDifficulty = 'Easy' | 'Medium' | 'Hard';
+
+export const DIFFICULTY_PROMPT_DIRECTIVES: Record<ProgramWizardDifficulty, string> = {
+  Easy: 'Difficulty: EASY. You MUST select strictly machine-based or cable-based exercises (e.g., Leg Press instead of Squat). Max 3 sets per exercise to prevent fatigue.',
+  Medium: 'Difficulty: MEDIUM. Use a standard mix of free-weights and machines. 3 to 4 sets per exercise.',
+  Hard: 'Difficulty: HARD. Prioritize complex, heavy free-weight barbell compound lifts (e.g., Barbell Squat, Deadlift). 4 to 5 sets per exercise.'
+};
+
+export function buildProgramSetupWizardPrompt(
+  daysPerWeek: ProgramWizardDays,
+  primaryFocus: ProgramWizardFocus,
+  difficulty: ProgramWizardDifficulty
+): string {
+  const safeDays = ([3, 4, 5, 6].includes(Number(daysPerWeek)) ? Number(daysPerWeek) : 5) as ProgramWizardDays;
+  const safeFocus = (['Balanced', 'Chest', 'Legs', 'Back'].includes(primaryFocus) ? primaryFocus : 'Balanced') as ProgramWizardFocus;
+  const safeDiff = (['Easy', 'Medium', 'Hard'].includes(difficulty) ? difficulty : 'Medium') as ProgramWizardDifficulty;
+  const directive = DIFFICULTY_PROMPT_DIRECTIVES[safeDiff];
+
+  return [
+    `Build a 7-day weekly gym training schedule with exactly ${safeDays} lifting days and ${7 - safeDays} rest days.`,
+    `Primary Muscle Focus: ${safeFocus}.`,
+    directive,
+    'Return ONLY a valid JSON array of exactly 7 day objects (Day 1 to Day 7).',
+    'Each rest day object must have: {"isRestDay": true, "daySub": "Rest", "title": "Rest & Recovery Day"}.',
+    'Each lift day object must have: {"isRestDay": false, "daySub": "Short Label", "title": "Workout Title", "warmupType": "upper" | "lower", "exercises": [{"name": "Exercise Name", "sets": 3, "reps": "8-12", "restSec": 90, "instructions": "Short plain-English form tip."}]}.',
+    'Each lift day must have 5 to 6 unique exercises with ZERO duplicates and ZERO forbidden jargon.'
+  ].join('\n');
+}
+
+export interface WizardExerciseSpec {
+  id: string;
+  name: string;
+  sets: number;
+  reps: string;
+  restSec: number;
+  restLabel: string;
+  videoUrl: string;
+  instructions: string;
+  isMachineOnly?: boolean;
+}
+
+export interface WizardDaySpec {
+  id: string;
+  isCustomGeneratedDay: true;
+  isAiBonusWorkout: true;
+  isRestDay: boolean;
+  daySub: string;
+  target: string;
+  title: string;
+  subtitle: string;
+  warmupType: 'upper' | 'lower';
+  difficulty: ProgramWizardDifficulty;
+  exercises: WizardExerciseSpec[];
+}
+
+export function buildDeterministicWizardWeekSchedule(
+  daysPerWeek: ProgramWizardDays,
+  primaryFocus: ProgramWizardFocus,
+  difficulty: ProgramWizardDifficulty,
+  weekNum = 1
+): (WizardDaySpec | number)[] {
+  const safeDays = ([3, 4, 5, 6].includes(Number(daysPerWeek)) ? Number(daysPerWeek) : 5) as ProgramWizardDays;
+  const safeFocus = (['Balanced', 'Chest', 'Legs', 'Back'].includes(primaryFocus) ? primaryFocus : 'Balanced') as ProgramWizardFocus;
+  const safeDiff = (['Easy', 'Medium', 'Hard'].includes(difficulty) ? difficulty : 'Medium') as ProgramWizardDifficulty;
+
+  const setCount = safeDiff === 'Easy' ? 3 : safeDiff === 'Medium' ? 4 : 5;
+  const repTarget = safeDiff === 'Easy' ? '10-12' : safeDiff === 'Medium' ? '8-10' : '5-8';
+  const restSec = safeDiff === 'Hard' ? 150 : safeDiff === 'Medium' ? 90 : 75;
+
+  const pools: Record<'Chest' | 'Legs' | 'Back' | 'ShouldersArms', Record<ProgramWizardDifficulty, string[]>> = {
+    Chest: {
+      Easy: ['Chest Press Machine', 'Seated Cable Fly', 'Incline Chest Press Machine', 'Pec Deck Fly Machine', 'Cable Tricep Pushdown'],
+      Medium: ['Incline Dumbbell Press', 'Chest Press Machine', 'Standing Cable Fly', 'Dumbbell Shoulder Press', 'Overhead Cable Tricep Extension'],
+      Hard: ['Barbell Bench Press', 'Incline Barbell Bench Press', 'Weighted Dips', 'Standing Barbell Overhead Press', 'Close-Grip Barbell Bench Press']
+    },
+    Legs: {
+      Easy: ['Seated Leg Press Machine', 'Seated Leg Curl Machine', 'Leg Extension Machine', 'Seated Calf Press Machine', 'Hip Abductor Machine'],
+      Medium: ['Hack Squat Machine', 'Romanian Deadlift', 'Walking Dumbbell Lunges', 'Seated Leg Curl Machine', 'Standing Calf Raise Machine'],
+      Hard: ['Barbell Back Squat', 'Conventional Barbell Deadlift', 'Barbell Front Squat', 'Barbell Hip Thrust', 'Standing Heavy Calf Raise']
+    },
+    Back: {
+      Easy: ['Lat Pulldown Machine', 'Seated Cable Row', 'Chest-Supported Machine Row', 'Cable Face Pull', 'Machine Preacher Curl'],
+      Medium: ['Lat Pulldown', 'Chest-Supported Dumbbell Row', 'Seated Cable Row', 'Standing Face Pulls', 'Incline Dumbbell Curl'],
+      Hard: ['Barbell Bent-Over Row', 'Weighted Pull-Ups', 'Barbell Pendlay Row', 'T-Bar Row', 'Barbell Bicep Curl']
+    },
+    ShouldersArms: {
+      Easy: ['Machine Shoulder Press', 'Cable Lateral Raise', 'Rear Delt Pec Deck Machine', 'Cable Rope Hammer Curl', 'Cable Tricep Pushdown'],
+      Medium: ['Dumbbell Overhead Press', 'Cable Lateral Raise', 'Face Pulls', 'EZ-Bar Curl', 'Overhead Rope Extension'],
+      Hard: ['Standing Barbell Overhead Press', 'Barbell Push Press', 'Weighted Chin-Ups', 'Barbell Curl', 'Barbell Skullcrushers']
+    }
+  };
+
+  const dayPlansByFocus: Record<ProgramWizardFocus, Array<'Chest' | 'Legs' | 'Back' | 'ShouldersArms'>> = {
+    Balanced: ['Chest', 'Legs', 'Back', 'ShouldersArms', 'Legs', 'Back'],
+    Chest: ['Chest', 'Back', 'Legs', 'Chest', 'ShouldersArms', 'Legs'],
+    Legs: ['Legs', 'Chest', 'Back', 'Legs', 'ShouldersArms', 'Legs'],
+    Back: ['Back', 'Chest', 'Legs', 'Back', 'ShouldersArms', 'Legs']
+  };
+
+  const order = dayPlansByFocus[safeFocus];
+  const restIndicesByDays: Record<ProgramWizardDays, number[]> = {
+    3: [1, 3, 5, 6],
+    4: [2, 5, 6],
+    5: [5, 6],
+    6: [6]
+  };
+  const restSet = new Set(restIndicesByDays[safeDays]);
+
+  const schedule: (WizardDaySpec | number)[] = [];
+  let liftIdx = 0;
+  let restOrder = 0;
+  for (let d = 0; d < 7; d++) {
+    if (restSet.has(d)) {
+      schedule.push(restOrder === 0 ? 5 : 6);
+      restOrder++;
+    } else {
+      const cat = order[liftIdx % order.length];
+      liftIdx++;
+      const exNames = pools[cat][safeDiff];
+      const exercises: WizardExerciseSpec[] = exNames.map((name, idx) => {
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+        return {
+          id: `wiz_w${weekNum}_d${d + 1}_${idx + 1}_${slug}`,
+          name,
+          sets: safeDiff === 'Easy' ? Math.min(3, setCount) : (idx === 0 ? setCount : Math.max(3, setCount - 1)),
+          reps: repTarget,
+          restSec,
+          restLabel: restSec >= 120 ? `${Math.round(restSec / 60)} min` : `${restSec} sec`,
+          videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' proper form tutorial')}`,
+          instructions: 'Set up safely and control every rep with steady breathing.',
+          isMachineOnly: safeDiff === 'Easy'
+        };
+      });
+      schedule.push({
+        id: `wiz_day_${d + 1}_w${weekNum}`,
+        isCustomGeneratedDay: true,
+        isAiBonusWorkout: true,
+        isRestDay: false,
+        daySub: cat === 'ShouldersArms' ? 'Arms+' : cat,
+        target: `${cat} (${safeDiff})`,
+        title: `${cat === 'ShouldersArms' ? 'Shoulders & Arms' : cat + ' Focus'} • ${safeDiff}`,
+        subtitle: `${exercises.length} Exercises • ${safeDiff} (${safeFocus} Focus)`,
+        warmupType: cat === 'Legs' ? 'lower' : 'upper',
+        difficulty: safeDiff,
+        exercises
+      });
+    }
+  }
+  return schedule;
+}
+
+export const WAKE_GAP_SWAP_ALERT_TEXT =
+  'Gap is over 2.5 hours. Eat your solid Oats (Fuel 2) now so they digest. Drink your Pre-Workout Shake (Fuel 1) 30 minutes before lifting.';
+
+export interface WakeGymChronoResult {
+  wakeUpMinutes: number;
+  wakeUpTime12: string;
+  gymTimeMinutes: number;
+  gymTime12: string;
+  gapMinutes: number;
+  gapHours: number;
+  isFuel1Fuel2Swapped: boolean;
+  alertBannerText: string;
+  mealOrder: ['post_oats', 'pre_shake', 'lunch', 'dinner'] | ['pre_shake', 'post_oats', 'lunch', 'dinner'];
+  fuel1ShakeTime12: string;
+  fuel2OatsTime12: string;
+  fuel3BowlTime12: string;
+  fuel4ShakeTime12: string;
+  nextFuelTime12: string;
+}
+
+export function evaluateWakeGymChronoSchedule(
+  wakeUpInput: string | number,
+  gymTimeInput: string | number
+): WakeGymChronoResult {
+  const toMins = (val: string | number, fallback: number): number => {
+    if (typeof val === 'number' && Number.isFinite(val)) {
+      return ((Math.round(val) % 1440) + 1440) % 1440;
+    }
+    const str = String(val || '').trim();
+    const m = /^(\d{1,2}):(\d{2})$/.exec(str);
+    if (!m) return fallback;
+    return ((parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) % 1440 + 1440) % 1440;
+  };
+  const fmt12 = (mins: number): string => {
+    const c = ((Math.round(mins) % 1440) + 1440) % 1440;
+    const h24 = Math.floor(c / 60);
+    const m = c % 60;
+    const ampm = h24 >= 12 ? 'PM' : 'AM';
+    const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+    return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+  };
+
+  const wakeUpMinutes = toMins(wakeUpInput, 390);
+  const gymTimeMinutes = toMins(gymTimeInput, 420);
+  let gapMinutes = gymTimeMinutes - wakeUpMinutes;
+  if (gapMinutes < 0) gapMinutes = 0;
+
+  const isFuel1Fuel2Swapped = gapMinutes >= 150;
+  const fuel1ShakeMins = ((gymTimeMinutes - 30) % 1440 + 1440) % 1440;
+  const fuel2OatsMins = isFuel1Fuel2Swapped
+    ? (wakeUpMinutes + 30) % 1440
+    : (gymTimeMinutes + 75) % 1440;
+  const fuel3BowlMins = isFuel1Fuel2Swapped
+    ? (gymTimeMinutes + 75) % 1440
+    : (gymTimeMinutes + 300) % 1440;
+  const fuel4ShakeMins = (gymTimeMinutes + 570) % 1440;
+
+  return {
+    wakeUpMinutes,
+    wakeUpTime12: fmt12(wakeUpMinutes),
+    gymTimeMinutes,
+    gymTime12: fmt12(gymTimeMinutes),
+    gapMinutes,
+    gapHours: Number((gapMinutes / 60).toFixed(2)),
+    isFuel1Fuel2Swapped,
+    alertBannerText: isFuel1Fuel2Swapped ? WAKE_GAP_SWAP_ALERT_TEXT : '',
+    mealOrder: isFuel1Fuel2Swapped
+      ? ['post_oats', 'pre_shake', 'lunch', 'dinner']
+      : ['pre_shake', 'post_oats', 'lunch', 'dinner'],
+    fuel1ShakeTime12: fmt12(fuel1ShakeMins),
+    fuel2OatsTime12: fmt12(fuel2OatsMins),
+    fuel3BowlTime12: fmt12(fuel3BowlMins),
+    fuel4ShakeTime12: fmt12(fuel4ShakeMins),
+    nextFuelTime12: isFuel1Fuel2Swapped ? fmt12(fuel2OatsMins) : fmt12(fuel1ShakeMins)
+  };
+}
+
+export interface HistoricalExerciseOption {
+  id: string;
+  name: string;
+  sets: number;
+  reps: string;
+  restSec: number;
+  restLabel?: string;
+  videoUrl: string;
+  notes?: string;
+  sourceLabel: string;
+}
+
+export function collectUniqueExercisesFromHistory(
+  customDayScheduleByWeek: Record<string, any[]> | undefined,
+  templateDaysSchedule: Array<{ title?: string; daySub?: string; exercises?: any[] }>
+): HistoricalExerciseOption[] {
+  const seen = new Map<string, HistoricalExerciseOption>();
+  const addEx = (ex: any, sourceLabel: string) => {
+    if (!ex || !ex.name) return;
+    const normKey = String(ex.name).trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!normKey || seen.has(normKey)) return;
+    seen.set(normKey, {
+      id: String(ex.originalId || ex.id || normKey.replace(/[^a-z0-9]+/g, '_')),
+      name: String(ex.name).trim(),
+      sets: Number(ex.sets) || 3,
+      reps: String(ex.reps || '8-12'),
+      restSec: Number(ex.restSec || ex.restSeconds) || 90,
+      restLabel: ex.restLabel || ((Number(ex.restSec) || 90) >= 120 ? '2 min' : '1.5 min'),
+      videoUrl: String(ex.videoUrl || ex.video || `https://www.youtube.com/results?search_query=${encodeURIComponent(String(ex.name) + ' form tutorial')}`),
+      notes: String(ex.notes || ex.instructions || ''),
+      sourceLabel
+    });
+  };
+
+  const schedMap = customDayScheduleByWeek && typeof customDayScheduleByWeek === 'object'
+    ? customDayScheduleByWeek
+    : {};
+
+  Object.keys(schedMap).forEach(wKey => {
+    const arr = schedMap[wKey];
+    if (!Array.isArray(arr)) return;
+    arr.forEach((entry, idx) => {
+      if (entry && typeof entry === 'object' && Array.isArray(entry.exercises)) {
+        const lbl = entry.title || entry.daySub || `Week ${wKey} Day ${idx + 1}`;
+        entry.exercises.forEach((ex: any) => addEx(ex, lbl));
+      } else if (typeof entry === 'number' && entry >= 0 && entry < 5 && templateDaysSchedule[entry]) {
+        const tpl = templateDaysSchedule[entry];
+        const lbl = tpl.daySub || tpl.title || `Day ${entry + 1}`;
+        (tpl.exercises || []).forEach((ex: any) => addEx(ex, lbl));
+      }
+    });
+  });
+
+  for (let i = 0; i < Math.min(5, templateDaysSchedule.length); i++) {
+    const tpl = templateDaysSchedule[i];
+    if (!tpl || !Array.isArray(tpl.exercises)) continue;
+    const lbl = tpl.daySub || tpl.title || `Day ${i + 1}`;
+    tpl.exercises.forEach((ex: any) => addEx(ex, lbl));
+  }
+
+  return Array.from(seen.values());
+}
+
+
 
 
