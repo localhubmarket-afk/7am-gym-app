@@ -3261,17 +3261,27 @@
       historyList.forEach(sess => {
         if (!sess || !Array.isArray(sess.sets) || sess.sets.length === 0) return;
         if (Number(sess.week) === Number(currentWeek) && Number(sess.dayIdx) === Number(currentDayIdx)) return;
-        if (sess.sets.some(st => String(st.weight || '').trim() !== '' || String(st.reps || '').trim() !== '')) {
-          candidates.push(sess);
+        const completedSets = sess.sets.filter(st =>
+          st &&
+          st.done !== false &&
+          st.isLogged !== false &&
+          (String(st.weight || '').trim() !== '' || String(st.reps || '').trim() !== '')
+        );
+        if (completedSets.length > 0) {
+          candidates.push({
+            ...sess,
+            sets: completedSets
+          });
         }
       });
 
-      // Also scan state.workoutLogs across ALL weeks & days by strict canonical exerciseID
+      // Also scan state.workoutLogs across ALL weeks & days by strict canonical exerciseID (completed sets only!)
       if (state && state.workoutLogs && typeof state.workoutLogs === 'object') {
         const groupedBySlot = {};
         Object.keys(state.workoutLogs).forEach(k => {
           const entry = state.workoutLogs[k];
-          if (!entry || (String(entry.weight || '').trim() === '' && String(entry.reps || '').trim() === '')) return;
+          if (!entry || entry.done !== true || entry.isLogged === false) return;
+          if (String(entry.weight || '').trim() === '' && String(entry.reps || '').trim() === '') return;
           const m = /^w(\d+)_(\d+)_(.+)_(\d+)$/.exec(k);
           if (!m) return;
           const wNum = parseInt(m[1], 10);
@@ -3296,7 +3306,9 @@
             setIdx: sNum,
             weight: String(entry.weight ?? ''),
             reps: String(entry.reps ?? ''),
-            unit: entry.unit || 'lbs'
+            unit: entry.unit || 'lbs',
+            done: true,
+            isLogged: true
           });
         });
         Object.values(groupedBySlot).forEach(g => {
@@ -3315,6 +3327,29 @@
         return (Number(b.dayIdx) || 0) - (Number(a.dayIdx) || 0);
       });
       return candidates[0];
+    }
+
+    function getLastSetFromSessionInline(sess) {
+      if (!sess || !Array.isArray(sess.sets) || sess.sets.length === 0) return null;
+      const loggedSets = sess.sets
+        .filter(st =>
+          st &&
+          st.done !== false &&
+          st.isLogged !== false &&
+          (String(st.weight || '').trim() !== '' || String(st.reps || '').trim() !== '')
+        )
+        .slice()
+        .sort((a, b) => Number(a.setIdx) - Number(b.setIdx));
+      if (loggedSets.length === 0) return null;
+      let lastSet = loggedSets[loggedSets.length - 1];
+      for (let i = loggedSets.length - 1; i >= 0; i--) {
+        const wStr = String(loggedSets[i].weight ?? '').trim();
+        if (wStr !== '' && wStr !== '0') {
+          lastSet = loggedSets[i];
+          break;
+        }
+      }
+      return lastSet;
     }
 
     function isCardioExerciseInline(ex) {
@@ -10016,29 +10051,242 @@
 
     let pendingWeekContinuityFromWeek = 1;
 
+    function stripLoggedFlagsFromDaySlotLocal(slot) {
+      if (slot === null || typeof slot !== 'object') {
+        return Math.max(0, Math.min(6, Math.floor(Number(slot) || 0)));
+      }
+      const cloned = JSON.parse(JSON.stringify(slot));
+      if ('isLogged' in cloned) cloned.isLogged = false;
+      if ('done' in cloned) cloned.done = false;
+      if ('completed' in cloned) cloned.completed = false;
+      if (Array.isArray(cloned.exercises)) {
+        cloned.exercises = cloned.exercises.map((ex) => {
+          if (!ex || typeof ex !== 'object') return ex;
+          const cleanEx = { ...ex, isLogged: false, done: false };
+          if (Array.isArray(cleanEx.setsList)) {
+            cleanEx.setsList = cleanEx.setsList.map((st) =>
+              st && typeof st === 'object' ? { ...st, isLogged: false, done: false } : st
+            );
+          }
+          if (Array.isArray(cleanEx.setLogs)) {
+            cleanEx.setLogs = cleanEx.setLogs.map((st) =>
+              st && typeof st === 'object' ? { ...st, isLogged: false, done: false } : st
+            );
+          }
+          return cleanEx;
+        });
+      }
+      return cloned;
+    }
+
     function cloneWeekScheduleIdenticallyLocal(sourceSchedule) {
       if (!Array.isArray(sourceSchedule) || sourceSchedule.length !== 7) {
         return [0, 1, 2, 3, 4, 5, 6];
       }
-      return sourceSchedule.map((slot) => {
-        if (slot !== null && typeof slot === 'object') {
-          return JSON.parse(JSON.stringify(slot));
-        }
-        return Math.max(0, Math.min(6, Math.floor(Number(slot) || 0)));
-      });
+      return sourceSchedule.map((slot) => stripLoggedFlagsFromDaySlotLocal(slot));
     }
 
-    function copyWeekCustomExercisesLocal(fromW, nextW) {
+    function copyWeekCustomExercisesLocal(fromW, nextW, onlyDayIdx) {
       if (!state.customDayExercises || typeof state.customDayExercises !== 'object') {
         state.customDayExercises = {};
       }
-      for (let d = 0; d < 7; d++) {
+      const startD = typeof onlyDayIdx === 'number' ? onlyDayIdx : 0;
+      const endD = typeof onlyDayIdx === 'number' ? onlyDayIdx : 6;
+      for (let d = startD; d <= endD; d++) {
         const srcKey = `w${fromW}_d${d}`;
         const dstKey = `w${nextW}_d${d}`;
         if (Array.isArray(state.customDayExercises[srcKey]) && state.customDayExercises[srcKey].length > 0) {
-          state.customDayExercises[dstKey] = JSON.parse(JSON.stringify(state.customDayExercises[srcKey]));
+          state.customDayExercises[dstKey] = state.customDayExercises[srcKey].map((ex) =>
+            ex && typeof ex === 'object' ? { ...JSON.parse(JSON.stringify(ex)), isLogged: false, done: false } : ex
+          );
+        } else if (typeof onlyDayIdx === 'number') {
+          delete state.customDayExercises[dstKey];
         }
       }
+    }
+
+    function wipeTargetWeekCheckmarksLocal(targetWeek) {
+      const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
+      const prefix = `w${safeW}_`;
+      const isMatchKey = (k) => k.startsWith(prefix) || (safeW === 1 && !/^w\d+_/.test(k));
+      if (state.workoutLogs && typeof state.workoutLogs === 'object') {
+        Object.keys(state.workoutLogs).forEach((k) => {
+          if (isMatchKey(k)) {
+            delete state.workoutLogs[k];
+          }
+        });
+      }
+      if (state.pullupLogs && typeof state.pullupLogs === 'object') {
+        Object.keys(state.pullupLogs).forEach((k) => {
+          if (isMatchKey(k)) {
+            delete state.pullupLogs[k];
+          }
+        });
+      }
+      if (state.warmupLogs && typeof state.warmupLogs === 'object') {
+        Object.keys(state.warmupLogs).forEach((k) => {
+          if (k.startsWith(prefix)) {
+            delete state.warmupLogs[k];
+          }
+        });
+      }
+      if (state.cardioLogs && typeof state.cardioLogs === 'object') {
+        Object.keys(state.cardioLogs).forEach((k) => {
+          if (k.startsWith(prefix)) {
+            delete state.cardioLogs[k];
+          }
+        });
+      }
+      if (state.completedWeeks && typeof state.completedWeeks === 'object') {
+        state.completedWeeks[safeW] = false;
+      }
+    }
+
+    function wipeSingleDayCheckmarksLocal(targetWeek, dayIdx, extraExerciseIds) {
+      const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
+      const safeD = Math.max(0, Math.min(6, Math.floor(Number(dayIdx) || 0)));
+      const assign = typeof getDayAssignment === 'function' ? getDayAssignment(safeW, safeD) : null;
+      const dayObj = typeof getScheduledDayObject === 'function' ? getScheduledDayObject(safeW, safeD) : null;
+
+      const targetExIds = new Set(Array.isArray(extraExerciseIds) ? extraExerciseIds : []);
+      if (dayObj && Array.isArray(dayObj.exercises)) {
+        dayObj.exercises.forEach((ex) => {
+          if (ex && ex.id) targetExIds.add(ex.id);
+        });
+      }
+      if (state.crunchDays && state.crunchDays.includes(safeD)) {
+        targetExIds.add(CABLE_CRUNCH_EXERCISE.id);
+      }
+
+      if (state.workoutLogs && typeof state.workoutLogs === 'object') {
+        const dayPrefix = `w${safeW}_${safeD}_`;
+        const bonusPrefix = assign && assign.logSlotKey ? `w${safeW}_${assign.logSlotKey}_` : '';
+        Object.keys(state.workoutLogs).forEach((k) => {
+          if (k.startsWith(dayPrefix) || (bonusPrefix && k.startsWith(bonusPrefix))) {
+            delete state.workoutLogs[k];
+            return;
+          }
+          const m = new RegExp(`^w${safeW}_(\\d+)_(.+)_(\\d+)$`).exec(k);
+          if (m && targetExIds.has(m[2])) {
+            const keyDayOrSlot = parseInt(m[1], 10);
+            if (m[2] !== 'cable_ab_crunch' || keyDayOrSlot === safeD) {
+              delete state.workoutLogs[k];
+            }
+          }
+        });
+      }
+
+      if (state.pullupLogs && typeof state.pullupLogs === 'object') {
+        targetExIds.forEach((exId) => {
+          const pDay = PULLUP_EX_ID_TO_DAY[exId];
+          if (pDay) {
+            const pPrefix = `w${safeW}_day_${pDay}_set_`;
+            Object.keys(state.pullupLogs).forEach((pk) => {
+              if (pk.startsWith(pPrefix)) {
+                delete state.pullupLogs[pk];
+              }
+            });
+          }
+        });
+      }
+
+      if (state.warmupLogs && typeof state.warmupLogs === 'object') {
+        Object.keys(state.warmupLogs).forEach((wk) => {
+          if (wk.startsWith(`w${safeW}_${safeD}_`) || wk.startsWith(`w${safeW}_d${safeD}_`)) {
+            delete state.warmupLogs[wk];
+          }
+        });
+      }
+    }
+
+    function prefillUnloggedDayFromLastSetHistoryLocal(targetWeek, dayIdx) {
+      const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
+      const safeD = Math.max(0, Math.min(6, Math.floor(Number(dayIdx) || 0)));
+      const assign = typeof getDayAssignment === 'function' ? getDayAssignment(safeW, safeD) : null;
+      const dayObj = typeof getScheduledDayObject === 'function' ? getScheduledDayObject(safeW, safeD) : null;
+      if (!dayObj || !Array.isArray(dayObj.exercises)) return;
+      if (!state.workoutLogs || typeof state.workoutLogs !== 'object') state.workoutLogs = {};
+
+      const exList = [...dayObj.exercises];
+      if (state.crunchDays && state.crunchDays.includes(safeD) && !dayObj.isAiBonusWorkout && !exList.some(ex => ex.id === CABLE_CRUNCH_EXERCISE.id)) {
+        exList.push(CABLE_CRUNCH_EXERCISE);
+      }
+
+      const slotIdx = assign && typeof assign.templateSlotIndex === 'number' ? assign.templateSlotIndex : safeD;
+      exList.forEach((ex) => {
+        if (!ex || !ex.id) return;
+        const totalSets = Math.max(1, Number(ex.sets) || 3);
+        const lastSug = getPreviousWeekSuggestion(safeW, safeD, ex.id, totalSets, ex.name);
+        if (!lastSug || (String(lastSug.weight || '').trim() === '' && String(lastSug.reps || '').trim() === '')) return;
+        const exUnit = typeof getExerciseUnit === 'function' ? getExerciseUnit(ex.id) : (state.weightUnit || 'lbs');
+        let fillWeight = String(lastSug.weight || '').trim();
+        if (fillWeight !== '' && lastSug.unit && lastSug.unit !== exUnit && typeof convertAndRoundWeight === 'function') {
+          const conv = convertAndRoundWeight(fillWeight, lastSug.unit);
+          if (conv) fillWeight = String(conv.rounded);
+        }
+        const fillReps = String(lastSug.reps || '').trim();
+        const logKeyIndex = (assign && assign.isBonusRepeat && ex.id !== 'cable_ab_crunch')
+          ? assign.logSlotKey
+          : (ex.id === 'cable_ab_crunch' ? safeD : (dayObj.isWizardGenerated || dayObj.isAiBonusWorkout ? safeD : slotIdx));
+
+        for (let s = 1; s <= totalSets; s++) {
+          const logKey = `w${safeW}_${logKeyIndex}_${ex.id}_${s}`;
+          state.workoutLogs[logKey] = {
+            weight: fillWeight,
+            reps: fillReps,
+            done: false,
+            isLogged: false,
+            unit: exUnit
+          };
+        }
+      });
+    }
+
+    function prefillUnloggedWeekFromLastSetHistoryLocal(targetWeek) {
+      for (let d = 0; d < 7; d++) {
+        prefillUnloggedDayFromLastSetHistoryLocal(targetWeek, d);
+      }
+    }
+
+    function copySingleDayFromPreviousWeekLocal(targetWeek, dayIdx) {
+      const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
+      const safeD = Math.max(0, Math.min(6, Math.floor(Number(dayIdx) || 0)));
+      if (safeW < 2) {
+        showToast('Move to Week 2 or later to copy from last week.');
+        return false;
+      }
+      const prevW = safeW - 1;
+      const oldDayObj = typeof getScheduledDayObject === 'function' ? getScheduledDayObject(safeW, safeD) : null;
+      const oldExIds = oldDayObj && Array.isArray(oldDayObj.exercises) ? oldDayObj.exercises.map(e => e && e.id).filter(Boolean) : [];
+
+      const prevSchedule = getCustomDayScheduleForWeek(prevW);
+      const curSchedule = getCustomDayScheduleForWeek(safeW).map((slot) =>
+        slot !== null && typeof slot === 'object' ? JSON.parse(JSON.stringify(slot)) : slot
+      );
+
+      // Overwrite ONLY Current Week -> Active Day from Previous Week -> Active Day (cleanly stripped)
+      curSchedule[safeD] = stripLoggedFlagsFromDaySlotLocal(prevSchedule[safeD]);
+
+      if (!state.customDayScheduleByWeek || typeof state.customDayScheduleByWeek !== 'object') {
+        state.customDayScheduleByWeek = {};
+      }
+      if (!state.manualScheduleOverrideByWeek || typeof state.manualScheduleOverrideByWeek !== 'object') {
+        state.manualScheduleOverrideByWeek = {};
+      }
+      state.customDayScheduleByWeek[String(safeW)] = curSchedule;
+      state.manualScheduleOverrideByWeek[String(safeW)] = true;
+
+      copyWeekCustomExercisesLocal(prevW, safeW, safeD);
+      wipeSingleDayCheckmarksLocal(safeW, safeD, oldExIds);
+      prefillUnloggedDayFromLastSetHistoryLocal(safeW, safeD);
+
+      state.openDayWorkoutPicker = false;
+      saveState();
+      renderWorkoutView();
+      renderPullupView();
+      renderVeganView();
+      showToast(`Copied Week ${prevW} • Day ${safeD + 1} into today! Progress reset to 0% and last weights loaded.`);
+      return true;
     }
 
     window.openWeekContinuityModal = function(currentWeek) {
@@ -10052,7 +10300,7 @@
       }
       const keepHelperEl = document.getElementById('week-continuity-keep-helper');
       if (keepHelperEl) {
-        keepHelperEl.textContent = `Copies all Week ${cur} exercises, sets, and target reps straight into Week ${nextW}.`;
+        keepHelperEl.textContent = `Copies all Week ${cur} exercises, sets, and target reps straight into Week ${nextW} at 0% with your last weights ready.`;
       }
       const buildHelperEl = document.getElementById('week-continuity-build-helper');
       if (buildHelperEl) {
@@ -10084,13 +10332,17 @@
       }
 
       if (mode === 'keep_same') {
-        // UPGRADE 22: Exact deep-copy of current week schedule verbatim into next week (do NOT auto-change plan)
+        // UPGRADE 23: Deep-clone current week schedule verbatim, wipe ALL checkmarks to isLogged=false (0%), and pre-fill from LAST set history
         const currentWeekSchedule = getCustomDayScheduleForWeek(cur);
         state.customDayScheduleByWeek[String(nextW)] = cloneWeekScheduleIdenticallyLocal(currentWeekSchedule);
         const curRest = getWeekRestDays(cur);
         state.weeklyRestDays[String(nextW)] = Array.isArray(curRest) ? curRest.slice() : [5, 6];
         state.manualScheduleOverrideByWeek[String(nextW)] = true;
         copyWeekCustomExercisesLocal(cur, nextW);
+        wipeTargetWeekCheckmarksLocal(nextW);
+        prefillUnloggedWeekFromLastSetHistoryLocal(nextW);
+      } else {
+        wipeTargetWeekCheckmarksLocal(nextW);
       }
 
       state.selectedWeek = nextW;
@@ -10120,7 +10372,7 @@
           window.openProgramSetupWizardModal(false, nextW);
         }
       } else {
-        showToast(`Week ${nextW} ready! Kept the exact same plan from Week ${cur}.`);
+        showToast(`Week ${nextW} ready at 0%! Same plan kept from Week ${cur} with your last weights loaded.`);
       }
     }
 
@@ -10188,7 +10440,7 @@
       `;
 
       return `
-        <div id="day-workout-picker-panel" class="mt-2.5 rounded-2xl bg-slate-950/95 border-2 border-emerald-500/50 p-3 space-y-3 shadow-xl">
+        <div id="day-workout-picker-panel" class="mt-2.5 rounded-2xl bg-slate-950/95 border-2 border-emerald-500/50 p-3 space-y-3 shadow-xl" style="letter-spacing: 0.02em; line-height: 1.5; font-family: system-ui, sans-serif;">
           <div class="flex items-start justify-between gap-2">
             <div>
               <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Week ${safeWeek} • Day ${safeDayIdx + 1} Workout &amp; Rest Selector</span>
@@ -10197,6 +10449,23 @@
             <button type="button" class="close-day-workout-picker-btn shrink-0 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-extrabold border border-slate-700">
               Close ✕
             </button>
+          </div>
+
+          <!-- 0. UPGRADE 23: Single-Day Sync from Previous Week (Easy Mid-Week Fix) -->
+          <div class="space-y-1">
+            <button
+              type="button"
+              id="picker-copy-last-week-day-btn"
+              class="w-full py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-2 shadow-sm hover:opacity-95"
+              style="min-height: 46px; background-color: ${safeWeek >= 2 ? 'rgba(14, 165, 233, 0.22)' : 'rgba(51, 65, 85, 0.35)'}; border: 1.5px solid ${safeWeek >= 2 ? '#0ea5e9' : '#475569'}; color: ${safeWeek >= 2 ? '#f8fafc' : '#94a3b8'};"
+            >
+              <span>🔁 Copy Last Week's Workout</span>
+            </button>
+            <p class="text-[11px] px-1" style="color: #cbd5e1;">
+              ${safeWeek >= 2
+                ? `Copies Week ${safeWeek - 1} • Day ${safeDayIdx + 1} into today only. Resets checkmarks to 0% and loads your last weights.`
+                : 'Starts working in Week 2. Copies this exact day from last week into today only.'}
+            </p>
           </div>
 
           <!-- 1. Smart Suggestion Callout Banner (Pre-Selected Default) -->
@@ -10270,6 +10539,13 @@
           renderPullupView();
         });
       });
+
+      const copyLastWeekDayBtn = containerEl.querySelector('#picker-copy-last-week-day-btn');
+      if (copyLastWeekDayBtn) {
+        copyLastWeekDayBtn.addEventListener('click', () => {
+          copySingleDayFromPreviousWeekLocal(week, dayIdx);
+        });
+      }
 
       const startSuggestedBtn = containerEl.querySelector('#picker-start-suggested-btn');
       if (startSuggestedBtn) {
@@ -10464,12 +10740,22 @@
       return null;
     }
 
-    // For Daily Cable Abdominal Crunch: Pre-fill from the DAY BEFORE (or most recent prior day/week!)
+    function findLastCompletedSetEntryForSlot(week, calDayIdx, exId) {
+      for (let s = 9; s >= 1; s--) {
+        const entry = getLogEntry(week, calDayIdx, exId, s);
+        if (entry && entry.done === true && entry.isLogged !== false && (String(entry.weight || '').trim() !== '' || String(entry.reps || '').trim() !== '')) {
+          return entry;
+        }
+      }
+      return null;
+    }
+
+    // For Daily Cable Abdominal Crunch: Pre-fill from the LAST set of the most recent prior day/week!
     function getPreviousDayAbSuggestion(currentWeek, currentDayIdx, setIdx) {
       // 1. Check earlier days in currentWeek (from yesterday back to Day 1)
       for (let d = currentDayIdx - 1; d >= 0; d--) {
-        const prev = getLogEntry(currentWeek, d, 'cable_ab_crunch', setIdx);
-        if (prev && (prev.weight !== '' || prev.reps !== '')) {
+        const prev = findLastCompletedSetEntryForSlot(currentWeek, d, 'cable_ab_crunch');
+        if (prev) {
           return {
             sourceLabel: `Day ${d + 1}`,
             isDailyPrev: true,
@@ -10482,8 +10768,8 @@
       // 2. Check previous weeks from Day 7 down to Day 1
       for (let w = currentWeek - 1; w >= 1; w--) {
         for (let d = 6; d >= 0; d--) {
-          const prev = getLogEntry(w, d, 'cable_ab_crunch', setIdx);
-          if (prev && (prev.weight !== '' || prev.reps !== '')) {
+          const prev = findLastCompletedSetEntryForSlot(w, d, 'cable_ab_crunch');
+          if (prev) {
             return {
               sourceLabel: `Wk ${w} • Day ${d + 1}`,
               isDailyPrev: true,
@@ -10496,8 +10782,8 @@
       }
       // 3. Also check later days in currentWeek if user logged days out of sequence
       for (let d = 6; d > currentDayIdx; d--) {
-        const prev = getLogEntry(currentWeek, d, 'cable_ab_crunch', setIdx);
-        if (prev && (prev.weight !== '' || prev.reps !== '')) {
+        const prev = findLastCompletedSetEntryForSlot(currentWeek, d, 'cable_ab_crunch');
+        if (prev) {
           return {
             sourceLabel: `Day ${d + 1}`,
             isDailyPrev: true,
@@ -10511,27 +10797,22 @@
     }
 
     function getPreviousWeekSuggestion(currentWeek, dayIdx, exId, setIdx, exName) {
-      // UPGRADE 19: Chronologically MOST RECENT "Last Known Set" lookup by strict canonical exerciseID (across ANY week or day!)
+      // UPGRADE 23: Smart Progressive Overload — use the LAST set weight from the most recent completed session for Set 1, Set 2, Set 3...
       const canonicalId = resolveCanonicalExerciseIdInline(exId, exName || '');
       const lastKnownSession = getLastKnownExerciseSessionInline(canonicalId, currentWeek, dayIdx);
-      if (lastKnownSession && Array.isArray(lastKnownSession.sets) && lastKnownSession.sets.length > 0) {
-        const matchedSet =
-          lastKnownSession.sets.find(st => Number(st.setIdx) === Number(setIdx)) ||
-          lastKnownSession.sets[Math.max(0, Number(setIdx) - 1)] ||
-          lastKnownSession.sets[lastKnownSession.sets.length - 1];
-        if (matchedSet && (String(matchedSet.weight || '').trim() !== '' || String(matchedSet.reps || '').trim() !== '')) {
-          return {
-            week: lastKnownSession.week,
-            sourceLabel: lastKnownSession.week === currentWeek
-              ? `Day ${lastKnownSession.dayIdx + 1}`
-              : `Wk ${lastKnownSession.week} • Day ${lastKnownSession.dayIdx + 1}`,
-            isDailyPrev: true,
-            exerciseID: canonicalId,
-            weight: matchedSet.weight,
-            reps: matchedSet.reps,
-            unit: matchedSet.unit || getExerciseUnit(exId)
-          };
-        }
+      const lastSet = getLastSetFromSessionInline(lastKnownSession);
+      if (lastKnownSession && lastSet && (String(lastSet.weight || '').trim() !== '' || String(lastSet.reps || '').trim() !== '')) {
+        return {
+          week: lastKnownSession.week,
+          sourceLabel: lastKnownSession.week === currentWeek
+            ? `Day ${lastKnownSession.dayIdx + 1}`
+            : `Wk ${lastKnownSession.week} • Day ${lastKnownSession.dayIdx + 1}`,
+          isDailyPrev: true,
+          exerciseID: canonicalId,
+          weight: lastSet.weight,
+          reps: lastSet.reps,
+          unit: lastSet.unit || getExerciseUnit(exId)
+        };
       }
       if (exId === 'cable_ab_crunch') {
         return getPreviousDayAbSuggestion(currentWeek, dayIdx, setIdx);
@@ -10539,8 +10820,8 @@
       const assign = typeof getDayAssignment === 'function' ? getDayAssignment(currentWeek, dayIdx) : null;
       if (assign && assign.isBonusRepeat) {
         const primaryDay = getCalendarDayForTemplateSlot(currentWeek, assign.templateSlotIndex);
-        const earlierThisWeek = getLogEntry(currentWeek, primaryDay, exId, setIdx);
-        if (earlierThisWeek && (earlierThisWeek.weight !== '' || earlierThisWeek.reps !== '')) {
+        const earlierThisWeek = findLastCompletedSetEntryForSlot(currentWeek, primaryDay, exId);
+        if (earlierThisWeek) {
           return {
             week: currentWeek,
             sourceLabel: `Wk ${currentWeek} • Day ${primaryDay + 1}`,
@@ -10554,8 +10835,8 @@
       }
       for (let w = currentWeek - 1; w >= 1; w--) {
         const targetCalDay = assign ? getCalendarDayForTemplateSlot(w, assign.templateSlotIndex) : dayIdx;
-        const prev = getLogEntry(w, targetCalDay, exId, setIdx);
-        if (prev && (prev.weight !== '' || prev.reps !== '')) {
+        const prev = findLastCompletedSetEntryForSlot(w, targetCalDay, exId);
+        if (prev) {
           return {
             week: w,
             sourceLabel: `Wk ${w}`,
@@ -11628,13 +11909,28 @@
 
         el.querySelectorAll('.cross-week-resync-btn').forEach(btn => {
           btn.addEventListener('click', () => {
-            const res = applySmartScheduleFromPreviousWeek(week, true);
-            syncSubsequentWeeksFromWeek(week);
+            const prevWeekSchedule = getCustomDayScheduleForWeek(prevWeek);
+            if (!state.customDayScheduleByWeek || typeof state.customDayScheduleByWeek !== 'object') {
+              state.customDayScheduleByWeek = {};
+            }
+            if (!state.weeklyRestDays || typeof state.weeklyRestDays !== 'object') {
+              state.weeklyRestDays = { default: [5, 6] };
+            }
+            if (!state.manualScheduleOverrideByWeek || typeof state.manualScheduleOverrideByWeek !== 'object') {
+              state.manualScheduleOverrideByWeek = {};
+            }
+            state.customDayScheduleByWeek[String(week)] = cloneWeekScheduleIdenticallyLocal(prevWeekSchedule);
+            const prevRest = getWeekRestDays(prevWeek);
+            state.weeklyRestDays[String(week)] = Array.isArray(prevRest) ? prevRest.slice() : [5, 6];
+            state.manualScheduleOverrideByWeek[String(week)] = true;
+            copyWeekCustomExercisesLocal(prevWeek, week);
+            wipeTargetWeekCheckmarksLocal(week);
+            prefillUnloggedWeekFromLastSetHistoryLocal(week);
             saveState();
             renderWorkoutView();
             renderPullupView();
             renderVeganView();
-            showToast(res.statusBannerText);
+            showToast(`Week ${week} synced from Week ${prevWeek}! Checkmarks reset to 0% and last weights loaded.`);
           });
         });
 
@@ -22269,7 +22565,7 @@
         if (!state.manualScheduleOverrideByWeek || typeof state.manualScheduleOverrideByWeek !== 'object') {
           state.manualScheduleOverrideByWeek = {};
         }
-        state.customDayScheduleByWeek[wKey] = builtSchedule;
+        state.customDayScheduleByWeek[wKey] = cloneWeekScheduleIdenticallyLocal(builtSchedule);
         const restIndices = [];
         builtSchedule.forEach((slot, idx) => {
           if (slot === 5 || slot === 6) restIndices.push(idx);
@@ -22278,6 +22574,8 @@
           state.weeklyRestDays[wKey] = [restIndices[0], restIndices[1]];
         }
         state.manualScheduleOverrideByWeek[wKey] = true;
+        wipeTargetWeekCheckmarksLocal(week);
+        prefillUnloggedWeekFromLastSetHistoryLocal(week);
         const normDiet = normalizeAppDietState(baseDiet);
         state.baseDiet = baseDiet;
         state.intolerances = intolerances;

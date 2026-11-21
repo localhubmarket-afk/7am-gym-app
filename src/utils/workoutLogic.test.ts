@@ -2968,3 +2968,144 @@ test('Subtest 45: Upgrade 22 — Week Continuity Engine (Exact Plan Deep-Copy vs
   assert.equal(mod.shouldForceFirstTimeOnboarding({ userHasCompletedOnboarding: false, hasCompletedFirstSetup: false }, '?autostart=1'), false);
 });
 
+test('Subtest 46: Upgrade 23 — Sync Week Checkmark Reset (0%), Last-Set Historical Pre-Fill (62.5 lbs across Sets 1-3) & Single-Day Sync', async () => {
+  const mod = await import('./workoutLogic.ts');
+
+  // 1. Deep-Clone Schedule With Forced Checkmark Reset (isLogged = false, done = false)
+  const completedWeek2Schedule = [
+    {
+      daySub: 'Push 1',
+      title: 'Day 1 • Push',
+      isLogged: true,
+      completed: true,
+      exercises: [
+        {
+          id: 'cable_ab_crunch',
+          name: 'Cable Abdominal Crunch',
+          sets: 3,
+          reps: '12',
+          isLogged: true,
+          done: true,
+          setsList: [
+            { setIdx: 1, weight: '55', reps: '12', isLogged: true, done: true },
+            { setIdx: 2, weight: '57.5', reps: '12', isLogged: true, done: true },
+            { setIdx: 3, weight: '62.5', reps: '12', isLogged: true, done: true }
+          ]
+        }
+      ]
+    },
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ];
+
+  const week3Clean = mod.cloneScheduleWithResetCheckmarks(completedWeek2Schedule);
+  assert.equal((week3Clean[0] as any).isLogged, false);
+  assert.equal((week3Clean[0] as any).completed, false);
+  assert.equal((week3Clean[0] as any).exercises[0].isLogged, false);
+  assert.equal((week3Clean[0] as any).exercises[0].done, false);
+  assert.ok((week3Clean[0] as any).exercises[0].setsList.every((st: any) => st.isLogged === false && st.done === false));
+  // Original Week 2 stays untouched (no shared references)
+  assert.equal((completedWeek2Schedule[0] as any).exercises[0].isLogged, true);
+
+  // 2. Wipe Week Checkmarks From Logs (Resets Target Week to 0% Without Touching Week 2)
+  const logsBefore = {
+    w2_0_cable_ab_crunch_1: { weight: '55', reps: '12', done: true, isLogged: true, unit: 'lbs' },
+    w2_0_cable_ab_crunch_3: { weight: '62.5', reps: '12', done: true, isLogged: true, unit: 'lbs' },
+    w3_0_cable_ab_crunch_1: { weight: '55', reps: '12', done: true, isLogged: true, unit: 'lbs' }
+  };
+  const pullupBefore = {
+    w2_day_1_set_1: { reps: '8', done: true, isLogged: true },
+    w3_day_1_set_1: { reps: '8', done: true, isLogged: true }
+  };
+  const wiped = mod.wipeWeekCheckmarksFromLogs(logsBefore, pullupBefore, 3);
+  assert.equal(wiped.workoutLogs.w2_0_cable_ab_crunch_3.done, true);
+  assert.equal(wiped.workoutLogs.w3_0_cable_ab_crunch_1.done, false);
+  assert.equal(wiped.workoutLogs.w3_0_cable_ab_crunch_1.isLogged, false);
+  assert.equal(wiped.pullupLogs.w2_day_1_set_1.done, true);
+  assert.equal(wiped.pullupLogs.w3_day_1_set_1.done, false);
+
+  // 3. Historical Pre-Fill: Use Weight From LAST Set of Most Recent Session for Set 1, Set 2 & Set 3
+  const historySessions = [
+    {
+      week: 1,
+      dayIdx: 4,
+      timestamp: 1000,
+      sets: [
+        { setIdx: 1, weight: '45', reps: '12', done: true },
+        { setIdx: 2, weight: '50', reps: '12', done: true },
+        { setIdx: 3, weight: '52.5', reps: '12', done: true }
+      ]
+    },
+    {
+      week: 2,
+      dayIdx: 6,
+      timestamp: 2000,
+      sets: [
+        { setIdx: 1, weight: '55', reps: '12', done: true },
+        { setIdx: 2, weight: '57.5', reps: '12', done: true },
+        { setIdx: 3, weight: '62.5', reps: '12', done: true }
+      ]
+    },
+    {
+      // Unlogged placeholder in Week 3 Day 1 must be ignored
+      week: 3,
+      dayIdx: 1,
+      timestamp: 3000,
+      sets: [{ setIdx: 1, weight: '999', reps: '12', done: false, isLogged: false }]
+    }
+  ];
+
+  const lastSet = mod.getLastSetWeightFromMostRecentSession(historySessions, 3, 0);
+  assert.ok(lastSet);
+  assert.equal(lastSet.weight, '62.5');
+  assert.equal(lastSet.reps, '12');
+  assert.equal(lastSet.sourceLabel, 'Wk 2 • Day 7');
+
+  const prefilledSets = mod.buildPrefilledUnloggedSetsFromHistory(3, lastSet, '50', '12', 'lbs');
+  assert.equal(prefilledSets.length, 3);
+  assert.deepEqual(
+    prefilledSets.map((s) => ({ setIdx: s.setIdx, weight: s.weight, done: s.done, isLogged: s.isLogged })),
+    [
+      { setIdx: 1, weight: '62.5', done: false, isLogged: false },
+      { setIdx: 2, weight: '62.5', done: false, isLogged: false },
+      { setIdx: 3, weight: '62.5', done: false, isLogged: false }
+    ]
+  );
+
+  // 4. Single-Day Sync: Overwrites ONLY Current Week Day 2 (dayIdx = 1) From Previous Week Day 2
+  const prevWeekSched = [
+    0,
+    { daySub: 'Legs 2', title: 'Prev Week Day 2 Legs', isLogged: true, exercises: [{ id: 'tue_squat', name: 'Back Squat', sets: 3, reps: '8', isLogged: true, done: true }] },
+    2,
+    3,
+    4,
+    5,
+    6
+  ];
+  const curWeekSched = [
+    { daySub: 'Custom Day 1', title: 'Keep Me Untouched', exercises: [{ id: 'mon_bench', name: 'Bench', sets: 3, reps: '8' }] },
+    5, // Day 2 is currently Rest
+    2,
+    3,
+    4,
+    5,
+    6
+  ];
+  const syncedCurWeek = mod.copySingleDayScheduleFromPreviousWeek({
+    prevWeekSchedule: prevWeekSched as any,
+    currentWeekSchedule: curWeekSched as any,
+    dayIdx: 1
+  });
+  assert.equal((syncedCurWeek[0] as any).title, 'Keep Me Untouched');
+  assert.equal((syncedCurWeek[1] as any).title, 'Prev Week Day 2 Legs');
+  assert.equal((syncedCurWeek[1] as any).isLogged, false);
+  assert.equal((syncedCurWeek[1] as any).exercises[0].isLogged, false);
+  assert.equal((syncedCurWeek[1] as any).exercises[0].done, false);
+  assert.equal(syncedCurWeek[2], 2);
+});
+
+

@@ -10428,3 +10428,235 @@ export function shouldForceFirstTimeOnboarding(
   return !completed;
 }
 
+// ============================================================================
+// UPGRADE 23: SYNC WEEK CHECKMARK WIPE, LAST-SET HISTORICAL PRE-FILL & SINGLE-DAY SYNC
+// ============================================================================
+
+export function stripLoggedFlagsFromDaySlot<T>(slot: T): T {
+  if (slot === null || typeof slot !== 'object') {
+    const num = Math.floor(Number(slot) || 0);
+    return (Math.max(0, Math.min(6, num)) as unknown) as T;
+  }
+  const cloned = JSON.parse(JSON.stringify(slot)) as Record<string, any>;
+  if ('isLogged' in cloned) cloned.isLogged = false;
+  if ('done' in cloned) cloned.done = false;
+  if ('completed' in cloned) cloned.completed = false;
+  if (Array.isArray(cloned.exercises)) {
+    cloned.exercises = cloned.exercises.map((ex: any) => {
+      if (!ex || typeof ex !== 'object') return ex;
+      const cleanEx = { ...ex, isLogged: false, done: false };
+      if (Array.isArray(cleanEx.setsList)) {
+        cleanEx.setsList = cleanEx.setsList.map((st: any) =>
+          st && typeof st === 'object' ? { ...st, isLogged: false, done: false } : st
+        );
+      }
+      if (Array.isArray(cleanEx.setLogs)) {
+        cleanEx.setLogs = cleanEx.setLogs.map((st: any) =>
+          st && typeof st === 'object' ? { ...st, isLogged: false, done: false } : st
+        );
+      }
+      return cleanEx;
+    });
+  }
+  return cloned as T;
+}
+
+export function cloneScheduleWithResetCheckmarks<T>(sourceSchedule: readonly T[] | null | undefined): T[] {
+  if (!Array.isArray(sourceSchedule) || sourceSchedule.length !== 7) {
+    return ([0, 1, 2, 3, 4, 5, 6] as unknown) as T[];
+  }
+  return sourceSchedule.map((slot) => stripLoggedFlagsFromDaySlot(slot));
+}
+
+export function wipeWeekCheckmarksFromLogs<T extends Record<string, any>>(
+  workoutLogs: T | null | undefined,
+  pullupLogs: Record<string, any> | null | undefined,
+  targetWeek: number
+): {
+  workoutLogs: Record<string, any>;
+  pullupLogs: Record<string, any>;
+} {
+  const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
+  const prefix = `w${safeW}_`;
+  const nextWorkoutLogs: Record<string, any> = {};
+  const nextPullupLogs: Record<string, any> = {};
+
+  Object.entries(workoutLogs || {}).forEach(([k, v]) => {
+    if (k.startsWith(prefix)) {
+      if (v && typeof v === 'object') {
+        nextWorkoutLogs[k] = { ...v, done: false, isLogged: false };
+      }
+    } else {
+      nextWorkoutLogs[k] = v && typeof v === 'object' ? { ...v } : v;
+    }
+  });
+
+  Object.entries(pullupLogs || {}).forEach(([k, v]) => {
+    if (k.startsWith(prefix)) {
+      if (v && typeof v === 'object') {
+        nextPullupLogs[k] = { ...v, done: false, isLogged: false };
+      }
+    } else {
+      nextPullupLogs[k] = v && typeof v === 'object' ? { ...v } : v;
+    }
+  });
+
+  return { workoutLogs: nextWorkoutLogs, pullupLogs: nextPullupLogs };
+}
+
+export interface HistoricalSessionSet {
+  setIdx: number;
+  weight?: string | number;
+  reps?: string | number;
+  unit?: 'lbs' | 'kg';
+  done?: boolean;
+  isLogged?: boolean;
+}
+
+export interface HistoricalExerciseSession {
+  week: number;
+  dayIdx: number;
+  timestamp?: number;
+  sets: HistoricalSessionSet[];
+}
+
+export function getLastSetWeightFromMostRecentSession(
+  sessions: readonly HistoricalExerciseSession[] | null | undefined,
+  currentWeek: number,
+  currentDayIdx: number
+): {
+  weight: string;
+  reps: string;
+  unit: 'lbs' | 'kg';
+  sourceWeek: number;
+  sourceDayIdx: number;
+  sourceLabel: string;
+} | null {
+  if (!Array.isArray(sessions) || sessions.length === 0) return null;
+
+  const eligible = sessions
+    .filter((sess) => {
+      if (!sess || !Array.isArray(sess.sets) || sess.sets.length === 0) return false;
+      if (Number(sess.week) === Number(currentWeek) && Number(sess.dayIdx) === Number(currentDayIdx)) {
+        return false;
+      }
+      // Must have at least one logged/non-empty set (ignore explicitly unlogged placeholders)
+      return sess.sets.some(
+        (st) =>
+          st &&
+          st.done !== false &&
+          st.isLogged !== false &&
+          (String(st.weight ?? '').trim() !== '' || String(st.reps ?? '').trim() !== '')
+      );
+    })
+    .slice()
+    .sort((a, b) => {
+      const tsDiff = (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0);
+      if (tsDiff !== 0) return tsDiff;
+      const wkDiff = (Number(b.week) || 0) - (Number(a.week) || 0);
+      if (wkDiff !== 0) return wkDiff;
+      return (Number(b.dayIdx) || 0) - (Number(a.dayIdx) || 0);
+    });
+
+  if (eligible.length === 0) return null;
+  const mostRecent = eligible[0];
+
+  const loggedSets = mostRecent.sets
+    .filter(
+      (st) =>
+        st &&
+        st.done !== false &&
+        st.isLogged !== false &&
+        (String(st.weight ?? '').trim() !== '' || String(st.reps ?? '').trim() !== '')
+    )
+    .slice()
+    .sort((a, b) => Number(a.setIdx) - Number(b.setIdx));
+
+  if (loggedSets.length === 0) return null;
+
+  // Pick the LAST set with a non-empty weight (or the absolute last logged set for bodyweight exercises)
+  let lastSet = loggedSets[loggedSets.length - 1];
+  for (let i = loggedSets.length - 1; i >= 0; i--) {
+    const wStr = String(loggedSets[i].weight ?? '').trim();
+    if (wStr !== '' && wStr !== '0') {
+      lastSet = loggedSets[i];
+      break;
+    }
+  }
+
+  const srcWeek = Number(mostRecent.week) || 1;
+  const srcDayIdx = Number(mostRecent.dayIdx) || 0;
+  return {
+    weight: String(lastSet.weight ?? '').trim(),
+    reps: String(lastSet.reps ?? '').trim(),
+    unit: lastSet.unit === 'kg' ? 'kg' : 'lbs',
+    sourceWeek: srcWeek,
+    sourceDayIdx: srcDayIdx,
+    sourceLabel:
+      srcWeek === Number(currentWeek)
+        ? `Day ${srcDayIdx + 1}`
+        : `Wk ${srcWeek} • Day ${srcDayIdx + 1}`
+  };
+}
+
+export function buildPrefilledUnloggedSetsFromHistory(
+  totalSets: number,
+  lastSetInfo: { weight: string; reps: string; unit?: 'lbs' | 'kg' } | null | undefined,
+  fallbackWeight: string | number = '',
+  fallbackReps: string | number = '',
+  unit: 'lbs' | 'kg' = 'lbs'
+): Array<{
+  setIdx: number;
+  weight: string;
+  reps: string;
+  unit: 'lbs' | 'kg';
+  done: false;
+  isLogged: false;
+}> {
+  const count = Math.max(1, Math.min(12, Math.floor(Number(totalSets) || 3)));
+  const useWeight =
+    lastSetInfo && String(lastSetInfo.weight || '').trim() !== ''
+      ? String(lastSetInfo.weight).trim()
+      : String(fallbackWeight ?? '');
+  const useReps =
+    lastSetInfo && String(lastSetInfo.reps || '').trim() !== ''
+      ? String(lastSetInfo.reps).trim()
+      : String(fallbackReps ?? '');
+  const useUnit = lastSetInfo?.unit === 'kg' ? 'kg' : unit;
+
+  const sets = [];
+  for (let s = 1; s <= count; s++) {
+    sets.push({
+      setIdx: s,
+      weight: useWeight,
+      reps: useReps,
+      unit: useUnit,
+      done: false as const,
+      isLogged: false as const
+    });
+  }
+  return sets;
+}
+
+export function copySingleDayScheduleFromPreviousWeek<T>(params: {
+  prevWeekSchedule: readonly T[] | null | undefined;
+  currentWeekSchedule: readonly T[] | null | undefined;
+  dayIdx: number;
+}): T[] {
+  const safeDayIdx = Math.max(0, Math.min(6, Math.floor(Number(params.dayIdx) || 0)));
+  const prevArr =
+    Array.isArray(params.prevWeekSchedule) && params.prevWeekSchedule.length === 7
+      ? params.prevWeekSchedule
+      : (([0, 1, 2, 3, 4, 5, 6] as unknown) as T[]);
+  const curArr =
+    Array.isArray(params.currentWeekSchedule) && params.currentWeekSchedule.length === 7
+      ? params.currentWeekSchedule.map((slot) =>
+          slot !== null && typeof slot === 'object' ? (JSON.parse(JSON.stringify(slot)) as T) : slot
+        )
+      : (([0, 1, 2, 3, 4, 5, 6] as unknown) as T[]);
+
+  curArr[safeDayIdx] = stripLoggedFlagsFromDaySlot(prevArr[safeDayIdx]);
+  return curArr;
+}
+
+
