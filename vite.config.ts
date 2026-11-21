@@ -7,11 +7,13 @@ export default defineConfig({
     port: 3000,
     strictPort: true,
     host: '0.0.0.0',
+    allowedHosts: true,
     hmr: false
   },
   preview: {
     port: 3000,
     strictPort: true,
-    host: '0.0.0.0'
+    host: '0.0.0.0',
+    allowedHosts: true
   }
 });
