@@ -57,6 +57,14 @@
       max-width: 100vw;
       width: 100%;
     }
+    /* UPGRADE 21: D3.js 1RM Chart — Transparent Dark Slate Blend & Vertical Scroll Protection */
+    .d3-1rm-chart-container,
+    .d3-1rm-chart-container svg {
+      background: transparent !important;
+      touch-action: pan-y;
+      letter-spacing: 0.02em;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
     /* Neurodivergent COGA / BDA Calm Surface & Glare-Reduction Tokens (Never pure #000000 or pure #ffffff) */
     .bg-slate-950 {
       background-color: #0f172a !important;
@@ -1200,6 +1208,7 @@
       cardioUiModeByEx: {},
       hasCompletedFirstSetup: false,
       dismissedOvertrainingAlertKey: '',
+      selectedOneRmChartLift: 'bench',
       programWizardConfig: {
         daysPerWeek: 5,
         primaryFocus: 'balanced',
@@ -1576,6 +1585,9 @@
       }
       if (typeof merged.dismissedOvertrainingAlertKey !== 'string') {
         merged.dismissedOvertrainingAlertKey = '';
+      }
+      if (!['bench', 'squat', 'deadlift'].includes(String(merged.selectedOneRmChartLift || ''))) {
+        merged.selectedOneRmChartLift = 'bench';
       }
       if (!merged.quickAddCaloriesByDay || typeof merged.quickAddCaloriesByDay !== 'object') {
         merged.quickAddCaloriesByDay = {};
@@ -23618,14 +23630,66 @@
               </div>
             </div>
 
-            <!-- KPI 3: Pull-Up & Key Lift PR Tracker (Estimated 1RM Epley Formula) -->
-            <div class="bg-slate-950 border border-amber-500/35 rounded-xl p-3 space-y-2.5">
+            <!-- KPI 3: Pull-Up & Key Lift PR Tracker (Estimated 1RM Epley Formula + Interactive D3.js Progression Chart) -->
+            <div class="bg-slate-950 border border-amber-500/35 rounded-xl p-3 space-y-3">
               <div class="flex items-center justify-between gap-2">
                 <div>
                   <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-400">3. Pull-Up &amp; Key Lift PR Tracker</span>
-                  <div class="text-xs font-extrabold text-white mt-0.5">Estimated 1-Rep Max (Epley: Weight × (1 + Reps/30))</div>
+                  <div class="text-xs font-extrabold text-[#f8fafc] mt-0.5">Estimated 1-Rep Max (Best Single Lift)</div>
                 </div>
               </div>
+
+              <!-- UPGRADE 21: Interactive D3.js 1RM Progression Chart (Single-Line Toggle, Neurodivergent Palette, Pan-Y Safe) -->
+              <div id="athlete-1rm-chart-card" class="rounded-xl border border-slate-800 p-2.5 space-y-2.5" style="background: transparent;">
+                <div class="flex flex-wrap items-center justify-between gap-1.5">
+                  <div>
+                    <div class="text-xs font-extrabold text-[#f8fafc]">Strength Over Time (1-Rep Max)</div>
+                    <p class="text-[11px] text-slate-300 leading-snug">Tap a dot to see your weight for that day.</p>
+                  </div>
+                  <span
+                    id="athlete-1rm-d3-tooltip-readout"
+                    aria-live="polite"
+                    class="text-[11px] font-extrabold px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 text-[#f8fafc] whitespace-nowrap"
+                    style="letter-spacing: 0.02em;"
+                  >Loading...</span>
+                </div>
+
+                <!-- 3-Pill Single-Lift Toggle: Bench Press | Squat | Deadlift -->
+                <div
+                  id="athlete-1rm-lift-toggle"
+                  role="group"
+                  aria-label="Choose lift for 1-Rep Max chart"
+                  class="grid grid-cols-3 gap-1.5"
+                  style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;"
+                >
+                  <button
+                    type="button"
+                    data-onerm-lift="bench"
+                    aria-pressed="${(state.selectedOneRmChartLift || 'bench') === 'bench' ? 'true' : 'false'}"
+                    class="onerm-lift-toggle-btn py-2 px-1.5 rounded-xl border text-[11px] font-extrabold text-center whitespace-nowrap transition"
+                  >Bench Press</button>
+                  <button
+                    type="button"
+                    data-onerm-lift="squat"
+                    aria-pressed="${state.selectedOneRmChartLift === 'squat' ? 'true' : 'false'}"
+                    class="onerm-lift-toggle-btn py-2 px-1.5 rounded-xl border text-[11px] font-extrabold text-center whitespace-nowrap transition"
+                  >Squat</button>
+                  <button
+                    type="button"
+                    data-onerm-lift="deadlift"
+                    aria-pressed="${state.selectedOneRmChartLift === 'deadlift' ? 'true' : 'false'}"
+                    class="onerm-lift-toggle-btn py-2 px-1.5 rounded-xl border text-[11px] font-extrabold text-center whitespace-nowrap transition"
+                  >Deadlift</button>
+                </div>
+
+                <!-- Transparent D3 SVG Mount Container (touch-action: pan-y prevents mobile scroll trapping) -->
+                <div
+                  id="athlete-1rm-d3-chart-wrap"
+                  class="d3-1rm-chart-container w-full min-h-[170px]"
+                  style="background: transparent; touch-action: pan-y;"
+                ></div>
+              </div>
+
               <div class="grid grid-cols-2 gap-1.5">
                 <div class="bg-slate-900/90 border border-emerald-500/30 rounded-lg p-2">
                   <div class="text-[9px] font-bold uppercase text-emerald-300">Best Pull-Up Set</div>
@@ -23647,7 +23711,7 @@
               <div class="flex items-center justify-between gap-2">
                 <div>
                   <span class="text-[10px] font-extrabold uppercase tracking-wider text-teal-300">4. 7-Day Muscle Fuel &amp; Hydration Adherence</span>
-                  <div class="text-xs font-extrabold text-white mt-0.5">MacroFactor Daily Target Consistency (Week ${activeW})</div>
+                  <div class="text-xs font-extrabold text-white mt-0.5">Daily Food &amp; Water Consistency (Week ${activeW})</div>
                 </div>
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-teal-500/15 text-teal-200 border border-teal-500/30">${loggedFuelDays}/7 Days Logged</span>
               </div>
@@ -23668,6 +23732,66 @@
             </div>
           </div>
         `;
+
+        // Bind & Mount D3.js Interactive 1RM Progression Chart
+        const mountOneRmChart = () => {
+          const activeLift = ['bench', 'squat', 'deadlift'].includes(String(state.selectedOneRmChartLift || ''))
+            ? state.selectedOneRmChartLift
+            : 'bench';
+          const liftAccentStyles = {
+            bench: { border: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.22)', text: '#e0f2fe' },
+            squat: { border: '#10b981', bg: 'rgba(16, 185, 129, 0.22)', text: '#d1fae5' },
+            deadlift: { border: '#d97706', bg: 'rgba(217, 119, 6, 0.22)', text: '#fef3c7' }
+          };
+
+          profDashboardWrap.querySelectorAll('.onerm-lift-toggle-btn').forEach(btn => {
+            const liftKey = btn.getAttribute('data-onerm-lift') || 'bench';
+            const isActive = liftKey === activeLift;
+            const palette = liftAccentStyles[liftKey] || liftAccentStyles.bench;
+            btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            if (isActive) {
+              btn.style.borderColor = palette.border;
+              btn.style.background = palette.bg;
+              btn.style.color = palette.text;
+            } else {
+              btn.style.borderColor = '#334155';
+              btn.style.background = '#1e293b';
+              btn.style.color = '#cbd5e1';
+            }
+          });
+
+          const chartWrapEl = document.getElementById('athlete-1rm-d3-chart-wrap');
+          const readoutEl = document.getElementById('athlete-1rm-d3-tooltip-readout');
+          const activePalette = liftAccentStyles[activeLift] || liftAccentStyles.bench;
+          if (readoutEl) {
+            readoutEl.style.borderColor = activePalette.border;
+          }
+
+          if (chartWrapEl && typeof window.renderOneRmD3Chart === 'function') {
+            window.renderOneRmD3Chart({
+              container: chartWrapEl,
+              tooltipReadoutEl: readoutEl,
+              liftKey: activeLift,
+              workoutLogs: state.workoutLogs || {},
+              exerciseHistory: state.exerciseHistory || {},
+              unit: state.weightUnit === 'kg' ? 'kg' : 'lbs'
+            });
+          } else if (chartWrapEl) {
+            window.addEventListener('d3-onerm-bridge-ready', () => mountOneRmChart(), { once: true });
+          }
+        };
+
+        profDashboardWrap.querySelectorAll('.onerm-lift-toggle-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const nextLift = btn.getAttribute('data-onerm-lift') || 'bench';
+            if (!['bench', 'squat', 'deadlift'].includes(nextLift)) return;
+            state.selectedOneRmChartLift = nextLift;
+            saveState();
+            mountOneRmChart();
+          });
+        });
+
+        mountOneRmChart();
       }
 
       function renderBodyAndPhotosTab() {
@@ -25666,5 +25790,6 @@
     </div>
   </div>
 
+  <script type="module" src="/src/d3ChartBridge.ts"></script>
 </body>
 </html>

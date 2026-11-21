@@ -10,6 +10,8 @@
     "lint": "node --check api/state.js && node --check api/gemini.js"
   },
   "dependencies": {
+    "@types/d3": "^7.4.3",
+    "d3": "^7.9.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

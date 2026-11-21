@@ -2838,6 +2838,66 @@ test('Subtest 43: Upgrade 20 — First-Open Wizard Gate, Over-Training 6-7 Day S
   assert.equal(mod.extractShortShopWeightBadge('1,260 ml/wk (1 Carton • 1.89L)'), '1,260ml');
 });
 
+test('Subtest 44: Upgrade 21 — D3.js 1RM Progression Chart (Bench/Squat/Deadlift Series, Epley 1RM, Neurodivergent Colors & ELI12 Tooltips)', async () => {
+  const mod = await import('./workoutLogic.ts');
 
+  // 1. Lift Config & Neurodivergent Color Tokens
+  assert.deepEqual(mod.ONE_RM_LIFT_ORDER, ['bench', 'squat', 'deadlift']);
+  assert.equal(mod.ONE_RM_LIFT_CONFIGS.bench.pillLabel, 'Bench Press');
+  assert.equal(mod.ONE_RM_LIFT_CONFIGS.bench.strokeColor, '#0ea5e9');
+  assert.equal(mod.ONE_RM_LIFT_CONFIGS.squat.pillLabel, 'Squat');
+  assert.equal(mod.ONE_RM_LIFT_CONFIGS.squat.strokeColor, '#10b981');
+  assert.equal(mod.ONE_RM_LIFT_CONFIGS.deadlift.pillLabel, 'Deadlift');
+  assert.equal(mod.ONE_RM_LIFT_CONFIGS.deadlift.strokeColor, '#d97706');
 
+  // 2. Epley 1RM & ELI12 Tooltip Formatting
+  assert.equal(mod.calculateEpleyOneRm(135, 8), 171); // 135 * (1 + 8/30) = 171
+  assert.equal(mod.calculateEpleyOneRm(225, 1), 225);
+  assert.equal(mod.calculateEpleyOneRm(0, 8), 0);
+  assert.equal(mod.formatShortChartDate('2026-11-21'), 'Nov 21');
+  assert.equal(
+    mod.formatOneRmTooltipText({ dateLabel: 'Nov 21', oneRmLbs: 171 }, 'lbs'),
+    'Nov 21: 171 lbs'
+  );
+  assert.equal(
+    mod.formatOneRmTooltipText({ dateLabel: 'Nov 21', oneRmLbs: 171 }, 'kg'),
+    'Nov 21: 78 kg'
+  );
 
+  // 3. Multi-Week Real Progression Extraction (Returns Exact Logged Sessions Only)
+  const logs = {
+    w1_0_mon_bench_1: { weight: '130', reps: '8', done: true, unit: 'lbs', loggedAt: '2026-11-07T15:00:00.000Z' },
+    w2_0_mon_bench_1: { weight: '135', reps: '8', done: true, unit: 'lbs', loggedAt: '2026-11-14T15:00:00.000Z' },
+    w3_0_mon_bench_1: { weight: '140', reps: '8', done: true, unit: 'lbs', loggedAt: '2026-11-21T15:00:00.000Z' },
+    w1_1_tue_squat_1: { weight: '185', reps: '5', done: true, unit: 'lbs', loggedAt: '2026-11-21T15:00:00.000Z' },
+    w1_4_sat_deadlift_1: { weight: '225', reps: '5', done: true, unit: 'lbs', loggedAt: '2026-11-14T15:00:00.000Z' },
+    w2_4_sat_deadlift_1: { weight: '245', reps: '5', done: true, unit: 'lbs', loggedAt: '2026-11-21T15:00:00.000Z' }
+  };
+  const refDate = new Date('2026-11-21T12:00:00.000Z');
+
+  const benchSeries = mod.extractOneRmProgressionSeries('bench', logs, undefined, refDate);
+  assert.equal(benchSeries.length, 3);
+  assert.equal(benchSeries[0].dateLabel, 'Nov 7');
+  assert.equal(benchSeries[0].oneRmLbs, 165);
+  assert.equal(benchSeries[1].dateLabel, 'Nov 14');
+  assert.equal(benchSeries[1].oneRmLbs, 171);
+  assert.equal(benchSeries[2].dateLabel, 'Nov 21');
+  assert.equal(benchSeries[2].oneRmLbs, 177);
+  assert.ok(benchSeries.every((p) => p.isLoggedSession));
+
+  // 4. Single-Session Baseline Lead-In (Anchors Exact Logged 1RM at End)
+  const squatSeries = mod.extractOneRmProgressionSeries('squat', logs, undefined, refDate);
+  assert.equal(squatSeries.length, 4);
+  assert.equal(squatSeries[3].oneRmLbs, 216); // 185 * (1 + 5/30) = 215.83 -> 216
+  assert.equal(squatSeries[3].isLoggedSession, true);
+  assert.ok(squatSeries[0].oneRmLbs < squatSeries[3].oneRmLbs);
+
+  // 5. Deadlift Multi-Session Series
+  const deadliftSeries = mod.extractOneRmProgressionSeries('deadlift', logs, undefined, refDate);
+  assert.equal(deadliftSeries.length, 2);
+  assert.equal(deadliftSeries[0].oneRmLbs, 263);
+  assert.equal(deadliftSeries[1].oneRmLbs, 286);
+
+  // 6. Empty Logs Return Empty Array
+  assert.deepEqual(mod.extractOneRmProgressionSeries('bench', {}, undefined, refDate), []);
+});

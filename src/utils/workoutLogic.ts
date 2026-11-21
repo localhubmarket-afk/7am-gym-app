@@ -10043,6 +10043,291 @@ export function extractShortShopWeightBadge(rawQtyText: string): string {
   return clean.split('(')[0].trim().slice(0, 18);
 }
 
+// =========================================================================
+// UPGRADE 21: D3.JS 1RM PROGRESSION CHART (ATHLETE DASHBOARD)
+// =========================================================================
 
+export type OneRmLiftKey = 'bench' | 'squat' | 'deadlift';
 
+export interface OneRmLiftConfig {
+  key: OneRmLiftKey;
+  pillLabel: string;
+  fullName: string;
+  strokeColor: string;
+  matchIds: string[];
+  canonicalId: string;
+}
 
+export interface OneRmChartPoint {
+  dateIso: string;
+  dateLabel: string;
+  oneRmLbs: number;
+  bestWeightLbs: number;
+  bestReps: number;
+  week: number;
+  isLoggedSession: boolean;
+}
+
+export const ONE_RM_LIFT_CONFIGS: Record<OneRmLiftKey, OneRmLiftConfig> = {
+  bench: {
+    key: 'bench',
+    pillLabel: 'Bench Press',
+    fullName: 'Barbell Bench Press',
+    strokeColor: '#0ea5e9',
+    matchIds: ['mon_bench', 'd1_e1', 'ex_barbell_bench_press'],
+    canonicalId: 'ex_barbell_bench_press'
+  },
+  squat: {
+    key: 'squat',
+    pillLabel: 'Squat',
+    fullName: 'Barbell Back Squat',
+    strokeColor: '#10b981',
+    matchIds: ['tue_squat', 'd1_e3', 'd5_e1', 'ex_barbell_squat'],
+    canonicalId: 'ex_barbell_squat'
+  },
+  deadlift: {
+    key: 'deadlift',
+    pillLabel: 'Deadlift',
+    fullName: 'Barbell Deadlift',
+    strokeColor: '#d97706',
+    matchIds: ['sat_deadlift', 'd3_e3', 'ex_barbell_deadlift'],
+    canonicalId: 'ex_barbell_deadlift'
+  }
+};
+
+export const ONE_RM_LIFT_ORDER: OneRmLiftKey[] = ['bench', 'squat', 'deadlift'];
+
+export function calculateEpleyOneRm(weightLbs: number, reps: number): number {
+  const w = Number(weightLbs);
+  const r = Math.floor(Number(reps));
+  if (!Number.isFinite(w) || w <= 0 || !Number.isFinite(r) || r <= 0) return 0;
+  if (r === 1) return Math.round(w);
+  return Math.round(w * (1 + r / 30));
+}
+
+export function formatShortChartDate(dateInput: Date | string): string {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  let d: Date;
+  if (dateInput instanceof Date) {
+    d = dateInput;
+  } else {
+    const raw = String(dateInput || '').trim();
+    const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+    if (isoMatch) {
+      const mIdx = Math.max(0, Math.min(11, parseInt(isoMatch[2], 10) - 1));
+      const dayNum = parseInt(isoMatch[3], 10);
+      return `${months[mIdx]} ${dayNum}`;
+    }
+    d = new Date(raw);
+  }
+  if (Number.isNaN(d.getTime())) return 'Today';
+  return `${months[d.getMonth()]} ${d.getDate()}`;
+}
+
+export function formatOneRmTooltipText(
+  point: { dateLabel: string; oneRmLbs: number },
+  unit: 'lbs' | 'kg' = 'lbs'
+): string {
+  const safeLabel = String((point && point.dateLabel) || '').trim() || 'Today';
+  const lbsVal = Math.max(0, Math.round(Number(point && point.oneRmLbs) || 0));
+  if (unit === 'kg') {
+    const kgVal = Math.round(lbsVal / 2.20462);
+    return `${safeLabel}: ${kgVal} kg`;
+  }
+  return `${safeLabel}: ${lbsVal} lbs`;
+}
+
+function matchesOneRmLiftId(liftKey: OneRmLiftKey, exId: string, exName = ''): boolean {
+  const cfg = ONE_RM_LIFT_CONFIGS[liftKey];
+  if (!cfg) return false;
+  const lowId = String(exId || '').trim().toLowerCase();
+  const lowName = String(exName || '').trim().toLowerCase();
+  if (cfg.matchIds.includes(lowId)) return true;
+  if (resolveCanonicalExerciseId(lowId, lowName) === cfg.canonicalId) return true;
+  if (liftKey === 'bench' && /barbell.*bench|flat.*bench|^mon_bench$/i.test(`${lowId} ${lowName}`)) return true;
+  if (liftKey === 'squat' && /barbell.*back.*squat|barbell.*squat|^tue_squat$/i.test(`${lowId} ${lowName}`)) return true;
+  if (liftKey === 'deadlift' && /barbell.*deadlift|conventional.*deadlift|^sat_deadlift$/i.test(`${lowId} ${lowName}`)) return true;
+  return false;
+}
+
+function toIsoDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+export function extractOneRmProgressionSeries(
+  liftKey: OneRmLiftKey,
+  workoutLogs: Record<string, any> | undefined,
+  exerciseHistory?: Record<string, any[]> | undefined,
+  referenceDate: Date = new Date()
+): OneRmChartPoint[] {
+  const cfg = ONE_RM_LIFT_CONFIGS[liftKey];
+  if (!cfg) return [];
+
+  const refDate = Number.isNaN(referenceDate.getTime()) ? new Date() : new Date(referenceDate.getTime());
+  const sessionBuckets = new Map<
+    string,
+    {
+      sortKey: number;
+      dateIso: string;
+      week: number;
+      dayIdx: number;
+      oneRmLbs: number;
+      bestWeightLbs: number;
+      bestReps: number;
+    }
+  >();
+
+  // 1. Scan structured workoutLogs (grouped by week + dayIdx)
+  let maxWeekSeen = 1;
+  const logEntries: Array<{
+    week: number;
+    dayIdx: number;
+    exId: string;
+    weightLbs: number;
+    reps: number;
+    recordedAt?: string;
+  }> = [];
+
+  Object.keys(workoutLogs || {}).forEach((k) => {
+    const m = /^w(\d+)_(?:d)?(\d+)_([a-z0-9_]+)_(?:s)?(\d+)$/i.exec(k);
+    if (!m) return;
+    const week = Math.max(1, parseInt(m[1], 10));
+    const dayIdx = Math.max(0, Math.min(6, parseInt(m[2], 10)));
+    const exId = m[3];
+    if (!matchesOneRmLiftId(liftKey, exId)) return;
+    const entry = workoutLogs![k];
+    if (!entry || !entry.done) return;
+    const rawWt = parseFloat(String(entry.weight ?? ''));
+    const reps = parseInt(String(entry.reps ?? ''), 10);
+    if (!Number.isFinite(rawWt) || rawWt <= 0 || !Number.isFinite(reps) || reps <= 0) return;
+    const weightLbs = entry.unit === 'kg' ? Math.round(rawWt * 2.20462 * 10) / 10 : rawWt;
+    if (week > maxWeekSeen) maxWeekSeen = week;
+    logEntries.push({
+      week,
+      dayIdx,
+      exId,
+      weightLbs,
+      reps,
+      recordedAt: typeof entry.loggedAt === 'string' ? entry.loggedAt : (typeof entry.updatedAt === 'string' ? entry.updatedAt : undefined)
+    });
+  });
+
+  logEntries.forEach((rec) => {
+    const epley = calculateEpleyOneRm(rec.weightLbs, rec.reps);
+    if (epley <= 0) return;
+    let dateIso: string;
+    let sortKey: number;
+    if (rec.recordedAt && !Number.isNaN(new Date(rec.recordedAt).getTime())) {
+      const dt = new Date(rec.recordedAt);
+      dateIso = toIsoDateString(dt);
+      sortKey = dt.getTime();
+    } else {
+      // Anchor most recent week to referenceDate, stepping back 7 days per earlier week
+      const weeksBack = Math.max(0, maxWeekSeen - rec.week);
+      const dt = new Date(refDate.getTime() - weeksBack * 7 * 86400000);
+      dateIso = toIsoDateString(dt);
+      sortKey = rec.week * 100 + rec.dayIdx;
+    }
+    const bucketKey = `w${rec.week}_d${rec.dayIdx}_${dateIso}`;
+    const existing = sessionBuckets.get(bucketKey);
+    if (!existing || epley > existing.oneRmLbs) {
+      sessionBuckets.set(bucketKey, {
+        sortKey,
+        dateIso,
+        week: rec.week,
+        dayIdx: rec.dayIdx,
+        oneRmLbs: epley,
+        bestWeightLbs: rec.weightLbs,
+        bestReps: rec.reps
+      });
+    }
+  });
+
+  // 2. Scan exerciseHistory (timestamped sessions across any week/day)
+  if (exerciseHistory && typeof exerciseHistory === 'object') {
+    Object.keys(exerciseHistory).forEach((histKey) => {
+      const sessions = exerciseHistory[histKey];
+      if (!Array.isArray(sessions)) return;
+      sessions.forEach((sess) => {
+        if (!sess || !Array.isArray(sess.sets)) return;
+        const exName = String(sess.exerciseName || sess.name || '');
+        if (!matchesOneRmLiftId(liftKey, histKey, exName)) return;
+        let best1Rm = 0;
+        let bestW = 0;
+        let bestR = 0;
+        sess.sets.forEach((st: any) => {
+          const rawWt = parseFloat(String((st && st.weight) ?? ''));
+          const reps = parseInt(String((st && st.reps) ?? ''), 10);
+          if (!Number.isFinite(rawWt) || rawWt <= 0 || !Number.isFinite(reps) || reps <= 0) return;
+          const wtLbs = st.unit === 'kg' ? Math.round(rawWt * 2.20462 * 10) / 10 : rawWt;
+          const epley = calculateEpleyOneRm(wtLbs, reps);
+          if (epley > best1Rm) {
+            best1Rm = epley;
+            bestW = wtLbs;
+            bestR = reps;
+          }
+        });
+        if (best1Rm <= 0) return;
+        const dt = sess.recordedAt && !Number.isNaN(new Date(sess.recordedAt).getTime())
+          ? new Date(sess.recordedAt)
+          : refDate;
+        const dateIso = toIsoDateString(dt);
+        const wNum = Math.max(1, Number(sess.week) || maxWeekSeen);
+        const dIdx = Math.max(0, Math.min(6, Number(sess.dayIdx) || 0));
+        const bucketKey = `w${wNum}_d${dIdx}_${dateIso}`;
+        const existing = sessionBuckets.get(bucketKey);
+        if (!existing || best1Rm > existing.oneRmLbs) {
+          sessionBuckets.set(bucketKey, {
+            sortKey: dt.getTime(),
+            dateIso,
+            week: wNum,
+            dayIdx: dIdx,
+            oneRmLbs: best1Rm,
+            bestWeightLbs: bestW,
+            bestReps: bestR
+          });
+        }
+      });
+    });
+  }
+
+  const sortedReal = Array.from(sessionBuckets.values())
+    .sort((a, b) => a.sortKey - b.sortKey)
+    .map((pt) => ({
+      dateIso: pt.dateIso,
+      dateLabel: formatShortChartDate(pt.dateIso),
+      oneRmLbs: pt.oneRmLbs,
+      bestWeightLbs: pt.bestWeightLbs,
+      bestReps: pt.bestReps,
+      week: pt.week,
+      isLoggedSession: true
+    }));
+
+  if (sortedReal.length === 0) return [];
+  if (sortedReal.length >= 2) return sortedReal;
+
+  // Exactly 1 logged session so far: build a 4-point baseline lead-in anchored to the real logged session
+  const anchor = sortedReal[0];
+  const anchorDate = new Date(`${anchor.dateIso}T12:00:00`);
+  const factors = [0.92, 0.95, 0.98];
+  const offsetsDays = [21, 14, 7];
+  const baselinePoints: OneRmChartPoint[] = offsetsDays.map((daysBack, idx) => {
+    const dt = new Date(anchorDate.getTime() - daysBack * 86400000);
+    const iso = toIsoDateString(dt);
+    const est1Rm = Math.max(20, Math.round(anchor.oneRmLbs * factors[idx]));
+    return {
+      dateIso: iso,
+      dateLabel: formatShortChartDate(iso),
+      oneRmLbs: est1Rm,
+      bestWeightLbs: Math.max(20, Math.round(anchor.bestWeightLbs * factors[idx])),
+      bestReps: anchor.bestReps,
+      week: Math.max(0, anchor.week - (3 - idx)),
+      isLoggedSession: false
+    };
+  });
+
+  return [...baselinePoints, anchor];
+}
