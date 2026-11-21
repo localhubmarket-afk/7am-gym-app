@@ -1206,6 +1206,7 @@
       customDayExercises: {},
       cardioLogs: {},
       cardioUiModeByEx: {},
+      userHasCompletedOnboarding: false,
       hasCompletedFirstSetup: false,
       dismissedOvertrainingAlertKey: '',
       selectedOneRmChartLift: 'bench',
@@ -1580,9 +1581,9 @@
       if (!merged.cardioUiModeByEx || typeof merged.cardioUiModeByEx !== 'object') {
         merged.cardioUiModeByEx = {};
       }
-      if (typeof merged.hasCompletedFirstSetup !== 'boolean') {
-        merged.hasCompletedFirstSetup = false;
-      }
+      const onboardingCompleted = Boolean(merged.userHasCompletedOnboarding || merged.hasCompletedFirstSetup);
+      merged.userHasCompletedOnboarding = onboardingCompleted;
+      merged.hasCompletedFirstSetup = onboardingCompleted;
       if (typeof merged.dismissedOvertrainingAlertKey !== 'string') {
         merged.dismissedOvertrainingAlertKey = '';
       }
@@ -10013,38 +10014,114 @@
       return res;
     }
 
-    function advanceToNextWeekDay1Now(currentWeek) {
+    let pendingWeekContinuityFromWeek = 1;
+
+    function cloneWeekScheduleIdenticallyLocal(sourceSchedule) {
+      if (!Array.isArray(sourceSchedule) || sourceSchedule.length !== 7) {
+        return [0, 1, 2, 3, 4, 5, 6];
+      }
+      return sourceSchedule.map((slot) => {
+        if (slot !== null && typeof slot === 'object') {
+          return JSON.parse(JSON.stringify(slot));
+        }
+        return Math.max(0, Math.min(6, Math.floor(Number(slot) || 0)));
+      });
+    }
+
+    function copyWeekCustomExercisesLocal(fromW, nextW) {
+      if (!state.customDayExercises || typeof state.customDayExercises !== 'object') {
+        state.customDayExercises = {};
+      }
+      for (let d = 0; d < 7; d++) {
+        const srcKey = `w${fromW}_d${d}`;
+        const dstKey = `w${nextW}_d${d}`;
+        if (Array.isArray(state.customDayExercises[srcKey]) && state.customDayExercises[srcKey].length > 0) {
+          state.customDayExercises[dstKey] = JSON.parse(JSON.stringify(state.customDayExercises[srcKey]));
+        }
+      }
+    }
+
+    window.openWeekContinuityModal = function(currentWeek) {
       syncProgressiveWeekState(state);
-      const cur = Math.max(1, Math.floor(Number(currentWeek || state.selectedWeek || state.currentWeek || 1)));
+      const cur = Math.max(1, Math.min(12, Math.floor(Number(currentWeek || state.selectedWeek || state.currentWeek || 1))));
+      pendingWeekContinuityFromWeek = cur;
+      const nextW = Math.min(12, cur + 1);
+      const badgeEl = document.getElementById('week-continuity-badge');
+      if (badgeEl) {
+        badgeEl.textContent = `Week ${cur} Complete -> Moving to Week ${nextW}`;
+      }
+      const keepHelperEl = document.getElementById('week-continuity-keep-helper');
+      if (keepHelperEl) {
+        keepHelperEl.textContent = `Copies all Week ${cur} exercises, sets, and target reps straight into Week ${nextW}.`;
+      }
+      const buildHelperEl = document.getElementById('week-continuity-build-helper');
+      if (buildHelperEl) {
+        buildHelperEl.textContent = `Unlocks Week ${nextW} and opens the Setup Wizard to build a fresh plan.`;
+      }
+      const modalEl = document.getElementById('week-continuity-modal');
+      if (modalEl) {
+        modalEl.classList.remove('hidden');
+      }
+    };
+
+    function advanceToNextWeekDay1Now(currentWeek, continuityMode) {
+      syncProgressiveWeekState(state);
+      const mode = continuityMode === 'build_new' ? 'build_new' : 'keep_same';
+      const cur = Math.max(1, Math.min(12, Math.floor(Number(currentWeek || state.selectedWeek || state.currentWeek || 1))));
       if (!state.completedWeeks || typeof state.completedWeeks !== 'object') state.completedWeeks = {};
       state.completedWeeks[cur] = true;
       const nextW = Math.min(12, cur + 1);
       state.maxUnlockedWeek = Math.min(12, Math.max((state.maxUnlockedWeek || 1) + 1, nextW));
-      const isNextOverridden = Boolean(
-        state.manualScheduleOverrideByWeek && state.manualScheduleOverrideByWeek[String(nextW)]
-      );
-      let smartNext = null;
-      if (!hasWeekAnyLoggedSets(nextW) && !isNextOverridden) {
-        smartNext = applySmartScheduleFromPreviousWeek(nextW, true);
-      } else {
-        smartNext = buildSmartScheduleFromPreviousWeek(nextW);
+
+      if (!state.customDayScheduleByWeek || typeof state.customDayScheduleByWeek !== 'object') {
+        state.customDayScheduleByWeek = {};
       }
+      if (!state.weeklyRestDays || typeof state.weeklyRestDays !== 'object') {
+        state.weeklyRestDays = { default: [5, 6] };
+      }
+      if (!state.manualScheduleOverrideByWeek || typeof state.manualScheduleOverrideByWeek !== 'object') {
+        state.manualScheduleOverrideByWeek = {};
+      }
+
+      if (mode === 'keep_same') {
+        // UPGRADE 22: Exact deep-copy of current week schedule verbatim into next week (do NOT auto-change plan)
+        const currentWeekSchedule = getCustomDayScheduleForWeek(cur);
+        state.customDayScheduleByWeek[String(nextW)] = cloneWeekScheduleIdenticallyLocal(currentWeekSchedule);
+        const curRest = getWeekRestDays(cur);
+        state.weeklyRestDays[String(nextW)] = Array.isArray(curRest) ? curRest.slice() : [5, 6];
+        state.manualScheduleOverrideByWeek[String(nextW)] = true;
+        copyWeekCustomExercisesLocal(cur, nextW);
+      }
+
       state.selectedWeek = nextW;
       state.currentWeek = nextW;
       state.selectedDayIndex = 0;
       state.openDayWorkoutPicker = false;
       clearGymLockerSilently();
+
       const weekSel = document.getElementById('week-select');
       if (weekSel) weekSel.value = String(nextW);
+
+      const continuityModal = document.getElementById('week-continuity-modal');
+      if (continuityModal) continuityModal.classList.add('hidden');
+      const weekSchedModal = document.getElementById('week-schedule-modal');
+      if (weekSchedModal) weekSchedModal.classList.add('hidden');
+      const syncModal = document.getElementById('sync-settings-modal');
+      if (syncModal) syncModal.classList.add('hidden');
+
       saveState();
       renderWorkoutView();
       renderPullupView();
       renderVeganView();
-      const day1Assign = getDayAssignment(nextW, 0);
-      const day1Label = day1Assign.isRestDay
-        ? `Rest & Muscle Recovery Day (followed by ${smartNext.startLiftDaySub})`
-        : (DAYS_SCHEDULE[day1Assign.templateSlotIndex] || DAYS_SCHEDULE[0]).title;
-      showToast(`Advanced to Week ${nextW} • Day 1: ${day1Label} (synced from Week ${cur})`);
+
+      if (mode === 'build_new') {
+        showToast(`Week ${nextW} unlocked! Pick your new routine in the Setup Wizard.`);
+        if (typeof window.openProgramSetupWizardModal === 'function') {
+          window.openProgramSetupWizardModal(false, nextW);
+        }
+      } else {
+        showToast(`Week ${nextW} ready! Kept the exact same plan from Week ${cur}.`);
+      }
     }
 
     function buildDayWorkoutPickerHtml(week, dayIdx) {
@@ -10205,7 +10282,7 @@
       const advanceNextWeekBtn = containerEl.querySelector('#picker-advance-next-week-btn');
       if (advanceNextWeekBtn) {
         advanceNextWeekBtn.addEventListener('click', () => {
-          advanceToNextWeekDay1Now(week);
+          window.openWeekContinuityModal(week);
         });
       }
 
@@ -21871,10 +21948,26 @@
         });
       });
 
-      window.openProgramSetupWizardModal = function(isFirstOpenRequired) {
+      window.openProgramSetupWizardModal = function(isFirstOpenRequired, targetWeekOverride) {
         if (syncSettingsModal) syncSettingsModal.classList.add('hidden');
+        const continuityModal = document.getElementById('week-continuity-modal');
+        if (continuityModal) continuityModal.classList.add('hidden');
         if (!programWizardModal) return;
         isWizardBlockingFirstOpen = Boolean(isFirstOpenRequired);
+        const activeWeekNum = Math.max(1, Math.min(12, Number(targetWeekOverride || state.selectedWeek || state.currentWeek || 1)));
+        const subtitleEl = document.getElementById('program-wizard-subtitle');
+        if (subtitleEl) {
+          subtitleEl.textContent = isWizardBlockingFirstOpen
+            ? 'Welcome! Pick your days, focus, difficulty, and diet to build Week 1.'
+            : `Pick your days, focus, difficulty, and diet for Week ${activeWeekNum}.`;
+        }
+        if (isWizardBlockingFirstOpen) {
+          programWizardModal.style.backgroundColor = '#0f172a';
+          programWizardModal.style.zIndex = '70';
+        } else {
+          programWizardModal.style.backgroundColor = 'rgba(15, 23, 42, 0.90)';
+          programWizardModal.style.zIndex = '50';
+        }
         if (closeProgramWizardBtn) {
           if (isWizardBlockingFirstOpen) {
             closeProgramWizardBtn.classList.add('hidden');
@@ -21906,6 +21999,12 @@
           }
         });
       }
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isWizardBlockingFirstOpen && programWizardModal && !programWizardModal.classList.contains('hidden')) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      });
 
       function buildLocalWizardFallbackWeek(daysPerWeek, primaryFocus, difficulty) {
         const diff = difficulty === 'easy' || difficulty === 'hard' ? difficulty : 'medium';
@@ -22194,10 +22293,15 @@
           intolerances,
           updatedAt: new Date().toISOString()
         };
+        state.userHasCompletedOnboarding = true;
         state.hasCompletedFirstSetup = true;
         state.dismissedOvertrainingAlertKey = '';
         isWizardBlockingFirstOpen = false;
         if (closeProgramWizardBtn) closeProgramWizardBtn.classList.remove('hidden');
+        if (programWizardModal) {
+          programWizardModal.style.backgroundColor = 'rgba(15, 23, 42, 0.90)';
+          programWizardModal.style.zIndex = '50';
+        }
         state.selectedDayIndex = 0;
         saveState();
         renderWorkoutView();
@@ -22531,7 +22635,7 @@
         finishWeekBtn.addEventListener('click', () => {
           syncProgressiveWeekState(state);
           const cur = state.selectedWeek || state.currentWeek || 1;
-          advanceToNextWeekDay1Now(cur);
+          window.openWeekContinuityModal(cur);
         });
       }
 
@@ -23343,7 +23447,36 @@
         quickNextWeekBtn.addEventListener('click', () => {
           syncProgressiveWeekState(state);
           const cur = state.selectedWeek || state.currentWeek || 1;
-          advanceToNextWeekDay1Now(cur);
+          window.openWeekContinuityModal(cur);
+        });
+      }
+
+      // UPGRADE 22: Week Continuity Engine Modal Event Listeners
+      const weekContinuityModalEl = document.getElementById('week-continuity-modal');
+      const weekContinuityKeepSameBtn = document.getElementById('week-continuity-keep-same-btn');
+      const weekContinuityBuildNewBtn = document.getElementById('week-continuity-build-new-btn');
+      const closeWeekContinuityModalBtn = document.getElementById('close-week-continuity-modal-btn');
+
+      if (weekContinuityKeepSameBtn) {
+        weekContinuityKeepSameBtn.addEventListener('click', () => {
+          advanceToNextWeekDay1Now(pendingWeekContinuityFromWeek, 'keep_same');
+        });
+      }
+      if (weekContinuityBuildNewBtn) {
+        weekContinuityBuildNewBtn.addEventListener('click', () => {
+          advanceToNextWeekDay1Now(pendingWeekContinuityFromWeek, 'build_new');
+        });
+      }
+      if (closeWeekContinuityModalBtn && weekContinuityModalEl) {
+        closeWeekContinuityModalBtn.addEventListener('click', () => {
+          weekContinuityModalEl.classList.add('hidden');
+        });
+      }
+      if (weekContinuityModalEl) {
+        weekContinuityModalEl.addEventListener('click', (e) => {
+          if (e.target === weekContinuityModalEl) {
+            weekContinuityModalEl.classList.add('hidden');
+          }
         });
       }
 
@@ -24833,14 +24966,15 @@
       renderShoppingView();
 
       // Mandatory Smart Login Gate (Guests Not Available — Requires 1-Time Smart Sign-In)
+      const hasCompletedOnboarding = Boolean(state.userHasCompletedOnboarding || state.hasCompletedFirstSetup);
       if (!state.userProfile || !state.userProfile.email) {
         const loginModal = document.getElementById('smart-login-modal');
         const closeBtn = document.getElementById('close-smart-login-btn');
         if (closeBtn) closeBtn.classList.add('hidden');
         if (loginModal) loginModal.classList.remove('hidden');
-      } else if (!state.hasCompletedFirstSetup && !/(?:^|[?&])autostart=1(?:&|$)/i.test(window.location.search || '')) {
-        // UPGRADE 20: First-Open Setup Wizard — Require Days, Focus, Difficulty, and Diet before viewing Gym tab
-        window.openProgramSetupWizardModal(true);
+      } else if (!hasCompletedOnboarding && !/(?:^|[?&])autostart=1(?:&|$)/i.test(window.location.search || '')) {
+        // UPGRADE 22: Force First-Time Onboarding Wizard full-screen before showing Gym tab
+        window.openProgramSetupWizardModal(true, 1);
       }
       claimAllPreviousLocalAndCloudDataIntoProfile();
       if (getActiveCloudEndpoint()) {
@@ -25056,13 +25190,43 @@
     </div>
   </div>
 
-  <!-- MODAL 4: Program Setup Wizard Modal (Strict AI Difficulty Engine) -->
-  <div id="program-setup-wizard-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3" role="dialog" aria-modal="true" aria-labelledby="program-wizard-title">
-    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl max-w-md w-full p-3.5 space-y-2.5 shadow-2xl max-h-[94vh] overflow-y-auto">
+  <!-- MODAL 3B: UPGRADE 22 — Week Continuity Engine Modal (Keep Same Plan vs Build a New Plan) -->
+  <div id="week-continuity-modal" class="hidden fixed inset-0 z-[60] backdrop-blur-sm flex items-center justify-center p-4" style="background-color: rgba(15, 23, 42, 0.92); letter-spacing: 0.02em; line-height: 1.5; font-family: system-ui, sans-serif;" role="dialog" aria-modal="true" aria-labelledby="week-continuity-modal-title">
+    <div class="border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl" style="background-color: #0f172a; color: #f8fafc;">
+      <div class="flex items-start justify-between gap-3 border-b border-slate-800 pb-3">
+        <div class="space-y-1">
+          <span id="week-continuity-badge" class="inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-lg border border-sky-400/40" style="background-color: rgba(14, 165, 233, 0.16); color: #7dd3fc;">Week 1 Complete -&gt; Moving to Week 2</span>
+          <h3 id="week-continuity-modal-title" class="text-base sm:text-lg font-extrabold" style="color: #f8fafc; line-height: 1.4;">Week Complete! What do you want to do for next week?</h3>
+          <p class="text-xs" style="color: #cbd5e1; line-height: 1.5;">You are in control. Keep your exact routine or build a fresh one.</p>
+        </div>
+        <button type="button" id="close-week-continuity-modal-btn" aria-label="Close" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="space-y-1">
+          <button type="button" id="week-continuity-keep-same-btn" class="w-full py-3 px-4 rounded-xl text-sm font-extrabold shadow-md transition flex items-center justify-center gap-2 hover:opacity-95" style="background-color: #0ea5e9; color: #0f172a; min-height: 48px;">
+            <span>🔁 Keep the Same Plan</span>
+          </button>
+          <p id="week-continuity-keep-helper" class="text-[11px] px-1" style="color: #cbd5e1;">Copies all exercises, sets, and target reps straight into next week.</p>
+        </div>
+
+        <div class="space-y-1 pt-1">
+          <button type="button" id="week-continuity-build-new-btn" class="w-full py-3 px-4 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 hover:bg-slate-800/70" style="border: 1px solid #64748b; color: #cbd5e1; background: transparent; min-height: 48px;">
+            <span>✨ Build a New Plan</span>
+          </button>
+          <p id="week-continuity-build-helper" class="text-[11px] px-1" style="color: #94a3b8;">Unlocks next week and opens the Setup Wizard to build a fresh plan.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: Program Setup Wizard Modal (Strict AI Difficulty Engine + Forced First-Time Onboarding) -->
+  <div id="program-setup-wizard-modal" class="hidden fixed inset-0 z-50 backdrop-blur-sm flex items-center justify-center p-3" style="background-color: rgba(15, 23, 42, 0.90); letter-spacing: 0.02em; line-height: 1.5; font-family: system-ui, sans-serif;" role="dialog" aria-modal="true" aria-labelledby="program-wizard-title">
+    <div class="border border-amber-500/50 rounded-2xl max-w-md w-full p-3.5 space-y-2.5 shadow-2xl max-h-[94vh] overflow-y-auto" style="background-color: #0f172a; color: #f8fafc;">
       <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2">
         <div>
-          <h3 id="program-wizard-title" class="text-sm sm:text-base font-extrabold text-slate-100">⚙️ Program Setup Wizard</h3>
-          <p class="text-[11px] text-slate-300 mt-0.5">Pick your days, focus, difficulty, and diet to start.</p>
+          <h3 id="program-wizard-title" class="text-sm sm:text-base font-extrabold" style="color: #f8fafc;">⚙️ Program Setup Wizard</h3>
+          <p id="program-wizard-subtitle" class="text-[11px] mt-0.5" style="color: #cbd5e1;">Pick your days, focus, difficulty, and diet to start.</p>
         </div>
         <button type="button" id="close-program-wizard-modal-btn" aria-label="Close" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
       </div>

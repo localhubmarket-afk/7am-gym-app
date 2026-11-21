@@ -2901,3 +2901,70 @@ test('Subtest 44: Upgrade 21 — D3.js 1RM Progression Chart (Bench/Squat/Deadli
   // 6. Empty Logs Return Empty Array
   assert.deepEqual(mod.extractOneRmProgressionSeries('bench', {}, undefined, refDate), []);
 });
+
+test('Subtest 45: Upgrade 22 — Week Continuity Engine (Exact Plan Deep-Copy vs Build New Plan) & Forced First-Time Onboarding', async () => {
+  const mod = await import('./workoutLogic.ts');
+
+  // 1. Exact ELI12 Modal Copy
+  assert.equal(
+    mod.WEEK_CONTINUITY_MODAL_COPY.title,
+    'Week Complete! What do you want to do for next week?'
+  );
+  assert.equal(mod.WEEK_CONTINUITY_MODAL_COPY.keepSameButtonLabel, '🔁 Keep the Same Plan');
+  assert.equal(mod.WEEK_CONTINUITY_MODAL_COPY.buildNewButtonLabel, '✨ Build a New Plan');
+
+  // 2. Deep-Copy Custom Wizard Week Schedule Identically (Zero Shared References)
+  const week2CustomSchedule = [
+    {
+      daySub: 'Push 1',
+      title: 'Day 1 • Push / Chest (EASY)',
+      isWizardGenerated: true,
+      exercises: [
+        { id: 'wiz_easy_chest_d1_e1', name: 'Seated Chest Press Machine', sets: 3, reps: '10-12' },
+        { id: 'wiz_easy_chest_d1_e2', name: 'Pec Deck Machine Fly', sets: 3, reps: '10-12' }
+      ]
+    },
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ];
+  const week3Cloned = mod.cloneWeekScheduleIdentically(week2CustomSchedule);
+  assert.deepEqual(week3Cloned, week2CustomSchedule);
+  assert.notEqual(week3Cloned[0], week2CustomSchedule[0]);
+  // Mutating week3 must never alter week2
+  (week3Cloned[0] as any).exercises[0].reps = '6-8';
+  assert.equal((week2CustomSchedule[0] as any).exercises[0].reps, '10-12');
+
+  // 3. Copy Per-Day Custom Added Exercises from Week 2 to Week 3
+  const customAdded = {
+    w2_d0: [{ id: 'custom_1', name: 'Face Pulls', sets: 3, reps: '15' }],
+    w2_d2: [{ id: 'custom_2', name: 'Calf Raise', sets: 4, reps: '12' }]
+  };
+  const copiedCustom = mod.copyWeekCustomExercises(customAdded, 2, 3);
+  assert.deepEqual(copiedCustom.w3_d0, customAdded.w2_d0);
+  assert.deepEqual(copiedCustom.w3_d2, customAdded.w2_d2);
+  assert.notEqual(copiedCustom.w3_d0[0], customAdded.w2_d0[0]);
+
+  // 4. Continuity Action Resolution (Keep Same vs Build New)
+  const keepSame = mod.resolveWeekContinuityChoice('keep_same', 2);
+  assert.equal(keepSame.fromWeek, 2);
+  assert.equal(keepSame.nextWeek, 3);
+  assert.equal(keepSame.copyScheduleIdentically, true);
+  assert.equal(keepSame.openSetupWizard, false);
+
+  const buildNew = mod.resolveWeekContinuityChoice('build_new', 2);
+  assert.equal(buildNew.fromWeek, 2);
+  assert.equal(buildNew.nextWeek, 3);
+  assert.equal(buildNew.copyScheduleIdentically, false);
+  assert.equal(buildNew.openSetupWizard, true);
+
+  // 5. Forced First-Time Onboarding Gate
+  assert.equal(mod.shouldForceFirstTimeOnboarding({ userHasCompletedOnboarding: false, hasCompletedFirstSetup: false }, ''), true);
+  assert.equal(mod.shouldForceFirstTimeOnboarding({ userHasCompletedOnboarding: true, hasCompletedFirstSetup: false }, ''), false);
+  assert.equal(mod.shouldForceFirstTimeOnboarding({ userHasCompletedOnboarding: false, hasCompletedFirstSetup: true }, ''), false);
+  assert.equal(mod.shouldForceFirstTimeOnboarding({ userHasCompletedOnboarding: false, hasCompletedFirstSetup: false }, '?autostart=1'), false);
+});
+

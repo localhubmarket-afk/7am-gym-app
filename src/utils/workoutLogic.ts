@@ -10331,3 +10331,100 @@ export function extractOneRmProgressionSeries(
 
   return [...baselinePoints, anchor];
 }
+
+// ============================================================================
+// UPGRADE 22: WEEK CONTINUITY ENGINE & FORCED FIRST-TIME ONBOARDING WIZARD
+// ============================================================================
+
+export type WeekContinuityAction = 'keep_same' | 'build_new';
+
+export const WEEK_CONTINUITY_MODAL_COPY = {
+  title: 'Week Complete! What do you want to do for next week?',
+  subtitle: 'You are in control. Keep your exact routine or build a fresh one.',
+  keepSameButtonLabel: '🔁 Keep the Same Plan',
+  keepSameHelper: 'Copies all exercises, sets, and target reps into next week.',
+  buildNewButtonLabel: '✨ Build a New Plan',
+  buildNewHelper: 'Opens the Setup Wizard to pick new days, focus, or difficulty.'
+} as const;
+
+export function cloneWeekScheduleIdentically<T>(sourceSchedule: readonly T[] | null | undefined): T[] {
+  if (!Array.isArray(sourceSchedule) || sourceSchedule.length !== 7) {
+    return ([0, 1, 2, 3, 4, 5, 6] as unknown) as T[];
+  }
+  return sourceSchedule.map((slot) => {
+    if (slot !== null && typeof slot === 'object') {
+      return JSON.parse(JSON.stringify(slot)) as T;
+    }
+    const num = Math.floor(Number(slot) || 0);
+    return (Math.max(0, Math.min(6, num)) as unknown) as T;
+  });
+}
+
+export function copyWeekCustomExercises<T>(
+  customDayExercises: Record<string, T[]> | null | undefined,
+  fromWeek: number,
+  toWeek: number
+): Record<string, T[]> {
+  const result: Record<string, T[]> = {};
+  if (customDayExercises && typeof customDayExercises === 'object') {
+    for (const [k, v] of Object.entries(customDayExercises)) {
+      result[k] = Array.isArray(v) ? (JSON.parse(JSON.stringify(v)) as T[]) : [];
+    }
+  }
+  const srcW = Math.max(1, Math.floor(Number(fromWeek) || 1));
+  const dstW = Math.max(1, Math.min(12, Math.floor(Number(toWeek) || srcW + 1)));
+  for (let d = 0; d < 7; d++) {
+    const srcKey = `w${srcW}_d${d}`;
+    const dstKey = `w${dstW}_d${d}`;
+    if (Array.isArray(result[srcKey]) && result[srcKey].length > 0) {
+      result[dstKey] = JSON.parse(JSON.stringify(result[srcKey])) as T[];
+    }
+  }
+  return result;
+}
+
+export function resolveWeekContinuityChoice(
+  action: WeekContinuityAction,
+  currentWeek: number
+): {
+  fromWeek: number;
+  nextWeek: number;
+  copyScheduleIdentically: boolean;
+  openSetupWizard: boolean;
+  toastMessage: string;
+} {
+  const fromWeek = Math.max(1, Math.min(12, Math.floor(Number(currentWeek) || 1)));
+  const nextWeek = Math.min(12, fromWeek + 1);
+  if (action === 'build_new') {
+    return {
+      fromWeek,
+      nextWeek,
+      copyScheduleIdentically: false,
+      openSetupWizard: true,
+      toastMessage: `Week ${nextWeek} unlocked! Build your new plan below.`
+    };
+  }
+  return {
+    fromWeek,
+    nextWeek,
+    copyScheduleIdentically: true,
+    openSetupWizard: false,
+    toastMessage: `Week ${nextWeek} ready! Kept the exact same plan from Week ${fromWeek}.`
+  };
+}
+
+export function shouldForceFirstTimeOnboarding(
+  stateFlags: {
+    userHasCompletedOnboarding?: boolean;
+    hasCompletedFirstSetup?: boolean;
+  } | null | undefined,
+  searchQuery = ''
+): boolean {
+  if (/(?:^|[?&])autostart=1(?:&|$)/i.test(String(searchQuery || ''))) {
+    return false;
+  }
+  if (!stateFlags) return true;
+  const completed = Boolean(stateFlags.userHasCompletedOnboarding || stateFlags.hasCompletedFirstSetup);
+  return !completed;
+}
+
