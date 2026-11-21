@@ -9657,6 +9657,7 @@ export function shouldShowChronoGapAlert(opts: {
 // =========================================================================
 
 export const STRICT_EXERCISE_VIDEO_MAP: Record<string, string> = {
+  ex_cable_lateral: 'https://www.youtube.com/watch?v=PPrzBWZDOhA',
   ex_cable_lateral_raise: 'https://www.youtube.com/watch?v=PPrzBWZDOhA',
   ex_db_lateral_raise: 'https://www.youtube.com/watch?v=3VcKaXpzqRo',
   ex_machine_lateral_raise: 'https://www.youtube.com/watch?v=3VcKaXpzqRo',
@@ -9677,7 +9678,8 @@ export function resolveCanonicalExerciseId(rawId?: string | null, rawName?: stri
   const id = String(rawId || '').trim().toLowerCase();
   const name = String(rawName || '').trim().toLowerCase();
 
-  // Explicit strict IDs stay unchanged
+  // Explicit strict IDs stay unchanged (normalize ex_cable_lateral alias -> ex_cable_lateral_raise)
+  if (id === 'ex_cable_lateral') return 'ex_cable_lateral_raise';
   if (id.startsWith('ex_')) return id;
 
   // Lateral Cable Bug Fix: strictly separate Cable vs Dumbbell vs Machine Lateral Raise
@@ -9851,7 +9853,7 @@ export function formatLockerPillLabel(locker: Partial<GymLockerState> | null | u
   if (pin && hasPhoto) return `🔒 Locker: #${pin} (Photo)`;
   if (pin) return `🔒 Locker: #${pin}`;
   if (hasPhoto) return `🔒 Locker: Photo`;
-  return '🔒 Locker: ---';
+  return '🔒 Locker';
 }
 
 export function createClearedLockerState(): GymLockerState {
@@ -9869,7 +9871,7 @@ export function computePostWorkoutMealTimePlus30(dateInput: Date | number): stri
 }
 
 export function formatOpenPostWorkoutMealButtonLabel(dateInput: Date | number): string {
-  return `Open Post-Workout Meal (${computePostWorkoutMealTimePlus30(dateInput)})`;
+  return `Eat Meal at ${computePostWorkoutMealTimePlus30(dateInput)}`;
 }
 
 export interface ScalableFuelItem {
@@ -9883,8 +9885,18 @@ export interface ScalableFuelItem {
 }
 
 export function isCarbHeavyFuelItem(item: { id?: string; name?: string }): boolean {
-  const text = `${item.id || ''} ${item.name || ''}`.toLowerCase();
-  if (/tofu|protein|pea|broccoli|spinach|egg|chicken|beef|salmon|milk|chia|hemp|peanut|sunflower|almond\s*butter|olive\s*oil|avocado/.test(text)) {
+  const idStr = String(item.id || '').toLowerCase();
+  const nameStr = String(item.name || '').toLowerCase();
+  const text = `${idStr} ${nameStr}`;
+  // Explicitly allow Oats & Rice even when labeled "Gluten-Free Protein Oats"
+  if (
+    idStr === 'm2_oats' ||
+    idStr === 'm2_rice' ||
+    (/\b(oats|oatmeal|rice)\b/.test(nameStr) && !/\b(pea\s*protein|protein\s*isolate|whey|milk)\b/.test(nameStr))
+  ) {
+    return true;
+  }
+  if (/tofu|pea\s*protein|protein\s*isolate|protein\s*powder|whey|broccoli|spinach|egg|chicken|beef|salmon|milk|chia|hemp|peanut|sunflower|almond\s*butter|olive\s*oil|avocado|creatine|yeast|salt|oil/.test(text)) {
     return false;
   }
   return /\b(rice|oats|oatmeal|banana|maple|syrup|carb|bread|toast|pasta|quinoa|potato|berry|berries|honey|tortilla)\b/.test(text);
@@ -9969,6 +9981,68 @@ export function areAllWarmupItemsComplete(
   if (!Array.isArray(part2CheckedFlags) || part2CheckedFlags.length === 0) return false;
   return part1CheckedFlags.every(Boolean) && part2CheckedFlags.every(Boolean);
 }
+
+// =========================================================================
+// UPGRADE 20: FIRST-OPEN SETUP WIZARD, OVER-TRAINING SAFETY ALERT,
+// 1000MS WARM-UP AUTO-CLOSE, REST-DAY OATS+RICE -20% & SHOP WEIGHT BADGE
+// =========================================================================
+
+export const WARMUP_AUTO_CLOSE_DELAY_MS = 1000;
+
+export const OVERTRAINING_ALERT_TEXT =
+  'Warning: Muscles need rest to grow. It is best to rest after 3 or 4 days of lifting.';
+
+export function detectConsecutiveLiftingDaysStreak(isRestDayFlags: boolean[]): number {
+  if (!Array.isArray(isRestDayFlags) || isRestDayFlags.length === 0) return 0;
+  let maxStreak = 0;
+  let curStreak = 0;
+  for (const isRest of isRestDayFlags) {
+    if (!isRest) {
+      curStreak += 1;
+      if (curStreak > maxStreak) maxStreak = curStreak;
+    } else {
+      curStreak = 0;
+    }
+  }
+  return maxStreak;
+}
+
+export function shouldShowOvertrainingAlert(
+  isRestDayFlags: boolean[],
+  dismissedKey?: string | null
+): { show: boolean; maxStreak: number; alertKey: string; message: string } {
+  const maxStreak = detectConsecutiveLiftingDaysStreak(isRestDayFlags);
+  const pattern = (Array.isArray(isRestDayFlags) ? isRestDayFlags : []).map((r) => (r ? 'R' : 'L')).join('');
+  const alertKey = `streak_${maxStreak}_${pattern}`;
+  const triggered = maxStreak >= 6;
+  const isDismissed = Boolean(dismissedKey && dismissedKey === alertKey);
+  return {
+    show: triggered && !isDismissed,
+    maxStreak,
+    alertKey,
+    message: OVERTRAINING_ALERT_TEXT
+  };
+}
+
+export function shouldAutoOpenFirstSetupWizard(
+  hasCompletedFirstSetup: boolean,
+  searchQuery = ''
+): boolean {
+  if (hasCompletedFirstSetup) return false;
+  if (/(?:^|[?&])autostart=1(?:&|$)/i.test(String(searchQuery || ''))) return false;
+  return true;
+}
+
+export function extractShortShopWeightBadge(rawQtyText: string): string {
+  const clean = String(rawQtyText || '').trim();
+  if (!clean) return '';
+  const weightMatch = clean.match(/\b(\d[\d,.]*\s*(?:g|kg|ml|L|oz|lb|lbs|Caps|Cartons|Blocks|Jars|Tubs|Bags|Bananas|Eggs))\b/i);
+  if (weightMatch) {
+    return weightMatch[1].replace(/\s+(g|ml|L)$/i, '$1');
+  }
+  return clean.split('(')[0].trim().slice(0, 18);
+}
+
 
 
 

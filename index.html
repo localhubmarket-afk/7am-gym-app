@@ -310,6 +310,9 @@
         <!-- Populated dynamically by JS -->
       </div>
 
+      <!-- UPGRADE 20: Over-Training Safety Alert (6-7 Lifting Days in a Row — Dismissible ELI12 Warning) -->
+      <div id="overtraining-safety-alert-banner" class="hidden"></div>
+
       <!-- Streamlined 7-Day Cycle, Progressive Week Selector & Zone A Admin Row -->
       <div id="gym-week-day-selector-card" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
         <!-- Row 1: Pure Week Selector Tabs (Week 1 | Week 2 | Week 3) -->
@@ -1195,6 +1198,8 @@
       customDayExercises: {},
       cardioLogs: {},
       cardioUiModeByEx: {},
+      hasCompletedFirstSetup: false,
+      dismissedOvertrainingAlertKey: '',
       programWizardConfig: {
         daysPerWeek: 5,
         primaryFocus: 'balanced',
@@ -1565,6 +1570,12 @@
       }
       if (!merged.cardioUiModeByEx || typeof merged.cardioUiModeByEx !== 'object') {
         merged.cardioUiModeByEx = {};
+      }
+      if (typeof merged.hasCompletedFirstSetup !== 'boolean') {
+        merged.hasCompletedFirstSetup = false;
+      }
+      if (typeof merged.dismissedOvertrainingAlertKey !== 'string') {
+        merged.dismissedOvertrainingAlertKey = '';
       }
       if (!merged.quickAddCaloriesByDay || typeof merged.quickAddCaloriesByDay !== 'object') {
         merged.quickAddCaloriesByDay = {};
@@ -3124,12 +3135,14 @@
       ex_side_plank: 'https://www.youtube.com/watch?v=K2VljzCC16g',
       ex_cardio_outdoor_biking: 'https://www.youtube.com/watch?v=4ssLDk1eX9w',
       ex_cardio_treadmill: 'https://www.youtube.com/watch?v=brFHyOtTwH4',
-      ex_cardio_rowing: 'https://www.youtube.com/watch?v=zQ82RYIFLN8'
+      ex_cardio_rowing: 'https://www.youtube.com/watch?v=zQ82RYIFLN8',
+      ex_cable_lateral: 'https://www.youtube.com/watch?v=PPrzBWZDOhA'
     };
 
     function resolveCanonicalExerciseIdInline(rawId, rawName) {
       const id = String(rawId || '').trim().toLowerCase();
       const name = String(rawName || '').trim().toLowerCase();
+      if (id === 'ex_cable_lateral') return 'ex_cable_lateral_raise';
       if (id.startsWith('ex_')) return id;
 
       // Lateral Cable Bug Fix: strictly distinguish Cable vs Dumbbell vs Machine Lateral Raise
@@ -3315,12 +3328,16 @@
       if (pin && hasPhoto) return `🔒 Locker: #${pin} (Photo)`;
       if (pin) return `🔒 Locker: #${pin}`;
       if (hasPhoto) return `🔒 Locker: Photo`;
-      return '🔒 Locker: ---';
+      return '🔒 Locker';
     }
 
     function clearGymLockerSilently() {
       if (!state) return;
       state.gymLocker = { pin: '', photoDataUrl: '', updatedAt: null };
+      const lockerBtn = document.getElementById('banner-gym-locker-btn');
+      if (lockerBtn) {
+        lockerBtn.textContent = formatLockerPillLabelInline(state.gymLocker);
+      }
     }
 
     function computePostWorkoutMealTimePlus30Inline(dateInput) {
@@ -3334,15 +3351,69 @@
     }
 
     function formatOpenPostWorkoutMealButtonLabelInline(dateInput) {
-      return `Open Post-Workout Meal (${computePostWorkoutMealTimePlus30Inline(dateInput)})`;
+      return `Eat Meal at ${computePostWorkoutMealTimePlus30Inline(dateInput)}`;
     }
 
     function isCarbHeavyFuelItemInline(item) {
-      const text = `${(item && item.id) || ''} ${(item && item.name) || ''}`.toLowerCase();
-      if (/tofu|protein|pea|broccoli|spinach|egg|chicken|beef|salmon|milk|chia|hemp|peanut|sunflower|almond\s*butter|olive\s*oil|avocado/.test(text)) {
+      const idStr = String((item && item.id) || '').toLowerCase();
+      const nameStr = String((item && item.name) || '').toLowerCase();
+      const text = `${idStr} ${nameStr}`;
+      // Explicitly allow Oats & Rice even when labeled "Gluten-Free Protein Oats"
+      if (
+        idStr === 'm2_oats' ||
+        idStr === 'm2_rice' ||
+        (/\b(oats|oatmeal|rice)\b/.test(nameStr) && !/\b(pea\s*protein|protein\s*isolate|whey|milk)\b/.test(nameStr))
+      ) {
+        return true;
+      }
+      if (/tofu|pea\s*protein|protein\s*isolate|protein\s*powder|whey|broccoli|spinach|egg|chicken|beef|salmon|milk|chia|hemp|peanut|sunflower|almond\s*butter|olive\s*oil|avocado|creatine|yeast|salt|oil/.test(text)) {
         return false;
       }
       return /\b(rice|oats|oatmeal|banana|maple|syrup|carb|bread|toast|pasta|quinoa|potato|berry|berries|honey|tortilla)\b/.test(text);
+    }
+
+    const OVERTRAINING_ALERT_TEXT_INLINE =
+      'Warning: Muscles need rest to grow. It is best to rest after 3 or 4 days of lifting.';
+
+    function detectConsecutiveLiftingDaysStreakInline(isRestFlags) {
+      if (!Array.isArray(isRestFlags) || isRestFlags.length === 0) return 0;
+      let maxStreak = 0;
+      let curStreak = 0;
+      for (let i = 0; i < isRestFlags.length; i++) {
+        if (!isRestFlags[i]) {
+          curStreak += 1;
+          if (curStreak > maxStreak) maxStreak = curStreak;
+        } else {
+          curStreak = 0;
+        }
+      }
+      return maxStreak;
+    }
+
+    function shouldShowOvertrainingAlertInline(isRestFlags, dismissedKey) {
+      const maxStreak = detectConsecutiveLiftingDaysStreakInline(isRestFlags);
+      const pattern = (Array.isArray(isRestFlags) ? isRestFlags : []).map(r => (r ? 'R' : 'L')).join('');
+      const alertKey = `streak_${maxStreak}_${pattern}`;
+      const triggered = maxStreak >= 6;
+      const isDismissed = Boolean(dismissedKey && dismissedKey === alertKey);
+      return {
+        show: triggered && !isDismissed,
+        shouldShow: triggered && !isDismissed,
+        maxStreak,
+        alertKey,
+        message: OVERTRAINING_ALERT_TEXT_INLINE,
+        alertText: OVERTRAINING_ALERT_TEXT_INLINE
+      };
+    }
+
+    function extractShortShopWeightBadgeInline(rawQtyText) {
+      const clean = String(rawQtyText || '').trim();
+      if (!clean) return '';
+      const weightMatch = clean.match(/\b(\d[\d,.]*\s*(?:g|kg|ml|L|oz|lb|lbs|Caps|Cartons|Blocks|Jars|Tubs|Bags|Bananas|Eggs))\b/i);
+      if (weightMatch) {
+        return weightMatch[1].replace(/\s+(g|ml|L)$/i, '$1');
+      }
+      return clean.split('(')[0].trim().slice(0, 18);
     }
 
     function applyRestDayCarbReductionInline(items, isRestDay, restDayCarbMode) {
@@ -11894,7 +11965,7 @@
 
           if (allPart1Done && allPart2Done) {
             if (warmupAutoCollapseTimer) clearTimeout(warmupAutoCollapseTimer);
-            showToast('All warm-up drills & sets done! Scrolling to Exercise #1...');
+            showToast('Warm-up complete. Moving to Exercise #1...');
             warmupAutoCollapseTimer = setTimeout(() => {
               state.warmupClosedByDay[dayKey] = true;
               if (state.openWarmupPart1ByDay) state.openWarmupPart1ByDay[dayKey] = false;
@@ -11905,7 +11976,7 @@
               if (ex1Card) {
                 ex1Card.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }
-            }, 800);
+            }, 1000);
           } else {
             showToast(cb.checked ? `✓ Warm-up complete: ${wName}` : `↺ Unchecked ${wName}`);
           }
@@ -12629,6 +12700,46 @@
       const dayObj = getScheduledDayObject(week, dayIdx);
       renderRestDaySchedulerDrawers();
       renderGymTimeTopBanners(week, dayIdx);
+
+      // UPGRADE 20: Over-Training Safety Alert (6 or 7 lifting days in a row)
+      const overtrainingBannerEl = document.getElementById('overtraining-safety-alert-banner');
+      if (overtrainingBannerEl) {
+        const weekRestFlags = [0, 1, 2, 3, 4, 5, 6].map(d => Boolean(getDayAssignment(week, d).isRestDay));
+        const otCheck = shouldShowOvertrainingAlertInline(weekRestFlags, state.dismissedOvertrainingAlertKey);
+        if (otCheck.show) {
+          overtrainingBannerEl.className = 'rounded-2xl border border-amber-500/60 bg-amber-500/15 p-3 flex items-start justify-between gap-2.5 shadow-sm';
+          overtrainingBannerEl.setAttribute('role', 'alert');
+          overtrainingBannerEl.innerHTML = `
+            <div class="min-w-0 flex-1 space-y-1">
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/25 text-amber-100 border border-amber-400/50">Over-Training Safety (${otCheck.maxStreak} Days in a Row)</span>
+              </div>
+              <p class="text-xs font-bold text-[#f8fafc] leading-relaxed">${otCheck.message}</p>
+            </div>
+            <button
+              type="button"
+              id="dismiss-overtraining-alert-btn"
+              class="shrink-0 px-2.5 py-1 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-amber-400/45 text-amber-100 text-[11px] font-extrabold transition"
+              aria-label="Dismiss over-training warning"
+            >
+              Dismiss ✕
+            </button>
+          `;
+          const dismissOtBtn = document.getElementById('dismiss-overtraining-alert-btn');
+          if (dismissOtBtn) {
+            dismissOtBtn.addEventListener('click', () => {
+              state.dismissedOvertrainingAlertKey = otCheck.alertKey;
+              saveState();
+              renderWorkoutView();
+            });
+          }
+        } else {
+          overtrainingBannerEl.className = 'hidden';
+          overtrainingBannerEl.removeAttribute('role');
+          overtrainingBannerEl.innerHTML = '';
+        }
+      }
+
       renderWarmupCard(dayObj);
       const warmupCardContainerEl = document.getElementById('warmup-card-container');
       if (warmupCardContainerEl) {
@@ -13186,40 +13297,40 @@
                 Take today off from lifting so your muscles recover and grow stronger.
               </div>
 
-              <!-- UPGRADE 19: Rest Day Nutrition Prompt (Match Training Day Calories vs Reduce Carbs -20%) -->
+              <!-- UPGRADE 19 + 20: Rest Day Nutrition Prompt (Keep Full Calories vs Cut Carbs -20% on Rice & Oats) -->
               <div id="rest-day-carb-mode-card" class="rounded-xl bg-[#0f172a] border border-amber-500/45 p-3 space-y-2">
                 <div class="text-xs font-extrabold text-[#f8fafc] leading-snug">
-                  Match training day calories, or reduce carbs?
+                  Eat fewer carbs today?
                 </div>
                 <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
                   <button
                     type="button"
-                    data-rest-carb-mode="match"
-                    aria-pressed="${state.restDayCarbMode !== 'reduce_20' ? 'true' : 'false'}"
-                    class="rest-day-carb-mode-btn py-2 px-2.5 rounded-xl border text-xs font-extrabold transition ${
-                      state.restDayCarbMode !== 'reduce_20'
-                        ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-sm'
-                        : 'bg-slate-900 text-slate-200 border-slate-700 hover:bg-slate-800'
-                    }"
-                  >
-                    Match Training Day
-                  </button>
-                  <button
-                    type="button"
                     data-rest-carb-mode="reduce_20"
                     aria-pressed="${state.restDayCarbMode === 'reduce_20' ? 'true' : 'false'}"
-                    class="rest-day-carb-mode-btn py-2 px-2.5 rounded-xl border text-xs font-extrabold transition ${
+                    class="rest-day-carb-mode-btn py-2 px-2 rounded-xl border text-xs font-extrabold transition ${
                       state.restDayCarbMode === 'reduce_20'
                         ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
                         : 'bg-slate-900 text-amber-200 border-amber-500/45 hover:bg-slate-800'
                     }"
                   >
-                    Reduce Carbs (-20%)
+                    Yes, Cut Carbs (-20%)
+                  </button>
+                  <button
+                    type="button"
+                    data-rest-carb-mode="match"
+                    aria-pressed="${state.restDayCarbMode !== 'reduce_20' ? 'true' : 'false'}"
+                    class="rest-day-carb-mode-btn py-2 px-2 rounded-xl border text-xs font-extrabold transition ${
+                      state.restDayCarbMode !== 'reduce_20'
+                        ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-sm'
+                        : 'bg-slate-900 text-slate-200 border-slate-700 hover:bg-slate-800'
+                    }"
+                  >
+                    No, Keep Full Calories
                   </button>
                 </div>
                 ${state.restDayCarbMode === 'reduce_20' ? `
                   <div class="text-[11px] font-semibold text-amber-200">
-                    Active: Rice and carb portions in Muscle Fuel are scaled down by 20% today.
+                    Active: Rice and Oats portions in Muscle Fuel are cut by 20% today.
                   </div>
                 ` : ''}
               </div>
@@ -14067,7 +14178,7 @@
                         }"
                         title="Open form cues and setup notes"
                       >
-                        ℹ️ Form Notes
+                        ℹ️ Form
                       </button>
                       <a
                         href="${verifiedExVideoUrl}"
@@ -14420,7 +14531,7 @@
                         : 'bg-slate-900 hover:bg-slate-800 text-cyan-200 border-cyan-500/45'
                     }"
                   >
-                    ⏱️ Start Live Cardio
+                    ⏱️ Start Live Timer
                   </button>
                   <button
                     type="button"
@@ -18220,30 +18331,30 @@
           fuelRestBannerEl.style.background = '#1e293b';
           fuelRestBannerEl.innerHTML = `
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <span class="text-xs font-extrabold text-amber-200">Rest Day Nutrition</span>
+              <span class="text-xs font-extrabold text-amber-200">Rest Day Carbs</span>
               <span class="text-[11px] font-bold px-2 py-0.5 rounded-lg border ${isReducedCarbs ? 'bg-amber-500/20 text-amber-200 border-amber-400/50' : 'bg-cyan-500/15 text-cyan-200 border-cyan-400/40'}">
-                ${isReducedCarbs ? 'Carbs Scaled -20%' : 'Full Training Calories'}
+                ${isReducedCarbs ? 'Rice & Oats Cut -20%' : 'Full Calories Active'}
               </span>
             </div>
-            <p class="text-xs font-semibold text-slate-200">Match training day calories, or reduce carbs?</p>
+            <p class="text-xs font-semibold text-slate-200">Eat fewer carbs today?</p>
             <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
-              <button
-                type="button"
-                id="fuel-rest-carb-match-btn"
-                data-fuel-rest-carb="match"
-                aria-pressed="${!isReducedCarbs ? 'true' : 'false'}"
-                class="fuel-rest-carb-btn w-full py-2 px-2.5 rounded-xl border text-xs font-extrabold transition ${!isReducedCarbs ? 'bg-cyan-500/20 text-cyan-100 border-cyan-400' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'}"
-              >
-                Match Training Day
-              </button>
               <button
                 type="button"
                 id="fuel-rest-carb-reduce-btn"
                 data-fuel-rest-carb="reduce_20"
                 aria-pressed="${isReducedCarbs ? 'true' : 'false'}"
-                class="fuel-rest-carb-btn w-full py-2 px-2.5 rounded-xl border text-xs font-extrabold transition ${isReducedCarbs ? 'bg-amber-500/25 text-amber-100 border-amber-400' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'}"
+                class="fuel-rest-carb-btn w-full py-2 px-2 rounded-xl border text-xs font-extrabold transition ${isReducedCarbs ? 'bg-amber-500/25 text-amber-100 border-amber-400' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'}"
               >
-                Reduce Carbs (-20%)
+                Yes, Cut Carbs (-20%)
+              </button>
+              <button
+                type="button"
+                id="fuel-rest-carb-match-btn"
+                data-fuel-rest-carb="match"
+                aria-pressed="${!isReducedCarbs ? 'true' : 'false'}"
+                class="fuel-rest-carb-btn w-full py-2 px-2 rounded-xl border text-xs font-extrabold transition ${!isReducedCarbs ? 'bg-cyan-500/20 text-cyan-100 border-cyan-400' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'}"
+              >
+                No, Keep Full Calories
               </button>
             </div>
           `;
@@ -18254,7 +18365,7 @@
               saveState();
               renderVeganView();
               renderWorkoutView();
-              showToast(mode === 'reduce_20' ? 'Rest Day: Rice & carbs reduced by 20%.' : 'Rest Day: Matching full training day calories.');
+              showToast(mode === 'reduce_20' ? 'Rest Day: Rice and Oats cut by 20%.' : 'Rest Day: Keeping full calories today.');
             });
           });
         } else {
@@ -18416,7 +18527,7 @@
                     class="batch-portion-step-btn w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-extrabold text-sm flex items-center justify-center shrink-0 transition"
                     aria-label="Decrease ${recipe.portionKey} portions"
                   >-</button>
-                  <span data-batch-portion-value="${recipe.portionKey}" class="px-2 text-xs font-extrabold text-cyan-200 whitespace-nowrap">${recipe.portions} ${recipe.portions === 1 ? 'Portion' : 'Portions'}</span>
+                  <span data-batch-portion-value="${recipe.portionKey}" class="px-2 text-xs font-extrabold text-cyan-200 whitespace-nowrap">${recipe.portions} ${recipe.portionKey === 'rice' ? (recipe.portions === 1 ? 'Bowl' : 'Bowls') : (recipe.portions === 1 ? 'Jar' : 'Jars')}</span>
                   <button
                     type="button"
                     data-batch-portion-key="${recipe.portionKey}"
@@ -19582,6 +19693,7 @@
         const isSwapped = Boolean(it.isBrandSwapped);
         const shortTitle = it.shortName || it.name;
         const leftQtyPill = eli12ShortShopQty(it, period);
+        const shortWeightBadge = extractShortShopWeightBadgeInline(leftQtyPill);
         const rightCostPill = period === 'quarterly' ? (it.quarterlyCost || '$41.06 / 3 mos') : (it.weeklyCost || '$3.19/wk');
         const eli12Sentence = it.eli12Summary || it.note;
         const fullQtyMath = period === 'quarterly' ? (it.quarterlyQty || it.qty) : (it.weeklyQty || it.qty);
@@ -19595,12 +19707,22 @@
                   ? 'bg-indigo-950/35 border-indigo-400/60'
                   : (isBulkCard ? `bg-slate-950/90 ${accentBorderClass || 'border-indigo-500/40'}` : 'bg-slate-900/95 border-slate-800 hover:border-emerald-500/40'))
           }">
-            <!-- Row 1 (Full Width): 22x22 Checkbox + Short Clear Item Name -->
-            <button type="button" data-shop-id="${it.id}" class="shop-item-btn w-full text-left flex items-start gap-2.5">
-              <span style="width: 22px; height: 22px;" class="mt-0.5 shrink-0 rounded-md flex items-center justify-center text-xs font-extrabold transition ${
-                done ? 'bg-emerald-500 text-slate-950' : (isBulkCard ? 'border-2 border-indigo-400 bg-slate-950' : 'border-2 border-slate-500 bg-slate-950')
-              }">${done ? '✓' : ''}</span>
-              <span class="flex-1 min-w-0 break-words ${done ? 'line-through text-slate-400' : 'text-slate-50'}" style="font-size: 15px; font-weight: 700; line-height: 1.35;">${shortTitle}</span>
+            <!-- Row 1 (Full Width): 22x22 Checkbox + Clear Item Name + High-Visibility Colored Total Weight Badge -->
+            <button type="button" data-shop-id="${it.id}" class="shop-item-btn w-full text-left flex items-center justify-between gap-2">
+              <div class="flex items-start gap-2.5 min-w-0 flex-1">
+                <span style="width: 22px; height: 22px;" class="mt-0.5 shrink-0 rounded-md flex items-center justify-center text-xs font-extrabold transition ${
+                  done ? 'bg-emerald-500 text-slate-950' : (isBulkCard ? 'border-2 border-indigo-400 bg-slate-950' : 'border-2 border-slate-500 bg-slate-950')
+                }">${done ? '✓' : ''}</span>
+                <span class="flex-1 min-w-0 break-words ${done ? 'line-through text-slate-400' : 'text-[#f8fafc]'}" style="font-size: 15px; font-weight: 700; line-height: 1.35;">${shortTitle}</span>
+              </div>
+              <span
+                data-shop-weight-pill="${it.id}"
+                class="shrink-0 text-xs font-extrabold px-2.5 py-0.5 rounded-md border whitespace-nowrap ${
+                  isBulkCard
+                    ? 'bg-indigo-500/25 border-indigo-400/70 text-indigo-100'
+                    : 'bg-cyan-500/20 border-cyan-400/65 text-cyan-100'
+                }"
+              >${shortWeightBadge}</span>
             </button>
 
             ${isSwapped && it.swappedBrandName ? `
@@ -19609,9 +19731,9 @@
               </div>
             ` : ''}
 
-            <!-- Row 2 (Aligned Pill Row Under the Title): Total Weight / Volume | Cost -->
+            <!-- Row 2 (Clean Cost & Period Strip; Complex Math Stays Hidden Inside Read Full Math) -->
             <div class="flex flex-wrap items-center justify-between gap-1.5 pl-7">
-              <span data-shop-weight-pill="${it.id}" class="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-slate-950 border whitespace-nowrap ${isBulkCard ? 'border-indigo-500/45 text-indigo-200' : 'border-emerald-500/35 text-emerald-300'}">${leftQtyPill}</span>
+              <span class="text-[11px] font-semibold text-slate-400 whitespace-nowrap">${period === 'quarterly' ? '90-Day Total' : '7-Day Total'}</span>
               <span data-shop-cost-pill="${it.id}" class="text-[11px] font-extrabold px-2 py-0.5 rounded-md border whitespace-nowrap ${
                 isSwapped
                   ? 'bg-indigo-600/30 border-indigo-400/70 text-indigo-100'
@@ -21593,6 +21715,7 @@
       let wizardSelectedDifficulty = String((state.programWizardConfig && state.programWizardConfig.difficulty) || 'medium').toLowerCase();
       let wizardSelectedBaseDiet = normalizeAppBaseDiet(state.baseDiet || (state.programWizardConfig && state.programWizardConfig.baseDiet) || state.dietPreference || 'Vegan');
       let wizardSelectedIntolerances = normalizeAppIntolerances(state.intolerances || (state.programWizardConfig && state.programWizardConfig.intolerances) || []);
+      let isWizardBlockingFirstOpen = false;
 
       function syncProgramWizardFromState() {
         wizardSelectedBaseDiet = normalizeAppBaseDiet(state.baseDiet || state.diet || state.dietPreference || 'Vegan');
@@ -21609,6 +21732,15 @@
             : 'wizard-days-pill py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-700';
           btn.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
+        const wizardOtWarnEl = document.getElementById('program-wizard-overtraining-warning');
+        if (wizardOtWarnEl) {
+          if (wizardSelectedDays >= 6) {
+            wizardOtWarnEl.textContent = OVERTRAINING_ALERT_TEXT_INLINE;
+            wizardOtWarnEl.classList.remove('hidden');
+          } else {
+            wizardOtWarnEl.classList.add('hidden');
+          }
+        }
         document.querySelectorAll('.wizard-focus-pill').forEach(btn => {
           const v = btn.getAttribute('data-wizard-focus') || 'balanced';
           const active = v === wizardSelectedFocus;
@@ -21676,7 +21808,7 @@
           const prevBase = wizardSelectedBaseDiet;
           const prevInts = wizardSelectedIntolerances.slice();
           const check = shouldConfirmAppDietChange(prevBase, prevInts, targetBase, prevInts);
-          if (check.requiresConfirm) {
+          if (check.requiresConfirm && !isWizardBlockingFirstOpen) {
             openDietChangeConfirmModal(
               check.warningText,
               () => {
@@ -21706,7 +21838,7 @@
             ? prevInts.filter(x => x !== item)
             : normalizeAppIntolerances(prevInts.concat([item]));
           const check = shouldConfirmAppDietChange(prevBase, prevInts, prevBase, nextInts);
-          if (check.requiresConfirm) {
+          if (check.requiresConfirm && !isWizardBlockingFirstOpen) {
             openDietChangeConfirmModal(
               check.warningText,
               () => {
@@ -21727,9 +21859,17 @@
         });
       });
 
-      window.openProgramSetupWizardModal = function() {
+      window.openProgramSetupWizardModal = function(isFirstOpenRequired) {
         if (syncSettingsModal) syncSettingsModal.classList.add('hidden');
         if (!programWizardModal) return;
+        isWizardBlockingFirstOpen = Boolean(isFirstOpenRequired);
+        if (closeProgramWizardBtn) {
+          if (isWizardBlockingFirstOpen) {
+            closeProgramWizardBtn.classList.add('hidden');
+          } else {
+            closeProgramWizardBtn.classList.remove('hidden');
+          }
+        }
         syncProgramWizardFromState();
         if (programWizardStatusEl) {
           programWizardStatusEl.textContent = '';
@@ -21739,14 +21879,19 @@
       };
 
       if (openProgramWizardBtn) {
-        openProgramWizardBtn.addEventListener('click', () => window.openProgramSetupWizardModal());
+        openProgramWizardBtn.addEventListener('click', () => window.openProgramSetupWizardModal(false));
       }
       if (closeProgramWizardBtn && programWizardModal) {
-        closeProgramWizardBtn.addEventListener('click', () => programWizardModal.classList.add('hidden'));
+        closeProgramWizardBtn.addEventListener('click', () => {
+          if (isWizardBlockingFirstOpen) return;
+          programWizardModal.classList.add('hidden');
+        });
       }
       if (programWizardModal) {
         programWizardModal.addEventListener('click', (e) => {
-          if (e.target === programWizardModal) programWizardModal.classList.add('hidden');
+          if (e.target === programWizardModal && !isWizardBlockingFirstOpen) {
+            programWizardModal.classList.add('hidden');
+          }
         });
       }
 
@@ -22037,6 +22182,10 @@
           intolerances,
           updatedAt: new Date().toISOString()
         };
+        state.hasCompletedFirstSetup = true;
+        state.dismissedOvertrainingAlertKey = '';
+        isWizardBlockingFirstOpen = false;
+        if (closeProgramWizardBtn) closeProgramWizardBtn.classList.remove('hidden');
         state.selectedDayIndex = 0;
         saveState();
         renderWorkoutView();
@@ -24565,6 +24714,9 @@
         const closeBtn = document.getElementById('close-smart-login-btn');
         if (closeBtn) closeBtn.classList.add('hidden');
         if (loginModal) loginModal.classList.remove('hidden');
+      } else if (!state.hasCompletedFirstSetup && !/(?:^|[?&])autostart=1(?:&|$)/i.test(window.location.search || '')) {
+        // UPGRADE 20: First-Open Setup Wizard — Require Days, Focus, Difficulty, and Diet before viewing Gym tab
+        window.openProgramSetupWizardModal(true);
       }
       claimAllPreviousLocalAndCloudDataIntoProfile();
       if (getActiveCloudEndpoint()) {
@@ -24781,12 +24933,12 @@
   </div>
 
   <!-- MODAL 4: Program Setup Wizard Modal (Strict AI Difficulty Engine) -->
-  <div id="program-setup-wizard-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="program-wizard-title">
-    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl max-w-md w-full p-4 space-y-3.5 shadow-2xl max-h-[90vh] overflow-y-auto">
-      <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
+  <div id="program-setup-wizard-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3" role="dialog" aria-modal="true" aria-labelledby="program-wizard-title">
+    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl max-w-md w-full p-3.5 space-y-2.5 shadow-2xl max-h-[94vh] overflow-y-auto">
+      <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2">
         <div>
-          <h3 id="program-wizard-title" class="text-base font-extrabold text-slate-100">⚙️ Program Setup Wizard</h3>
-          <p class="text-xs text-slate-300 mt-0.5">Answer 5 quick questions to build your custom week.</p>
+          <h3 id="program-wizard-title" class="text-sm sm:text-base font-extrabold text-slate-100">⚙️ Program Setup Wizard</h3>
+          <p class="text-[11px] text-slate-300 mt-0.5">Pick your days, focus, difficulty, and diet to start.</p>
         </div>
         <button type="button" id="close-program-wizard-modal-btn" aria-label="Close" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
       </div>
@@ -24799,6 +24951,9 @@
           <button type="button" data-wizard-days="4" class="wizard-days-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">4 Days</button>
           <button type="button" data-wizard-days="5" class="wizard-days-pill py-2 px-2 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500">5 Days</button>
           <button type="button" data-wizard-days="6" class="wizard-days-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">6 Days</button>
+        </div>
+        <div id="program-wizard-overtraining-warning" role="alert" class="hidden rounded-xl border border-amber-500/60 bg-amber-500/15 px-3 py-2 text-xs font-bold text-amber-100 leading-relaxed">
+          Warning: Muscles need rest to grow. It is best to rest after 3 or 4 days of lifting.
         </div>
       </div>
 
@@ -24845,9 +25000,9 @@
       </div>
 
       <!-- Strict AI Rule Preview -->
-      <div class="rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-[11px] text-slate-300 leading-relaxed">
-        <div class="font-extrabold text-slate-100 mb-0.5">Active AI Rules:</div>
-        <div id="program-wizard-rule-preview">Difficulty: MEDIUM. Use a standard mix of free-weights and machines. 3 to 4 sets per exercise. Base Diet: [Vegan]. Dietary Intolerances: [None].</div>
+      <div class="rounded-xl border border-slate-700 bg-slate-950 px-2.5 py-2 text-[11px] text-slate-300 leading-snug">
+        <span class="font-extrabold text-slate-100">Active Rules: </span>
+        <span id="program-wizard-rule-preview">Difficulty: MEDIUM. Base Diet: [Vegan].</span>
       </div>
 
       <div id="program-wizard-status" class="hidden rounded-xl border border-amber-500/50 bg-amber-600/15 px-3 py-2 text-xs font-bold text-amber-100"></div>
@@ -25025,7 +25180,7 @@
             id="gym-locker-pin-input"
             inputmode="text"
             maxlength="16"
-            placeholder="e.g., 142"
+            placeholder="e.g., 159"
             class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm font-bold text-slate-50 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
           />
         </div>
@@ -25360,7 +25515,7 @@
     <div class="bg-slate-900 border border-emerald-500/40 rounded-2xl max-w-md w-full p-4 space-y-3.5 shadow-2xl">
       <div class="flex items-start justify-between border-b border-slate-800 pb-2.5">
         <div>
-          <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"> Session Complete • Anabolic Window Open</span>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Session Complete • Post-Workout</span>
           <h3 id="workout-complete-modal-title" class="text-base sm:text-lg font-extrabold text-white mt-1.5">Congratulations! Great Job Today!</h3>
           <p id="modal-workout-complete-stats" class="text-xs font-bold text-emerald-300 mt-0.5">All scheduled sets completed for today.</p>
         </div>
@@ -25371,8 +25526,8 @@
       <div class="bg-slate-950/95 border border-sky-500/35 rounded-xl p-3 space-y-2">
         <div class="flex items-center justify-between gap-2">
           <div>
-            <div class="text-xs font-extrabold text-sky-300"> Drink 500 ml of water now</div>
-            <p class="text-[11px] text-slate-300 leading-snug mt-0.5">Replenish intracellular water &amp; accelerate muscle glycogen recovery immediately after your final set.</p>
+            <div class="text-xs font-extrabold text-sky-300">Drink 500 ml of water now</div>
+            <p class="text-[11px] text-slate-300 leading-snug mt-0.5">Drink water right after your last set to help your muscles recover.</p>
           </div>
           <span id="modal-water-intake-status" class="text-[10px] font-extrabold px-2 py-1 rounded-lg bg-sky-500/15 text-sky-200 border border-sky-500/30 shrink-0">Logged today: 0 ml</span>
         </div>

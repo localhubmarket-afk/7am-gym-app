@@ -2745,18 +2745,18 @@ test('Subtest 42: Upgrade 19 — Strict exerciseID Sync, Historical Pre-Fill, Du
   assert.ok(manualBike.summaryText.includes('60 mins'));
 
   // 4. Gym Locker Pin & Auto-Clear
-  assert.equal(mod.formatLockerPillLabel({ pin: '', photoDataUrl: '' }), '🔒 Locker: ---');
-  assert.equal(mod.formatLockerPillLabel({ pin: '142', photoDataUrl: '' }), '🔒 Locker: #142');
-  assert.equal(mod.formatLockerPillLabel({ pin: '142', photoDataUrl: 'data:image/jpeg;base64,abc' }), '🔒 Locker: #142 (Photo)');
+  assert.equal(mod.formatLockerPillLabel({ pin: '', photoDataUrl: '' }), '🔒 Locker');
+  assert.equal(mod.formatLockerPillLabel({ pin: '159', photoDataUrl: '' }), '🔒 Locker: #159');
+  assert.equal(mod.formatLockerPillLabel({ pin: '159', photoDataUrl: 'data:image/jpeg;base64,abc' }), '🔒 Locker: #159 (Photo)');
   const cleared = mod.createClearedLockerState();
-  assert.equal(mod.formatLockerPillLabel(cleared), '🔒 Locker: ---');
+  assert.equal(mod.formatLockerPillLabel(cleared), '🔒 Locker');
 
   // 5. Dynamic Post-Workout Meal (+30 mins)
   const testDate = new Date(2026, 10, 20, 8, 15, 0);
   assert.equal(mod.computePostWorkoutMealTimePlus30(testDate), '8:45 AM');
-  assert.equal(mod.formatOpenPostWorkoutMealButtonLabel(testDate), 'Open Post-Workout Meal (8:45 AM)');
+  assert.equal(mod.formatOpenPostWorkoutMealButtonLabel(testDate), 'Eat Meal at 8:45 AM');
 
-  // 6. Rest Day -20% Carb Scaling
+  // 6. Rest Day -20% Carb Scaling (Rice AND Gluten-Free Protein Oats!)
   const lunchItems = [
     { id: 'm2_tofu', name: 'Extra-Firm Tofu', weight: '175g', grams: 175, protein: 22, kcal: 160 },
     { id: 'm2_rice', name: 'Cooked Jasmine Rice', weight: '150g', grams: 150, protein: 4, kcal: 195 },
@@ -2767,6 +2767,14 @@ test('Subtest 42: Upgrade 19 — Strict exerciseID Sync, Historical Pre-Fill, Du
   assert.equal(reducedRest[1].grams, 120); // Rice scaled -20% (150 * 0.8 = 120)
   assert.equal(reducedRest[1].kcal, 156);  // 195 * 0.8 = 156
   assert.equal(reducedRest[2].grams, 100); // Broccoli untouched
+
+  const oatsItems = [
+    { id: 'm2_oats', name: 'Gluten-Free Protein Oats', weight: '45g', grams: 45, protein: 10, kcal: 170 },
+    { id: 'm2_pea_oats', name: 'Naked Pea Protein Isolate (whisked in jar)', weight: '10g', grams: 10, protein: 9, kcal: 40 }
+  ];
+  const reducedOats = mod.applyRestDayCarbReduction(oatsItems, true, 'reduce_20');
+  assert.equal(reducedOats[0].grams, 36); // Oats scaled -20% (45 * 0.8 = 36)
+  assert.equal(reducedOats[1].grams, 10); // Pea Protein Isolate untouched
 
   // On Lift Day or Match mode, nothing reduced
   const matchRest = mod.applyRestDayCarbReduction(lunchItems, true, 'match');
@@ -2790,6 +2798,46 @@ test('Subtest 42: Upgrade 19 — Strict exerciseID Sync, Historical Pre-Fill, Du
   assert.equal(mod.areAllWarmupItemsComplete([true, true], [true, false]), false);
   assert.equal(mod.areAllWarmupItemsComplete([true, true], [true, true, true]), true);
 });
+
+test('Subtest 43: Upgrade 20 — First-Open Wizard Gate, Over-Training 6-7 Day Streak Alert, 1000ms Warm-Up Close, ex_cable_lateral Alias & Shop Weight Badge', async () => {
+  const mod = await import('./workoutLogic.ts');
+
+  // 1. First-Open Setup Wizard Gate
+  assert.equal(mod.shouldAutoOpenFirstSetupWizard(false, ''), true);
+  assert.equal(mod.shouldAutoOpenFirstSetupWizard(true, ''), false);
+  assert.equal(mod.shouldAutoOpenFirstSetupWizard(false, '?autostart=1'), false);
+
+  // 2. Over-Training Alert (6 or 7 lifting days in a row)
+  const fiveLiftTwoRest = [false, false, false, false, false, true, true];
+  assert.equal(mod.detectConsecutiveLiftingDaysStreak(fiveLiftTwoRest), 5);
+  assert.equal(mod.shouldShowOvertrainingAlert(fiveLiftTwoRest).show, false);
+
+  const sixInARow = [false, false, false, false, false, false, true];
+  assert.equal(mod.detectConsecutiveLiftingDaysStreak(sixInARow), 6);
+  const alert6 = mod.shouldShowOvertrainingAlert(sixInARow);
+  assert.equal(alert6.show, true);
+  assert.equal(
+    alert6.message,
+    'Warning: Muscles need rest to grow. It is best to rest after 3 or 4 days of lifting.'
+  );
+  // Dismissing the exact pattern suppresses it
+  assert.equal(mod.shouldShowOvertrainingAlert(sixInARow, alert6.alertKey).show, false);
+
+  const sevenInARow = [false, false, false, false, false, false, false];
+  assert.equal(mod.detectConsecutiveLiftingDaysStreak(sevenInARow), 7);
+  assert.equal(mod.shouldShowOvertrainingAlert(sevenInARow).show, true);
+
+  // 3. 1000ms Warm-Up Auto-Close delay & ex_cable_lateral alias
+  assert.equal(mod.WARMUP_AUTO_CLOSE_DELAY_MS, 1000);
+  assert.equal(mod.resolveCanonicalExerciseId('ex_cable_lateral', 'Any Renamed Lateral'), 'ex_cable_lateral_raise');
+  assert.equal(mod.getVerifiedVideoUrlByExerciseId('ex_cable_lateral'), 'https://www.youtube.com/watch?v=PPrzBWZDOhA');
+
+  // 4. Shop List Short Weight Badge next to food name
+  assert.equal(mod.extractShortShopWeightBadge('907g bag (315g/wk)'), '907g');
+  assert.equal(mod.extractShortShopWeightBadge('1,225g/wk (3.5 Blocks)'), '1,225g');
+  assert.equal(mod.extractShortShopWeightBadge('1,260 ml/wk (1 Carton • 1.89L)'), '1,260ml');
+});
+
 
 
 
