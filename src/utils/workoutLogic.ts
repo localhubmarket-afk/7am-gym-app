@@ -9650,4 +9650,325 @@ export function shouldShowChronoGapAlert(opts: {
   );
 }
 
+// =========================================================================
+// UPGRADE 19: STRICT EXERCISE ID SYNC, HISTORICAL PRE-FILL, DUAL-MODE CARDIO,
+// LOCKER PIN, DYNAMIC POST-WORKOUT +30M, REST-DAY -20% CARBS, WARM-UP AUTO-CLOSE
+// & DYNAMIC RICE/OATS BATCH CALCULATOR
+// =========================================================================
+
+export const STRICT_EXERCISE_VIDEO_MAP: Record<string, string> = {
+  ex_cable_lateral_raise: 'https://www.youtube.com/watch?v=PPrzBWZDOhA',
+  ex_db_lateral_raise: 'https://www.youtube.com/watch?v=3VcKaXpzqRo',
+  ex_machine_lateral_raise: 'https://www.youtube.com/watch?v=3VcKaXpzqRo',
+  ex_cable_crunch: 'https://www.youtube.com/watch?v=2fbujeH3F0E',
+  ex_daily_pullups: 'https://www.youtube.com/watch?v=eGo4IYlbE5g',
+  ex_barbell_bench_press: 'https://www.youtube.com/watch?v=rT7DgCr-3pg',
+  ex_barbell_ohp: 'https://www.youtube.com/watch?v=2yjwXTZQDDI',
+  ex_barbell_squat: 'https://www.youtube.com/watch?v=ultWZbUMPL8',
+  ex_barbell_deadlift: 'https://www.youtube.com/watch?v=op9kVnSso6Q',
+  ex_barbell_hip_thrust: 'https://www.youtube.com/watch?v=SEdqd1n0cvg',
+  ex_side_plank: 'https://www.youtube.com/watch?v=K2VljzCC16g',
+  ex_cardio_outdoor_biking: 'https://www.youtube.com/watch?v=4ssLDk1eX9w',
+  ex_cardio_treadmill: 'https://www.youtube.com/watch?v=brFHyOtTwH4',
+  ex_cardio_rowing: 'https://www.youtube.com/watch?v=zQ82RYIFLN8'
+};
+
+export function resolveCanonicalExerciseId(rawId?: string | null, rawName?: string | null): string {
+  const id = String(rawId || '').trim().toLowerCase();
+  const name = String(rawName || '').trim().toLowerCase();
+
+  // Explicit strict IDs stay unchanged
+  if (id.startsWith('ex_')) return id;
+
+  // Lateral Cable Bug Fix: strictly separate Cable vs Dumbbell vs Machine Lateral Raise
+  if (
+    id.includes('cable_lateral') ||
+    id === 'thu_cable_lat_raise' ||
+    id === 'wed_cable_lat_raise' ||
+    (/cable/.test(name) && /lateral\s*raise/.test(name))
+  ) {
+    return 'ex_cable_lateral_raise';
+  }
+  if (
+    id.includes('machine_lateral') ||
+    id.includes('seated_lateral_raise_machine') ||
+    (/machine/.test(name) && /lateral\s*raise/.test(name))
+  ) {
+    return 'ex_machine_lateral_raise';
+  }
+  if (
+    id.includes('db_lateral') ||
+    id.includes('dumbbell_lateral') ||
+    id === 'mon_lat_raise' ||
+    id === 'thu_lat_raise' ||
+    (/lateral\s*raise/.test(name) && !/cable|machine/.test(name))
+  ) {
+    return 'ex_db_lateral_raise';
+  }
+
+  // Daily recurring exercises unified across all days/weeks
+  if (id === 'cable_ab_crunch' || /cable.*crunch|abdominal\s*crunch/.test(name)) {
+    return 'ex_cable_crunch';
+  }
+  if (/^day[1-5]_pullups$/.test(id) || /pull[\s-]*ups?/.test(name)) {
+    return 'ex_daily_pullups';
+  }
+  if (id === 'mon_bench' || /barbell\s*bench\s*press/.test(name)) return 'ex_barbell_bench_press';
+  if (id === 'mon_ohp' || /overhead\s*press/.test(name)) return 'ex_barbell_ohp';
+  if (id === 'tue_squat' || /barbell.*squat/.test(name)) return 'ex_barbell_squat';
+  if (id === 'sat_deadlift' || /barbell.*deadlift/.test(name)) return 'ex_barbell_deadlift';
+  if (id === 'sat_hip_thrust' || /hip\s*thrust/.test(name)) return 'ex_barbell_hip_thrust';
+  if (id === 'tue_side_plank' || /side\s*plank/.test(name)) return 'ex_side_plank';
+
+  // Cardio canonical IDs
+  if (/outdoor\s*bik|cycling|bike\s*ride/.test(name) || id.includes('biking')) return 'ex_cardio_outdoor_biking';
+  if (/treadmill|outdoor\s*run|jogging|running/.test(name) || id.includes('treadmill')) return 'ex_cardio_treadmill';
+  if (/rowing\s*machine|erg\s*row|cardio\s*row/.test(name)) return 'ex_cardio_rowing';
+
+  const slugBase = (id || name || 'exercise')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return `ex_${slugBase || 'exercise'}`;
+}
+
+export function getVerifiedVideoUrlByExerciseId(exerciseId: string, fallbackUrl?: string): string {
+  const canonical = resolveCanonicalExerciseId(exerciseId, '');
+  if (STRICT_EXERCISE_VIDEO_MAP[canonical]) {
+    return STRICT_EXERCISE_VIDEO_MAP[canonical];
+  }
+  if (fallbackUrl && /^https?:\/\//i.test(String(fallbackUrl))) {
+    return String(fallbackUrl);
+  }
+  const readable = canonical.replace(/^ex_/, '').replace(/_/g, ' ');
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(readable + ' proper form tutorial')}`;
+}
+
+export interface ExerciseHistorySetRecord {
+  setIdx: number;
+  weight: string;
+  reps: string;
+  unit?: string;
+}
+
+export interface ExerciseHistorySessionRecord {
+  exerciseID: string;
+  timestamp: number;
+  week: number;
+  dayIdx: number;
+  sets: ExerciseHistorySetRecord[];
+}
+
+export function getLastKnownExerciseSession(
+  exerciseHistory: Record<string, ExerciseHistorySessionRecord[]> | undefined | null,
+  canonicalId: string,
+  currentWeek: number,
+  currentDayIdx: number
+): ExerciseHistorySessionRecord | null {
+  if (!exerciseHistory || typeof exerciseHistory !== 'object') return null;
+  const list = exerciseHistory[canonicalId];
+  if (!Array.isArray(list) || list.length === 0) return null;
+
+  const candidates = list.filter((sess) => {
+    if (!sess || !Array.isArray(sess.sets) || sess.sets.length === 0) return false;
+    // Skip today's exact slot so we pull from the most recent PREVIOUS session
+    if (sess.week === currentWeek && sess.dayIdx === currentDayIdx) return false;
+    return sess.sets.some((st) => String(st.weight || '').trim() !== '' || String(st.reps || '').trim() !== '');
+  });
+  if (candidates.length === 0) return null;
+
+  candidates.sort((a, b) => {
+    const tsDiff = (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0);
+    if (tsDiff !== 0) return tsDiff;
+    const wkDiff = (Number(b.week) || 0) - (Number(a.week) || 0);
+    if (wkDiff !== 0) return wkDiff;
+    return (Number(b.dayIdx) || 0) - (Number(a.dayIdx) || 0);
+  });
+
+  return candidates[0];
+}
+
+export function autoFillSetsFromLastKnown(
+  lastKnown: ExerciseHistorySessionRecord | null,
+  numSets: number
+): Array<{ setIdx: number; weight: string; reps: string; unit?: string }> {
+  const out: Array<{ setIdx: number; weight: string; reps: string; unit?: string }> = [];
+  if (!lastKnown || !Array.isArray(lastKnown.sets) || lastKnown.sets.length === 0) return out;
+
+  const fallbackSet = lastKnown.sets[lastKnown.sets.length - 1];
+  for (let s = 1; s <= Math.max(1, numSets); s++) {
+    const exact = lastKnown.sets.find((st) => Number(st.setIdx) === s) || lastKnown.sets[s - 1] || fallbackSet;
+    out.push({
+      setIdx: s,
+      weight: String(exact?.weight ?? ''),
+      reps: String(exact?.reps ?? ''),
+      unit: exact?.unit
+    });
+  }
+  return out;
+}
+
+export function isCardioExerciseSpec(ex: { id?: string; name?: string; type?: string; isCardio?: boolean } | null | undefined): boolean {
+  if (!ex) return false;
+  if (ex.isCardio === true || String(ex.type || '').toLowerCase() === 'cardio') return true;
+  const n = String(ex.name || '').toLowerCase();
+  const id = String(ex.id || '').toLowerCase();
+  if (id.includes('cardio')) return true;
+  return /\b(cardio|outdoor\s*biking|biking|cycling|bike\s*ride|spin\s*bike|treadmill|running|jogging|elliptical|stairmaster|stair\s*climber|jump\s*rope|swimming|brisk\s*walk|rowing\s*machine)\b/i.test(n);
+}
+
+export function formatCardioDurationClock(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+  const hrs = Math.floor(safe / 3600);
+  const mins = Math.floor((safe % 3600) / 60);
+  const secs = safe % 60;
+  const pad = (v: number) => String(v).padStart(2, '0');
+  return hrs > 0 ? `${pad(hrs)}:${pad(mins)}:${pad(secs)}` : `${pad(mins)}:${pad(secs)}`;
+}
+
+export function buildCardioLogRecord(
+  mode: 'live' | 'manual',
+  payload: { durationMins?: number; elapsedSeconds?: number; distanceKm?: number }
+): { mode: 'live' | 'manual'; durationMins: number; distanceKm: number; summaryText: string } {
+  const distanceKm = Math.max(0, Math.round((Number(payload.distanceKm) || 0) * 10) / 10);
+  const durationMins =
+    mode === 'live'
+      ? Math.max(1, Math.round((Number(payload.elapsedSeconds) || 0) / 60))
+      : Math.max(1, Math.round(Number(payload.durationMins) || 0));
+  const distPart = distanceKm > 0 ? `${distanceKm} km • ` : '';
+  const summaryText = `${distPart}${durationMins} mins (${mode === 'live' ? 'Live' : 'Logged'})`;
+  return { mode, durationMins, distanceKm, summaryText };
+}
+
+export interface GymLockerState {
+  pin: string;
+  photoDataUrl: string;
+  updatedAt: number | null;
+}
+
+export function formatLockerPillLabel(locker: Partial<GymLockerState> | null | undefined): string {
+  const pin = String(locker?.pin || '').trim();
+  const hasPhoto = Boolean(String(locker?.photoDataUrl || '').trim());
+  if (pin && hasPhoto) return `🔒 Locker: #${pin} (Photo)`;
+  if (pin) return `🔒 Locker: #${pin}`;
+  if (hasPhoto) return `🔒 Locker: Photo`;
+  return '🔒 Locker: ---';
+}
+
+export function createClearedLockerState(): GymLockerState {
+  return { pin: '', photoDataUrl: '', updatedAt: null };
+}
+
+export function computePostWorkoutMealTimePlus30(dateInput: Date | number): string {
+  const baseMs = dateInput instanceof Date ? dateInput.getTime() : Number(dateInput);
+  const target = new Date((Number.isFinite(baseMs) ? baseMs : Date.now()) + 30 * 60 * 1000);
+  const hours24 = target.getHours();
+  const mins = target.getMinutes();
+  const period = hours24 >= 12 ? 'PM' : 'AM';
+  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+  return `${hours12}:${String(mins).padStart(2, '0')} ${period}`;
+}
+
+export function formatOpenPostWorkoutMealButtonLabel(dateInput: Date | number): string {
+  return `Open Post-Workout Meal (${computePostWorkoutMealTimePlus30(dateInput)})`;
+}
+
+export interface ScalableFuelItem {
+  id: string;
+  name: string;
+  label?: string;
+  weight?: string;
+  grams: number;
+  protein: number;
+  kcal: number;
+}
+
+export function isCarbHeavyFuelItem(item: { id?: string; name?: string }): boolean {
+  const text = `${item.id || ''} ${item.name || ''}`.toLowerCase();
+  if (/tofu|protein|pea|broccoli|spinach|egg|chicken|beef|salmon|milk|chia|hemp|peanut|sunflower|almond\s*butter|olive\s*oil|avocado/.test(text)) {
+    return false;
+  }
+  return /\b(rice|oats|oatmeal|banana|maple|syrup|carb|bread|toast|pasta|quinoa|potato|berry|berries|honey|tortilla)\b/.test(text);
+}
+
+export function applyRestDayCarbReduction(
+  items: ScalableFuelItem[],
+  isRestDay: boolean,
+  restDayCarbMode: 'match' | 'reduce_20'
+): ScalableFuelItem[] {
+  if (!Array.isArray(items)) return [];
+  if (!isRestDay || restDayCarbMode !== 'reduce_20') {
+    return items.map((it) => ({ ...it }));
+  }
+  return items.map((it) => {
+    if (!isCarbHeavyFuelItem(it)) return { ...it };
+    const scaledGrams = Math.max(1, Math.round((Number(it.grams) || 0) * 0.8));
+    const scaledKcal = Math.max(1, Math.round((Number(it.kcal) || 0) * 0.8));
+    const scaledProt = Math.round((Number(it.protein) || 0) * 0.8 * 10) / 10;
+    const isMl = /ml\b/i.test(String(it.weight || ''));
+    const unitSuffix = isMl ? 'ml' : 'g';
+    return {
+      ...it,
+      grams: scaledGrams,
+      kcal: scaledKcal,
+      protein: scaledProt,
+      weight: `${scaledGrams}${unitSuffix} (-20% Rest)`
+    };
+  });
+}
+
+export function scaleWeightTextByFactor(rawText: string, multiplier: number, targetPortions?: number): string {
+  const text = String(rawText || '');
+  if (!text || !Number.isFinite(multiplier) || multiplier <= 0) return text;
+  let updated = text;
+  if (typeof targetPortions === 'number' && targetPortions >= 1) {
+    // Handle patterns like "150g × 4" -> "150g × 6" (keep per-portion weight, update count!)
+    const perPortionCountRe = /^(\d+(?:\.\d+)?\s*(?:g|ml))\s*[×x]\s*(\d+)$/i;
+    const m = perPortionCountRe.exec(updated.trim());
+    if (m) {
+      return `${m[1]} × ${targetPortions}`;
+    }
+  }
+  updated = updated.replace(/(\d+(?:\.\d+)?)\s*(g|ml|kg|tbsp|scoops?)\b/gi, (_match, numStr, unit) => {
+    const val = parseFloat(numStr);
+    if (!Number.isFinite(val)) return _match;
+    const scaled = val * multiplier;
+    const rounded = Math.abs(scaled - Math.round(scaled)) < 0.05 ? String(Math.round(scaled)) : String(Math.round(scaled * 10) / 10);
+    const space = unit.toLowerCase() === 'ml' || unit.toLowerCase() === 'tbsp' || unit.toLowerCase().startsWith('scoop') ? ' ' : '';
+    return `${rounded}${space}${unit}`;
+  });
+  return updated;
+}
+
+export function scaleBatchRecipeSteps<T extends { id: string; title: string; detail: string; weightBadge?: string }>(
+  steps: T[],
+  portions: number,
+  basePortions = 4
+): T[] {
+  const safePortions = Math.max(1, Math.min(12, Math.round(Number(portions) || basePortions)));
+  const mult = safePortions / Math.max(1, basePortions);
+  return (Array.isArray(steps) ? steps : []).map((st) => {
+    const nextDetail = String(st.detail || '')
+      .replace(/×\s*4\s*(days|jars|containers|bowls|portions)/gi, `× ${safePortions} $1`)
+      .replace(/into\s+4\s+(fridge\s+containers|jars|bowls)/gi, `into ${safePortions} $1`);
+    const nextTitle = String(st.title || '')
+      .replace(/Into\s+4\s+Fridge\s+Containers/i, `Into ${safePortions} Fridge Containers`);
+    return {
+      ...st,
+      title: nextTitle,
+      detail: nextDetail,
+      weightBadge: st.weightBadge ? scaleWeightTextByFactor(st.weightBadge, mult, safePortions) : st.weightBadge
+    };
+  });
+}
+
+export function areAllWarmupItemsComplete(
+  part1CheckedFlags: boolean[],
+  part2CheckedFlags: boolean[]
+): boolean {
+  if (!Array.isArray(part1CheckedFlags) || part1CheckedFlags.length === 0) return false;
+  if (!Array.isArray(part2CheckedFlags) || part2CheckedFlags.length === 0) return false;
+  return part1CheckedFlags.every(Boolean) && part2CheckedFlags.every(Boolean);
+}
+
+
 

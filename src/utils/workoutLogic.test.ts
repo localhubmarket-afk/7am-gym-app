@@ -2680,4 +2680,116 @@ test('Subtest 41: Multi-Select Base Diet & Intolerances, Error Prevention Confir
   );
 });
 
+test('Subtest 42: Upgrade 19 — Strict exerciseID Sync, Historical Pre-Fill, Dual-Mode Cardio, Gym Locker, Post-Workout +30m, Rest-Day -20% Carbs, Warm-Up Auto-Close & Dynamic Batch Portions', async () => {
+  const mod = await import('./workoutLogic.ts');
+  // 1. Strict exerciseID Canonicalization & Lateral Cable Bug Fix
+  assert.equal(mod.resolveCanonicalExerciseId('thu_cable_lat_raise', 'Cable Lateral Raise'), 'ex_cable_lateral_raise');
+  assert.equal(mod.resolveCanonicalExerciseId('mon_lat_raise', 'Dumbbell Lateral Raise'), 'ex_db_lateral_raise');
+  assert.notEqual(
+    mod.resolveCanonicalExerciseId('thu_cable_lat_raise', 'Cable Lateral Raise'),
+    mod.resolveCanonicalExerciseId('mon_lat_raise', 'Dumbbell Lateral Raise')
+  );
+  assert.equal(mod.resolveCanonicalExerciseId('cable_ab_crunch', 'Cable Abdominal Crunch'), 'ex_cable_crunch');
+  assert.equal(mod.resolveCanonicalExerciseId('day3_pullups', 'Overhand Pull-Ups'), 'ex_daily_pullups');
+
+  // Video URLs strictly bound to canonical exerciseID (no cable/dumbbell collision!)
+  assert.equal(mod.getVerifiedVideoUrlByExerciseId('ex_cable_lateral_raise'), 'https://www.youtube.com/watch?v=PPrzBWZDOhA');
+  assert.equal(mod.getVerifiedVideoUrlByExerciseId('ex_db_lateral_raise'), 'https://www.youtube.com/watch?v=3VcKaXpzqRo');
+
+  // 2. Historical Pre-Fill ("Last Known Set" chronologically across any week/day)
+  const history = {
+    ex_cable_crunch: [
+      {
+        exerciseID: 'ex_cable_crunch',
+        timestamp: 1000,
+        week: 1,
+        dayIdx: 0,
+        sets: [
+          { setIdx: 1, weight: '60', reps: '15', unit: 'lbs' },
+          { setIdx: 2, weight: '60', reps: '14', unit: 'lbs' },
+          { setIdx: 3, weight: '60', reps: '12', unit: 'lbs' }
+        ]
+      },
+      {
+        exerciseID: 'ex_cable_crunch',
+        timestamp: 5000,
+        week: 1,
+        dayIdx: 2,
+        sets: [
+          { setIdx: 1, weight: '70', reps: '16', unit: 'lbs' },
+          { setIdx: 2, weight: '70', reps: '15', unit: 'lbs' },
+          { setIdx: 3, weight: '70', reps: '15', unit: 'lbs' }
+        ]
+      }
+    ]
+  };
+  const lastKnown = mod.getLastKnownExerciseSession(history, 'ex_cable_crunch', 1, 3);
+  assert.ok(lastKnown);
+  assert.equal(lastKnown.dayIdx, 2);
+  const autoFilled = mod.autoFillSetsFromLastKnown(lastKnown, 3);
+  assert.equal(autoFilled.length, 3);
+  assert.equal(autoFilled[0].weight, '70');
+  assert.equal(autoFilled[0].reps, '16');
+  assert.equal(autoFilled[2].reps, '15');
+
+  // 3. Dual-Mode Cardio Engine
+  assert.equal(mod.isCardioExerciseSpec({ name: 'Outdoor Biking' }), true);
+  assert.equal(mod.isCardioExerciseSpec({ name: 'Treadmill Run' }), true);
+  assert.equal(mod.isCardioExerciseSpec({ name: 'Barbell Bench Press' }), false);
+  assert.equal(mod.formatCardioDurationClock(125), '02:05');
+  assert.equal(mod.formatCardioDurationClock(3661), '01:01:01');
+  const manualBike = mod.buildCardioLogRecord('manual', { distanceKm: 18.5, durationMins: 60 });
+  assert.equal(manualBike.durationMins, 60);
+  assert.equal(manualBike.distanceKm, 18.5);
+  assert.ok(manualBike.summaryText.includes('18.5 km'));
+  assert.ok(manualBike.summaryText.includes('60 mins'));
+
+  // 4. Gym Locker Pin & Auto-Clear
+  assert.equal(mod.formatLockerPillLabel({ pin: '', photoDataUrl: '' }), '🔒 Locker: ---');
+  assert.equal(mod.formatLockerPillLabel({ pin: '142', photoDataUrl: '' }), '🔒 Locker: #142');
+  assert.equal(mod.formatLockerPillLabel({ pin: '142', photoDataUrl: 'data:image/jpeg;base64,abc' }), '🔒 Locker: #142 (Photo)');
+  const cleared = mod.createClearedLockerState();
+  assert.equal(mod.formatLockerPillLabel(cleared), '🔒 Locker: ---');
+
+  // 5. Dynamic Post-Workout Meal (+30 mins)
+  const testDate = new Date(2026, 10, 20, 8, 15, 0);
+  assert.equal(mod.computePostWorkoutMealTimePlus30(testDate), '8:45 AM');
+  assert.equal(mod.formatOpenPostWorkoutMealButtonLabel(testDate), 'Open Post-Workout Meal (8:45 AM)');
+
+  // 6. Rest Day -20% Carb Scaling
+  const lunchItems = [
+    { id: 'm2_tofu', name: 'Extra-Firm Tofu', weight: '175g', grams: 175, protein: 22, kcal: 160 },
+    { id: 'm2_rice', name: 'Cooked Jasmine Rice', weight: '150g', grams: 150, protein: 4, kcal: 195 },
+    { id: 'm2_broccoli', name: 'Steamed Broccoli', weight: '100g', grams: 100, protein: 3, kcal: 35 }
+  ];
+  const reducedRest = mod.applyRestDayCarbReduction(lunchItems, true, 'reduce_20');
+  assert.equal(reducedRest[0].grams, 175); // Tofu untouched
+  assert.equal(reducedRest[1].grams, 120); // Rice scaled -20% (150 * 0.8 = 120)
+  assert.equal(reducedRest[1].kcal, 156);  // 195 * 0.8 = 156
+  assert.equal(reducedRest[2].grams, 100); // Broccoli untouched
+
+  // On Lift Day or Match mode, nothing reduced
+  const matchRest = mod.applyRestDayCarbReduction(lunchItems, true, 'match');
+  assert.equal(matchRest[1].grams, 150);
+
+  // 7. Dynamic Rice & Oats Batch Portion Calculator (6 portions = 1.5x)
+  const riceSteps = [
+    { id: 'rice_step_1', title: 'Dry White Jasmine Rice (Rinsed)', detail: '55g dry per day × 4 days', weightBadge: '220g' },
+    { id: 'rice_step_2', title: 'Filtered Cooking Water', detail: 'Add water to pot', weightBadge: '330 ml' },
+    { id: 'rice_step_3', title: 'Cook & Cool-Down', detail: 'Cook 10-12m', weightBadge: '600g Yield' },
+    { id: 'rice_step_4', title: 'Divide Into 4 Fridge Containers', detail: '150g cooked rice per container × 4 days', weightBadge: '150g × 4' }
+  ];
+  const scaled6 = mod.scaleBatchRecipeSteps(riceSteps, 6, 4);
+  assert.equal(scaled6[0].weightBadge, '330g');
+  assert.equal(scaled6[1].weightBadge, '495 ml');
+  assert.equal(scaled6[2].weightBadge, '900g Yield');
+  assert.equal(scaled6[3].weightBadge, '150g × 6');
+  assert.ok(scaled6[3].title.includes('Into 6 Fridge Containers'));
+
+  // 8. Warm-Up Auto-Collapse Gate (Part 1 AND Part 2 complete)
+  assert.equal(mod.areAllWarmupItemsComplete([true, true], [true, false]), false);
+  assert.equal(mod.areAllWarmupItemsComplete([true, true], [true, true, true]), true);
+});
+
+
 

@@ -772,6 +772,9 @@
         <div id="vegan-gym-time-bar" class="hidden"></div>
       </div>
 
+      <!-- UPGRADE 19: Rest Day Nutrition Carb Reduction Prompt on Muscle Fuel Tab -->
+      <div id="fuel-rest-day-carb-banner" class="hidden"></div>
+
       <!-- Decoupled Oats vs. Rice Fridge Inventory Status & Smart Next-Day Prep Prompt Banner -->
       <div id="fuel-next-day-prep-prompt-banner" class="space-y-2"></div>
 
@@ -1184,6 +1187,14 @@
       dismissedChronoAlertsByDay: {},
       flexMealOverridesByDay: {},
       quickAddCaloriesByDay: {},
+      exerciseHistory: {},
+      gymLocker: { pin: '', photoDataUrl: '', updatedAt: null },
+      restDayCarbMode: 'match',
+      oatsBatchPortions: 4,
+      riceBatchPortions: 4,
+      customDayExercises: {},
+      cardioLogs: {},
+      cardioUiModeByEx: {},
       programWizardConfig: {
         daysPerWeek: 5,
         primaryFocus: 'balanced',
@@ -1532,6 +1543,28 @@
       }
       if (!merged.flexMealOverridesByDay || typeof merged.flexMealOverridesByDay !== 'object') {
         merged.flexMealOverridesByDay = {};
+      }
+      if (!merged.exerciseHistory || typeof merged.exerciseHistory !== 'object') {
+        merged.exerciseHistory = {};
+      }
+      if (!merged.gymLocker || typeof merged.gymLocker !== 'object') {
+        merged.gymLocker = { pin: '', photoDataUrl: '', updatedAt: null };
+      }
+      if (merged.restDayCarbMode !== 'reduce_20' && merged.restDayCarbMode !== 'match') {
+        merged.restDayCarbMode = 'match';
+      }
+      const parsedOatsP = parseInt(merged.oatsBatchPortions, 10);
+      merged.oatsBatchPortions = (!isNaN(parsedOatsP) && parsedOatsP >= 1 && parsedOatsP <= 12) ? parsedOatsP : 4;
+      const parsedRiceP = parseInt(merged.riceBatchPortions, 10);
+      merged.riceBatchPortions = (!isNaN(parsedRiceP) && parsedRiceP >= 1 && parsedRiceP <= 12) ? parsedRiceP : 4;
+      if (!merged.customDayExercises || typeof merged.customDayExercises !== 'object') {
+        merged.customDayExercises = {};
+      }
+      if (!merged.cardioLogs || typeof merged.cardioLogs !== 'object') {
+        merged.cardioLogs = {};
+      }
+      if (!merged.cardioUiModeByEx || typeof merged.cardioUiModeByEx !== 'object') {
+        merged.cardioUiModeByEx = {};
       }
       if (!merged.quickAddCaloriesByDay || typeof merged.quickAddCaloriesByDay !== 'object') {
         merged.quickAddCaloriesByDay = {};
@@ -3022,6 +3055,19 @@
             }
           });
 
+          const dayAssignForFuel = (typeof getDayAssignment === 'function')
+            ? getDayAssignment(w, d)
+            : { isRestDay: (d >= 5) };
+          const isRestReduceCarbs = Boolean(
+            dayAssignForFuel &&
+            dayAssignForFuel.isRestDay &&
+            s &&
+            s.restDayCarbMode === 'reduce_20'
+          );
+          if (isRestReduceCarbs && Array.isArray(plan.meals[slotId].items)) {
+            plan.meals[slotId].items = applyRestDayCarbReductionInline(plan.meals[slotId].items, true, 'reduce_20');
+          }
+
           const items = plan.meals[slotId].items;
           const sumGrams = Math.round(items.reduce((acc, it) => acc + (Number(it.grams) || 0), 0));
           const sumProt = Math.round(items.reduce((acc, it) => acc + (Number(it.protein) || 0), 0));
@@ -3031,6 +3077,7 @@
           plan.meals[slotId].scaleLbText = formatGramsToLbOzBadge(sumGrams);
 
           const hasCustomOrSwap = Boolean(
+            isRestReduceCarbs ||
             (slotId === 'lunch' && (activeSwaps.tofu || activeSwaps.rice || activeSwaps.broccoli)) ||
             Object.keys(customOverrides).some(k => customOverrides[k] && customOverrides[k].slotId === slotId)
           );
@@ -3044,7 +3091,12 @@
         totalProtein += plan.meals[slotId].protein;
       });
 
-      if (presetId === 'almond_cashew_pea' && totalKcal === 1395) {
+      const dayAssignPlan = (typeof getDayAssignment === 'function')
+        ? getDayAssignment(w, d)
+        : { isRestDay: (d >= 5) };
+      plan.isRestDayCarbsReduced = Boolean(dayAssignPlan && dayAssignPlan.isRestDay && s && s.restDayCarbMode === 'reduce_20');
+
+      if (!plan.isRestDayCarbsReduced && presetId === 'almond_cashew_pea' && totalKcal === 1395) {
         plan.dailyKcal = 1300;
       } else {
         plan.dailyKcal = totalKcal;
@@ -3052,6 +3104,306 @@
       plan.dailyProtein = totalProtein;
       return plan;
     }
+
+    // =========================================================================
+    // UPGRADE 19 INLINE ENGINE: STRICT exerciseID SYNC, HISTORICAL PRE-FILL,
+    // DUAL-MODE CARDIO, GYM LOCKER PIN, DYNAMIC POST-WORKOUT +30M, REST-DAY
+    // -20% CARBS, WARM-UP AUTO-COLLAPSE & DYNAMIC BATCH PORTIONS
+    // =========================================================================
+    const STRICT_EXERCISE_VIDEO_MAP_INLINE = {
+      ex_cable_lateral_raise: 'https://www.youtube.com/watch?v=PPrzBWZDOhA',
+      ex_db_lateral_raise: 'https://www.youtube.com/watch?v=3VcKaXpzqRo',
+      ex_machine_lateral_raise: 'https://www.youtube.com/watch?v=3VcKaXpzqRo',
+      ex_cable_crunch: 'https://www.youtube.com/watch?v=2fbujeH3F0E',
+      ex_daily_pullups: 'https://www.youtube.com/watch?v=eGo4IYlbE5g',
+      ex_barbell_bench_press: 'https://www.youtube.com/watch?v=rT7DgCr-3pg',
+      ex_barbell_ohp: 'https://www.youtube.com/watch?v=2yjwXTZQDDI',
+      ex_barbell_squat: 'https://www.youtube.com/watch?v=ultWZbUMPL8',
+      ex_barbell_deadlift: 'https://www.youtube.com/watch?v=op9kVnSso6Q',
+      ex_barbell_hip_thrust: 'https://www.youtube.com/watch?v=SEdqd1n0cvg',
+      ex_side_plank: 'https://www.youtube.com/watch?v=K2VljzCC16g',
+      ex_cardio_outdoor_biking: 'https://www.youtube.com/watch?v=4ssLDk1eX9w',
+      ex_cardio_treadmill: 'https://www.youtube.com/watch?v=brFHyOtTwH4',
+      ex_cardio_rowing: 'https://www.youtube.com/watch?v=zQ82RYIFLN8'
+    };
+
+    function resolveCanonicalExerciseIdInline(rawId, rawName) {
+      const id = String(rawId || '').trim().toLowerCase();
+      const name = String(rawName || '').trim().toLowerCase();
+      if (id.startsWith('ex_')) return id;
+
+      // Lateral Cable Bug Fix: strictly distinguish Cable vs Dumbbell vs Machine Lateral Raise
+      if (
+        id.includes('cable_lateral') ||
+        id === 'thu_cable_lat_raise' ||
+        id === 'wed_cable_lat_raise' ||
+        (/cable/.test(name) && /lateral\s*raise/.test(name))
+      ) {
+        return 'ex_cable_lateral_raise';
+      }
+      if (
+        id.includes('machine_lateral') ||
+        id.includes('seated_lateral_raise_machine') ||
+        (/machine/.test(name) && /lateral\s*raise/.test(name))
+      ) {
+        return 'ex_machine_lateral_raise';
+      }
+      if (
+        id.includes('db_lateral') ||
+        id.includes('dumbbell_lateral') ||
+        id === 'mon_lat_raise' ||
+        id === 'thu_lat_raise' ||
+        (/lateral\s*raise/.test(name) && !/cable|machine/.test(name))
+      ) {
+        return 'ex_db_lateral_raise';
+      }
+
+      if (id === 'cable_ab_crunch' || /cable.*crunch|abdominal\s*crunch/.test(name)) {
+        return 'ex_cable_crunch';
+      }
+      if (/^day[1-5]_pullups$/.test(id) || /pull[\s-]*ups?/.test(name)) {
+        return 'ex_daily_pullups';
+      }
+      if (id === 'mon_bench' || /barbell\s*bench\s*press/.test(name)) return 'ex_barbell_bench_press';
+      if (id === 'mon_ohp' || /overhead\s*press/.test(name)) return 'ex_barbell_ohp';
+      if (id === 'tue_squat' || /barbell.*squat/.test(name)) return 'ex_barbell_squat';
+      if (id === 'sat_deadlift' || /barbell.*deadlift/.test(name)) return 'ex_barbell_deadlift';
+      if (id === 'sat_hip_thrust' || /hip\s*thrust/.test(name)) return 'ex_barbell_hip_thrust';
+      if (id === 'tue_side_plank' || /side\s*plank/.test(name)) return 'ex_side_plank';
+      if (/outdoor\s*bik|cycling|bike\s*ride/.test(name) || id.includes('biking')) return 'ex_cardio_outdoor_biking';
+      if (/treadmill|outdoor\s*run|jogging|running/.test(name) || id.includes('treadmill')) return 'ex_cardio_treadmill';
+      if (/rowing\s*machine|erg\s*row|cardio\s*row/.test(name)) return 'ex_cardio_rowing';
+
+      const slugBase = (id || name || 'exercise')
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+      return `ex_${slugBase || 'exercise'}`;
+    }
+
+    function getVerifiedVideoUrlByExerciseIdInline(rawId, rawName, fallbackUrl) {
+      const canonical = resolveCanonicalExerciseIdInline(rawId, rawName);
+      if (STRICT_EXERCISE_VIDEO_MAP_INLINE[canonical]) {
+        return STRICT_EXERCISE_VIDEO_MAP_INLINE[canonical];
+      }
+      if (fallbackUrl && /^https?:\/\//i.test(String(fallbackUrl))) {
+        return String(fallbackUrl);
+      }
+      const readable = canonical.replace(/^ex_/, '').replace(/_/g, ' ');
+      return `https://www.youtube.com/results?search_query=${encodeURIComponent(readable + ' proper form tutorial')}`;
+    }
+
+    function recordExerciseHistorySetInline(week, dayIdx, exId, exName, setIdx, weight, reps, unit) {
+      if (!state) return;
+      if (!state.exerciseHistory || typeof state.exerciseHistory !== 'object') {
+        state.exerciseHistory = {};
+      }
+      const canonicalId = resolveCanonicalExerciseIdInline(exId, exName);
+      if (!Array.isArray(state.exerciseHistory[canonicalId])) {
+        state.exerciseHistory[canonicalId] = [];
+      }
+      const list = state.exerciseHistory[canonicalId];
+      let sess = list.find(s => s && Number(s.week) === Number(week) && Number(s.dayIdx) === Number(dayIdx));
+      if (!sess) {
+        sess = {
+          exerciseID: canonicalId,
+          timestamp: Date.now(),
+          week: Number(week),
+          dayIdx: Number(dayIdx),
+          sets: []
+        };
+        list.push(sess);
+      } else {
+        sess.timestamp = Date.now();
+      }
+      const existingIdx = sess.sets.findIndex(st => Number(st.setIdx) === Number(setIdx));
+      const rec = {
+        setIdx: Number(setIdx),
+        weight: String(weight ?? ''),
+        reps: String(reps ?? ''),
+        unit: unit || 'lbs'
+      };
+      if (existingIdx >= 0) sess.sets[existingIdx] = rec;
+      else sess.sets.push(rec);
+      sess.sets.sort((a, b) => Number(a.setIdx) - Number(b.setIdx));
+    }
+
+    function getLastKnownExerciseSessionInline(canonicalId, currentWeek, currentDayIdx) {
+      const candidates = [];
+      const historyList = (state && state.exerciseHistory && Array.isArray(state.exerciseHistory[canonicalId]))
+        ? state.exerciseHistory[canonicalId]
+        : [];
+      historyList.forEach(sess => {
+        if (!sess || !Array.isArray(sess.sets) || sess.sets.length === 0) return;
+        if (Number(sess.week) === Number(currentWeek) && Number(sess.dayIdx) === Number(currentDayIdx)) return;
+        if (sess.sets.some(st => String(st.weight || '').trim() !== '' || String(st.reps || '').trim() !== '')) {
+          candidates.push(sess);
+        }
+      });
+
+      // Also scan state.workoutLogs across ALL weeks & days by strict canonical exerciseID
+      if (state && state.workoutLogs && typeof state.workoutLogs === 'object') {
+        const groupedBySlot = {};
+        Object.keys(state.workoutLogs).forEach(k => {
+          const entry = state.workoutLogs[k];
+          if (!entry || (String(entry.weight || '').trim() === '' && String(entry.reps || '').trim() === '')) return;
+          const m = /^w(\d+)_(\d+)_(.+)_(\d+)$/.exec(k);
+          if (!m) return;
+          const wNum = parseInt(m[1], 10);
+          const dNum = parseInt(m[2], 10);
+          const rawKeyExId = m[3];
+          const sNum = parseInt(m[4], 10);
+          if (wNum === Number(currentWeek) && dNum === Number(currentDayIdx)) return;
+          if (resolveCanonicalExerciseIdInline(rawKeyExId, '') !== canonicalId) return;
+          const slotTag = `w${wNum}_d${dNum}`;
+          if (!groupedBySlot[slotTag]) {
+            groupedBySlot[slotTag] = {
+              exerciseID: canonicalId,
+              timestamp: Number(entry.updatedAt) || (wNum * 100 + dNum),
+              week: wNum,
+              dayIdx: dNum,
+              sets: []
+            };
+          } else if (Number(entry.updatedAt) > groupedBySlot[slotTag].timestamp) {
+            groupedBySlot[slotTag].timestamp = Number(entry.updatedAt);
+          }
+          groupedBySlot[slotTag].sets.push({
+            setIdx: sNum,
+            weight: String(entry.weight ?? ''),
+            reps: String(entry.reps ?? ''),
+            unit: entry.unit || 'lbs'
+          });
+        });
+        Object.values(groupedBySlot).forEach(g => {
+          g.sets.sort((a, b) => Number(a.setIdx) - Number(b.setIdx));
+          const alreadyInHistory = candidates.some(c => Number(c.week) === g.week && Number(c.dayIdx) === g.dayIdx);
+          if (!alreadyInHistory) candidates.push(g);
+        });
+      }
+
+      if (candidates.length === 0) return null;
+      candidates.sort((a, b) => {
+        const tsDiff = (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0);
+        if (tsDiff !== 0) return tsDiff;
+        const wkDiff = (Number(b.week) || 0) - (Number(a.week) || 0);
+        if (wkDiff !== 0) return wkDiff;
+        return (Number(b.dayIdx) || 0) - (Number(a.dayIdx) || 0);
+      });
+      return candidates[0];
+    }
+
+    function isCardioExerciseInline(ex) {
+      if (!ex) return false;
+      if (ex.isCardio === true || String(ex.type || '').toLowerCase() === 'cardio') return true;
+      const n = String(ex.name || '').toLowerCase();
+      const id = String(ex.id || '').toLowerCase();
+      if (id.includes('cardio')) return true;
+      return /\b(cardio|outdoor\s*biking|biking|cycling|bike\s*ride|spin\s*bike|treadmill|running|jogging|elliptical|stairmaster|stair\s*climber|jump\s*rope|swimming|brisk\s*walk|rowing\s*machine)\b/i.test(n);
+    }
+
+    function formatCardioDurationClockInline(totalSeconds) {
+      const safe = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+      const hrs = Math.floor(safe / 3600);
+      const mins = Math.floor((safe % 3600) / 60);
+      const secs = safe % 60;
+      const pad = v => String(v).padStart(2, '0');
+      return hrs > 0 ? `${pad(hrs)}:${pad(mins)}:${pad(secs)}` : `${pad(mins)}:${pad(secs)}`;
+    }
+
+    function formatLockerPillLabelInline(locker) {
+      const pin = String((locker && locker.pin) || '').trim();
+      const hasPhoto = Boolean(String((locker && locker.photoDataUrl) || '').trim());
+      if (pin && hasPhoto) return `🔒 Locker: #${pin} (Photo)`;
+      if (pin) return `🔒 Locker: #${pin}`;
+      if (hasPhoto) return `🔒 Locker: Photo`;
+      return '🔒 Locker: ---';
+    }
+
+    function clearGymLockerSilently() {
+      if (!state) return;
+      state.gymLocker = { pin: '', photoDataUrl: '', updatedAt: null };
+    }
+
+    function computePostWorkoutMealTimePlus30Inline(dateInput) {
+      const baseMs = dateInput instanceof Date ? dateInput.getTime() : Number(dateInput);
+      const target = new Date((Number.isFinite(baseMs) ? baseMs : Date.now()) + 30 * 60 * 1000);
+      const hours24 = target.getHours();
+      const mins = target.getMinutes();
+      const period = hours24 >= 12 ? 'PM' : 'AM';
+      const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+      return `${hours12}:${String(mins).padStart(2, '0')} ${period}`;
+    }
+
+    function formatOpenPostWorkoutMealButtonLabelInline(dateInput) {
+      return `Open Post-Workout Meal (${computePostWorkoutMealTimePlus30Inline(dateInput)})`;
+    }
+
+    function isCarbHeavyFuelItemInline(item) {
+      const text = `${(item && item.id) || ''} ${(item && item.name) || ''}`.toLowerCase();
+      if (/tofu|protein|pea|broccoli|spinach|egg|chicken|beef|salmon|milk|chia|hemp|peanut|sunflower|almond\s*butter|olive\s*oil|avocado/.test(text)) {
+        return false;
+      }
+      return /\b(rice|oats|oatmeal|banana|maple|syrup|carb|bread|toast|pasta|quinoa|potato|berry|berries|honey|tortilla)\b/.test(text);
+    }
+
+    function applyRestDayCarbReductionInline(items, isRestDay, restDayCarbMode) {
+      if (!Array.isArray(items)) return [];
+      if (!isRestDay || restDayCarbMode !== 'reduce_20') {
+        return items.map(it => Object.assign({}, it));
+      }
+      return items.map(it => {
+        if (!isCarbHeavyFuelItemInline(it)) return Object.assign({}, it);
+        const scaledGrams = Math.max(1, Math.round((Number(it.grams) || 0) * 0.8));
+        const scaledKcal = Math.max(1, Math.round((Number(it.kcal) || 0) * 0.8));
+        const scaledProt = Math.round((Number(it.protein) || 0) * 0.8 * 10) / 10;
+        const isMl = /ml\b/i.test(String(it.weight || ''));
+        const unitSuffix = isMl ? 'ml' : 'g';
+        return Object.assign({}, it, {
+          grams: scaledGrams,
+          kcal: scaledKcal,
+          protein: scaledProt,
+          weight: `${scaledGrams}${unitSuffix} (-20% Rest)`
+        });
+      });
+    }
+
+    function scaleWeightTextByFactorInline(rawText, multiplier, targetPortions) {
+      const text = String(rawText || '');
+      if (!text || !Number.isFinite(multiplier) || multiplier <= 0) return text;
+      if (typeof targetPortions === 'number' && targetPortions >= 1) {
+        const m = /^(\d+(?:\.\d+)?\s*(?:g|ml))\s*[×x]\s*(\d+)$/i.exec(text.trim());
+        if (m) return `${m[1]} × ${targetPortions}`;
+      }
+      return text.replace(/(\d+(?:\.\d+)?)\s*(g|ml|kg|tbsp|scoops?)\b/gi, (_match, numStr, unit) => {
+        const val = parseFloat(numStr);
+        if (!Number.isFinite(val)) return _match;
+        const scaled = val * multiplier;
+        const rounded = Math.abs(scaled - Math.round(scaled)) < 0.05 ? String(Math.round(scaled)) : String(Math.round(scaled * 10) / 10);
+        const space = unit.toLowerCase() === 'ml' || unit.toLowerCase() === 'tbsp' || unit.toLowerCase().startsWith('scoop') ? ' ' : '';
+        return `${rounded}${space}${unit}`;
+      });
+    }
+
+    function scaleBatchRecipeStepsInline(steps, portions, basePortions) {
+      const baseP = Math.max(1, Number(basePortions) || 4);
+      const safePortions = Math.max(1, Math.min(12, Math.round(Number(portions) || baseP)));
+      const mult = safePortions / baseP;
+      return (Array.isArray(steps) ? steps : []).map(st => {
+        const nextDetail = String(st.detail || '')
+          .replace(/×\s*4\s*(days|jars|containers|bowls|portions)/gi, `× ${safePortions} $1`)
+          .replace(/into\s+4\s+(fridge\s+containers|jars|bowls)/gi, `into ${safePortions} $1`);
+        const nextTitle = String(st.title || '')
+          .replace(/Into\s+4\s+Fridge\s+Containers/i, `Into ${safePortions} Fridge Containers`);
+        return Object.assign({}, st, {
+          title: nextTitle,
+          detail: nextDetail,
+          weightBadge: st.weightBadge ? scaleWeightTextByFactorInline(st.weightBadge, mult, safePortions) : st.weightBadge
+        });
+      });
+    }
+
+    let activeCardioLiveInterval = null;
+    let activeCardioLiveState = { exId: null, week: 1, dayIdx: 0, elapsedSec: 0, running: false, startedAtMs: null };
+    let warmupAutoCollapseTimer = null;
 
     function snapshotMealOnLog(targetState, w, d, slotId) {
       if (!targetState) return;
@@ -5104,6 +5456,10 @@
         ];
       }
       const cookMins = getRiceCookMinutes();
+      const ricePortions = Math.max(1, Math.min(12, parseInt((state && state.riceBatchPortions), 10) || 4));
+      const dryRiceG = Math.round(55 * ricePortions);
+      const waterMl = Math.round(82.5 * ricePortions);
+      const cookedTotalG = Math.round(150 * ricePortions);
       return [
         {
           stage: 1,
@@ -5113,7 +5469,7 @@
           runningLabel: `Cooking (${cookMins}m) — Running`,
           doneLabel: `✓ ${cookMins}m Cook Done`,
           seconds: cookMins * 60,
-          actionText: `Simmer ${cookMins}m (220g rice + 330 ml water) • Stir every 1.5m.`,
+          actionText: `Simmer ${cookMins}m (${dryRiceG}g rice + ${waterMl} ml water) • Stir every 1.5m.`,
           completionBanner: `COOKING DONE! Take pot off heat and tap Start 10m Cooldown Timer.`
         },
         {
@@ -5125,7 +5481,7 @@
           doneLabel: '✓ 10m Cooldown Done',
           seconds: 600,
           actionText: 'Take pot off heat, keep lid closed, and rest 10m before portioning.',
-          completionBanner: 'RICE READY! Portion into 4 x 150g bowls (600g total).'
+          completionBanner: `RICE READY! Portion into ${ricePortions} x 150g bowls (${cookedTotalG}g total).`
         }
       ];
     }
@@ -5364,6 +5720,10 @@
         `;
       }).join('');
 
+      const ricePortions = Math.max(1, Math.min(12, parseInt((state && state.riceBatchPortions), 10) || 4));
+      const dryRiceG = Math.round(55 * ricePortions);
+      const waterMl = Math.round(82.5 * ricePortions);
+      const cookedTotalG = Math.round(150 * ricePortions);
       const dynamicBadgeLabel = isKetoMode
         ? '2-Phase Low-Carb Veggie Timer'
         : (isGfActive
@@ -5372,8 +5732,8 @@
                 ? '2-Phase Rice & Egg Prep Timer'
                 : (normDiet.id === 'any' ? '2-Phase Bulk Rice Timer' : '2-Phase Jasmine Rice Timer')));
       const dynamicSubLine = isKetoMode
-        ? '4-day keto batch: 300g broccoli + riced cauliflower • Syncs live with top sticky timer bar'
-        : '220g rinsed dry rice + 330 ml water • Syncs live with top sticky timer bar & Batch 2/2';
+        ? `${ricePortions}-day keto batch: ${Math.round(75 * ricePortions)}g broccoli + riced cauliflower • Syncs live with top sticky timer bar`
+        : `${dryRiceG}g rinsed dry rice + ${waterMl} ml water • Syncs live with top sticky timer bar & Batch 2/2`;
 
       return `
         <div class="bg-slate-950/90 border border-sky-500/40 rounded-xl p-3 space-y-2.5" data-rice-widget="${contextPrefix}" data-diet-timer-mode="${isKetoMode ? 'keto_veggie' : 'rice'}">
@@ -5386,7 +5746,7 @@
                   ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-200 border border-indigo-400/45">${isKetoMode ? 'Phase 2/2 • Drain & Cool' : 'Phase 2/2 • Cooldown Off Heat'}</span>`
                   : `<span class="live-rice-next-mix-readout text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">${isKetoMode ? `Next Veggie Toss in: ${nextMixStr}` : `Next Mix/Stir in: ${nextMixStr}`}</span>`
                 }
-                ${!isKetoMode ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded ${riceStepsDone ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40' : 'bg-slate-900 text-sky-300 border border-slate-700'}">${bowlsLeft}/4 Bowls in Fridge</span>` : ''}
+                ${!isKetoMode ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded ${riceStepsDone ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40' : 'bg-slate-900 text-sky-300 border border-slate-700'}">${bowlsLeft}/${ricePortions} Bowls in Fridge</span>` : ''}
               </div>
               <p class="text-[11px] text-slate-400 mt-1">${dynamicSubLine}</p>
             </div>
@@ -5469,27 +5829,27 @@
               <button
                 type="button"
                 class="rice-timer-mark-prepped-btn px-3 py-1.5 rounded-xl text-[11px] font-extrabold border transition ${
-                  riceStepsDone && bowlsLeft === 4
+                  riceStepsDone && bowlsLeft === ricePortions
                     ? 'bg-emerald-500 text-slate-950 border-emerald-300'
                     : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border-emerald-400/50'
                 }"
               >
-                ${riceStepsDone && bowlsLeft === 4 ? '✓ 4 Bowls Ready in Fridge' : 'Mark 4 Bowls Ready (Sync Batch 2/2)'}
+                ${riceStepsDone && bowlsLeft === ricePortions ? `✓ ${ricePortions} Bowls Ready in Fridge` : `Mark ${ricePortions} Bowls Ready (Sync Batch 2/2)`}
               </button>
             </div>
 
-            <!-- Full Jasmine Rice Batch Recipe (4 Bowls • 600g Cooked) — Hidden by Default Behind View Full Rice Recipe -->
+            <!-- Full Jasmine Rice Batch Recipe — Hidden by Default Behind View Full Rice Recipe -->
             <div class="rice-full-recipe-panel ${isRecipeOpen ? 'bg-slate-900/95 border border-slate-800 rounded-xl p-2.5 space-y-1.5 text-left' : 'hidden'}" style="display: ${isRecipeOpen ? 'block' : 'none'};">
               <div class="flex flex-wrap items-center justify-between gap-1">
-                <span class="text-[11px] font-extrabold text-sky-300">Full Jasmine Rice Batch Recipe (4 Bowls • 600g Cooked)</span>
+                <span class="text-[11px] font-extrabold text-sky-300">Full Jasmine Rice Batch Recipe (${ricePortions} Bowls • ${cookedTotalG}g Cooked)</span>
                 <span class="text-[10px] font-bold text-emerald-300">150g cooked / bowl</span>
               </div>
               <p class="text-[11px] text-slate-200 leading-snug">
-                <strong class="text-amber-300">Ingredients:</strong> 220g dry white jasmine rice (rinsed 3x until water runs clear), 330 ml cold water (1:1.5 rice-to-water ratio), optional pinch of salt.
+                <strong class="text-amber-300">Ingredients:</strong> ${dryRiceG}g dry white jasmine rice (rinsed 3x until water runs clear), ${waterMl} ml cold water (1:1.5 rice-to-water ratio), optional pinch of salt.
               </p>
               <div class="text-[11px] text-slate-300 space-y-0.5 leading-snug">
                 <div><strong class="text-sky-300">Method:</strong></div>
-                <div>1. Combine rinsed rice + 330 ml water in pot and bring to a boil.</div>
+                <div>1. Combine rinsed rice + ${waterMl} ml water in pot and bring to a boil.</div>
                 <div>2. Reduce to lowest heat, cover, and simmer 10–12 min, stirring every 1.5 min when the timer chimes.</div>
                 <div>3. Turn off heat and let rest covered for 10 min cool-down/steam.</div>
                 <div>4. Weigh into 4 bowls (150g cooked rice each).</div>
@@ -9590,6 +9950,7 @@
       state.currentWeek = nextW;
       state.selectedDayIndex = 0;
       state.openDayWorkoutPicker = false;
+      clearGymLockerSilently();
       const weekSel = document.getElementById('week-select');
       if (weekSel) weekSel.value = String(nextW);
       saveState();
@@ -9989,7 +10350,29 @@
       return null;
     }
 
-    function getPreviousWeekSuggestion(currentWeek, dayIdx, exId, setIdx) {
+    function getPreviousWeekSuggestion(currentWeek, dayIdx, exId, setIdx, exName) {
+      // UPGRADE 19: Chronologically MOST RECENT "Last Known Set" lookup by strict canonical exerciseID (across ANY week or day!)
+      const canonicalId = resolveCanonicalExerciseIdInline(exId, exName || '');
+      const lastKnownSession = getLastKnownExerciseSessionInline(canonicalId, currentWeek, dayIdx);
+      if (lastKnownSession && Array.isArray(lastKnownSession.sets) && lastKnownSession.sets.length > 0) {
+        const matchedSet =
+          lastKnownSession.sets.find(st => Number(st.setIdx) === Number(setIdx)) ||
+          lastKnownSession.sets[Math.max(0, Number(setIdx) - 1)] ||
+          lastKnownSession.sets[lastKnownSession.sets.length - 1];
+        if (matchedSet && (String(matchedSet.weight || '').trim() !== '' || String(matchedSet.reps || '').trim() !== '')) {
+          return {
+            week: lastKnownSession.week,
+            sourceLabel: lastKnownSession.week === currentWeek
+              ? `Day ${lastKnownSession.dayIdx + 1}`
+              : `Wk ${lastKnownSession.week} • Day ${lastKnownSession.dayIdx + 1}`,
+            isDailyPrev: true,
+            exerciseID: canonicalId,
+            weight: matchedSet.weight,
+            reps: matchedSet.reps,
+            unit: matchedSet.unit || getExerciseUnit(exId)
+          };
+        }
+      }
       if (exId === 'cable_ab_crunch') {
         return getPreviousDayAbSuggestion(currentWeek, dayIdx, setIdx);
       }
@@ -10002,6 +10385,7 @@
             week: currentWeek,
             sourceLabel: `Wk ${currentWeek} • Day ${primaryDay + 1}`,
             isDailyPrev: false,
+            exerciseID: canonicalId,
             weight: earlierThisWeek.weight,
             reps: earlierThisWeek.reps,
             unit: earlierThisWeek.unit || getExerciseUnit(exId)
@@ -10016,6 +10400,7 @@
             week: w,
             sourceLabel: `Wk ${w}`,
             isDailyPrev: false,
+            exerciseID: canonicalId,
             weight: prev.weight,
             reps: prev.reps,
             unit: prev.unit || getExerciseUnit(exId)
@@ -11349,6 +11734,11 @@
       }
 
       const drills = dayObj.warmupType === 'upper' ? WARMUP_DATA.upper : WARMUP_DATA.lower;
+      const part2Sets = [
+        { id: 'part2_set_50', name: 'Warm-Up Set 1 — 50% Weight', reps: '8 reps', notes: 'Easy speed. Wake up the joints.' },
+        { id: 'part2_set_70', name: 'Warm-Up Set 2 — 70% Weight', reps: '4 reps', notes: 'Smooth form. Feel the weight.' },
+        { id: 'part2_set_90', name: 'Warm-Up Set 3 — 90% Weight', reps: '2 reps', notes: 'Fast & crisp. Ready for Set 1.' }
+      ];
       const curSched = getDayGymSchedule(week, dayIdx);
       const curStart12 = formatMinutesTo12Hr(parseHHMMToMinutes(curSched.startTime));
       let doneDrillsCount = 0;
@@ -11356,16 +11746,26 @@
         const wKey = `w${week}_d${dayIdx}_warmup_${d.id || idx}`;
         if (state.warmupLogs[wKey]) doneDrillsCount++;
       });
+      let donePart2Count = 0;
+      part2Sets.forEach(ps => {
+        const p2Key = `w${week}_d${dayIdx}_warmup_${ps.id}`;
+        if (state.warmupLogs[p2Key]) donePart2Count++;
+      });
+      const totalWarmupChecks = drills.length + part2Sets.length;
+      const doneWarmupChecks = doneDrillsCount + donePart2Count;
 
       if (titleEl) {
         titleEl.textContent = `${curStart12} ${dayObj.warmupType === 'upper' ? 'Upper Body' : 'Lower Body'} Warm-Up (~10 Min)`;
       }
       if (subEl) {
-        subEl.textContent = `${doneDrillsCount}/${drills.length} drills checked • Tap to open Part 1 & Part 2`;
+        subEl.textContent = `${doneWarmupChecks}/${totalWarmupChecks} checked • Tap to open Part 1 & Part 2`;
       }
 
+      const keepPart1Open = Boolean(state.openWarmupPart1ByDay && state.openWarmupPart1ByDay[dayKey]);
+      const keepPart2Open = Boolean(state.openWarmupPart2ByDay && state.openWarmupPart2ByDay[dayKey]);
+
       panelEl.innerHTML = `
-        <details id="warmup-part1-accordion" class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 space-y-2">
+        <details id="warmup-part1-accordion" ${keepPart1Open ? 'open' : ''} class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 space-y-2">
           <summary class="cursor-pointer select-none flex items-center justify-between gap-2 text-xs font-extrabold text-emerald-400">
             <span>Part 1: Dynamic Mobility Drills (${doneDrillsCount}/${drills.length} Done)</span>
             <span class="text-[11px] text-slate-400">▼</span>
@@ -11390,6 +11790,7 @@
                     <input
                       type="checkbox"
                       data-warmup-key="${wKey}"
+                      data-warmup-part="1"
                       data-warmup-name="${d.name}"
                       aria-label="Mark ${d.name} complete"
                       ${isDrillDone ? 'checked' : ''}
@@ -11418,12 +11819,42 @@
             </div>
           </div>
         </details>
-        <details id="warmup-part2-accordion" class="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 text-[11px] text-slate-300">
+        <details id="warmup-part2-accordion" ${keepPart2Open ? 'open' : ''} class="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 text-[11px] text-slate-300 space-y-2">
           <summary class="cursor-pointer select-none flex items-center justify-between gap-2 text-xs font-extrabold text-white">
-            <span>Part 2: Warm-Up Sets (50% / 70% / 90%)</span>
+            <span>Part 2: Warm-Up Sets (50% / 70% / 90%) (${donePart2Count}/${part2Sets.length} Done)</span>
             <span class="text-[11px] text-slate-400">▼</span>
           </summary>
-          <p class="pt-2 leading-relaxed text-slate-300">${WARMUP_DATA.warmupSetsNote}</p>
+          <div class="pt-2 space-y-1.5">
+            <p class="leading-relaxed text-slate-300 text-[11px]">${WARMUP_DATA.warmupSetsNote}</p>
+            ${part2Sets.map(ps => {
+              const p2Key = `w${week}_d${dayIdx}_warmup_${ps.id}`;
+              const isP2Done = Boolean(state.warmupLogs[p2Key]);
+              return `
+                <label class="rounded-xl p-2 flex items-center justify-between gap-2 border cursor-pointer select-none transition ${
+                  isP2Done
+                    ? 'bg-emerald-950/25 border-emerald-500/40'
+                    : 'bg-slate-950/70 border-slate-800/80'
+                }">
+                  <span class="flex items-center gap-2 min-w-0">
+                    <input
+                      type="checkbox"
+                      data-warmup-key="${p2Key}"
+                      data-warmup-part="2"
+                      data-warmup-name="${ps.name}"
+                      aria-label="Mark ${ps.name} complete"
+                      ${isP2Done ? 'checked' : ''}
+                      class="warmup-drill-checkbox w-4 h-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-400 shrink-0 cursor-pointer"
+                    />
+                    <span class="min-w-0">
+                      <span class="block text-xs font-bold ${isP2Done ? 'text-emerald-300 line-through' : 'text-white'}">${ps.name}</span>
+                      <span class="block text-[10px] text-slate-400">${ps.notes}</span>
+                    </span>
+                  </span>
+                  <span class="text-[11px] font-mono font-bold text-sky-300 bg-sky-500/10 border border-sky-500/25 px-2 py-0.5 rounded-md shrink-0">${ps.reps}</span>
+                </label>
+              `;
+            }).join('')}
+          </div>
         </details>
         <button
           type="button"
@@ -11434,15 +11865,50 @@
         </button>
       `;
 
+      const part1Details = document.getElementById('warmup-part1-accordion');
+      const part2Details = document.getElementById('warmup-part2-accordion');
+      if (part1Details) {
+        part1Details.addEventListener('toggle', () => {
+          if (!state.openWarmupPart1ByDay) state.openWarmupPart1ByDay = {};
+          state.openWarmupPart1ByDay[dayKey] = Boolean(part1Details.open);
+        });
+      }
+      if (part2Details) {
+        part2Details.addEventListener('toggle', () => {
+          if (!state.openWarmupPart2ByDay) state.openWarmupPart2ByDay = {};
+          state.openWarmupPart2ByDay[dayKey] = Boolean(part2Details.open);
+        });
+      }
+
       panelEl.querySelectorAll('.warmup-drill-checkbox').forEach(cb => {
         cb.addEventListener('change', () => {
           const wKey = cb.getAttribute('data-warmup-key');
           const wName = cb.getAttribute('data-warmup-name') || 'Warm-up drill';
           if (!state.warmupLogs || typeof state.warmupLogs !== 'object') state.warmupLogs = {};
           state.warmupLogs[wKey] = Boolean(cb.checked);
+
+          const allPart1Done = drills.every((d, idx) => Boolean(state.warmupLogs[`w${week}_d${dayIdx}_warmup_${d.id || idx}`]));
+          const allPart2Done = part2Sets.every(ps => Boolean(state.warmupLogs[`w${week}_d${dayIdx}_warmup_${ps.id}`]));
           saveState();
           renderWarmupCard(dayObj);
-          showToast(cb.checked ? `✓ Warm-up drill complete: ${wName}` : `↺ Unchecked ${wName}`);
+
+          if (allPart1Done && allPart2Done) {
+            if (warmupAutoCollapseTimer) clearTimeout(warmupAutoCollapseTimer);
+            showToast('All warm-up drills & sets done! Scrolling to Exercise #1...');
+            warmupAutoCollapseTimer = setTimeout(() => {
+              state.warmupClosedByDay[dayKey] = true;
+              if (state.openWarmupPart1ByDay) state.openWarmupPart1ByDay[dayKey] = false;
+              if (state.openWarmupPart2ByDay) state.openWarmupPart2ByDay[dayKey] = false;
+              saveState();
+              renderWarmupCard(dayObj);
+              const ex1Card = document.querySelector('[data-exercise-index="0"]');
+              if (ex1Card) {
+                ex1Card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }, 800);
+          } else {
+            showToast(cb.checked ? `✓ Warm-up complete: ${wName}` : `↺ Unchecked ${wName}`);
+          }
         });
       });
 
@@ -11453,9 +11919,14 @@
             const wKey = `w${week}_d${dayIdx}_warmup_${d.id || idx}`;
             state.warmupLogs[wKey] = true;
           });
+          part2Sets.forEach(ps => {
+            state.warmupLogs[`w${week}_d${dayIdx}_warmup_${ps.id}`] = true;
+          });
           state.warmupClosedByDay[dayKey] = true;
           saveState();
           renderWarmupCard(dayObj);
+          const ex1Card = document.querySelector('[data-exercise-index="0"]');
+          if (ex1Card) ex1Card.scrollIntoView({ behavior: 'smooth', block: 'start' });
           showToast('Warm-Up Complete — Ready for Set 1');
         });
       }
@@ -11873,10 +12344,13 @@
         waterStatusEl.textContent = `Current Hydration: ${curWater.toLocaleString()} / ${targetWater.toLocaleString()} ml`;
       }
 
-      const mealSched = getAdaptiveMealScheduleForDay(week, dayIdx);
+      // UPGRADE 19: Dynamic End-Time (+30 mins from actual finish time) & Auto-Clear Gym Locker
+      clearGymLockerSilently();
+      saveState();
+      const dynamicPostWorkoutBtnLabel = formatOpenPostWorkoutMealButtonLabelInline(new Date());
       const mealBtn = document.getElementById('modal-open-post-meal-btn');
       if (mealBtn) {
-        mealBtn.textContent = `Open Post-Workout Meal (${mealSched.nextPostWorkoutTime12}) →`;
+        mealBtn.textContent = dynamicPostWorkoutBtnLabel;
       }
 
       modal.classList.remove('hidden');
@@ -12175,14 +12649,26 @@
       if (hasCrunchToday && !dayAssignment.isRestDay && !dayAssignment.isAiBonusWorkout && !rawDayExercises.some(ex => ex.id === CABLE_CRUNCH_EXERCISE.id)) {
         rawDayExercises.push(CABLE_CRUNCH_EXERCISE);
       }
+      const customCardioDayKey = `w${week}_d${dayIdx}`;
+      const customExtrasToday = (state.customDayExercises && Array.isArray(state.customDayExercises[customCardioDayKey]))
+        ? state.customDayExercises[customCardioDayKey]
+        : [];
+      customExtrasToday.forEach(cex => {
+        if (cex && cex.id && !rawDayExercises.some(ex => ex.id === cex.id)) {
+          rawDayExercises.push(cex);
+        }
+      });
 
       const exercisesToday = rawDayExercises.map((rawEx, exIdx) => {
         const cleanBaseName = String(rawEx.name || '').replace(/^[A-Z]\d+[\.\:\-\)]\s*/i, '').trim();
+        const canonicalId = resolveCanonicalExerciseIdInline(rawEx.id, cleanBaseName);
         let exObj = {
           ...rawEx,
+          exerciseID: canonicalId,
           originalId: rawEx.id,
           originalName: cleanBaseName,
-          name: cleanBaseName
+          name: cleanBaseName,
+          videoUrl: getVerifiedVideoUrlByExerciseIdInline(rawEx.id, cleanBaseName, rawEx.videoUrl)
         };
         if (rawEx.id === 'day5_pullups') {
           exObj = {
@@ -12195,7 +12681,10 @@
             restLabel: day5Spec.restLabel
           };
         }
-        return getEffectiveExercise(week, dayIdx, exIdx, exObj);
+        const effectiveEx = getEffectiveExercise(week, dayIdx, exIdx, exObj);
+        effectiveEx.exerciseID = resolveCanonicalExerciseIdInline(effectiveEx.id, effectiveEx.name);
+        effectiveEx.videoUrl = getVerifiedVideoUrlByExerciseIdInline(effectiveEx.exerciseID, effectiveEx.name, effectiveEx.videoUrl);
+        return effectiveEx;
       });
 
       // Count sets completed today in current week BEFORE evaluating Pre-Gym Fuel Check-In banner
@@ -12618,11 +13107,13 @@
           }
         }
 
-        // ZONE C: Clean 3-Pill Horizontal Live Tracker Bar (Right above Warm-Up; Next Fuel moved strictly to Muscle Fuel tab)
+        // ZONE C: Clean 2x2 Symmetrical Live Tracker Bar (Water, Abs, Gear, Gym Locker Pin)
         const zoneCSlot = document.getElementById('gym-zone-c-tracker-slot');
         if (zoneCSlot) {
+          const lockerPillText = formatLockerPillLabelInline(state.gymLocker);
+          const hasLockerSaved = Boolean((state.gymLocker && state.gymLocker.pin) || (state.gymLocker && state.gymLocker.photoDataUrl));
           zoneCSlot.innerHTML = `
-            <div class="grid gap-1.5" style="display: grid; grid-template-columns: 1.42fr 0.78fr 1fr; gap: 6px;">
+            <div class="grid grid-cols-2 gap-1.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;">
               <button
                 type="button"
                 id="banner-water-add-btn"
@@ -12631,6 +13122,19 @@
                 title="Tap to log +500ml of water (1 bottle)"
               >
                 💧 Water: ${waterLitersLogged}/${waterLitersTarget}L (+500ml)
+              </button>
+              <button
+                type="button"
+                id="banner-gym-locker-btn"
+                style="min-height: 36px;"
+                class="px-2 py-1.5 rounded-full border text-[11px] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center ${
+                  hasLockerSaved
+                    ? 'bg-amber-500/20 text-amber-200 border-amber-400/60 shadow-sm'
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-700'
+                }"
+                title="Save your gym locker number or snap a quick photo"
+              >
+                ${lockerPillText}
               </button>
               <button
                 type="button"
@@ -12680,6 +13184,44 @@
               <!-- ELI12 Recovery Status Sentence -->
               <div class="rounded-xl bg-emerald-950/40 border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-200 leading-relaxed">
                 Take today off from lifting so your muscles recover and grow stronger.
+              </div>
+
+              <!-- UPGRADE 19: Rest Day Nutrition Prompt (Match Training Day Calories vs Reduce Carbs -20%) -->
+              <div id="rest-day-carb-mode-card" class="rounded-xl bg-[#0f172a] border border-amber-500/45 p-3 space-y-2">
+                <div class="text-xs font-extrabold text-[#f8fafc] leading-snug">
+                  Match training day calories, or reduce carbs?
+                </div>
+                <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+                  <button
+                    type="button"
+                    data-rest-carb-mode="match"
+                    aria-pressed="${state.restDayCarbMode !== 'reduce_20' ? 'true' : 'false'}"
+                    class="rest-day-carb-mode-btn py-2 px-2.5 rounded-xl border text-xs font-extrabold transition ${
+                      state.restDayCarbMode !== 'reduce_20'
+                        ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-sm'
+                        : 'bg-slate-900 text-slate-200 border-slate-700 hover:bg-slate-800'
+                    }"
+                  >
+                    Match Training Day
+                  </button>
+                  <button
+                    type="button"
+                    data-rest-carb-mode="reduce_20"
+                    aria-pressed="${state.restDayCarbMode === 'reduce_20' ? 'true' : 'false'}"
+                    class="rest-day-carb-mode-btn py-2 px-2.5 rounded-xl border text-xs font-extrabold transition ${
+                      state.restDayCarbMode === 'reduce_20'
+                        ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
+                        : 'bg-slate-900 text-amber-200 border-amber-500/45 hover:bg-slate-800'
+                    }"
+                  >
+                    Reduce Carbs (-20%)
+                  </button>
+                </div>
+                ${state.restDayCarbMode === 'reduce_20' ? `
+                  <div class="text-[11px] font-semibold text-amber-200">
+                    Active: Rice and carb portions in Muscle Fuel are scaled down by 20% today.
+                  </div>
+                ` : ''}
               </div>
 
               <!-- Recovery Walk & Food Shortcuts -->
@@ -12833,6 +13375,24 @@
             }
           });
         }
+        const bannerLockerBtn = document.getElementById('banner-gym-locker-btn');
+        if (bannerLockerBtn) {
+          bannerLockerBtn.addEventListener('click', () => {
+            if (typeof window.openGymLockerModal === 'function') {
+              window.openGymLockerModal();
+            }
+          });
+        }
+        banner.querySelectorAll('.rest-day-carb-mode-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const nextMode = btn.getAttribute('data-rest-carb-mode') === 'reduce_20' ? 'reduce_20' : 'match';
+            state.restDayCarbMode = nextMode;
+            saveState();
+            renderWorkoutView();
+            renderVeganView();
+            showToast(nextMode === 'reduce_20' ? 'Rest Day: Rice & carbs scaled down by 20% in Muscle Fuel.' : 'Rest Day: Matching full training day calories.');
+          });
+        });
         const bannerWaterBtn = document.getElementById('banner-water-add-btn');
         if (bannerWaterBtn) {
           bannerWaterBtn.addEventListener('click', () => {
@@ -13040,7 +13600,7 @@
           const logKeyIndex = ex.id === 'cable_ab_crunch' ? dayIdx : slotIdx;
           const logKey = `w${week}_${logKeyIndex}_${ex.id}_${s}`;
           const existing = getLogEntry(week, dayIdx, ex.id, s);
-          const prevSuggestion = getPreviousWeekSuggestion(week, dayIdx, ex.id, s);
+          const prevSuggestion = getPreviousWeekSuggestion(week, dayIdx, ex.id, s, ex.name);
           const isDone = !!(existing && existing.done);
 
           // Find most recent completed set prior to s today (for Rule B intra-workout cascading suggestion)
@@ -13415,13 +13975,26 @@
         const calcTargetLogKey = `w${week}_${calcLogKeyIndex}_${ex.id}_${calcTargetSet}`;
         const pendingSwapPreview = (state.pendingMachineSwapPreviews && state.pendingMachineSwapPreviews[ex.id]) || null;
 
+        const canonicalExId = ex.exerciseID || resolveCanonicalExerciseIdInline(ex.id, ex.name);
+        const verifiedExVideoUrl = getVerifiedVideoUrlByExerciseIdInline(canonicalExId, ex.name, ex.videoUrl);
+        const isCardioEx = isCardioExerciseInline(ex);
+        const cardioLogKey = `w${week}_d${dayIdx}_${ex.id}`;
+        const savedCardioLog = (state.cardioLogs && state.cardioLogs[cardioLogKey]) || null;
+        const cardioDoneNow = Boolean(savedCardioLog && savedCardioLog.done);
+        const activeCardioMode = (state.cardioUiModeByEx && state.cardioUiModeByEx[cardioLogKey]) || 'idle';
+        const isLiveCardioThisEx = Boolean(activeCardioLiveState.exId === cardioLogKey && activeCardioLiveState.running);
+        const liveCardioClockStr = activeCardioLiveState.exId === cardioLogKey
+          ? formatCardioDurationClockInline(activeCardioLiveState.elapsedSec)
+          : '00:00';
+        const effectiveExComplete = isCardioEx ? cardioDoneNow : isExComplete;
+
         return `
-          <article id="ex-card-${ex.id}" data-ex-progress-state="${isExComplete ? 'completed' : (isExInProgress ? 'in_progress' : 'not_started')}" style="${isExInProgress ? 'border: 2px solid #d97706; background: rgba(217, 119, 6, 0.15);' : (!isActiveCard && !isExComplete ? 'border: 1px solid #334155;' : '')}" class="${
+          <article id="ex-card-${ex.id}" data-exercise-index="${exOrder}" data-canonical-ex-id="${canonicalExId}" data-ex-progress-state="${effectiveExComplete ? 'completed' : (isExInProgress ? 'in_progress' : 'not_started')}" style="${isExInProgress ? 'border: 2px solid #d97706; background: rgba(217, 119, 6, 0.15);' : (!isActiveCard && !effectiveExComplete ? 'border: 1px solid #334155;' : '')}" class="${
             isExInProgress
               ? 'shadow-lg shadow-amber-950/25'
               : (isActiveCard
                   ? 'border-2 border-sky-400 bg-[#1e293b] shadow-lg shadow-sky-950/40'
-                  : (isExComplete
+                  : (effectiveExComplete
                       ? 'border border-[#059669]/55 bg-[#1e293b]/80 opacity-90 hover:opacity-100'
                       : 'bg-[#1e293b] hover:border-slate-500'))
           } rounded-2xl px-1.5 py-3 sm:p-4 space-y-2.5 scroll-mt-28 transition-all">
@@ -13453,30 +14026,61 @@
               </div>
             ` : ''}
 
-            <!-- Clean Exercise Header (Click Anywhere on Title/Number to Open or Collapse!) -->
-            <div class="flex items-start justify-between gap-2.5">
-              <div class="flex items-start gap-2.5 flex-1 min-w-0">
+            <!-- Clean Exercise Header with Exposed Form Notes & Video Buttons Directly Right of Title -->
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-start gap-2 flex-1 min-w-0">
                 <div id="hdr-img-${panelKey}" class="${isImgOpen ? 'flex' : 'hidden'} w-11 h-11 rounded-xl bg-slate-950 border border-slate-800 items-center justify-center shrink-0 shadow-inner" style="display: ${isImgOpen ? 'flex' : 'none'};" title="${meta.equipLabel}">
                   ${getEquipmentSvg(meta.equipType)}
                 </div>
                 <div class="flex-1 min-w-0">
-                  <div data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${isExComplete ? '1' : '0'}" class="expand-done-btn cursor-pointer select-none group min-w-0">
-                    <div class="flex flex-wrap items-center gap-1.5">
-                      <span class="exercise-progress-badge whitespace-nowrap px-2 py-0.5 text-xs font-bold font-mono rounded-md transition-colors ${
-                        isExInProgress
-                          ? 'bg-amber-400 text-slate-950'
-                          : (isActiveCard ? 'bg-sky-400 text-slate-950' : (isExComplete ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300 group-hover:text-sky-300'))
-                      }">#${exOrder + 1}/${totalExercisesToday}</span>
-                      ${ex.isSwappedMachine ? `<span class="text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-md whitespace-nowrap">Machine</span>` : ''}
-                      <span class="text-[11px] font-semibold text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded-md whitespace-nowrap">${isTimedHold ? `${ex.sets} Sets × ${targetHoldSec}s / side` : `${ex.sets} Sets × ${ex.reps}`}</span>
-                      ${isExInProgress ? `<span data-ex-inprogress-badge="${ex.id}" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b;">IN PROGRESS • ${exDoneSets}/${ex.sets}</span>` : ''}
-                      ${isExComplete ? `<span class="text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">✓ Done</span>` : ''}
-                    </div>
-                    <h3 class="${
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${effectiveExComplete ? '1' : '0'}" class="expand-done-btn cursor-pointer exercise-progress-badge whitespace-nowrap px-2 py-0.5 text-xs font-bold font-mono rounded-md transition-colors ${
+                      isExInProgress
+                        ? 'bg-amber-400 text-slate-950'
+                        : (isActiveCard ? 'bg-sky-400 text-slate-950' : (effectiveExComplete ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300 hover:text-sky-300'))
+                    }">#${exOrder + 1}/${totalExercisesToday}</span>
+                    ${isCardioEx ? `<span class="text-[10px] font-extrabold bg-cyan-500/20 text-cyan-200 border border-cyan-400/45 px-2 py-0.5 rounded-md whitespace-nowrap">CARDIO</span>` : ''}
+                    ${ex.isSwappedMachine ? `<span class="text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-md whitespace-nowrap">Machine</span>` : ''}
+                    ${!isCardioEx ? `<span class="text-[11px] font-semibold text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded-md whitespace-nowrap">${isTimedHold ? `${ex.sets} Sets × ${targetHoldSec}s / side` : `${ex.sets} Sets × ${ex.reps}`}</span>` : ''}
+                    ${isExInProgress ? `<span data-ex-inprogress-badge="${ex.id}" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b;">IN PROGRESS • ${exDoneSets}/${ex.sets}</span>` : ''}
+                    ${effectiveExComplete ? `<span class="text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">✓ Done</span>` : ''}
+                  </div>
+
+                  <!-- Exercise Title Row with Directly Exposed [ℹ️ Form Notes] and [🎥 Video] Buttons on the Right -->
+                  <div class="flex items-start justify-between gap-1.5 mt-1">
+                    <h3 data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${effectiveExComplete ? '1' : '0'}" class="expand-done-btn cursor-pointer flex-1 min-w-0 ${
                       isActiveCard || isExInProgress
-                        ? 'text-base sm:text-lg font-extrabold text-white mt-1 leading-snug tracking-tight break-words'
-                        : 'text-sm font-bold text-slate-200 group-hover:text-white mt-0.5 leading-snug break-words'
+                        ? 'text-base sm:text-lg font-extrabold text-[#f8fafc] leading-snug tracking-tight break-words'
+                        : 'text-sm font-bold text-[#f8fafc] hover:text-white leading-snug break-words'
                     } transition-colors">${ex.name}</h3>
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        data-toggle-img="${ex.id}"
+                        data-day-idx="${dayIdx}"
+                        data-panel-key="${panelKey}"
+                        aria-expanded="${isImgOpen ? 'true' : 'false'}"
+                        class="toggle-img-btn px-2 py-1 rounded-lg border text-[10px] font-extrabold whitespace-nowrap transition ${
+                          isImgOpen
+                            ? 'bg-sky-500/25 border-sky-400 text-sky-100'
+                            : 'bg-[#0f172a] hover:bg-slate-800 border-slate-700 text-slate-200'
+                        }"
+                        title="Open form cues and setup notes"
+                      >
+                        ℹ️ Form Notes
+                      </button>
+                      <a
+                        href="${verifiedExVideoUrl}"
+                        data-ex-video-btn="${ex.id}"
+                        data-canonical-ex-id="${canonicalExId}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="px-2 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/40 text-[10px] font-extrabold whitespace-nowrap transition"
+                        title="Watch verified form video for ${ex.name}"
+                      >
+                        🎥 Video
+                      </a>
+                    </div>
                   </div>
 
                   <!-- UPGRADE 4: Prominent Amber Reminder Badge on Header (Visible Even When Collapsed, with 1-Tap × Delete Button!) -->
@@ -13488,12 +14092,11 @@
                     </span>
                   </div>
 
-                  <div class="${isImgOpen || (isBarbellEx && activeCalcBarMath && !(isExComplete && isCollapsedDone)) ? 'flex flex-wrap items-center gap-1.5 mt-1' : 'hidden'}">
+                  <div class="${isImgOpen || (isBarbellEx && activeCalcBarMath && !(effectiveExComplete && isCollapsedDone)) ? 'flex flex-wrap items-center gap-1.5 mt-1' : 'hidden'}">
                     <div id="hdr-setup-${panelKey}" class="${isImgOpen ? 'inline-flex' : 'hidden'} items-center gap-1 text-[11px] font-semibold text-sky-300 bg-sky-500/10 border border-sky-500/25 px-2 py-0.5 rounded-lg" style="display: ${isImgOpen ? 'inline-flex' : 'none'};">
-                      <span></span>
                       <span class="text-white font-bold">${ex.isSwappedMachine ? (activeCalcBarMath && activeCalcBarMath.loadMode === 'pin_stack' ? 'Pin / Cable Stack Machine' : 'Plate-Loaded Machine') : meta.equipLabel}</span>
                     </div>
-                    ${isBarbellEx && activeCalcBarMath && !(isExComplete && isCollapsedDone) ? `
+                    ${isBarbellEx && activeCalcBarMath && !(effectiveExComplete && isCollapsedDone) ? `
                     <span data-plate-badge="${ex.id}" class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-300 bg-slate-950 border border-slate-800 px-2 py-0.5 rounded-lg">
                        Set ${calcTargetSet}: ${activeCalcBarMath.isMachine
                          ? (activeCalcBarMath.loadMode === 'pin_stack'
@@ -13505,45 +14108,24 @@
                   </div>
                 </div>
               </div>
-
-              <!-- Right Header Controls: Hidden on Timed Isometric Holds (Side Plank) & Bodyweight Pull-Ups -->
-              ${isTimedHold ? `
-              <div class="flex flex-col items-end gap-1 shrink-0">
-                <span class="text-[10px] font-extrabold text-amber-300 bg-amber-500/15 border border-amber-500/35 px-2.5 py-1 rounded-xl whitespace-nowrap">
-                   ${targetHoldSec}s / side
-                </span>
-              </div>
-              ` : (isBodyweightRepsOnly ? `
-              <div class="flex flex-col items-end gap-1.5 shrink-0">
-                <span class="text-[10px] font-extrabold text-emerald-300 bg-emerald-500/15 border border-emerald-500/35 px-2.5 py-1 rounded-xl whitespace-nowrap">
-                  Bodyweight
-                </span>
-                <button type="button" data-overload-ex="${ex.id}" class="overload-bump-btn ${isCollapsedDone ? 'hidden' : 'inline-flex'} text-[10px] font-bold text-sky-300 bg-slate-950 hover:bg-slate-800 border border-slate-700 px-2 py-0.5 rounded-lg transition">
-                  +1 Rep
-                </button>
-              </div>
-              ` : `
-              <div class="flex flex-col items-end gap-1.5 shrink-0">
-                <div class="inline-flex rounded-xl bg-slate-950 border border-slate-800 p-0.5">
-                  <button type="button" data-ex-unit-btn="${ex.id}" data-unit-val="lbs" class="ex-unit-toggle px-2 py-1 rounded-lg text-[10px] font-extrabold transition ${
-                    exUnit === 'lbs' ? 'bg-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
-                  }">LBS</button>
-                  <button type="button" data-ex-unit-btn="${ex.id}" data-unit-val="kg" class="ex-unit-toggle px-2 py-1 rounded-lg text-[10px] font-extrabold transition ${
-                    exUnit === 'kg' ? 'bg-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
-                  }">KG</button>
-                </div>
-                <button type="button" data-overload-ex="${ex.id}" class="overload-bump-btn ${isCollapsedDone ? 'hidden' : 'inline-flex'} text-[10px] font-bold text-sky-300 bg-slate-950 hover:bg-slate-800 border border-slate-700 px-2 py-0.5 rounded-lg transition">
-                  +${meta.defaultWeightLbs === 0 ? '1 Rep' : (exUnit === 'kg' ? '1.25 kg' : '2.5 lb')}
-                </button>
-              </div>
-              `)}
             </div>
 
-            <!-- Summary Bar: Zeigarnik Amber/Gold when In-Progress (1/3 or 2/3 logged), Emerald when Done, Slate when Not Started -->
-            <button type="button" data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${isExComplete ? '1' : '0'}" style="${isExInProgress ? 'border-color: #f59e0b; color: #fbbf24;' : ''}" class="expand-done-btn w-full flex items-center justify-between bg-slate-950/80 hover:bg-slate-950 border ${isExInProgress ? 'border-amber-500 text-amber-300' : 'border-slate-800/90 text-slate-300'} rounded-xl px-3 py-2 text-xs transition">
+            <!-- Collapsible Form Notes Panel (Strictly Default CLOSED, Opens Directly When [ℹ️ Form Notes] Is Tapped) -->
+            <div id="img-panel-${ex.id}" data-panel-id="${panelKey}" class="${isImgOpen ? 'block' : 'hidden'}" style="display: ${isImgOpen ? 'block' : 'none'};">
+              ${getStepVisualDiagramHtml(ex, meta, dayIdx)}
+            </div>
+
+            <!-- Summary Bar: Zeigarnik Amber/Gold when In-Progress, Emerald when Done, Slate when Not Started -->
+            <button type="button" data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${effectiveExComplete ? '1' : '0'}" style="${isExInProgress ? 'border-color: #f59e0b; color: #fbbf24;' : ''}" class="expand-done-btn w-full flex items-center justify-between bg-slate-950/80 hover:bg-slate-950 border ${isExInProgress ? 'border-amber-500 text-amber-300' : 'border-slate-800/90 text-slate-300'} rounded-xl px-3 py-2 text-xs transition">
               <span class="font-medium text-left">
-                ${isExComplete ? `<span class="text-emerald-400 font-bold">✓ All ${ex.sets} sets logged</span>` : (isExInProgress ? `<span class="font-extrabold" style="color: #fbbf24;">${exDoneSets} / ${ex.sets} sets logged</span>` : `${exDoneSets} / ${ex.sets} sets logged`)}
-                ${isTimedHold ? `<span class="text-amber-300 ml-1">• <strong>${targetHoldSec}s / side</strong></span>` : (isBodyweightRepsOnly ? `<span class="text-emerald-300 ml-1">• <strong>Bodyweight Reps</strong></span>` : (meta.defaultWeightLbs > 0 ? `<span class="${isExInProgress ? 'text-amber-200' : 'text-slate-400'} ml-1">• <strong class="text-white">${activeCalcEffectiveTotal} ${exUnit}</strong></span>` : ''))}
+                ${isCardioEx
+                  ? (cardioDoneNow
+                      ? `<span class="text-emerald-400 font-bold">✓ ${savedCardioLog.summaryText || 'Cardio Logged'}</span>`
+                      : `Cardio • Tap to Start Live or Log Past`)
+                  : (effectiveExComplete
+                      ? `<span class="text-emerald-400 font-bold">✓ All ${ex.sets} sets logged</span>`
+                      : (isExInProgress ? `<span class="font-extrabold" style="color: #fbbf24;">${exDoneSets} / ${ex.sets} sets logged</span>` : `${exDoneSets} / ${ex.sets} sets logged`))}
+                ${!isCardioEx ? (isTimedHold ? `<span class="text-amber-300 ml-1">• <strong>${targetHoldSec}s / side</strong></span>` : (isBodyweightRepsOnly ? `<span class="text-emerald-300 ml-1">• <strong>Bodyweight Reps</strong></span>` : (meta.defaultWeightLbs > 0 ? `<span class="${isExInProgress ? 'text-amber-200' : 'text-slate-400'} ml-1">• <strong class="text-white">${activeCalcEffectiveTotal} ${exUnit}</strong></span>` : ''))) : ''}
               </span>
               <span class="${isExInProgress ? 'text-amber-300 font-extrabold' : (isActiveCard ? 'text-sky-300 font-bold' : 'text-slate-400 font-bold')} text-[11px] shrink-0">
                 ${isCollapsedDone ? (isExInProgress ? `Resume (${remainingSetsCount} ${remainingSetsCount === 1 ? 'set' : 'sets'} left) ▼` : 'Tap to Open ▾') : 'Close ▴'}
@@ -13551,19 +14133,33 @@
             </button>
 
             <div id="sets-wrap-${panelKey}" class="${isCollapsedDone ? 'hidden' : 'space-y-3'}" style="display: ${isCollapsedDone ? 'none' : 'block'};">
-              <!-- Single-Line Action Bar: Form & Setup Toggle, Rest Timer & Video Link -->
-              <div class="flex items-center justify-between gap-1.5 pt-1">
-                <button type="button" data-toggle-img="${ex.id}" data-day-idx="${dayIdx}" data-panel-key="${panelKey}" class="toggle-img-btn flex-1 min-w-0 bg-slate-950 hover:bg-slate-800 text-slate-200 border border-slate-800 text-[11px] font-bold px-2.5 py-1.5 rounded-xl flex items-center justify-between gap-1 whitespace-nowrap transition">
-                  <span class="truncate"> ${isImgOpen ? 'Hide Form & Setup' : 'Form & Setup'}</span>
-                  <span class="text-[10px] text-emerald-400 font-extrabold shrink-0">${isImgOpen ? '▲' : '▼'}</span>
+              <!-- Compact Unit + Rest Bar (Zero Options Deleted) -->
+              ${!isCardioEx ? `
+              <div class="flex flex-wrap items-center justify-between gap-1.5 pt-1">
+                ${!isTimedHold && !isBodyweightRepsOnly ? `
+                <div class="inline-flex items-center gap-1.5">
+                  <div class="inline-flex rounded-xl bg-slate-950 border border-slate-800 p-0.5">
+                    <button type="button" data-ex-unit-btn="${ex.id}" data-unit-val="lbs" class="ex-unit-toggle px-2 py-1 rounded-lg text-[10px] font-extrabold transition ${
+                      exUnit === 'lbs' ? 'bg-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
+                    }">LBS</button>
+                    <button type="button" data-ex-unit-btn="${ex.id}" data-unit-val="kg" class="ex-unit-toggle px-2 py-1 rounded-lg text-[10px] font-extrabold transition ${
+                      exUnit === 'kg' ? 'bg-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
+                    }">KG</button>
+                  </div>
+                  <button type="button" data-overload-ex="${ex.id}" class="overload-bump-btn inline-flex text-[10px] font-bold text-sky-300 bg-slate-950 hover:bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg transition">
+                    +${meta.defaultWeightLbs === 0 ? '1 Rep' : (exUnit === 'kg' ? '1.25 kg' : '2.5 lb')}
+                  </button>
+                </div>
+                ` : (isBodyweightRepsOnly ? `
+                <button type="button" data-overload-ex="${ex.id}" class="overload-bump-btn inline-flex text-[10px] font-bold text-sky-300 bg-slate-950 hover:bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg transition">
+                  +1 Rep
                 </button>
+                ` : `<span class="text-[10px] font-extrabold text-amber-300 bg-amber-500/15 border border-amber-500/35 px-2.5 py-1 rounded-xl">${targetHoldSec}s / side</span>`)}
                 <button type="button" data-rest-sec="${ex.restSec || 90}" data-ex-name="${ex.name}" class="quick-rest-btn shrink-0 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 text-[11px] font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 whitespace-nowrap transition">
-                   ${ex.restLabel || ((ex.restSec || 90) >= 120 ? '2 min' : ((ex.restSec || 90) === 60 ? '60 sec' : '1.5 min'))}
+                  Rest: ${ex.restLabel || ((ex.restSec || 90) >= 120 ? '2 min' : ((ex.restSec || 90) === 60 ? '60 sec' : '1.5 min'))}
                 </button>
-                <a href="${ex.videoUrl}" data-ex-video-btn="${ex.id}" target="_blank" rel="noopener noreferrer" class="shrink-0 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 whitespace-nowrap transition">
-                   Video
-                </a>
               </div>
+              ` : ''}
 
               ${ex.id === 'day5_pullups' ? `
                 <div class="bg-slate-950/95 border border-sky-500/40 rounded-xl p-2.5 space-y-2" data-day5-hardest-selector="workout">
@@ -13598,10 +14194,7 @@
                 </div>
               ` : ''}
 
-              <!-- Collapsible Visual Diagram & Machine Setup Dropdown Panel (Strictly Hidden When Closed) -->
-              <div id="img-panel-${ex.id}" data-panel-id="${panelKey}" class="${isImgOpen ? 'block' : 'hidden'}" style="display: ${isImgOpen ? 'block' : 'none'};">
-                ${getStepVisualDiagramHtml(ex, meta, dayIdx)}
-              </div>
+              <!-- Form notes panel moved directly under exercise title above -->
 
               ${isTimedHold ? `
               <!-- UPGRADE 2: Side Plank Quick Duration Preset Pills (30 sec, 45 sec, 1 min (60s), 1m 15s (75s), 1m 30s (90s)) -->
@@ -13812,7 +14405,110 @@
               </div>
               ` : ''}
 
-              <!-- STEP 2: SET 1, SET 2, SET 3 ROWS -->
+              <!-- STEP 2: DUAL-MODE CARDIO ENGINE OR SET 1..N ROWS -->
+              ${isCardioEx ? `
+              <div class="bg-[#0f172a] border border-cyan-500/40 rounded-xl p-3 space-y-3" data-cardio-dual-mode="${cardioLogKey}">
+                <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+                  <button
+                    type="button"
+                    data-cardio-mode-btn="live"
+                    data-cardio-key="${cardioLogKey}"
+                    data-cardio-ex-id="${ex.id}"
+                    class="cardio-mode-switch-btn py-2.5 px-2 rounded-xl border text-xs font-extrabold transition ${
+                      activeCardioMode === 'live'
+                        ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-sm'
+                        : 'bg-slate-900 hover:bg-slate-800 text-cyan-200 border-cyan-500/45'
+                    }"
+                  >
+                    ⏱️ Start Live Cardio
+                  </button>
+                  <button
+                    type="button"
+                    data-cardio-mode-btn="manual"
+                    data-cardio-key="${cardioLogKey}"
+                    data-cardio-ex-id="${ex.id}"
+                    class="cardio-mode-switch-btn py-2.5 px-2 rounded-xl border text-xs font-extrabold transition ${
+                      activeCardioMode === 'manual'
+                        ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
+                        : 'bg-slate-900 hover:bg-slate-800 text-amber-200 border-amber-500/45'
+                    }"
+                  >
+                    📝 Log Past Workout
+                  </button>
+                </div>
+
+                ${activeCardioMode === 'live' ? `
+                <div class="bg-slate-900/95 border border-cyan-400/45 rounded-xl p-3 space-y-2.5 text-center" data-cardio-live-panel="${cardioLogKey}">
+                  <div class="text-[11px] font-bold text-cyan-200">Live Cardio Stopwatch</div>
+                  <div id="cardio-live-clock-${ex.id}" class="font-mono text-3xl font-extrabold text-[#f8fafc] tracking-wider">${liveCardioClockStr}</div>
+                  <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+                    <button
+                      type="button"
+                      data-cardio-live-toggle="${cardioLogKey}"
+                      data-cardio-ex-id="${ex.id}"
+                      class="cardio-live-toggle-btn py-2 px-3 rounded-xl text-xs font-extrabold transition ${
+                        isLiveCardioThisEx
+                          ? 'bg-amber-400 text-slate-950'
+                          : 'bg-cyan-500 text-slate-950'
+                      }"
+                    >
+                      ${isLiveCardioThisEx ? 'Pause' : 'Start / Resume'}
+                    </button>
+                    <button
+                      type="button"
+                      data-cardio-live-save="${cardioLogKey}"
+                      data-cardio-ex-id="${ex.id}"
+                      class="cardio-live-save-btn py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition"
+                    >
+                      ✓ Finish &amp; Save
+                    </button>
+                  </div>
+                </div>
+                ` : ''}
+
+                ${activeCardioMode === 'manual' ? `
+                <div class="bg-slate-900/95 border border-amber-500/45 rounded-xl p-3 space-y-2.5" data-cardio-manual-panel="${cardioLogKey}">
+                  <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+                    <div class="space-y-1">
+                      <label for="cardio-dist-inp-${ex.id}" class="block text-[11px] font-extrabold text-slate-200">Distance (km)</label>
+                      <div class="flex items-center justify-between bg-[#0f172a] border border-slate-700 rounded-xl p-1">
+                        <button type="button" data-cardio-step-field="dist" data-cardio-delta="-0.5" data-cardio-ex-id="${ex.id}" class="cardio-manual-step-btn w-8 h-8 shrink-0 rounded-lg bg-slate-800 text-slate-200 font-extrabold">−</button>
+                        <input id="cardio-dist-inp-${ex.id}" type="number" step="0.5" min="0" value="${(savedCardioLog && savedCardioLog.distanceKm) || 10}" class="w-full min-w-0 bg-transparent text-center text-sm font-extrabold text-[#f8fafc] focus:outline-none" />
+                        <button type="button" data-cardio-step-field="dist" data-cardio-delta="0.5" data-cardio-ex-id="${ex.id}" class="cardio-manual-step-btn w-8 h-8 shrink-0 rounded-lg bg-slate-800 text-cyan-300 font-extrabold">+</button>
+                      </div>
+                    </div>
+                    <div class="space-y-1">
+                      <label for="cardio-mins-inp-${ex.id}" class="block text-[11px] font-extrabold text-slate-200">Time (mins)</label>
+                      <div class="flex items-center justify-between bg-[#0f172a] border border-slate-700 rounded-xl p-1">
+                        <button type="button" data-cardio-step-field="mins" data-cardio-delta="-5" data-cardio-ex-id="${ex.id}" class="cardio-manual-step-btn w-8 h-8 shrink-0 rounded-lg bg-slate-800 text-slate-200 font-extrabold">−</button>
+                        <input id="cardio-mins-inp-${ex.id}" type="number" step="1" min="1" value="${(savedCardioLog && savedCardioLog.durationMins) || 60}" class="w-full min-w-0 bg-transparent text-center text-sm font-extrabold text-[#f8fafc] focus:outline-none" />
+                        <button type="button" data-cardio-step-field="mins" data-cardio-delta="5" data-cardio-ex-id="${ex.id}" class="cardio-manual-step-btn w-8 h-8 shrink-0 rounded-lg bg-slate-800 text-cyan-300 font-extrabold">+</button>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    data-cardio-manual-save="${cardioLogKey}"
+                    data-cardio-ex-id="${ex.id}"
+                    class="cardio-manual-save-btn w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition"
+                  >
+                    ✓ Log Past Workout
+                  </button>
+                </div>
+                ` : ''}
+
+                ${cardioDoneNow ? `
+                <div class="flex items-center justify-between gap-2 bg-emerald-950/50 border border-emerald-500/45 rounded-xl px-3 py-2 text-xs font-bold text-emerald-200">
+                  <span>✓ Logged: ${savedCardioLog.summaryText}</span>
+                  <button type="button" data-cardio-remove-ex="${ex.id}" class="remove-custom-cardio-btn text-[11px] text-rose-300 underline">Remove</button>
+                </div>
+                ` : (ex.isCustomCardio ? `
+                <div class="flex justify-end">
+                  <button type="button" data-cardio-remove-ex="${ex.id}" class="remove-custom-cardio-btn text-[11px] font-bold text-slate-400 hover:text-rose-300">Remove Cardio</button>
+                </div>
+                ` : '')}
+              </div>
+              ` : `
               <div class="space-y-1.5">
                 ${isTimedHold ? `
                 <div class="flex items-center justify-between px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -13836,6 +14532,7 @@
                 ${setsHtml}
                 ${PULLUP_EX_ID_TO_DAY[ex.id] ? getPullupExpansionControlBarHtml(week, PULLUP_EX_ID_TO_DAY[ex.id], ex.sets, ex.baseSetsCount || (PULLUP_EX_ID_TO_DAY[ex.id] === 3 ? 9 : 5), 'gym') : ''}
               </div>
+              `}
 
               <!-- PERMANENT EXERCISE SWAP GRID: Green AI Machine Swap + Swap from History + AI Check & Swap (Zero Options Deleted) -->
               <div data-exposed-machine-swap-grid="${ex.id}" class="space-y-2 mt-3">
@@ -14137,6 +14834,20 @@
         `;
       }).join('');
 
+      const addCardioBarHtml = `
+        <div id="add-cardio-exercise-bar" class="bg-[#1e293b] border border-cyan-500/35 rounded-2xl p-3 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs font-extrabold text-[#f8fafc]">Add Cardio Session (Live or Manual)</span>
+            <span class="text-[10px] font-bold text-cyan-300">Dual-Mode</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;">
+            <button type="button" data-quick-add-cardio="Outdoor Biking" class="quick-add-cardio-btn py-2 px-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border border-cyan-500/40 text-cyan-200 text-[11px] font-extrabold transition">+ Outdoor Biking</button>
+            <button type="button" data-quick-add-cardio="Treadmill" class="quick-add-cardio-btn py-2 px-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border border-cyan-500/40 text-cyan-200 text-[11px] font-extrabold transition">+ Treadmill</button>
+            <button type="button" data-quick-add-cardio="Rowing Machine" class="quick-add-cardio-btn py-2 px-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border border-cyan-500/40 text-cyan-200 text-[11px] font-extrabold transition">+ Rowing</button>
+          </div>
+        </div>
+      `;
+
       if (dayAssignment.isRestDay) {
         const isRestDrawerOpen = Boolean(state.showRestDayMobility && state.openRestMobilityDrawer);
         listEl.innerHTML = `
@@ -14149,6 +14860,7 @@
               ${exerciseCardsHtml}
             </div>
           </details>
+          ${addCardioBarHtml}
         `;
         const restMobilityDrawerEl = document.getElementById('rest-day-mobility-drawer');
         if (restMobilityDrawerEl) {
@@ -14197,7 +14909,7 @@
             </div>
           `;
         }
-        listEl.innerHTML = bonusHabitsBarHtml + exerciseCardsHtml;
+        listEl.innerHTML = bonusHabitsBarHtml + exerciseCardsHtml + addCardioBarHtml;
 
         const day6AbsBtn = document.getElementById('day6-toggle-daily-abs-btn');
         if (day6AbsBtn) {
@@ -14212,6 +14924,186 @@
           });
         }
       }
+
+      // UPGRADE 19: Quick-Add Cardio & Dual-Mode Cardio Engine Listeners
+      listEl.querySelectorAll('.quick-add-cardio-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cardioName = btn.getAttribute('data-quick-add-cardio') || 'Outdoor Biking';
+          const dKey = `w${week}_d${dayIdx}`;
+          if (!state.customDayExercises || typeof state.customDayExercises !== 'object') state.customDayExercises = {};
+          if (!Array.isArray(state.customDayExercises[dKey])) state.customDayExercises[dKey] = [];
+          const canonicalId = resolveCanonicalExerciseIdInline('', cardioName);
+          const exId = `${canonicalId}_${dayIdx}`;
+          if (!state.customDayExercises[dKey].some(c => c.id === exId)) {
+            state.customDayExercises[dKey].push({
+              id: exId,
+              exerciseID: canonicalId,
+              name: cardioName,
+              type: 'cardio',
+              isCardio: true,
+              isCustomCardio: true,
+              sets: 1,
+              reps: 'Cardio',
+              restSec: 60,
+              restLabel: '60 sec',
+              videoUrl: getVerifiedVideoUrlByExerciseIdInline(canonicalId, cardioName, ''),
+              notes: 'Keep a steady pace you can talk through, or push intervals if you want extra work.'
+            });
+          }
+          // Expand the new cardio card immediately
+          const cPanelKey = getExercisePanelKey(dayIdx, exId);
+          state.cardCollapsedState[cPanelKey] = 'expanded';
+          if (dayAssignment.isRestDay) {
+            state.showRestDayMobility = true;
+            state.openRestMobilityDrawer = true;
+          }
+          saveState();
+          renderWorkoutView();
+          const newCard = document.getElementById(`ex-card-${exId}`);
+          if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showToast(`Added ${cardioName} — choose Live Cardio or Log Past Workout.`);
+        });
+      });
+
+      listEl.querySelectorAll('.cardio-mode-switch-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const mode = btn.getAttribute('data-cardio-mode-btn') || 'live';
+          const cKey = btn.getAttribute('data-cardio-key');
+          const exId = btn.getAttribute('data-cardio-ex-id');
+          if (!cKey) return;
+          if (!state.cardioUiModeByEx || typeof state.cardioUiModeByEx !== 'object') state.cardioUiModeByEx = {};
+          state.cardioUiModeByEx[cKey] = mode;
+          if (mode === 'live') {
+            if (activeCardioLiveInterval) clearInterval(activeCardioLiveInterval);
+            activeCardioLiveState = {
+              exId: cKey,
+              rawExId: exId,
+              week,
+              dayIdx,
+              elapsedSec: activeCardioLiveState.exId === cKey ? activeCardioLiveState.elapsedSec : 0,
+              running: true,
+              startedAtMs: Date.now()
+            };
+            activeCardioLiveInterval = setInterval(() => {
+              if (!activeCardioLiveState.running) return;
+              activeCardioLiveState.elapsedSec += 1;
+              const clockEl = document.getElementById(`cardio-live-clock-${activeCardioLiveState.rawExId}`);
+              if (clockEl) clockEl.textContent = formatCardioDurationClockInline(activeCardioLiveState.elapsedSec);
+            }, 1000);
+          }
+          saveState();
+          renderWorkoutView();
+        });
+      });
+
+      listEl.querySelectorAll('.cardio-live-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cKey = btn.getAttribute('data-cardio-live-toggle');
+          const exId = btn.getAttribute('data-cardio-ex-id');
+          if (activeCardioLiveState.exId === cKey && activeCardioLiveState.running) {
+            activeCardioLiveState.running = false;
+            if (activeCardioLiveInterval) clearInterval(activeCardioLiveInterval);
+            activeCardioLiveInterval = null;
+          } else {
+            if (activeCardioLiveInterval) clearInterval(activeCardioLiveInterval);
+            activeCardioLiveState = {
+              exId: cKey,
+              rawExId: exId,
+              week,
+              dayIdx,
+              elapsedSec: activeCardioLiveState.exId === cKey ? activeCardioLiveState.elapsedSec : 0,
+              running: true,
+              startedAtMs: Date.now()
+            };
+            activeCardioLiveInterval = setInterval(() => {
+              if (!activeCardioLiveState.running) return;
+              activeCardioLiveState.elapsedSec += 1;
+              const clockEl = document.getElementById(`cardio-live-clock-${activeCardioLiveState.rawExId}`);
+              if (clockEl) clockEl.textContent = formatCardioDurationClockInline(activeCardioLiveState.elapsedSec);
+            }, 1000);
+          }
+          renderWorkoutView();
+        });
+      });
+
+      listEl.querySelectorAll('.cardio-live-save-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cKey = btn.getAttribute('data-cardio-live-save');
+          if (!cKey) return;
+          if (activeCardioLiveInterval) clearInterval(activeCardioLiveInterval);
+          activeCardioLiveInterval = null;
+          const elapsed = activeCardioLiveState.exId === cKey ? activeCardioLiveState.elapsedSec : 60;
+          activeCardioLiveState.running = false;
+          activeCardioLiveState.elapsedSec = 0;
+          const mins = Math.max(1, Math.round(elapsed / 60));
+          if (!state.cardioLogs) state.cardioLogs = {};
+          state.cardioLogs[cKey] = {
+            mode: 'live',
+            durationMins: mins,
+            distanceKm: 0,
+            done: true,
+            summaryText: `${mins} mins (Live)`,
+            updatedAt: Date.now()
+          };
+          state.cardioUiModeByEx[cKey] = 'idle';
+          saveState();
+          renderWorkoutView();
+          showToast(`Saved live cardio session: ${mins} mins!`);
+        });
+      });
+
+      listEl.querySelectorAll('.cardio-manual-step-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const field = btn.getAttribute('data-cardio-step-field');
+          const delta = parseFloat(btn.getAttribute('data-cardio-delta') || '0');
+          const exId = btn.getAttribute('data-cardio-ex-id');
+          const inp = document.getElementById(field === 'dist' ? `cardio-dist-inp-${exId}` : `cardio-mins-inp-${exId}`);
+          if (!inp) return;
+          const cur = parseFloat(inp.value) || 0;
+          const next = field === 'dist' ? Math.max(0, Math.round((cur + delta) * 10) / 10) : Math.max(1, Math.round(cur + delta));
+          inp.value = String(next);
+        });
+      });
+
+      listEl.querySelectorAll('.cardio-manual-save-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cKey = btn.getAttribute('data-cardio-manual-save');
+          const exId = btn.getAttribute('data-cardio-ex-id');
+          if (!cKey || !exId) return;
+          const distEl = document.getElementById(`cardio-dist-inp-${exId}`);
+          const minsEl = document.getElementById(`cardio-mins-inp-${exId}`);
+          const distKm = Math.max(0, Math.round((parseFloat(distEl && distEl.value) || 0) * 10) / 10);
+          const durMins = Math.max(1, Math.round(parseFloat(minsEl && minsEl.value) || 30));
+          const summaryText = `${distKm > 0 ? `${distKm} km • ` : ''}${durMins} mins (Logged)`;
+          if (!state.cardioLogs) state.cardioLogs = {};
+          state.cardioLogs[cKey] = {
+            mode: 'manual',
+            durationMins: durMins,
+            distanceKm: distKm,
+            done: true,
+            summaryText,
+            updatedAt: Date.now()
+          };
+          state.cardioUiModeByEx[cKey] = 'idle';
+          saveState();
+          renderWorkoutView();
+          showToast(`Logged cardio: ${summaryText}`);
+        });
+      });
+
+      listEl.querySelectorAll('.remove-custom-cardio-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-cardio-remove-ex');
+          const dKey = `w${week}_d${dayIdx}`;
+          if (state.customDayExercises && Array.isArray(state.customDayExercises[dKey])) {
+            state.customDayExercises[dKey] = state.customDayExercises[dKey].filter(c => c.id !== exId);
+          }
+          if (state.cardioLogs) delete state.cardioLogs[`w${week}_d${dayIdx}_${exId}`];
+          saveState();
+          renderWorkoutView();
+          showToast('Removed cardio exercise from today.');
+        });
+      });
 
       // Day 5 Hardest-Day 4-Option Selector Listeners on Gym Tab (Synced with Pull-Ups Tab)
       listEl.querySelectorAll('.day5-hardest-opt-btn').forEach(btn => {
@@ -15331,6 +16223,7 @@
       listEl.querySelectorAll('.toggle-img-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.preventDefault();
+          e.stopPropagation();
           const exId = btn.getAttribute('data-toggle-img');
           const dIdx = parseInt(btn.getAttribute('data-day-idx'), 10);
           const targetDay = isNaN(dIdx) ? dayIdx : dIdx;
@@ -15405,7 +16298,20 @@
             }
           }
           state.workoutLogs[key].unit = exUnit;
+          state.workoutLogs[key].updatedAt = Date.now();
           state.workoutLogs[key].done = !state.workoutLogs[key].done;
+          if (state.workoutLogs[key].done) {
+            recordExerciseHistorySetInline(
+              week,
+              dayIdx,
+              exId,
+              exName,
+              setIdx,
+              state.workoutLogs[key].weight,
+              state.workoutLogs[key].reps,
+              exUnit
+            );
+          }
 
           // UPGRADE 2 & UPGRADE 4: When Set s is logged (done = true), propagate weight & reps to unlogged sets (or cascade N+1 on Pyramid Pull-Up days)
           const pullupDayNum = PULLUP_EX_ID_TO_DAY[exId] || 0;
@@ -17083,13 +17989,24 @@
       function getBatchCardScaleBadgeText(recipeId, unit) {
         if (recipeId === 'recipe_oats_batch') {
           const isOptionB = !dayPlan || dayPlan.id === 'almond_cashew_pea';
+          const oatsPortions = Math.max(1, Math.min(12, parseInt(state.oatsBatchPortions, 10) || 4));
+          const perJarG = isOptionB ? 279 : 269;
+          const totalG = perJarG * oatsPortions;
           if (unit === 'lb') {
-            return isOptionB ? '2.46 lb (9.8 oz/jar)' : '2.37 lb (9.5 oz/jar)';
+            const totalLb = (totalG / 453.59237).toFixed(2);
+            const perJarOz = (perJarG / 28.349523125).toFixed(1);
+            return `${totalLb} lb (${perJarOz} oz/jar)`;
           }
-          return isOptionB ? '1,116g (279g/jar)' : '1,076g (269g/jar)';
+          return `${totalG.toLocaleString('en-US')}g (${perJarG}g/jar)`;
         }
         if (recipeId === 'recipe_rice_batch') {
-          return unit === 'lb' ? '1.32 lb (5.3 oz/bowl)' : '600g (150g/bowl)';
+          const ricePortions = Math.max(1, Math.min(12, parseInt(state.riceBatchPortions, 10) || 4));
+          const totalG = 150 * ricePortions;
+          if (unit === 'lb') {
+            const totalLb = (totalG / 453.59237).toFixed(2);
+            return `${totalLb} lb (5.3 oz/bowl)`;
+          }
+          return `${totalG.toLocaleString('en-US')}g (150g/bowl)`;
         }
         return '';
       }
@@ -17293,6 +18210,59 @@
         });
       }
 
+      // UPGRADE 19: Rest Day Nutrition Prompt directly on Muscle Fuel Tab
+      const fuelRestBannerEl = document.getElementById('fuel-rest-day-carb-banner');
+      if (fuelRestBannerEl) {
+        const fuelDayAssign = getDayAssignment(week, dayIdx);
+        if (fuelDayAssign && fuelDayAssign.isRestDay) {
+          const isReducedCarbs = state.restDayCarbMode === 'reduce_20';
+          fuelRestBannerEl.className = 'rounded-2xl border border-amber-500/40 p-3.5 space-y-2.5';
+          fuelRestBannerEl.style.background = '#1e293b';
+          fuelRestBannerEl.innerHTML = `
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-xs font-extrabold text-amber-200">Rest Day Nutrition</span>
+              <span class="text-[11px] font-bold px-2 py-0.5 rounded-lg border ${isReducedCarbs ? 'bg-amber-500/20 text-amber-200 border-amber-400/50' : 'bg-cyan-500/15 text-cyan-200 border-cyan-400/40'}">
+                ${isReducedCarbs ? 'Carbs Scaled -20%' : 'Full Training Calories'}
+              </span>
+            </div>
+            <p class="text-xs font-semibold text-slate-200">Match training day calories, or reduce carbs?</p>
+            <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+              <button
+                type="button"
+                id="fuel-rest-carb-match-btn"
+                data-fuel-rest-carb="match"
+                aria-pressed="${!isReducedCarbs ? 'true' : 'false'}"
+                class="fuel-rest-carb-btn w-full py-2 px-2.5 rounded-xl border text-xs font-extrabold transition ${!isReducedCarbs ? 'bg-cyan-500/20 text-cyan-100 border-cyan-400' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'}"
+              >
+                Match Training Day
+              </button>
+              <button
+                type="button"
+                id="fuel-rest-carb-reduce-btn"
+                data-fuel-rest-carb="reduce_20"
+                aria-pressed="${isReducedCarbs ? 'true' : 'false'}"
+                class="fuel-rest-carb-btn w-full py-2 px-2.5 rounded-xl border text-xs font-extrabold transition ${isReducedCarbs ? 'bg-amber-500/25 text-amber-100 border-amber-400' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'}"
+              >
+                Reduce Carbs (-20%)
+              </button>
+            </div>
+          `;
+          fuelRestBannerEl.querySelectorAll('.fuel-rest-carb-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const mode = btn.getAttribute('data-fuel-rest-carb') === 'reduce_20' ? 'reduce_20' : 'match';
+              state.restDayCarbMode = mode;
+              saveState();
+              renderVeganView();
+              renderWorkoutView();
+              showToast(mode === 'reduce_20' ? 'Rest Day: Rice & carbs reduced by 20%.' : 'Rest Day: Matching full training day calories.');
+            });
+          });
+        } else {
+          fuelRestBannerEl.className = 'hidden';
+          fuelRestBannerEl.innerHTML = '';
+        }
+      }
+
       // Render Decoupled Oats vs. Rice Fridge Inventory Status & Next-Day Prep Prompt Banner
       const fuelPrepBannerEl = document.getElementById('fuel-next-day-prep-prompt-banner');
       if (fuelPrepBannerEl) {
@@ -17300,58 +18270,69 @@
         bindDecoupledNextDayPrepBannerEvents(fuelPrepBannerEl);
       }
 
-      // UPGRADE 3: Decluttered 4-Day Batch Prep Card Headers (Prep Video & Reset Batch moved inside Checklist Drawer)
+      // UPGRADE 3 + UPGRADE 19: Decluttered Dynamic Portions Batch Prep Cards
       const batchInvForCards = ensureBatchInventoryState();
       const recipeCardsContainer = document.getElementById('batch-recipe-cards-container');
       if (recipeCardsContainer) {
         if (!state.recipePrepLogs || typeof state.recipePrepLogs !== 'object') state.recipePrepLogs = {};
         if (!state.collapsedRecipeCards || typeof state.collapsedRecipeCards !== 'object') state.collapsedRecipeCards = {};
 
+        const oatsPortions = Math.max(1, Math.min(12, parseInt(state.oatsBatchPortions, 10) || 4));
+        const ricePortions = Math.max(1, Math.min(12, parseInt(state.riceBatchPortions, 10) || 4));
+        const baseRiceSteps = [
+          {
+            id: 'rice_step_1',
+            title: 'Dry White Jasmine Rice (Rinsed)',
+            detail: '55g dry per day × 4 days (rinse until clear)',
+            weightBadge: '220g'
+          },
+          {
+            id: 'rice_step_2',
+            title: 'Filtered Cooking Water (1 : 1.5 Ratio)',
+            detail: 'Add water to pot or rice cooker with rinsed rice',
+            weightBadge: '330 ml'
+          },
+          {
+            id: 'rice_step_3',
+            title: 'Cook 10–12 Mins (Mix Every 1.5m) & Cool-Down 10 Mins',
+            detail: 'Cook 10–12m stirring every 1.5m (90s) to prevent sticking, then cool-down 10m off heat',
+            weightBadge: '600g Yield'
+          },
+          {
+            id: 'rice_step_4',
+            title: 'Divide Into 4 Fridge Containers',
+            detail: '150g cooked rice per container × 4 days',
+            weightBadge: '150g × 4'
+          }
+        ];
+
+        const scaledOatsSteps = scaleBatchRecipeStepsInline(dayPlan.batchOats.steps, oatsPortions, 4);
+        const scaledRiceSteps = scaleBatchRecipeStepsInline(baseRiceSteps, ricePortions, 4);
+
         const BATCH_PREP_RECIPES_DATA = [
           {
             id: 'recipe_oats_batch',
+            portionKey: 'oats',
+            portions: oatsPortions,
             badge: 'Batch 1/2',
-            yieldPill: `${batchInvForCards.oatsJarsRemaining}/4 Jars in Fridge`,
-            title: '4-Day Overnight Protein Oats Batch',
-            subtitle: dayPlan.batchOats.subtitle,
+            yieldPill: `${batchInvForCards.oatsJarsRemaining}/${oatsPortions} Jars in Fridge`,
+            title: `${oatsPortions}-Portion Overnight Protein Oats Batch`,
+            subtitle: String(dayPlan.batchOats.subtitle || '').replace(/4\s*jars/gi, `${oatsPortions} jars`).replace(/4\s*days/gi, `${oatsPortions} days`),
             videoUrl: 'https://www.youtube.com/watch?v=_wgQBioExZA',
             videoTitle: 'High-Protein Overnight Oats Without Whey',
-            steps: dayPlan.batchOats.steps
+            steps: scaledOatsSteps
           },
           {
             id: 'recipe_rice_batch',
+            portionKey: 'rice',
+            portions: ricePortions,
             badge: 'Batch 2/2',
-            yieldPill: `${batchInvForCards.riceBowlsRemaining}/4 Bowls in Fridge`,
-            title: '4-Day Jasmine Rice Batch Prep',
-            subtitle: 'Prep time: 20 mins • Yields 4 × 150g cooked rice portions (55g dry/day)',
+            yieldPill: `${batchInvForCards.riceBowlsRemaining}/${ricePortions} Bowls in Fridge`,
+            title: `${ricePortions}-Portion Jasmine Rice Batch Prep`,
+            subtitle: `Prep time: 20 mins • Yields ${ricePortions} × 150g cooked rice portions (55g dry/day)`,
             videoUrl: 'https://www.youtube.com/watch?v=dVKVb1NFP8s',
             videoTitle: 'How to Cook Jasmine Rice — Stovetop Tutorial',
-            steps: [
-              {
-                id: 'rice_step_1',
-                title: 'Dry White Jasmine Rice (Rinsed)',
-                detail: '55g dry per day × 4 days (rinse until clear)',
-                weightBadge: '220g'
-              },
-              {
-                id: 'rice_step_2',
-                title: 'Filtered Cooking Water (1 : 1.5 Ratio)',
-                detail: 'Add water to pot or rice cooker with rinsed rice',
-                weightBadge: '330 ml'
-              },
-              {
-                id: 'rice_step_3',
-                title: 'Cook 10–12 Mins (Mix Every 1.5m) & Cool-Down 10 Mins',
-                detail: 'Cook 10–12m stirring every 1.5m (90s) to prevent sticking, then cool-down 10m off heat',
-                weightBadge: '600g Yield'
-              },
-              {
-                id: 'rice_step_4',
-                title: 'Divide Into 4 Fridge Containers',
-                detail: '150g cooked rice per container × 4 days',
-                weightBadge: '150g × 4'
-              }
-            ]
+            steps: scaledRiceSteps
           }
         ];
 
@@ -17409,9 +18390,8 @@
                     ? 'border border-emerald-500/40 bg-slate-900/75'
                     : 'border border-slate-800 bg-slate-900/85')
             } rounded-2xl p-3 sm:p-3.5 space-y-2 transition-all">
-              <!-- Row 1: Left: Batch 1/2 badge + Title. Right: 4/4 Ready / 4 Jars in Fridge badge -->
-              <!-- Row 1: Full-Width Batch Badge + Title -->
-              <div data-toggle-recipe-card="${recipe.id}" class="recipe-card-toggle-btn cursor-pointer select-none space-y-1">
+              <!-- Row 1: Full-Width Batch Badge + Title + Dynamic Portions Stepper -->
+              <div data-toggle-recipe-card="${recipe.id}" class="recipe-card-toggle-btn cursor-pointer select-none space-y-1.5">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                   <span class="recipe-prep-badge whitespace-nowrap px-2 py-0.5 text-[10px] font-bold font-mono rounded-md shrink-0 ${
                     !isCollapsed ? 'bg-sky-400 text-slate-950' : (isRecipeDone ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300')
@@ -17423,6 +18403,28 @@
                   }">${recipe.yieldPill}</span>
                 </div>
                 <h3 class="w-full font-bold text-slate-50 leading-snug" style="font-size: 15px; line-height: 1.35;">${recipe.title}</h3>
+              </div>
+
+              <!-- UPGRADE 19: Dynamic Portions Stepper ([ - ] X Portions [ + ]) -->
+              <div class="flex items-center justify-between gap-2 bg-slate-950/65 border border-slate-800 rounded-xl px-2.5 py-1.5">
+                <span class="text-[11px] font-bold text-slate-300">Dynamic Portions</span>
+                <div class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 rounded-xl p-0.5" role="group" aria-label="${recipe.portionKey === 'oats' ? 'Oats batch portions' : 'Rice batch portions'}">
+                  <button
+                    type="button"
+                    data-batch-portion-key="${recipe.portionKey}"
+                    data-batch-portion-delta="-1"
+                    class="batch-portion-step-btn w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-extrabold text-sm flex items-center justify-center shrink-0 transition"
+                    aria-label="Decrease ${recipe.portionKey} portions"
+                  >-</button>
+                  <span data-batch-portion-value="${recipe.portionKey}" class="px-2 text-xs font-extrabold text-cyan-200 whitespace-nowrap">${recipe.portions} ${recipe.portions === 1 ? 'Portion' : 'Portions'}</span>
+                  <button
+                    type="button"
+                    data-batch-portion-key="${recipe.portionKey}"
+                    data-batch-portion-delta="1"
+                    class="batch-portion-step-btn w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-extrabold text-sm flex items-center justify-center shrink-0 transition"
+                    aria-label="Increase ${recipe.portionKey} portions"
+                  >+</button>
+                </div>
               </div>
 
               <!-- Row 2: Aligned Scale Badge + Checklist Toggle -->
@@ -17468,6 +18470,33 @@
         renderRiceCookingTimerWidgets();
         bindPrepNoteEvents(recipeCardsContainer);
 
+        // UPGRADE 19: Dynamic Portions Stepper Click Listeners
+        recipeCardsContainer.querySelectorAll('.batch-portion-step-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const key = btn.getAttribute('data-batch-portion-key');
+            const delta = parseInt(btn.getAttribute('data-batch-portion-delta') || '0', 10);
+            if (!key || !delta) return;
+            if (key === 'oats') {
+              const cur = Math.max(1, Math.min(12, parseInt(state.oatsBatchPortions, 10) || 4));
+              const next = Math.max(1, Math.min(12, cur + delta));
+              if (next === cur) return;
+              state.oatsBatchPortions = next;
+              saveState();
+              renderVeganView();
+              showToast(`Oats batch scaled to ${next} ${next === 1 ? 'portion' : 'portions'}.`);
+            } else if (key === 'rice') {
+              const cur = Math.max(1, Math.min(12, parseInt(state.riceBatchPortions, 10) || 4));
+              const next = Math.max(1, Math.min(12, cur + delta));
+              if (next === cur) return;
+              state.riceBatchPortions = next;
+              saveState();
+              renderVeganView();
+              showToast(`Rice batch scaled to ${next} ${next === 1 ? 'portion' : 'portions'}.`);
+            }
+          });
+        });
+
         recipeCardsContainer.querySelectorAll('.recipe-card-toggle-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const rId = btn.getAttribute('data-toggle-recipe-card');
@@ -17492,17 +18521,17 @@
             if (oatsRecipe && oatsRecipe.steps.some(st => st.id === stepId)) {
               const allOatsDone = oatsRecipe.steps.every(st => Boolean(state.recipePrepLogs[st.id]));
               if (allOatsDone) {
-                inv.oatsJarsRemaining = 4;
+                inv.oatsJarsRemaining = oatsPortions;
                 inv.oatsPrepDay = null;
-                showToast('Batch 1/2 complete: 4 Overnight Oats Jars ready in fridge!');
+                showToast(`Batch 1/2 complete: ${oatsPortions} Overnight Oats Jars ready in fridge!`);
               }
             }
             if (riceRecipe && riceRecipe.steps.some(st => st.id === stepId)) {
               const allRiceDone = riceRecipe.steps.every(st => Boolean(state.recipePrepLogs[st.id]));
               if (allRiceDone) {
-                inv.riceBowlsRemaining = 4;
+                inv.riceBowlsRemaining = ricePortions;
                 inv.ricePrepDay = null;
-                showToast('Batch 2/2 complete: 4 Jasmine Rice Bowls ready in fridge!');
+                showToast(`Batch 2/2 complete: ${ricePortions} Jasmine Rice Bowls ready in fridge!`);
               }
             }
             saveState();
@@ -19420,7 +20449,9 @@
       if (/(flat|barbell|dumbbell|machine|converging).*(bench|chest\s*press)/.test(n)) return 'chest_flat_press';
       if (/dip/.test(n)) return 'chest_dip';
       if (/rear\s*delt|reverse\s*pec|face\s*pull/.test(n)) return 'rear_delt';
-      if (/lateral\s*raise/.test(n)) return 'lateral_raise';
+      if (/cable/.test(n) && /lateral\s*raise/.test(n)) return 'ex_cable_lateral_raise';
+      if (/machine/.test(n) && /lateral\s*raise/.test(n)) return 'ex_machine_lateral_raise';
+      if (/lateral\s*raise/.test(n)) return 'ex_db_lateral_raise';
       if (/overhead\s*press|shoulder\s*press|military\s*press/.test(n)) return 'overhead_press';
       if (/lat\s*pulldown|pulldown/.test(n)) return 'lat_pulldown';
       if (/pullover/.test(n)) return 'lat_pullover';
@@ -20319,6 +21350,111 @@
       if (dietConfirmModal) {
         dietConfirmModal.addEventListener('click', (e) => {
           if (e.target === dietConfirmModal) resolveDietChangeConfirmModal(false);
+        });
+      }
+
+      // UPGRADE 19: GYM LOCKER PIN & PHOTO MEMORY MODAL
+      const gymLockerModal = document.getElementById('gym-locker-modal');
+      const gymLockerCloseBtn = document.getElementById('gym-locker-close-btn');
+      const gymLockerPinInput = document.getElementById('gym-locker-pin-input');
+      const gymLockerPhotoInput = document.getElementById('gym-locker-photo-input');
+      const gymLockerPhotoPreviewWrap = document.getElementById('gym-locker-photo-preview-wrap');
+      const gymLockerPhotoPreviewImg = document.getElementById('gym-locker-photo-preview-img');
+      const gymLockerRemovePhotoBtn = document.getElementById('gym-locker-remove-photo-btn');
+      const gymLockerClearBtn = document.getElementById('gym-locker-clear-btn');
+      const gymLockerSaveBtn = document.getElementById('gym-locker-save-btn');
+      let draftLockerPhotoDataUrl = '';
+
+      function syncGymLockerPhotoPreview() {
+        if (!gymLockerPhotoPreviewWrap || !gymLockerPhotoPreviewImg) return;
+        if (draftLockerPhotoDataUrl) {
+          gymLockerPhotoPreviewImg.src = draftLockerPhotoDataUrl;
+          gymLockerPhotoPreviewWrap.classList.remove('hidden');
+        } else {
+          gymLockerPhotoPreviewImg.removeAttribute('src');
+          gymLockerPhotoPreviewWrap.classList.add('hidden');
+        }
+      }
+
+      window.openGymLockerModal = function() {
+        if (!gymLockerModal) return;
+        const curLocker = (state.gymLocker && typeof state.gymLocker === 'object')
+          ? state.gymLocker
+          : { pin: '', photoDataUrl: '', updatedAt: null };
+        if (gymLockerPinInput) gymLockerPinInput.value = String(curLocker.pin || '');
+        draftLockerPhotoDataUrl = String(curLocker.photoDataUrl || '');
+        syncGymLockerPhotoPreview();
+        gymLockerModal.classList.remove('hidden');
+        if (gymLockerPinInput && typeof gymLockerPinInput.focus === 'function') {
+          setTimeout(() => { try { gymLockerPinInput.focus(); } catch (e) {} }, 30);
+        }
+      };
+
+      function closeGymLockerModal() {
+        if (gymLockerModal) gymLockerModal.classList.add('hidden');
+      }
+
+      if (gymLockerCloseBtn) {
+        gymLockerCloseBtn.addEventListener('click', closeGymLockerModal);
+      }
+      if (gymLockerModal) {
+        gymLockerModal.addEventListener('click', (e) => {
+          if (e.target === gymLockerModal) closeGymLockerModal();
+        });
+      }
+      if (gymLockerPhotoInput) {
+        gymLockerPhotoInput.addEventListener('change', (e) => {
+          const file = e.target && e.target.files && e.target.files[0];
+          if (!file) return;
+          if (typeof compressExercisePhotoFileToDataUrl === 'function') {
+            compressExercisePhotoFileToDataUrl(file, (compressedUrl) => {
+              if (compressedUrl) {
+                draftLockerPhotoDataUrl = compressedUrl;
+                syncGymLockerPhotoPreview();
+                showToast('Locker photo attached.');
+              }
+            });
+          } else {
+            const reader = new FileReader();
+            reader.onload = () => {
+              draftLockerPhotoDataUrl = String(reader.result || '');
+              syncGymLockerPhotoPreview();
+              showToast('Locker photo attached.');
+            };
+            reader.readAsDataURL(file);
+          }
+          gymLockerPhotoInput.value = '';
+        });
+      }
+      if (gymLockerRemovePhotoBtn) {
+        gymLockerRemovePhotoBtn.addEventListener('click', () => {
+          draftLockerPhotoDataUrl = '';
+          syncGymLockerPhotoPreview();
+        });
+      }
+      if (gymLockerSaveBtn) {
+        gymLockerSaveBtn.addEventListener('click', () => {
+          const pin = gymLockerPinInput ? String(gymLockerPinInput.value || '').trim().slice(0, 16) : '';
+          state.gymLocker = {
+            pin,
+            photoDataUrl: draftLockerPhotoDataUrl,
+            updatedAt: (pin || draftLockerPhotoDataUrl) ? Date.now() : null
+          };
+          saveState();
+          renderWorkoutView();
+          closeGymLockerModal();
+          showToast(pin ? `Saved Locker #${pin}.` : (draftLockerPhotoDataUrl ? 'Saved locker photo.' : 'Cleared locker pin.'));
+        });
+      }
+      if (gymLockerClearBtn) {
+        gymLockerClearBtn.addEventListener('click', () => {
+          draftLockerPhotoDataUrl = '';
+          if (gymLockerPinInput) gymLockerPinInput.value = '';
+          clearGymLockerSilently();
+          saveState();
+          renderWorkoutView();
+          closeGymLockerModal();
+          showToast('Cleared gym locker.');
         });
       }
 
@@ -23868,6 +25004,64 @@
           style="border: 1px solid #d97706; color: #d97706; background: transparent;"
         >
           Yes, Change Diet
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 9: Gym Locker Pin & Photo Memory (Auto-Clears on Workout / Week Finish) -->
+  <div id="gym-locker-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="gym-locker-modal-title">
+    <div class="rounded-2xl max-w-sm w-full p-4 space-y-4 shadow-2xl border border-slate-700" style="background: #0f172a; color: #f8fafc; letter-spacing: 0.02em; line-height: 1.5; font-family: system-ui, sans-serif;">
+      <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+        <h3 id="gym-locker-modal-title" class="text-base font-extrabold text-slate-50">🔒 Gym Locker Memory</h3>
+        <button type="button" id="gym-locker-close-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0" aria-label="Close locker modal">✕</button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label for="gym-locker-pin-input" class="block text-xs font-extrabold text-slate-200 mb-1.5">Locker Number:</label>
+          <input
+            type="text"
+            id="gym-locker-pin-input"
+            inputmode="text"
+            maxlength="16"
+            placeholder="e.g., 142"
+            class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm font-bold text-slate-50 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+          />
+        </div>
+
+        <div class="space-y-2">
+          <label class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer transition">
+            <span>📷 Snap Photo</span>
+            <input type="file" id="gym-locker-photo-input" accept="image/*" capture="environment" class="hidden" />
+          </label>
+
+          <div id="gym-locker-photo-preview-wrap" class="hidden rounded-xl bg-slate-900 border border-slate-800 p-2 flex items-center gap-2.5">
+            <img id="gym-locker-photo-preview-img" alt="Gym locker photo preview" class="w-14 h-14 rounded-lg object-cover border border-slate-700 shrink-0" />
+            <div class="min-w-0 flex-1">
+              <div class="text-xs font-bold text-emerald-300">Locker Photo Saved</div>
+              <button type="button" id="gym-locker-remove-photo-btn" class="mt-1 text-[11px] font-bold text-rose-300 hover:text-rose-200 underline">Remove Photo</button>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-[11px] text-slate-400">Auto-clears silently when you finish your workout or finish the week.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+        <button
+          type="button"
+          id="gym-locker-clear-btn"
+          class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition"
+        >
+          Clear Locker
+        </button>
+        <button
+          type="button"
+          id="gym-locker-save-btn"
+          class="w-full py-2.5 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-extrabold shadow-md transition"
+        >
+          Save Locker
         </button>
       </div>
     </div>
