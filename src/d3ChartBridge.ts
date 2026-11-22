@@ -23,6 +23,19 @@ import {
   type OneRmLiftKey,
   type UnifiedWeeklyVolumePoint
 } from './utils/workoutLogic';
+import {
+  classifyExerciseCategory,
+  enforceDifficultyOnExercise,
+  enforceDifficultyOnRoutine,
+  filterRecipesByDietAndIntolerances,
+  groupExercisesByCategory,
+  isRecipeAllowedForDiet,
+  validateProgramWizardConfig
+} from './utils/wizardValidation';
+import {
+  countTotalLoggedSetsInState,
+  createAutoSupabaseSyncEngine
+} from './utils/workoutSyncEngine';
 
 export interface RenderOneRmD3ChartOptions {
   container: HTMLElement;
@@ -623,6 +636,15 @@ declare global {
     clampWeightInputValue?: typeof clampWeightInputValue;
     clampRepsInputValue?: typeof clampRepsInputValue;
     AI_EXERCISE_WHITELIST_RULE?: string;
+    validateProgramWizardConfig?: typeof validateProgramWizardConfig;
+    isRecipeAllowedForDiet?: typeof isRecipeAllowedForDiet;
+    filterRecipesByDietAndIntolerances?: typeof filterRecipesByDietAndIntolerances;
+    classifyExerciseCategory?: typeof classifyExerciseCategory;
+    groupExercisesByCategory?: typeof groupExercisesByCategory;
+    enforceDifficultyOnExercise?: typeof enforceDifficultyOnExercise;
+    enforceDifficultyOnRoutine?: typeof enforceDifficultyOnRoutine;
+    createAutoSupabaseSyncEngine?: typeof createAutoSupabaseSyncEngine;
+    countTotalLoggedSetsInState?: typeof countTotalLoggedSetsInState;
   }
 }
 
@@ -648,5 +670,14 @@ if (typeof window !== 'undefined') {
   window.clampWeightInputValue = clampWeightInputValue;
   window.clampRepsInputValue = clampRepsInputValue;
   window.AI_EXERCISE_WHITELIST_RULE = AI_EXERCISE_WHITELIST_RULE;
+  window.validateProgramWizardConfig = validateProgramWizardConfig;
+  window.isRecipeAllowedForDiet = isRecipeAllowedForDiet;
+  window.filterRecipesByDietAndIntolerances = filterRecipesByDietAndIntolerances;
+  window.classifyExerciseCategory = classifyExerciseCategory;
+  window.groupExercisesByCategory = groupExercisesByCategory;
+  window.enforceDifficultyOnExercise = enforceDifficultyOnExercise;
+  window.enforceDifficultyOnRoutine = enforceDifficultyOnRoutine;
+  window.createAutoSupabaseSyncEngine = createAutoSupabaseSyncEngine;
+  window.countTotalLoggedSetsInState = countTotalLoggedSetsInState;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

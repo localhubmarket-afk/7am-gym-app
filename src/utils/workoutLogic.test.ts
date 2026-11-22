@@ -3317,3 +3317,167 @@ test('Subtest 48: Data Protection & Undo Engine — Smart Warning Detector, Full
   ctrl.flushUndoRestorePush();
   assert.deepEqual(pushedReasons, ['undo_restore', 'delayed_sync', 'undo_restore']);
 });
+
+test('Subtest 49: Exercise Grouping, Auto Supabase Sync with Undo Protection & Strict Setup Wizard Validation (Diet + Difficulty)', async () => {
+  const wizMod = await import('./wizardValidation');
+  const syncMod = await import('./workoutSyncEngine');
+
+  // 1. Strict programWizardConfig validation
+  const validRes = wizMod.validateProgramWizardConfig({
+    daysPerWeek: 4,
+    primaryFocus: 'strength',
+    difficulty: 'easy',
+    baseDiet: 'Vegan',
+    intolerances: ['Nut-Free', 'Gluten-Free']
+  });
+  assert.equal(validRes.isValid, true);
+  assert.equal(validRes.errors.length, 0);
+  assert.equal(validRes.sanitizedConfig.daysPerWeek, 4);
+  assert.equal(validRes.sanitizedConfig.difficulty, 'easy');
+  assert.equal(validRes.sanitizedConfig.baseDiet, 'Vegan');
+  assert.deepEqual(validRes.sanitizedConfig.intolerances, ['Nut-Free', 'Gluten-Free']);
+
+  const invalidRes = wizMod.validateProgramWizardConfig({
+    daysPerWeek: 9,
+    primaryFocus: 'invalid_focus',
+    difficulty: 'extreme',
+    baseDiet: 'Carnivore',
+    intolerances: ['Unknown']
+  });
+  assert.equal(invalidRes.isValid, false);
+  assert.ok(invalidRes.errors.length >= 4);
+  assert.equal(invalidRes.sanitizedConfig.daysPerWeek, 7);
+  assert.equal(invalidRes.sanitizedConfig.difficulty, 'medium');
+  assert.equal(invalidRes.sanitizedConfig.baseDiet, 'Vegan');
+
+  // 2. Strict Diet & Intolerance Filter (Vegan MUST reject animal products while safely allowing plant milks & peanut butter)
+  const sampleRecipes = [
+    { id: 'r1', title: 'Crispy Tofu & Jasmine Rice Bowl', ingredients: ['Extra-Firm Tofu', 'Jasmine Rice', 'Soy Milk', 'Broccoli'] },
+    { id: 'r2', title: 'Grilled Chicken Breast & Rice', ingredients: ['Chicken Breast', 'White Rice', 'Olive Oil'] },
+    { id: 'r3', title: 'Whey Protein Banana Shake', ingredients: ['Whey Protein Powder', 'Whole Milk', 'Banana'] },
+    { id: 'r4', title: 'Overnight Pea Protein Oats', ingredients: ['Rolled Oats', 'Pea Protein', 'Oat Milk', 'Peanut Butter'] },
+    { id: 'r5', title: 'Scrambled Eggs & Spinach', ingredients: ['3 Whole Eggs', 'Spinach', 'Avocado Oil'] },
+    { id: 'r6', title: 'Honey Glazed Salmon', ingredients: ['Salmon Fillet', 'Honey', 'Asparagus'] }
+  ];
+
+  const veganOnly = wizMod.filterRecipesByDietAndIntolerances(sampleRecipes, 'Vegan', []);
+  assert.deepEqual(veganOnly.accepted.map((r) => r.id), ['r1', 'r4']);
+  assert.equal(veganOnly.rejected.length, 4);
+
+  const veganNutFree = wizMod.filterRecipesByDietAndIntolerances(sampleRecipes, 'Vegan', ['Nut-Free']);
+  assert.deepEqual(veganNutFree.accepted.map((r) => r.id), ['r1']);
+
+  const vegetarianOnly = wizMod.filterRecipesByDietAndIntolerances(sampleRecipes, 'Vegetarian', []);
+  assert.deepEqual(vegetarianOnly.accepted.map((r) => r.id), ['r1', 'r3', 'r4', 'r5']);
+
+  const ketoOnly = wizMod.filterRecipesByDietAndIntolerances(sampleRecipes, 'Keto', []);
+  assert.deepEqual(ketoOnly.accepted.map((r) => r.id), ['r5']);
+
+  assert.equal(
+    wizMod.isRecipeAllowedForDiet({ title: 'Plant-Based Oat Milk & Vegan Cheese Wrap', ingredients: ['Oat Milk', 'Vegan Cheese'] }, 'Vegan', []).allowed,
+    true
+  );
+  const yogurtVerdict = wizMod.isRecipeAllowedForDiet({ title: 'Greek Yogurt Parfait with Honey', ingredients: ['Greek Yogurt', 'Honey'] }, 'Vegan', []);
+  assert.equal(yogurtVerdict.allowed, false);
+  assert.ok(yogurtVerdict.reason.includes('Vegan'));
+
+  // 3. Exercise Display Organization (Weightlifting vs Bodyweight vs Cardio)
+  const mixedExercises = [
+    { id: 'mon_bench', name: 'Barbell Bench Press', sets: 4, reps: '6-8' },
+    { id: 'cable_ab_crunch', name: 'Daily Cable Abdominal Crunch', sets: 3, reps: '12-15' },
+    { id: 'day1_pullups', name: 'Pull-Ups (Bodyweight)', sets: 5, reps: 'Max', isBodyweightRepsOnly: true },
+    { id: 'tue_side_plank', name: 'Side Plank Hold', sets: 3, reps: '30s', isTimedHold: true },
+    { id: 'cardio_bike', name: 'Outdoor Biking', sets: 1, reps: 'Cardio', isCardio: true }
+  ];
+  const grouped = wizMod.groupExercisesByCategory(mixedExercises);
+  assert.deepEqual(grouped.weightlifting.map((e) => e.id), ['mon_bench', 'cable_ab_crunch']);
+  assert.deepEqual(grouped.bodyweight.map((e) => e.id), ['day1_pullups', 'tue_side_plank']);
+  assert.deepEqual(grouped.cardio.map((e) => e.id), ['cardio_bike']);
+
+  // 4. Difficulty Enforcer (Easy = machine/cable & <= 3 sets; Hard = barbell & 4-5 sets)
+  const rawWeek: any[] = [
+    {
+      daySub: 'Lower 1',
+      exercises: [
+        { id: 'e1', name: 'Barbell Back Squat', sets: 5, reps: '5-8', restSec: 150, equipType: 'barbell' },
+        { id: 'e2', name: 'Barbell Bench Press', sets: 5, reps: '6-8', restSec: 120, equipType: 'barbell' }
+      ]
+    },
+    5,
+    6
+  ];
+  const easyWeek = wizMod.enforceDifficultyOnRoutine(rawWeek, 'easy') as any[];
+  assert.equal(easyWeek[0].exercises[0].name, 'Leg Press Machine');
+  assert.equal(easyWeek[0].exercises[0].sets, 3);
+  assert.equal(easyWeek[0].exercises[1].name, 'Seated Chest Press Machine');
+  assert.equal(easyWeek[0].exercises[1].sets, 3);
+
+  const hardWeek = wizMod.enforceDifficultyOnRoutine(
+    [{ daySub: 'Upper 1', exercises: [{ id: 'e1', name: 'Leg Press Machine', sets: 2, reps: '12', restSec: 60, equipType: 'machine' }] }],
+    'hard'
+  ) as any[];
+  assert.equal(hardWeek[0].exercises[0].name, 'Barbell Back Squat');
+  assert.equal(hardWeek[0].exercises[0].sets, 4);
+
+  // 5. Automatic Supabase Sync Engine integrated with Data Protection & Undo Engine
+  const postedCalls: Array<{ url: string; reason: string; body: string }> = [];
+  let stateRef: Record<string, any> = {
+    workoutLogs: { w1_0_mon_bench_1: { weight: '135', reps: '8', done: true } },
+    pullupLogs: {},
+    cardioLogs: {},
+    undoBackup: { shouldBeStripped: true }
+  };
+
+  let pendingTimerFn: (() => void) | null = null;
+  let timerCount = 0;
+
+  const engine = syncMod.createAutoSupabaseSyncEngine({
+    getState: () => stateRef,
+    getEndpoint: () => '/api/state?email=athlete%40example.com',
+    fetchImpl: async (url, init) => {
+      postedCalls.push({ url, reason: 'http_post', body: init.body });
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ configured: true, saved: true })
+      };
+    },
+    setTimer: (fn) => {
+      pendingTimerFn = fn;
+      return ++timerCount;
+    },
+    clearTimer: () => {
+      pendingTimerFn = null;
+    }
+  });
+
+  // Trigger automatic sync when a set is logged (no manual button needed!)
+  const setSyncRes = await engine.autoSyncWorkoutToSupabase('set_logged');
+  assert.equal(setSyncRes.synced, true);
+  assert.equal(postedCalls.length, 1);
+  assert.equal(postedCalls[0].body.includes('"undoBackup"'), false);
+
+  // Schedule a destructive overwrite (5-second Undo protection window active)
+  engine.scheduleDestructiveOverwritePush(5000);
+  assert.equal(engine.isUndoProtectionWindowActive(), true);
+
+  // During the 5s Undo window, passive set/workout auto-sync MUST be paused to prevent premature destructive push
+  const blockedRes = await engine.autoSyncWorkoutToSupabase('workout_finished');
+  assert.equal(blockedRes.synced, false);
+  assert.equal(blockedRes.blockedByUndoGuard, true);
+  assert.equal(postedCalls.length, 1);
+
+  // Clicking UNDO flushes restored state immediately and cancels delayed destructive timer
+  const restoreRes = await engine.flushUndoRestorePush();
+  assert.equal(restoreRes.synced, true);
+  assert.equal(engine.isUndoProtectionWindowActive(), false);
+  assert.equal(postedCalls.length, 2);
+
+  // Empty local state cannot accidentally wipe a known populated cloud record on passive auto-sync
+  stateRef = { workoutLogs: {}, pullupLogs: {}, cardioLogs: {} };
+  const wipeGuardRes = await engine.autoSyncWorkoutToSupabase('set_logged');
+  assert.equal(wipeGuardRes.synced, false);
+  assert.equal(wipeGuardRes.blockedByEmptyStateGuard, true);
+  assert.equal(postedCalls.length, 2);
+});
+

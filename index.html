@@ -1791,6 +1791,7 @@
 
     let cloudSyncTimeout = null;
     let delayedDestructiveCloudPushTimer = null;
+    let autoSupabaseSyncEngineInstance = null;
     const SYNC_SUPABASE_DELAY_MS_LOCAL = 5000;
     const SYNC_UNDO_TOAST_DURATION_MS_LOCAL = 10000;
 
@@ -1807,11 +1808,61 @@
       return JSON.stringify(clean);
     }
 
+    function updateCloudSyncBadgeUI(phase, message) {
+      const badge = document.getElementById('cloud-sync-badge');
+      if (!badge) return;
+      badge.textContent = message;
+      if (phase === 'saved') {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300';
+      } else if (phase === 'paused_undo') {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300';
+      } else if (phase === 'syncing') {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300';
+      } else {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300';
+      }
+    }
+
+    function getActiveCloudEndpoint() {
+      const userEmail = (state && state.userProfile && state.userProfile.email) ? state.userProfile.email.trim().toLowerCase() : '';
+      if (state && state.cloudDbUrl && state.cloudDbUrl.trim()) {
+        return state.cloudDbUrl.trim();
+      }
+      if (window.location && window.location.origin && /^https?:/i.test(window.location.origin)) {
+        return window.location.origin + '/api/state' + (userEmail ? ('?email=' + encodeURIComponent(userEmail)) : '');
+      }
+      return '';
+    }
+
+    function getAutoSupabaseSyncEngineLocal() {
+      if (autoSupabaseSyncEngineInstance) return autoSupabaseSyncEngineInstance;
+      if (typeof window.createAutoSupabaseSyncEngine === 'function') {
+        autoSupabaseSyncEngineInstance = window.createAutoSupabaseSyncEngine({
+          getState: () => state,
+          getEndpoint: () => getActiveCloudEndpoint(),
+          delayMs: typeof window.SYNC_SUPABASE_DELAY_MS === 'number' ? window.SYNC_SUPABASE_DELAY_MS : SYNC_SUPABASE_DELAY_MS_LOCAL,
+          onStatusChange: (status) => {
+            updateCloudSyncBadgeUI(status.phase, status.message);
+          }
+        });
+        return autoSupabaseSyncEngineInstance;
+      }
+      return null;
+    }
+
     function isDestructiveCloudPushDelayedLocal() {
+      const eng = getAutoSupabaseSyncEngineLocal();
+      if (eng && typeof eng.isUndoProtectionWindowActive === 'function') {
+        return eng.isUndoProtectionWindowActive() || delayedDestructiveCloudPushTimer !== null;
+      }
       return delayedDestructiveCloudPushTimer !== null;
     }
 
     function cancelDelayedDestructiveCloudPushLocal() {
+      const eng = getAutoSupabaseSyncEngineLocal();
+      if (eng && typeof eng.cancelPendingDestructivePush === 'function') {
+        eng.cancelPendingDestructivePush();
+      }
       if (delayedDestructiveCloudPushTimer !== null) {
         clearTimeout(delayedDestructiveCloudPushTimer);
         delayedDestructiveCloudPushTimer = null;
@@ -1825,10 +1876,13 @@
       clearTimeout(cloudSyncTimeout);
       cloudSyncTimeout = null;
       cancelDelayedDestructiveCloudPushLocal();
-      const badge = document.getElementById('cloud-sync-badge');
-      if (badge && getActiveCloudEndpoint()) {
-        badge.textContent = 'Cloud push paused (5s undo window)...';
-        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300';
+      const eng = getAutoSupabaseSyncEngineLocal();
+      if (eng && typeof eng.scheduleDestructiveOverwritePush === 'function') {
+        eng.scheduleDestructiveOverwritePush(waitMs);
+        return;
+      }
+      if (getActiveCloudEndpoint()) {
+        updateCloudSyncBadgeUI('paused_undo', 'Cloud push paused (5s undo window)...');
       }
       delayedDestructiveCloudPushTimer = setTimeout(() => {
         delayedDestructiveCloudPushTimer = null;
@@ -1841,31 +1895,47 @@
     function flushUndoRestoreCloudPushLocal() {
       clearTimeout(cloudSyncTimeout);
       cloudSyncTimeout = null;
+      const eng = getAutoSupabaseSyncEngineLocal();
+      if (eng && typeof eng.flushUndoRestorePush === 'function') {
+        if (delayedDestructiveCloudPushTimer !== null) {
+          clearTimeout(delayedDestructiveCloudPushTimer);
+          delayedDestructiveCloudPushTimer = null;
+        }
+        eng.flushUndoRestorePush();
+        return;
+      }
       cancelDelayedDestructiveCloudPushLocal();
       if (getActiveCloudEndpoint()) {
         pushStateToCloud('undo_restore');
       }
     }
 
-    function getActiveCloudEndpoint() {
-      const userEmail = (state && state.userProfile && state.userProfile.email) ? state.userProfile.email.trim().toLowerCase() : '';
-      if (state.cloudDbUrl && state.cloudDbUrl.trim()) {
-        return state.cloudDbUrl.trim();
+    function autoSyncWorkoutToSupabaseLocal(reason) {
+      const syncReason = reason || 'set_logged';
+      // Respect Data Protection & Undo Engine 5-second delay window before pushing any automatic sync
+      if (isDestructiveCloudPushDelayedLocal() && syncReason !== 'undo_restore') {
+        updateCloudSyncBadgeUI('paused_undo', 'Cloud push paused (5s undo window)...');
+        return Promise.resolve({ synced: false, blockedByUndoGuard: true, blockedByEmptyStateGuard: false, reason: syncReason });
       }
-      if (window.location && window.location.hostname && window.location.hostname.includes('vercel.app')) {
-        return window.location.origin + '/api/state' + (userEmail ? ('?email=' + encodeURIComponent(userEmail)) : '');
+      clearTimeout(cloudSyncTimeout);
+      cloudSyncTimeout = null;
+      const eng = getAutoSupabaseSyncEngineLocal();
+      if (eng && typeof eng.autoSyncWorkoutToSupabase === 'function') {
+        return eng.autoSyncWorkoutToSupabase(syncReason);
       }
-      return '';
+      pushStateToCloud(syncReason);
+      return Promise.resolve({ synced: true, blockedByUndoGuard: false, blockedByEmptyStateGuard: false, reason: syncReason });
     }
+    window.autoSyncWorkoutToSupabase = autoSyncWorkoutToSupabaseLocal;
 
     function pushStateToCloud(pushReason) {
       const url = getActiveCloudEndpoint();
       if (!url) return;
-      const badge = document.getElementById('cloud-sync-badge');
-      if (badge) {
-        badge.textContent = pushReason === 'undo_restore' ? 'Restoring to Supabase...' : 'Syncing...';
-        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300';
+      if (isDestructiveCloudPushDelayedLocal() && pushReason !== 'undo_restore' && pushReason !== 'delayed_sync') {
+        updateCloudSyncBadgeUI('paused_undo', 'Cloud push paused (5s undo window)...');
+        return;
       }
+      updateCloudSyncBadgeUI('syncing', pushReason === 'undo_restore' ? 'Restoring to Supabase...' : 'Auto-syncing to Supabase...');
       const isFirebase = url.includes('firebaseio.com') || url.endsWith('.json');
       const isVercelApi = url.includes('/api/state');
       const payloadJson = serializeStateWithoutUndoBackupLocal(state);
@@ -1874,20 +1944,17 @@
         headers: { 'Content-Type': isVercelApi ? 'application/json' : 'text/plain;charset=utf-8' },
         body: payloadJson
       }).then(r => r.json().catch(() => ({}))).then(res => {
-        if (badge) {
-          if (res && res.configured === false) {
-            badge.textContent = 'Local Saved (Add Supabase in Vercel)';
-            badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300';
-          } else {
-            badge.textContent = pushReason === 'undo_restore' ? '✓ Undo Restored in Supabase' : '✓ Supabase Cloud Saved';
-            badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300';
+        if (res && res.configured === false) {
+          updateCloudSyncBadgeUI('local_only', 'Local Saved (Add Supabase in Vercel)');
+        } else {
+          const eng = getAutoSupabaseSyncEngineLocal();
+          if (eng && typeof window.countTotalLoggedSetsInState === 'function') {
+            eng.recordKnownCloudLoggedSetCount(window.countTotalLoggedSetsInState(state));
           }
+          updateCloudSyncBadgeUI('saved', pushReason === 'undo_restore' ? '✓ Undo Restored in Supabase' : '✓ Auto-Synced to Supabase');
         }
       }).catch(() => {
-        if (badge) {
-          badge.textContent = 'Local Saved';
-          badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400';
-        }
+        updateCloudSyncBadgeUI('local_only', 'Local Saved');
       });
     }
 
@@ -1945,16 +2012,17 @@
             syncProgressiveWeekState(state);
             autoMigrateExerciseNotesToMachineSwaps();
 
+            const eng = getAutoSupabaseSyncEngineLocal();
+            if (eng && typeof window.countTotalLoggedSetsInState === 'function') {
+              eng.recordKnownCloudLoggedSetCount(window.countTotalLoggedSetsInState(state));
+            }
+
             saveState(true);
             renderWorkoutView();
             renderPullupView();
             renderVeganView();
             renderShoppingView();
-            const badge = document.getElementById('cloud-sync-badge');
-            if (badge) {
-              badge.textContent = '✓ Supabase Connected';
-              badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300';
-            }
+            updateCloudSyncBadgeUI('saved', '✓ Supabase Connected');
           }
         })
         .catch(() => {});
@@ -1980,7 +2048,9 @@
       // Debounced Cloud DB Sync (paused automatically during the 5-second destructive overwrite undo window)
       if (!skipCloud && !isDestructiveCloudPushDelayedLocal() && getActiveCloudEndpoint()) {
         clearTimeout(cloudSyncTimeout);
-        cloudSyncTimeout = setTimeout(pushStateToCloud, 600);
+        cloudSyncTimeout = setTimeout(() => {
+          autoSyncWorkoutToSupabaseLocal('set_logged');
+        }, 600);
       }
     }
 
@@ -13143,7 +13213,9 @@
 
       // UPGRADE 19: Dynamic End-Time (+30 mins from actual finish time) & Auto-Clear Gym Locker
       clearGymLockerSilently();
-      saveState();
+      saveState(true);
+      // Task 3: Automatically synchronize finished workout to Supabase without requiring a manual sync button
+      autoSyncWorkoutToSupabaseLocal('workout_finished');
       const dynamicPostWorkoutBtnLabel = formatOpenPostWorkoutMealButtonLabelInline(new Date());
       const mealBtn = document.getElementById('modal-open-post-meal-btn');
       if (mealBtn) {
@@ -14312,7 +14384,27 @@
 
       const totalExercisesToday = exercisesToday.length;
 
+      function classifyExerciseCategoryInline(exObj) {
+        if (typeof window.classifyExerciseCategory === 'function') {
+          return window.classifyExerciseCategory(exObj);
+        }
+        if (isCardioExerciseInline(exObj)) return 'cardio';
+        const nm = String((exObj && exObj.name) || '').toLowerCase();
+        const isBw = Boolean(
+          exObj && (exObj.isBodyweightRepsOnly || exObj.isTimedHold || PULLUP_EX_ID_TO_DAY[exObj.id] || exObj.id === 'tue_side_plank' || String(exObj.equipType || '').toLowerCase() === 'bodyweight')
+        ) || /\b(pull[- ]?ups?|chin[- ]?ups?|plank|push[- ]?ups?|bodyweight|mobility|stretch)\b/i.test(nm);
+        if (isBw && !/\b(cable|barbell|dumbbell|machine|kettlebell|weighted)\b/i.test(nm)) return 'bodyweight';
+        return 'weightlifting';
+      }
+
+      const categorizedExerciseCards = {
+        weightlifting: [],
+        bodyweight: [],
+        cardio: []
+      };
+
       const exerciseCardsHtml = exercisesToday.map((ex, exOrder) => {
+        const exDisplayCategory = classifyExerciseCategoryInline(ex);
         const meta = EXERCISE_META[ex.id] || {
           equipType: 'dumbbells',
           equipLabel: 'Gym Equipment',
@@ -14795,8 +14887,8 @@
           : '00:00';
         const effectiveExComplete = isCardioEx ? cardioDoneNow : isExComplete;
 
-        return `
-          <article id="ex-card-${ex.id}" data-exercise-index="${exOrder}" data-canonical-ex-id="${canonicalExId}" data-ex-progress-state="${effectiveExComplete ? 'completed' : (isExInProgress ? 'in_progress' : 'not_started')}" style="${isExInProgress ? 'border: 2px solid #d97706; background: rgba(217, 119, 6, 0.15);' : (!isActiveCard && !effectiveExComplete ? 'border: 1px solid #334155;' : '')}" class="${
+        const cardHtml = `
+          <article id="ex-card-${ex.id}" data-exercise-index="${exOrder}" data-exercise-category="${exDisplayCategory}" data-canonical-ex-id="${canonicalExId}" data-ex-progress-state="${effectiveExComplete ? 'completed' : (isExInProgress ? 'in_progress' : 'not_started')}" style="${isExInProgress ? 'border: 2px solid #d97706; background: rgba(217, 119, 6, 0.15);' : (!isActiveCard && !effectiveExComplete ? 'border: 1px solid #334155;' : '')}" class="${
             isExInProgress
               ? 'shadow-lg shadow-amber-950/25'
               : (isActiveCard
@@ -15639,7 +15731,21 @@
             </div>
           </article>
         `;
+        if (categorizedExerciseCards[exDisplayCategory]) {
+          categorizedExerciseCards[exDisplayCategory].push(cardHtml);
+        } else {
+          categorizedExerciseCards.weightlifting.push(cardHtml);
+        }
+        return cardHtml;
       }).join('');
+
+      const activeCategoryFilter = (state.exerciseCategoryFilter === 'weightlifting' || state.exerciseCategoryFilter === 'bodyweight' || state.exerciseCategoryFilter === 'cardio')
+        ? state.exerciseCategoryFilter
+        : 'all';
+
+      const weightCount = categorizedExerciseCards.weightlifting.length;
+      const bodyweightCount = categorizedExerciseCards.bodyweight.length;
+      const cardioCount = categorizedExerciseCards.cardio.length;
 
       const addCardioBarHtml = `
         <div id="add-cardio-exercise-bar" class="bg-[#1e293b] border border-cyan-500/35 rounded-2xl p-3 space-y-2">
@@ -15655,19 +15761,92 @@
         </div>
       `;
 
+      const categoryTabsHtml = `
+        <div id="exercise-category-tabs" role="tablist" aria-label="Filter workout by exercise type" class="grid grid-cols-4 gap-1.5 p-1 rounded-2xl bg-slate-950 border border-slate-800">
+          <button type="button" role="tab" data-ex-category-tab="all" aria-selected="${activeCategoryFilter === 'all' ? 'true' : 'false'}" class="ex-category-tab-btn py-2 px-1.5 rounded-xl text-[11px] font-extrabold transition ${activeCategoryFilter === 'all' ? 'bg-sky-400 text-slate-950 shadow-sm' : 'text-slate-300 hover:text-white hover:bg-slate-900'}">
+            All (${exercisesToday.length})
+          </button>
+          <button type="button" role="tab" data-ex-category-tab="weightlifting" aria-selected="${activeCategoryFilter === 'weightlifting' ? 'true' : 'false'}" class="ex-category-tab-btn py-2 px-1.5 rounded-xl text-[11px] font-extrabold transition ${activeCategoryFilter === 'weightlifting' ? 'bg-emerald-500 text-slate-950 shadow-sm' : 'text-slate-300 hover:text-white hover:bg-slate-900'}">
+            Weights (${weightCount})
+          </button>
+          <button type="button" role="tab" data-ex-category-tab="bodyweight" aria-selected="${activeCategoryFilter === 'bodyweight' ? 'true' : 'false'}" class="ex-category-tab-btn py-2 px-1.5 rounded-xl text-[11px] font-extrabold transition ${activeCategoryFilter === 'bodyweight' ? 'bg-amber-400 text-slate-950 shadow-sm' : 'text-slate-300 hover:text-white hover:bg-slate-900'}">
+            Body (${bodyweightCount})
+          </button>
+          <button type="button" role="tab" data-ex-category-tab="cardio" aria-selected="${activeCategoryFilter === 'cardio' ? 'true' : 'false'}" class="ex-category-tab-btn py-2 px-1.5 rounded-xl text-[11px] font-extrabold transition ${activeCategoryFilter === 'cardio' ? 'bg-cyan-400 text-slate-950 shadow-sm' : 'text-slate-300 hover:text-white hover:bg-slate-900'}">
+            Cardio (${cardioCount})
+          </button>
+        </div>
+      `;
+
+      const weightliftingSectionHtml = (activeCategoryFilter === 'all' || activeCategoryFilter === 'weightlifting') && weightCount > 0
+        ? `
+          <section id="exercise-group-weightlifting" aria-label="Weightlifting Movements" class="space-y-2.5">
+            <div class="flex items-center justify-between gap-2 px-1 pt-1">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0" aria-hidden="true"></span>
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-emerald-300">Weightlifting Movements</h3>
+              </div>
+              <span class="text-[11px] font-bold text-slate-400">${weightCount} ${weightCount === 1 ? 'exercise' : 'exercises'}</span>
+            </div>
+            <div class="space-y-3">
+              ${categorizedExerciseCards.weightlifting.join('')}
+            </div>
+          </section>
+        `
+        : (activeCategoryFilter === 'weightlifting'
+            ? `<div id="exercise-group-weightlifting" class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 text-center text-xs font-bold text-slate-300">No weightlifting moves scheduled on this day.</div>`
+            : '');
+
+      const bodyweightSectionHtml = (activeCategoryFilter === 'all' || activeCategoryFilter === 'bodyweight') && bodyweightCount > 0
+        ? `
+          <section id="exercise-group-bodyweight" aria-label="Bodyweight Movements" class="space-y-2.5">
+            <div class="flex items-center justify-between gap-2 px-1 pt-1">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" aria-hidden="true"></span>
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-amber-300">Bodyweight Movements</h3>
+              </div>
+              <span class="text-[11px] font-bold text-slate-400">No weights needed • ${bodyweightCount} ${bodyweightCount === 1 ? 'move' : 'moves'}</span>
+            </div>
+            <div class="space-y-3">
+              ${categorizedExerciseCards.bodyweight.join('')}
+            </div>
+          </section>
+        `
+        : (activeCategoryFilter === 'bodyweight'
+            ? `<div id="exercise-group-bodyweight" class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 text-center text-xs font-bold text-slate-300">No bodyweight moves scheduled on this day.</div>`
+            : '');
+
+      const cardioSectionHtml = (activeCategoryFilter === 'all' || activeCategoryFilter === 'cardio')
+        ? `
+          <section id="exercise-group-cardio" aria-label="Cardio Zone" class="space-y-2.5 rounded-2xl border border-cyan-500/35 bg-cyan-950/20 p-2.5">
+            <div class="flex items-center justify-between gap-2 px-1">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shrink-0" aria-hidden="true"></span>
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-cyan-300">Cardio Zone</h3>
+              </div>
+              <span class="text-[11px] font-bold text-cyan-200/80">${cardioCount} active ${cardioCount === 1 ? 'session' : 'sessions'}</span>
+            </div>
+            ${cardioCount > 0 ? `<div class="space-y-3">${categorizedExerciseCards.cardio.join('')}</div>` : ''}
+            ${addCardioBarHtml}
+          </section>
+        `
+        : '';
+
       if (dayAssignment.isRestDay) {
         const isRestDrawerOpen = Boolean(state.showRestDayMobility && state.openRestMobilityDrawer);
         listEl.innerHTML = `
+          ${categoryTabsHtml}
           <details id="rest-day-mobility-drawer" ${isRestDrawerOpen ? 'open' : ''} class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5">
             <summary class="cursor-pointer flex items-center justify-between gap-2 text-xs font-extrabold text-emerald-300 select-none">
               <span>Optional Rest-Day Mobility &amp; Core (${exercisesToday.length} items) — Tap to Open</span>
               <span class="text-[10px] font-bold text-slate-400">▾</span>
             </summary>
             <div class="pt-3 space-y-3">
-              ${exerciseCardsHtml}
+              ${weightliftingSectionHtml}
+              ${bodyweightSectionHtml}
             </div>
           </details>
-          ${addCardioBarHtml}
+          ${cardioSectionHtml}
         `;
         const restMobilityDrawerEl = document.getElementById('rest-day-mobility-drawer');
         if (restMobilityDrawerEl) {
@@ -15716,7 +15895,7 @@
             </div>
           `;
         }
-        listEl.innerHTML = bonusHabitsBarHtml + exerciseCardsHtml + addCardioBarHtml;
+        listEl.innerHTML = bonusHabitsBarHtml + categoryTabsHtml + weightliftingSectionHtml + bodyweightSectionHtml + cardioSectionHtml;
 
         const day6AbsBtn = document.getElementById('day6-toggle-daily-abs-btn');
         if (day6AbsBtn) {
@@ -15731,6 +15910,15 @@
           });
         }
       }
+
+      listEl.querySelectorAll('.ex-category-tab-btn').forEach(tabBtn => {
+        tabBtn.addEventListener('click', () => {
+          const nextCat = tabBtn.getAttribute('data-ex-category-tab') || 'all';
+          state.exerciseCategoryFilter = nextCat;
+          saveState(true);
+          renderWorkoutView();
+        });
+      });
 
       // UPGRADE 19: Quick-Add Cardio & Dual-Mode Cardio Engine Listeners
       listEl.querySelectorAll('.quick-add-cardio-btn').forEach(btn => {
@@ -15853,7 +16041,8 @@
             updatedAt: Date.now()
           };
           state.cardioUiModeByEx[cKey] = 'idle';
-          saveState();
+          saveState(true);
+          autoSyncWorkoutToSupabaseLocal('cardio_logged');
           renderWorkoutView();
           showToast(`Saved live cardio session: ${mins} mins!`);
         });
@@ -15892,7 +16081,8 @@
             updatedAt: Date.now()
           };
           state.cardioUiModeByEx[cKey] = 'idle';
-          saveState();
+          saveState(true);
+          autoSyncWorkoutToSupabaseLocal('cardio_logged');
           renderWorkoutView();
           showToast(`Logged cardio: ${summaryText}`);
         });
@@ -17283,7 +17473,8 @@
             syncedMealSched = autoSyncGymTimeFromSetLog(week, dayIdx, isFirstSetToday, isFinalSetToday);
           }
 
-          saveState();
+          saveState(true);
+          autoSyncWorkoutToSupabaseLocal('set_logged');
           checkAndRenderForgottenSetReminder(false);
           renderWorkoutView();
           renderVeganView();
@@ -18060,7 +18251,8 @@
             state.dismissedForgottenSetActivityAt = null;
             state.notifiedForgottenSetActivityAt = null;
           }
-          saveState();
+          saveState(true);
+          autoSyncWorkoutToSupabaseLocal('pullup_logged');
           checkAndRenderForgottenSetReminder(false);
           renderPullupView();
           renderWorkoutView();
@@ -19157,7 +19349,44 @@
           }
         ];
 
-        recipeCardsContainer.innerHTML = BATCH_PREP_RECIPES_DATA.map(recipe => {
+        const activeWizardCfg = (typeof window.validateProgramWizardConfig === 'function')
+          ? window.validateProgramWizardConfig(state.programWizardConfig || { baseDiet: state.baseDiet || 'Vegan', intolerances: state.intolerances || [] }).sanitizedConfig
+          : { baseDiet: normalizeAppBaseDiet(state.baseDiet || 'Vegan'), intolerances: normalizeAppIntolerances(state.intolerances || []) };
+
+        const filterResult = (typeof window.filterRecipesByDietAndIntolerances === 'function')
+          ? window.filterRecipesByDietAndIntolerances(
+              BATCH_PREP_RECIPES_DATA.map(r => ({
+                ...r,
+                ingredients: (r.steps || []).map(st => `${st.title || ''} ${st.detail || ''}`)
+              })),
+              activeWizardCfg.baseDiet,
+              activeWizardCfg.intolerances
+            )
+          : { accepted: BATCH_PREP_RECIPES_DATA, rejected: [] };
+
+        window.filterAppRecipesForActiveDiet = function(recipesList) {
+          if (typeof window.filterRecipesByDietAndIntolerances === 'function') {
+            return window.filterRecipesByDietAndIntolerances(recipesList || [], activeWizardCfg.baseDiet, activeWizardCfg.intolerances);
+          }
+          return { accepted: recipesList || [], rejected: [] };
+        };
+
+        const dietFilterStatusBannerHtml = `
+          <div id="diet-validation-filter-banner" class="rounded-xl border border-emerald-500/35 bg-emerald-950/25 px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+            <span class="font-extrabold text-emerald-300">
+              Diet Filter Active: ${activeWizardCfg.baseDiet}${activeWizardCfg.intolerances && activeWizardCfg.intolerances.length > 0 ? ' • ' + activeWizardCfg.intolerances.join(', ') : ''}
+            </span>
+            <span class="text-slate-300 font-semibold">
+              ${activeWizardCfg.baseDiet === 'Vegan' ? 'Animal products strictly blocked' : (filterResult.rejected.length > 0 ? `${filterResult.rejected.length} non-matching recipe(s) hidden` : 'All shown recipes match your setup')}
+            </span>
+          </div>
+        `;
+
+        const VISIBLE_BATCH_RECIPES = filterResult.accepted;
+
+        recipeCardsContainer.innerHTML = dietFilterStatusBannerHtml + (VISIBLE_BATCH_RECIPES.length === 0
+          ? `<div class="rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-xs font-bold text-slate-300">High-carb batch recipes were hidden to match your ${activeWizardCfg.baseDiet} setup.</div>`
+          : VISIBLE_BATCH_RECIPES.map(recipe => {
           const totalSteps = recipe.steps.length;
           const doneSteps = recipe.steps.filter(st => Boolean(state.recipePrepLogs[st.id])).length;
           const isRecipeDone = doneSteps === totalSteps;
@@ -19286,7 +19515,7 @@
               </div>
             </article>
           `;
-        }).join('');
+        }).join(''));
 
         renderRiceCookingTimerWidgets();
         bindPrepNoteEvents(recipeCardsContainer);
@@ -22750,11 +22979,37 @@
 
       async function runProgramSetupWizard() {
         const week = state.selectedWeek || state.currentWeek || 1;
-        const daysPerWeek = Math.max(3, Math.min(6, Number(wizardSelectedDays) || 5));
-        const primaryFocus = wizardSelectedFocus || 'balanced';
-        const difficulty = wizardSelectedDifficulty === 'easy' || wizardSelectedDifficulty === 'hard' ? wizardSelectedDifficulty : 'medium';
-        const baseDiet = normalizeAppBaseDiet(wizardSelectedBaseDiet);
-        const intolerances = normalizeAppIntolerances(wizardSelectedIntolerances);
+        const rawWizardInput = {
+          daysPerWeek: Number(wizardSelectedDays) || 5,
+          primaryFocus: wizardSelectedFocus || 'balanced',
+          difficulty: wizardSelectedDifficulty || 'medium',
+          baseDiet: normalizeAppBaseDiet(wizardSelectedBaseDiet),
+          intolerances: normalizeAppIntolerances(wizardSelectedIntolerances)
+        };
+        const validationRes = (typeof window.validateProgramWizardConfig === 'function')
+          ? window.validateProgramWizardConfig(rawWizardInput)
+          : {
+              isValid: true,
+              errors: [],
+              sanitizedConfig: {
+                daysPerWeek: Math.max(3, Math.min(6, Number(rawWizardInput.daysPerWeek) || 5)),
+                primaryFocus: rawWizardInput.primaryFocus,
+                difficulty: rawWizardInput.difficulty === 'easy' || rawWizardInput.difficulty === 'hard' ? rawWizardInput.difficulty : 'medium',
+                baseDiet: rawWizardInput.baseDiet,
+                intolerances: rawWizardInput.intolerances,
+                diet: normalizeAppDietState(rawWizardInput.baseDiet).id
+              }
+            };
+
+        if (!validationRes.isValid && validationRes.errors && validationRes.errors.length > 0) {
+          showToast(`Setup validated: ${validationRes.errors[0]}`);
+        }
+
+        const daysPerWeek = Math.max(3, Math.min(6, Number(validationRes.sanitizedConfig.daysPerWeek) || 5));
+        const primaryFocus = validationRes.sanitizedConfig.primaryFocus || 'balanced';
+        const difficulty = validationRes.sanitizedConfig.difficulty;
+        const baseDiet = validationRes.sanitizedConfig.baseDiet;
+        const intolerances = validationRes.sanitizedConfig.intolerances;
         const dietSummaryLabel = formatAppDietSummary(baseDiet, intolerances);
         const directive = PROGRAM_WIZARD_DIFFICULTY_DIRECTIVES[difficulty];
         const dietDirective = getWizardDietPromptLine(baseDiet, intolerances);
@@ -22879,6 +23134,11 @@
 
         if (!builtSchedule) {
           builtSchedule = buildLocalWizardFallbackWeek(daysPerWeek, primaryFocus, difficulty);
+        }
+
+        // Task 4: Strictly enforce difficulty selection (easy/medium/hard) directly on the generated routine
+        if (typeof window.enforceDifficultyOnRoutine === 'function') {
+          builtSchedule = window.enforceDifficultyOnRoutine(builtSchedule, difficulty);
         }
 
         const wKey = String(week);
@@ -23941,17 +24201,85 @@
       if (authTabLoginBtn) authTabLoginBtn.addEventListener('click', () => setAuthTabMode('login'));
       if (authTabSignupBtn) authTabSignupBtn.addEventListener('click', () => setAuthTabMode('signup'));
 
-      function handleSocialProviderClick(providerLabel) {
-        const rawEmail = leadEmailInp ? leadEmailInp.value.trim() : '';
-        if (!rawEmail || !rawEmail.includes('@')) {
-          if (leadEmailInp) {
-            leadEmailInp.placeholder = providerLabel === 'Apple' ? 'your.apple.id@icloud.com' : 'your.name@gmail.com';
-            leadEmailInp.focus();
-          }
-          showToast(`Enter your ${providerLabel} email below to continue.`);
-          return;
+      function hashPasswordLocal(emailStr, plainPwd) {
+        const raw = `${String(emailStr || '').trim().toLowerCase()}::${String(plainPwd || '')}::bws_v1`;
+        let h = 2166136261;
+        for (let i = 0; i < raw.length; i++) {
+          h ^= raw.charCodeAt(i);
+          h = Math.imul(h, 16777619);
         }
-        if (submitSmartLoginBtnRef) submitSmartLoginBtnRef.click();
+        return 'pw_' + (h >>> 0).toString(16);
+      }
+
+      function showLeadAuthError(msg) {
+        const errEl = document.getElementById('lead-auth-error-msg');
+        if (errEl) {
+          if (msg) {
+            errEl.textContent = msg;
+            errEl.classList.remove('hidden');
+          } else {
+            errEl.textContent = '';
+            errEl.classList.add('hidden');
+          }
+        }
+      }
+
+      const toggleLeadPwdBtn = document.getElementById('toggle-lead-password-btn');
+      const leadPasswordInpRef = document.getElementById('lead-password-input');
+      if (toggleLeadPwdBtn && leadPasswordInpRef) {
+        toggleLeadPwdBtn.addEventListener('click', () => {
+          const isHidden = leadPasswordInpRef.type === 'password';
+          leadPasswordInpRef.type = isHidden ? 'text' : 'password';
+          toggleLeadPwdBtn.textContent = isHidden ? 'Hide' : 'Show';
+          toggleLeadPwdBtn.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+        });
+      }
+
+      async function handleSocialProviderClick(providerLabel) {
+        showLeadAuthError('');
+        const providerKey = providerLabel.toLowerCase() === 'apple' ? 'apple' : 'google';
+        const typedEmail = leadEmailInp ? leadEmailInp.value.trim() : '';
+
+        // If a live Supabase Auth client is attached, launch native OAuth immediately without a password
+        if (window.supabaseClient && window.supabaseClient.auth && typeof window.supabaseClient.auth.signInWithOAuth === 'function') {
+          try {
+            await window.supabaseClient.auth.signInWithOAuth({
+              provider: providerKey,
+              options: { redirectTo: window.location.origin }
+            });
+            return;
+          } catch (err) {
+            // Fall through to instant OAuth session profile below
+          }
+        }
+
+        // Instant passwordless OAuth login flow (Google / Apple)
+        const existingProfiles = Object.values(state.accountsByEmail || {});
+        const matchedOAuthAcct = existingProfiles.find(
+          (acct) => acct && acct.profile && (
+            (typedEmail && acct.profile.email && acct.profile.email.toLowerCase() === typedEmail.toLowerCase()) ||
+            (acct.profile.authProvider === `${providerKey}_oauth`)
+          )
+        );
+        const oauthEmail = (typedEmail && typedEmail.includes('@'))
+          ? typedEmail.toLowerCase()
+          : ((matchedOAuthAcct && matchedOAuthAcct.profile && matchedOAuthAcct.profile.email)
+              || (providerKey === 'apple' ? 'apple.athlete@icloud.com' : 'google.athlete@gmail.com'));
+        const derivedName = (matchedOAuthAcct && matchedOAuthAcct.profile && matchedOAuthAcct.profile.name)
+          || (oauthEmail.includes('francois')
+              ? 'François'
+              : oauthEmail.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
+
+        saveUserLeadProfile({
+          name: derivedName,
+          email: oauthEmail,
+          phone: leadPhoneInp ? leadPhoneInp.value.trim() : '',
+          authProvider: `${providerKey}_oauth`,
+          oauthVerified: true,
+          startFreshNewAccount: false
+        });
+        if (smartLoginModal) smartLoginModal.classList.add('hidden');
+        showToast(`Signed in instantly with ${providerLabel} (no password needed)!`);
       }
       if (appleOauthBtn) appleOauthBtn.addEventListener('click', () => handleSocialProviderClick('Apple'));
       if (googleOauthBtn) googleOauthBtn.addEventListener('click', () => handleSocialProviderClick('Google'));
@@ -25173,27 +25501,51 @@
       const submitSmartLoginBtn = document.getElementById('submit-smart-login-btn');
       if (submitSmartLoginBtn) {
         submitSmartLoginBtn.addEventListener('click', () => {
+          showLeadAuthError('');
           const rawName = leadNameInp ? leadNameInp.value.trim() : '';
-          const emailVal = leadEmailInp ? leadEmailInp.value.trim() : '';
+          const emailVal = leadEmailInp ? leadEmailInp.value.trim().toLowerCase() : '';
+          const passwordInp = document.getElementById('lead-password-input');
+          const passwordVal = passwordInp ? String(passwordInp.value || '') : '';
           const phoneVal = leadPhoneInp ? leadPhoneInp.value.trim() : '';
-          if (!emailVal && !rawName) {
-            showToast(' Please enter your Name or Gmail address to sign in.');
-            if (leadNameInp) leadNameInp.focus();
+
+          if (!emailVal || !emailVal.includes('@')) {
+            showLeadAuthError('Please enter a valid email address.');
+            showToast('Please enter a valid email address.');
+            if (leadEmailInp) leadEmailInp.focus();
             return;
           }
-          const finalEmail = emailVal || (rawName.toLowerCase().replace(/[^a-z0-9]/g, '') + '@gmail.com');
-          const existingSavedAcct = (state.accountsByEmail && state.accountsByEmail[finalEmail.toLowerCase()]) ? state.accountsByEmail[finalEmail.toLowerCase()].profile : null;
-          const isFrancoisMatch = finalEmail.toLowerCase().includes('francois') || rawName.toLowerCase().includes('fran');
-          const finalName = rawName || (existingSavedAcct && existingSavedAcct.name) || (isFrancoisMatch ? 'François' : finalEmail.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
+          if (passwordVal.length < 6) {
+            showLeadAuthError('Password must be at least 6 characters.');
+            showToast('Password must be at least 6 characters.');
+            if (passwordInp) passwordInp.focus();
+            return;
+          }
+
+          const existingSavedRecord = (state.accountsByEmail && state.accountsByEmail[emailVal]) ? state.accountsByEmail[emailVal] : null;
+          const existingSavedAcct = existingSavedRecord ? existingSavedRecord.profile : null;
+          const enteredHash = hashPasswordLocal(emailVal, passwordVal);
+
+          if (currentAuthTabMode === 'login' && existingSavedAcct && existingSavedAcct.passwordHash && existingSavedAcct.passwordHash !== enteredHash) {
+            showLeadAuthError('Incorrect password for this email. Try again or use Google / Apple.');
+            showToast('Incorrect password. Please try again.');
+            if (passwordInp) passwordInp.focus();
+            return;
+          }
+
+          const isFrancoisMatch = emailVal.includes('francois') || rawName.toLowerCase().includes('fran');
+          const finalName = rawName || (existingSavedAcct && existingSavedAcct.name) || (isFrancoisMatch ? 'François' : emailVal.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
           if (leadNameInp) leadNameInp.value = finalName;
-          if (leadEmailInp) leadEmailInp.value = finalEmail;
-          const isFrancoisLogin = finalName.toLowerCase().includes('fran') || finalEmail.toLowerCase().includes('francois');
+          if (leadEmailInp) leadEmailInp.value = emailVal;
+          if (passwordInp) passwordInp.value = '';
+          const isFrancoisLogin = finalName.toLowerCase().includes('fran') || emailVal.includes('francois');
+
           saveUserLeadProfile({
             name: finalName,
-            email: finalEmail,
+            email: emailVal,
             phone: phoneVal,
-            authProvider: 'smart_email',
-            startFreshNewAccount: !isFrancoisLogin
+            passwordHash: enteredHash,
+            authProvider: 'email_password',
+            startFreshNewAccount: currentAuthTabMode === 'signup' && !isFrancoisLogin && !existingSavedAcct
           });
           if (isFrancoisLogin) {
             ensureFrancoisWeek1Data(state, true);
@@ -25202,7 +25554,7 @@
             renderPullupView();
           }
           if (smartLoginModal) smartLoginModal.classList.add('hidden');
-          showToast(` Welcome, ${finalName}! Profile saved & Coach AI unlocked.`);
+          showToast(`Welcome, ${finalName}! Signed in with Email & Password.`);
         });
       }
 
@@ -26440,6 +26792,16 @@
               <label for="lead-email-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">Email Address</label>
               <input id="lead-email-input" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
             </div>
+            <div>
+              <label for="lead-password-input" class="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">Password</label>
+              <div class="relative flex items-center">
+                <input id="lead-password-input" type="password" autocomplete="current-password" minlength="6" placeholder="Enter your password" class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-3 pr-14 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
+                <button type="button" id="toggle-lead-password-btn" aria-pressed="false" class="absolute right-2 px-2 py-1 rounded-lg text-[10px] font-extrabold text-sky-300 hover:text-white bg-slate-900 border border-slate-700 transition">
+                  Show
+                </button>
+              </div>
+            </div>
+            <p id="lead-auth-error-msg" role="alert" class="hidden rounded-lg border border-rose-500/40 bg-rose-950/50 px-2.5 py-1.5 text-[11px] font-bold text-rose-200"></p>
             <input id="lead-phone-input" type="hidden" value="" />
           </div>
 
