@@ -3566,4 +3566,139 @@ test('Subtest 50: Real Username Display, Single-Day Reset Isolation, Biking Rena
   ]);
 });
 
+test('Subtest 51: Overhand Pull-Ups First Ordering, Single Source of Truth Cloud Hydration & Immediate Day-Reset Push', async () => {
+  const {
+    isOverhandPullUpsExercise,
+    orderExercisesWithPullUpsFirst,
+    groupExercisesByCategory
+  } = await import('./wizardValidation');
+  const {
+    resolveSingleSourceOfTruthState,
+    fetchLatestCloudStateAsSingleSourceOfTruth,
+    createAutoSupabaseSyncEngine
+  } = await import('./workoutSyncEngine');
+
+  // 1. Task 1: Overhand Pull-Ups must render first immediately after Warm-Up (before Weightlifting)
+  const rawDayExercises = [
+    { id: 'barbell_bench', name: 'Barbell Bench Press', muscle: 'Chest' },
+    { id: 'incline_db', name: 'Incline Dumbbell Press', muscle: 'Upper Chest' },
+    { id: 'plank_hold', name: 'Forearm Plank Hold', muscle: 'Core' },
+    { id: 'outdoor_bike', name: 'Outdoor Biking', muscle: 'Cardio' },
+    { id: 'pullup_overhand', name: 'Overhand Pull-Ups (Max Effort)', muscle: 'Back & Lats' }
+  ];
+
+  assert.equal(isOverhandPullUpsExercise(rawDayExercises[4]), true);
+  assert.equal(isOverhandPullUpsExercise(rawDayExercises[0]), false);
+
+  const ordered = orderExercisesWithPullUpsFirst(rawDayExercises);
+  assert.equal(ordered[0].id, 'pullup_overhand');
+  assert.equal(ordered[1].id, 'barbell_bench');
+
+  const grouped = groupExercisesByCategory(rawDayExercises);
+  assert.equal(grouped.pullUpsLead.length, 1);
+  assert.equal(grouped.pullUpsLead[0].id, 'pullup_overhand');
+  assert.equal(grouped.weightlifting.length, 2);
+  assert.equal(grouped.otherBodyweight.length, 1);
+  assert.equal(grouped.otherBodyweight[0].id, 'plank_hold');
+  assert.equal(grouped.cardio.length, 1);
+  assert.equal(grouped.cardio[0].id, 'outdoor_bike');
+
+  // 2. Task 2: Single Source of Truth resolves Supabase Week 3 over stale phone Week 1 localStorage
+  const stalePhoneState = {
+    selectedWeek: 1,
+    maxUnlockedWeek: 1,
+    updatedAt: '2026-11-20T08:00:00.000Z',
+    workoutLogs: {
+      w1_0_bench_1: { weight: '135', reps: '10', done: true }
+    }
+  };
+  const remoteWeek3State = {
+    selectedWeek: 3,
+    maxUnlockedWeek: 3,
+    updatedAt: '2026-11-22T14:30:00.000Z',
+    workoutLogs: {
+      w3_0_pullup_1: { weight: 'BW', reps: '8', done: true }
+    }
+  };
+
+  const resolved = resolveSingleSourceOfTruthState(stalePhoneState, remoteWeek3State, {
+    remoteUpdatedAt: '2026-11-22T14:30:00.000Z'
+  });
+  assert.equal(resolved.appliedRemote, true);
+  assert.equal(resolved.state.selectedWeek, 3);
+  assert.equal(resolved.state.maxUnlockedWeek, 3);
+  assert.equal(resolved.state.workoutLogs.w1_0_bench_1, undefined); // Stale local logs are NOT resurrected
+  assert.equal(resolved.state.workoutLogs.w3_0_pullup_1.reps, '8');
+
+  // Test live fetch helper with mocked fetch + localStorage overwrite & cache: 'no-store'
+  let capturedInit: RequestInit | undefined;
+  let capturedUrl = '';
+  const storageMap = new Map<string, string>();
+  const mockStorage = {
+    getItem: (k: string) => storageMap.get(k) ?? null,
+    setItem: (k: string, v: string) => { storageMap.set(k, v); }
+  };
+
+  const hydrated = await fetchLatestCloudStateAsSingleSourceOfTruth({
+    endpoint: 'https://7am-gym-app.vercel.app/api/state?email=francois@example.com',
+    localState: stalePhoneState,
+    storageKey: 'gym_state_test',
+    storage: mockStorage,
+    fetchImpl: async (url, init) => {
+      capturedUrl = String(url);
+      capturedInit = init;
+      return {
+        ok: true,
+        json: async () => ({
+          configured: true,
+          updatedAt: '2026-11-22T14:30:00.000Z',
+          data: remoteWeek3State
+        })
+      } as Response;
+    }
+  });
+
+  assert.equal(hydrated.appliedRemote, true);
+  assert.equal(hydrated.state.selectedWeek, 3);
+  assert.equal(capturedInit?.cache, 'no-store');
+  assert.equal(capturedUrl.includes('&t='), true);
+  assert.equal(JSON.parse(storageMap.get('gym_state_test') || '{}').selectedWeek, 3);
+
+  // 3. Task 3: Explicit 'day_reset' immediately pushes empty/cleared day state to Supabase (no 5s delay, no empty-guard block)
+  let currentAppState: Record<string, any> = {
+    selectedWeek: 3,
+    workoutLogs: {},
+    pullupLogs: {},
+    cardioLogs: {},
+    warmupLogs: {},
+    userProfile: { email: 'francois@example.com', name: 'François' }
+  };
+  const pushedPayloads: Array<{ url: string; body: any }> = [];
+
+  const syncEngine = createAutoSupabaseSyncEngine({
+    getEndpoint: () => 'https://7am-gym-app.vercel.app/api/state?email=francois@example.com',
+    getState: () => currentAppState,
+    setState: (next) => { currentAppState = next; },
+    fetchImpl: async (url, init) => {
+      pushedPayloads.push({
+        url: String(url),
+        body: JSON.parse(String(init?.body || '{}'))
+      });
+      return {
+        ok: true,
+        json: async () => ({ configured: true, saved: true })
+      } as Response;
+    }
+  });
+
+  const resetSyncRes = await syncEngine.autoSyncWorkoutToSupabase('day_reset');
+  assert.equal(resetSyncRes.synced, true);
+  assert.equal(resetSyncRes.reason, 'day_reset');
+  assert.equal(resetSyncRes.blockedByEmptyStateGuard, false);
+  assert.equal(pushedPayloads.length, 1);
+  assert.equal(typeof pushedPayloads[0].body.updatedAt, 'string');
+  assert.equal(Object.keys(pushedPayloads[0].body.workoutLogs).length, 0);
+});
+
+
 

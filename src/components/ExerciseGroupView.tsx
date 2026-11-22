@@ -108,7 +108,28 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
         </button>
       </div>
 
-      {/* Section 1: Weightlifting Movements */}
+      {/* Section 1 (Lead): Overhand Pull-Ups immediately after Warm-Up */}
+      {showBodyweight && grouped.pullUpsLead.length > 0 && (
+        <section aria-labelledby="section-pullups-lead-heading" className="space-y-2.5">
+          <div className="flex items-center justify-between border-b border-amber-500/35 pb-1.5">
+            <h3 id="section-pullups-lead-heading" className="text-xs font-extrabold uppercase tracking-wider text-amber-300">
+              First Exercise • Overhand Pull-Ups
+            </h3>
+            <span className="text-[11px] font-bold text-slate-300">
+              Right after Warm-Up
+            </span>
+          </div>
+          <div className="space-y-3">
+            {grouped.pullUpsLead.map((ex, idx) => (
+              <React.Fragment key={ex.id || `pullup-${idx}`}>
+                {renderExerciseCard(ex, idx)}
+              </React.Fragment>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Section 2: Weightlifting Movements */}
       {showWeightlifting && grouped.weightlifting.length > 0 && (
         <section aria-labelledby="section-weightlifting-heading" className="space-y-2.5">
           <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
@@ -122,28 +143,28 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
           <div className="space-y-3">
             {grouped.weightlifting.map((ex, idx) => (
               <React.Fragment key={ex.id || `wt-${idx}`}>
-                {renderExerciseCard(ex, idx)}
+                {renderExerciseCard(ex, grouped.pullUpsLead.length + idx)}
               </React.Fragment>
             ))}
           </div>
         </section>
       )}
 
-      {/* Section 2: Bodyweight Movements (Separated from Weightlifting) */}
-      {showBodyweight && grouped.bodyweight.length > 0 && (
+      {/* Section 3: Other Bodyweight Movements (Separated from Weightlifting) */}
+      {showBodyweight && grouped.otherBodyweight.length > 0 && (
         <section aria-labelledby="section-bodyweight-heading" className="space-y-2.5">
           <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
             <h3 id="section-bodyweight-heading" className="text-xs font-extrabold uppercase tracking-wider text-emerald-300">
               Bodyweight Movements
             </h3>
             <span className="text-[11px] font-bold text-slate-400">
-              No weights needed ({grouped.bodyweight.length})
+              No weights needed ({grouped.otherBodyweight.length})
             </span>
           </div>
           <div className="space-y-3">
-            {grouped.bodyweight.map((ex, idx) => (
+            {grouped.otherBodyweight.map((ex, idx) => (
               <React.Fragment key={ex.id || `bw-${idx}`}>
-                {renderExerciseCard(ex, idx)}
+                {renderExerciseCard(ex, grouped.pullUpsLead.length + grouped.weightlifting.length + idx)}
               </React.Fragment>
             ))}
           </div>

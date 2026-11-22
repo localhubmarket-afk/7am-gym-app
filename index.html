@@ -1436,27 +1436,34 @@
       const isFrancoisActive = !activeProfName || activeProfName.includes('fran') || activeProfEmail.includes('francois') || activeProfEmail === 'francois@7amgym.app';
 
       // Check if Week 1 logs are missing for François (e.g., overwritten by empty localStorage or #state= hash)
+      const clearedMap = (target.clearedDaysMap && typeof target.clearedDaysMap === 'object') ? target.clearedDaysMap : {};
+      const hasAnyClearedWeek1Day = Object.keys(clearedMap).some(k => k.startsWith('w1_d') && clearedMap[k]);
       const hasWeek1Data = Boolean(
-        target.workoutLogs['w1_0_mon_cs_row_1'] &&
+        hasAnyClearedWeek1Day ||
+        (target.workoutLogs['w1_0_mon_cs_row_1'] &&
         target.workoutLogs['w1_0_mon_cs_row_1'].done &&
         target.workoutLogs['w1_0_mon_ohp_1'] &&
-        target.workoutLogs['w1_0_mon_ohp_1'].done
+        target.workoutLogs['w1_0_mon_ohp_1'].done)
       );
 
       if (forceOverwrite || (isFrancoisActive && (!target.francoisWeek1RestoredV2 || !hasWeek1Data))) {
         Object.keys(FRANCOIS_WEEK1_SEED_LOGS).forEach(k => {
+          const dayMatch = /^(?:w1_)?(\d+)_/.exec(k);
+          if (!forceOverwrite && dayMatch && clearedMap[`w1_d${dayMatch[1]}`]) return;
           const cur = target.workoutLogs[k];
           if (forceOverwrite || !cur || !cur.done || !cur.weight || cur.weight === '0') {
             target.workoutLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_LOGS[k]));
           }
         });
         Object.keys(FRANCOIS_WEEK1_SEED_PULLUPS).forEach(k => {
+          const pMatch = /^(?:w1_)?day_(\d+)_/.exec(k);
+          if (!forceOverwrite && pMatch && clearedMap[`w1_d${Math.max(0, parseInt(pMatch[1], 10) - 1)}`]) return;
           const cur = target.pullupLogs[k];
           if (forceOverwrite || !cur || !cur.done) {
             target.pullupLogs[k] = JSON.parse(JSON.stringify(FRANCOIS_WEEK1_SEED_PULLUPS[k]));
           }
         });
-        target.completedWeeks[1] = true;
+        if (!hasAnyClearedWeek1Day) target.completedWeeks[1] = true;
         target.francoisWeek1RestoredV2 = true;
       }
 
@@ -1542,7 +1549,17 @@
         } catch (e) {}
       }
       const merged = Object.assign({}, base, loaded || {});
-      ensureFrancoisWeek1Data(merged, false);
+      return normalizeLoadedStateShape(merged, { runSeedCheck: true });
+    }
+
+    function normalizeLoadedStateShape(merged, opts) {
+      if (!merged || typeof merged !== 'object') merged = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      if (!merged.clearedDaysMap || typeof merged.clearedDaysMap !== 'object') merged.clearedDaysMap = {};
+      if (!merged.workoutLogs || typeof merged.workoutLogs !== 'object') merged.workoutLogs = {};
+      if (!merged.pullupLogs || typeof merged.pullupLogs !== 'object') merged.pullupLogs = {};
+      if (opts && opts.runSeedCheck) {
+        ensureFrancoisWeek1Data(merged, false);
+      }
       syncProgressiveWeekState(merged);
       // Always start with all Setup & Image panels and Rest Day Mobility drawer hidden so no card ever gets stuck open
       merged.openImagePanels = {};
@@ -1619,7 +1636,8 @@
       if (!merged.cardioUiModeByEx || typeof merged.cardioUiModeByEx !== 'object') {
         merged.cardioUiModeByEx = {};
       }
-      const onboardingCompleted = Boolean(merged.userHasCompletedOnboarding || merged.hasCompletedFirstSetup);
+      const onboardingCompleted = Boolean(merged.onboardingComplete || merged.userHasCompletedOnboarding || merged.hasCompletedFirstSetup);
+      merged.onboardingComplete = onboardingCompleted;
       merged.userHasCompletedOnboarding = onboardingCompleted;
       merged.hasCompletedFirstSetup = onboardingCompleted;
       if (typeof merged.dismissedOvertrainingAlertKey !== 'string') {
@@ -1823,15 +1841,26 @@
       }
     }
 
+    const PROD_CLOUD_API_ORIGIN = 'https://7am-gym-app.vercel.app';
+
     function getActiveCloudEndpoint() {
       const userEmail = (state && state.userProfile && state.userProfile.email) ? state.userProfile.email.trim().toLowerCase() : '';
       if (state && state.cloudDbUrl && state.cloudDbUrl.trim()) {
         return state.cloudDbUrl.trim();
       }
-      if (window.location && window.location.origin && /^https?:/i.test(window.location.origin)) {
-        return window.location.origin + '/api/state' + (userEmail ? ('?email=' + encodeURIComponent(userEmail)) : '');
+      const isNativeCapacitor = Boolean(
+        (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) ||
+        (window.location && /^(capacitor|ionic|file):/i.test(window.location.protocol || '')) ||
+        (window.location && window.location.origin === 'https://localhost')
+      );
+      const querySuffix = userEmail ? ('?email=' + encodeURIComponent(userEmail)) : '';
+      if (isNativeCapacitor) {
+        return PROD_CLOUD_API_ORIGIN + '/api/state' + querySuffix;
       }
-      return '';
+      if (window.location && window.location.origin && /^https?:/i.test(window.location.origin)) {
+        return window.location.origin + '/api/state' + querySuffix;
+      }
+      return PROD_CLOUD_API_ORIGIN + '/api/state' + querySuffix;
     }
 
     function getAutoSupabaseSyncEngineLocal() {
@@ -1912,13 +1941,15 @@
 
     function autoSyncWorkoutToSupabaseLocal(reason) {
       const syncReason = reason || 'set_logged';
-      // Respect Data Protection & Undo Engine 5-second delay window before pushing any automatic sync
-      if (isDestructiveCloudPushDelayedLocal() && syncReason !== 'undo_restore') {
+      // Respect Data Protection & Undo Engine 5-second delay window before pushing passive syncs.
+      // Explicit undo_restore and confirmed day_reset pushes execute immediately.
+      if (isDestructiveCloudPushDelayedLocal() && syncReason !== 'undo_restore' && syncReason !== 'day_reset') {
         updateCloudSyncBadgeUI('paused_undo', 'Cloud push paused (5s undo window)...');
         return Promise.resolve({ synced: false, blockedByUndoGuard: true, blockedByEmptyStateGuard: false, reason: syncReason });
       }
       clearTimeout(cloudSyncTimeout);
       cloudSyncTimeout = null;
+      state.updatedAt = new Date().toISOString();
       const eng = getAutoSupabaseSyncEngineLocal();
       if (eng && typeof eng.autoSyncWorkoutToSupabase === 'function') {
         return eng.autoSyncWorkoutToSupabase(syncReason);
@@ -1931,44 +1962,88 @@
     function pushStateToCloud(pushReason) {
       const url = getActiveCloudEndpoint();
       if (!url) return;
-      if (isDestructiveCloudPushDelayedLocal() && pushReason !== 'undo_restore' && pushReason !== 'delayed_sync') {
+      if (isDestructiveCloudPushDelayedLocal() && pushReason !== 'undo_restore' && pushReason !== 'delayed_sync' && pushReason !== 'day_reset') {
         updateCloudSyncBadgeUI('paused_undo', 'Cloud push paused (5s undo window)...');
         return;
       }
-      updateCloudSyncBadgeUI('syncing', pushReason === 'undo_restore' ? 'Restoring to Supabase...' : 'Auto-syncing to Supabase...');
+      state.updatedAt = new Date().toISOString();
+      updateCloudSyncBadgeUI(
+        'syncing',
+        pushReason === 'undo_restore'
+          ? 'Restoring to Supabase...'
+          : (pushReason === 'day_reset' ? 'Syncing cleared day to Supabase...' : 'Auto-syncing to Supabase...')
+      );
       const isFirebase = url.includes('firebaseio.com') || url.endsWith('.json');
       const isVercelApi = url.includes('/api/state');
       const payloadJson = serializeStateWithoutUndoBackupLocal(state);
       fetch(url, {
         method: isFirebase ? 'PUT' : 'POST',
+        cache: 'no-store',
         headers: { 'Content-Type': isVercelApi ? 'application/json' : 'text/plain;charset=utf-8' },
         body: payloadJson
       }).then(r => r.json().catch(() => ({}))).then(res => {
         if (res && res.configured === false) {
           updateCloudSyncBadgeUI('local_only', 'Local Saved (Add Supabase in Vercel)');
         } else {
+          if (res && typeof res.updatedAt === 'string') {
+            state.updatedAt = res.updatedAt;
+          }
           const eng = getAutoSupabaseSyncEngineLocal();
           if (eng && typeof window.countTotalLoggedSetsInState === 'function') {
             eng.recordKnownCloudLoggedSetCount(window.countTotalLoggedSetsInState(state));
           }
-          updateCloudSyncBadgeUI('saved', pushReason === 'undo_restore' ? '✓ Undo Restored in Supabase' : '✓ Auto-Synced to Supabase');
+          updateCloudSyncBadgeUI(
+            'saved',
+            pushReason === 'undo_restore'
+              ? '✓ Undo Restored in Supabase'
+              : (pushReason === 'day_reset' ? '✓ Day Reset Synced' : '✓ Auto-Synced to Supabase')
+          );
         }
       }).catch(() => {
         updateCloudSyncBadgeUI('local_only', 'Local Saved');
       });
     }
 
-    function pullStateFromCloud() {
+    let isPullingCloudTruth = false;
+
+    function pullStateFromCloud(pullOptions) {
       const url = getActiveCloudEndpoint();
-      if (!url) return;
-      fetch(url)
-        .then(r => r.json())
+      if (!url) return Promise.resolve(false);
+      // Cancel any queued local push so stale local state can never overwrite Supabase during hydration
+      clearTimeout(cloudSyncTimeout);
+      isPullingCloudTruth = true;
+      const forceRemoteTruth = !(pullOptions && pullOptions.forceRemoteTruth === false);
+      const sep = url.includes('?') ? '&' : '?';
+      const cacheBustedUrl = url + sep + 't=' + Date.now();
+      return fetch(cacheBustedUrl, {
+        method: 'GET',
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
+      })
+        .then(r => (r.ok ? r.json() : null))
         .then(res => {
-          const remote = (res && res.configured && res.data) ? res.data : res;
+          if (!res) return false;
+          const remote = (res && res.configured && res.data) ? res.data : (res && res.data ? res.data : res);
+          const remoteUpdatedAt = (res && typeof res.updatedAt === 'string' && res.updatedAt)
+            || (remote && typeof remote.updatedAt === 'string' && remote.updatedAt)
+            || null;
+
           if (remote && typeof remote === 'object' && (remote.workoutLogs || remote.selectedDayIndex !== undefined)) {
+            const resolved = typeof window.resolveSingleSourceOfTruthState === 'function'
+              ? window.resolveSingleSourceOfTruthState(state, remote, {
+                  forceRemoteOnInit: forceRemoteTruth,
+                  remoteUpdatedAt
+                })
+              : { appliedRemote: true, state: remote, remoteUpdatedAt };
+
+            if (!resolved || !resolved.appliedRemote || !resolved.state) {
+              return false;
+            }
+
+            const authoritativeRemote = resolved.state;
             const keepUrl = state.cloudDbUrl;
             const currentOpenPanels = state.openImagePanels || {};
-            const localProfile = (state.userProfile && state.userProfile.name && state.userProfile.email)
+            const localProfile = (state.userProfile && state.userProfile.email)
               ? JSON.parse(JSON.stringify(state.userProfile))
               : null;
             const localLeads = Array.isArray(state.capturedLeads) && state.capturedLeads.length > 0
@@ -1977,38 +2052,50 @@
             const localAccounts = state.accountsByEmail && Object.keys(state.accountsByEmail).length > 0
               ? JSON.parse(JSON.stringify(state.accountsByEmail))
               : null;
-            const localWorkoutLogs = JSON.parse(JSON.stringify(state.workoutLogs || {}));
-            const localPullupLogs = JSON.parse(JSON.stringify(state.pullupLogs || state[LEGACY_PULLUP_LOGS_KEY] || {}));
-            const localExerciseSwaps = JSON.parse(JSON.stringify(state.exerciseSwaps || {}));
-            const localSwappedExercises = JSON.parse(JSON.stringify(state.swappedExercises || {}));
-            const localRevertedSwaps = JSON.parse(JSON.stringify(state.revertedMachineSwaps || {}));
-            const localSharedMachineDb = JSON.parse(JSON.stringify(state.sharedMachineDatabase || {}));
-            const localExerciseNotes = JSON.parse(JSON.stringify(state.exerciseNotes || {}));
 
-            state = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), remote, {
+            // Strict Single Source of Truth: overwrite local state & localStorage with authoritative Supabase gym_state
+            const nextState = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), authoritativeRemote, {
               cloudDbUrl: keepUrl,
               openImagePanels: currentOpenPanels,
-              pendingMachineSwapPreviews: {}
+              pendingMachineSwapPreviews: {},
+              updatedAt: resolved.remoteUpdatedAt || authoritativeRemote.updatedAt || new Date().toISOString()
             });
 
-            // Preserve signed-in local userProfile so cloud sync NEVER wipes out your login name!
-            if (localProfile) {
-              state.userProfile = localProfile;
+            // Sync currentWeek & selectedWeek from remote authoritatively so Week 3 never falls back to Week 1
+            const remoteWeekNum = parseInt(authoritativeRemote.selectedWeek || authoritativeRemote.currentWeek || 0, 10);
+            if (remoteWeekNum >= 1 && remoteWeekNum <= 12) {
+              nextState.selectedWeek = remoteWeekNum;
+              nextState.currentWeek = remoteWeekNum;
+              nextState.maxUnlockedWeek = Math.max(parseInt(nextState.maxUnlockedWeek, 10) || 1, remoteWeekNum);
+            }
+
+            // Keep authenticated email/name clean (never display "Google" or "Apple" as username)
+            if (localProfile && (!nextState.userProfile || !nextState.userProfile.email)) {
+              nextState.userProfile = localProfile;
+            }
+            if (nextState.userProfile && nextState.userProfile.email) {
+              nextState.userProfile.name = resolveHeaderDisplayNameInline(nextState.userProfile);
             }
             if (localLeads) {
-              state.capturedLeads = localLeads;
+              nextState.capturedLeads = Array.isArray(nextState.capturedLeads) && nextState.capturedLeads.length > 0
+                ? nextState.capturedLeads
+                : localLeads;
             }
             if (localAccounts) {
-              state.accountsByEmail = Object.assign({}, state.accountsByEmail || {}, localAccounts);
+              nextState.accountsByEmail = Object.assign({}, localAccounts, nextState.accountsByEmail || {});
             }
-            state.exerciseNotes = Object.assign({}, remote.exerciseNotes || {}, localExerciseNotes);
-            state.sharedMachineDatabase = Object.assign({}, remote.sharedMachineDatabase || {}, localSharedMachineDb);
-            state.exerciseSwaps = Object.assign({}, remote.exerciseSwaps || {}, localExerciseSwaps);
-            state.swappedExercises = Object.assign({}, remote.swappedExercises || {}, localSwappedExercises);
-            state.revertedMachineSwaps = Object.assign({}, remote.revertedMachineSwaps || {}, localRevertedSwaps);
-            // Merge local sets and remote sets so neither is ever lost
-            mergeWorkoutSnapshotsIntoCurrentState({ workoutLogs: localWorkoutLogs, pullupLogs: localPullupLogs });
-            ensureFrancoisWeek1Data(state, false);
+
+            // Returning cloud profiles with existing logged data automatically satisfy onboarding
+            if (nextState.userProfile && nextState.userProfile.email && (nextState.onboardingComplete || nextState.userHasCompletedOnboarding || nextState.hasCompletedFirstSetup || nextState.maxUnlockedWeek >= 2 || Object.keys(nextState.workoutLogs || {}).length > 0)) {
+              nextState.onboardingComplete = true;
+              nextState.userHasCompletedOnboarding = true;
+              nextState.hasCompletedFirstSetup = true;
+              const wizModal = document.getElementById('program-setup-wizard-modal');
+              if (wizModal) wizModal.classList.add('hidden');
+            }
+
+            // Normalize full state shape (intolerances, programWizardConfig, cardioLogs, gymLocker, etc.) so renderers never fail
+            state = normalizeLoadedStateShape(nextState, { runSeedCheck: false });
             syncProgressiveWeekState(state);
             autoMigrateExerciseNotesToMachineSwaps();
 
@@ -2017,18 +2104,35 @@
               eng.recordKnownCloudLoggedSetCount(window.countTotalLoggedSetsInState(state));
             }
 
+            // Overwrite localStorage immediately with authoritative remote state (without triggering a redundant push)
             saveState(true);
             renderWorkoutView();
             renderPullupView();
             renderVeganView();
             renderShoppingView();
-            updateCloudSyncBadgeUI('saved', '✓ Supabase Connected');
+            updateCloudSyncBadgeUI('saved', '✓ Synced from Supabase');
+            return true;
           }
+          return false;
         })
-        .catch(() => {});
+        .catch((err) => {
+          if (typeof console !== 'undefined' && console.warn) {
+            console.warn('[pullStateFromCloud]', err);
+          }
+          return false;
+        })
+        .finally(() => {
+          isPullingCloudTruth = false;
+        });
     }
 
     function saveState(skipCloud) {
+      if (skipCloud || isPullingCloudTruth) {
+        clearTimeout(cloudSyncTimeout);
+      }
+      if (!skipCloud) {
+        state.updatedAt = new Date().toISOString();
+      }
       const jsonStr = serializeStateWithoutUndoBackupLocal(state);
       // Save to localStorage
       try {
@@ -2045,8 +2149,8 @@
           history.replaceState(null, '', '#state=' + b64);
         }
       } catch (err) {}
-      // Debounced Cloud DB Sync (paused automatically during the 5-second destructive overwrite undo window)
-      if (!skipCloud && !isDestructiveCloudPushDelayedLocal() && getActiveCloudEndpoint()) {
+      // Debounced Cloud DB Sync (paused automatically during cloud hydration or the 5-second destructive overwrite undo window)
+      if (!skipCloud && !isPullingCloudTruth && !isDestructiveCloudPushDelayedLocal() && getActiveCloudEndpoint()) {
         clearTimeout(cloudSyncTimeout);
         cloudSyncTimeout = setTimeout(() => {
           autoSyncWorkoutToSupabaseLocal('set_logged');
@@ -10343,6 +10447,11 @@
       const assign = typeof getDayAssignment === 'function' ? getDayAssignment(safeW, safeD) : null;
       const dayObj = typeof getScheduledDayObject === 'function' ? getScheduledDayObject(safeW, safeD) : null;
 
+      if (!state.clearedDaysMap || typeof state.clearedDaysMap !== 'object') {
+        state.clearedDaysMap = {};
+      }
+      state.clearedDaysMap[`w${safeW}_d${safeD}`] = true;
+
       const targetExIds = new Set(Array.isArray(extraExerciseIds) ? extraExerciseIds : []);
       if (dayObj && Array.isArray(dayObj.exercises)) {
         dayObj.exercises.forEach((ex) => {
@@ -10353,34 +10462,68 @@
         targetExIds.add(CABLE_CRUNCH_EXERCISE.id);
       }
 
-      if (state.workoutLogs && typeof state.workoutLogs === 'object') {
-        const dayPrefix = `w${safeW}_${safeD}_`;
-        const bonusPrefix = assign && assign.logSlotKey ? `w${safeW}_${assign.logSlotKey}_` : '';
-        Object.keys(state.workoutLogs).forEach((k) => {
-          if (k.startsWith(dayPrefix) || (bonusPrefix && k.startsWith(bonusPrefix))) {
-            delete state.workoutLogs[k];
-            return;
+      const dayPrefix = `w${safeW}_${safeD}_`;
+      const legacyDayPrefix = safeW === 1 ? `${safeD}_` : '';
+      const bonusPrefix = assign && assign.logSlotKey ? `w${safeW}_${assign.logSlotKey}_` : '';
+      const templateSlotIdx = assign && typeof assign.templateSlotIndex === 'number' ? assign.templateSlotIndex : safeD;
+
+      const shouldDeleteWorkoutLogKey = (k) => {
+        if (k.startsWith(dayPrefix) || (bonusPrefix && k.startsWith(bonusPrefix))) return true;
+        if (legacyDayPrefix && k.startsWith(legacyDayPrefix)) return true;
+        const m = new RegExp(`^w${safeW}_(\\d+)_(.+)_(\\d+)$`).exec(k);
+        if (m && targetExIds.has(m[2])) {
+          const keyDayOrSlot = parseInt(m[1], 10);
+          if (m[2] !== 'cable_ab_crunch' || keyDayOrSlot === safeD || keyDayOrSlot === templateSlotIdx) {
+            return true;
           }
-          const m = new RegExp(`^w${safeW}_(\\d+)_(.+)_(\\d+)$`).exec(k);
-          if (m && targetExIds.has(m[2])) {
-            const keyDayOrSlot = parseInt(m[1], 10);
-            if (m[2] !== 'cable_ab_crunch' || keyDayOrSlot === safeD) {
-              delete state.workoutLogs[k];
+        }
+        if (safeW === 1) {
+          const mLegacy = /^(\d+)_(.+)_(\d+)$/.exec(k);
+          if (mLegacy && targetExIds.has(mLegacy[2])) {
+            const keyDayOrSlot = parseInt(mLegacy[1], 10);
+            if (mLegacy[2] !== 'cable_ab_crunch' || keyDayOrSlot === safeD || keyDayOrSlot === templateSlotIdx) {
+              return true;
             }
           }
-        });
-      }
+        }
+        return false;
+      };
 
-      if (state.pullupLogs && typeof state.pullupLogs === 'object') {
-        targetExIds.forEach((exId) => {
-          const pDay = PULLUP_EX_ID_TO_DAY[exId];
-          if (pDay) {
-            const pPrefix = `w${safeW}_day_${pDay}_set_`;
-            Object.keys(state.pullupLogs).forEach((pk) => {
-              if (pk.startsWith(pPrefix)) {
-                delete state.pullupLogs[pk];
-              }
-            });
+      const pullupPrefixes = [];
+      targetExIds.forEach((exId) => {
+        const pDay = PULLUP_EX_ID_TO_DAY[exId];
+        if (pDay) {
+          pullupPrefixes.push(`w${safeW}_day_${pDay}_set_`);
+          if (safeW === 1) pullupPrefixes.push(`day_${pDay}_set_`);
+        }
+      });
+
+      const wipeLogMaps = (wLogs, pLogs) => {
+        if (wLogs && typeof wLogs === 'object') {
+          Object.keys(wLogs).forEach((k) => {
+            if (shouldDeleteWorkoutLogKey(k)) delete wLogs[k];
+          });
+        }
+        if (pLogs && typeof pLogs === 'object' && pullupPrefixes.length > 0) {
+          Object.keys(pLogs).forEach((pk) => {
+            if (pullupPrefixes.some((pref) => pk.startsWith(pref))) {
+              delete pLogs[pk];
+            }
+          });
+        }
+      };
+
+      wipeLogMaps(state.workoutLogs, state.pullupLogs);
+      state.pullUpLogs = state.pullupLogs;
+
+      // Also clear the active account snapshot so recovery logic cannot resurrect cleared day sets
+      if (state.accountsByEmail && typeof state.accountsByEmail === 'object') {
+        Object.keys(state.accountsByEmail).forEach((em) => {
+          const acct = state.accountsByEmail[em];
+          if (!acct || typeof acct !== 'object') return;
+          wipeLogMaps(acct.workoutLogs, acct.pullupLogs);
+          if (acct.snapshot && typeof acct.snapshot === 'object') {
+            wipeLogMaps(acct.snapshot.workoutLogs, acct.snapshot.pullupLogs);
           }
         });
       }
@@ -14458,14 +14601,30 @@
         return 'weightlifting';
       }
 
+      function isOverhandPullUpsExerciseInline(exObj) {
+        if (typeof window.isOverhandPullUpsExercise === 'function') {
+          return window.isOverhandPullUpsExercise(exObj);
+        }
+        if (!exObj || typeof exObj !== 'object') return false;
+        const nm = String(exObj.name || '').toLowerCase();
+        const id = String(exObj.id || '').toLowerCase();
+        return Boolean(PULLUP_EX_ID_TO_DAY[exObj.id]) || id.includes('pullup') || /\b(overhand\s+pull[- ]?ups?|pull[- ]?ups?|chin[- ]?ups?)\b/i.test(nm);
+      }
+
+      const orderedExercisesToday = typeof window.orderExercisesWithPullUpsFirst === 'function'
+        ? window.orderExercisesWithPullUpsFirst(exercisesToday)
+        : exercisesToday.slice().sort((a, b) => (isOverhandPullUpsExerciseInline(b) ? 1 : 0) - (isOverhandPullUpsExerciseInline(a) ? 1 : 0));
+
       const categorizedExerciseCards = {
+        pullUpsLead: [],
         weightlifting: [],
         bodyweight: [],
         cardio: []
       };
 
-      const exerciseCardsHtml = exercisesToday.map((ex, exOrder) => {
+      const exerciseCardsHtml = orderedExercisesToday.map((ex, exOrder) => {
         const exDisplayCategory = classifyExerciseCategoryInline(ex);
+        const isPullUpsLeadEx = exDisplayCategory === 'bodyweight' && isOverhandPullUpsExerciseInline(ex);
         const meta = EXERCISE_META[ex.id] || {
           equipType: 'dumbbells',
           equipLabel: 'Gym Equipment',
@@ -15824,7 +15983,9 @@
             </div>
           </article>
         `;
-        if (categorizedExerciseCards[exDisplayCategory]) {
+        if (isPullUpsLeadEx) {
+          categorizedExerciseCards.pullUpsLead.push(cardHtml);
+        } else if (categorizedExerciseCards[exDisplayCategory]) {
           categorizedExerciseCards[exDisplayCategory].push(cardHtml);
         } else {
           categorizedExerciseCards.weightlifting.push(cardHtml);
@@ -15836,8 +15997,10 @@
         ? state.exerciseCategoryFilter
         : 'all';
 
+      const pullUpsLeadCount = categorizedExerciseCards.pullUpsLead.length;
       const weightCount = categorizedExerciseCards.weightlifting.length;
-      const bodyweightCount = categorizedExerciseCards.bodyweight.length;
+      const otherBodyweightCount = categorizedExerciseCards.bodyweight.length;
+      const bodyweightCount = pullUpsLeadCount + otherBodyweightCount;
       const cardioCount = categorizedExerciseCards.cardio.length;
 
       const addCardioBarHtml = `
@@ -15859,7 +16022,7 @@
       const categoryTabsHtml = `
         <div id="exercise-category-tabs" role="tablist" aria-label="Filter workout by exercise type" class="grid grid-cols-4 gap-1.5 p-1 rounded-2xl bg-slate-950 border border-slate-800">
           <button type="button" role="tab" data-ex-category-tab="all" aria-selected="${activeCategoryFilter === 'all' ? 'true' : 'false'}" class="ex-category-tab-btn py-2 px-1.5 rounded-xl text-[11px] font-extrabold transition ${activeCategoryFilter === 'all' ? 'bg-sky-400 text-slate-950 shadow-sm' : 'text-slate-300 hover:text-white hover:bg-slate-900'}">
-            All (${exercisesToday.length})
+            All (${orderedExercisesToday.length})
           </button>
           <button type="button" role="tab" data-ex-category-tab="weightlifting" aria-selected="${activeCategoryFilter === 'weightlifting' ? 'true' : 'false'}" class="ex-category-tab-btn py-2 px-1.5 rounded-xl text-[11px] font-extrabold transition ${activeCategoryFilter === 'weightlifting' ? 'bg-emerald-500 text-slate-950 shadow-sm' : 'text-slate-300 hover:text-white hover:bg-slate-900'}">
             Weights (${weightCount})
@@ -15872,6 +16035,24 @@
           </button>
         </div>
       `;
+
+      // Task 1: Render Overhand Pull-Ups immediately after the Warm-Up block as the very first active exercise of the day
+      const pullUpsLeadSectionHtml = (activeCategoryFilter === 'all' || activeCategoryFilter === 'bodyweight') && pullUpsLeadCount > 0
+        ? `
+          <section id="exercise-group-pullups-lead" aria-label="First Exercise • Overhand Pull-Ups" class="space-y-2.5">
+            <div class="flex items-center justify-between gap-2 px-1 pt-1">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" aria-hidden="true"></span>
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-amber-300">First Exercise • Overhand Pull-Ups</h3>
+              </div>
+              <span class="text-[11px] font-bold text-slate-300">Right after Warm-Up</span>
+            </div>
+            <div class="space-y-3">
+              ${categorizedExerciseCards.pullUpsLead.join('')}
+            </div>
+          </section>
+        `
+        : '';
 
       const weightliftingSectionHtml = (activeCategoryFilter === 'all' || activeCategoryFilter === 'weightlifting') && weightCount > 0
         ? `
@@ -15892,7 +16073,7 @@
             ? `<div id="exercise-group-weightlifting" class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 text-center text-xs font-bold text-slate-300">No weightlifting moves scheduled on this day.</div>`
             : '');
 
-      const bodyweightSectionHtml = (activeCategoryFilter === 'all' || activeCategoryFilter === 'bodyweight') && bodyweightCount > 0
+      const bodyweightSectionHtml = (activeCategoryFilter === 'all' || activeCategoryFilter === 'bodyweight') && otherBodyweightCount > 0
         ? `
           <section id="exercise-group-bodyweight" aria-label="Bodyweight Movements" class="space-y-2.5">
             <div class="flex items-center justify-between gap-2 px-1 pt-1">
@@ -15900,14 +16081,14 @@
                 <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" aria-hidden="true"></span>
                 <h3 class="text-xs font-extrabold uppercase tracking-wider text-amber-300">Bodyweight Movements</h3>
               </div>
-              <span class="text-[11px] font-bold text-slate-400">No weights needed • ${bodyweightCount} ${bodyweightCount === 1 ? 'move' : 'moves'}</span>
+              <span class="text-[11px] font-bold text-slate-400">No weights needed • ${otherBodyweightCount} ${otherBodyweightCount === 1 ? 'move' : 'moves'}</span>
             </div>
             <div class="space-y-3">
               ${categorizedExerciseCards.bodyweight.join('')}
             </div>
           </section>
         `
-        : (activeCategoryFilter === 'bodyweight'
+        : (activeCategoryFilter === 'bodyweight' && pullUpsLeadCount === 0
             ? `<div id="exercise-group-bodyweight" class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 text-center text-xs font-bold text-slate-300">No bodyweight moves scheduled on this day.</div>`
             : '');
 
@@ -15931,9 +16112,10 @@
         const isRestDrawerOpen = Boolean(state.showRestDayMobility && state.openRestMobilityDrawer);
         listEl.innerHTML = `
           ${categoryTabsHtml}
+          ${pullUpsLeadSectionHtml}
           <details id="rest-day-mobility-drawer" ${isRestDrawerOpen ? 'open' : ''} class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5">
             <summary class="cursor-pointer flex items-center justify-between gap-2 text-xs font-extrabold text-emerald-300 select-none">
-              <span>Optional Rest-Day Mobility &amp; Core (${exercisesToday.length} items) — Tap to Open</span>
+              <span>Optional Rest-Day Mobility &amp; Core (${orderedExercisesToday.length} items) — Tap to Open</span>
               <span class="text-[10px] font-bold text-slate-400">▾</span>
             </summary>
             <div class="pt-3 space-y-3">
@@ -15953,13 +16135,13 @@
       } else {
         let bonusHabitsBarHtml = '';
         if (dayAssignment.isAiBonusWorkout) {
-          const hasDailyAbsAdded = exercisesToday.some(ex => ex.id === CABLE_CRUNCH_EXERCISE.id);
-          const hasDailyPullupsAdded = exercisesToday.some(ex => ex.id === 'day1_pullups');
+          const hasDailyAbsAdded = orderedExercisesToday.some(ex => ex.id === CABLE_CRUNCH_EXERCISE.id);
+          const hasDailyPullupsAdded = orderedExercisesToday.some(ex => ex.id === 'day1_pullups');
           bonusHabitsBarHtml = `
             <div id="day6-bonus-habits-bar" class="bg-slate-900/95 border border-indigo-500/40 rounded-2xl p-3 space-y-2">
               <div class="flex items-center justify-between gap-2">
                 <span class="text-xs font-extrabold text-indigo-200">Optional Daily Habits for Bonus Day</span>
-                <span class="text-[11px] font-bold text-slate-400">${exercisesToday.length} exercises</span>
+                <span class="text-[11px] font-bold text-slate-400">${orderedExercisesToday.length} exercises</span>
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                 <button
@@ -15990,7 +16172,7 @@
             </div>
           `;
         }
-        listEl.innerHTML = bonusHabitsBarHtml + categoryTabsHtml + weightliftingSectionHtml + bodyweightSectionHtml + cardioSectionHtml;
+        listEl.innerHTML = bonusHabitsBarHtml + categoryTabsHtml + pullUpsLeadSectionHtml + weightliftingSectionHtml + bodyweightSectionHtml + cardioSectionHtml;
 
         const day6AbsBtn = document.getElementById('day6-toggle-daily-abs-btn');
         if (day6AbsBtn) {
@@ -22020,30 +22202,8 @@
           }
         });
       }
-      // Also pull from '/api/state?email=default' in case last week's data was saved in the 'default' cloud row before profiles were added!
-      if (window.location && window.location.hostname && window.location.hostname.includes('vercel.app')) {
-        fetch(window.location.origin + '/api/state?email=default')
-          .then(r => r.json())
-          .then(res => {
-            const remote = (res && res.configured && res.data) ? res.data : null;
-            if (remote && (remote.workoutLogs || remote.pullupLogs || remote[LEGACY_PULLUP_LOGS_KEY])) {
-              const cloudRecovered = mergeWorkoutSnapshotsIntoCurrentState(remote);
-              if (cloudRecovered > 0) {
-                if (state.userProfile && state.userProfile.email) {
-                  state.accountsByEmail[state.userProfile.email.toLowerCase()] = {
-                    profile: JSON.parse(JSON.stringify(state.userProfile)),
-                    snapshot: getAccountSnapshotFromCurrentState()
-                  };
-                }
-                saveState();
-                renderWorkoutView();
-                renderPullupView();
-                showToast(` Recovered ${cloudRecovered} logged set(s) from last week's cloud backup into your profile!`);
-              }
-            }
-          })
-          .catch(() => {});
-      }
+      // Note: Cross-device Supabase Single Source of Truth hydration runs via pullStateFromCloud({ forceRemoteTruth: true }),
+      // which compares user_<email> vs default by newest updated_at on the server without resurrecting cleared days.
       if (state.userProfile && state.userProfile.email) {
         if (!state.accountsByEmail) state.accountsByEmail = {};
         state.accountsByEmail[state.userProfile.email.toLowerCase()] = {
@@ -22219,19 +22379,22 @@
       const cntEl = null;
       if (cntEl) cntEl.textContent = String(state.capturedLeads.length);
 
-      saveState();
+      const shouldSkipInitialPush = Boolean(profileData && profileData.skipInitialPush);
+      saveState(shouldSkipInitialPush);
       renderWorkoutView();
       renderPullupView();
       renderVeganView();
       renderShoppingView();
 
-      // Save newly signed-in profile & merged state directly to Supabase (/api/auth-lead & pushStateToCloud)
+      // Save newly signed-in lead record (for returning logins, pull latest Supabase state first so we never overwrite newer Week 3 data)
       fetch('/api/auth-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lead: leadRecord, state })
       }).catch(() => {});
-      pushStateToCloud();
+      if (!shouldSkipInitialPush) {
+        pushStateToCloud();
+      }
     }
 
     function initApp() {
@@ -23018,13 +23181,14 @@
           pendingResetDayTarget = null;
           if (resetDayConfirmModalEl) resetDayConfirmModalEl.classList.add('hidden');
 
-          // Save full state backup for the Data Protection & Undo Engine before clearing
+          // Save full state backup for Undo recovery before clearing
           saveSyncUndoSnapshotLocal();
           wipeSingleDayCheckmarksLocal(wNum, dNum);
+          state.updatedAt = new Date().toISOString();
           saveState(true);
-          // Delay destructive overwrite push by 5s so user can click Undo if needed
-          scheduleDelayedDestructiveCloudPushLocal();
-          showSyncUndoToastLocal(`Day ${dNum + 1} cleared. Cloud sync in 5s.`);
+          // Immediately push the cleared day's empty state to Supabase (Single Source of Truth)
+          autoSyncWorkoutToSupabaseLocal('day_reset');
+          showSyncUndoToastLocal(`Day ${dNum + 1} cleared & synced to cloud.`);
           renderWorkoutView();
           renderPullupView();
         });
@@ -24534,6 +24698,8 @@
               }
             }
             state.onboardingComplete = true;
+            state.userHasCompletedOnboarding = true;
+            state.hasCompletedFirstSetup = true;
             if (programWizardModal) programWizardModal.classList.add('hidden');
             saveUserLeadProfile({
               name: verifiedName,
@@ -24541,10 +24707,11 @@
               phone: leadPhoneInp ? leadPhoneInp.value.trim() : '',
               authProvider: `${providerKey}_oauth`,
               oauthVerified: true,
-              startFreshNewAccount: false
+              startFreshNewAccount: false,
+              skipInitialPush: true
             });
             if (typeof pullStateFromCloud === 'function') {
-              pullStateFromCloud();
+              pullStateFromCloud({ forceRemoteTruth: true });
             }
             if (smartLoginModal) smartLoginModal.classList.add('hidden');
             openedLoginFromWizardBypass = false;
@@ -25818,24 +25985,22 @@
               if (leadEmailInp) leadEmailInp.value = emailVal;
               if (passwordInp) passwordInp.value = '';
               state.onboardingComplete = true;
+              state.userHasCompletedOnboarding = true;
+              state.hasCompletedFirstSetup = true;
               if (programWizardModal) programWizardModal.classList.add('hidden');
 
+              const isReturningUserLogin = currentAuthTabMode !== 'signup' || openedLoginFromWizardBypass;
               saveUserLeadProfile({
                 name: verifiedName,
                 email: emailVal,
                 phone: phoneVal,
                 passwordHash: enteredHash,
                 authProvider: 'email_password',
-                startFreshNewAccount: currentAuthTabMode === 'signup' && !isFrancoisLogin && !existingSavedAcct
+                startFreshNewAccount: currentAuthTabMode === 'signup' && !isFrancoisLogin && !existingSavedAcct,
+                skipInitialPush: isReturningUserLogin
               });
-              if (isFrancoisLogin) {
-                ensureFrancoisWeek1Data(state, true);
-                saveState();
-                renderWorkoutView();
-                renderPullupView();
-              }
               if (typeof pullStateFromCloud === 'function') {
-                pullStateFromCloud();
+                pullStateFromCloud({ forceRemoteTruth: true });
               }
               if (smartLoginModal) smartLoginModal.classList.add('hidden');
               openedLoginFromWizardBypass = false;
@@ -26379,7 +26544,7 @@
       renderShoppingView();
 
       // Mandatory Smart Login Gate (Guests Not Available — Requires 1-Time Smart Sign-In)
-      const hasCompletedOnboarding = Boolean(state.userHasCompletedOnboarding || state.hasCompletedFirstSetup);
+      const hasCompletedOnboarding = Boolean(state.onboardingComplete || state.userHasCompletedOnboarding || state.hasCompletedFirstSetup);
       if (!state.userProfile || !state.userProfile.email) {
         const loginModal = document.getElementById('smart-login-modal');
         const closeBtn = document.getElementById('close-smart-login-btn');
@@ -26391,8 +26556,21 @@
       }
       claimAllPreviousLocalAndCloudDataIntoProfile();
       if (getActiveCloudEndpoint()) {
-        pullStateFromCloud();
+        // Strict Single Source of Truth on app initialization: fetch latest timestamped Supabase state & overwrite stale local cache
+        pullStateFromCloud({ forceRemoteTruth: true });
       }
+      let lastResumeSyncAt = Date.now();
+      const triggerResumeCloudPull = () => {
+        if (document.visibilityState && document.visibilityState !== 'visible') return;
+        const now = Date.now();
+        if (now - lastResumeSyncAt < 2500) return;
+        lastResumeSyncAt = now;
+        if (getActiveCloudEndpoint() && !isDestructiveCloudPushDelayedLocal()) {
+          pullStateFromCloud({ forceRemoteTruth: true });
+        }
+      };
+      document.addEventListener('visibilitychange', triggerResumeCloudPull);
+      window.addEventListener('focus', triggerResumeCloudPull);
     }
 
     window.addEventListener('DOMContentLoaded', initApp);

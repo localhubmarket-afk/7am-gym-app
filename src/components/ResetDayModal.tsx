@@ -4,7 +4,7 @@ export interface ResetDayControlProps {
   weekNumber: number;
   dayNumber: number;
   dayTitle?: string;
-  onConfirmClearDay: () => void;
+  onConfirmClearDay: () => Promise<void> | void;
 }
 
 export const ResetDayControl: React.FC<ResetDayControlProps> = ({
@@ -14,10 +14,16 @@ export const ResetDayControl: React.FC<ResetDayControlProps> = ({
   onConfirmClearDay
 }) => {
   const [isWarningOpen, setIsWarningOpen] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
-  function handleConfirm() {
-    onConfirmClearDay();
-    setIsWarningOpen(false);
+  async function handleConfirm() {
+    setIsClearing(true);
+    try {
+      await onConfirmClearDay();
+      setIsWarningOpen(false);
+    } finally {
+      setIsClearing(false);
+    }
   }
 
   return (
@@ -25,9 +31,9 @@ export const ResetDayControl: React.FC<ResetDayControlProps> = ({
       <button
         type="button"
         onClick={() => setIsWarningOpen(true)}
-        className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-rose-400/60 bg-rose-500/10 px-3 py-2 text-xs font-extrabold text-rose-200 transition hover:bg-rose-500/20"
+        className="inline-flex min-h-[40px] w-full items-center justify-center rounded-xl border border-rose-400/60 bg-rose-500/10 px-3 py-2 text-xs font-extrabold text-rose-200 transition hover:bg-rose-500/20"
       >
-        Reset Workout
+        Reset Workout (Clear Day {dayNumber})
       </button>
 
       {isWarningOpen && (
@@ -46,24 +52,26 @@ export const ResetDayControl: React.FC<ResetDayControlProps> = ({
                 Are you sure you want to clear all data for this day?
               </h2>
               <p className="text-xs leading-relaxed text-slate-300">
-                This will erase all logged sets for {dayTitle ? `${dayTitle} (Day ${dayNumber})` : `Day ${dayNumber}`} only. Your other workout days will stay safe.
+                This will erase all logged sets for {dayTitle ? `${dayTitle} (Day ${dayNumber})` : `Day ${dayNumber}`} only and sync to your account. Your other workout days stay safe.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
+                disabled={isClearing}
                 onClick={() => setIsWarningOpen(false)}
-                className="rounded-xl bg-slate-800 px-3 py-2.5 text-xs font-extrabold text-slate-100 transition hover:bg-slate-700"
+                className="rounded-xl bg-slate-800 px-3 py-2.5 text-xs font-extrabold text-slate-100 transition hover:bg-slate-700 disabled:opacity-60"
               >
                 Cancel
               </button>
               <button
                 type="button"
+                disabled={isClearing}
                 onClick={handleConfirm}
-                className="rounded-xl bg-rose-500 px-3 py-2.5 text-xs font-extrabold text-slate-950 transition hover:bg-rose-400"
+                className="rounded-xl bg-rose-500 px-3 py-2.5 text-xs font-extrabold text-slate-950 transition hover:bg-rose-400 disabled:opacity-60"
               >
-                Clear Day
+                {isClearing ? 'Clearing...' : 'Clear Day'}
               </button>
             </div>
           </div>

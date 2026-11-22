@@ -593,21 +593,65 @@ export function classifyExerciseCategory(ex: RoutineExerciseLike | null | undefi
   return 'weightlifting';
 }
 
+export function isOverhandPullUpsExercise(ex: RoutineExerciseLike | null | undefined): boolean {
+  if (!ex || typeof ex !== 'object') return false;
+  const name = String(ex.name || '').toLowerCase();
+  const id = String(ex.id || '').toLowerCase();
+  return (
+    id === 'day1_pullups' ||
+    id === 'ex_pullups' ||
+    id.includes('pullup') ||
+    /\b(overhand\s+pull[- ]?ups?|pull[- ]?ups?|chin[- ]?ups?)\b/i.test(name)
+  );
+}
+
+export function orderExercisesWithPullUpsFirst<T extends RoutineExerciseLike>(exercises: T[]): T[] {
+  const pullUps: T[] = [];
+  const rest: T[] = [];
+  (exercises || []).forEach((ex) => {
+    if (isOverhandPullUpsExercise(ex)) {
+      pullUps.push(ex);
+    } else {
+      rest.push(ex);
+    }
+  });
+  return [...pullUps, ...rest];
+}
+
 export function groupExercisesByCategory<T extends RoutineExerciseLike>(
   exercises: T[]
 ): {
+  pullUpsLead: T[];
   weightlifting: T[];
   bodyweight: T[];
+  otherBodyweight: T[];
   cardio: T[];
 } {
-  const groups: { weightlifting: T[]; bodyweight: T[]; cardio: T[] } = {
+  const ordered = orderExercisesWithPullUpsFirst(exercises || []);
+  const groups: {
+    pullUpsLead: T[];
+    weightlifting: T[];
+    bodyweight: T[];
+    otherBodyweight: T[];
+    cardio: T[];
+  } = {
+    pullUpsLead: [],
     weightlifting: [],
     bodyweight: [],
+    otherBodyweight: [],
     cardio: []
   };
-  (exercises || []).forEach((ex) => {
+  ordered.forEach((ex) => {
     const cat = classifyExerciseCategory(ex);
-    groups[cat].push(ex);
+    if (cat === 'bodyweight' && isOverhandPullUpsExercise(ex)) {
+      groups.pullUpsLead.push(ex);
+      groups.bodyweight.push(ex);
+    } else if (cat === 'bodyweight') {
+      groups.otherBodyweight.push(ex);
+      groups.bodyweight.push(ex);
+    } else {
+      groups[cat].push(ex);
+    }
   });
   return groups;
 }

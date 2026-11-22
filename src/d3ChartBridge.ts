@@ -32,14 +32,18 @@ import {
   filterRecipesByDietAndIntolerances,
   groupExercisesByCategory,
   isBikingExercise,
+  isOverhandPullUpsExercise,
   isRecipeAllowedForDiet,
   normalizeCardioExerciseName,
+  orderExercisesWithPullUpsFirst,
   resolveDisplayUsername,
   validateProgramWizardConfig
 } from './utils/wizardValidation';
 import {
   countTotalLoggedSetsInState,
-  createAutoSupabaseSyncEngine
+  createAutoSupabaseSyncEngine,
+  fetchLatestCloudStateAsSingleSourceOfTruth,
+  resolveSingleSourceOfTruthState
 } from './utils/workoutSyncEngine';
 
 export interface RenderOneRmD3ChartOptions {
@@ -650,9 +654,13 @@ declare global {
     enforceDifficultyOnRoutine?: typeof enforceDifficultyOnRoutine;
     createAutoSupabaseSyncEngine?: typeof createAutoSupabaseSyncEngine;
     countTotalLoggedSetsInState?: typeof countTotalLoggedSetsInState;
+    resolveSingleSourceOfTruthState?: typeof resolveSingleSourceOfTruthState;
+    fetchLatestCloudStateAsSingleSourceOfTruth?: typeof fetchLatestCloudStateAsSingleSourceOfTruth;
     resolveDisplayUsername?: typeof resolveDisplayUsername;
     clearActiveDayWorkoutData?: typeof clearActiveDayWorkoutData;
     isBikingExercise?: typeof isBikingExercise;
+    isOverhandPullUpsExercise?: typeof isOverhandPullUpsExercise;
+    orderExercisesWithPullUpsFirst?: typeof orderExercisesWithPullUpsFirst;
     normalizeCardioExerciseName?: typeof normalizeCardioExerciseName;
     STANDARD_CARDIO_SESSIONS?: typeof STANDARD_CARDIO_SESSIONS;
   }
@@ -689,9 +697,13 @@ if (typeof window !== 'undefined') {
   window.enforceDifficultyOnRoutine = enforceDifficultyOnRoutine;
   window.createAutoSupabaseSyncEngine = createAutoSupabaseSyncEngine;
   window.countTotalLoggedSetsInState = countTotalLoggedSetsInState;
+  window.resolveSingleSourceOfTruthState = resolveSingleSourceOfTruthState;
+  window.fetchLatestCloudStateAsSingleSourceOfTruth = fetchLatestCloudStateAsSingleSourceOfTruth;
   window.resolveDisplayUsername = resolveDisplayUsername;
   window.clearActiveDayWorkoutData = clearActiveDayWorkoutData;
   window.isBikingExercise = isBikingExercise;
+  window.isOverhandPullUpsExercise = isOverhandPullUpsExercise;
+  window.orderExercisesWithPullUpsFirst = orderExercisesWithPullUpsFirst;
   window.normalizeCardioExerciseName = normalizeCardioExerciseName;
   window.STANDARD_CARDIO_SESSIONS = STANDARD_CARDIO_SESSIONS;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
