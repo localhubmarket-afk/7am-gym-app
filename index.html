@@ -305,17 +305,17 @@
     </div>
   </div>
 
-  <!-- UPGRADE 24: 5-Second Bottom Undo Toast Notification (Sync Safety) -->
+  <!-- DATA PROTECTION & UNDO ENGINE: 10-Second Bottom Undo Toast Notification -->
   <div id="sync-undo-toast-container" role="status" aria-live="polite" class="hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-[75] w-max max-w-[92vw] transition-all duration-200">
     <div class="rounded-2xl border border-sky-400/60 shadow-2xl px-3.5 py-2.5 flex items-center justify-between gap-3" style="background-color: #0f172a; color: #f8fafc; letter-spacing: 0.02em; line-height: 1.5; font-family: system-ui, sans-serif;">
-      <span id="sync-undo-toast-msg" class="text-xs font-extrabold whitespace-nowrap" style="color: #f8fafc;">Week Synced.</span>
+      <span id="sync-undo-toast-msg" class="text-xs font-extrabold whitespace-nowrap" style="color: #f8fafc;">Week overwritten.</span>
       <button
         type="button"
         id="sync-undo-toast-btn"
-        class="px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition hover:opacity-90"
-        style="background-color: #0ea5e9; color: #0f172a; min-height: 34px;"
+        class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition hover:opacity-90"
+        style="background-color: #0ea5e9; color: #0f172a; min-height: 36px;"
       >
-        ↩️ Undo Mistake
+        ↩️ UNDO
       </button>
     </div>
   </div>
@@ -1790,6 +1790,62 @@
     }
 
     let cloudSyncTimeout = null;
+    let delayedDestructiveCloudPushTimer = null;
+    const SYNC_SUPABASE_DELAY_MS_LOCAL = 5000;
+    const SYNC_UNDO_TOAST_DURATION_MS_LOCAL = 10000;
+
+    function serializeStateWithoutUndoBackupLocal(stateObj) {
+      if (typeof window.serializeStateForPersistence === 'function') {
+        return window.serializeStateForPersistence(stateObj);
+      }
+      if (!stateObj || typeof stateObj !== 'object') return '{}';
+      const clean = {};
+      Object.keys(stateObj).forEach((k) => {
+        if (k === 'undoBackup') return;
+        clean[k] = stateObj[k];
+      });
+      return JSON.stringify(clean);
+    }
+
+    function isDestructiveCloudPushDelayedLocal() {
+      return delayedDestructiveCloudPushTimer !== null;
+    }
+
+    function cancelDelayedDestructiveCloudPushLocal() {
+      if (delayedDestructiveCloudPushTimer !== null) {
+        clearTimeout(delayedDestructiveCloudPushTimer);
+        delayedDestructiveCloudPushTimer = null;
+      }
+    }
+
+    function scheduleDelayedDestructiveCloudPushLocal(delayMs) {
+      const waitMs = (typeof delayMs === 'number' && Number.isFinite(delayMs))
+        ? Math.max(0, Math.floor(delayMs))
+        : (typeof window.SYNC_SUPABASE_DELAY_MS === 'number' ? window.SYNC_SUPABASE_DELAY_MS : SYNC_SUPABASE_DELAY_MS_LOCAL);
+      clearTimeout(cloudSyncTimeout);
+      cloudSyncTimeout = null;
+      cancelDelayedDestructiveCloudPushLocal();
+      const badge = document.getElementById('cloud-sync-badge');
+      if (badge && getActiveCloudEndpoint()) {
+        badge.textContent = 'Cloud push paused (5s undo window)...';
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300';
+      }
+      delayedDestructiveCloudPushTimer = setTimeout(() => {
+        delayedDestructiveCloudPushTimer = null;
+        if (getActiveCloudEndpoint()) {
+          pushStateToCloud('delayed_sync');
+        }
+      }, waitMs);
+    }
+
+    function flushUndoRestoreCloudPushLocal() {
+      clearTimeout(cloudSyncTimeout);
+      cloudSyncTimeout = null;
+      cancelDelayedDestructiveCloudPushLocal();
+      if (getActiveCloudEndpoint()) {
+        pushStateToCloud('undo_restore');
+      }
+    }
 
     function getActiveCloudEndpoint() {
       const userEmail = (state && state.userProfile && state.userProfile.email) ? state.userProfile.email.trim().toLowerCase() : '';
@@ -1802,27 +1858,28 @@
       return '';
     }
 
-    function pushStateToCloud() {
+    function pushStateToCloud(pushReason) {
       const url = getActiveCloudEndpoint();
       if (!url) return;
       const badge = document.getElementById('cloud-sync-badge');
       if (badge) {
-        badge.textContent = 'Syncing...';
+        badge.textContent = pushReason === 'undo_restore' ? 'Restoring to Supabase...' : 'Syncing...';
         badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300';
       }
       const isFirebase = url.includes('firebaseio.com') || url.endsWith('.json');
       const isVercelApi = url.includes('/api/state');
+      const payloadJson = serializeStateWithoutUndoBackupLocal(state);
       fetch(url, {
         method: isFirebase ? 'PUT' : 'POST',
         headers: { 'Content-Type': isVercelApi ? 'application/json' : 'text/plain;charset=utf-8' },
-        body: JSON.stringify(state)
+        body: payloadJson
       }).then(r => r.json().catch(() => ({}))).then(res => {
         if (badge) {
           if (res && res.configured === false) {
             badge.textContent = 'Local Saved (Add Supabase in Vercel)';
             badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300';
           } else {
-            badge.textContent = '✓ Supabase Cloud Saved';
+            badge.textContent = pushReason === 'undo_restore' ? '✓ Undo Restored in Supabase' : '✓ Supabase Cloud Saved';
             badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300';
           }
         }
@@ -1904,7 +1961,7 @@
     }
 
     function saveState(skipCloud) {
-      const jsonStr = JSON.stringify(state);
+      const jsonStr = serializeStateWithoutUndoBackupLocal(state);
       // Save to localStorage
       try {
         localStorage.setItem(STORAGE_KEY, jsonStr);
@@ -1920,8 +1977,8 @@
           history.replaceState(null, '', '#state=' + b64);
         }
       } catch (err) {}
-      // Debounced Cloud DB Sync
-      if (!skipCloud && getActiveCloudEndpoint()) {
+      // Debounced Cloud DB Sync (paused automatically during the 5-second destructive overwrite undo window)
+      if (!skipCloud && !isDestructiveCloudPushDelayedLocal() && getActiveCloudEndpoint()) {
         clearTimeout(cloudSyncTimeout);
         cloudSyncTimeout = setTimeout(pushStateToCloud, 600);
       }
@@ -10274,6 +10331,7 @@
             reps: fillReps,
             done: false,
             isLogged: false,
+            autoPrefilled: true,
             unit: exUnit
           };
         }
@@ -10318,8 +10376,14 @@
     }
 
     function scanTargetScopeForLoggedSetsLocal(targetWeek, dayIdxFilter) {
-      if (typeof window.hasLoggedSetsInWeek === 'function') {
-        return window.hasLoggedSetsInWeek(state.workoutLogs || {}, state.pullupLogs || {}, targetWeek, dayIdxFilter);
+      if (typeof window.hasWeekWorkoutData === 'function') {
+        const res = window.hasWeekWorkoutData(state.workoutLogs || {}, state.pullupLogs || {}, targetWeek, dayIdxFilter);
+        return {
+          hasData: res.hasData,
+          hasLoggedData: res.hasData,
+          loggedSetCount: res.loggedSetCount > 0 ? res.loggedSetCount : res.enteredEntryCount,
+          enteredEntryCount: res.enteredEntryCount
+        };
       }
       const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
       const hasD = typeof dayIdxFilter === 'number' && Number.isFinite(dayIdxFilter);
@@ -10327,7 +10391,10 @@
       const seen = new Set();
       Object.keys(state.workoutLogs || {}).forEach((k) => {
         const entry = state.workoutLogs[k];
-        if (!entry || (entry.done !== true && entry.isLogged !== true)) return;
+        if (!entry || typeof entry !== 'object') return;
+        const isLogged = entry.done === true || entry.isLogged === true;
+        const hasManualVal = !entry.autoPrefilled && (String(entry.weight ?? entry.wt ?? '').trim() !== '' || String(entry.reps ?? '').trim() !== '');
+        if (!isLogged && !hasManualVal) return;
         const mPref = k.match(/^w(\d+)_(?:d)?(\d+)_(.+)_(?:s)?(\d+)$/i);
         if (mPref) {
           const w = parseInt(mPref[1], 10) || 1;
@@ -10343,7 +10410,10 @@
       });
       Object.keys(state.pullupLogs || {}).forEach((k) => {
         const entry = state.pullupLogs[k];
-        if (!entry || (entry.done !== true && entry.isLogged !== true)) return;
+        if (!entry || typeof entry !== 'object') return;
+        const isLogged = entry.done === true || entry.isLogged === true;
+        const hasManualVal = !entry.autoPrefilled && String(entry.reps ?? '').trim() !== '';
+        if (!isLogged && !hasManualVal) return;
         const m = k.match(/^w(\d+)_day_(\d+)_set_(\d+)$/i);
         if (m) {
           const w = parseInt(m[1], 10) || 1;
@@ -10351,39 +10421,24 @@
           if (w === safeW && (!hasD || d === safeD)) seen.add(`pullup_w${w}_${d}_${m[3]}`);
         }
       });
-      return { hasLoggedData: seen.size > 0, loggedSetCount: seen.size };
+      return { hasData: seen.size > 0, hasLoggedData: seen.size > 0, loggedSetCount: seen.size, enteredEntryCount: seen.size };
     }
 
-    function saveSyncUndoSnapshotLocal(meta) {
-      if (typeof window.createSyncUndoSnapshot === 'function') {
-        state.undoBackup = window.createSyncUndoSnapshot(state, meta);
+    function saveSyncUndoSnapshotLocal() {
+      if (typeof window.createFullStateUndoBackup === 'function') {
+        state.undoBackup = window.createFullStateUndoBackup(state);
         return state.undoBackup;
       }
-      const clone = (val, fb) => {
-        try { return val !== undefined && val !== null ? JSON.parse(JSON.stringify(val)) : fb; } catch (e) { return fb; }
-      };
-      state.undoBackup = {
-        createdAt: Date.now(),
-        targetWeek: meta.targetWeek,
-        sourceWeek: meta.sourceWeek,
-        mode: meta.mode,
-        dayIdx: meta.dayIdx,
-        stateData: {
-          customDayScheduleByWeek: clone(state.customDayScheduleByWeek, {}),
-          weeklyRestDays: clone(state.weeklyRestDays, { default: [5, 6] }),
-          manualScheduleOverrideByWeek: clone(state.manualScheduleOverrideByWeek, {}),
-          customExercisesByWeek: clone(state.customExercisesByWeek, {}),
-          workoutLogs: clone(state.workoutLogs, {}),
-          pullupLogs: clone(state.pullupLogs, {}),
-          warmupLogs: clone(state.warmupLogs, {}),
-          cardioLogs: clone(state.cardioLogs, {}),
-          completedWeeks: clone(state.completedWeeks, {}),
-          maxUnlockedWeek: Number(state.maxUnlockedWeek) || 2,
-          selectedWeek: Number(state.selectedWeek || state.currentWeek) || 1,
-          currentWeek: Number(state.currentWeek || state.selectedWeek) || 1,
-          selectedDayIndex: Math.max(0, Math.min(6, Math.floor(Number(state.selectedDayIndex) || 0)))
-        }
-      };
+      const snapshot = {};
+      Object.keys(state || {}).forEach((key) => {
+        if (key === 'undoBackup') return;
+        const val = state[key];
+        if (typeof val === 'function' || val === undefined) return;
+        try {
+          snapshot[key] = JSON.parse(JSON.stringify(val));
+        } catch (e) {}
+      });
+      state.undoBackup = snapshot;
       return state.undoBackup;
     }
 
@@ -10400,13 +10455,16 @@
       const box = document.getElementById('sync-undo-toast-container');
       const msgEl = document.getElementById('sync-undo-toast-msg');
       if (!box) return;
-      if (msgEl) msgEl.textContent = labelText || 'Week Synced.';
+      if (msgEl) msgEl.textContent = labelText || 'Week overwritten. Cloud sync in 5s.';
       box.classList.remove('hidden');
       if (syncUndoToastTimeout) clearTimeout(syncUndoToastTimeout);
+      const durationMs = typeof window.SYNC_UNDO_TOAST_DURATION_MS === 'number'
+        ? window.SYNC_UNDO_TOAST_DURATION_MS
+        : SYNC_UNDO_TOAST_DURATION_MS_LOCAL;
       syncUndoToastTimeout = setTimeout(() => {
         box.classList.add('hidden');
         syncUndoToastTimeout = null;
-      }, 5000);
+      }, durationMs);
     }
 
     function performUndoLastSyncLocal() {
@@ -10414,24 +10472,23 @@
         hideSyncUndoToastLocal();
         return false;
       }
-      const ok = typeof window.restoreSyncUndoSnapshot === 'function'
-        ? window.restoreSyncUndoSnapshot(state, state.undoBackup)
+      // Cancel any pending 5-second delayed Supabase push BEFORE restoring state
+      cancelDelayedDestructiveCloudPushLocal();
+      const ok = typeof window.restoreFullStateUndoBackup === 'function'
+        ? window.restoreFullStateUndoBackup(state, state.undoBackup)
         : (() => {
-            const d = state.undoBackup && state.undoBackup.stateData ? JSON.parse(JSON.stringify(state.undoBackup.stateData)) : null;
-            if (!d) return false;
-            state.customDayScheduleByWeek = d.customDayScheduleByWeek;
-            state.weeklyRestDays = d.weeklyRestDays;
-            state.manualScheduleOverrideByWeek = d.manualScheduleOverrideByWeek;
-            state.customExercisesByWeek = d.customExercisesByWeek;
-            state.workoutLogs = d.workoutLogs;
-            state.pullupLogs = d.pullupLogs;
-            state.warmupLogs = d.warmupLogs;
-            state.cardioLogs = d.cardioLogs;
-            state.completedWeeks = d.completedWeeks;
-            state.maxUnlockedWeek = d.maxUnlockedWeek;
-            state.selectedWeek = d.selectedWeek;
-            state.currentWeek = d.currentWeek;
-            state.selectedDayIndex = d.selectedDayIndex;
+            const backup = state.undoBackup;
+            if (!backup || typeof backup !== 'object') return false;
+            const cloned = JSON.parse(JSON.stringify(backup));
+            Object.keys(state).forEach((k) => {
+              if (k === 'undoBackup') return;
+              if (!(k in cloned)) delete state[k];
+            });
+            Object.keys(cloned).forEach((k) => {
+              if (k === 'undoBackup') return;
+              state[k] = cloned[k];
+            });
+            state.undoBackup = null;
             return true;
           })();
       state.undoBackup = null;
@@ -10439,12 +10496,15 @@
       if (!ok) return false;
       const weekSel = document.getElementById('week-select');
       if (weekSel) weekSel.value = String(state.selectedWeek || state.currentWeek || 1);
-      saveState();
+      // Save locally and immediately push restored state to Supabase
+      saveState(true);
+      flushUndoRestoreCloudPushLocal();
       renderWorkoutView();
       renderPullupView();
       renderVeganView();
+      if (typeof renderShoppingView === 'function') renderShoppingView();
       if (typeof renderAthleteDashboardTab === 'function') renderAthleteDashboardTab();
-      showToast('Undo complete! Your logged sets are back.');
+      showToast('Undo complete! Your data is restored and pushed to Supabase.');
       return true;
     }
 
@@ -10455,10 +10515,12 @@
       const descEl = document.getElementById('sync-overwrite-guard-desc');
       if (badgeEl) {
         const setWord = loggedSetCount === 1 ? 'set' : 'sets';
-        badgeEl.textContent = `${scopeLabel || `Week ${targetWeek}`} has ${loggedSetCount} logged ${setWord}`;
+        badgeEl.textContent = `${scopeLabel || `Week ${targetWeek}`} has ${loggedSetCount} saved ${setWord}`;
       }
       if (descEl) {
-        descEl.textContent = 'Wait! You already logged data in this week. Erase it and copy the previous week?';
+        descEl.textContent = typeof window.SYNC_OVERWRITE_WARNING_TEXT === 'string'
+          ? window.SYNC_OVERWRITE_WARNING_TEXT
+          : 'Warning: You already have data for this week. Overwriting will delete it. Proceed?';
       }
       if (modalEl) {
         modalEl.classList.remove('hidden');
@@ -10469,7 +10531,7 @@
 
     function runWithSyncOverwriteProtectionLocal(targetWeek, dayIdxFilter, onExecuteFn, scopeLabel) {
       const scan = scanTargetScopeForLoggedSetsLocal(targetWeek, dayIdxFilter);
-      if (scan.hasLoggedData) {
+      if (scan.hasData || scan.hasLoggedData) {
         openSyncOverwriteGuardModalLocal(targetWeek, scan.loggedSetCount, onExecuteFn, scopeLabel);
         return false;
       }
@@ -10481,7 +10543,7 @@
       const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
       const safeD = Math.max(0, Math.min(6, Math.floor(Number(dayIdx) || 0)));
       const prevW = safeW - 1;
-      saveSyncUndoSnapshotLocal({ targetWeek: safeW, sourceWeek: prevW, mode: 'copy_single_day', dayIdx: safeD });
+      saveSyncUndoSnapshotLocal();
 
       const oldDayObj = typeof getScheduledDayObject === 'function' ? getScheduledDayObject(safeW, safeD) : null;
       const oldExIds = oldDayObj && Array.isArray(oldDayObj.exercises) ? oldDayObj.exercises.map(e => e && e.id).filter(Boolean) : [];
@@ -10508,11 +10570,13 @@
       prefillUnloggedDayFromLastSetHistoryLocal(safeW, safeD);
 
       state.openDayWorkoutPicker = false;
-      saveState();
+      // Save locally right away, but delay the destructive Supabase push by 5 seconds for Undo safety
+      saveState(true);
+      scheduleDelayedDestructiveCloudPushLocal();
       renderWorkoutView();
       renderPullupView();
       renderVeganView();
-      showSyncUndoToastLocal('Week Synced.');
+      showSyncUndoToastLocal('Day overwritten. Cloud sync in 5s.');
       return true;
     }
 
@@ -10606,7 +10670,13 @@
       const syncModal = document.getElementById('sync-settings-modal');
       if (syncModal) syncModal.classList.add('hidden');
 
-      saveState();
+      if (mode === 'keep_same') {
+        // Save locally immediately, but delay the destructive Supabase push by 5 seconds for Undo safety
+        saveState(true);
+        scheduleDelayedDestructiveCloudPushLocal();
+      } else {
+        saveState();
+      }
       renderWorkoutView();
       renderPullupView();
       renderVeganView();
@@ -10618,7 +10688,7 @@
         }
       } else {
         showToast(`Week ${nextW} ready at 0%! Same plan kept from Week ${cur} with your last weights loaded.`);
-        showSyncUndoToastLocal('Week Synced.');
+        showSyncUndoToastLocal('Week overwritten. Cloud sync in 5s.');
       }
     }
 
@@ -12192,12 +12262,14 @@
               prefillUnloggedWeekFromLastSetHistoryLocal(week);
               const syncModal = document.getElementById('sync-settings-modal');
               if (syncModal) syncModal.classList.add('hidden');
-              saveState();
+              // Save locally right away, but delay the destructive Supabase push by 5 seconds for Undo safety
+              saveState(true);
+              scheduleDelayedDestructiveCloudPushLocal();
               renderWorkoutView();
               renderPullupView();
               renderVeganView();
               showToast(`Week ${week} synced from Week ${prevWeek}! Checkmarks reset to 0% and last weights loaded.`);
-              showSyncUndoToastLocal('Week Synced.');
+              showSyncUndoToastLocal('Week overwritten. Cloud sync in 5s.');
             };
             runWithSyncOverwriteProtectionLocal(week, null, executeResyncNow, `Week ${week}`);
           });
@@ -16791,6 +16863,7 @@
             state.workoutLogs[key][field] = inp.value;
           }
           state.workoutLogs[key].unit = exUnit;
+          delete state.workoutLogs[key].autoPrefilled;
 
           if (week === 1) {
             const kIdx = exId === 'cable_ab_crunch' ? dayIdx : slotIdx;
@@ -25927,7 +26000,7 @@
       <div class="space-y-1.5 border-b border-slate-800 pb-3">
         <span id="sync-overwrite-guard-badge" class="inline-block text-[11px] font-extrabold px-2.5 py-0.5 rounded-lg border border-amber-400/50" style="background-color: rgba(217, 119, 6, 0.18); color: #fde68a;">Logged data detected</span>
         <h3 id="sync-overwrite-guard-title" class="text-base font-extrabold" style="color: #f8fafc;">Protect Your Logged Sets</h3>
-        <p id="sync-overwrite-guard-desc" class="text-xs font-semibold" style="color: #e2e8f0; line-height: 1.5;">Wait! You already logged data in this week. Erase it and copy the previous week?</p>
+        <p id="sync-overwrite-guard-desc" class="text-xs font-semibold" style="color: #e2e8f0; line-height: 1.5;">Warning: You already have data for this week. Overwriting will delete it. Proceed?</p>
       </div>
       <div class="grid grid-cols-2 gap-2.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));">
         <button
@@ -25944,7 +26017,7 @@
           class="py-3 px-3 rounded-xl text-xs sm:text-sm font-bold transition hover:bg-slate-800/80"
           style="border: 1px solid #64748b; color: #f8fafc; background: transparent; min-height: 46px;"
         >
-          Erase &amp; Sync
+          Proceed
         </button>
       </div>
     </div>

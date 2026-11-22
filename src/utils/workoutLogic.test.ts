@@ -3206,5 +3206,114 @@ test('47. Upgrade 24: Sync Data Protection & Undo, Single-Source Volume Math, St
   );
 });
 
+test('Subtest 48: Data Protection & Undo Engine — Smart Warning Detector, Full-State Deep undoBackup, 10s Undo Window & 5s Delayed Supabase Push', async () => {
+  const mod = await import('./workoutLogic');
 
+  // 1. Exact constants & warning copy
+  assert.equal(mod.SYNC_UNDO_TOAST_DURATION_MS, 10000);
+  assert.equal(mod.SYNC_SUPABASE_DELAY_MS, 5000);
+  assert.equal(
+    mod.SYNC_OVERWRITE_WARNING_TEXT,
+    'Warning: You already have data for this week. Overwriting will delete it. Proceed?'
+  );
 
+  // 2. Smart Warning detector: detects logged sets AND user-entered unlogged sets, ignores untouched autoPrefilled entries
+  const logs: Record<string, any> = {
+    w2_0_mon_bench_1: { weight: '135', reps: '10', done: true, isLogged: true },
+    w3_4_fri_squat_1: { weight: '185', reps: '8', done: false, isLogged: false }, // user-entered!
+    w4_0_mon_bench_1: { weight: '135', reps: '10', done: false, isLogged: false, autoPrefilled: true }
+  };
+  const scanW2 = mod.hasWeekWorkoutData(logs, {}, 2);
+  assert.equal(scanW2.hasData, true);
+  assert.equal(scanW2.hasLoggedData, true);
+  assert.equal(scanW2.loggedSetCount, 1);
+
+  const scanW3 = mod.hasWeekWorkoutData(logs, {}, 3);
+  assert.equal(scanW3.hasData, true);
+  assert.equal(scanW3.enteredEntryCount, 1);
+
+  const scanW4 = mod.hasWeekWorkoutData(logs, {}, 4);
+  assert.equal(scanW4.hasData, false);
+  assert.equal(scanW4.enteredEntryCount, 0);
+
+  // 3. Full-state deep copy snapshot into state.undoBackup & restore
+  const liveState: Record<string, any> = {
+    selectedWeek: 3,
+    currentWeek: 3,
+    workoutLogs: {
+      w3_4_fri_bench_1: { weight: '145', reps: '8', done: true, isLogged: true }
+    },
+    customDayScheduleByWeek: { '3': [0, 1, 2, 3, 4, 5, 6] },
+    nestedPrefs: { theme: 'dark', tags: ['a', 'b'] },
+    undoBackup: { stale: true }
+  };
+
+  const backup = mod.createFullStateUndoBackup(liveState);
+  assert.equal('undoBackup' in backup, false, 'undoBackup must never be nested inside itself');
+
+  // Save to state.undoBackup and verify serialization excludes undoBackup
+  liveState.undoBackup = backup;
+  const serialized = mod.serializeStateForPersistence(liveState);
+  assert.equal(serialized.includes('"undoBackup"'), false);
+
+  // Simulate destructive overwrite + extra key added after overwrite
+  liveState.workoutLogs = {};
+  liveState.nestedPrefs.tags.push('overwritten');
+  liveState.tempAfterOverwrite = 'remove_me';
+  assert.equal(backup.workoutLogs.w3_4_fri_bench_1.weight, '145', 'backup must be a true deep copy');
+  assert.deepEqual(backup.nestedPrefs.tags, ['a', 'b']);
+
+  // Restore from state.undoBackup
+  const restored = mod.restoreFullStateUndoBackup(liveState, liveState.undoBackup);
+  assert.equal(restored, true);
+  assert.equal(liveState.undoBackup, null);
+  assert.equal(liveState.workoutLogs.w3_4_fri_bench_1.weight, '145');
+  assert.deepEqual(liveState.nestedPrefs.tags, ['a', 'b']);
+  assert.equal('tempAfterOverwrite' in liveState, false);
+
+  // 4. 5-Second Delayed Supabase Push Controller
+  const pushedReasons: string[] = [];
+  let scheduledFn: (() => void) | null = null;
+  let scheduledMs = 0;
+  let clearedCount = 0;
+  let nextHandle = 1;
+
+  const ctrl = mod.createDelayedCloudPushController({
+    delayMs: mod.SYNC_SUPABASE_DELAY_MS,
+    pushFn: (reason) => pushedReasons.push(reason),
+    setTimer: (fn, ms) => {
+      scheduledFn = fn;
+      scheduledMs = ms;
+      return nextHandle++;
+    },
+    clearTimer: () => {
+      scheduledFn = null;
+      clearedCount++;
+    }
+  });
+
+  // Case A: Overwrite happens -> NOT pushed immediately, waits 5000ms
+  ctrl.scheduleDelayedPush();
+  assert.equal(pushedReasons.length, 0, 'must NOT push destructive overwrite immediately');
+  assert.equal(scheduledMs, 5000);
+  assert.equal(ctrl.isWithinDelayWindow(), true);
+
+  // User clicks UNDO before 5 seconds -> pending destructive push cancelled, restored state pushed immediately
+  ctrl.flushUndoRestorePush();
+  assert.equal(clearedCount, 1);
+  assert.equal(ctrl.isWithinDelayWindow(), false);
+  assert.deepEqual(pushedReasons, ['undo_restore']);
+  assert.equal(scheduledFn, null);
+
+  // Case B: Overwrite happens and 5 seconds pass -> delayed_sync pushes to Supabase
+  ctrl.scheduleDelayedPush();
+  assert.equal(pushedReasons.length, 1);
+  assert.ok(scheduledFn);
+  (scheduledFn as () => void)();
+  assert.equal(ctrl.isWithinDelayWindow(), false);
+  assert.deepEqual(pushedReasons, ['undo_restore', 'delayed_sync']);
+
+  // User clicks UNDO at second 7 (still inside 10s Undo window) -> immediately pushes restored state to Supabase
+  ctrl.flushUndoRestorePush();
+  assert.deepEqual(pushedReasons, ['undo_restore', 'delayed_sync', 'undo_restore']);
+});

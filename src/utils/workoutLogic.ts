@@ -11005,5 +11005,210 @@ export function formatWeeklyVolumeTooltipText(week: number, volumeLbs: number): 
   return `Week ${safeW} Volume: ${safeVol.toLocaleString('en-US')} lbs. Tapped to view full Week ${safeW} logs.`;
 }
 
+// ============================================================================
+// DATA PROTECTION & UNDO ENGINE (Smart Warning + Deep Snapshot + 10s Undo + 5s Delayed Cloud Push)
+// ============================================================================
 
+export const SYNC_UNDO_TOAST_DURATION_MS = 10000;
+export const SYNC_SUPABASE_DELAY_MS = 5000;
+export const SYNC_OVERWRITE_WARNING_TEXT =
+  'Warning: You already have data for this week. Overwriting will delete it. Proceed?';
 
+export interface WeekWorkoutDataScanResult {
+  hasData: boolean;
+  hasLoggedData: boolean;
+  loggedSetCount: number;
+  enteredEntryCount: number;
+}
+
+export function isWorkoutEntryUserPopulated(entry: any): boolean {
+  if (!entry || typeof entry !== 'object') return false;
+  if (isSetEntryLogged(entry)) return true;
+  if (entry.autoPrefilled === true) return false;
+  const wStr = String(entry.weight ?? entry.wt ?? '').trim();
+  const rStr = String(entry.reps ?? '').trim();
+  return wStr !== '' || rStr !== '';
+}
+
+export function hasWeekWorkoutData(
+  workoutLogs: Record<string, any> | null | undefined,
+  pullupLogs: Record<string, any> | null | undefined,
+  targetWeek: number,
+  dayIdxFilter?: number | null
+): WeekWorkoutDataScanResult {
+  const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
+  const hasDayFilter = typeof dayIdxFilter === 'number' && Number.isFinite(dayIdxFilter);
+  const safeD = hasDayFilter ? Math.max(0, Math.min(6, Math.floor(dayIdxFilter as number))) : -1;
+
+  const loggedCanonical = new Set<string>();
+  const populatedCanonical = new Set<string>();
+
+  Object.keys(workoutLogs || {}).forEach((k) => {
+    const entry = workoutLogs?.[k];
+    if (!entry || typeof entry !== 'object') return;
+    const meta = parseWorkoutLogKeyMeta(k);
+    if (!meta || meta.week !== safeW) return;
+    if (hasDayFilter && meta.dayIdx !== safeD) return;
+    const canon = `w${meta.week}_${meta.dayIdx}_${meta.exerciseId}_${meta.setIdx}`;
+    if (isSetEntryLogged(entry)) {
+      loggedCanonical.add(canon);
+      populatedCanonical.add(canon);
+    } else if (isWorkoutEntryUserPopulated(entry)) {
+      populatedCanonical.add(canon);
+    }
+  });
+
+  Object.keys(pullupLogs || {}).forEach((k) => {
+    const entry = pullupLogs?.[k];
+    if (!entry || typeof entry !== 'object') return;
+    const m = k.match(/^w(\d+)_day_(\d+)_set_(\d+)$/i);
+    let wk = -1;
+    let dIdx = -1;
+    let setPart = '';
+    if (m) {
+      wk = parseInt(m[1], 10) || 1;
+      dIdx = Math.max(0, (parseInt(m[2], 10) || 1) - 1);
+      setPart = m[3];
+    } else if (safeW === 1) {
+      const mLeg = k.match(/^day_(\d+)_set_(\d+)$/i);
+      if (mLeg) {
+        wk = 1;
+        dIdx = Math.max(0, (parseInt(mLeg[1], 10) || 1) - 1);
+        setPart = mLeg[2];
+      }
+    }
+    if (wk !== safeW) return;
+    if (hasDayFilter && dIdx !== safeD) return;
+    const canon = `pullup_w${wk}_${dIdx}_${setPart}`;
+    if (isSetEntryLogged(entry)) {
+      loggedCanonical.add(canon);
+      populatedCanonical.add(canon);
+    } else if (isWorkoutEntryUserPopulated(entry)) {
+      populatedCanonical.add(canon);
+    }
+  });
+
+  return {
+    hasData: populatedCanonical.size > 0,
+    hasLoggedData: loggedCanonical.size > 0,
+    loggedSetCount: loggedCanonical.size,
+    enteredEntryCount: populatedCanonical.size
+  };
+}
+
+export function createFullStateUndoBackup<T extends Record<string, any>>(stateObj: T): Record<string, any> {
+  const snapshot: Record<string, any> = {};
+  if (!stateObj || typeof stateObj !== 'object') return snapshot;
+  Object.keys(stateObj).forEach((key) => {
+    if (key === 'undoBackup') return;
+    const val = stateObj[key];
+    if (typeof val === 'function' || val === undefined) return;
+    try {
+      snapshot[key] = JSON.parse(JSON.stringify(val));
+    } catch {
+      // Skip non-serializable transient fields
+    }
+  });
+  return snapshot;
+}
+
+export function restoreFullStateUndoBackup(
+  stateObj: Record<string, any>,
+  backup: Record<string, any> | null | undefined
+): boolean {
+  if (!stateObj || typeof stateObj !== 'object' || !backup || typeof backup !== 'object') {
+    return false;
+  }
+  // Support legacy SyncUndoBackupSnapshot shape with .stateData as well as full-state deep copy
+  if (backup.stateData && typeof backup.stateData === 'object' && !('workoutLogs' in backup)) {
+    return restoreSyncUndoSnapshot(stateObj, backup as SyncUndoBackupSnapshot);
+  }
+  const cloned = JSON.parse(JSON.stringify(backup)) as Record<string, any>;
+  Object.keys(stateObj).forEach((k) => {
+    if (k === 'undoBackup') return;
+    if (!(k in cloned)) {
+      delete stateObj[k];
+    }
+  });
+  Object.keys(cloned).forEach((k) => {
+    if (k === 'undoBackup') return;
+    stateObj[k] = cloned[k];
+  });
+  stateObj.undoBackup = null;
+  return true;
+}
+
+export function serializeStateForPersistence(stateObj: Record<string, any>): string {
+  if (!stateObj || typeof stateObj !== 'object') return '{}';
+  const clean: Record<string, any> = {};
+  Object.keys(stateObj).forEach((k) => {
+    if (k === 'undoBackup') return;
+    clean[k] = stateObj[k];
+  });
+  return JSON.stringify(clean);
+}
+
+export interface DelayedCloudPushController {
+  scheduleDelayedPush: (delayOverrideMs?: number) => void;
+  cancelDelayedPush: () => void;
+  isWithinDelayWindow: () => boolean;
+  flushUndoRestorePush: () => void;
+  getPendingDelayMs: () => number;
+}
+
+export function createDelayedCloudPushController(options: {
+  delayMs?: number;
+  pushFn: (reason: 'delayed_sync' | 'undo_restore') => void;
+  setTimer?: (fn: () => void, ms: number) => any;
+  clearTimer?: (handle: any) => void;
+}): DelayedCloudPushController {
+  const defaultDelayMs = Math.max(0, Math.floor(Number(options.delayMs ?? SYNC_SUPABASE_DELAY_MS)));
+  const setTimerFn = options.setTimer || ((fn: () => void, ms: number) => setTimeout(fn, ms));
+  const clearTimerFn = options.clearTimer || ((h: any) => clearTimeout(h));
+
+  let pendingHandle: any = null;
+  let activeDelayMs = 0;
+
+  function cancelDelayedPush() {
+    if (pendingHandle !== null && pendingHandle !== undefined) {
+      clearTimerFn(pendingHandle);
+      pendingHandle = null;
+    }
+    activeDelayMs = 0;
+  }
+
+  function scheduleDelayedPush(delayOverrideMs?: number) {
+    cancelDelayedPush();
+    const waitMs =
+      typeof delayOverrideMs === 'number' && Number.isFinite(delayOverrideMs)
+        ? Math.max(0, Math.floor(delayOverrideMs))
+        : defaultDelayMs;
+    activeDelayMs = waitMs;
+    pendingHandle = setTimerFn(() => {
+      pendingHandle = null;
+      activeDelayMs = 0;
+      options.pushFn('delayed_sync');
+    }, waitMs);
+  }
+
+  function isWithinDelayWindow() {
+    return pendingHandle !== null && pendingHandle !== undefined;
+  }
+
+  function flushUndoRestorePush() {
+    cancelDelayedPush();
+    options.pushFn('undo_restore');
+  }
+
+  function getPendingDelayMs() {
+    return activeDelayMs;
+  }
+
+  return {
+    scheduleDelayedPush,
+    cancelDelayedPush,
+    isWithinDelayWindow,
+    flushUndoRestorePush,
+    getPendingDelayMs
+  };
+}

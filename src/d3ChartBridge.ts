@@ -2,15 +2,23 @@ import * as d3 from 'd3';
 import {
   AI_EXERCISE_WHITELIST_RULE,
   ONE_RM_LIFT_CONFIGS,
+  SYNC_OVERWRITE_WARNING_TEXT,
+  SYNC_SUPABASE_DELAY_MS,
+  SYNC_UNDO_TOAST_DURATION_MS,
   clampRepsInputValue,
   clampWeightInputValue,
   computeUnifiedWeeklyVolumeSeries,
+  createDelayedCloudPushController,
+  createFullStateUndoBackup,
   createSyncUndoSnapshot,
   extractOneRmProgressionSeries,
   formatOneRmTooltipText,
   formatWeeklyVolumeTooltipText,
   hasLoggedSetsInWeek,
+  hasWeekWorkoutData,
+  restoreFullStateUndoBackup,
   restoreSyncUndoSnapshot,
+  serializeStateForPersistence,
   type OneRmChartPoint,
   type OneRmLiftKey,
   type UnifiedWeeklyVolumePoint
@@ -602,8 +610,16 @@ declare global {
     computeUnifiedWeeklyVolumeSeries?: typeof computeUnifiedWeeklyVolumeSeries;
     formatWeeklyVolumeTooltipText?: typeof formatWeeklyVolumeTooltipText;
     hasLoggedSetsInWeek?: typeof hasLoggedSetsInWeek;
+    hasWeekWorkoutData?: typeof hasWeekWorkoutData;
     createSyncUndoSnapshot?: typeof createSyncUndoSnapshot;
     restoreSyncUndoSnapshot?: typeof restoreSyncUndoSnapshot;
+    createFullStateUndoBackup?: typeof createFullStateUndoBackup;
+    restoreFullStateUndoBackup?: typeof restoreFullStateUndoBackup;
+    serializeStateForPersistence?: typeof serializeStateForPersistence;
+    createDelayedCloudPushController?: typeof createDelayedCloudPushController;
+    SYNC_UNDO_TOAST_DURATION_MS?: number;
+    SYNC_SUPABASE_DELAY_MS?: number;
+    SYNC_OVERWRITE_WARNING_TEXT?: string;
     clampWeightInputValue?: typeof clampWeightInputValue;
     clampRepsInputValue?: typeof clampRepsInputValue;
     AI_EXERCISE_WHITELIST_RULE?: string;
@@ -619,8 +635,16 @@ if (typeof window !== 'undefined') {
   window.computeUnifiedWeeklyVolumeSeries = computeUnifiedWeeklyVolumeSeries;
   window.formatWeeklyVolumeTooltipText = formatWeeklyVolumeTooltipText;
   window.hasLoggedSetsInWeek = hasLoggedSetsInWeek;
+  window.hasWeekWorkoutData = hasWeekWorkoutData;
   window.createSyncUndoSnapshot = createSyncUndoSnapshot;
   window.restoreSyncUndoSnapshot = restoreSyncUndoSnapshot;
+  window.createFullStateUndoBackup = createFullStateUndoBackup;
+  window.restoreFullStateUndoBackup = restoreFullStateUndoBackup;
+  window.serializeStateForPersistence = serializeStateForPersistence;
+  window.createDelayedCloudPushController = createDelayedCloudPushController;
+  window.SYNC_UNDO_TOAST_DURATION_MS = SYNC_UNDO_TOAST_DURATION_MS;
+  window.SYNC_SUPABASE_DELAY_MS = SYNC_SUPABASE_DELAY_MS;
+  window.SYNC_OVERWRITE_WARNING_TEXT = SYNC_OVERWRITE_WARNING_TEXT;
   window.clampWeightInputValue = clampWeightInputValue;
   window.clampRepsInputValue = clampRepsInputValue;
   window.AI_EXERCISE_WHITELIST_RULE = AI_EXERCISE_WHITELIST_RULE;
