@@ -703,3 +703,143 @@ export function enforceDifficultyOnRoutine<T extends RoutineDayLike | number>(
     };
   });
 }
+
+export type BikingEnvironment = 'indoor' | 'outdoor';
+
+export const STANDARD_CARDIO_SESSIONS = [
+  'Biking',
+  'Treadmill',
+  'Rowing Machine',
+  'Elliptical',
+  'Stairmaster'
+] as const;
+
+const PROVIDER_ONLY_LABELS = new Set([
+  'google',
+  'apple',
+  'google athlete',
+  'apple athlete',
+  'google user',
+  'apple user',
+  'google_oauth',
+  'apple_oauth',
+  'oauth',
+  'user',
+  'member',
+  'athlete'
+]);
+
+export function resolveDisplayUsername(profile: {
+  name?: string | null;
+  email?: string | null;
+  authProvider?: string | null;
+} | null | undefined): string {
+  if (!profile || typeof profile !== 'object') return 'Sign In';
+  const rawName = String(profile.name || '').trim();
+  const rawEmail = String(profile.email || '').trim().toLowerCase();
+
+  if (rawName && !PROVIDER_ONLY_LABELS.has(rawName.toLowerCase())) {
+    return rawName.split(/\s+/)[0];
+  }
+
+  if (rawEmail.includes('francois')) {
+    return 'François';
+  }
+
+  if (rawEmail && rawEmail.includes('@')) {
+    const localPart = rawEmail.split('@')[0] || '';
+    const tokens = localPart
+      .replace(/[._+-]+/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .filter((t) => t && !PROVIDER_ONLY_LABELS.has(t.toLowerCase()));
+    if (tokens.length > 0) {
+      const candidate = tokens[0];
+      return candidate.charAt(0).toUpperCase() + candidate.slice(1);
+    }
+  }
+
+  return rawEmail ? 'Member' : 'Sign In';
+}
+
+export function isBikingExercise(ex: { name?: string; id?: string } | null | undefined): boolean {
+  if (!ex || typeof ex !== 'object') return false;
+  const text = `${String(ex.name || '')} ${String(ex.id || '')}`.toLowerCase();
+  return /\b(biking|bike|cycling|spin)\b/i.test(text);
+}
+
+export function normalizeCardioExerciseName(rawName: string): string {
+  const trimmed = String(rawName || '').trim();
+  if (/^(outdoor|indoor)\s+biking$/i.test(trimmed)) {
+    return 'Biking';
+  }
+  return trimmed || 'Biking';
+}
+
+export function clearActiveDayWorkoutData(
+  stateObj: Record<string, any>,
+  targetWeek: number,
+  targetDayIdx: number,
+  options?: {
+    exerciseIds?: string[];
+    pullupDayNumber?: number | null;
+    logSlotKey?: string | null;
+  }
+): { clearedKeysCount: number; week: number; dayIdx: number } {
+  const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
+  const safeD = Math.max(0, Math.min(6, Math.floor(Number(targetDayIdx) || 0)));
+  const targetExIds = new Set<string>(Array.isArray(options?.exerciseIds) ? options!.exerciseIds : []);
+  let clearedKeysCount = 0;
+
+  if (stateObj && stateObj.workoutLogs && typeof stateObj.workoutLogs === 'object') {
+    const dayPrefix = `w${safeW}_${safeD}_`;
+    const bonusPrefix = options?.logSlotKey ? `w${safeW}_${options.logSlotKey}_` : '';
+    Object.keys(stateObj.workoutLogs).forEach((k) => {
+      if (k.startsWith(dayPrefix) || (bonusPrefix && k.startsWith(bonusPrefix))) {
+        delete stateObj.workoutLogs[k];
+        clearedKeysCount += 1;
+        return;
+      }
+      const m = new RegExp(`^w${safeW}_(\\d+)_(.+)_(\\d+)$`).exec(k);
+      if (m && targetExIds.has(m[2])) {
+        const keyDayOrSlot = parseInt(m[1], 10);
+        if (m[2] !== 'cable_ab_crunch' || keyDayOrSlot === safeD) {
+          delete stateObj.workoutLogs[k];
+          clearedKeysCount += 1;
+        }
+      }
+    });
+  }
+
+  if (stateObj && stateObj.pullupLogs && typeof stateObj.pullupLogs === 'object' && options?.pullupDayNumber) {
+    const pPrefix = `w${safeW}_day_${options.pullupDayNumber}_set_`;
+    Object.keys(stateObj.pullupLogs).forEach((pk) => {
+      if (pk.startsWith(pPrefix)) {
+        delete stateObj.pullupLogs[pk];
+        clearedKeysCount += 1;
+      }
+    });
+  }
+
+  if (stateObj && stateObj.cardioLogs && typeof stateObj.cardioLogs === 'object') {
+    const cPrefix = `w${safeW}_d${safeD}_`;
+    Object.keys(stateObj.cardioLogs).forEach((ck) => {
+      if (ck.startsWith(cPrefix)) {
+        delete stateObj.cardioLogs[ck];
+        clearedKeysCount += 1;
+      }
+    });
+  }
+
+  if (stateObj && stateObj.warmupLogs && typeof stateObj.warmupLogs === 'object') {
+    Object.keys(stateObj.warmupLogs).forEach((wk) => {
+      if (wk.startsWith(`w${safeW}_${safeD}_`) || wk.startsWith(`w${safeW}_d${safeD}_`)) {
+        delete stateObj.warmupLogs[wk];
+        clearedKeysCount += 1;
+      }
+    });
+  }
+
+  return { clearedKeysCount, week: safeW, dayIdx: safeD };
+}
+

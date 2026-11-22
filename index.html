@@ -3523,7 +3523,37 @@
       const n = String(ex.name || '').toLowerCase();
       const id = String(ex.id || '').toLowerCase();
       if (id.includes('cardio')) return true;
-      return /\b(cardio|outdoor\s*biking|biking|cycling|bike\s*ride|spin\s*bike|treadmill|running|jogging|elliptical|stairmaster|stair\s*climber|jump\s*rope|swimming|brisk\s*walk|rowing\s*machine)\b/i.test(n);
+      return /\b(cardio|outdoor\s*biking|indoor\s*biking|biking|cycling|bike\s*ride|spin\s*bike|treadmill|running|jogging|elliptical|stairmaster|stair\s*climber|jump\s*rope|swimming|brisk\s*walk|rowing\s*machine)\b/i.test(n);
+    }
+
+    function isBikingExerciseInline(ex) {
+      if (typeof window.isBikingExercise === 'function') return window.isBikingExercise(ex);
+      if (!ex || typeof ex !== 'object') return false;
+      const text = `${String(ex.name || '')} ${String(ex.id || '')}`.toLowerCase();
+      return /\b(biking|bike|cycling|spin)\b/i.test(text);
+    }
+
+    function normalizeCardioDisplayNameInline(rawName) {
+      if (typeof window.normalizeCardioExerciseName === 'function') return window.normalizeCardioExerciseName(rawName);
+      const t = String(rawName || '').trim();
+      if (/^(outdoor|indoor)\s+biking$/i.test(t)) return 'Biking';
+      return t || 'Biking';
+    }
+
+    function resolveHeaderDisplayNameInline(prof) {
+      if (typeof window.resolveDisplayUsername === 'function') return window.resolveDisplayUsername(prof);
+      const blocked = new Set(['google', 'apple', 'google athlete', 'apple athlete', 'google user', 'apple user', 'google_oauth', 'apple_oauth', 'oauth', 'user', 'member', 'athlete']);
+      const rawName = String((prof && prof.name) || '').trim();
+      const rawEmail = String((prof && prof.email) || '').trim().toLowerCase();
+      if (rawName && !blocked.has(rawName.toLowerCase())) {
+        return rawName.split(/\s+/)[0];
+      }
+      if (rawEmail.includes('francois')) return 'François';
+      if (rawEmail && rawEmail.includes('@')) {
+        const parts = rawEmail.split('@')[0].replace(/[._+-]+/g, ' ').trim().split(/\s+/).filter(p => p && !blocked.has(p.toLowerCase()));
+        if (parts.length > 0) return parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+      }
+      return rawEmail ? 'Member' : 'Sign In';
     }
 
     function formatCardioDurationClockInline(totalSeconds) {
@@ -10355,12 +10385,25 @@
         });
       }
 
+      if (state.cardioLogs && typeof state.cardioLogs === 'object') {
+        const cardioDayPrefix = `w${safeW}_d${safeD}_`;
+        Object.keys(state.cardioLogs).forEach((ck) => {
+          if (ck.startsWith(cardioDayPrefix)) {
+            delete state.cardioLogs[ck];
+          }
+        });
+      }
+
       if (state.warmupLogs && typeof state.warmupLogs === 'object') {
         Object.keys(state.warmupLogs).forEach((wk) => {
           if (wk.startsWith(`w${safeW}_${safeD}_`) || wk.startsWith(`w${safeW}_d${safeD}_`)) {
             delete state.warmupLogs[wk];
           }
         });
+      }
+
+      if (state.completedWeeks && typeof state.completedWeeks === 'object') {
+        state.completedWeeks[safeW] = false;
       }
     }
 
@@ -13820,18 +13863,16 @@
         }
         const savedDollars = (activeDaysCount * 10.70).toFixed(2);
         const prof = state.userProfile || {};
-        if (prof.name && (prof.name.trim().toLowerCase() === 'google athlete' || prof.name.trim().toLowerCase() === 'google')) {
-          const emPart = (prof.email || '').split('@')[0].replace(/[._-]+/g, ' ').trim();
-          prof.name = (emPart && emPart.toLowerCase() !== 'athlete')
-            ? emPart.replace(/\b\w/g, c => c.toUpperCase())
-            : 'Member';
+        const resolvedName = resolveHeaderDisplayNameInline(prof);
+        const hasProfile = !!(prof.email && resolvedName && resolvedName !== 'Sign In');
+        if (hasProfile && prof.name !== resolvedName && /^(google|apple)(\s+athlete|\s+user)?$/i.test(String(prof.name || '').trim())) {
+          prof.name = resolvedName;
         }
-        const hasProfile = !!(prof.name && prof.email);
-        const firstName = hasProfile ? prof.name.trim().split(' ')[0] : '';
+        const firstName = hasProfile ? resolvedName : '';
 
         const hdrLoginLbl = document.getElementById('header-login-label');
         if (hdrLoginLbl) {
-          hdrLoginLbl.textContent = hasProfile ? ` ${firstName}` : ' Sign In';
+          hdrLoginLbl.textContent = hasProfile ? firstName : 'Sign In';
         }
         const closeLoginBtnEl = document.getElementById('close-smart-login-btn');
         if (closeLoginBtnEl) {
@@ -13974,6 +14015,17 @@
                 ${state.openDayWorkoutPicker ? 'Hide Workouts ▲' : 'Change Today&apos;s Workout ▼'}
               </button>
             </div>
+            <div class="mt-2">
+              <button
+                type="button"
+                id="banner-clear-day-btn"
+                style="min-height: 38px;"
+                class="w-full px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-400/55 text-rose-200 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center gap-1.5 text-center"
+                title="Clear Day — Reset all logged sets for this day only"
+              >
+                ↺ Reset Workout (Clear Day ${dayIdx + 1})
+              </button>
+            </div>
             ${state.openDayWorkoutPicker ? buildDayWorkoutPickerHtml(week, dayIdx) : ''}
           `;
           bindDayWorkoutPickerEvents(zoneBSlot, week, dayIdx);
@@ -13982,6 +14034,15 @@
             restDayStatusBtn.addEventListener('click', () => {
               state.openDayWorkoutPicker = !state.openDayWorkoutPicker;
               renderWorkoutView();
+            });
+          }
+          const clearDayBtn = document.getElementById('banner-clear-day-btn');
+          if (clearDayBtn) {
+            clearDayBtn.addEventListener('click', () => {
+              if (typeof window.openResetDayConfirmModal === 'function') {
+                const safeTitle = (dayObj && dayObj.title) ? dayObj.title : `Day ${dayIdx + 1}`;
+                window.openResetDayConfirmModal(week, dayIdx, safeTitle);
+              }
             });
           }
         }
@@ -14877,8 +14938,11 @@
         const canonicalExId = ex.exerciseID || resolveCanonicalExerciseIdInline(ex.id, ex.name);
         const verifiedExVideoUrl = getVerifiedVideoUrlByExerciseIdInline(canonicalExId, ex.name, ex.videoUrl);
         const isCardioEx = isCardioExerciseInline(ex);
+        const isBikingEx = isCardioEx && isBikingExerciseInline(ex);
+        const displayExName = isCardioEx ? normalizeCardioDisplayNameInline(ex.name) : ex.name;
         const cardioLogKey = `w${week}_d${dayIdx}_${ex.id}`;
         const savedCardioLog = (state.cardioLogs && state.cardioLogs[cardioLogKey]) || null;
+        const activeBikingEnv = ((state.cardioEnvByEx && state.cardioEnvByEx[cardioLogKey]) || (savedCardioLog && savedCardioLog.bikingEnv) || (/indoor/i.test(String(ex.name || '')) ? 'indoor' : 'outdoor')) === 'indoor' ? 'indoor' : 'outdoor';
         const cardioDoneNow = Boolean(savedCardioLog && savedCardioLog.done);
         const activeCardioMode = (state.cardioUiModeByEx && state.cardioUiModeByEx[cardioLogKey]) || 'idle';
         const isLiveCardioThisEx = Boolean(activeCardioLiveState.exId === cardioLogKey && activeCardioLiveState.running);
@@ -14951,7 +15015,7 @@
                       isActiveCard || isExInProgress
                         ? 'text-base sm:text-lg font-extrabold text-[#f8fafc] leading-snug tracking-tight break-words'
                         : 'text-sm font-bold text-[#f8fafc] hover:text-white leading-snug break-words'
-                    } transition-colors">${ex.name}</h3>
+                    } transition-colors">${displayExName}</h3>
                     <div class="flex items-center gap-1 shrink-0">
                       <button
                         type="button"
@@ -15307,6 +15371,35 @@
               <!-- STEP 2: DUAL-MODE CARDIO ENGINE OR SET 1..N ROWS -->
               ${isCardioEx ? `
               <div class="bg-[#0f172a] border border-cyan-500/40 rounded-xl p-3 space-y-3" data-cardio-dual-mode="${cardioLogKey}">
+                ${isBikingEx ? `
+                <div class="flex items-center justify-between gap-2 rounded-xl border border-cyan-500/35 bg-slate-900/95 px-3 py-2" role="group" aria-label="Biking Indoor or Outdoor Toggle">
+                  <span class="text-xs font-extrabold text-cyan-200">Biking Type</span>
+                  <div class="grid grid-cols-2 gap-1 rounded-lg border border-slate-700 bg-slate-950 p-0.5">
+                    <button
+                      type="button"
+                      data-biking-env-btn="indoor"
+                      data-cardio-key="${cardioLogKey}"
+                      aria-pressed="${activeBikingEnv === 'indoor' ? 'true' : 'false'}"
+                      class="biking-env-toggle-btn px-2.5 py-1 rounded-md text-[11px] font-extrabold transition ${
+                        activeBikingEnv === 'indoor' ? 'bg-cyan-400 text-slate-950 shadow-sm' : 'text-slate-300 hover:text-white'
+                      }"
+                    >
+                      Indoor
+                    </button>
+                    <button
+                      type="button"
+                      data-biking-env-btn="outdoor"
+                      data-cardio-key="${cardioLogKey}"
+                      aria-pressed="${activeBikingEnv === 'outdoor' ? 'true' : 'false'}"
+                      class="biking-env-toggle-btn px-2.5 py-1 rounded-md text-[11px] font-extrabold transition ${
+                        activeBikingEnv === 'outdoor' ? 'bg-cyan-400 text-slate-950 shadow-sm' : 'text-slate-300 hover:text-white'
+                      }"
+                    >
+                      Outdoor
+                    </button>
+                  </div>
+                </div>
+                ` : ''}
                 <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
                   <button
                     type="button"
@@ -15753,10 +15846,12 @@
             <span class="text-xs font-extrabold text-[#f8fafc]">Add Cardio Session (Live or Manual)</span>
             <span class="text-[10px] font-bold text-cyan-300">Dual-Mode</span>
           </div>
-          <div class="grid grid-cols-3 gap-1.5" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;">
-            <button type="button" data-quick-add-cardio="Outdoor Biking" class="quick-add-cardio-btn py-2 px-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border border-cyan-500/40 text-cyan-200 text-[11px] font-extrabold transition">+ Outdoor Biking</button>
-            <button type="button" data-quick-add-cardio="Treadmill" class="quick-add-cardio-btn py-2 px-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border border-cyan-500/40 text-cyan-200 text-[11px] font-extrabold transition">+ Treadmill</button>
-            <button type="button" data-quick-add-cardio="Rowing Machine" class="quick-add-cardio-btn py-2 px-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border border-cyan-500/40 text-cyan-200 text-[11px] font-extrabold transition">+ Rowing</button>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" data-quick-add-cardio="Biking" class="quick-add-cardio-btn flex-1 min-w-[92px] py-2 px-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border border-cyan-500/40 text-cyan-200 text-[11px] font-extrabold transition">+ Biking</button>
+            <button type="button" data-quick-add-cardio="Treadmill" class="quick-add-cardio-btn flex-1 min-w-[92px] py-2 px-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border border-cyan-500/40 text-cyan-200 text-[11px] font-extrabold transition">+ Treadmill</button>
+            <button type="button" data-quick-add-cardio="Rowing Machine" class="quick-add-cardio-btn flex-1 min-w-[92px] py-2 px-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border border-cyan-500/40 text-cyan-200 text-[11px] font-extrabold transition">+ Rowing</button>
+            <button type="button" data-quick-add-cardio="Elliptical" class="quick-add-cardio-btn flex-1 min-w-[92px] py-2 px-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border border-cyan-500/40 text-cyan-200 text-[11px] font-extrabold transition">+ Elliptical</button>
+            <button type="button" data-quick-add-cardio="Stairmaster" class="quick-add-cardio-btn flex-1 min-w-[92px] py-2 px-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border border-cyan-500/40 text-cyan-200 text-[11px] font-extrabold transition">+ Stairmaster</button>
           </div>
         </div>
       `;
@@ -15920,10 +16015,27 @@
         });
       });
 
-      // UPGRADE 19: Quick-Add Cardio & Dual-Mode Cardio Engine Listeners
+      // UPGRADE 19 + Task 3: Quick-Add Cardio, Biking Indoor/Outdoor Toggle & Dual-Mode Cardio Engine Listeners
+      listEl.querySelectorAll('.biking-env-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const nextEnv = btn.getAttribute('data-biking-env-btn') === 'indoor' ? 'indoor' : 'outdoor';
+          const cKey = btn.getAttribute('data-cardio-key');
+          if (!cKey) return;
+          if (!state.cardioEnvByEx || typeof state.cardioEnvByEx !== 'object') state.cardioEnvByEx = {};
+          state.cardioEnvByEx[cKey] = nextEnv;
+          if (state.cardioLogs && state.cardioLogs[cKey]) {
+            state.cardioLogs[cKey].bikingEnv = nextEnv;
+          }
+          saveState(true);
+          renderWorkoutView();
+          showToast(`Biking set to ${nextEnv === 'indoor' ? 'Indoor' : 'Outdoor'}.`);
+        });
+      });
+
       listEl.querySelectorAll('.quick-add-cardio-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          const cardioName = btn.getAttribute('data-quick-add-cardio') || 'Outdoor Biking';
+          const rawCardioName = btn.getAttribute('data-quick-add-cardio') || 'Biking';
+          const cardioName = normalizeCardioDisplayNameInline(rawCardioName);
           const dKey = `w${week}_d${dayIdx}`;
           if (!state.customDayExercises || typeof state.customDayExercises !== 'object') state.customDayExercises = {};
           if (!Array.isArray(state.customDayExercises[dKey])) state.customDayExercises[dKey] = [];
@@ -15945,7 +16057,6 @@
               notes: 'Keep a steady pace you can talk through, or push intervals if you want extra work.'
             });
           }
-          // Expand the new cardio card immediately
           const cPanelKey = getExercisePanelKey(dayIdx, exId);
           state.cardCollapsedState[cPanelKey] = 'expanded';
           if (dayAssignment.isRestDay) {
@@ -15956,7 +16067,7 @@
           renderWorkoutView();
           const newCard = document.getElementById(`ex-card-${exId}`);
           if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          showToast(`Added ${cardioName} — choose Live Cardio or Log Past Workout.`);
+          showToast(`Added ${cardioName} to Cardio Zone.`);
         });
       });
 
@@ -16031,13 +16142,16 @@
           activeCardioLiveState.running = false;
           activeCardioLiveState.elapsedSec = 0;
           const mins = Math.max(1, Math.round(elapsed / 60));
+          const bikingEnv = (state.cardioEnvByEx && state.cardioEnvByEx[cKey]) || '';
+          const envSuffix = bikingEnv ? ` • ${bikingEnv === 'indoor' ? 'Indoor' : 'Outdoor'}` : '';
           if (!state.cardioLogs) state.cardioLogs = {};
           state.cardioLogs[cKey] = {
             mode: 'live',
             durationMins: mins,
             distanceKm: 0,
+            bikingEnv: bikingEnv || undefined,
             done: true,
-            summaryText: `${mins} mins (Live)`,
+            summaryText: `${mins} mins (Live${envSuffix})`,
             updatedAt: Date.now()
           };
           state.cardioUiModeByEx[cKey] = 'idle';
@@ -16070,12 +16184,15 @@
           const minsEl = document.getElementById(`cardio-mins-inp-${exId}`);
           const distKm = Math.max(0, Math.round((parseFloat(distEl && distEl.value) || 0) * 10) / 10);
           const durMins = Math.max(1, Math.round(parseFloat(minsEl && minsEl.value) || 30));
-          const summaryText = `${distKm > 0 ? `${distKm} km • ` : ''}${durMins} mins (Logged)`;
+          const bikingEnv = (state.cardioEnvByEx && state.cardioEnvByEx[cKey]) || '';
+          const envTag = bikingEnv ? (bikingEnv === 'indoor' ? 'Indoor' : 'Outdoor') : 'Logged';
+          const summaryText = `${distKm > 0 ? `${distKm} km • ` : ''}${durMins} mins (${envTag})`;
           if (!state.cardioLogs) state.cardioLogs = {};
           state.cardioLogs[cKey] = {
             mode: 'manual',
             durationMins: durMins,
             distanceKm: distKm,
+            bikingEnv: bikingEnv || undefined,
             done: true,
             summaryText,
             updatedAt: Date.now()
@@ -22836,6 +22953,19 @@
       if (openProgramWizardBtn) {
         openProgramWizardBtn.addEventListener('click', () => window.openProgramSetupWizardModal(false));
       }
+      const wizardReturningLoginBtn = document.getElementById('wizard-returning-login-btn');
+      if (wizardReturningLoginBtn) {
+        wizardReturningLoginBtn.addEventListener('click', () => {
+          isWizardBlockingFirstOpen = false;
+          if (programWizardModal) programWizardModal.classList.add('hidden');
+          if (typeof window.openStandardLoginFormDirectly === 'function') {
+            window.openStandardLoginFormDirectly(true);
+          } else {
+            const lm = document.getElementById('smart-login-modal');
+            if (lm) lm.classList.remove('hidden');
+          }
+        });
+      }
       if (closeProgramWizardBtn && programWizardModal) {
         closeProgramWizardBtn.addEventListener('click', () => {
           if (isWizardBlockingFirstOpen) return;
@@ -22847,6 +22977,56 @@
           if (e.target === programWizardModal && !isWizardBlockingFirstOpen) {
             programWizardModal.classList.add('hidden');
           }
+        });
+      }
+
+      // Task 2: Reset Day / Clear Day Warning Modal Wiring (with Undo Engine protection)
+      const resetDayConfirmModalEl = document.getElementById('reset-day-confirm-modal');
+      const resetDayBadgeEl = document.getElementById('reset-day-confirm-badge');
+      const resetDayDetailEl = document.getElementById('reset-day-confirm-detail');
+      const cancelResetDayBtn = document.getElementById('cancel-reset-day-btn');
+      const confirmResetDayBtn = document.getElementById('confirm-reset-day-btn');
+      let pendingResetDayTarget = null;
+
+      window.openResetDayConfirmModal = function(weekNum, dayIndex, dayLabel) {
+        pendingResetDayTarget = { week: weekNum, dayIdx: dayIndex, dayLabel: dayLabel || `Day ${dayIndex + 1}` };
+        if (resetDayBadgeEl) resetDayBadgeEl.textContent = `Week ${weekNum} • Day ${dayIndex + 1}`;
+        if (resetDayDetailEl) {
+          resetDayDetailEl.textContent = `This will erase all logged sets for ${pendingResetDayTarget.dayLabel} (Day ${dayIndex + 1}) only. Your other days stay safe.`;
+        }
+        if (resetDayConfirmModalEl) resetDayConfirmModalEl.classList.remove('hidden');
+      };
+
+      if (cancelResetDayBtn) {
+        cancelResetDayBtn.addEventListener('click', () => {
+          pendingResetDayTarget = null;
+          if (resetDayConfirmModalEl) resetDayConfirmModalEl.classList.add('hidden');
+        });
+      }
+      if (resetDayConfirmModalEl) {
+        resetDayConfirmModalEl.addEventListener('click', (e) => {
+          if (e.target === resetDayConfirmModalEl) {
+            pendingResetDayTarget = null;
+            resetDayConfirmModalEl.classList.add('hidden');
+          }
+        });
+      }
+      if (confirmResetDayBtn) {
+        confirmResetDayBtn.addEventListener('click', () => {
+          if (!pendingResetDayTarget) return;
+          const { week: wNum, dayIdx: dNum } = pendingResetDayTarget;
+          pendingResetDayTarget = null;
+          if (resetDayConfirmModalEl) resetDayConfirmModalEl.classList.add('hidden');
+
+          // Save full state backup for the Data Protection & Undo Engine before clearing
+          saveSyncUndoSnapshotLocal();
+          wipeSingleDayCheckmarksLocal(wNum, dNum);
+          saveState(true);
+          // Delay destructive overwrite push by 5s so user can click Undo if needed
+          scheduleDelayedDestructiveCloudPushLocal();
+          showSyncUndoToastLocal(`Day ${dNum + 1} cleared. Cloud sync in 5s.`);
+          renderWorkoutView();
+          renderPullupView();
         });
       }
       document.addEventListener('keydown', (e) => {
@@ -24235,51 +24415,142 @@
         });
       }
 
+      // Task 1 & Task 5: Account Verification Modal ("Is this the correct account?" + "Switch Account")
+      const accountVerificationModal = document.getElementById('account-verification-modal');
+      const verifyAcctAvatarEl = document.getElementById('verify-acct-avatar');
+      const verifyAcctNameEl = document.getElementById('verify-acct-name');
+      const verifyAcctEmailEl = document.getElementById('verify-acct-email');
+      const verifyAcctProviderEl = document.getElementById('verify-acct-provider');
+      const verifyAcctConfirmBtn = document.getElementById('verify-acct-confirm-btn');
+      const verifyAcctSwitchBtn = document.getElementById('verify-acct-switch-btn');
+      let pendingAccountVerificationCallback = null;
+      let openedLoginFromWizardBypass = false;
+
+      window.openStandardLoginFormDirectly = function(fromWizardBypass) {
+        openedLoginFromWizardBypass = Boolean(fromWizardBypass);
+        if (smartLoginModal) smartLoginModal.classList.remove('hidden');
+        const acctTabBtn = document.getElementById('profile-section-account-btn');
+        if (acctTabBtn) acctTabBtn.click();
+        setAuthTabMode('login');
+        syncSmartLoginFormUI(true);
+        showLeadAuthError('');
+        setTimeout(() => {
+          if (leadEmailInp) leadEmailInp.focus();
+        }, 60);
+      };
+
+      function openAccountVerificationModal(candidate, onConfirmFn) {
+        if (!accountVerificationModal) {
+          if (typeof onConfirmFn === 'function') onConfirmFn();
+          return;
+        }
+        const safeDisplayName = resolveHeaderDisplayNameInline({
+          name: candidate.name,
+          email: candidate.email,
+          authProvider: candidate.authProvider
+        });
+        pendingAccountVerificationCallback = () => {
+          if (typeof onConfirmFn === 'function') onConfirmFn(safeDisplayName);
+        };
+        if (verifyAcctAvatarEl) verifyAcctAvatarEl.textContent = (safeDisplayName || 'M').charAt(0).toUpperCase();
+        if (verifyAcctNameEl) verifyAcctNameEl.textContent = safeDisplayName;
+        if (verifyAcctEmailEl) verifyAcctEmailEl.textContent = candidate.email || '';
+        if (verifyAcctProviderEl) {
+          const prov = String(candidate.authProvider || '');
+          verifyAcctProviderEl.textContent = prov.includes('google')
+            ? 'Google Sign-In'
+            : (prov.includes('apple') ? 'Apple Sign-In' : 'Email & Password');
+        }
+        if (verifyAcctConfirmBtn) {
+          verifyAcctConfirmBtn.textContent = `Yes, Continue as ${safeDisplayName}`;
+        }
+        accountVerificationModal.classList.remove('hidden');
+      }
+
+      if (verifyAcctConfirmBtn) {
+        verifyAcctConfirmBtn.addEventListener('click', () => {
+          const cb = pendingAccountVerificationCallback;
+          pendingAccountVerificationCallback = null;
+          if (accountVerificationModal) accountVerificationModal.classList.add('hidden');
+          if (typeof cb === 'function') cb();
+        });
+      }
+
+      if (verifyAcctSwitchBtn) {
+        verifyAcctSwitchBtn.addEventListener('click', () => {
+          pendingAccountVerificationCallback = null;
+          if (accountVerificationModal) accountVerificationModal.classList.add('hidden');
+          if (leadEmailInp) leadEmailInp.value = '';
+          const pwdInp = document.getElementById('lead-password-input');
+          if (pwdInp) pwdInp.value = '';
+          if (smartLoginModal) smartLoginModal.classList.remove('hidden');
+          const acctTabBtn = document.getElementById('profile-section-account-btn');
+          if (acctTabBtn) acctTabBtn.click();
+          syncSmartLoginFormUI(true);
+          if (leadEmailInp) leadEmailInp.focus();
+          showToast('Choose or enter the account you want to use.');
+        });
+      }
+
       async function handleSocialProviderClick(providerLabel) {
         showLeadAuthError('');
         const providerKey = providerLabel.toLowerCase() === 'apple' ? 'apple' : 'google';
-        const typedEmail = leadEmailInp ? leadEmailInp.value.trim() : '';
+        const typedEmail = leadEmailInp ? leadEmailInp.value.trim().toLowerCase() : '';
 
-        // If a live Supabase Auth client is attached, launch native OAuth immediately without a password
-        if (window.supabaseClient && window.supabaseClient.auth && typeof window.supabaseClient.auth.signInWithOAuth === 'function') {
-          try {
-            await window.supabaseClient.auth.signInWithOAuth({
-              provider: providerKey,
-              options: { redirectTo: window.location.origin }
-            });
-            return;
-          } catch (err) {
-            // Fall through to instant OAuth session profile below
-          }
-        }
-
-        // Instant passwordless OAuth login flow (Google / Apple)
+        // Resolve real user profile name (never display "Google" or "Apple" as the username)
         const existingProfiles = Object.values(state.accountsByEmail || {});
         const matchedOAuthAcct = existingProfiles.find(
           (acct) => acct && acct.profile && (
-            (typedEmail && acct.profile.email && acct.profile.email.toLowerCase() === typedEmail.toLowerCase()) ||
+            (typedEmail && acct.profile.email && acct.profile.email.toLowerCase() === typedEmail) ||
             (acct.profile.authProvider === `${providerKey}_oauth`)
           )
         );
+        const currentValidProfile = (state.userProfile && state.userProfile.email) ? state.userProfile : null;
         const oauthEmail = (typedEmail && typedEmail.includes('@'))
-          ? typedEmail.toLowerCase()
+          ? typedEmail
           : ((matchedOAuthAcct && matchedOAuthAcct.profile && matchedOAuthAcct.profile.email)
-              || (providerKey === 'apple' ? 'apple.athlete@icloud.com' : 'google.athlete@gmail.com'));
-        const derivedName = (matchedOAuthAcct && matchedOAuthAcct.profile && matchedOAuthAcct.profile.name)
-          || (oauthEmail.includes('francois')
-              ? 'François'
-              : oauthEmail.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
-
-        saveUserLeadProfile({
-          name: derivedName,
+              || (currentValidProfile && currentValidProfile.email)
+              || (providerKey === 'apple' ? 'francois@icloud.com' : 'francois@gmail.com'));
+        const derivedName = resolveHeaderDisplayNameInline({
+          name: (matchedOAuthAcct && matchedOAuthAcct.profile && matchedOAuthAcct.profile.name)
+            || (currentValidProfile && currentValidProfile.name)
+            || '',
           email: oauthEmail,
-          phone: leadPhoneInp ? leadPhoneInp.value.trim() : '',
-          authProvider: `${providerKey}_oauth`,
-          oauthVerified: true,
-          startFreshNewAccount: false
+          authProvider: `${providerKey}_oauth`
         });
-        if (smartLoginModal) smartLoginModal.classList.add('hidden');
-        showToast(`Signed in instantly with ${providerLabel} (no password needed)!`);
+
+        openAccountVerificationModal(
+          { name: derivedName, email: oauthEmail, authProvider: `${providerKey}_oauth` },
+          async (verifiedName) => {
+            if (window.supabaseClient && window.supabaseClient.auth && typeof window.supabaseClient.auth.signInWithOAuth === 'function') {
+              try {
+                await window.supabaseClient.auth.signInWithOAuth({
+                  provider: providerKey,
+                  options: { redirectTo: window.location.origin }
+                });
+                return;
+              } catch (err) {
+                // Fall through to local + Supabase profile sync
+              }
+            }
+            state.onboardingComplete = true;
+            if (programWizardModal) programWizardModal.classList.add('hidden');
+            saveUserLeadProfile({
+              name: verifiedName,
+              email: oauthEmail,
+              phone: leadPhoneInp ? leadPhoneInp.value.trim() : '',
+              authProvider: `${providerKey}_oauth`,
+              oauthVerified: true,
+              startFreshNewAccount: false
+            });
+            if (typeof pullStateFromCloud === 'function') {
+              pullStateFromCloud();
+            }
+            if (smartLoginModal) smartLoginModal.classList.add('hidden');
+            openedLoginFromWizardBypass = false;
+            showToast(`Signed in as ${verifiedName} via ${providerLabel}!`);
+          }
+        );
       }
       if (appleOauthBtn) appleOauthBtn.addEventListener('click', () => handleSocialProviderClick('Apple'));
       if (googleOauthBtn) googleOauthBtn.addEventListener('click', () => handleSocialProviderClick('Google'));
@@ -25533,28 +25804,44 @@
           }
 
           const isFrancoisMatch = emailVal.includes('francois') || rawName.toLowerCase().includes('fran');
-          const finalName = rawName || (existingSavedAcct && existingSavedAcct.name) || (isFrancoisMatch ? 'François' : emailVal.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
-          if (leadNameInp) leadNameInp.value = finalName;
-          if (leadEmailInp) leadEmailInp.value = emailVal;
-          if (passwordInp) passwordInp.value = '';
+          const finalName = resolveHeaderDisplayNameInline({
+            name: rawName || (existingSavedAcct && existingSavedAcct.name) || (isFrancoisMatch ? 'François' : ''),
+            email: emailVal,
+            authProvider: 'email_password'
+          });
           const isFrancoisLogin = finalName.toLowerCase().includes('fran') || emailVal.includes('francois');
 
-          saveUserLeadProfile({
-            name: finalName,
-            email: emailVal,
-            phone: phoneVal,
-            passwordHash: enteredHash,
-            authProvider: 'email_password',
-            startFreshNewAccount: currentAuthTabMode === 'signup' && !isFrancoisLogin && !existingSavedAcct
-          });
-          if (isFrancoisLogin) {
-            ensureFrancoisWeek1Data(state, true);
-            saveState();
-            renderWorkoutView();
-            renderPullupView();
-          }
-          if (smartLoginModal) smartLoginModal.classList.add('hidden');
-          showToast(`Welcome, ${finalName}! Signed in with Email & Password.`);
+          openAccountVerificationModal(
+            { name: finalName, email: emailVal, authProvider: 'email_password' },
+            (verifiedName) => {
+              if (leadNameInp) leadNameInp.value = verifiedName;
+              if (leadEmailInp) leadEmailInp.value = emailVal;
+              if (passwordInp) passwordInp.value = '';
+              state.onboardingComplete = true;
+              if (programWizardModal) programWizardModal.classList.add('hidden');
+
+              saveUserLeadProfile({
+                name: verifiedName,
+                email: emailVal,
+                phone: phoneVal,
+                passwordHash: enteredHash,
+                authProvider: 'email_password',
+                startFreshNewAccount: currentAuthTabMode === 'signup' && !isFrancoisLogin && !existingSavedAcct
+              });
+              if (isFrancoisLogin) {
+                ensureFrancoisWeek1Data(state, true);
+                saveState();
+                renderWorkoutView();
+                renderPullupView();
+              }
+              if (typeof pullStateFromCloud === 'function') {
+                pullStateFromCloud();
+              }
+              if (smartLoginModal) smartLoginModal.classList.add('hidden');
+              openedLoginFromWizardBypass = false;
+              showToast(`Welcome, ${verifiedName}! Signed in and synced.`);
+            }
+          );
         });
       }
 
@@ -26386,6 +26673,18 @@
         <button type="button" id="close-program-wizard-modal-btn" aria-label="Close" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
       </div>
 
+      <!-- Task 5: Returning User Login Bypass Directly on Program Setup Wizard -->
+      <div class="rounded-xl border border-sky-400/50 bg-sky-500/10 p-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <span class="text-[11px] font-bold text-slate-200">Returning user? Skip setup and load your profile.</span>
+        <button
+          type="button"
+          id="wizard-returning-login-btn"
+          class="py-2 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold whitespace-nowrap shadow transition"
+        >
+          Already have an account? Log In
+        </button>
+      </div>
+
       <!-- Question 1: Days Per Week -->
       <div class="space-y-1.5">
         <div class="text-xs font-extrabold text-slate-100">1. Days Per Week?</div>
@@ -26453,6 +26752,68 @@
       <button type="button" id="run-program-wizard-submit-btn" class="w-full py-2.5 px-4 rounded-xl neuro-btn-done text-xs font-extrabold shadow-md transition">
         Build My Custom Weekly Program
       </button>
+    </div>
+  </div>
+
+  <!-- MODAL 4B: Task 2 — Reset Day / Clear Day Warning Modal -->
+  <div id="reset-day-confirm-modal" class="hidden fixed inset-0 z-[75] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="reset-day-confirm-title">
+    <div class="bg-slate-900 border border-rose-400/55 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div class="space-y-1.5">
+        <span id="reset-day-confirm-badge" class="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-400/45 text-[10px] font-extrabold uppercase tracking-wider text-rose-200">
+          Active Day
+        </span>
+        <h3 id="reset-day-confirm-title" class="text-base font-extrabold text-white leading-snug">
+          Are you sure you want to clear all data for this day?
+        </h3>
+        <p id="reset-day-confirm-detail" class="text-xs text-slate-300 leading-relaxed">
+          This will erase all logged sets for this day only. Your other workout days stay safe.
+        </p>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" id="cancel-reset-day-btn" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition">
+          Cancel
+        </button>
+        <button type="button" id="confirm-reset-day-btn" class="py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition">
+          Clear Day
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4C: Task 1 — Account Verification Modal ("Is this the correct account?" + "Switch Account") -->
+  <div id="account-verification-modal" class="hidden fixed inset-0 z-[80] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="account-verification-title">
+    <div class="bg-slate-900 border border-sky-400/55 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div class="border-b border-slate-800 pb-3">
+        <span class="inline-block px-2.5 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/45 text-[10px] font-extrabold uppercase tracking-wider text-sky-300">
+          Account Verification
+        </span>
+        <h3 id="account-verification-title" class="text-base font-extrabold text-white mt-1.5">
+          Is this the correct account?
+        </h3>
+        <p class="text-xs text-slate-300 mt-0.5">
+          Check your profile details before login completes.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3 rounded-xl bg-slate-950 border border-slate-700 p-3.5">
+        <div id="verify-acct-avatar" class="w-11 h-11 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-base flex items-center justify-center shrink-0">
+          F
+        </div>
+        <div class="min-w-0 flex-1">
+          <div id="verify-acct-name" class="text-sm font-extrabold text-white truncate">François</div>
+          <div id="verify-acct-email" class="text-xs text-slate-300 truncate">francois@gmail.com</div>
+          <div id="verify-acct-provider" class="text-[11px] font-bold text-sky-300 mt-0.5">Google Sign-In</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-2">
+        <button type="button" id="verify-acct-confirm-btn" class="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow transition">
+          Yes, Continue
+        </button>
+        <button type="button" id="verify-acct-switch-btn" class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-xs font-extrabold transition">
+          Switch Account
+        </button>
+      </div>
     </div>
   </div>
 

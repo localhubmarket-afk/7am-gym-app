@@ -10,6 +10,7 @@ export type AutoSyncTriggerReason =
   | 'pullup_logged'
   | 'cardio_logged'
   | 'workout_finished'
+  | 'day_reset'
   | 'delayed_sync'
   | 'undo_restore';
 

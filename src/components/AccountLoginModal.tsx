@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { resolveDisplayUsername } from '../utils/wizardValidation';
 
 export type AuthMode = 'login' | 'signup';
 export type OAuthProvider = 'google' | 'apple';
@@ -10,12 +11,29 @@ export interface EmailPasswordCredentials {
   password: string;
 }
 
+export interface PendingAccountCandidate {
+  displayName: string;
+  email: string;
+  provider: 'email_password' | 'google_oauth' | 'apple_oauth';
+  credentials?: EmailPasswordCredentials;
+  oauthProvider?: OAuthProvider;
+}
+
 export interface AccountLoginModalProps {
   isOpen: boolean;
   onClose?: () => void;
   onEmailPasswordLogin: (credentials: EmailPasswordCredentials) => Promise<void> | void;
-  onOAuthLogin: (provider: OAuthProvider) => Promise<void> | void;
+  onOAuthLogin: (provider: OAuthProvider, resolvedEmail?: string) => Promise<void> | void;
   initialEmail?: string;
+  initialName?: string;
+}
+
+export function getHeaderProfileDisplayName(profile: {
+  name?: string | null;
+  email?: string | null;
+  authProvider?: string | null;
+} | null | undefined): string {
+  return resolveDisplayUsername(profile);
 }
 
 export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
@@ -23,23 +41,25 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
   onClose,
   onEmailPasswordLogin,
   onOAuthLogin,
-  initialEmail = ''
+  initialEmail = '',
+  initialName = ''
 }) => {
   const [mode, setMode] = useState<AuthMode>('login');
-  const [firstName, setFirstName] = useState('');
+  const [firstName, setFirstName] = useState(initialName);
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingVerification, setPendingVerification] = useState<PendingAccountCandidate | null>(null);
 
   if (!isOpen) return null;
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage('');
 
-    const cleanEmail = email.trim();
+    const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@')) {
       setErrorMessage('Please enter a valid email address.');
       return;
@@ -49,31 +69,135 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      await onEmailPasswordLogin({
+    const displayName = resolveDisplayUsername({
+      name: firstName.trim(),
+      email: cleanEmail,
+      authProvider: 'email_password'
+    });
+
+    setPendingVerification({
+      displayName,
+      email: cleanEmail,
+      provider: 'email_password',
+      credentials: {
         mode,
-        firstName: firstName.trim(),
+        firstName: displayName,
         email: cleanEmail,
         password
-      });
+      }
+    });
+  }
+
+  function handleProviderClick(provider: OAuthProvider) {
+    setErrorMessage('');
+    const cleanEmail = email.trim().toLowerCase();
+    const fallbackEmail =
+      cleanEmail && cleanEmail.includes('@')
+        ? cleanEmail
+        : provider === 'apple'
+          ? 'francois@icloud.com'
+          : 'francois@gmail.com';
+    const displayName = resolveDisplayUsername({
+      name: firstName.trim(),
+      email: fallbackEmail,
+      authProvider: `${provider}_oauth`
+    });
+
+    setPendingVerification({
+      displayName,
+      email: fallbackEmail,
+      provider: `${provider}_oauth`,
+      oauthProvider: provider
+    });
+  }
+
+  async function handleConfirmVerification() {
+    if (!pendingVerification) return;
+    setErrorMessage('');
+    setIsSubmitting(true);
+    try {
+      if (pendingVerification.provider === 'email_password' && pendingVerification.credentials) {
+        await onEmailPasswordLogin(pendingVerification.credentials);
+      } else if (pendingVerification.oauthProvider) {
+        await onOAuthLogin(pendingVerification.oauthProvider, pendingVerification.email);
+      }
+      setPendingVerification(null);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'Unable to sign in. Please check your credentials.');
+      setErrorMessage(err instanceof Error ? err.message : 'Unable to complete login. Please try again.');
+      setPendingVerification(null);
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  async function handleProviderClick(provider: OAuthProvider) {
+  function handleSwitchAccount() {
+    setPendingVerification(null);
+    setEmail('');
+    setPassword('');
+    setFirstName('');
     setErrorMessage('');
-    setIsSubmitting(true);
-    try {
-      await onOAuthLogin(provider);
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : `Unable to continue with ${provider}.`);
-    } finally {
-      setIsSubmitting(false);
-    }
+  }
+
+  if (pendingVerification) {
+    const providerLabel =
+      pendingVerification.provider === 'google_oauth'
+        ? 'Google Sign-In'
+        : pendingVerification.provider === 'apple_oauth'
+          ? 'Apple Sign-In'
+          : 'Email & Password';
+
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="account-verify-title"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 p-4 backdrop-blur-sm"
+      >
+        <div className="w-full max-w-md space-y-4 rounded-2xl border border-sky-400/50 bg-slate-900 p-5 text-slate-100 shadow-2xl">
+          <div className="border-b border-slate-800 pb-3">
+            <span className="inline-block rounded-full border border-sky-400/40 bg-sky-500/15 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-sky-300">
+              Account Verification
+            </span>
+            <h2 id="account-verify-title" className="mt-1.5 text-base font-extrabold text-white">
+              Is this the correct account?
+            </h2>
+            <p className="mt-1 text-xs text-slate-300">
+              Confirm your profile before we load your saved workouts.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-950 p-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-base font-extrabold text-slate-950">
+              {pendingVerification.displayName.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-extrabold text-white">{pendingVerification.displayName}</div>
+              <div className="truncate text-xs text-slate-300">{pendingVerification.email}</div>
+              <div className="mt-0.5 text-[11px] font-bold text-sky-300">{providerLabel}</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2">
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleConfirmVerification}
+              className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-emerald-400 disabled:opacity-60"
+            >
+              {isSubmitting ? 'Signing In...' : `Yes, Continue as ${pendingVerification.displayName}`}
+            </button>
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleSwitchAccount}
+              className="w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-2.5 text-xs font-extrabold text-slate-100 transition hover:bg-slate-700 disabled:opacity-60"
+            >
+              Switch Account
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -128,7 +252,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
           </button>
         </div>
 
-        {/* Instant OAuth Login Buttons (No Password Required) */}
+        {/* Instant OAuth Login Buttons */}
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -228,10 +352,11 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
             disabled={isSubmitting}
             className="w-full rounded-xl bg-sky-400 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-sky-300 disabled:opacity-60"
           >
-            {isSubmitting ? 'Signing In...' : mode === 'signup' ? 'Create Account' : 'Log In'}
+            {isSubmitting ? 'Checking Account...' : mode === 'signup' ? 'Create Account' : 'Log In'}
           </button>
         </form>
       </div>
     </div>
   );
 };
+

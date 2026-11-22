@@ -1,6 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import {
+  STANDARD_CARDIO_SESSIONS,
   groupExercisesByCategory,
+  isBikingExercise,
+  normalizeCardioExerciseName,
+  type BikingEnvironment,
   type ExerciseDisplayCategory,
   type RoutineExerciseLike
 } from '../utils/wizardValidation';
@@ -11,24 +15,36 @@ export interface ExerciseGroupViewProps<T extends RoutineExerciseLike> {
   exercises: T[];
   renderExerciseCard: (exercise: T, index: number) => React.ReactNode;
   onQuickAddCardio?: (cardioName: string) => void;
+  bikingModeById?: Record<string, BikingEnvironment>;
+  onToggleBikingMode?: (exerciseId: string, mode: BikingEnvironment) => void;
   defaultTab?: ExerciseFilterTab;
 }
-
-const QUICK_CARDIO_PRESETS = ['Outdoor Biking', 'Treadmill', 'Rowing Machine'];
 
 export function ExerciseGroupView<T extends RoutineExerciseLike>({
   exercises,
   renderExerciseCard,
   onQuickAddCardio,
+  bikingModeById = {},
+  onToggleBikingMode,
   defaultTab = 'all'
 }: ExerciseGroupViewProps<T>) {
   const [activeTab, setActiveTab] = useState<ExerciseFilterTab>(defaultTab);
+  const [localBikingModes, setLocalBikingModes] = useState<Record<string, BikingEnvironment>>({});
 
   const grouped = useMemo(() => groupExercisesByCategory(exercises), [exercises]);
 
   const showWeightlifting = activeTab === 'all' || activeTab === 'weightlifting';
   const showBodyweight = activeTab === 'all' || activeTab === 'bodyweight';
   const showCardio = activeTab === 'all' || activeTab === 'cardio';
+
+  function getBikingMode(exerciseId: string): BikingEnvironment {
+    return bikingModeById[exerciseId] || localBikingModes[exerciseId] || 'outdoor';
+  }
+
+  function handleBikingToggle(exerciseId: string, mode: BikingEnvironment) {
+    setLocalBikingModes((prev) => ({ ...prev, [exerciseId]: mode }));
+    onToggleBikingMode?.(exerciseId, mode);
+  }
 
   return (
     <div className="space-y-4 text-slate-100">
@@ -134,7 +150,7 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
         </section>
       )}
 
-      {/* Section 3: Dedicated Cardio Section */}
+      {/* Section 3: Dedicated Cardio Zone */}
       {showCardio && (
         <section aria-labelledby="section-cardio-heading" className="space-y-2.5 rounded-2xl border border-cyan-500/35 bg-slate-900/90 p-3">
           <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
@@ -148,30 +164,75 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
 
           {grouped.cardio.length > 0 ? (
             <div className="space-y-3">
-              {grouped.cardio.map((ex, idx) => (
-                <React.Fragment key={ex.id || `cardio-${idx}`}>
-                  {renderExerciseCard(ex, idx)}
-                </React.Fragment>
-              ))}
+              {grouped.cardio.map((ex, idx) => {
+                const exId = ex.id || `cardio-${idx}`;
+                const normalizedEx = { ...ex, name: normalizeCardioExerciseName(ex.name) } as T;
+                const showBikingToggle = isBikingExercise(normalizedEx);
+                const activeEnv = getBikingMode(exId);
+
+                return (
+                  <div key={exId} className="space-y-2">
+                    {showBikingToggle && (
+                      <div
+                        role="group"
+                        aria-label="Biking Environment Toggle"
+                        className="flex items-center justify-between rounded-xl border border-cyan-500/30 bg-slate-950 px-3 py-2"
+                      >
+                        <span className="text-xs font-extrabold text-cyan-200">Biking Type</span>
+                        <div className="grid grid-cols-2 gap-1 rounded-lg border border-slate-800 bg-slate-900 p-0.5">
+                          <button
+                            type="button"
+                            aria-pressed={activeEnv === 'indoor'}
+                            onClick={() => handleBikingToggle(exId, 'indoor')}
+                            className={`rounded-md px-2.5 py-1 text-[11px] font-extrabold transition ${
+                              activeEnv === 'indoor'
+                                ? 'bg-cyan-400 text-slate-950'
+                                : 'text-slate-300 hover:text-white'
+                            }`}
+                          >
+                            Indoor
+                          </button>
+                          <button
+                            type="button"
+                            aria-pressed={activeEnv === 'outdoor'}
+                            onClick={() => handleBikingToggle(exId, 'outdoor')}
+                            className={`rounded-md px-2.5 py-1 text-[11px] font-extrabold transition ${
+                              activeEnv === 'outdoor'
+                                ? 'bg-cyan-400 text-slate-950'
+                                : 'text-slate-300 hover:text-white'
+                            }`}
+                          >
+                            Outdoor
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {renderExerciseCard(normalizedEx, idx)}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="text-xs text-slate-300">
-              No cardio added today. Tap a cardio workout below to track live time or log distance manually.
+              No cardio added today. Pick a cardio session below to track live time or log past cardio.
             </p>
           )}
 
           {onQuickAddCardio && (
-            <div className="grid grid-cols-3 gap-1.5 pt-1">
-              {QUICK_CARDIO_PRESETS.map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => onQuickAddCardio(preset)}
-                  className="rounded-xl border border-cyan-500/40 bg-slate-950 px-2 py-2 text-[11px] font-extrabold text-cyan-200 transition hover:bg-slate-800"
-                >
-                  + {preset}
-                </button>
-              ))}
+            <div className="space-y-1.5 pt-1">
+              <div className="text-[11px] font-bold text-cyan-200">Add Cardio Session</div>
+              <div className="flex flex-wrap gap-1.5">
+                {STANDARD_CARDIO_SESSIONS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => onQuickAddCardio(preset)}
+                    className="rounded-xl border border-cyan-500/40 bg-slate-950 px-2.5 py-2 text-[11px] font-extrabold text-cyan-200 transition hover:bg-slate-800"
+                  >
+                    + {preset === 'Rowing Machine' ? 'Rowing' : preset}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </section>
@@ -179,3 +240,4 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
     </div>
   );
 }
+

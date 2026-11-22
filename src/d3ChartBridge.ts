@@ -24,12 +24,17 @@ import {
   type UnifiedWeeklyVolumePoint
 } from './utils/workoutLogic';
 import {
+  STANDARD_CARDIO_SESSIONS,
   classifyExerciseCategory,
+  clearActiveDayWorkoutData,
   enforceDifficultyOnExercise,
   enforceDifficultyOnRoutine,
   filterRecipesByDietAndIntolerances,
   groupExercisesByCategory,
+  isBikingExercise,
   isRecipeAllowedForDiet,
+  normalizeCardioExerciseName,
+  resolveDisplayUsername,
   validateProgramWizardConfig
 } from './utils/wizardValidation';
 import {
@@ -645,6 +650,11 @@ declare global {
     enforceDifficultyOnRoutine?: typeof enforceDifficultyOnRoutine;
     createAutoSupabaseSyncEngine?: typeof createAutoSupabaseSyncEngine;
     countTotalLoggedSetsInState?: typeof countTotalLoggedSetsInState;
+    resolveDisplayUsername?: typeof resolveDisplayUsername;
+    clearActiveDayWorkoutData?: typeof clearActiveDayWorkoutData;
+    isBikingExercise?: typeof isBikingExercise;
+    normalizeCardioExerciseName?: typeof normalizeCardioExerciseName;
+    STANDARD_CARDIO_SESSIONS?: typeof STANDARD_CARDIO_SESSIONS;
   }
 }
 
@@ -679,5 +689,10 @@ if (typeof window !== 'undefined') {
   window.enforceDifficultyOnRoutine = enforceDifficultyOnRoutine;
   window.createAutoSupabaseSyncEngine = createAutoSupabaseSyncEngine;
   window.countTotalLoggedSetsInState = countTotalLoggedSetsInState;
+  window.resolveDisplayUsername = resolveDisplayUsername;
+  window.clearActiveDayWorkoutData = clearActiveDayWorkoutData;
+  window.isBikingExercise = isBikingExercise;
+  window.normalizeCardioExerciseName = normalizeCardioExerciseName;
+  window.STANDARD_CARDIO_SESSIONS = STANDARD_CARDIO_SESSIONS;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

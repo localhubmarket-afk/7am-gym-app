@@ -3481,3 +3481,89 @@ test('Subtest 49: Exercise Grouping, Auto Supabase Sync with Undo Protection & S
   assert.equal(postedCalls.length, 2);
 });
 
+test('Subtest 50: Real Username Display, Single-Day Reset Isolation, Biking Rename & Cardio Zone Presets', async () => {
+  const {
+    STANDARD_CARDIO_SESSIONS,
+    clearActiveDayWorkoutData,
+    isBikingExercise,
+    normalizeCardioExerciseName,
+    resolveDisplayUsername
+  } = await import('./wizardValidation');
+
+  // 1. Real username in header (never show "Google" or "Apple")
+  assert.equal(
+    resolveDisplayUsername({ name: 'Google', email: 'francois@gmail.com', authProvider: 'google_oauth' }),
+    'François'
+  );
+  assert.equal(
+    resolveDisplayUsername({ name: 'Google Athlete', email: 'alex.martin@gmail.com', authProvider: 'google_oauth' }),
+    'Alex'
+  );
+  assert.equal(
+    resolveDisplayUsername({ name: 'Apple', email: 'maya@icloud.com', authProvider: 'apple_oauth' }),
+    'Maya'
+  );
+  assert.equal(
+    resolveDisplayUsername({ name: 'François Dupont', email: 'f@example.com', authProvider: 'email_password' }),
+    'François'
+  );
+  assert.equal(resolveDisplayUsername({ name: '', email: '' }), 'Sign In');
+
+  // 2. Reset Day clears ONLY the active day (Day 5 = idx 4) and preserves all other days & weeks
+  const mockState: Record<string, any> = {
+    workoutLogs: {
+      w1_0_bench_1: { weight: '135', reps: '10', done: true, isLogged: true },
+      w1_4_squat_1: { weight: '185', reps: '8', done: true, isLogged: true },
+      w1_4_squat_2: { weight: '185', reps: '8', done: true, isLogged: true },
+      w2_4_squat_1: { weight: '190', reps: '8', done: true, isLogged: true }
+    },
+    pullupLogs: {
+      w1_day_1_set_1: { reps: '8', done: true, isLogged: true },
+      w1_day_5_set_1: { reps: '6', done: true, isLogged: true }
+    },
+    cardioLogs: {
+      w1_d0_cardio_bike_0: { mode: 'manual', durationMins: 30, done: true },
+      w1_d4_cardio_bike_4: { mode: 'manual', durationMins: 45, done: true }
+    },
+    warmupLogs: {
+      w1_d0_wu_0: true,
+      w1_d4_wu_0: true
+    }
+  };
+
+  const resetRes = clearActiveDayWorkoutData(mockState, 1, 4, {
+    exerciseIds: ['squat'],
+    pullupDayNumber: 5
+  });
+  assert.equal(resetRes.week, 1);
+  assert.equal(resetRes.dayIdx, 4);
+  assert.equal(resetRes.clearedKeysCount, 5);
+  // Day 5 (idx 4) in Week 1 is completely cleared
+  assert.equal(mockState.workoutLogs.w1_4_squat_1, undefined);
+  assert.equal(mockState.workoutLogs.w1_4_squat_2, undefined);
+  assert.equal(mockState.pullupLogs.w1_day_5_set_1, undefined);
+  assert.equal(mockState.cardioLogs.w1_d4_cardio_bike_4, undefined);
+  assert.equal(mockState.warmupLogs.w1_d4_wu_0, undefined);
+  // Day 1 (idx 0) in Week 1 and Day 5 in Week 2 remain 100% untouched
+  assert.equal(mockState.workoutLogs.w1_0_bench_1.done, true);
+  assert.equal(mockState.workoutLogs.w2_4_squat_1.done, true);
+  assert.equal(mockState.pullupLogs.w1_day_1_set_1.done, true);
+  assert.equal(mockState.cardioLogs.w1_d0_cardio_bike_0.done, true);
+  assert.equal(mockState.warmupLogs.w1_d0_wu_0, true);
+
+  // 3. Cardio Zone presets & Outdoor Biking -> Biking normalization
+  assert.equal(normalizeCardioExerciseName('Outdoor Biking'), 'Biking');
+  assert.equal(normalizeCardioExerciseName('Indoor Biking'), 'Biking');
+  assert.equal(normalizeCardioExerciseName('Stairmaster'), 'Stairmaster');
+  assert.equal(isBikingExercise({ name: 'Biking' }), true);
+  assert.equal(isBikingExercise({ name: 'Treadmill' }), false);
+  assert.deepEqual([...STANDARD_CARDIO_SESSIONS], [
+    'Biking',
+    'Treadmill',
+    'Rowing Machine',
+    'Elliptical',
+    'Stairmaster'
+  ]);
+});
+
+
