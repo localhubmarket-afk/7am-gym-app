@@ -1,10 +1,19 @@
 import * as d3 from 'd3';
 import {
+  AI_EXERCISE_WHITELIST_RULE,
   ONE_RM_LIFT_CONFIGS,
+  clampRepsInputValue,
+  clampWeightInputValue,
+  computeUnifiedWeeklyVolumeSeries,
+  createSyncUndoSnapshot,
   extractOneRmProgressionSeries,
   formatOneRmTooltipText,
+  formatWeeklyVolumeTooltipText,
+  hasLoggedSetsInWeek,
+  restoreSyncUndoSnapshot,
   type OneRmChartPoint,
-  type OneRmLiftKey
+  type OneRmLiftKey,
+  type UnifiedWeeklyVolumePoint
 } from './utils/workoutLogic';
 
 export interface RenderOneRmD3ChartOptions {
@@ -346,20 +355,274 @@ export function renderOneRmD3Chart(options: RenderOneRmD3ChartOptions): {
   };
 }
 
+export interface RenderWeeklyVolumeBarChartOptions {
+  container: HTMLElement;
+  tooltipWrapEl?: HTMLElement | null;
+  tooltipTextEl?: HTMLElement | null;
+  tooltipSetsEl?: HTMLElement | null;
+  jumpBtnEl?: HTMLButtonElement | null;
+  series: UnifiedWeeklyVolumePoint[];
+  activeWeek: number;
+  onJumpToWeek?: (week: number) => void;
+}
+
+export function renderWeeklyVolumeD3BarChart(options: RenderWeeklyVolumeBarChartOptions): {
+  rendered: boolean;
+  barCount: number;
+  selectedWeek: number;
+} {
+  const {
+    container,
+    tooltipWrapEl,
+    tooltipTextEl,
+    tooltipSetsEl,
+    jumpBtnEl,
+    series,
+    activeWeek,
+    onJumpToWeek
+  } = options;
+
+  if (!container || !Array.isArray(series) || series.length === 0) {
+    return { rendered: false, barCount: 0, selectedWeek: activeWeek || 1 };
+  }
+
+  container.style.touchAction = 'pan-y';
+  container.style.background = 'transparent';
+  container.style.position = 'relative';
+
+  d3.select(container).selectAll('*').remove();
+
+  const width = 336;
+  const height = 178;
+  const margin = { top: 20, right: 12, bottom: 28, left: 46 };
+  const innerW = width - margin.left - margin.right;
+  const innerH = height - margin.top - margin.bottom;
+
+  const maxVol = d3.max(series, (d) => d.tonnageLbs) ?? 0;
+  const yTop = maxVol > 0 ? Math.ceil((maxVol * 1.18) / 500) * 500 : 5000;
+
+  const xScale = d3
+    .scaleBand<string>()
+    .domain(series.map((d) => d.label))
+    .range([0, innerW])
+    .padding(0.32);
+
+  const yScale = d3.scaleLinear().domain([0, yTop]).range([innerH, 0]).nice(4);
+
+  const svg = d3
+    .select(container)
+    .append('svg')
+    .attr('viewBox', `0 0 ${width} ${height}`)
+    .attr('role', 'img')
+    .attr('aria-label', 'Total Weekly Volume bar chart in pounds across training weeks')
+    .attr('data-volume-bar-chart-svg', 'true')
+    .style('width', '100%')
+    .style('height', 'auto')
+    .style('display', 'block')
+    .style('background', 'transparent')
+    .style('touch-action', 'pan-y')
+    .style('overflow', 'visible')
+    .style('font-family', 'system-ui, -apple-system, sans-serif')
+    .style('letter-spacing', '0.02em');
+
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const yTicks = yScale.ticks(4).slice(0, 5);
+  const formatCompactLbs = (v: number): string => {
+    if (v >= 1000) {
+      const k = v / 1000;
+      return Number.isInteger(k) ? `${k}k` : `${k.toFixed(1)}k`;
+    }
+    return `${v}`;
+  };
+
+  // Faint horizontal gridlines
+  g.append('g')
+    .attr('class', 'd3-vol-h-grid')
+    .selectAll('line')
+    .data(yTicks)
+    .enter()
+    .append('line')
+    .attr('x1', 0)
+    .attr('x2', innerW)
+    .attr('y1', (d) => yScale(d))
+    .attr('y2', (d) => yScale(d))
+    .attr('stroke', 'rgba(248, 250, 252, 0.1)')
+    .attr('stroke-width', 1);
+
+  // Y-axis labels (lbs)
+  g.append('g')
+    .attr('class', 'd3-vol-y-labels')
+    .selectAll('text')
+    .data(yTicks)
+    .enter()
+    .append('text')
+    .attr('x', -8)
+    .attr('y', (d) => yScale(d))
+    .attr('dy', '0.32em')
+    .attr('text-anchor', 'end')
+    .attr('fill', '#94a3b8')
+    .style('font-size', '10px')
+    .style('font-weight', '600')
+    .text((d) => formatCompactLbs(d));
+
+  // X-axis week labels (W1, W2, W3, W4...)
+  g.append('g')
+    .attr('class', 'd3-vol-x-labels')
+    .selectAll('text')
+    .data(series)
+    .enter()
+    .append('text')
+    .attr('x', (d) => (xScale(d.label) ?? 0) + xScale.bandwidth() / 2)
+    .attr('y', innerH + 18)
+    .attr('text-anchor', 'middle')
+    .attr('fill', '#f8fafc')
+    .style('font-size', '11px')
+    .style('font-weight', '800')
+    .text((d) => d.label);
+
+  // Visible rounded vertical bars: Soft Cyan (#0ea5e9) for completed weeks, Muted Slate (#334155) for uncompleted
+  const bars = g
+    .selectAll('rect.d3-vol-bar')
+    .data(series)
+    .enter()
+    .append('rect')
+    .attr('class', 'd3-vol-bar')
+    .attr('data-vol-week', (d) => String(d.week))
+    .attr('x', (d) => xScale(d.label) ?? 0)
+    .attr('width', xScale.bandwidth())
+    .attr('y', (d) => {
+      if (d.tonnageLbs <= 0) return innerH - 8;
+      return Math.min(innerH - 8, yScale(d.tonnageLbs));
+    })
+    .attr('height', (d) => {
+      if (d.tonnageLbs <= 0) return 8;
+      return Math.max(8, innerH - yScale(d.tonnageLbs));
+    })
+    .attr('rx', 6)
+    .attr('ry', 6)
+    .attr('fill', (d) => (d.isCompleted ? '#0ea5e9' : '#334155'))
+    .attr('stroke', 'transparent')
+    .attr('stroke-width', 2);
+
+  // Small compact value label above non-zero bars
+  g.selectAll('text.d3-vol-bar-val')
+    .data(series.filter((d) => d.tonnageLbs > 0))
+    .enter()
+    .append('text')
+    .attr('class', 'd3-vol-bar-val')
+    .attr('x', (d) => (xScale(d.label) ?? 0) + xScale.bandwidth() / 2)
+    .attr('y', (d) => Math.max(4, Math.min(innerH - 12, yScale(d.tonnageLbs) - 5)))
+    .attr('text-anchor', 'middle')
+    .attr('fill', '#e0f2fe')
+    .style('font-size', '9.5px')
+    .style('font-weight', '700')
+    .text((d) => formatCompactLbs(d.tonnageLbs));
+
+  let selectedWeek =
+    series.some((d) => d.week === activeWeek) ? activeWeek : series[series.length - 1].week;
+
+  function selectWeekBar(weekNum: number, showTooltip: boolean): void {
+    const row = series.find((d) => d.week === weekNum) || series[0];
+    selectedWeek = row.week;
+
+    bars
+      .attr('stroke', (d) => (d.week === row.week ? '#f8fafc' : 'transparent'))
+      .attr('fill-opacity', (d) => (d.week === row.week ? 1 : 0.85));
+
+    if (tooltipWrapEl) {
+      if (showTooltip) {
+        tooltipWrapEl.classList.remove('hidden');
+      }
+      tooltipWrapEl.setAttribute('data-selected-week', String(row.week));
+    }
+    if (tooltipTextEl) {
+      tooltipTextEl.textContent = formatWeeklyVolumeTooltipText(row.week, row.tonnageLbs);
+    }
+    if (tooltipSetsEl) {
+      const setWord = row.setsCount === 1 ? 'set' : 'sets';
+      tooltipSetsEl.textContent = `${row.setsCount} ${setWord} logged in Week ${row.week}`;
+    }
+    if (jumpBtnEl) {
+      jumpBtnEl.textContent = `Jump to Week ${row.week}`;
+      jumpBtnEl.setAttribute('data-jump-week', String(row.week));
+      jumpBtnEl.onclick = () => {
+        if (typeof onJumpToWeek === 'function') {
+          onJumpToWeek(row.week);
+        }
+      };
+    }
+  }
+
+  // Full-height transparent mobile tap columns for easy tapping (even on 0-volume weeks)
+  g.selectAll('rect.d3-vol-hit')
+    .data(series)
+    .enter()
+    .append('rect')
+    .attr('class', 'd3-vol-hit')
+    .attr('data-vol-hit-week', (d) => String(d.week))
+    .attr('role', 'button')
+    .attr('tabindex', 0)
+    .attr('aria-label', (d) => `Week ${d.week}: ${d.tonnageLbs.toLocaleString('en-US')} pounds, ${d.setsCount} sets`)
+    .attr('x', (d) => Math.max(0, (xScale(d.label) ?? 0) - 4))
+    .attr('width', xScale.bandwidth() + 8)
+    .attr('y', 0)
+    .attr('height', innerH + 22)
+    .attr('fill', 'transparent')
+    .style('cursor', 'pointer')
+    .style('touch-action', 'pan-y')
+    .on('click', (_event, d) => {
+      selectWeekBar(d.week, true);
+    })
+    .on('keydown', (event: KeyboardEvent, d) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        selectWeekBar(d.week, true);
+      }
+    });
+
+  // Pre-highlight active week and keep tooltip populated
+  selectWeekBar(selectedWeek, true);
+
+  return {
+    rendered: true,
+    barCount: series.length,
+    selectedWeek
+  };
+}
+
 // Expose cleanly to the single-file app script in index.html
 declare global {
   interface Window {
     d3?: typeof d3;
     renderOneRmD3Chart?: typeof renderOneRmD3Chart;
+    renderWeeklyVolumeD3BarChart?: typeof renderWeeklyVolumeD3BarChart;
     extractOneRmProgressionSeries?: typeof extractOneRmProgressionSeries;
     ONE_RM_LIFT_CONFIGS?: typeof ONE_RM_LIFT_CONFIGS;
+    computeUnifiedWeeklyVolumeSeries?: typeof computeUnifiedWeeklyVolumeSeries;
+    formatWeeklyVolumeTooltipText?: typeof formatWeeklyVolumeTooltipText;
+    hasLoggedSetsInWeek?: typeof hasLoggedSetsInWeek;
+    createSyncUndoSnapshot?: typeof createSyncUndoSnapshot;
+    restoreSyncUndoSnapshot?: typeof restoreSyncUndoSnapshot;
+    clampWeightInputValue?: typeof clampWeightInputValue;
+    clampRepsInputValue?: typeof clampRepsInputValue;
+    AI_EXERCISE_WHITELIST_RULE?: string;
   }
 }
 
 if (typeof window !== 'undefined') {
   window.d3 = d3;
   window.renderOneRmD3Chart = renderOneRmD3Chart;
+  window.renderWeeklyVolumeD3BarChart = renderWeeklyVolumeD3BarChart;
   window.extractOneRmProgressionSeries = extractOneRmProgressionSeries;
   window.ONE_RM_LIFT_CONFIGS = ONE_RM_LIFT_CONFIGS;
+  window.computeUnifiedWeeklyVolumeSeries = computeUnifiedWeeklyVolumeSeries;
+  window.formatWeeklyVolumeTooltipText = formatWeeklyVolumeTooltipText;
+  window.hasLoggedSetsInWeek = hasLoggedSetsInWeek;
+  window.createSyncUndoSnapshot = createSyncUndoSnapshot;
+  window.restoreSyncUndoSnapshot = restoreSyncUndoSnapshot;
+  window.clampWeightInputValue = clampWeightInputValue;
+  window.clampRepsInputValue = clampRepsInputValue;
+  window.AI_EXERCISE_WHITELIST_RULE = AI_EXERCISE_WHITELIST_RULE;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

@@ -100,6 +100,29 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
+    /* UPGRADE 24: Horizontal Scroll for Multi-Week Tabs (Weeks 1 to 6+) */
+    .week-tabs-scroll-strip {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      gap: 8px;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding-bottom: 2px;
+      min-width: 0;
+      max-width: 100%;
+    }
+    .week-tabs-scroll-strip::-webkit-scrollbar {
+      display: none;
+    }
+    .week-tabs-scroll-strip > button {
+      scroll-snap-align: start;
+      flex-shrink: 0;
+    }
     input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button {
       -webkit-appearance: none;
@@ -282,6 +305,21 @@
     </div>
   </div>
 
+  <!-- UPGRADE 24: 5-Second Bottom Undo Toast Notification (Sync Safety) -->
+  <div id="sync-undo-toast-container" role="status" aria-live="polite" class="hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-[75] w-max max-w-[92vw] transition-all duration-200">
+    <div class="rounded-2xl border border-sky-400/60 shadow-2xl px-3.5 py-2.5 flex items-center justify-between gap-3" style="background-color: #0f172a; color: #f8fafc; letter-spacing: 0.02em; line-height: 1.5; font-family: system-ui, sans-serif;">
+      <span id="sync-undo-toast-msg" class="text-xs font-extrabold whitespace-nowrap" style="color: #f8fafc;">Week Synced.</span>
+      <button
+        type="button"
+        id="sync-undo-toast-btn"
+        class="px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition hover:opacity-90"
+        style="background-color: #0ea5e9; color: #0f172a; min-height: 34px;"
+      >
+        ↩️ Undo Mistake
+      </button>
+    </div>
+  </div>
+
   <!-- Main Content Container (Sits cleanly below fixed top header with dynamic ResizeObserver spacer) -->
   <main id="main-content-container" class="max-w-xl w-full mx-auto px-1.5 sm:px-4 pt-24 space-y-2.5 overflow-x-hidden" style="padding-bottom: 110px;">
 
@@ -323,12 +361,12 @@
 
       <!-- Streamlined 7-Day Cycle, Progressive Week Selector & Zone A Admin Row -->
       <div id="gym-week-day-selector-card" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
-        <!-- Row 1: Pure Week Selector Tabs (Week 1 | Week 2 | Week 3) -->
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex flex-wrap items-center gap-1.5 min-w-0">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400 whitespace-nowrap">Week:</span>
-            <div id="progressive-week-pills" class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Progressive Training Weeks">
-              <!-- Populated dynamically by JS (3-Week Rolling Visibility) -->
+        <!-- Row 1: Pure Horizontal-Scroll Week Selector Tabs (Week 1 to Week 6+) -->
+        <div class="flex items-center justify-between gap-2 min-w-0">
+          <div class="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400 whitespace-nowrap shrink-0">Week:</span>
+            <div id="progressive-week-pills" class="week-tabs-scroll-strip flex-1" role="group" aria-label="Progressive Training Weeks">
+              <!-- Populated dynamically by JS (Horizontal Swipe Weeks 1–12) -->
             </div>
             <!-- Native select kept hidden for programmatic compatibility while custom pills provide mobile-safe color hierarchy -->
             <select id="week-select" aria-label="Select training week" class="hidden">
@@ -336,7 +374,7 @@
               <option value="2">Week 2</option>
             </select>
           </div>
-          <span class="hidden sm:inline text-[10px] bg-slate-950 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-full font-semibold" id="crunch-weekly-badge">Done / Partial</span>
+          <span class="hidden sm:inline text-[10px] bg-slate-950 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-full font-semibold shrink-0" id="crunch-weekly-badge">Done / Partial</span>
         </div>
 
         <!-- ZONE A: Symmetrical 3-Column Admin & Settings Row (Directly under Week Tabs) -->
@@ -434,10 +472,10 @@
     <section id="view-pullups" class="hidden space-y-3">
       <!-- Synced Progressive Week & 7-Day Selector Card (100% Synced with Gym & Muscle Fuel Tabs) -->
       <div id="pullups-top-week-selector-card" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex flex-wrap items-center gap-1.5 min-w-0">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400 whitespace-nowrap">Week:</span>
-            <div id="pullups-progressive-week-pills" class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Progressive Training Weeks">
+        <div class="flex flex-wrap items-center justify-between gap-2 min-w-0">
+          <div class="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400 whitespace-nowrap shrink-0">Week:</span>
+            <div id="pullups-progressive-week-pills" class="week-tabs-scroll-strip flex-1" role="group" aria-label="Progressive Training Weeks">
               <!-- Populated dynamically by JS -->
             </div>
           </div>
@@ -690,10 +728,10 @@
 
       <!-- Synced 7-Day Cycle & Progressive Week Selector Card (Matches Gym Tab) -->
       <div id="vegan-top-day-selector-container" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex flex-wrap items-center gap-1.5 min-w-0">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400 whitespace-nowrap">Week:</span>
-            <div id="vegan-progressive-week-pills" class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Progressive Training Weeks">
+        <div class="flex flex-wrap items-center justify-between gap-2 min-w-0">
+          <div class="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400 whitespace-nowrap shrink-0">Week:</span>
+            <div id="vegan-progressive-week-pills" class="week-tabs-scroll-strip flex-1" role="group" aria-label="Progressive Training Weeks">
               <!-- Populated dynamically by JS -->
             </div>
           </div>
@@ -10248,14 +10286,203 @@
       }
     }
 
-    function copySingleDayFromPreviousWeekLocal(targetWeek, dayIdx) {
+    // UPGRADE 24: Sync Data Protection & 5-Second Undo Engine
+    let pendingSyncOverwriteAction = null;
+    let syncUndoToastTimeout = null;
+
+    function clampWeightInputLocal(rawVal) {
+      if (typeof window.clampWeightInputValue === 'function') {
+        return window.clampWeightInputValue(rawVal, 999);
+      }
+      const s = String(rawVal ?? '').trim();
+      if (s === '') return { value: '', numeric: 0, wasClamped: false };
+      const n = parseFloat(s);
+      if (!Number.isFinite(n)) return { value: '', numeric: 0, wasClamped: false };
+      if (n < 0) return { value: '0', numeric: 0, wasClamped: true };
+      if (n > 999) return { value: '999', numeric: 999, wasClamped: true };
+      const c = +n.toFixed(2);
+      return { value: String(c), numeric: c, wasClamped: false };
+    }
+
+    function clampRepsInputLocal(rawVal) {
+      if (typeof window.clampRepsInputValue === 'function') {
+        return window.clampRepsInputValue(rawVal, 100);
+      }
+      const s = String(rawVal ?? '').trim();
+      if (s === '') return { value: '', numeric: 0, wasClamped: false };
+      const n = parseInt(s, 10);
+      if (!Number.isFinite(n)) return { value: '', numeric: 0, wasClamped: false };
+      if (n < 0) return { value: '0', numeric: 0, wasClamped: true };
+      if (n > 100) return { value: '100', numeric: 100, wasClamped: true };
+      return { value: String(n), numeric: n, wasClamped: false };
+    }
+
+    function scanTargetScopeForLoggedSetsLocal(targetWeek, dayIdxFilter) {
+      if (typeof window.hasLoggedSetsInWeek === 'function') {
+        return window.hasLoggedSetsInWeek(state.workoutLogs || {}, state.pullupLogs || {}, targetWeek, dayIdxFilter);
+      }
       const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
-      const safeD = Math.max(0, Math.min(6, Math.floor(Number(dayIdx) || 0)));
-      if (safeW < 2) {
-        showToast('Move to Week 2 or later to copy from last week.');
+      const hasD = typeof dayIdxFilter === 'number' && Number.isFinite(dayIdxFilter);
+      const safeD = hasD ? Math.max(0, Math.min(6, Math.floor(dayIdxFilter))) : -1;
+      const seen = new Set();
+      Object.keys(state.workoutLogs || {}).forEach((k) => {
+        const entry = state.workoutLogs[k];
+        if (!entry || (entry.done !== true && entry.isLogged !== true)) return;
+        const mPref = k.match(/^w(\d+)_(?:d)?(\d+)_(.+)_(?:s)?(\d+)$/i);
+        if (mPref) {
+          const w = parseInt(mPref[1], 10) || 1;
+          const d = parseInt(mPref[2], 10) || 0;
+          if (w === safeW && (!hasD || d === safeD)) seen.add(`w${w}_${d}_${mPref[3]}_${mPref[4]}`);
+        } else if (safeW === 1) {
+          const mLeg = k.match(/^(\d+)_(.+)_(\d+)$/);
+          if (mLeg) {
+            const d = parseInt(mLeg[1], 10) || 0;
+            if (!hasD || d === safeD) seen.add(`w1_${d}_${mLeg[2]}_${mLeg[3]}`);
+          }
+        }
+      });
+      Object.keys(state.pullupLogs || {}).forEach((k) => {
+        const entry = state.pullupLogs[k];
+        if (!entry || (entry.done !== true && entry.isLogged !== true)) return;
+        const m = k.match(/^w(\d+)_day_(\d+)_set_(\d+)$/i);
+        if (m) {
+          const w = parseInt(m[1], 10) || 1;
+          const d = Math.max(0, (parseInt(m[2], 10) || 1) - 1);
+          if (w === safeW && (!hasD || d === safeD)) seen.add(`pullup_w${w}_${d}_${m[3]}`);
+        }
+      });
+      return { hasLoggedData: seen.size > 0, loggedSetCount: seen.size };
+    }
+
+    function saveSyncUndoSnapshotLocal(meta) {
+      if (typeof window.createSyncUndoSnapshot === 'function') {
+        state.undoBackup = window.createSyncUndoSnapshot(state, meta);
+        return state.undoBackup;
+      }
+      const clone = (val, fb) => {
+        try { return val !== undefined && val !== null ? JSON.parse(JSON.stringify(val)) : fb; } catch (e) { return fb; }
+      };
+      state.undoBackup = {
+        createdAt: Date.now(),
+        targetWeek: meta.targetWeek,
+        sourceWeek: meta.sourceWeek,
+        mode: meta.mode,
+        dayIdx: meta.dayIdx,
+        stateData: {
+          customDayScheduleByWeek: clone(state.customDayScheduleByWeek, {}),
+          weeklyRestDays: clone(state.weeklyRestDays, { default: [5, 6] }),
+          manualScheduleOverrideByWeek: clone(state.manualScheduleOverrideByWeek, {}),
+          customExercisesByWeek: clone(state.customExercisesByWeek, {}),
+          workoutLogs: clone(state.workoutLogs, {}),
+          pullupLogs: clone(state.pullupLogs, {}),
+          warmupLogs: clone(state.warmupLogs, {}),
+          cardioLogs: clone(state.cardioLogs, {}),
+          completedWeeks: clone(state.completedWeeks, {}),
+          maxUnlockedWeek: Number(state.maxUnlockedWeek) || 2,
+          selectedWeek: Number(state.selectedWeek || state.currentWeek) || 1,
+          currentWeek: Number(state.currentWeek || state.selectedWeek) || 1,
+          selectedDayIndex: Math.max(0, Math.min(6, Math.floor(Number(state.selectedDayIndex) || 0)))
+        }
+      };
+      return state.undoBackup;
+    }
+
+    function hideSyncUndoToastLocal() {
+      const box = document.getElementById('sync-undo-toast-container');
+      if (box) box.classList.add('hidden');
+      if (syncUndoToastTimeout) {
+        clearTimeout(syncUndoToastTimeout);
+        syncUndoToastTimeout = null;
+      }
+    }
+
+    function showSyncUndoToastLocal(labelText) {
+      const box = document.getElementById('sync-undo-toast-container');
+      const msgEl = document.getElementById('sync-undo-toast-msg');
+      if (!box) return;
+      if (msgEl) msgEl.textContent = labelText || 'Week Synced.';
+      box.classList.remove('hidden');
+      if (syncUndoToastTimeout) clearTimeout(syncUndoToastTimeout);
+      syncUndoToastTimeout = setTimeout(() => {
+        box.classList.add('hidden');
+        syncUndoToastTimeout = null;
+      }, 5000);
+    }
+
+    function performUndoLastSyncLocal() {
+      if (!state.undoBackup) {
+        hideSyncUndoToastLocal();
         return false;
       }
+      const ok = typeof window.restoreSyncUndoSnapshot === 'function'
+        ? window.restoreSyncUndoSnapshot(state, state.undoBackup)
+        : (() => {
+            const d = state.undoBackup && state.undoBackup.stateData ? JSON.parse(JSON.stringify(state.undoBackup.stateData)) : null;
+            if (!d) return false;
+            state.customDayScheduleByWeek = d.customDayScheduleByWeek;
+            state.weeklyRestDays = d.weeklyRestDays;
+            state.manualScheduleOverrideByWeek = d.manualScheduleOverrideByWeek;
+            state.customExercisesByWeek = d.customExercisesByWeek;
+            state.workoutLogs = d.workoutLogs;
+            state.pullupLogs = d.pullupLogs;
+            state.warmupLogs = d.warmupLogs;
+            state.cardioLogs = d.cardioLogs;
+            state.completedWeeks = d.completedWeeks;
+            state.maxUnlockedWeek = d.maxUnlockedWeek;
+            state.selectedWeek = d.selectedWeek;
+            state.currentWeek = d.currentWeek;
+            state.selectedDayIndex = d.selectedDayIndex;
+            return true;
+          })();
+      state.undoBackup = null;
+      hideSyncUndoToastLocal();
+      if (!ok) return false;
+      const weekSel = document.getElementById('week-select');
+      if (weekSel) weekSel.value = String(state.selectedWeek || state.currentWeek || 1);
+      saveState();
+      renderWorkoutView();
+      renderPullupView();
+      renderVeganView();
+      if (typeof renderAthleteDashboardTab === 'function') renderAthleteDashboardTab();
+      showToast('Undo complete! Your logged sets are back.');
+      return true;
+    }
+
+    function openSyncOverwriteGuardModalLocal(targetWeek, loggedSetCount, onConfirmFn, scopeLabel) {
+      pendingSyncOverwriteAction = typeof onConfirmFn === 'function' ? onConfirmFn : null;
+      const modalEl = document.getElementById('sync-overwrite-guard-modal');
+      const badgeEl = document.getElementById('sync-overwrite-guard-badge');
+      const descEl = document.getElementById('sync-overwrite-guard-desc');
+      if (badgeEl) {
+        const setWord = loggedSetCount === 1 ? 'set' : 'sets';
+        badgeEl.textContent = `${scopeLabel || `Week ${targetWeek}`} has ${loggedSetCount} logged ${setWord}`;
+      }
+      if (descEl) {
+        descEl.textContent = 'Wait! You already logged data in this week. Erase it and copy the previous week?';
+      }
+      if (modalEl) {
+        modalEl.classList.remove('hidden');
+        const cancelBtn = document.getElementById('sync-overwrite-cancel-btn');
+        if (cancelBtn) setTimeout(() => cancelBtn.focus(), 40);
+      }
+    }
+
+    function runWithSyncOverwriteProtectionLocal(targetWeek, dayIdxFilter, onExecuteFn, scopeLabel) {
+      const scan = scanTargetScopeForLoggedSetsLocal(targetWeek, dayIdxFilter);
+      if (scan.hasLoggedData) {
+        openSyncOverwriteGuardModalLocal(targetWeek, scan.loggedSetCount, onExecuteFn, scopeLabel);
+        return false;
+      }
+      if (typeof onExecuteFn === 'function') onExecuteFn();
+      return true;
+    }
+
+    function executeCopySingleDayFromPreviousWeekNow(targetWeek, dayIdx) {
+      const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
+      const safeD = Math.max(0, Math.min(6, Math.floor(Number(dayIdx) || 0)));
       const prevW = safeW - 1;
+      saveSyncUndoSnapshotLocal({ targetWeek: safeW, sourceWeek: prevW, mode: 'copy_single_day', dayIdx: safeD });
+
       const oldDayObj = typeof getScheduledDayObject === 'function' ? getScheduledDayObject(safeW, safeD) : null;
       const oldExIds = oldDayObj && Array.isArray(oldDayObj.exercises) ? oldDayObj.exercises.map(e => e && e.id).filter(Boolean) : [];
 
@@ -10285,8 +10512,23 @@
       renderWorkoutView();
       renderPullupView();
       renderVeganView();
-      showToast(`Copied Week ${prevW} • Day ${safeD + 1} into today! Progress reset to 0% and last weights loaded.`);
+      showSyncUndoToastLocal('Week Synced.');
       return true;
+    }
+
+    function copySingleDayFromPreviousWeekLocal(targetWeek, dayIdx) {
+      const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
+      const safeD = Math.max(0, Math.min(6, Math.floor(Number(dayIdx) || 0)));
+      if (safeW < 2) {
+        showToast('Move to Week 2 or later to copy from last week.');
+        return false;
+      }
+      return runWithSyncOverwriteProtectionLocal(
+        safeW,
+        safeD,
+        () => executeCopySingleDayFromPreviousWeekNow(safeW, safeD),
+        `Week ${safeW} • Day ${safeD + 1}`
+      );
     }
 
     window.openWeekContinuityModal = function(currentWeek) {
@@ -10312,13 +10554,16 @@
       }
     };
 
-    function advanceToNextWeekDay1Now(currentWeek, continuityMode) {
+    function executeAdvanceToNextWeekDay1Now(currentWeek, continuityMode) {
       syncProgressiveWeekState(state);
       const mode = continuityMode === 'build_new' ? 'build_new' : 'keep_same';
       const cur = Math.max(1, Math.min(12, Math.floor(Number(currentWeek || state.selectedWeek || state.currentWeek || 1))));
+      const nextW = Math.min(12, cur + 1);
+
+      saveSyncUndoSnapshotLocal({ targetWeek: nextW, sourceWeek: cur, mode: 'keep_same' });
+
       if (!state.completedWeeks || typeof state.completedWeeks !== 'object') state.completedWeeks = {};
       state.completedWeeks[cur] = true;
-      const nextW = Math.min(12, cur + 1);
       state.maxUnlockedWeek = Math.min(12, Math.max((state.maxUnlockedWeek || 1) + 1, nextW));
 
       if (!state.customDayScheduleByWeek || typeof state.customDayScheduleByWeek !== 'object') {
@@ -10332,7 +10577,7 @@
       }
 
       if (mode === 'keep_same') {
-        // UPGRADE 23: Deep-clone current week schedule verbatim, wipe ALL checkmarks to isLogged=false (0%), and pre-fill from LAST set history
+        // UPGRADE 23 & 24: Deep-clone current week schedule verbatim, wipe ALL checkmarks to isLogged=false (0%), and pre-fill from LAST set history
         const currentWeekSchedule = getCustomDayScheduleForWeek(cur);
         state.customDayScheduleByWeek[String(nextW)] = cloneWeekScheduleIdenticallyLocal(currentWeekSchedule);
         const curRest = getWeekRestDays(cur);
@@ -10373,7 +10618,24 @@
         }
       } else {
         showToast(`Week ${nextW} ready at 0%! Same plan kept from Week ${cur} with your last weights loaded.`);
+        showSyncUndoToastLocal('Week Synced.');
       }
+    }
+
+    function advanceToNextWeekDay1Now(currentWeek, continuityMode) {
+      const cur = Math.max(1, Math.min(12, Math.floor(Number(currentWeek || state.selectedWeek || state.currentWeek || 1))));
+      const nextW = Math.min(12, cur + 1);
+      if (continuityMode !== 'build_new') {
+        const continuityModal = document.getElementById('week-continuity-modal');
+        if (continuityModal) continuityModal.classList.add('hidden');
+        return runWithSyncOverwriteProtectionLocal(
+          nextW,
+          null,
+          () => executeAdvanceToNextWeekDay1Now(cur, 'keep_same'),
+          `Week ${nextW}`
+        );
+      }
+      return executeAdvanceToNextWeekDay1Now(cur, continuityMode);
     }
 
     function buildDayWorkoutPickerHtml(week, dayIdx) {
@@ -11909,28 +12171,35 @@
 
         el.querySelectorAll('.cross-week-resync-btn').forEach(btn => {
           btn.addEventListener('click', () => {
-            const prevWeekSchedule = getCustomDayScheduleForWeek(prevWeek);
-            if (!state.customDayScheduleByWeek || typeof state.customDayScheduleByWeek !== 'object') {
-              state.customDayScheduleByWeek = {};
-            }
-            if (!state.weeklyRestDays || typeof state.weeklyRestDays !== 'object') {
-              state.weeklyRestDays = { default: [5, 6] };
-            }
-            if (!state.manualScheduleOverrideByWeek || typeof state.manualScheduleOverrideByWeek !== 'object') {
-              state.manualScheduleOverrideByWeek = {};
-            }
-            state.customDayScheduleByWeek[String(week)] = cloneWeekScheduleIdenticallyLocal(prevWeekSchedule);
-            const prevRest = getWeekRestDays(prevWeek);
-            state.weeklyRestDays[String(week)] = Array.isArray(prevRest) ? prevRest.slice() : [5, 6];
-            state.manualScheduleOverrideByWeek[String(week)] = true;
-            copyWeekCustomExercisesLocal(prevWeek, week);
-            wipeTargetWeekCheckmarksLocal(week);
-            prefillUnloggedWeekFromLastSetHistoryLocal(week);
-            saveState();
-            renderWorkoutView();
-            renderPullupView();
-            renderVeganView();
-            showToast(`Week ${week} synced from Week ${prevWeek}! Checkmarks reset to 0% and last weights loaded.`);
+            const executeResyncNow = () => {
+              saveSyncUndoSnapshotLocal({ targetWeek: week, sourceWeek: prevWeek, mode: 'resync_week' });
+              const prevWeekSchedule = getCustomDayScheduleForWeek(prevWeek);
+              if (!state.customDayScheduleByWeek || typeof state.customDayScheduleByWeek !== 'object') {
+                state.customDayScheduleByWeek = {};
+              }
+              if (!state.weeklyRestDays || typeof state.weeklyRestDays !== 'object') {
+                state.weeklyRestDays = { default: [5, 6] };
+              }
+              if (!state.manualScheduleOverrideByWeek || typeof state.manualScheduleOverrideByWeek !== 'object') {
+                state.manualScheduleOverrideByWeek = {};
+              }
+              state.customDayScheduleByWeek[String(week)] = cloneWeekScheduleIdenticallyLocal(prevWeekSchedule);
+              const prevRest = getWeekRestDays(prevWeek);
+              state.weeklyRestDays[String(week)] = Array.isArray(prevRest) ? prevRest.slice() : [5, 6];
+              state.manualScheduleOverrideByWeek[String(week)] = true;
+              copyWeekCustomExercisesLocal(prevWeek, week);
+              wipeTargetWeekCheckmarksLocal(week);
+              prefillUnloggedWeekFromLastSetHistoryLocal(week);
+              const syncModal = document.getElementById('sync-settings-modal');
+              if (syncModal) syncModal.classList.add('hidden');
+              saveState();
+              renderWorkoutView();
+              renderPullupView();
+              renderVeganView();
+              showToast(`Week ${week} synced from Week ${prevWeek}! Checkmarks reset to 0% and last weights loaded.`);
+              showSyncUndoToastLocal('Week Synced.');
+            };
+            runWithSyncOverwriteProtectionLocal(week, null, executeResyncNow, `Week ${week}`);
           });
         });
 
@@ -13296,30 +13565,22 @@
 
       const weekPillsContainer = document.getElementById('progressive-week-pills');
       if (weekPillsContainer) {
-        const rollingStart = maxUnlocked <= 3 ? 1 : Math.max(1, maxUnlocked - 3);
         const visibleWeeks = [];
-        for (let w = rollingStart; w <= maxUnlocked; w++) {
+        for (let w = 1; w <= maxUnlocked; w++) {
           visibleWeeks.push(w);
-        }
-        const olderWeeks = [];
-        for (let w = 1; w < rollingStart; w++) {
-          olderWeeks.push(w);
-        }
-        if (maxUnlocked === 4 && olderWeeks.length === 0) {
-          olderWeeks.push(1);
         }
 
         function buildWeekPillButtonHtml(w) {
           const isCurrentActive = (w === week);
-          const isPastCompleted = (w < week) || (w < maxUnlocked) || Boolean(state.completedWeeks && state.completedWeeks[w]);
+          const isPastCompleted = Boolean(state.completedWeeks && state.completedWeeks[w]) || hasWeekAnyLoggedSets(w);
           let pillClasses = '';
           let labelHtml = `Week ${w}`;
           if (isCurrentActive) {
             pillClasses = 'border-sky-400 bg-sky-500/20 text-sky-200 font-bold shadow-sm shadow-sky-500/25';
-            labelHtml = isPastCompleted ? `✓ Week ${w} (Active)` : `Week ${w}`;
+            labelHtml = isPastCompleted ? `✓ Week ${w}` : `Week ${w}`;
           } else if (isPastCompleted) {
             pillClasses = 'border-amber-500/50 bg-amber-950/30 text-amber-300 hover:bg-amber-950/50 font-bold';
-            labelHtml = `✓ Done • Week ${w}`;
+            labelHtml = `✓ W${w}`;
           } else {
             pillClasses = 'bg-slate-900 text-slate-200 border-slate-700 hover:border-sky-400/50 font-semibold';
           }
@@ -13328,32 +13589,14 @@
               type="button"
               data-prog-week="${w}"
               aria-pressed="${isCurrentActive ? 'true' : 'false'}"
-              class="progressive-week-pill-btn px-2.5 py-1 rounded-lg text-[11px] border transition whitespace-nowrap ${pillClasses}"
+              class="progressive-week-pill-btn shrink-0 px-3 py-1.5 rounded-lg text-[11px] border transition whitespace-nowrap ${pillClasses}"
             >
               ${labelHtml}
             </button>
           `;
         }
 
-        let pillsHtml = visibleWeeks.map(w => buildWeekPillButtonHtml(w)).join('');
-        if (maxUnlocked > 3) {
-          const isOlderOpen = Boolean(state.showOlderWeeks);
-          pillsHtml += `
-            <button
-              type="button"
-              id="toggle-older-weeks-btn"
-              aria-expanded="${isOlderOpen ? 'true' : 'false'}"
-              class="px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-700 bg-slate-950 text-slate-300 hover:text-white transition whitespace-nowrap"
-            >
-              ${isOlderOpen ? '▴ Hide Older Weeks' : `▾ View Older Weeks (${olderWeeks.length})`}
-            </button>
-          `;
-          if (isOlderOpen && olderWeeks.length > 0) {
-            pillsHtml += `<div id="older-weeks-drawer" class="w-full flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-800/80">${olderWeeks.map(w => buildWeekPillButtonHtml(w)).join('')}</div>`;
-          }
-        }
-
-        weekPillsContainer.innerHTML = pillsHtml;
+        weekPillsContainer.innerHTML = visibleWeeks.map(w => buildWeekPillButtonHtml(w)).join('');
         weekPillsContainer.querySelectorAll('.progressive-week-pill-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const targetW = parseInt(btn.getAttribute('data-prog-week'), 10) || 1;
@@ -13373,13 +13616,9 @@
             showToast(`Switched to Week ${targetW}`);
           });
         });
-
-        const toggleOlderBtn = document.getElementById('toggle-older-weeks-btn');
-        if (toggleOlderBtn) {
-          toggleOlderBtn.addEventListener('click', () => {
-            state.showOlderWeeks = !state.showOlderWeeks;
-            renderWorkoutView();
-          });
+        const activeWeekPillEl = weekPillsContainer.querySelector(`.progressive-week-pill-btn[data-prog-week="${week}"]`);
+        if (activeWeekPillEl && typeof activeWeekPillEl.scrollIntoView === 'function') {
+          try { activeWeekPillEl.scrollIntoView({ inline: 'nearest', block: 'nearest' }); } catch (e) {}
         }
       }
 
@@ -14352,7 +14591,7 @@
                   <div class="min-w-0 max-w-[200px] mx-auto w-full">
                     <div class="reps-stepper border border-slate-700/90">
                       <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
-                      <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input text-white placeholder-slate-500 focus:outline-none" />
+                      <input type="number" min="0" max="100" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input text-white placeholder-slate-500 focus:outline-none" />
                       <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn text-sm font-extrabold text-slate-200 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
                     </div>
                   </div>
@@ -14392,14 +14631,14 @@
                   <div class="min-w-0">
                     <div class="weight-stepper ring-1 ring-inset ${isBarbellEx ? 'ring-amber-500/40' : 'ring-slate-700/90'}">
                       <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-${weightStep}" class="step-adj-btn text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Weight">−</button>
-                      <input type="number" step="${weightStep}" min="0" inputmode="decimal" placeholder="${weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input text-white placeholder-slate-500 focus:outline-none" />
+                      <input type="number" step="${weightStep}" min="0" max="999" inputmode="decimal" placeholder="${weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input text-white placeholder-slate-500 focus:outline-none" />
                       <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="${weightStep}" class="step-adj-btn text-sm font-extrabold text-slate-200 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Weight">+</button>
                     </div>
                   </div>
                   <div class="min-w-0">
                     <div class="reps-stepper ring-1 ring-inset ring-slate-700/90">
                       <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
-                      <input type="number" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input text-white placeholder-slate-500 focus:outline-none" />
+                      <input type="number" min="0" max="100" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input text-white placeholder-slate-500 focus:outline-none" />
                       <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn text-sm font-extrabold text-slate-200 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
                     </div>
                   </div>
@@ -16535,7 +16774,22 @@
           if (!state.workoutLogs[key]) {
             state.workoutLogs[key] = { weight: '', reps: '', done: false, unit: exUnit };
           }
-          state.workoutLogs[key][field] = inp.value;
+          // UPGRADE 24: Strict Stepper Limits (Weight capped at 999 lbs, Reps capped at 100)
+          if (field === 'weight') {
+            const clampedW = clampWeightInputLocal(inp.value);
+            if (clampedW.wasClamped) {
+              inp.value = clampedW.value;
+            }
+            state.workoutLogs[key].weight = clampedW.value;
+          } else if (field === 'reps') {
+            const clampedR = clampRepsInputLocal(inp.value);
+            if (clampedR.wasClamped) {
+              inp.value = clampedR.value;
+            }
+            state.workoutLogs[key].reps = clampedR.value;
+          } else {
+            state.workoutLogs[key][field] = inp.value;
+          }
           state.workoutLogs[key].unit = exUnit;
 
           if (week === 1) {
@@ -16780,17 +17034,21 @@
             }
           } else {
             if (weightInput && weightInput.value !== '') {
-              state.workoutLogs[key].weight = weightInput.value;
+              const clampedW = clampWeightInputLocal(weightInput.value);
+              weightInput.value = clampedW.value;
+              state.workoutLogs[key].weight = clampedW.value;
             } else if (state.workoutLogs[key].weight === '' && weightInput && weightInput.placeholder) {
-              state.workoutLogs[key].weight = weightInput.placeholder;
+              state.workoutLogs[key].weight = clampWeightInputLocal(weightInput.placeholder).value;
             } else if (PULLUP_EX_ID_TO_DAY[exId]) {
               state.workoutLogs[key].weight = '0';
             }
             const pDayForSet = PULLUP_EX_ID_TO_DAY[exId] || 0;
             if (repsInput && repsInput.value !== '') {
-              state.workoutLogs[key].reps = repsInput.value;
+              const clampedR = clampRepsInputLocal(repsInput.value);
+              repsInput.value = clampedR.value;
+              state.workoutLogs[key].reps = clampedR.value;
             } else if (!state.workoutLogs[key].reps) {
-              state.workoutLogs[key].reps = parseTargetRepsNumber(exObjForSet ? exObjForSet.reps : '10', pDayForSet, setIdx, week);
+              state.workoutLogs[key].reps = clampRepsInputLocal(parseTargetRepsNumber(exObjForSet ? exObjForSet.reps : '10', pDayForSet, setIdx, week)).value;
             }
           }
           state.workoutLogs[key].unit = exUnit;
@@ -17056,13 +17314,14 @@
             } else if (nextW < minPositiveStep) {
               nextW = delta > 0 ? minPositiveStep : 0;
             }
+            nextW = Math.min(999, nextW);
             curEntry.weight = String(nextW);
             if (inp) inp.value = String(nextW);
             cascadeSetModificationToSubsequentUnloggedSets(exId, setIdx, curEntry.weight, null);
           } else {
             const defR = parseInt(parseTargetRepsNumber(exObj ? exObj.reps : '10', pullupDayNum, setIdx), 10) || 10;
             const baseR = (inp && inp.value !== '') ? parseInt(inp.value, 10) : (parseInt(curEntry.reps, 10) || defR);
-            const nextR = Math.max(1, baseR + Math.round(delta));
+            const nextR = Math.max(1, Math.min(100, baseR + Math.round(delta)));
             curEntry.reps = String(nextR);
             if (inp) inp.value = String(nextR);
             cascadeSetModificationToSubsequentUnloggedSets(exId, setIdx, null, curEntry.reps);
@@ -17096,7 +17355,7 @@
             for (let s = 1; s <= exObj.sets; s++) {
               const k = `w${week}_${kIdx}_${exId}_${s}`;
               const cur = getLogEntry(week, dayIdx, exId, s) || getPreviousWeekSuggestion(week, dayIdx, exId, s) || { weight: '0', reps: String(state.pullupTrainingSetReps || 5), done: false };
-              const nextReps = (parseInt(cur.reps, 10) || state.pullupTrainingSetReps || 5) + 1;
+              const nextReps = Math.min(100, (parseInt(cur.reps, 10) || state.pullupTrainingSetReps || 5) + 1);
               state.workoutLogs[k] = Object.assign({}, cur, { reps: String(nextReps), unit: exUnit });
               if (PULLUP_EX_ID_TO_DAY[exId]) {
                 syncPullupStateBothWays(week, PULLUP_EX_ID_TO_DAY[exId], s, state.workoutLogs[k]);
@@ -17115,7 +17374,7 @@
                 ? Math.max(1.25, Math.round((meta.defaultWeightLbs / 2.20462) / 1.25) * 1.25)
                 : Math.max(2.5, meta.defaultWeightLbs);
               const baseW = (cur.weight !== undefined && cur.weight !== '') ? parseFloat(cur.weight) : defW;
-              const nextW = +(baseW + stepTotal).toFixed(2);
+              const nextW = Math.min(999, +(baseW + stepTotal).toFixed(2));
               state.workoutLogs[k] = Object.assign({}, cur, { weight: String(nextW), unit: exUnit });
               if (week === 1) {
                 state.workoutLogs[`${kIdx}_${exId}_${s}`] = Object.assign({}, state.workoutLogs[k]);
@@ -17267,23 +17526,22 @@
 
       const pullupWeekPillsContainer = document.getElementById('pullups-progressive-week-pills');
       if (pullupWeekPillsContainer) {
-        const rollingStart = maxUnlocked <= 3 ? 1 : Math.max(1, maxUnlocked - 3);
         const visibleWeeks = [];
-        for (let w = rollingStart; w <= maxUnlocked; w++) {
+        for (let w = 1; w <= maxUnlocked; w++) {
           visibleWeeks.push(w);
         }
 
         function buildPullupWeekPillHtml(w) {
           const isCurrentActive = (w === week);
-          const isPastCompleted = (w < week) || (w < maxUnlocked) || Boolean(state.completedWeeks && state.completedWeeks[w]);
+          const isPastCompleted = Boolean(state.completedWeeks && state.completedWeeks[w]) || hasWeekAnyLoggedSets(w);
           let pillClasses = '';
           let labelHtml = `Week ${w}`;
           if (isCurrentActive) {
             pillClasses = 'border-sky-400 bg-sky-500/20 text-sky-200 font-bold shadow-sm shadow-sky-500/25';
-            labelHtml = isPastCompleted ? `✓ Week ${w} (Active)` : `Week ${w}`;
+            labelHtml = isPastCompleted ? `✓ Week ${w}` : `Week ${w}`;
           } else if (isPastCompleted) {
             pillClasses = 'border-amber-500/50 bg-amber-950/30 text-amber-300 hover:bg-amber-950/50 font-bold';
-            labelHtml = `✓ Done • Week ${w}`;
+            labelHtml = `✓ W${w}`;
           } else {
             pillClasses = 'bg-slate-900 text-slate-200 border-slate-700 hover:border-sky-400/50 font-semibold';
           }
@@ -17292,7 +17550,7 @@
               type="button"
               data-pullup-prog-week="${w}"
               aria-pressed="${isCurrentActive ? 'true' : 'false'}"
-              class="pullup-progressive-week-pill-btn px-2.5 py-1 rounded-lg text-[11px] border transition whitespace-nowrap ${pillClasses}"
+              class="pullup-progressive-week-pill-btn shrink-0 px-3 py-1.5 rounded-lg text-[11px] border transition whitespace-nowrap ${pillClasses}"
             >
               ${labelHtml}
             </button>
@@ -17460,7 +17718,7 @@
                 <div class="min-w-0 max-w-[200px] mx-auto w-full">
                   <div class="flex items-center bg-slate-900 border border-slate-700/90 rounded-lg overflow-hidden">
                     <button type="button" data-pullup-step-day="${d.dayNum}" data-set-idx="${s}" data-delta="-1" class="pullup-rep-step-btn w-8 h-9 sm:w-9 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease Pull-Up Day ${d.dayNum} ${rowLabel} Reps">−</button>
-                    <input type="number" inputmode="numeric" placeholder="${defaultRepPlaceholder}" value="${(syncedEntry.reps !== '' && syncedEntry.reps !== undefined) ? syncedEntry.reps : (isPyramidSession ? String(s) : '')}" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" aria-label="Pull-Up Day ${d.dayNum} ${rowLabel} Reps" class="pullup-rep-input w-full bg-transparent py-1 text-white placeholder-slate-500 focus:outline-none" style="min-width: 52px; font-size: 15px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums;" />
+                    <input type="number" min="0" max="100" inputmode="numeric" placeholder="${defaultRepPlaceholder}" value="${(syncedEntry.reps !== '' && syncedEntry.reps !== undefined) ? syncedEntry.reps : (isPyramidSession ? String(s) : '')}" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" aria-label="Pull-Up Day ${d.dayNum} ${rowLabel} Reps" class="pullup-rep-input w-full bg-transparent py-1 text-white placeholder-slate-500 focus:outline-none" style="min-width: 52px; font-size: 15px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums;" />
                     <button type="button" data-pullup-step-day="${d.dayNum}" data-set-idx="${s}" data-delta="1" class="pullup-rep-step-btn w-8 h-9 sm:w-9 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase Pull-Up Day ${d.dayNum} ${rowLabel} Reps">+</button>
                   </div>
                 </div>
@@ -17597,7 +17855,7 @@
           const inp = container.querySelector(`.pullup-rep-input[data-day-num="${dayNum}"][data-set-idx="${setIdx}"]`);
           const defaultR = parseInt(getPullupDefaultReps(dayNum, setIdx, week), 10) || (state.pullupTrainingSetReps || 5);
           const curVal = (inp && inp.value !== '') ? parseInt(inp.value, 10) : defaultR;
-          const nextVal = String(Math.max(1, curVal + delta));
+          const nextVal = clampRepsInputLocal(String(Math.max(1, curVal + delta)));
           if (inp) inp.value = nextVal;
           syncPullupStateBothWays(week, dayNum, setIdx, { reps: nextVal });
 
@@ -17644,7 +17902,9 @@
         inp.addEventListener('input', () => {
           const dayNum = parseInt(inp.getAttribute('data-day-num'), 10);
           const setIdx = parseInt(inp.getAttribute('data-set-idx'), 10);
-          syncPullupStateBothWays(week, dayNum, setIdx, { reps: inp.value });
+          const clampedReps = clampRepsInputLocal(inp.value);
+          if (clampedReps !== inp.value) inp.value = clampedReps;
+          syncPullupStateBothWays(week, dayNum, setIdx, { reps: clampedReps });
           if (isPullupSessionPyramidMode(dayNum, week) && inp.value !== '') {
             const dSpec = dayNum === 5 ? getEffectiveDay5PullupSpec(week) : PULLUP_DAYS_DATA.find(item => item.dayNum === dayNum);
             const totalSetsForDay = getEffectivePullupSetsCount(week, dayNum, dSpec ? dSpec.setsCount : 5);
@@ -18090,30 +18350,22 @@
       const maxUnlocked = state.maxUnlockedWeek || 2;
       const veganWeekPillsContainer = document.getElementById('vegan-progressive-week-pills');
       if (veganWeekPillsContainer) {
-        const rollingStart = maxUnlocked <= 3 ? 1 : Math.max(1, maxUnlocked - 3);
         const visibleWeeks = [];
-        for (let w = rollingStart; w <= maxUnlocked; w++) {
+        for (let w = 1; w <= maxUnlocked; w++) {
           visibleWeeks.push(w);
-        }
-        const olderWeeks = [];
-        for (let w = 1; w < rollingStart; w++) {
-          olderWeeks.push(w);
-        }
-        if (maxUnlocked === 4 && olderWeeks.length === 0) {
-          olderWeeks.push(1);
         }
 
         function buildVeganWeekPillHtml(w) {
           const isCurrentActive = (w === week);
-          const isPastCompleted = (w < week) || (w < maxUnlocked) || Boolean(state.completedWeeks && state.completedWeeks[w]);
+          const isPastCompleted = Boolean(state.completedWeeks && state.completedWeeks[w]) || hasWeekAnyLoggedSets(w);
           let pillClasses = '';
           let labelHtml = `Week ${w}`;
           if (isCurrentActive) {
             pillClasses = 'border-sky-400 bg-sky-500/20 text-sky-200 font-bold shadow-sm shadow-sky-500/25';
-            labelHtml = isPastCompleted ? `✓ Week ${w} (Active)` : `Week ${w}`;
+            labelHtml = isPastCompleted ? `✓ Week ${w}` : `Week ${w}`;
           } else if (isPastCompleted) {
             pillClasses = 'border-amber-500/50 bg-amber-950/30 text-amber-300 hover:bg-amber-950/50 font-bold';
-            labelHtml = `✓ Done • Week ${w}`;
+            labelHtml = `✓ W${w}`;
           } else {
             pillClasses = 'bg-slate-900 text-slate-200 border-slate-700 hover:border-sky-400/50 font-semibold';
           }
@@ -18122,7 +18374,7 @@
               type="button"
               data-vegan-prog-week="${w}"
               aria-pressed="${isCurrentActive ? 'true' : 'false'}"
-              class="vegan-progressive-week-pill-btn px-2.5 py-1 rounded-lg text-[11px] border transition whitespace-nowrap ${pillClasses}"
+              class="vegan-progressive-week-pill-btn shrink-0 px-3 py-1.5 rounded-lg text-[11px] border transition whitespace-nowrap ${pillClasses}"
             >
               ${labelHtml}
             </button>
@@ -21015,7 +21267,7 @@
     }
 
     function buildAiBonusWorkoutSystemPrompt(selectedTarget) {
-      return `System: You are an elite sports scientist. Generate a custom workout for the target: ${selectedTarget}. You must return ONLY a valid JSON array containing exactly 5 to 7 exercises. Rule 1: ALL EXERCISE NAMES MUST BE UNIQUE. Rule 2: Do NOT include duplicate movement patterns. Rule 3: DO NOT include any abdominal, core, or pull-up exercises under any circumstances. Schema: [{ "name": "Exercise", "sets": 3, "reps": "8-12", "videoUrl": "https..." }]. Output JSON only.`;
+      return `System: You are an elite sports scientist. Generate a custom workout for the target: ${selectedTarget}. You must return ONLY a valid JSON array containing exactly 5 to 7 exercises. Rule 1: ALL EXERCISE NAMES MUST BE UNIQUE. Rule 2: Do NOT include duplicate movement patterns. Rule 3: DO NOT include any abdominal, core, or pull-up exercises under any circumstances. Rule 4: You MUST only select exercises from standard, scientifically validated movements (e.g., Barbell Squat, Cable Crunch). Do not invent names. Schema: [{ "name": "Exercise", "sets": 3, "reps": "8-12", "videoUrl": "https..." }]. Output JSON only.`;
     }
 
     function parseAiBonusWorkoutJson(rawText, targetLabel) {
@@ -22450,6 +22702,7 @@
           `Rule 2 (Diet & Intolerances): ${dietDirective}`,
           'Rule 3 (Strict UI Schema): Format every single exercise inside each day\'s exercises array using this exact JSON schema so the UI never crashes:',
           '[{ "name": "Exercise Name", "sets": 3, "reps": "8-12", "restTimer": "90s", "videoUrl": "https://youtube.com/...", "instructions": "Short setup text" }]',
+          'Rule 4 (Exercise Whitelist): You MUST only select exercises from standard, scientifically validated movements (e.g., Barbell Squat, Cable Crunch). Do not invent names.',
           'Return ONLY a valid JSON object with shape: { "days": [ ...7 items... ] }.',
           `Include exactly ${daysPerWeek} lift days (isRest: false) and ${7 - daysPerWeek} rest days (isRest: true).`,
           'Each lift day must have: { "isRest": false, "daySub": "Short Label", "title": "Day Title", "subtitle": "Short ELI12 Subtitle", "warmupType": "upper" | "lower", "exercises": [ 5 unique exercises matching the strict UI schema ] }.',
@@ -23778,6 +24031,40 @@
         });
       }
 
+      // UPGRADE 24: Sync Overwrite Guard Modal & 5-Second Undo Toast Listeners
+      const syncGuardModalEl = document.getElementById('sync-overwrite-guard-modal');
+      const syncGuardCancelBtn = document.getElementById('sync-overwrite-cancel-btn');
+      const syncGuardConfirmBtn = document.getElementById('sync-overwrite-confirm-btn');
+      const syncUndoToastBtn = document.getElementById('sync-undo-toast-btn');
+
+      if (syncGuardCancelBtn && syncGuardModalEl) {
+        syncGuardCancelBtn.addEventListener('click', () => {
+          pendingSyncOverwriteAction = null;
+          syncGuardModalEl.classList.add('hidden');
+        });
+      }
+      if (syncGuardConfirmBtn && syncGuardModalEl) {
+        syncGuardConfirmBtn.addEventListener('click', () => {
+          const actionFn = pendingSyncOverwriteAction;
+          pendingSyncOverwriteAction = null;
+          syncGuardModalEl.classList.add('hidden');
+          if (typeof actionFn === 'function') actionFn();
+        });
+      }
+      if (syncGuardModalEl) {
+        syncGuardModalEl.addEventListener('click', (e) => {
+          if (e.target === syncGuardModalEl) {
+            pendingSyncOverwriteAction = null;
+            syncGuardModalEl.classList.add('hidden');
+          }
+        });
+      }
+      if (syncUndoToastBtn) {
+        syncUndoToastBtn.addEventListener('click', () => {
+          performUndoLastSyncLocal();
+        });
+      }
+
       if (continueActiveAcctBtn && smartLoginModal) {
         continueActiveAcctBtn.addEventListener('click', () => {
           smartLoginModal.classList.add('hidden');
@@ -23868,23 +24155,88 @@
       function renderAthleteDashboardTab() {
         if (!profDashboardWrap) return;
         const activeW = state.selectedWeek || state.currentWeek || 1;
-        const maxW = Math.max(activeW, state.maxUnlockedWeek || 2);
+        const maxW = Math.max(4, activeW, state.maxUnlockedWeek || 2);
 
-        // 1. Workout Completion & Consistency for Active Week
-        let loggedSetsActiveWeek = 0;
+        // UPGRADE 24: SINGLE SOURCE OF TRUTH for BOTH Workout Completion (KPI 1) AND Total Weekly Volume (KPI 2)
+        const computeUnifiedVolumeLocal = () => {
+          if (typeof window.computeUnifiedWeeklyVolumeSeries === 'function') {
+            return window.computeUnifiedWeeklyVolumeSeries({
+              workoutLogs: state.workoutLogs || {},
+              completedWeeks: state.completedWeeks || {},
+              maxWeek: maxW,
+              minVisibleWeeks: 4
+            });
+          }
+          const out = [];
+          for (let w = 1; w <= maxW; w++) {
+            const byCanon = new Map();
+            const entries = Object.entries(state.workoutLogs || {}).sort(([a], [b]) => ((/^w\d+_/i.test(a) ? 0 : 1) - (/^w\d+_/i.test(b) ? 0 : 1)));
+            entries.forEach(([k, entry]) => {
+              if (!entry || (entry.done !== true && entry.isLogged !== true)) return;
+              let wk = 0; let dIdx = 0; let exId = ''; let sIdx = 1;
+              const mPref = k.match(/^w(\d+)_(?:d)?(\d+)_(.+)_(?:s)?(\d+)$/i);
+              if (mPref) {
+                wk = parseInt(mPref[1], 10) || 1;
+                dIdx = Math.max(0, Math.min(6, parseInt(mPref[2], 10) || 0));
+                exId = mPref[3];
+                sIdx = parseInt(mPref[4], 10) || 1;
+              } else if (w === 1) {
+                const mLeg = k.match(/^(\d+)_(.+)_(\d+)$/);
+                if (!mLeg) return;
+                wk = 1;
+                dIdx = Math.max(0, Math.min(6, parseInt(mLeg[1], 10) || 0));
+                exId = mLeg[2];
+                sIdx = parseInt(mLeg[3], 10) || 1;
+              }
+              if (wk !== w) return;
+              const canon = `w${wk}_${dIdx}_${exId}_${sIdx}`;
+              if (byCanon.has(canon)) return;
+              const rawW = parseFloat(String(entry.weight ?? '').replace(/[^\d.-]/g, ''));
+              const safeW = Number.isFinite(rawW) && rawW > 0 ? Math.min(999, rawW) : 0;
+              const weightLbs = entry.unit === 'kg' ? Math.round(safeW * 2.20462 * 10) / 10 : safeW;
+              const rawR = parseInt(String(entry.reps ?? '').replace(/[^\d-]/g, ''), 10);
+              const reps = Number.isFinite(rawR) && rawR > 0 ? Math.min(100, rawR) : 0;
+              const volumeLbs = weightLbs > 0 && reps > 0 ? Math.round(weightLbs * reps) : 0;
+              byCanon.set(canon, { canonicalKey: canon, week: wk, dayIdx: dIdx, exerciseId: exId, setIdx: sIdx, weightLbs, reps, volumeLbs });
+            });
+            const completedSets = Array.from(byCanon.values());
+            const daySetCounts = [0, 0, 0, 0, 0, 0, 0];
+            let tonnageLbs = 0;
+            completedSets.forEach(r => {
+              tonnageLbs += r.volumeLbs;
+              if (r.dayIdx >= 0 && r.dayIdx < 7) daySetCounts[r.dayIdx]++;
+            });
+            const isCompleted = Boolean(state.completedWeeks && (state.completedWeeks[w] || state.completedWeeks[String(w)])) || completedSets.length > 0;
+            out.push({ week: w, label: `W${w}`, setsCount: completedSets.length, tonnageLbs, isCompleted, daySetCounts, completedSets });
+          }
+          return out;
+        };
+
+        const tonnageByWeek = computeUnifiedVolumeLocal();
+        const activeWeekUnified = tonnageByWeek.find(r => r.week === activeW) || {
+          week: activeW,
+          label: `W${activeW}`,
+          setsCount: 0,
+          tonnageLbs: 0,
+          isCompleted: false,
+          daySetCounts: [0, 0, 0, 0, 0, 0, 0],
+          completedSets: []
+        };
+
+        // 1. Workout Completion & Consistency for Active Week (reads directly from activeWeekUnified.completedSets!)
         let totalSetsActiveWeek = 0;
+        const activeRestDays = typeof getWeekRestDays === 'function' ? getWeekRestDays(activeW) : [5, 6];
         const dayCompletionList = [];
-        DAYS_SCHEDULE.forEach((dayObj, dIdx) => {
-          const isRestDay = dIdx >= 5;
+        for (let dIdx = 0; dIdx < 7; dIdx++) {
+          const isRestDay = Array.isArray(activeRestDays) ? activeRestDays.includes(dIdx) : dIdx >= 5;
           const prog = typeof getDayCompletionStatus === 'function'
             ? getDayCompletionStatus(activeW, dIdx)
             : { doneSets: 0, totalSets: 0, status: 'none' };
-          const dayDone = prog.doneSets || 0;
-          const dayTotal = prog.totalSets || 0;
-          loggedSetsActiveWeek += dayDone;
+          const dayDone = activeWeekUnified.daySetCounts[dIdx] || 0;
+          const dayTotal = Math.max(prog.totalSets || 0, dayDone);
           totalSetsActiveWeek += dayTotal;
-          const completed = prog.status === 'complete';
-          const partial = prog.status === 'partial';
+          const completed = dayTotal > 0 && dayDone >= dayTotal;
+          const partial = !completed && dayDone > 0;
           dayCompletionList.push({
             dayNumber: dIdx + 1,
             shortLabel: `D${dIdx + 1}`,
@@ -23894,30 +24246,11 @@
             completed,
             partial
           });
-        });
+        }
+        const loggedSetsActiveWeek = activeWeekUnified.setsCount;
+        const liftDaysTotal = Math.max(1, dayCompletionList.filter(d => !d.isRestDay).length);
         const completedWorkoutDaysCount = dayCompletionList.filter(d => !d.isRestDay && d.completed).length;
         const completionPct = totalSetsActiveWeek > 0 ? Math.min(100, Math.round((loggedSetsActiveWeek / totalSetsActiveWeek) * 100)) : 0;
-
-        // 2. Total Weekly Volume (Tonnage Lifted) across unlocked weeks
-        const tonnageByWeek = [];
-        let maxWeekTonnage = 1000;
-        for (let w = 1; w <= maxW; w++) {
-          let wTonnage = 0;
-          let wSets = 0;
-          Object.keys(state.workoutLogs || {}).forEach(k => {
-            if (!k.startsWith(`w${w}_`)) return;
-            const entry = state.workoutLogs[k];
-            if (!entry || !entry.done) return;
-            const wt = parseFloat(String(entry.weight ?? ''));
-            const rp = parseInt(String(entry.reps ?? ''), 10);
-            if (Number.isFinite(wt) && wt > 0 && Number.isFinite(rp) && rp > 0) {
-              wTonnage += Math.round(wt * rp);
-              wSets++;
-            }
-          });
-          if (wTonnage > maxWeekTonnage) maxWeekTonnage = wTonnage;
-          tonnageByWeek.push({ week: w, tonnageLbs: wTonnage, setsCount: wSets });
-        }
 
         // 3. Pull-Up & Key Lift PR Tracker (Epley 1RM: weight * (1 + reps / 30))
         const keyLiftSpecs = [
@@ -24010,15 +24343,15 @@
         const avgWaterMl = loggedWaterDays > 0 ? Math.round(totalWeekWaterMl / loggedWaterDays) : 3000;
 
         profDashboardWrap.innerHTML = `
-          <div class="space-y-3 text-xs">
+          <div class="space-y-3 text-xs" style="letter-spacing: 0.02em; line-height: 1.5; font-family: system-ui, sans-serif;">
             <!-- KPI 1: Workout Completion & Consistency -->
             <div class="bg-slate-950 border border-emerald-500/35 rounded-xl p-3 space-y-2.5">
               <div class="flex items-center justify-between gap-2">
                 <div>
                   <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">1. Workout Completion &amp; Consistency</span>
-                  <div class="text-sm font-extrabold text-white mt-0.5">Week ${activeW}: ${loggedSetsActiveWeek} / ${totalSetsActiveWeek} Sets Logged (${completionPct}%)</div>
+                  <div class="text-sm font-extrabold text-[#f8fafc] mt-0.5">Week ${activeW}: ${loggedSetsActiveWeek} / ${totalSetsActiveWeek} Sets Logged (${completionPct}%)</div>
                 </div>
-                <span class="px-2 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-extrabold shrink-0">${completedWorkoutDaysCount}/5 Lift Days</span>
+                <span class="px-2 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-extrabold shrink-0">${completedWorkoutDaysCount}/${liftDaysTotal} Lift Days</span>
               </div>
               <div class="w-full h-2 rounded-full bg-slate-900 overflow-hidden border border-slate-800">
                 <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300" style="width: ${completionPct}%"></div>
@@ -24027,37 +24360,59 @@
                 ${dayCompletionList.map(d => `
                   <div class="rounded-lg p-1.5 text-center border ${d.completed ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200' : (d.partial ? 'bg-sky-500/20 border-sky-400/50 text-sky-200' : 'bg-slate-900 border-slate-800 text-slate-400')}">
                     <div class="text-[9px] font-extrabold">${d.shortLabel}</div>
-                    <div class="text-[11px] font-black mt-0.5">${d.isRestDay ? '' : (d.completed ? '✓' : (d.partial ? `${d.dayDone}` : '•'))}</div>
+                    <div class="text-[11px] font-black mt-0.5">${d.isRestDay && d.dayDone === 0 ? '' : (d.completed ? '✓' : (d.partial ? `${d.dayDone}` : '•'))}</div>
                   </div>
                 `).join('')}
               </div>
             </div>
 
-            <!-- KPI 2: Total Weekly Volume (Tonnage Lifted) -->
-            <div class="bg-slate-950 border border-sky-500/35 rounded-xl p-3 space-y-2">
+            <!-- KPI 2: Total Weekly Volume (UPGRADE 24 — D3.js Bar Chart & Interactive Data Retrieval) -->
+            <div id="athlete-volume-d3-chart-card" class="bg-slate-950 border border-sky-500/35 rounded-xl p-3 space-y-2.5">
               <div class="flex items-center justify-between gap-2">
                 <div>
-                  <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">2. Total Weekly Volume (Tonnage Lifted)</span>
-                  <div class="text-xs font-extrabold text-white mt-0.5">Progressive Overload Bar Comparison (Weight × Reps)</div>
+                  <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">2. Total Weekly Volume (Weight × Reps)</span>
+                  <div class="text-xs font-extrabold text-[#f8fafc] mt-0.5">Week ${activeW}: ${activeWeekUnified.tonnageLbs.toLocaleString('en-US')} lbs (${activeWeekUnified.setsCount} sets)</div>
                 </div>
-                <span class="text-[10px] font-extrabold text-sky-300 bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 rounded-lg">Hevy / Strong Standard</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg border border-sky-400/40 bg-sky-500/15 text-sky-200 whitespace-nowrap">Tap a Bar</span>
               </div>
-              <div class="space-y-1.5 pt-1">
-                ${tonnageByWeek.map(row => {
-                  const barPct = maxWeekTonnage > 0 ? Math.max(8, Math.round((row.tonnageLbs / maxWeekTonnage) * 100)) : 8;
-                  const isCurrent = row.week === activeW;
-                  return `
-                    <div class="space-y-1">
-                      <div class="flex items-center justify-between text-[11px]">
-                        <span class="font-extrabold ${isCurrent ? 'text-sky-300' : 'text-slate-300'}">Week ${row.week} ${isCurrent ? '• Active' : ''}</span>
-                        <span class="font-mono font-extrabold text-white">${row.tonnageLbs.toLocaleString()} lbs <span class="text-slate-400 font-normal">(${row.setsCount} sets)</span></span>
-                      </div>
-                      <div class="w-full h-2.5 rounded-full bg-slate-900 overflow-hidden border border-slate-800">
-                        <div class="h-full rounded-full ${isCurrent ? 'bg-gradient-to-r from-sky-400 to-emerald-400' : 'bg-slate-600'}" style="width: ${barPct}%"></div>
-                      </div>
-                    </div>
-                  `;
-                }).join('')}
+
+              <div class="flex items-center gap-3 text-[10px] text-slate-300">
+                <span class="inline-flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background-color: #0ea5e9;"></span>Completed Week</span>
+                <span class="inline-flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background-color: #334155;"></span>Uncompleted</span>
+              </div>
+
+              <!-- Transparent D3 Bar Chart Container -->
+              <div
+                id="athlete-volume-d3-chart-wrap"
+                class="d3-1rm-chart-container w-full min-h-[165px]"
+                style="background: transparent; touch-action: pan-y;"
+              ></div>
+
+              <!-- Crisp ELI12 Interactive Tooltip Pop-up with Jump to Week Button -->
+              <div
+                id="athlete-volume-d3-tooltip-card"
+                role="region"
+                aria-live="polite"
+                class="rounded-xl border border-sky-400/50 p-2.5 space-y-2"
+                style="background-color: #1e293b; color: #f8fafc;"
+              >
+                <div class="space-y-0.5">
+                  <p id="athlete-volume-d3-tooltip-text" class="text-xs font-extrabold text-[#f8fafc] leading-snug">
+                    Week ${activeW} Volume: ${activeWeekUnified.tonnageLbs.toLocaleString('en-US')} lbs. Tapped to view full Week ${activeW} logs.
+                  </p>
+                  <p id="athlete-volume-d3-tooltip-sets" class="text-[11px] text-slate-300">
+                    ${activeWeekUnified.setsCount} ${activeWeekUnified.setsCount === 1 ? 'set' : 'sets'} logged in Week ${activeW}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  id="athlete-volume-jump-week-btn"
+                  data-jump-week="${activeW}"
+                  class="w-full py-2 px-3 rounded-xl text-xs font-extrabold transition hover:opacity-95"
+                  style="background-color: #0ea5e9; color: #0f172a; min-height: 38px;"
+                >
+                  Jump to Week ${activeW}
+                </button>
               </div>
             </div>
 
@@ -24222,6 +24577,54 @@
           });
         });
 
+        // Mount UPGRADE 24 D3.js Weekly Volume Bar Chart + Jump to Week Data Retrieval
+        const jumpToGymWeekFromDashboard = (targetWeekNum) => {
+          const safeTargetW = Math.max(1, Math.min(12, Math.floor(Number(targetWeekNum) || 1)));
+          state.maxUnlockedWeek = Math.max(state.maxUnlockedWeek || 2, safeTargetW);
+          state.selectedWeek = safeTargetW;
+          state.currentWeek = safeTargetW;
+          const weekSel = document.getElementById('week-select');
+          if (weekSel) weekSel.value = String(safeTargetW);
+          if (smartLoginModal) smartLoginModal.classList.add('hidden');
+          const workoutNavBtn = document.querySelector('.nav-tab-btn[data-nav="workout"]');
+          if (workoutNavBtn) workoutNavBtn.click();
+          saveState();
+          renderWorkoutView();
+          renderPullupView();
+          renderVeganView();
+          try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+          showToast(`Jumped to Week ${safeTargetW} logs!`);
+        };
+
+        const mountVolumeBarChart = () => {
+          const volWrapEl = document.getElementById('athlete-volume-d3-chart-wrap');
+          const volTipWrap = document.getElementById('athlete-volume-d3-tooltip-card');
+          const volTipText = document.getElementById('athlete-volume-d3-tooltip-text');
+          const volTipSets = document.getElementById('athlete-volume-d3-tooltip-sets');
+          const volJumpBtn = document.getElementById('athlete-volume-jump-week-btn');
+          if (volJumpBtn) {
+            volJumpBtn.onclick = () => {
+              const wAttr = parseInt(volJumpBtn.getAttribute('data-jump-week') || String(activeW), 10) || activeW;
+              jumpToGymWeekFromDashboard(wAttr);
+            };
+          }
+          if (volWrapEl && typeof window.renderWeeklyVolumeD3BarChart === 'function') {
+            window.renderWeeklyVolumeD3BarChart({
+              container: volWrapEl,
+              tooltipWrapEl: volTipWrap,
+              tooltipTextEl: volTipText,
+              tooltipSetsEl: volTipSets,
+              jumpBtnEl: volJumpBtn,
+              series: tonnageByWeek,
+              activeWeek: activeW,
+              onJumpToWeek: jumpToGymWeekFromDashboard
+            });
+          } else if (volWrapEl) {
+            window.addEventListener('d3-onerm-bridge-ready', () => mountVolumeBarChart(), { once: true });
+          }
+        };
+
+        mountVolumeBarChart();
         mountOneRmChart();
       }
 
@@ -25514,6 +25917,35 @@
           </button>
           <p id="week-continuity-build-helper" class="text-[11px] px-1" style="color: #94a3b8;">Unlocks next week and opens the Setup Wizard to build a fresh plan.</p>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3C: UPGRADE 24 — Sync Data Protection Guard Modal (Prevents Overwriting Logged Sets) -->
+  <div id="sync-overwrite-guard-modal" class="hidden fixed inset-0 z-[70] backdrop-blur-sm flex items-center justify-center p-4" style="background-color: rgba(15, 23, 42, 0.92); letter-spacing: 0.02em; line-height: 1.5; font-family: system-ui, sans-serif;" role="dialog" aria-modal="true" aria-labelledby="sync-overwrite-guard-title">
+    <div class="border border-amber-500/60 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl" style="background-color: #0f172a; color: #f8fafc;">
+      <div class="space-y-1.5 border-b border-slate-800 pb-3">
+        <span id="sync-overwrite-guard-badge" class="inline-block text-[11px] font-extrabold px-2.5 py-0.5 rounded-lg border border-amber-400/50" style="background-color: rgba(217, 119, 6, 0.18); color: #fde68a;">Logged data detected</span>
+        <h3 id="sync-overwrite-guard-title" class="text-base font-extrabold" style="color: #f8fafc;">Protect Your Logged Sets</h3>
+        <p id="sync-overwrite-guard-desc" class="text-xs font-semibold" style="color: #e2e8f0; line-height: 1.5;">Wait! You already logged data in this week. Erase it and copy the previous week?</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));">
+        <button
+          type="button"
+          id="sync-overwrite-cancel-btn"
+          class="py-3 px-3 rounded-xl text-xs sm:text-sm font-extrabold shadow-md transition hover:opacity-95"
+          style="background-color: #0ea5e9; color: #0f172a; min-height: 46px;"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="sync-overwrite-confirm-btn"
+          class="py-3 px-3 rounded-xl text-xs sm:text-sm font-bold transition hover:bg-slate-800/80"
+          style="border: 1px solid #64748b; color: #f8fafc; background: transparent; min-height: 46px;"
+        >
+          Erase &amp; Sync
+        </button>
       </div>
     </div>
   </div>

@@ -41,14 +41,29 @@ export default async function handler(req, res) {
       '';
     const isJsonMode = requestedResponseMimeType === 'application/json';
     const enableGoogleSearch = !isJsonMode && body.enableGoogleSearch !== false;
+    const whitelistRule =
+      'You MUST only select exercises from standard, scientifically validated movements (e.g., Barbell Squat, Cable Crunch). Do not invent names.';
+    const combinedPromptText = `${String(prompt || '')} ${typeof systemInstruction === 'string' ? systemInstruction : ''}`.toLowerCase();
+    const isWorkoutJsonGen =
+      isJsonMode &&
+      (combinedPromptText.includes('exercise') ||
+        combinedPromptText.includes('workout') ||
+        combinedPromptText.includes('gym program'));
+    const effectiveSystemInstruction = isWorkoutJsonGen
+      ? (systemInstruction && typeof systemInstruction === 'object'
+          ? systemInstruction
+          : `${String(systemInstruction || '').trim()}\n${whitelistRule}`.trim())
+      : systemInstruction;
     const modelsToTry = Array.from(new Set([requestedModel, 'gemini-3.8-flash', 'gemini-4-hydrogen']));
     let lastErr = null;
 
     for (const m of modelsToTry) {
       const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(m) + ':generateContent?key=' + encodeURIComponent(apiKey);
       const reqPayload = {
-        systemInstruction: systemInstruction
-          ? (typeof systemInstruction === 'object' ? systemInstruction : { parts: [{ text: String(systemInstruction) }] })
+        systemInstruction: effectiveSystemInstruction
+          ? (typeof effectiveSystemInstruction === 'object'
+              ? effectiveSystemInstruction
+              : { parts: [{ text: String(effectiveSystemInstruction) }] })
           : undefined,
         contents: contentsPayload,
         tools: enableGoogleSearch ? [{ googleSearch: {} }] : undefined,

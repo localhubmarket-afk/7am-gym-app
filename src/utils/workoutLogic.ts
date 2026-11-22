@@ -10659,4 +10659,351 @@ export function copySingleDayScheduleFromPreviousWeek<T>(params: {
   return curArr;
 }
 
+// =========================================================================
+// UPGRADE 24: SYNC DATA PROTECTION & UNDO, UNIFIED VOLUME MATH, STEPPER CAPS & AI WHITELIST
+// =========================================================================
+
+export const MAX_STEPPER_WEIGHT_LBS = 999;
+export const MAX_STEPPER_REPS = 100;
+
+export const AI_EXERCISE_WHITELIST_RULE =
+  'You MUST only select exercises from standard, scientifically validated movements (e.g., Barbell Squat, Cable Crunch). Do not invent names.';
+
+export interface ClampedStepperResult {
+  value: string;
+  numeric: number;
+  wasClamped: boolean;
+}
+
+export function clampWeightInputValue(
+  rawVal: string | number | null | undefined,
+  maxWeight: number = MAX_STEPPER_WEIGHT_LBS
+): ClampedStepperResult {
+  const cap = Math.max(1, Number(maxWeight) || MAX_STEPPER_WEIGHT_LBS);
+  const str = String(rawVal ?? '').trim();
+  if (str === '') {
+    return { value: '', numeric: 0, wasClamped: false };
+  }
+  const num = parseFloat(str);
+  if (!Number.isFinite(num)) {
+    return { value: '', numeric: 0, wasClamped: false };
+  }
+  if (num < 0) {
+    return { value: '0', numeric: 0, wasClamped: true };
+  }
+  if (num > cap) {
+    return { value: String(cap), numeric: cap, wasClamped: true };
+  }
+  const clean = +num.toFixed(2);
+  return { value: String(clean), numeric: clean, wasClamped: false };
+}
+
+export function clampRepsInputValue(
+  rawVal: string | number | null | undefined,
+  maxReps: number = MAX_STEPPER_REPS
+): ClampedStepperResult {
+  const cap = Math.max(1, Math.floor(Number(maxReps) || MAX_STEPPER_REPS));
+  const str = String(rawVal ?? '').trim();
+  if (str === '') {
+    return { value: '', numeric: 0, wasClamped: false };
+  }
+  const num = parseInt(str, 10);
+  if (!Number.isFinite(num)) {
+    return { value: '', numeric: 0, wasClamped: false };
+  }
+  if (num < 0) {
+    return { value: '0', numeric: 0, wasClamped: true };
+  }
+  if (num > cap) {
+    return { value: String(cap), numeric: cap, wasClamped: true };
+  }
+  return { value: String(num), numeric: num, wasClamped: false };
+}
+
+export interface ParsedLogKeyMeta {
+  week: number;
+  dayIdx: number;
+  exerciseId: string;
+  setIdx: number;
+  isLegacyWeek1: boolean;
+}
+
+export function parseWorkoutLogKeyMeta(logKey: string): ParsedLogKeyMeta | null {
+  const k = String(logKey || '').trim();
+  const prefixed = k.match(/^w(\d+)_(?:d)?(\d+)_(.+)_(?:s)?(\d+)$/i);
+  if (prefixed) {
+    return {
+      week: Math.max(1, parseInt(prefixed[1], 10) || 1),
+      dayIdx: Math.max(0, Math.min(6, parseInt(prefixed[2], 10) || 0)),
+      exerciseId: prefixed[3],
+      setIdx: Math.max(1, parseInt(prefixed[4], 10) || 1),
+      isLegacyWeek1: false
+    };
+  }
+  const legacy = k.match(/^(\d+)_(.+)_(\d+)$/);
+  if (legacy) {
+    return {
+      week: 1,
+      dayIdx: Math.max(0, Math.min(6, parseInt(legacy[1], 10) || 0)),
+      exerciseId: legacy[2],
+      setIdx: Math.max(1, parseInt(legacy[3], 10) || 1),
+      isLegacyWeek1: true
+    };
+  }
+  return null;
+}
+
+export function isSetEntryLogged(entry: any): boolean {
+  if (!entry || typeof entry !== 'object') return false;
+  return entry.done === true || entry.isLogged === true;
+}
+
+export function hasLoggedSetsInWeek(
+  workoutLogs: Record<string, any> | null | undefined,
+  pullupLogs: Record<string, any> | null | undefined,
+  targetWeek: number,
+  dayIdxFilter?: number | null
+): { hasLoggedData: boolean; loggedSetCount: number } {
+  const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
+  const hasDayFilter = typeof dayIdxFilter === 'number' && Number.isFinite(dayIdxFilter);
+  const safeD = hasDayFilter ? Math.max(0, Math.min(6, Math.floor(dayIdxFilter as number))) : -1;
+  const seenCanonicalKeys = new Set<string>();
+
+  Object.keys(workoutLogs || {}).forEach((k) => {
+    const entry = workoutLogs?.[k];
+    if (!isSetEntryLogged(entry)) return;
+    const meta = parseWorkoutLogKeyMeta(k);
+    if (!meta || meta.week !== safeW) return;
+    if (hasDayFilter && meta.dayIdx !== safeD) return;
+    seenCanonicalKeys.add(`w${meta.week}_${meta.dayIdx}_${meta.exerciseId}_${meta.setIdx}`);
+  });
+
+  Object.keys(pullupLogs || {}).forEach((k) => {
+    const entry = pullupLogs?.[k];
+    if (!isSetEntryLogged(entry)) return;
+    const m = k.match(/^w(\d+)_day_(\d+)_set_(\d+)$/i);
+    if (m) {
+      const wk = parseInt(m[1], 10) || 1;
+      const dIdx = Math.max(0, (parseInt(m[2], 10) || 1) - 1);
+      if (wk !== safeW) return;
+      if (hasDayFilter && dIdx !== safeD) return;
+      seenCanonicalKeys.add(`pullup_w${wk}_${dIdx}_${m[3]}`);
+    } else if (safeW === 1) {
+      const mLeg = k.match(/^day_(\d+)_set_(\d+)$/i);
+      if (!mLeg) return;
+      const dIdx = Math.max(0, (parseInt(mLeg[1], 10) || 1) - 1);
+      if (hasDayFilter && dIdx !== safeD) return;
+      seenCanonicalKeys.add(`pullup_w1_${dIdx}_${mLeg[2]}`);
+    }
+  });
+
+  return {
+    hasLoggedData: seenCanonicalKeys.size > 0,
+    loggedSetCount: seenCanonicalKeys.size
+  };
+}
+
+export interface SyncUndoBackupSnapshot {
+  createdAt: number;
+  targetWeek: number;
+  sourceWeek: number;
+  mode: 'keep_same' | 'resync_week' | 'copy_single_day';
+  dayIdx?: number;
+  stateData: {
+    customDayScheduleByWeek: Record<string, any>;
+    weeklyRestDays: Record<string, any>;
+    manualScheduleOverrideByWeek: Record<string, any>;
+    customExercisesByWeek: Record<string, any>;
+    workoutLogs: Record<string, any>;
+    pullupLogs: Record<string, any>;
+    warmupLogs: Record<string, any>;
+    cardioLogs: Record<string, any>;
+    completedWeeks: Record<string, any>;
+    maxUnlockedWeek: number;
+    selectedWeek: number;
+    currentWeek: number;
+    selectedDayIndex: number;
+  };
+}
+
+export function createSyncUndoSnapshot(
+  stateObj: Record<string, any>,
+  meta: {
+    targetWeek: number;
+    sourceWeek: number;
+    mode: 'keep_same' | 'resync_week' | 'copy_single_day';
+    dayIdx?: number;
+  }
+): SyncUndoBackupSnapshot {
+  const deepClone = <T,>(val: T, fallback: T): T => {
+    try {
+      return val !== undefined && val !== null ? (JSON.parse(JSON.stringify(val)) as T) : fallback;
+    } catch {
+      return fallback;
+    }
+  };
+  return {
+    createdAt: Date.now(),
+    targetWeek: Math.max(1, Math.min(12, Math.floor(Number(meta.targetWeek) || 1))),
+    sourceWeek: Math.max(1, Math.min(12, Math.floor(Number(meta.sourceWeek) || 1))),
+    mode: meta.mode,
+    dayIdx: typeof meta.dayIdx === 'number' ? Math.max(0, Math.min(6, Math.floor(meta.dayIdx))) : undefined,
+    stateData: {
+      customDayScheduleByWeek: deepClone(stateObj.customDayScheduleByWeek, {}),
+      weeklyRestDays: deepClone(stateObj.weeklyRestDays, { default: [5, 6] }),
+      manualScheduleOverrideByWeek: deepClone(stateObj.manualScheduleOverrideByWeek, {}),
+      customExercisesByWeek: deepClone(stateObj.customExercisesByWeek, {}),
+      workoutLogs: deepClone(stateObj.workoutLogs, {}),
+      pullupLogs: deepClone(stateObj.pullupLogs, {}),
+      warmupLogs: deepClone(stateObj.warmupLogs, {}),
+      cardioLogs: deepClone(stateObj.cardioLogs, {}),
+      completedWeeks: deepClone(stateObj.completedWeeks, {}),
+      maxUnlockedWeek: Number(stateObj.maxUnlockedWeek) || 2,
+      selectedWeek: Number(stateObj.selectedWeek || stateObj.currentWeek) || 1,
+      currentWeek: Number(stateObj.currentWeek || stateObj.selectedWeek) || 1,
+      selectedDayIndex: Math.max(0, Math.min(6, Math.floor(Number(stateObj.selectedDayIndex) || 0)))
+    }
+  };
+}
+
+export function restoreSyncUndoSnapshot(
+  stateObj: Record<string, any>,
+  backup: SyncUndoBackupSnapshot | null | undefined
+): boolean {
+  if (!stateObj || !backup || !backup.stateData) return false;
+  const d = JSON.parse(JSON.stringify(backup.stateData));
+  stateObj.customDayScheduleByWeek = d.customDayScheduleByWeek;
+  stateObj.weeklyRestDays = d.weeklyRestDays;
+  stateObj.manualScheduleOverrideByWeek = d.manualScheduleOverrideByWeek;
+  stateObj.customExercisesByWeek = d.customExercisesByWeek;
+  stateObj.workoutLogs = d.workoutLogs;
+  stateObj.pullupLogs = d.pullupLogs;
+  stateObj.warmupLogs = d.warmupLogs;
+  stateObj.cardioLogs = d.cardioLogs;
+  stateObj.completedWeeks = d.completedWeeks;
+  stateObj.maxUnlockedWeek = d.maxUnlockedWeek;
+  stateObj.selectedWeek = d.selectedWeek;
+  stateObj.currentWeek = d.currentWeek;
+  stateObj.selectedDayIndex = d.selectedDayIndex;
+  return true;
+}
+
+export interface UnifiedCompletedSetRecord {
+  canonicalKey: string;
+  week: number;
+  dayIdx: number;
+  exerciseId: string;
+  setIdx: number;
+  weightLbs: number;
+  reps: number;
+  volumeLbs: number;
+}
+
+export interface UnifiedWeeklyVolumePoint {
+  week: number;
+  label: string;
+  setsCount: number;
+  tonnageLbs: number;
+  isCompleted: boolean;
+  daySetCounts: number[];
+  completedSets: UnifiedCompletedSetRecord[];
+}
+
+export function collectCompletedSetsForWeekSingleSource(
+  workoutLogs: Record<string, any> | null | undefined,
+  targetWeek: number
+): UnifiedCompletedSetRecord[] {
+  const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
+  const byCanonical = new Map<string, UnifiedCompletedSetRecord>();
+  const entries = Object.entries(workoutLogs || {});
+
+  // Sort prefixed keys before legacy Week 1 keys so canonical prefixed logs take priority
+  entries.sort(([keyA], [keyB]) => {
+    const aPref = /^w\d+_/i.test(keyA) ? 0 : 1;
+    const bPref = /^w\d+_/i.test(keyB) ? 0 : 1;
+    return aPref - bPref;
+  });
+
+  for (const [k, entry] of entries) {
+    if (!isSetEntryLogged(entry)) continue;
+    const meta = parseWorkoutLogKeyMeta(k);
+    if (!meta || meta.week !== safeW) continue;
+    const canonicalKey = `w${meta.week}_${meta.dayIdx}_${meta.exerciseId}_${meta.setIdx}`;
+    if (byCanonical.has(canonicalKey)) continue;
+
+    const rawW = parseFloat(String(entry.weight ?? entry.wt ?? '').replace(/[^\d.-]/g, ''));
+    const safeRawW = Number.isFinite(rawW) && rawW > 0 ? Math.min(MAX_STEPPER_WEIGHT_LBS, rawW) : 0;
+    const weightLbs = entry.unit === 'kg' ? Math.round(safeRawW * 2.20462 * 10) / 10 : safeRawW;
+
+    const rawR = parseInt(String(entry.reps ?? '').replace(/[^\d-]/g, ''), 10);
+    const reps = Number.isFinite(rawR) && rawR > 0 ? Math.min(MAX_STEPPER_REPS, rawR) : 0;
+    const volumeLbs = weightLbs > 0 && reps > 0 ? Math.round(weightLbs * reps) : 0;
+
+    byCanonical.set(canonicalKey, {
+      canonicalKey,
+      week: safeW,
+      dayIdx: meta.dayIdx,
+      exerciseId: meta.exerciseId,
+      setIdx: meta.setIdx,
+      weightLbs,
+      reps,
+      volumeLbs
+    });
+  }
+
+  return Array.from(byCanonical.values());
+}
+
+export function computeUnifiedWeeklyVolumeSeries(params: {
+  workoutLogs: Record<string, any> | null | undefined;
+  completedWeeks?: Record<string | number, boolean> | null;
+  maxWeek: number;
+  minVisibleWeeks?: number;
+}): UnifiedWeeklyVolumePoint[] {
+  const minW = Math.max(1, Math.min(12, Math.floor(Number(params.minVisibleWeeks) || 4)));
+  let highestLoggedW = 1;
+  Object.keys(params.workoutLogs || {}).forEach((k) => {
+    const entry = params.workoutLogs?.[k];
+    if (!isSetEntryLogged(entry)) return;
+    const meta = parseWorkoutLogKeyMeta(k);
+    if (meta && meta.week > highestLoggedW) highestLoggedW = meta.week;
+  });
+  const totalWeeks = Math.max(minW, Math.min(12, Math.max(Math.floor(Number(params.maxWeek) || 1), highestLoggedW)));
+  const series: UnifiedWeeklyVolumePoint[] = [];
+
+  for (let w = 1; w <= totalWeeks; w++) {
+    const completedSets = collectCompletedSetsForWeekSingleSource(params.workoutLogs, w);
+    const daySetCounts = [0, 0, 0, 0, 0, 0, 0];
+    let tonnageLbs = 0;
+    completedSets.forEach((rec) => {
+      tonnageLbs += rec.volumeLbs;
+      if (rec.dayIdx >= 0 && rec.dayIdx < 7) {
+        daySetCounts[rec.dayIdx] += 1;
+      }
+    });
+    const isCompleted =
+      Boolean(params.completedWeeks && (params.completedWeeks[w] || params.completedWeeks[String(w)])) ||
+      completedSets.length > 0;
+
+    series.push({
+      week: w,
+      label: `W${w}`,
+      setsCount: completedSets.length,
+      tonnageLbs,
+      isCompleted,
+      daySetCounts,
+      completedSets
+    });
+  }
+
+  return series;
+}
+
+export function formatWeeklyVolumeTooltipText(week: number, volumeLbs: number): string {
+  const safeW = Math.max(1, Math.floor(Number(week) || 1));
+  const safeVol = Math.max(0, Math.round(Number(volumeLbs) || 0));
+  return `Week ${safeW} Volume: ${safeVol.toLocaleString('en-US')} lbs. Tapped to view full Week ${safeW} logs.`;
+}
+
+
 

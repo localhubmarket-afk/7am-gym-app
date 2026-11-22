@@ -3108,4 +3108,103 @@ test('Subtest 46: Upgrade 23 — Sync Week Checkmark Reset (0%), Last-Set Histor
   assert.equal(syncedCurWeek[2], 2);
 });
 
+test('47. Upgrade 24: Sync Data Protection & Undo, Single-Source Volume Math, Stepper Caps & AI Whitelist', async () => {
+  const mod = await import('./workoutLogic');
+  // 1. Smart Warning scanner detects 4 logged sets on Week 3 Day 5 (dayIdx = 4)
+  const w3Logs: Record<string, any> = {
+    w3_4_barbell_bench_1: { weight: '135', reps: '10', done: true, isLogged: true, unit: 'lbs' },
+    w3_4_barbell_bench_2: { weight: '135', reps: '10', done: true, isLogged: true, unit: 'lbs' },
+    w3_4_barbell_bench_3: { weight: '145', reps: '8', done: true, isLogged: true, unit: 'lbs' },
+    w3_4_barbell_bench_4: { weight: '145', reps: '8', done: true, isLogged: true, unit: 'lbs' },
+    w4_0_barbell_bench_1: { weight: '145', reps: '8', done: false, isLogged: false, unit: 'lbs' }
+  };
+  const scanW3 = mod.hasLoggedSetsInWeek(w3Logs, {}, 3);
+  assert.equal(scanW3.hasLoggedData, true);
+  assert.equal(scanW3.loggedSetCount, 4);
+
+  const scanW4 = mod.hasLoggedSetsInWeek(w3Logs, {}, 4);
+  assert.equal(scanW4.hasLoggedData, false);
+  assert.equal(scanW4.loggedSetCount, 0);
+
+  // 2. Undo Snapshot captures & restores Week 3 Day 5 logs after overwrite
+  const liveState: Record<string, any> = {
+    selectedWeek: 3,
+    currentWeek: 3,
+    selectedDayIndex: 4,
+    maxUnlockedWeek: 3,
+    completedWeeks: { 1: true, 2: true },
+    customDayScheduleByWeek: { '3': [0, 1, 2, 3, 4, 5, 6] },
+    weeklyRestDays: { '3': [5, 6] },
+    manualScheduleOverrideByWeek: { '3': true },
+    customExercisesByWeek: {},
+    workoutLogs: JSON.parse(JSON.stringify(w3Logs)),
+    pullupLogs: {},
+    warmupLogs: {},
+    cardioLogs: {}
+  };
+  const backup = mod.createSyncUndoSnapshot(liveState, {
+    targetWeek: 3,
+    sourceWeek: 2,
+    mode: 'resync_week'
+  });
+  // Simulate destructive overwrite of Week 3
+  liveState.workoutLogs = { w3_4_barbell_bench_1: { weight: '135', reps: '10', done: false, isLogged: false } };
+  assert.equal(mod.hasLoggedSetsInWeek(liveState.workoutLogs, {}, 3).loggedSetCount, 0);
+
+  // Tap [ Undo Mistake ] -> restores all 4 sets instantaneously
+  const restored = mod.restoreSyncUndoSnapshot(liveState, backup);
+  assert.equal(restored, true);
+  assert.equal(mod.hasLoggedSetsInWeek(liveState.workoutLogs, {}, 3).loggedSetCount, 4);
+  assert.equal(liveState.workoutLogs.w3_4_barbell_bench_4.weight, '145');
+
+  // 3. Single Source of Truth Dashboard Math tallies exact 4 sets & tonnage on Week 3 Day 5
+  const series = mod.computeUnifiedWeeklyVolumeSeries({
+    workoutLogs: w3Logs,
+    completedWeeks: { 1: true, 2: true },
+    maxWeek: 4
+  });
+  assert.equal(series.length, 4);
+  const w3Row = series[2];
+  assert.equal(w3Row.label, 'W3');
+  assert.equal(w3Row.setsCount, 4);
+  assert.equal(w3Row.daySetCounts[4], 4);
+  // 135*10 + 135*10 + 145*8 + 145*8 = 1350 + 1350 + 1160 + 1160 = 5020 lbs
+  assert.equal(w3Row.tonnageLbs, 5020);
+  assert.equal(w3Row.isCompleted, true);
+  assert.equal(series[3].isCompleted, false);
+  assert.equal(series[3].tonnageLbs, 0);
+
+  // Verify ELI12 Tooltip formatting
+  assert.equal(
+    mod.formatWeeklyVolumeTooltipText(3, 49427),
+    'Week 3 Volume: 49,427 lbs. Tapped to view full Week 3 logs.'
+  );
+
+  // 4. Stepper Guardrails cap Weight at 999 lbs and Reps at 100
+  const wOver = mod.clampWeightInputValue('1450');
+  assert.equal(wOver.value, '999');
+  assert.equal(wOver.numeric, 999);
+  assert.equal(wOver.wasClamped, true);
+
+  const wOk = mod.clampWeightInputValue('225.5');
+  assert.equal(wOk.value, '225.5');
+  assert.equal(wOk.wasClamped, false);
+
+  const rOver = mod.clampRepsInputValue('250');
+  assert.equal(rOver.value, '100');
+  assert.equal(rOver.numeric, 100);
+  assert.equal(rOver.wasClamped, true);
+
+  const rOk = mod.clampRepsInputValue('12');
+  assert.equal(rOk.value, '12');
+  assert.equal(rOk.wasClamped, false);
+
+  // 5. AI Whitelist Enforcer exact rule text
+  assert.equal(
+    mod.AI_EXERCISE_WHITELIST_RULE,
+    'You MUST only select exercises from standard, scientifically validated movements (e.g., Barbell Squat, Cable Crunch). Do not invent names.'
+  );
+});
+
+
 
