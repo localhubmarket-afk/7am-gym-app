@@ -24977,12 +24977,47 @@
       if (appleOauthBtn) appleOauthBtn.addEventListener('click', () => handleSocialProviderClick('Apple'));
       if (googleOauthBtn) googleOauthBtn.addEventListener('click', () => handleSocialProviderClick('Google'));
 
-      // Task 2 & Task 3: Highly Visible "Delete Account" Button + Strict Warning Pop-Up + Supabase Row Deletion
+      // Account Deletion Redesign: Jargon-Free Warning + Concurrent 3-Layer Sanitization + Automated One-Click Account Switch
       const deleteAccountConfirmModalEl = document.getElementById('delete-account-confirm-modal');
       const deleteAccountEmailDispEl = document.getElementById('delete-account-target-email');
       const cancelDeleteAccountBtn = document.getElementById('cancel-delete-account-btn');
       const confirmDeleteAccountBtn = document.getElementById('confirm-delete-account-btn');
+      const postDeleteSwitchModalEl = document.getElementById('post-delete-switch-modal');
+      const postDeleteSwitchTitleEl = document.getElementById('post-delete-switch-title');
+      const postDeleteSwitchAvatarEl = document.getElementById('post-delete-switch-avatar');
+      const postDeleteSwitchNameEl = document.getElementById('post-delete-switch-name');
+      const postDeleteSwitchEmailEl = document.getElementById('post-delete-switch-email');
+      const oneClickSwitchAccountBtn = document.getElementById('one-click-switch-account-btn');
+      const postDeleteUseAnotherBtn = document.getElementById('post-delete-use-another-btn');
       let pendingDeleteAccountEmail = '';
+      let pendingSecondarySwitchAccount = null;
+
+      function routeToEmptyLoginAfterDelete() {
+        pendingSecondarySwitchAccount = null;
+        if (postDeleteSwitchModalEl) postDeleteSwitchModalEl.classList.add('hidden');
+        if (smartLoginModal) smartLoginModal.classList.remove('hidden');
+        if (closeSmartLoginBtn) closeSmartLoginBtn.classList.add('hidden');
+        const acctTabBtn = document.getElementById('profile-section-account-btn');
+        if (acctTabBtn) acctTabBtn.click();
+        setAuthTabMode('login');
+        syncSmartLoginFormUI(true);
+        renderWorkoutView();
+        renderVeganView();
+      }
+
+      function clearLocalCookiesFallback() {
+        try {
+          const raw = document.cookie || '';
+          const names = new Set(['gym_session', 'session', 'session_id', 'auth_token', 'access_token', 'refresh_token', 'sb-access-token', 'sb-refresh-token']);
+          raw.split(';').forEach(part => {
+            const name = part.split('=')[0].trim();
+            if (name) names.add(name);
+          });
+          names.forEach(name => {
+            document.cookie = `${name}=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+          });
+        } catch (e) {}
+      }
 
       if (deleteAccountDataBtn) {
         deleteAccountDataBtn.addEventListener('click', () => {
@@ -25011,52 +25046,129 @@
           }
         });
       }
+      if (oneClickSwitchAccountBtn) {
+        oneClickSwitchAccountBtn.addEventListener('click', () => {
+          const targetAcct = pendingSecondarySwitchAccount;
+          if (!targetAcct || !targetAcct.email) {
+            routeToEmptyLoginAfterDelete();
+            return;
+          }
+          pendingSecondarySwitchAccount = null;
+          if (postDeleteSwitchModalEl) postDeleteSwitchModalEl.classList.add('hidden');
+          if (smartLoginModal) smartLoginModal.classList.add('hidden');
+          if (leadNameInp) leadNameInp.value = targetAcct.name || '';
+          if (leadEmailInp) leadEmailInp.value = targetAcct.email || '';
+          if (leadPhoneInp) leadPhoneInp.value = targetAcct.phone || '';
+
+          if (targetAcct.snapshot && typeof targetAcct.snapshot === 'object') {
+            applyAccountSnapshotToCurrentState(targetAcct.snapshot);
+          }
+
+          saveUserLeadProfile({
+            name: targetAcct.name,
+            email: targetAcct.email,
+            phone: targetAcct.phone || '',
+            goal: targetAcct.goal || '6-Pack Recomp',
+            diet: targetAcct.diet || '100% Plant-Based ($5.55/day)',
+            skipInitialPush: true
+          });
+          syncSmartLoginFormUI(false);
+          if (typeof pullStateFromCloud === 'function') {
+            pullStateFromCloud({ forceRemoteTruth: false }).catch(() => {});
+          }
+          showToast(`Signed in as ${targetAcct.name}.`);
+        });
+      }
+      if (postDeleteUseAnotherBtn) {
+        postDeleteUseAnotherBtn.addEventListener('click', () => {
+          routeToEmptyLoginAfterDelete();
+        });
+      }
       if (confirmDeleteAccountBtn) {
         confirmDeleteAccountBtn.addEventListener('click', async () => {
           const activeEmail = (state.userProfile && state.userProfile.email || '').trim().toLowerCase();
           const targetEmail = pendingDeleteAccountEmail;
           const validation = validateScopedDeletionLocal('account', targetEmail);
           if (!validation.valid || validation.normalizedUserId !== activeEmail) {
-            showToast('Account deletion blocked: active user ID did not match.');
+            showToast('Deletion stopped because the selected account did not match your active login.');
             return;
           }
 
           confirmDeleteAccountBtn.disabled = true;
           confirmDeleteAccountBtn.textContent = 'Deleting...';
           try {
-            const endpointUrl = getActiveCloudEndpoint();
-            if (typeof window.deleteUserAccountFromSupabase === 'function') {
-              await window.deleteUserAccountFromSupabase({
-                endpoint: endpointUrl,
-                activeUserId: activeEmail,
-                targetUserId: targetEmail
-              });
-            } else if (endpointUrl) {
-              await fetch(endpointUrl, {
-                method: 'DELETE',
-                cache: 'no-store',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: validation.normalizedUserId, confirmDeleteAccount: true })
-              }).catch(() => {});
-            }
-
-            // Cancel any pending background sync or undo snapshot so the deleted account is never restored or re-pushed
+            // Cancel any pending background sync or undo snapshot so deleted data is never re-pushed
             clearTimeout(cloudSyncTimeout);
             cloudSyncTimeout = null;
             cancelDelayedDestructiveCloudPushLocal();
             state.undoBackup = null;
             if (typeof hideSyncUndoToastLocal === 'function') hideSyncUndoToastLocal();
-            if (typeof window.purgeDeletedAccountFromLocalState === 'function') {
-              window.purgeDeletedAccountFromLocalState(state, targetEmail);
+
+            const endpointUrl = getActiveCloudEndpoint();
+            let secondaryAccount = null;
+            let switchPromptText = null;
+
+            if (typeof window.executeCompleteAccountDeletion === 'function') {
+              const deletionRes = await window.executeCompleteAccountDeletion({
+                endpoint: endpointUrl,
+                activeUserId: activeEmail,
+                targetUserId: targetEmail,
+                stateObj: state,
+                storageKey: STORAGE_KEY
+              });
+              secondaryAccount = deletionRes && deletionRes.secondaryAccount ? deletionRes.secondaryAccount : null;
+              switchPromptText = deletionRes && deletionRes.switchPromptText ? deletionRes.switchPromptText : null;
             } else {
-              if (state.accountsByEmail && state.accountsByEmail[validation.normalizedUserId]) {
-                delete state.accountsByEmail[validation.normalizedUserId];
+              // Concurrent fallback across Server, Mobile Storage/Cache, and Web Cookies
+              const serverTask = endpointUrl
+                ? fetch(endpointUrl, {
+                    method: 'DELETE',
+                    cache: 'no-store',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: validation.normalizedUserId, confirmDeleteAccount: true })
+                  }).catch(() => {})
+                : Promise.resolve();
+
+              const mobileTask = (async () => {
+                const leads = (state.capturedLeads || []).filter(
+                  l => l && l.email && l.email.toLowerCase() !== validation.normalizedUserId && l.email !== 'member@gmail.com' && l.email !== 'athlete@gmail.com'
+                );
+                if (leads.length > 0) {
+                  secondaryAccount = {
+                    name: leads[0].name || leads[0].email.split('@')[0],
+                    email: leads[0].email.toLowerCase(),
+                    phone: leads[0].phone || '',
+                    goal: leads[0].goal || '6-Pack Recomp',
+                    diet: leads[0].diet || '100% Plant-Based ($5.55/day)',
+                    snapshot: state.accountsByEmail && state.accountsByEmail[leads[0].email.toLowerCase()] ? state.accountsByEmail[leads[0].email.toLowerCase()].snapshot : null
+                  };
+                }
+                if (state.accountsByEmail && state.accountsByEmail[validation.normalizedUserId]) {
+                  delete state.accountsByEmail[validation.normalizedUserId];
+                }
+                state.capturedLeads = (state.capturedLeads || []).filter(l => !l.email || l.email.toLowerCase() !== validation.normalizedUserId);
+                state.userProfile = { name: '', email: '', phone: '', goal: '6-Pack Recomp', diet: '100% Plant-Based ($5.55/day)', gymTime: '07:00', signedInAt: null };
+                try { sessionStorage.clear(); } catch (e) {}
+                if (!secondaryAccount) {
+                  try { localStorage.removeItem(STORAGE_KEY); localStorage.clear(); } catch (e) {}
+                }
+                if (typeof caches !== 'undefined' && caches.keys) {
+                  const cacheKeys = await caches.keys().catch(() => []);
+                  await Promise.all(cacheKeys.map(k => caches.delete(k).catch(() => false)));
+                }
+              })();
+
+              const cookieTask = Promise.resolve().then(() => clearLocalCookiesFallback());
+              await Promise.all([serverTask, mobileTask, cookieTask]);
+              if (secondaryAccount) {
+                switchPromptText = `Account deleted. Do you want to continue as ${secondaryAccount.name}?`;
               }
-              state.capturedLeads = (state.capturedLeads || []).filter(l => !l.email || l.email.toLowerCase() !== validation.normalizedUserId);
-              state.userProfile = { name: '', email: '', phone: '', goal: '6-Pack Recomp', diet: '100% Plant-Based ($5.55/day)', gymTime: '07:00', signedInAt: null };
             }
 
-            saveState(true);
+            if (secondaryAccount) {
+              saveState(true);
+            }
             pendingDeleteAccountEmail = '';
             if (deleteAccountConfirmModalEl) deleteAccountConfirmModalEl.classList.add('hidden');
             if (leadEmailInp) leadEmailInp.value = '';
@@ -25064,16 +25176,31 @@
             const pwdInp = document.getElementById('lead-password-input');
             if (pwdInp) pwdInp.value = '';
 
-            // Return user directly to the Login screen
-            if (smartLoginModal) smartLoginModal.classList.remove('hidden');
-            if (closeSmartLoginBtn) closeSmartLoginBtn.classList.add('hidden');
-            const acctTabBtn = document.getElementById('profile-section-account-btn');
-            if (acctTabBtn) acctTabBtn.click();
-            setAuthTabMode('login');
-            syncSmartLoginFormUI(true);
-            renderWorkoutView();
-            renderVeganView();
-            showToast('Account deleted from Supabase. Please sign in to continue.');
+            if (secondaryAccount && postDeleteSwitchModalEl) {
+              // Automated Account Switch: offer 1-click login instead of dropping user on an empty login screen
+              pendingSecondarySwitchAccount = secondaryAccount;
+              const promptLabel =
+                switchPromptText ||
+                (typeof window.buildPostDeleteSwitchPrompt === 'function'
+                  ? window.buildPostDeleteSwitchPrompt(secondaryAccount.name)
+                  : `Account deleted. Do you want to continue as ${secondaryAccount.name}?`);
+              if (smartLoginModal) smartLoginModal.classList.add('hidden');
+              if (postDeleteSwitchTitleEl) postDeleteSwitchTitleEl.textContent = promptLabel;
+              if (postDeleteSwitchAvatarEl) {
+                postDeleteSwitchAvatarEl.textContent = (secondaryAccount.name || 'A').trim().charAt(0).toUpperCase();
+              }
+              if (postDeleteSwitchNameEl) postDeleteSwitchNameEl.textContent = secondaryAccount.name;
+              if (postDeleteSwitchEmailEl) postDeleteSwitchEmailEl.textContent = secondaryAccount.email;
+              if (oneClickSwitchAccountBtn) {
+                oneClickSwitchAccountBtn.textContent = `Continue as ${secondaryAccount.name}`;
+              }
+              postDeleteSwitchModalEl.classList.remove('hidden');
+              renderWorkoutView();
+              renderVeganView();
+            } else {
+              routeToEmptyLoginAfterDelete();
+              showToast('Account deleted. You can log in anytime.');
+            }
           } finally {
             confirmDeleteAccountBtn.disabled = false;
             confirmDeleteAccountBtn.textContent = 'Yes, Delete Account';
@@ -27340,18 +27467,19 @@
     </div>
   </div>
 
-  <!-- MODAL 4E: Task 2 — Strict Account Deletion Warning Modal -->
-  <div id="delete-account-confirm-modal" class="hidden fixed inset-0 z-[85] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-account-confirm-title">
+  <!-- MODAL 4E: Redesigned Account Deletion Warning Modal (Jargon-Free ELI12 Copy) -->
+  <div id="delete-account-confirm-modal" class="hidden fixed inset-0 z-[85] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-account-confirm-title" aria-describedby="delete-account-confirm-copy">
     <div class="bg-slate-900 border border-rose-500/70 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
-      <div class="space-y-1.5">
+      <div class="space-y-2">
         <span class="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/60 text-[10px] font-extrabold uppercase tracking-wider text-rose-200">
-          Permanent Account Deletion
+          Delete Account
         </span>
         <h3 id="delete-account-confirm-title" class="text-base font-extrabold text-white leading-snug">
           Are you sure you want to delete the account?
         </h3>
-        <p class="text-xs text-slate-300 leading-relaxed">
-          This permanently deletes <strong id="delete-account-target-email" class="text-rose-200">your account</strong> from Supabase and returns you to the login screen.
+        <div id="delete-account-target-email" class="text-xs font-bold text-rose-200 truncate">your account</div>
+        <p id="delete-account-confirm-copy" class="text-xs text-slate-200 leading-relaxed">
+          This will permanently erase your account and all your data. You cannot get it back.
         </p>
       </div>
       <div class="grid grid-cols-2 gap-2">
@@ -27360,6 +27488,37 @@
         </button>
         <button type="button" id="confirm-delete-account-btn" class="py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition">
           Yes, Delete Account
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4F: Automated Post-Deletion One-Click Account Switch Modal -->
+  <div id="post-delete-switch-modal" class="hidden fixed inset-0 z-[86] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="post-delete-switch-title">
+    <div class="bg-slate-900 border border-emerald-400/60 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div class="space-y-2">
+        <span class="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-[10px] font-extrabold uppercase tracking-wider text-emerald-200">
+          Account Deleted
+        </span>
+        <h3 id="post-delete-switch-title" class="text-base font-extrabold text-white leading-snug">
+          Account deleted. Do you want to continue as your other account?
+        </h3>
+      </div>
+      <div class="flex items-center gap-3 rounded-xl bg-slate-950 border border-slate-700 p-3">
+        <div id="post-delete-switch-avatar" class="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-sm flex items-center justify-center shrink-0">
+          A
+        </div>
+        <div class="min-w-0">
+          <div id="post-delete-switch-name" class="text-sm font-extrabold text-white truncate">Saved Account</div>
+          <div id="post-delete-switch-email" class="text-xs text-slate-300 truncate">account@7amgym.app</div>
+        </div>
+      </div>
+      <div class="space-y-2">
+        <button type="button" id="one-click-switch-account-btn" class="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition">
+          Continue as Saved Account
+        </button>
+        <button type="button" id="post-delete-use-another-btn" class="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition">
+          Log In with Another Account
         </button>
       </div>
     </div>
@@ -27679,7 +27838,7 @@
                 ↺ Fresh Start Reset
               </button>
             </div>
-            <button type="button" id="delete-account-data-btn" class="w-full py-2.5 px-3 rounded-xl bg-rose-600/20 hover:bg-rose-600/35 border border-rose-400/70 text-rose-100 text-xs font-extrabold transition" title="Permanently delete your account from Supabase">
+            <button type="button" id="delete-account-data-btn" class="w-full py-2.5 px-3 rounded-xl bg-rose-600/20 hover:bg-rose-600/35 border border-rose-400/70 text-rose-100 text-xs font-extrabold transition" title="Permanently delete your account">
               Delete Account
             </button>
           </div>

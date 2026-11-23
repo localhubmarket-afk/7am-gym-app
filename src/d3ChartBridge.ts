@@ -49,16 +49,29 @@ import {
   stampGymStateLastUpdated
 } from './utils/workoutSyncEngine';
 import {
+  DELETE_ACCOUNT_BUTTON_LABELS,
+  DELETE_ACCOUNT_MAIN_WARNING,
   DELETE_ACCOUNT_WARNING_PROMPT,
   WORKOUT_FUEL_RESET_PROMPT,
+  buildPostDeleteSwitchPrompt,
   clearActiveDayFuelData,
   clearActiveDayWorkoutAndOptionalFuel,
+  clearAllWebSessionCookies,
   deleteUserAccountFromSupabase,
+  executeCompleteAccountDeletion,
+  findSecondarySavedAccount,
   isValidDeletableUserId,
   normalizeAccountUserId,
   purgeDeletedAccountFromLocalState,
+  purgeMobileClientStorage,
   validateDeletionTarget
 } from './utils/deletionValidation';
+import {
+  runDeploymentValidationChecklist,
+  scanContentForBrokenLinksAndTypos,
+  validateScientificAlignment,
+  validateWorkoutPlanExpertApproval
+} from './utils/contentValidationProtocol';
 
 export interface RenderOneRmD3ChartOptions {
   container: HTMLElement;
@@ -682,6 +695,13 @@ declare global {
     STANDARD_CARDIO_SESSIONS?: typeof STANDARD_CARDIO_SESSIONS;
     WORKOUT_FUEL_RESET_PROMPT?: string;
     DELETE_ACCOUNT_WARNING_PROMPT?: string;
+    DELETE_ACCOUNT_MAIN_WARNING?: string;
+    DELETE_ACCOUNT_BUTTON_LABELS?: typeof DELETE_ACCOUNT_BUTTON_LABELS;
+    buildPostDeleteSwitchPrompt?: typeof buildPostDeleteSwitchPrompt;
+    findSecondarySavedAccount?: typeof findSecondarySavedAccount;
+    clearAllWebSessionCookies?: typeof clearAllWebSessionCookies;
+    purgeMobileClientStorage?: typeof purgeMobileClientStorage;
+    executeCompleteAccountDeletion?: typeof executeCompleteAccountDeletion;
     validateDeletionTarget?: typeof validateDeletionTarget;
     clearActiveDayFuelData?: typeof clearActiveDayFuelData;
     clearActiveDayWorkoutAndOptionalFuel?: typeof clearActiveDayWorkoutAndOptionalFuel;
@@ -689,6 +709,10 @@ declare global {
     purgeDeletedAccountFromLocalState?: typeof purgeDeletedAccountFromLocalState;
     normalizeAccountUserId?: typeof normalizeAccountUserId;
     isValidDeletableUserId?: typeof isValidDeletableUserId;
+    scanContentForBrokenLinksAndTypos?: typeof scanContentForBrokenLinksAndTypos;
+    validateWorkoutPlanExpertApproval?: typeof validateWorkoutPlanExpertApproval;
+    validateScientificAlignment?: typeof validateScientificAlignment;
+    runDeploymentValidationChecklist?: typeof runDeploymentValidationChecklist;
   }
 }
 
@@ -737,6 +761,13 @@ if (typeof window !== 'undefined') {
   window.STANDARD_CARDIO_SESSIONS = STANDARD_CARDIO_SESSIONS;
   window.WORKOUT_FUEL_RESET_PROMPT = WORKOUT_FUEL_RESET_PROMPT;
   window.DELETE_ACCOUNT_WARNING_PROMPT = DELETE_ACCOUNT_WARNING_PROMPT;
+  window.DELETE_ACCOUNT_MAIN_WARNING = DELETE_ACCOUNT_MAIN_WARNING;
+  window.DELETE_ACCOUNT_BUTTON_LABELS = DELETE_ACCOUNT_BUTTON_LABELS;
+  window.buildPostDeleteSwitchPrompt = buildPostDeleteSwitchPrompt;
+  window.findSecondarySavedAccount = findSecondarySavedAccount;
+  window.clearAllWebSessionCookies = clearAllWebSessionCookies;
+  window.purgeMobileClientStorage = purgeMobileClientStorage;
+  window.executeCompleteAccountDeletion = executeCompleteAccountDeletion;
   window.validateDeletionTarget = validateDeletionTarget;
   window.clearActiveDayFuelData = clearActiveDayFuelData;
   window.clearActiveDayWorkoutAndOptionalFuel = clearActiveDayWorkoutAndOptionalFuel;
@@ -744,5 +775,9 @@ if (typeof window !== 'undefined') {
   window.purgeDeletedAccountFromLocalState = purgeDeletedAccountFromLocalState;
   window.normalizeAccountUserId = normalizeAccountUserId;
   window.isValidDeletableUserId = isValidDeletableUserId;
+  window.scanContentForBrokenLinksAndTypos = scanContentForBrokenLinksAndTypos;
+  window.validateWorkoutPlanExpertApproval = validateWorkoutPlanExpertApproval;
+  window.validateScientificAlignment = validateScientificAlignment;
+  window.runDeploymentValidationChecklist = runDeploymentValidationChecklist;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

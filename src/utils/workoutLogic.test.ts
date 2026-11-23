@@ -4055,6 +4055,275 @@ test('Subtest 53: Linked Workout & Fuel Deletion, Muscle Fuel Reset, Account Del
   assert.equal(stateToPurge.capturedLeads[0].email, 'partner@7amgym.app');
 });
 
+test('Account Deletion Redesign, Concurrent 3-Layer Data Sanitization, Auto Account Switch & Content Validation Protocols', async () => {
+  const {
+    DELETE_ACCOUNT_BUTTON_LABELS,
+    DELETE_ACCOUNT_MAIN_WARNING,
+    buildPostDeleteSwitchPrompt,
+    clearAllWebSessionCookies,
+    executeCompleteAccountDeletion,
+    findSecondarySavedAccount
+  } = await import('./deletionValidation');
+  const {
+    runDeploymentValidationChecklist,
+    scanContentForBrokenLinksAndTypos,
+    validateScientificAlignment,
+    validateWorkoutPlanExpertApproval
+  } = await import('./contentValidationProtocol');
+
+  // 1. Account Deletion Redesign: exact jargon-free ELI12 copy & button structure
+  assert.equal(
+    DELETE_ACCOUNT_MAIN_WARNING,
+    'This will permanently erase your account and all your data. You cannot get it back.'
+  );
+  assert.equal(DELETE_ACCOUNT_MAIN_WARNING.toLowerCase().includes('supabase'), false);
+  assert.equal(DELETE_ACCOUNT_BUTTON_LABELS.cancel, 'Cancel');
+  assert.equal(DELETE_ACCOUNT_BUTTON_LABELS.confirm, 'Yes, Delete Account');
+  assert.equal(
+    buildPostDeleteSwitchPrompt('Alex'),
+    'Account deleted. Do you want to continue as Alex?'
+  );
+
+  // 2. Automated Account Switching: detects another valid profile on the device (skips deleted & placeholders)
+  const dualAccountState: Record<string, any> = {
+    userProfile: { email: 'francois@7amgym.app', name: 'François' },
+    workoutLogs: { w3_0_pullup_1: { reps: 8, done: true } },
+    undoBackup: { snapshot: true },
+    accountsByEmail: {
+      'francois@7amgym.app': {
+        profile: { email: 'francois@7amgym.app', name: 'François', signedInAt: '2026-11-23T07:00:00Z' },
+        snapshot: { workoutLogs: { w3_0_pullup_1: { reps: 8, done: true } } }
+      },
+      'partner@7amgym.app': {
+        profile: { email: 'partner@7amgym.app', name: 'Alex', signedInAt: '2026-11-22T07:00:00Z' },
+        snapshot: { workoutLogs: { w1_0_bench_1: { reps: 10, done: true } } }
+      },
+      'athlete@gmail.com': {
+        profile: { email: 'athlete@gmail.com', name: 'Placeholder' }
+      }
+    },
+    capturedLeads: [
+      { email: 'francois@7amgym.app', name: 'François' },
+      { email: 'partner@7amgym.app', name: 'Alex' }
+    ]
+  };
+
+  const secondaryFound = findSecondarySavedAccount(dualAccountState, 'francois@7amgym.app');
+  assert.ok(secondaryFound);
+  assert.equal(secondaryFound.name, 'Alex');
+  assert.equal(secondaryFound.email, 'partner@7amgym.app');
+
+  // 3. Concurrent 3-Layer Complete Data Removal (Server + Mobile Storage/Cache + Web Cookies)
+  const executionEvents: string[] = [];
+  const writtenCookieHeaders: string[] = [];
+  const fakeDoc = {
+    location: { pathname: '/app', hostname: 'localhost' },
+    get cookie() {
+      return 'gym_session=tok123; sb-access-token=abc; custom_pref=1';
+    },
+    set cookie(val: string) {
+      writtenCookieHeaders.push(val);
+    }
+  };
+  const fakeLocalStoreMap = new Map<string, string>();
+  const fakeLocalStorage = {
+    getItem: (k: string) => fakeLocalStoreMap.get(k) ?? null,
+    setItem: (k: string, v: string) => {
+      fakeLocalStoreMap.set(k, v);
+    },
+    removeItem: (k: string) => {
+      fakeLocalStoreMap.delete(k);
+    },
+    clear: () => {
+      fakeLocalStoreMap.clear();
+    }
+  };
+  let sessionCleared = false;
+  const fakeSessionStorage = {
+    clear: () => {
+      sessionCleared = true;
+    }
+  };
+  const deletedCacheKeys: string[] = [];
+  const fakeCaches = {
+    keys: async () => ['7am-gym-v1', '7am-gym-assets'],
+    delete: async (key: string) => {
+      deletedCacheKeys.push(key);
+      return true;
+    }
+  };
+  const fakeWindow = { name: 'cached_window_state', location: { hash: '#state=secret', pathname: '/', search: '' }, history: { replaceState: () => {} } };
+
+  const deletionRes = await executeCompleteAccountDeletion({
+    endpoint: 'https://7am-gym-app.vercel.app/api/state',
+    activeUserId: 'francois@7amgym.app',
+    targetUserId: 'francois@7amgym.app',
+    stateObj: dualAccountState,
+    storageKey: 'bws_vegan_7am_app_v1',
+    fetchImpl: async (url, init) => {
+      executionEvents.push(`server:${init?.method}:${String(url)}`);
+      return {
+        ok: true,
+        json: async () => ({
+          configured: true,
+          deleted: true,
+          clearedDefaultMirror: true,
+          clearedCookies: true
+        })
+      } as Response;
+    },
+    docImpl: fakeDoc,
+    localStorageImpl: fakeLocalStorage,
+    sessionStorageImpl: fakeSessionStorage,
+    cachesImpl: fakeCaches,
+    windowImpl: fakeWindow
+  });
+
+  assert.equal(deletionRes.deleted, true);
+  assert.equal(deletionRes.serverDeleted, true);
+  assert.equal(deletionRes.clearedDefaultMirror, true);
+  assert.equal(deletionRes.mobilePurged, true);
+  assert.equal(deletionRes.clearedCacheCount, 2);
+  assert.deepEqual(deletedCacheKeys, ['7am-gym-v1', '7am-gym-assets']);
+  assert.equal(sessionCleared, true);
+  assert.equal(fakeWindow.name, '');
+  assert.equal(deletionRes.cookiesClearedCount >= 3, true);
+  assert.equal(writtenCookieHeaders.some((h) => h.startsWith('gym_session=;') && h.includes('Max-Age=0')), true);
+  assert.equal(writtenCookieHeaders.some((h) => h.startsWith('sb-access-token=;') && h.includes('Max-Age=0')), true);
+  assert.equal(deletionRes.secondaryAccount?.name, 'Alex');
+  assert.equal(deletionRes.switchPromptText, 'Account deleted. Do you want to continue as Alex?');
+  assert.equal(dualAccountState.accountsByEmail['francois@7amgym.app'], undefined);
+  assert.equal(dualAccountState.undoBackup, null);
+  assert.equal(executionEvents.length, 1);
+
+  // 4. Single-account deletion wipes localStorage completely and returns secondaryAccount = null
+  const soloState: Record<string, any> = {
+    userProfile: { email: 'solo@7amgym.app', name: 'Solo' },
+    accountsByEmail: {
+      'solo@7amgym.app': { profile: { email: 'solo@7amgym.app', name: 'Solo' } }
+    },
+    capturedLeads: [{ email: 'solo@7amgym.app', name: 'Solo' }]
+  };
+  fakeLocalStorage.setItem('bws_vegan_7am_app_v1', '{"dirty":true}');
+  const soloRes = await executeCompleteAccountDeletion({
+    endpoint: 'https://7am-gym-app.vercel.app/api/state',
+    activeUserId: 'solo@7amgym.app',
+    targetUserId: 'solo@7amgym.app',
+    stateObj: soloState,
+    storageKey: 'bws_vegan_7am_app_v1',
+    fetchImpl: async () => ({ ok: true, json: async () => ({ deleted: true }) } as Response),
+    docImpl: fakeDoc,
+    localStorageImpl: fakeLocalStorage,
+    sessionStorageImpl: fakeSessionStorage,
+    cachesImpl: fakeCaches,
+    windowImpl: fakeWindow
+  });
+  assert.equal(soloRes.deleted, true);
+  assert.equal(soloRes.secondaryAccount, null);
+  assert.equal(soloRes.switchPromptText, null);
+  assert.equal(soloRes.wipedEntireLocalStorage, true);
+  assert.equal(fakeLocalStorage.getItem('bws_vegan_7am_app_v1'), null);
+
+  // Also test standalone clearAllWebSessionCookies helper directly
+  const clearedDirect = clearAllWebSessionCookies(fakeDoc);
+  assert.equal(clearedDirect >= 3, true);
+
+  // 5. Content Validation Protocol: Automated QA (links, typos, forbidden database jargon)
+  const cleanQa = scanContentForBrokenLinksAndTypos(
+    '<p>This will permanently erase your account and all your data. You cannot get it back.</p><a href="https://7am-gym-app.vercel.app">Home</a>'
+  );
+  assert.equal(cleanQa.passed, true);
+  assert.equal(cleanQa.issues.length, 0);
+
+  const dirtyQa = scanContentForBrokenLinksAndTypos(
+    '<p>This will permanantly delte your protien log from Supabase.</p><a href="https://example.com/todo">Broken</a>'
+  );
+  assert.equal(dirtyQa.passed, false);
+  assert.equal(dirtyQa.issues.some((i) => i.type === 'forbidden_jargon' && i.token === 'supabase'), true);
+  assert.equal(dirtyQa.issues.some((i) => i.type === 'spelling' && i.token === 'protien'), true);
+  assert.equal(dirtyQa.issues.some((i) => i.type === 'broken_link'), true);
+
+  // 6. Content Validation Protocol: Mandatory Expert Review gate
+  const rejectedExpert = validateWorkoutPlanExpertApproval(
+    {
+      planId: 'w7-hypertrophy',
+      planName: 'Week 7 Hypertrophy',
+      reviewerName: 'Coach Sam',
+      certification: 'UNVERIFIED',
+      certificationId: '12',
+      certificationExpiresAt: '2020-01-01',
+      status: 'draft'
+    },
+    new Date('2026-11-23T00:00:00Z')
+  );
+  assert.equal(rejectedExpert.approvedForRelease, false);
+  assert.equal(rejectedExpert.reasons.length >= 3, true);
+
+  const approvedExpert = validateWorkoutPlanExpertApproval(
+    {
+      planId: 'w7-hypertrophy',
+      planName: 'Week 7 Hypertrophy',
+      reviewerName: 'Dr. Jordan Lee',
+      certification: 'CSCS',
+      certificationId: 'NSCA-882419',
+      certificationExpiresAt: '2028-12-31',
+      status: 'approved',
+      signedOffAt: '2026-11-20T15:00:00Z'
+    },
+    new Date('2026-11-23T00:00:00Z')
+  );
+  assert.equal(approvedExpert.approvedForRelease, true);
+  assert.equal(approvedExpert.reasons.length, 0);
+
+  // 7. Content Validation Protocol: Sports Science Alignment
+  const alignedScience = validateScientificAlignment({
+    restSeconds: 90,
+    weeklyHardSetsPerMuscle: 14,
+    targetRpe: 8,
+    proteinGramsPerKg: 1.8,
+    dailyWaterMl: 2500,
+    includesWarmup: true,
+    instructionsText: 'Focus on controlled reps and full range of motion.'
+  });
+  assert.equal(alignedScience.aligned, true);
+
+  const unsafeScience = validateScientificAlignment({
+    restSeconds: 10,
+    weeklyHardSetsPerMuscle: 40,
+    targetRpe: 11,
+    proteinGramsPerKg: 0.4,
+    dailyWaterMl: 500,
+    includesWarmup: false,
+    instructionsText: 'Spot reduce fat fast and starve yourself.'
+  });
+  assert.equal(unsafeScience.aligned, false);
+  assert.equal(unsafeScience.violations.length >= 6, true);
+
+  // 8. Content Validation Protocol: Deployment Checklist Gate
+  const blockedDeploy = runDeploymentValidationChecklist({
+    automatedQaPassed: true,
+    expertReviewApproved: false,
+    scientificAlignmentPassed: true,
+    accessibilityWcagAndEli12Passed: true,
+    concurrentDataSanitizationPassed: true,
+    zeroFeatureDeprecationVerified: true
+  });
+  assert.equal(blockedDeploy.readyToDeploy, false);
+  assert.equal(blockedDeploy.failedGates.length, 1);
+
+  const readyDeploy = runDeploymentValidationChecklist({
+    automatedQaPassed: true,
+    expertReviewApproved: true,
+    scientificAlignmentPassed: true,
+    accessibilityWcagAndEli12Passed: true,
+    concurrentDataSanitizationPassed: true,
+    zeroFeatureDeprecationVerified: true
+  });
+  assert.equal(readyDeploy.readyToDeploy, true);
+  assert.equal(readyDeploy.failedGates.length, 0);
+});
+
+
 
 
 
