@@ -262,3 +262,58 @@ export function applyDyslexiaFontToDocument(
 
   return { mode: normalized, fontFamily };
 }
+
+export const SENSORY_CALM_STORAGE_KEY = 'budget_gym_sensory_calm_v1';
+
+export function normalizeSensoryCalmPreference(raw: unknown): boolean {
+  if (typeof raw === 'boolean') return raw;
+  const s = String(raw ?? '').trim().toLowerCase();
+  return s === 'true' || s === '1' || s === 'on' || s === 'enabled';
+}
+
+export function loadStoredSensoryCalmPreference(
+  storage?: Pick<Storage, 'getItem'> | null
+): boolean {
+  try {
+    const store = storage ?? (typeof localStorage !== 'undefined' ? localStorage : null);
+    if (!store) return false;
+    return normalizeSensoryCalmPreference(store.getItem(SENSORY_CALM_STORAGE_KEY));
+  } catch {
+    return false;
+  }
+}
+
+export function saveSensoryCalmPreference(
+  enabled: boolean,
+  storage?: Pick<Storage, 'setItem'> | null
+): boolean {
+  const normalized = Boolean(enabled);
+  try {
+    const store = storage ?? (typeof localStorage !== 'undefined' ? localStorage : null);
+    if (store) {
+      store.setItem(SENSORY_CALM_STORAGE_KEY, normalized ? 'true' : 'false');
+    }
+  } catch {
+    // Ignore storage restrictions
+  }
+  return normalized;
+}
+
+export function applySensoryCalmToDocument(
+  enabled: boolean,
+  doc?: Document | null
+): { isSensoryCalm: boolean; audioAndHapticsMuted: boolean; layoutStabilityLocked: boolean } {
+  const isSensoryCalm = Boolean(enabled);
+  const targetDoc = doc ?? (typeof document !== 'undefined' ? document : null);
+  if (targetDoc && targetDoc.documentElement) {
+    const html = targetDoc.documentElement;
+    html.classList.toggle('sensory-calm', isSensoryCalm);
+    html.setAttribute('data-sensory-calm', isSensoryCalm ? 'true' : 'false');
+  }
+  return {
+    isSensoryCalm,
+    audioAndHapticsMuted: isSensoryCalm,
+    layoutStabilityLocked: isSensoryCalm
+  };
+}
+

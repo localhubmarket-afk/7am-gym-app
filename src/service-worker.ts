@@ -228,6 +228,23 @@ self.addEventListener('sync', (event: any) => {
   }
 });
 
+self.addEventListener('notificationclick', (event: NotificationEvent) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ('focus' in client && typeof client.focus === 'function') {
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow('/');
+      }
+      return undefined;
+    })
+  );
+});
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 

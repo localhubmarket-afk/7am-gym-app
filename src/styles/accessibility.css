@@ -370,3 +370,55 @@ html.light-theme .text-slate-200 {
   outline: 3px solid #38BDF8;
   outline-offset: 2px;
 }
+
+/* ============================================================================
+ * 9. Sensory-Calm Mode & Reduced-Motion Neurodivergent Support (COGA / WCAG 2.2)
+ * - Reduces visual saturation to <5% (filter: saturate(4%))
+ * - Enforces strict layout stability (no automatic shifting, jumping, or reordering)
+ * - Disables all CSS transitions and animations & honors prefers-reduced-motion
+ * ============================================================================ */
+html.sensory-calm,
+html[data-sensory-calm="true"] {
+  filter: saturate(4%);
+  scroll-behavior: auto !important;
+  overflow-anchor: none;
+}
+
+html.sensory-calm *,
+html.sensory-calm *::before,
+html.sensory-calm *::after,
+html[data-sensory-calm="true"] *,
+html[data-sensory-calm="true"] *::before,
+html[data-sensory-calm="true"] *::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  transition-property: none !important;
+  scroll-behavior: auto !important;
+}
+
+/* Strict layout stability: prevent scale/translate micro-shifts and pulse jitter */
+html.sensory-calm .animate-pulse,
+html.sensory-calm .animate-bounce,
+html.sensory-calm .animate-spin,
+html[data-sensory-calm="true"] .animate-pulse,
+html[data-sensory-calm="true"] .animate-bounce,
+html[data-sensory-calm="true"] .animate-spin {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  body,
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

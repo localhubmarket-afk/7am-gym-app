@@ -114,16 +114,21 @@ import {
   ACCESSIBLE_THEME_TOKENS,
   DEFAULT_DYSLEXIA_FRIENDLY_FONT_STACK,
   OPENDYSLEXIC_FONT_STACK,
+  SENSORY_CALM_STORAGE_KEY,
   applyDyslexiaFontToDocument,
+  applySensoryCalmToDocument,
   applyThemeToDocument,
   calculateWcagContrastRatio,
   getSystemPrefersDark,
   loadStoredFontPreference,
+  loadStoredSensoryCalmPreference,
   loadStoredThemePreference,
   normalizeFontModePreference,
+  normalizeSensoryCalmPreference,
   normalizeThemeModePreference,
   resolveEffectiveTheme,
   saveFontPreference,
+  saveSensoryCalmPreference,
   saveThemePreference
 } from './utils/themeProvider';
 import {
@@ -132,7 +137,32 @@ import {
   mergeImportedHistoryIntoGymState,
   parseWorkoutHistoryCsv
 } from './utils/csvHistoryImporter';
-import { computeAdherenceNeutralWeeklyProgress } from './utils/adherenceEngine';
+import {
+  computeAdherenceNeutralWeeklyProgress,
+  computeRolling30DayConsistencyScore
+} from './utils/adherenceEngine';
+import {
+  ADVANCED_SUBJECTIVE_STORAGE_KEY,
+  DEFAULT_SUBJECTIVE_TRACKING_ENABLED,
+  calculateDoubleProgressionTarget,
+  evaluateExerciseDoubleProgressionFromGymState,
+  loadAdvancedSubjectiveSetting,
+  parseObjectiveRepRange,
+  saveAdvancedSubjectiveSetting
+} from './utils/doubleProgressionEngine';
+import {
+  DEFAULT_KG_PLATES,
+  DEFAULT_LBS_PLATES,
+  STANDARD_BAR_WEIGHT_KG,
+  STANDARD_BAR_WEIGHT_LBS,
+  buildVisualPlateLoaderSvgHtml,
+  calculateVisualBarbellPlates
+} from './utils/plateLoader';
+import {
+  dispatchRestTimerCompletionAlert,
+  shouldMuteSensoryOutput,
+  triggerSafeHapticFeedback
+} from './utils/pwaRestTimer';
 import {
   calculateEstimated1RM,
   evaluateSessionMicroWins
@@ -929,6 +959,28 @@ declare global {
     flushIndexedDbSyncOutbox?: typeof flushIndexedDbSyncOutbox;
     notifyServiceWorkerToSync?: typeof notifyServiceWorkerToSync;
     startOfflineFirstBackgroundSync?: typeof startOfflineFirstBackgroundSync;
+    SENSORY_CALM_STORAGE_KEY?: string;
+    applySensoryCalmToDocument?: typeof applySensoryCalmToDocument;
+    loadStoredSensoryCalmPreference?: typeof loadStoredSensoryCalmPreference;
+    normalizeSensoryCalmPreference?: typeof normalizeSensoryCalmPreference;
+    saveSensoryCalmPreference?: typeof saveSensoryCalmPreference;
+    computeRolling30DayConsistencyScore?: typeof computeRolling30DayConsistencyScore;
+    ADVANCED_SUBJECTIVE_STORAGE_KEY?: string;
+    DEFAULT_SUBJECTIVE_TRACKING_ENABLED?: boolean;
+    calculateDoubleProgressionTarget?: typeof calculateDoubleProgressionTarget;
+    evaluateExerciseDoubleProgressionFromGymState?: typeof evaluateExerciseDoubleProgressionFromGymState;
+    loadAdvancedSubjectiveSetting?: typeof loadAdvancedSubjectiveSetting;
+    parseObjectiveRepRange?: typeof parseObjectiveRepRange;
+    saveAdvancedSubjectiveSetting?: typeof saveAdvancedSubjectiveSetting;
+    DEFAULT_KG_PLATES?: typeof DEFAULT_KG_PLATES;
+    DEFAULT_LBS_PLATES?: typeof DEFAULT_LBS_PLATES;
+    STANDARD_BAR_WEIGHT_KG?: number;
+    STANDARD_BAR_WEIGHT_LBS?: number;
+    buildVisualPlateLoaderSvgHtml?: typeof buildVisualPlateLoaderSvgHtml;
+    calculateVisualBarbellPlates?: typeof calculateVisualBarbellPlates;
+    dispatchRestTimerCompletionAlert?: typeof dispatchRestTimerCompletionAlert;
+    shouldMuteSensoryOutput?: typeof shouldMuteSensoryOutput;
+    triggerSafeHapticFeedback?: typeof triggerSafeHapticFeedback;
   }
 }
 
@@ -1068,5 +1120,27 @@ if (typeof window !== 'undefined') {
   window.flushIndexedDbSyncOutbox = flushIndexedDbSyncOutbox;
   window.notifyServiceWorkerToSync = notifyServiceWorkerToSync;
   window.startOfflineFirstBackgroundSync = startOfflineFirstBackgroundSync;
+  window.SENSORY_CALM_STORAGE_KEY = SENSORY_CALM_STORAGE_KEY;
+  window.applySensoryCalmToDocument = applySensoryCalmToDocument;
+  window.loadStoredSensoryCalmPreference = loadStoredSensoryCalmPreference;
+  window.normalizeSensoryCalmPreference = normalizeSensoryCalmPreference;
+  window.saveSensoryCalmPreference = saveSensoryCalmPreference;
+  window.computeRolling30DayConsistencyScore = computeRolling30DayConsistencyScore;
+  window.ADVANCED_SUBJECTIVE_STORAGE_KEY = ADVANCED_SUBJECTIVE_STORAGE_KEY;
+  window.DEFAULT_SUBJECTIVE_TRACKING_ENABLED = DEFAULT_SUBJECTIVE_TRACKING_ENABLED;
+  window.calculateDoubleProgressionTarget = calculateDoubleProgressionTarget;
+  window.evaluateExerciseDoubleProgressionFromGymState = evaluateExerciseDoubleProgressionFromGymState;
+  window.loadAdvancedSubjectiveSetting = loadAdvancedSubjectiveSetting;
+  window.parseObjectiveRepRange = parseObjectiveRepRange;
+  window.saveAdvancedSubjectiveSetting = saveAdvancedSubjectiveSetting;
+  window.DEFAULT_KG_PLATES = DEFAULT_KG_PLATES;
+  window.DEFAULT_LBS_PLATES = DEFAULT_LBS_PLATES;
+  window.STANDARD_BAR_WEIGHT_KG = STANDARD_BAR_WEIGHT_KG;
+  window.STANDARD_BAR_WEIGHT_LBS = STANDARD_BAR_WEIGHT_LBS;
+  window.buildVisualPlateLoaderSvgHtml = buildVisualPlateLoaderSvgHtml;
+  window.calculateVisualBarbellPlates = calculateVisualBarbellPlates;
+  window.dispatchRestTimerCompletionAlert = dispatchRestTimerCompletionAlert;
+  window.shouldMuteSensoryOutput = shouldMuteSensoryOutput;
+  window.triggerSafeHapticFeedback = triggerSafeHapticFeedback;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

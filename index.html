@@ -183,6 +183,36 @@
       display: none !important;
     }
 
+    /* Sensory-Calm Mode (<5% saturation, strict layout stability, zero animations/transitions) & prefers-reduced-motion */
+    html.sensory-calm,
+    html[data-sensory-calm="true"] {
+      filter: saturate(4%);
+      scroll-behavior: auto !important;
+      overflow-anchor: none;
+    }
+    html.sensory-calm *,
+    html.sensory-calm *::before,
+    html.sensory-calm *::after,
+    html[data-sensory-calm="true"] *,
+    html[data-sensory-calm="true"] *::before,
+    html[data-sensory-calm="true"] *::after {
+      animation-duration: 0s !important;
+      animation-delay: 0s !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0s !important;
+      transition-delay: 0s !important;
+      transition-property: none !important;
+      scroll-behavior: auto !important;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html, body, *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
     /* 200% Text Scaling Reflow Protection & Fluid Set Row Layout (48x48px targets + >= 8px gaps) */
     main, section, article, header, footer, nav {
       min-width: 0;
@@ -621,21 +651,22 @@
         <span class="shrink-0 rounded-md bg-amber-500/25 px-2 py-0.5 text-[0.625rem] font-extrabold uppercase">Local-First</span>
       </div>
 
-      <!-- Module 3: Adherence-Neutral Flexible Weekly Goal Card (Dynamically Bound to gym_state.workoutLogs) -->
-      <section id="weekly-adherence-neutral-card" aria-label="Weekly flexible workout goal" data-adherence-source="workoutLogs" class="rounded-2xl border border-emerald-500/40 bg-slate-900/90 p-3 space-y-2 shadow-sm">
+      <!-- Module 3 / Task 2: Adherence-Neutral Rolling 30-Day Consistency & Flexible Weekly Goal Card -->
+      <section id="weekly-adherence-neutral-card" aria-label="Rolling 30-day consistency and flexible weekly workout goal" data-adherence-source="workoutLogs" class="rounded-2xl border border-emerald-500/40 bg-slate-900/90 p-3 space-y-2 shadow-sm">
         <div class="flex items-center justify-between gap-2">
           <div class="min-w-0">
-            <div class="text-[0.625rem] font-extrabold uppercase tracking-wider text-emerald-300">Flexible Weekly Goal • Zero Streak Punishment</div>
-            <div id="adherence-neutral-status-text" aria-live="polite" aria-atomic="true" data-completed-workouts="0" class="text-xs sm:text-sm font-extrabold text-white mt-0.5"></div>
+            <div class="text-[0.6875rem] font-extrabold tracking-wide text-emerald-300">Rolling 30-Day Consistency · Zero Streak Resets</div>
+            <div id="rolling-30day-consistency-text" aria-live="polite" aria-atomic="true" data-rolling-30day-percent="0" class="text-xs sm:text-sm font-extrabold text-white mt-0.5 tabular-nums"></div>
+            <div id="adherence-neutral-status-text" aria-live="polite" aria-atomic="true" data-completed-workouts="0" class="text-xs font-bold text-slate-200 mt-0.5 tabular-nums"></div>
           </div>
-          <button type="button" id="open-micro-wins-preview-btn" aria-label="View your session micro-wins" class="shrink-0 min-h-[44px] min-w-[44px] px-2.5 py-1.5 rounded-xl border border-amber-400/60 bg-amber-600/20 hover:bg-amber-600/30 text-amber-100 text-[0.6875rem] font-extrabold transition whitespace-nowrap">
+          <button type="button" id="open-micro-wins-preview-btn" aria-label="View your session micro-wins" class="shrink-0 min-h-[48px] min-w-[48px] px-2.5 py-1.5 rounded-xl border border-amber-400/60 bg-amber-600/20 hover:bg-amber-600/30 text-amber-100 text-[0.6875rem] font-extrabold transition whitespace-nowrap">
             <span aria-hidden="true">★ </span><span>View Session Wins</span>
           </button>
         </div>
-        <div role="progressbar" aria-label="Weekly flexible workout goal progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="adherence-neutral-progress-bar" class="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+        <div role="progressbar" aria-label="Rolling 30-day workout consistency progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="adherence-neutral-progress-bar" class="h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
           <div id="adherence-neutral-progress-fill" class="h-full rounded-full bg-emerald-500 transition-all duration-300" style="width: 0%;"></div>
         </div>
-        <p id="adherence-neutral-encouragement" aria-live="polite" class="text-[0.6875rem] text-slate-300 leading-relaxed"></p>
+        <p id="adherence-neutral-encouragement" aria-live="polite" class="text-[0.75rem] text-slate-300 leading-relaxed"></p>
       </section>
 
       <!-- Module 4: Biometric Readiness Banner (Sleep < 5h -> -10% Prescribed Sets) -->
@@ -731,6 +762,11 @@
 
       <!-- ZONE C: Live Tracker Bar (3-Pill Horizontal Row right above Warm-Up) -->
       <div id="gym-zone-c-tracker-slot">
+        <!-- Populated dynamically by JS -->
+      </div>
+
+      <!-- Task 3: 2-Minute Micro-Start Trigger & Single Warm-Up Set Focus View -->
+      <div id="micro-start-slot" class="space-y-2">
         <!-- Populated dynamically by JS -->
       </div>
 
@@ -5539,7 +5575,23 @@
     // =========================================================================
     // 4. BLUETOOTH-SAFE WEB AUDIO API TIMER CHIME (ZERO PERSISTENT AUDIOCONTEXT)
     // =========================================================================
+    function isSensoryCalmModeActive() {
+      if (typeof window.shouldMuteSensoryOutput === 'function' && window.shouldMuteSensoryOutput()) {
+        return true;
+      }
+      return Boolean(
+        (typeof state === 'object' && state && state.isSensoryCalm === true) ||
+        (typeof document !== 'undefined' &&
+          document.documentElement &&
+          (document.documentElement.classList.contains('sensory-calm') ||
+            document.documentElement.getAttribute('data-sensory-calm') === 'true'))
+      );
+    }
+
     function getEffectiveAudioMode() {
+      if (isSensoryCalmModeActive()) {
+        return 'silent';
+      }
       if (state.audioMode && ['sound_vibe', 'vibe_only', 'silent'].includes(state.audioMode)) {
         return state.audioMode;
       }
@@ -5554,9 +5606,12 @@
     }
 
     function updateAudioModeUI() {
+      const calmActive = isSensoryCalmModeActive();
       const mode = getEffectiveAudioMode();
-      state.audioMode = mode;
-      state.soundEnabled = mode === 'sound_vibe';
+      if (!calmActive) {
+        state.audioMode = mode;
+        state.soundEnabled = mode === 'sound_vibe';
+      }
 
       const labels = {
         sound_vibe: 'Sound & Vibe',
@@ -5796,6 +5851,10 @@
     }
 
     function playTimerChime(overrideTone, isPreview) {
+      // Task 4: Sensory-Calm Mode globally mutes all audio chimes and haptic vibrations
+      if (isSensoryCalmModeActive()) {
+        return;
+      }
       configureAmbientAudioSession();
       const mode = getEffectiveAudioMode();
       if (!isPreview && mode === 'silent') return;
@@ -6917,8 +6976,23 @@
         if (!state.timerZeroChimeFired) {
           state.timerZeroChimeFired = true;
           state.timerInOvertime = true;
-          playTimerChime();
-          triggerWatchWristTimerNotification(null);
+          const calmActive = isSensoryCalmModeActive();
+          if (!calmActive) {
+            playTimerChime();
+          }
+          if (typeof window.dispatchRestTimerCompletionAlert === 'function') {
+            window.dispatchRestTimerCompletionAlert({
+              title: 'Rest Complete — Next Set Ready',
+              body: state.timerContextLabel
+                ? `${state.timerContextLabel} finished. Start your next set when ready.`
+                : 'Rest complete. Start your next set when ready.',
+              tag: 'gym-rest-timer',
+              iconUrl: window.generatedPwaIcon192 || window.__gymPwaIcon192 || '/icon-192.png',
+              isSensoryCalm: calmActive
+            }).catch(() => {});
+          } else {
+            triggerWatchWristTimerNotification(null);
+          }
           showToast('Rest Complete (00:00) — Time for your next set.');
         }
         const overtimeSec = Math.floor(remainingMs / 1000);
@@ -7126,11 +7200,12 @@
         saveState();
         if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
           const notifTitle = 'Did you finish your last set?';
+          const calmActive = isSensoryCalmModeActive();
           const notifOptions = {
             body: `You have unlogged sets remaining on ${nxt.exName}. Tap to log and finish.`,
             icon: window.__gymPwaIcon192 || '/icon-192.png',
             badge: window.__gymPwaIcon192 || '/icon-192.png',
-            vibrate: [200, 100, 200],
+            ...(calmActive ? { silent: true } : { vibrate: [200, 100, 200] }),
             tag: 'unfinished-workout-reminder',
             renotify: true
           };
@@ -7349,13 +7424,14 @@
       const body = isRiceStage && riceBanner
         ? `Rice Timer Complete! ${riceBanner}`
         : `Time to lift! Up Next: ${cleanSummary}`;
+      const calmActive = isSensoryCalmModeActive();
       return {
         title: isRiceStage ? '7AM Kitchen Timer Alert' : 'Rest Complete! Start Next Set',
         options: {
           body,
           icon: '/icon-192.png',
           badge: '/icon-192.png',
-          vibrate: [300, 150, 300, 150, 400],
+          ...(calmActive ? { silent: true } : { vibrate: [300, 150, 300, 150, 400] }),
           tag: 'gym-rest-timer',
           renotify: true,
           requireInteraction: true
@@ -7368,8 +7444,9 @@
       const safeBody = body || 'Rest Complete! Start your next set.';
       const uniqueTag = tag || ('budget-gym-alert-' + Date.now());
       const iconUrl = window.generatedPwaIcon192 || window.__gymPwaIcon192 || '/icon-192.png';
+      const calmActive = isSensoryCalmModeActive();
 
-      if (navigator && typeof navigator.vibrate === 'function') {
+      if (!calmActive && navigator && typeof navigator.vibrate === 'function') {
         try {
           navigator.vibrate([400, 150, 400]);
         } catch (e) {}
@@ -7394,7 +7471,8 @@
                 body: safeBody,
                 icon: iconUrl,
                 badge: iconUrl,
-                vibrate: [400, 150, 400, 150, 500],
+                silent: calmActive,
+                ...(calmActive ? {} : { vibrate: [400, 150, 400, 150, 500] }),
                 tag: uniqueTag,
                 renotify: true,
                 requireInteraction: true
@@ -7413,14 +7491,15 @@
           new Notification(safeTitle, {
             body: safeBody,
             icon: iconUrl,
-            vibrate: [400, 150, 400],
+            silent: calmActive,
+            ...(calmActive ? {} : { vibrate: [400, 150, 400] }),
             tag: uniqueTag,
             renotify: true
           });
         } catch (e) {}
       }
 
-      showToast('Watch Alert Sent to Phone Status Bar');
+      showToast(calmActive ? 'Silent Rest Alert Delivered' : 'Watch Alert Sent to Phone Status Bar');
       return true;
     }
 
@@ -12348,15 +12427,24 @@
           </div>` : ''}
         `;
       }
+      const visualPlateLoaderHtml = typeof window.buildVisualPlateLoaderSvgHtml === 'function'
+        ? window.buildVisualPlateLoaderSvgHtml(mathObj.total, {
+            barWeight: mathObj.bar,
+            unit: mathObj.unit
+          })
+        : '';
       return `
-        <div class="flex flex-wrap items-center justify-between gap-1.5">
-          <span class="text-[0.6875rem] font-bold text-slate-200">
-            <span class="text-amber-300 font-extrabold">${mathObj.bar}</span> Bar + <span class="text-sky-300 font-extrabold">${mathObj.bothSides}</span> Sides (<span class="text-emerald-300 font-extrabold">${mathObj.perSide}</span>/side) = <span class="text-amber-300 font-extrabold">${mathObj.total} ${mathObj.unit}</span> <span class="text-slate-400 font-normal">(≈ ${mathObj.totalOther} ${mathObj.otherUnit})</span>
-          </span>
-          <div class="flex flex-wrap items-center gap-1">
-            <span class="text-[0.625rem] text-slate-400 font-semibold">/side:</span>
-            ${mathObj.plateChipsHtml}
+        <div class="space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-1.5">
+            <span class="text-[0.6875rem] font-bold text-slate-200">
+              <span class="text-amber-300 font-extrabold">${mathObj.bar}</span> Bar + <span class="text-sky-300 font-extrabold">${mathObj.bothSides}</span> Sides (<span class="text-emerald-300 font-extrabold">${mathObj.perSide}</span>/side) = <span class="text-amber-300 font-extrabold">${mathObj.total} ${mathObj.unit}</span> <span class="text-slate-400 font-normal">(≈ ${mathObj.totalOther} ${mathObj.otherUnit})</span>
+            </span>
+            <div class="flex flex-wrap items-center gap-1">
+              <span class="text-[0.625rem] text-slate-400 font-semibold">/side:</span>
+              ${mathObj.plateChipsHtml}
+            </div>
           </div>
+          ${visualPlateLoaderHtml}
         </div>
         ${mathObj.needsMicroPlate && logKey && exId ? `
         <div class="pt-1">
@@ -14460,7 +14548,7 @@
         }
       });
 
-      // Module 3 / Task 3: Adherence-Neutral Weekly Goal Card (Strictly Bound to state.workoutLogs — Never Hardcoded)
+      // Module 3 / Task 2: Adherence-Neutral Rolling 30-Day Consistency & Weekly Goal Card (Never Resets Streaks)
       (function updateConnectedWeeklyAdherenceCard() {
         const targetDays = Math.max(
           1,
@@ -14477,7 +14565,6 @@
             cardioLogs: state.cardioLogs || {}
           });
         } else {
-          // Synchronous workoutLogs-bound fallback before ES bridge hydrates
           const doneDays = new Set();
           const wPref = `w${week}_`;
           Object.entries(logs).forEach(([k, v]) => {
@@ -14503,23 +14590,178 @@
                 ? `${count} of ${targetDays} workouts completed this week (Goal hit!)`
                 : `${count} of ${targetDays} workouts completed this week`),
             encouragementCopy: count === 0
-              ? 'Start whenever you are ready. Any day counts toward your weekly goal.'
+              ? 'Take rest days when you need them. Start whenever you are ready.'
               : (count >= targetDays
-                ? 'You hit your flexible weekly target. Great consistency.'
+                ? 'Steady work this week. Take rest days when you need them.'
                 : `${rem} more workout${rem === 1 ? '' : 's'} any day this week. Take rest days when you need them.`)
           };
         }
+
+        let rolling30 = null;
+        if (typeof window.computeRolling30DayConsistencyScore === 'function') {
+          rolling30 = window.computeRolling30DayConsistencyScore({
+            plannedDaysPerWeek: targetDays,
+            currentWeek: week,
+            workoutLogs: logs,
+            pullupLogs: state.pullupLogs || {},
+            cardioLogs: state.cardioLogs || {}
+          });
+        } else {
+          const planned30 = Math.max(1, Math.round((targetDays * 30) / 7));
+          const completed30 = adh.completedWorkoutsCount || 0;
+          const pct30 = Math.min(100, Math.round((completed30 / planned30) * 100));
+          rolling30 = {
+            consistencyPercent: pct30,
+            statusLabel: `${pct30}% Rolling 30-Day Consistency (${completed30} of ${planned30} planned workouts)`,
+            encouragementCopy: 'Take rest days when you need them. Missing a day never resets your progress to zero.'
+          };
+        }
+
+        const rollingEl = document.getElementById('rolling-30day-consistency-text');
         const adhStatus = document.getElementById('adherence-neutral-status-text');
         const adhBar = document.getElementById('adherence-neutral-progress-bar');
         const adhFill = document.getElementById('adherence-neutral-progress-fill');
         const adhEnc = document.getElementById('adherence-neutral-encouragement');
+        if (rollingEl) {
+          rollingEl.textContent = rolling30.statusLabel;
+          rollingEl.setAttribute('data-rolling-30day-percent', String(rolling30.consistencyPercent));
+        }
         if (adhStatus) {
           adhStatus.textContent = adh.statusLabel;
           adhStatus.setAttribute('data-completed-workouts', String(adh.completedWorkoutsCount));
         }
-        if (adhBar) adhBar.setAttribute('aria-valuenow', String(adh.percentComplete));
-        if (adhFill) adhFill.style.width = `${adh.percentComplete}%`;
-        if (adhEnc) adhEnc.textContent = adh.encouragementCopy;
+        if (adhBar) adhBar.setAttribute('aria-valuenow', String(rolling30.consistencyPercent));
+        if (adhFill) adhFill.style.width = `${rolling30.consistencyPercent}%`;
+        if (adhEnc) adhEnc.textContent = rolling30.encouragementCopy;
+      })();
+
+      // Task 3: 2-Minute Micro-Start Focus Mode (Renders ONLY Warm-Up Set 1 until completed, then reveals full workout)
+      (function renderMicroStartFocusControl() {
+        const microSlot = document.getElementById('micro-start-slot');
+        const warmupWrap = document.getElementById('warmup-card-container');
+        const exListEl = document.getElementById('exercise-list');
+        const zoneBEl = document.getElementById('gym-zone-b-setup-slot');
+        const zoneCEl = document.getElementById('gym-zone-c-tracker-slot');
+        if (!microSlot) return;
+
+        if (dayAssignment.isRestDay) {
+          microSlot.innerHTML = '';
+          microSlot.classList.add('hidden');
+          return;
+        }
+        microSlot.classList.remove('hidden');
+
+        const isMicroActive = Boolean(state.microStartActive);
+        const firstExercise = exercisesToday[0];
+        const firstMeta = firstExercise ? (EXERCISE_META[firstExercise.id] || { defaultWeightLbs: 45 }) : { defaultWeightLbs: 45 };
+        const firstUnit = firstExercise ? getExerciseUnit(firstExercise.id) : 'lbs';
+        const firstWarmupWeight = firstMeta.defaultWeightLbs > 0
+          ? `${Math.max(firstUnit === 'kg' ? 20 : 45, Math.round((firstMeta.defaultWeightLbs * 0.5) / 5) * 5)} ${firstUnit} (50% light warm-up)`
+          : 'Bodyweight (easy pace)';
+        const firstWarmupTitle = firstExercise
+          ? `Warm-Up Set 1 · ${firstExercise.name}`
+          : 'Warm-Up Set 1 · Easy Mobility';
+
+        if (!isMicroActive) {
+          if (exListEl) exListEl.classList.remove('hidden');
+          if (zoneBEl) zoneBEl.classList.remove('hidden');
+          if (zoneCEl) zoneCEl.classList.remove('hidden');
+          if (warmupWrap) warmupWrap.classList.remove('hidden');
+
+          microSlot.innerHTML = `
+            <div class="rounded-2xl border border-emerald-500/45 bg-slate-900/95 p-3 flex flex-wrap items-center justify-between gap-2.5">
+              <div class="min-w-0 flex-1 space-y-0.5">
+                <div class="text-xs sm:text-sm font-extrabold text-white">Low energy or stuck starting?</div>
+                <p class="text-[0.75rem] text-slate-300 leading-relaxed">Show just 1 short warm-up set for 2 minutes. The rest of the workout stays hidden until you finish it.</p>
+              </div>
+              <button
+                type="button"
+                id="micro-start-trigger-btn"
+                data-testid="micro-start-trigger-btn"
+                class="min-h-[48px] min-w-[48px] shrink-0 rounded-xl border border-emerald-400 bg-emerald-600 hover:bg-emerald-500 px-3.5 py-2 text-xs sm:text-sm font-extrabold text-white"
+              >
+                2-Minute Micro-Start
+              </button>
+            </div>
+          `;
+          const triggerBtn = document.getElementById('micro-start-trigger-btn');
+          if (triggerBtn) {
+            triggerBtn.onclick = () => {
+              state.microStartActive = true;
+              renderWorkoutView();
+              showToast('2-Minute Micro-Start active: Focus only on Warm-Up Set 1.');
+            };
+          }
+          return;
+        }
+
+        // Micro-Start Active: Hide all other exercise cards so ONLY Warm-Up Set 1 is on screen
+        if (exListEl) exListEl.classList.add('hidden');
+        if (zoneBEl) zoneBEl.classList.add('hidden');
+        if (zoneCEl) zoneCEl.classList.add('hidden');
+        if (warmupWrap) warmupWrap.classList.add('hidden');
+
+        microSlot.innerHTML = `
+          <section
+            id="micro-start-focus-panel"
+            data-testid="micro-start-focus-panel"
+            aria-label="2-Minute Micro-Start Focused Warm-Up Set"
+            class="rounded-2xl border-2 border-emerald-400 bg-slate-900 p-4 sm:p-5 space-y-4 shadow-lg"
+          >
+            <div class="flex flex-wrap items-start justify-between gap-2">
+              <div class="space-y-1">
+                <div class="text-xs font-extrabold text-emerald-300">2-Minute Micro-Start · Step 1 of 1</div>
+                <h2 class="text-base sm:text-lg font-extrabold text-white">${firstWarmupTitle}</h2>
+              </div>
+              <button
+                type="button"
+                id="micro-start-exit-btn"
+                class="min-h-[48px] min-w-[48px] rounded-xl border border-slate-600 bg-slate-800 hover:bg-slate-700 px-3 py-2 text-xs font-extrabold text-slate-100"
+              >
+                Show Full Workout
+              </button>
+            </div>
+
+            <div class="rounded-xl border border-slate-700 bg-slate-950 p-3.5 space-y-2">
+              <div class="flex flex-wrap items-center gap-2 text-sm font-extrabold text-emerald-300 tabular-nums">
+                <span>8 easy reps</span>
+                <span aria-hidden="true">·</span>
+                <span>${firstWarmupWeight}</span>
+              </div>
+              <p class="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                Move smoothly and wake up your joints. Once you tap done below, the rest of today's workout will appear right away.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              id="micro-start-complete-btn"
+              data-testid="micro-start-complete-btn"
+              class="w-full min-h-[48px] min-w-[48px] rounded-xl border border-emerald-300 bg-emerald-600 hover:bg-emerald-500 px-4 py-3 text-sm font-extrabold text-white"
+            >
+              Done With Warm-Up Set 1 — Reveal Full Workout
+            </button>
+          </section>
+        `;
+
+        const exitBtn = document.getElementById('micro-start-exit-btn');
+        if (exitBtn) {
+          exitBtn.onclick = () => {
+            state.microStartActive = false;
+            renderWorkoutView();
+          };
+        }
+        const completeBtn = document.getElementById('micro-start-complete-btn');
+        if (completeBtn) {
+          completeBtn.onclick = () => {
+            if (!state.warmupLogs || typeof state.warmupLogs !== 'object') state.warmupLogs = {};
+            state.warmupLogs[`w${week}_d${dayIdx}_warmup_part2_set_50`] = true;
+            state.microStartActive = false;
+            saveState(true);
+            renderWorkoutView();
+            showToast('Warm-Up Set 1 done! Full workout unlocked.');
+          };
+        }
       })();
 
       // Wire "★ View Session Wins" preview button directly to Micro-Wins completion modal
@@ -16000,6 +16242,46 @@
             </button>
 
             <div id="sets-wrap-${panelKey}" class="${isCollapsedDone ? 'hidden' : 'space-y-3'}" style="display: ${isCollapsedDone ? 'none' : 'block'};">
+              <!-- Task 1: Deterministic Double Progression Target Banner (Objective Weight & Reps Only — Zero RPE/RIR Required) -->
+              ${!isCardioEx && !isTimedHold && typeof window.evaluateExerciseDoubleProgressionFromGymState === 'function' ? (() => {
+                const dp = window.evaluateExerciseDoubleProgressionFromGymState({
+                  gymState: state,
+                  exerciseId: ex.id,
+                  exerciseName: displayExName,
+                  currentWeek: week,
+                  daySlotIndex: ex.id === 'cable_ab_crunch' ? dayIdx : slotIdx,
+                  targetSets: ex.sets,
+                  repRangeLabel: String(ex.reps || '8-12'),
+                  baselineWeight: meta.defaultWeightLbs || 0,
+                  unit: exUnit,
+                  isBodyweight: isBodyweightRepsOnly
+                });
+                const showOptInSubjective = Boolean(state.advancedSubjectiveEnabled);
+                const subjKey = `w${week}_${dayIdx}_${ex.id}`;
+                const savedSubj = (state.optionalSubjectiveNotes && state.optionalSubjectiveNotes[subjKey]) || '';
+                return `
+                  <div class="rounded-xl border border-sky-500/35 bg-slate-950/90 px-3 py-2 space-y-1.5" data-double-progression-card="${ex.id}">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <span class="text-[0.6875rem] font-extrabold text-sky-300">Double Progression Target</span>
+                      <span class="text-xs font-extrabold text-white tabular-nums">${dp.nextTargetLabel}</span>
+                    </div>
+                    <p class="text-[0.75rem] text-slate-300 leading-relaxed">${dp.plainEnglishSummary}</p>
+                    ${showOptInSubjective ? `
+                      <div class="pt-1.5 border-t border-slate-800 flex flex-wrap items-center gap-2">
+                        <label for="opt-subj-${ex.id}" class="text-[0.6875rem] font-bold text-slate-300">Optional Effort Note (RPE/RIR/Soreness — does not alter math):</label>
+                        <input
+                          id="opt-subj-${ex.id}"
+                          type="text"
+                          value="${String(savedSubj).replace(/"/g, '&quot;')}"
+                          data-opt-subj-key="${subjKey}"
+                          placeholder="e.g. RPE 8, RIR 2, mild soreness"
+                          class="optional-subjective-note-input flex-1 min-w-[10rem] rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-white"
+                        />
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              })() : ''}
               <!-- Compact Unit + Rest Bar (Zero Options Deleted) -->
               ${!isCardioEx ? `
               <div class="flex flex-wrap items-center justify-between gap-1.5 pt-1">
@@ -18586,7 +18868,7 @@
           const isThisExJustCompleted = state.workoutLogs[key].done && exSetsDoneNow === totalExSets;
           let autoOpenedNextEx = null;
 
-          if (isThisExJustCompleted && state.autoCollapseDone !== false) {
+          if (isThisExJustCompleted && state.autoCollapseDone !== false && !isSensoryCalmModeActive()) {
             if (!state.cardCollapsedState) state.cardCollapsedState = {};
             state.cardCollapsedState[getExercisePanelKey(dayIdx, exId)] = "collapsed";
             setExerciseImgOpen(dayIdx, exId, false);
@@ -18624,7 +18906,7 @@
             setTimeout(() => {
               const loginModal = document.getElementById('smart-login-modal');
               const titleEl = document.getElementById('smart-login-modal-title');
-              if (titleEl) titleEl.textContent = 'First Set Logged: Save Your Streak & Unlock Cloud Sync';
+              if (titleEl) titleEl.textContent = 'First Set Logged: Save Your Progress & Unlock Cloud Sync';
               if (loginModal) loginModal.classList.remove('hidden');
             }, 650);
           }
@@ -18661,7 +18943,7 @@
           renderWorkoutView();
           renderVeganView();
 
-          if (autoOpenedNextEx) {
+          if (autoOpenedNextEx && !isSensoryCalmModeActive()) {
             setTimeout(() => {
               const nextCard = document.getElementById(`ex-card-${autoOpenedNextEx.id}`);
               if (nextCard) nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -28174,6 +28456,36 @@
             <span id="toggle-opendyslexic-status">OFF — Tap to Enable</span>
           </button>
         </div>
+
+        <!-- Task 4: Global Sensory-Calm Mode Toggle -->
+        <div class="pt-2.5 border-t border-slate-800 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-extrabold text-white">
+            <span>Sensory-Calm Mode</span>
+            <span id="active-sensory-calm-readout" class="text-[0.75rem] font-bold text-emerald-300">Standard Display</span>
+          </div>
+          <p class="text-[0.75rem] text-slate-300 leading-relaxed">
+            Drops color saturation below 5%, locks layout stability, removes motion, and mutes all chimes and vibrations.
+          </p>
+          <button type="button" id="toggle-sensory-calm-btn" role="switch" aria-checked="false" class="w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-sky-400/60 bg-slate-900 hover:bg-slate-800 text-slate-100 text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2">
+            <span>Sensory-Calm Mode</span>
+            <span id="toggle-sensory-calm-status">OFF — Tap to Enable</span>
+          </button>
+        </div>
+
+        <!-- Task 1: Opt-In Advanced Settings (Optional RPE / RIR / Pump / Soreness — Never Blocks Progression) -->
+        <div class="pt-2.5 border-t border-slate-800 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-extrabold text-white">
+            <span>Advanced Settings: Optional Effort Notes</span>
+            <span id="active-advanced-subjective-readout" class="text-[0.75rem] font-bold text-emerald-300">Hidden (Default)</span>
+          </div>
+          <p class="text-[0.75rem] text-slate-300 leading-relaxed">
+            Double Progression uses only logged weight and reps. Enable this only if you want optional RPE, RIR, pump, or soreness notes.
+          </p>
+          <button type="button" id="toggle-advanced-subjective-btn" role="switch" aria-checked="false" class="w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-sky-400/60 bg-slate-900 hover:bg-slate-800 text-slate-100 text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2">
+            <span>Show Optional RPE / RIR Fields</span>
+            <span id="toggle-advanced-subjective-status">OFF — Tap to Enable</span>
+          </button>
+        </div>
       </div>
 
       <!-- Module 2: CSV History Importer (Strong, Hevy, Fitbod) — Default Closed Accordion -->
@@ -29563,6 +29875,57 @@
         }
       }
 
+      function applySensoryCalmUI(enabled) {
+        const clean = typeof window.saveSensoryCalmPreference === 'function'
+          ? window.saveSensoryCalmPreference(Boolean(enabled))
+          : Boolean(enabled);
+        if (typeof window.applySensoryCalmToDocument === 'function') {
+          window.applySensoryCalmToDocument(clean, document);
+        } else {
+          document.documentElement.classList.toggle('sensory-calm', clean);
+          document.documentElement.setAttribute('data-sensory-calm', clean ? 'true' : 'false');
+        }
+        if (typeof state === 'object' && state) {
+          state.isSensoryCalm = clean;
+        }
+        const readout = document.getElementById('active-sensory-calm-readout');
+        if (readout) readout.textContent = clean ? 'Active (Low Saturation · Muted)' : 'Standard Display';
+        const btn = document.getElementById('toggle-sensory-calm-btn');
+        const statusEl = document.getElementById('toggle-sensory-calm-status');
+        if (btn) {
+          btn.setAttribute('aria-checked', clean ? 'true' : 'false');
+          btn.className = clean
+            ? 'w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-emerald-400 bg-emerald-600 text-white text-xs font-extrabold flex flex-wrap items-center justify-between gap-2'
+            : 'w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-sky-400/60 bg-slate-900 hover:bg-slate-800 text-slate-100 text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2';
+        }
+        if (statusEl) {
+          statusEl.textContent = clean ? 'ON — Tap to Disable' : 'OFF — Tap to Enable';
+        }
+        if (typeof updateAudioModeUI === 'function') updateAudioModeUI();
+      }
+
+      function applyAdvancedSubjectiveUI(enabled) {
+        const clean = typeof window.saveAdvancedSubjectiveSetting === 'function'
+          ? window.saveAdvancedSubjectiveSetting(Boolean(enabled))
+          : Boolean(enabled);
+        if (typeof state === 'object' && state) {
+          state.advancedSubjectiveEnabled = clean;
+        }
+        const readout = document.getElementById('active-advanced-subjective-readout');
+        if (readout) readout.textContent = clean ? 'Shown (Optional Only)' : 'Hidden (Default)';
+        const btn = document.getElementById('toggle-advanced-subjective-btn');
+        const statusEl = document.getElementById('toggle-advanced-subjective-status');
+        if (btn) {
+          btn.setAttribute('aria-checked', clean ? 'true' : 'false');
+          btn.className = clean
+            ? 'w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-emerald-400 bg-emerald-600 text-white text-xs font-extrabold flex flex-wrap items-center justify-between gap-2'
+            : 'w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-sky-400/60 bg-slate-900 hover:bg-slate-800 text-slate-100 text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2';
+        }
+        if (statusEl) {
+          statusEl.textContent = clean ? 'ON — Tap to Hide' : 'OFF — Tap to Enable';
+        }
+      }
+
       const initialTheme = (typeof window.loadStoredThemePreference === 'function')
         ? window.loadStoredThemePreference()
         : ((typeof state === 'object' && state && state.themeMode) || 'dark');
@@ -29572,6 +29935,16 @@
         ? window.loadStoredFontPreference()
         : ((typeof state === 'object' && state && state.fontMode) || 'default');
       applyFontModeUI(initialFontMode);
+
+      const initialSensoryCalm = (typeof window.loadStoredSensoryCalmPreference === 'function')
+        ? window.loadStoredSensoryCalmPreference()
+        : Boolean(typeof state === 'object' && state && state.isSensoryCalm);
+      applySensoryCalmUI(initialSensoryCalm);
+
+      const initialAdvSubj = (typeof window.loadAdvancedSubjectiveSetting === 'function')
+        ? window.loadAdvancedSubjectiveSetting()
+        : Boolean(typeof state === 'object' && state && state.advancedSubjectiveEnabled);
+      applyAdvancedSubjectiveUI(initialAdvSubj);
 
       if (!themeHydrated || typeof window.computeAdherenceNeutralWeeklyProgress !== 'function') {
         if (!window.__strategicBridgeWaitBound) {
@@ -29586,6 +29959,14 @@
               ? window.loadStoredFontPreference()
               : ((typeof state === 'object' && state && state.fontMode) || 'default');
             applyFontModeUI(fontNow);
+            const calmNow = (typeof window.loadStoredSensoryCalmPreference === 'function')
+              ? window.loadStoredSensoryCalmPreference()
+              : Boolean(typeof state === 'object' && state && state.isSensoryCalm);
+            applySensoryCalmUI(calmNow);
+            const subjNow = (typeof window.loadAdvancedSubjectiveSetting === 'function')
+              ? window.loadAdvancedSubjectiveSetting()
+              : Boolean(typeof state === 'object' && state && state.advancedSubjectiveEnabled);
+            applyAdvancedSubjectiveUI(subjNow);
             updateOfflineConnectivityBannerUI();
             if (typeof renderWorkoutView === 'function') renderWorkoutView();
           }, { once: true });
@@ -29619,6 +30000,46 @@
           }
         });
       }
+
+      const sensoryCalmBtn = document.getElementById('toggle-sensory-calm-btn');
+      if (sensoryCalmBtn) {
+        sensoryCalmBtn.addEventListener('click', () => {
+          const nextCalm = !isSensoryCalmModeActive();
+          applySensoryCalmUI(nextCalm);
+          if (typeof saveState === 'function') saveState(true);
+          if (typeof showToast === 'function') {
+            showToast(nextCalm ? 'Sensory-Calm Mode enabled (low saturation, motion off, audio/haptics muted).' : 'Sensory-Calm Mode turned off.');
+          }
+        });
+      }
+
+      const advSubjBtn = document.getElementById('toggle-advanced-subjective-btn');
+      if (advSubjBtn) {
+        advSubjBtn.addEventListener('click', () => {
+          const nextVal = !(typeof state === 'object' && state && state.advancedSubjectiveEnabled);
+          applyAdvancedSubjectiveUI(nextVal);
+          if (typeof saveState === 'function') saveState(true);
+          if (typeof renderWorkoutView === 'function') renderWorkoutView();
+          if (typeof showToast === 'function') {
+            showToast(nextVal ? 'Optional RPE/RIR note fields shown.' : 'Optional RPE/RIR note fields hidden.');
+          }
+        });
+      }
+
+      // Persist optional subjective effort notes without ever altering progression math
+      document.addEventListener('input', (ev) => {
+        const target = ev.target;
+        if (target && target.classList && target.classList.contains('optional-subjective-note-input')) {
+          const subjKey = target.getAttribute('data-opt-subj-key');
+          if (subjKey && typeof state === 'object' && state) {
+            if (!state.optionalSubjectiveNotes || typeof state.optionalSubjectiveNotes !== 'object') {
+              state.optionalSubjectiveNotes = {};
+            }
+            state.optionalSubjectiveNotes[subjKey] = String(target.value || '');
+            if (typeof saveState === 'function') saveState(false);
+          }
+        }
+      });
 
       if (window.matchMedia) {
         const mq = window.matchMedia('(prefers-color-scheme: dark)');

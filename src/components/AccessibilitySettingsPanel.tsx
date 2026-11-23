@@ -26,8 +26,12 @@ export const AccessibilitySettingsPanel: React.FC<AccessibilitySettingsPanelProp
     themePreference,
     resolvedTheme,
     isOpenDyslexicEnabled,
+    isSensoryCalm,
+    isAdvancedSubjectiveEnabled,
     setThemePreference,
-    toggleOpenDyslexicFont
+    toggleOpenDyslexicFont,
+    toggleSensoryCalm,
+    toggleAdvancedSubjective
   } = useAccessibilityTheme();
 
   return (
@@ -93,8 +97,69 @@ export const AccessibilitySettingsPanel: React.FC<AccessibilitySettingsPanelProp
           <span>{isOpenDyslexicEnabled ? 'ON (Tap to turn off)' : 'OFF (Tap to turn on)'}</span>
         </button>
       </div>
+
+      {/* Task 4: Global Sensory-Calm Mode */}
+      <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-sm font-extrabold leading-relaxed">
+            Sensory-Calm Mode
+          </span>
+          <span className="text-xs font-bold text-emerald-500">
+            {isSensoryCalm ? 'Active (Low Saturation · Muted)' : 'Standard Display'}
+          </span>
+        </div>
+        <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
+          Reduces color saturation under 5%, locks layout stability, removes animations, and mutes all chimes and vibrations.
+        </p>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isSensoryCalm}
+          onClick={toggleSensoryCalm}
+          data-testid="toggle-sensory-calm-btn"
+          className={`w-full min-h-[48px] min-w-[48px] px-4 py-3 rounded-xl border text-sm font-extrabold flex flex-wrap items-center justify-between gap-2 ${
+            isSensoryCalm
+              ? 'border-emerald-400 bg-emerald-600 text-white'
+              : 'border-[var(--border-strong)] bg-[var(--bg-surface-alt)] text-[var(--text-primary)]'
+          }`}
+        >
+          <span>Sensory-Calm Mode</span>
+          <span>{isSensoryCalm ? 'ON (Tap to turn off)' : 'OFF (Tap to turn on)'}</span>
+        </button>
+      </div>
+
+      {/* Task 1: Opt-In Advanced Settings for Subjective Ratings (Never Required for Progression) */}
+      <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-sm font-extrabold leading-relaxed">
+            Advanced Settings: Optional Effort Notes (RPE / RIR)
+          </span>
+          <span className="text-xs font-bold text-emerald-500">
+            {isAdvancedSubjectiveEnabled ? 'Shown (Opt-In)' : 'Hidden (Recommended)'}
+          </span>
+        </div>
+        <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
+          Standard Double Progression uses only your logged weight and reps. Turn this on only if you want optional RPE, RIR, pump, or soreness notes.
+        </p>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isAdvancedSubjectiveEnabled}
+          onClick={toggleAdvancedSubjective}
+          data-testid="toggle-advanced-subjective-btn"
+          className={`w-full min-h-[48px] min-w-[48px] px-4 py-3 rounded-xl border text-sm font-extrabold flex flex-wrap items-center justify-between gap-2 ${
+            isAdvancedSubjectiveEnabled
+              ? 'border-emerald-400 bg-emerald-600 text-white'
+              : 'border-[var(--border-strong)] bg-[var(--bg-surface-alt)] text-[var(--text-primary)]'
+          }`}
+        >
+          <span>Show Optional RPE / RIR Fields</span>
+          <span>{isAdvancedSubjectiveEnabled ? 'ON (Optional Only)' : 'OFF (Default)'}</span>
+        </button>
+      </div>
     </section>
   );
 };
 
 export default AccessibilitySettingsPanel;
+

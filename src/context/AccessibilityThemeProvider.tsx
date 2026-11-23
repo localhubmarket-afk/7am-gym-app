@@ -2,18 +2,25 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import {
   ACCESSIBLE_THEME_TOKENS,
   applyDyslexiaFontToDocument,
+  applySensoryCalmToDocument,
   applyThemeToDocument,
   getSystemPrefersDark,
   loadStoredFontPreference,
+  loadStoredSensoryCalmPreference,
   loadStoredThemePreference,
   resolveEffectiveTheme,
   saveFontPreference,
+  saveSensoryCalmPreference,
   saveThemePreference,
   type AccessibilityFontMode,
   type AccessibleThemeTokens,
   type ResolvedTheme,
   type ThemeModePreference
 } from '../utils/themeProvider';
+import {
+  loadAdvancedSubjectiveSetting,
+  saveAdvancedSubjectiveSetting
+} from '../utils/doubleProgressionEngine';
 
 export interface AccessibilityThemeContextValue {
   themePreference: ThemeModePreference;
@@ -21,10 +28,16 @@ export interface AccessibilityThemeContextValue {
   tokens: AccessibleThemeTokens;
   fontMode: AccessibilityFontMode;
   isOpenDyslexicEnabled: boolean;
+  isSensoryCalm: boolean;
+  isAdvancedSubjectiveEnabled: boolean;
   setThemePreference: (next: ThemeModePreference) => void;
   toggleLightDarkTheme: () => void;
   setFontMode: (next: AccessibilityFontMode) => void;
   toggleOpenDyslexicFont: () => void;
+  setSensoryCalm: (enabled: boolean) => void;
+  toggleSensoryCalm: () => void;
+  setAdvancedSubjectiveEnabled: (enabled: boolean) => void;
+  toggleAdvancedSubjective: () => void;
 }
 
 const AccessibilityThemeContext = createContext<AccessibilityThemeContextValue | null>(null);
@@ -39,6 +52,12 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
   const [fontMode, setFontModeState] = useState<AccessibilityFontMode>(() =>
     loadStoredFontPreference()
   );
+  const [isSensoryCalm, setSensoryCalmState] = useState<boolean>(() =>
+    loadStoredSensoryCalmPreference()
+  );
+  const [isAdvancedSubjectiveEnabled, setAdvancedSubjectiveState] = useState<boolean>(() =>
+    loadAdvancedSubjectiveSetting()
+  );
 
   const resolvedTheme = resolveEffectiveTheme(themePreference, systemPrefersDark);
   const tokens = ACCESSIBLE_THEME_TOKENS[resolvedTheme];
@@ -50,6 +69,10 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
   useEffect(() => {
     applyDyslexiaFontToDocument(fontMode, document);
   }, [fontMode]);
+
+  useEffect(() => {
+    applySensoryCalmToDocument(isSensoryCalm, document);
+  }, [isSensoryCalm]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
@@ -82,6 +105,24 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
     setFontMode(fontMode === 'opendyslexic' ? 'default' : 'opendyslexic');
   }, [fontMode, setFontMode]);
 
+  const setSensoryCalm = useCallback((enabled: boolean) => {
+    const saved = saveSensoryCalmPreference(enabled);
+    setSensoryCalmState(saved);
+  }, []);
+
+  const toggleSensoryCalm = useCallback(() => {
+    setSensoryCalm(!isSensoryCalm);
+  }, [isSensoryCalm, setSensoryCalm]);
+
+  const setAdvancedSubjectiveEnabled = useCallback((enabled: boolean) => {
+    const saved = saveAdvancedSubjectiveSetting(enabled);
+    setAdvancedSubjectiveState(saved);
+  }, []);
+
+  const toggleAdvancedSubjective = useCallback(() => {
+    setAdvancedSubjectiveEnabled(!isAdvancedSubjectiveEnabled);
+  }, [isAdvancedSubjectiveEnabled, setAdvancedSubjectiveEnabled]);
+
   const value = useMemo<AccessibilityThemeContextValue>(
     () => ({
       themePreference,
@@ -89,20 +130,32 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
       tokens,
       fontMode,
       isOpenDyslexicEnabled: fontMode === 'opendyslexic',
+      isSensoryCalm,
+      isAdvancedSubjectiveEnabled,
       setThemePreference,
       toggleLightDarkTheme,
       setFontMode,
-      toggleOpenDyslexicFont
+      toggleOpenDyslexicFont,
+      setSensoryCalm,
+      toggleSensoryCalm,
+      setAdvancedSubjectiveEnabled,
+      toggleAdvancedSubjective
     }),
     [
       themePreference,
       resolvedTheme,
       tokens,
       fontMode,
+      isSensoryCalm,
+      isAdvancedSubjectiveEnabled,
       setThemePreference,
       toggleLightDarkTheme,
       setFontMode,
-      toggleOpenDyslexicFont
+      toggleOpenDyslexicFont,
+      setSensoryCalm,
+      toggleSensoryCalm,
+      setAdvancedSubjectiveEnabled,
+      toggleAdvancedSubjective
     ]
   );
 
@@ -120,3 +173,4 @@ export function useAccessibilityTheme(): AccessibilityThemeContextValue {
   }
   return ctx;
 }
+
