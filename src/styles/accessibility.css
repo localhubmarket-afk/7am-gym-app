@@ -1,0 +1,372 @@
+/* ============================================================================
+ * Visual & Motor Accessibility Constitution (WCAG 2.2 AA / AAA + COGA)
+ * - Relative rem typography scaling up to 200% with zero clipping/overlap
+ * - Dyslexia-friendly high-contrast Light (#F7F7F7 / #0A1128) & Dark (#1A1A1A / #F2F2F2)
+ * - Lexend / Atkinson Hyperlegible default + One-Tap OpenDyslexic font override
+ * - Global line-height: 1.5 and strict global italics removal
+ * - Motor ergonomics: 48x48px minimum touch targets & >= 8px (0.5rem) separation
+ * - Fluid portrait & landscape orientation reflow (zero hardcoded height/width locks)
+ * ============================================================================ */
+
+:root {
+  --app-font-family: 'Lexend', 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
+  --app-line-height: 1.5;
+  --bg-canvas: #1A1A1A;
+  --bg-surface: #242424;
+  --bg-surface-alt: #141414;
+  --text-primary: #F2F2F2;
+  --text-secondary: #D4D4D8;
+  --border-subtle: #3D3D3D;
+  --border-strong: #737373;
+  --accent-primary: #10B981;
+  --accent-on-primary: #0A1128;
+  --danger-bg: rgba(225, 29, 72, 0.18);
+  --danger-text: #FECDD3;
+  --danger-border: #FB7185;
+  --touch-target-min: 48px;
+  --touch-target-gap: 0.5rem;
+}
+
+html[data-theme="dark"],
+html.dark {
+  --bg-canvas: #1A1A1A;
+  --bg-surface: #242424;
+  --bg-surface-alt: #141414;
+  --text-primary: #F2F2F2;
+  --text-secondary: #D4D4D8;
+  --border-subtle: #3D3D3D;
+  --border-strong: #737373;
+}
+
+html[data-theme="light"],
+html.light-theme {
+  --bg-canvas: #F7F7F7;
+  --bg-surface: #FFFFFF;
+  --bg-surface-alt: #EAECEF;
+  --text-primary: #0A1128;
+  --text-secondary: #1E293B;
+  --border-subtle: #CBD5E1;
+  --border-strong: #475569;
+}
+
+html[data-font-mode="opendyslexic"],
+html.font-opendyslexic {
+  --app-font-family: 'OpenDyslexic', 'OpenDyslexic3', 'Lexend', 'Atkinson Hyperlegible', sans-serif;
+}
+
+/* 1. Global Typography, Relative Scaling & Strict Line-Height (1.5) */
+html {
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html,
+body {
+  font-family: var(--app-font-family) !important;
+  line-height: var(--app-line-height) !important;
+  background-color: var(--bg-canvas) !important;
+  color: var(--text-primary) !important;
+  letter-spacing: 0.015em;
+  text-align: left;
+  overflow-x: hidden;
+  overflow-y: auto;
+  height: auto;
+  min-height: 100%;
+  width: 100%;
+  max-width: 100vw;
+}
+
+body,
+button,
+input,
+select,
+textarea,
+p,
+li,
+span,
+div,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+label,
+summary,
+.d3-1rm-chart-container,
+.d3-1rm-chart-container svg,
+.d3-1rm-chart-container text {
+  font-family: var(--app-font-family);
+}
+
+/* 2. Global Italics Override — Strip all italics for Dyslexia clarity */
+*,
+*::before,
+*::after,
+em,
+i,
+cite,
+var,
+dfn,
+address,
+.italic {
+  font-style: normal !important;
+}
+
+/* 3. 200% Text Scaling Reflow Protection (No clipping or overlap) */
+main,
+section,
+article,
+header,
+footer,
+nav,
+.neuro-card-unstarted,
+.neuro-card-active {
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+button,
+a[href],
+label,
+p,
+h1,
+h2,
+h3,
+h4,
+span {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Allow wrapping inside buttons & nav items so 200% zoom never clips labels */
+button,
+[role="button"],
+[role="tab"],
+[role="radio"],
+[role="switch"] {
+  white-space: normal;
+  height: auto;
+  line-height: 1.4;
+}
+
+/* 4. Motor Ergonomics: Minimum 48x48px Touch Targets & >= 8px Physical Separation */
+button,
+a[href],
+select,
+summary,
+[role="button"],
+[role="tab"],
+[role="radio"],
+[role="switch"],
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="checkbox"],
+input[type="radio"] {
+  min-height: var(--touch-target-min) !important;
+  min-width: var(--touch-target-min) !important;
+  box-sizing: border-box;
+}
+
+/* Ensure >= 8px (0.5rem) separation between interactive controls in action bars and button groups */
+header nav,
+#pinned-rest-timer-row .flex,
+nav.fixed.bottom-0 > div,
+.week-tabs-scroll-strip,
+.accessible-action-group,
+.set-row-actions-group,
+.d3-chart-tap-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--touch-target-gap) !important;
+}
+
+nav.fixed.bottom-0 > div {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem !important;
+}
+
+/* 5. Accessible Fluid Set Row Layout (48x48px Steppers + Visible Trash Delete Button + 200% Reflow) */
+.set-row-uncrushable-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.set-row-meta-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1 1 5.5rem;
+}
+
+.set-row-stepper-cell {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.set-row-actions-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex: 0 1 auto;
+}
+
+.weight-stepper,
+.reps-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: var(--bg-surface-alt);
+  border-radius: 0.625rem;
+  padding: 0.25rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.weight-stepper .step-adj-btn,
+.reps-stepper .step-adj-btn {
+  flex-shrink: 0;
+  min-width: 48px !important;
+  width: 48px;
+  min-height: 48px !important;
+  height: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+  line-height: 1.2;
+}
+
+.weight-stepper .workout-input,
+.reps-stepper .workout-input {
+  flex: 1 1 3.25rem;
+  min-width: 3rem;
+  width: 100%;
+  min-height: 48px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.25rem;
+  background: transparent;
+  border: 0;
+}
+
+.delete-set-btn {
+  min-width: 48px !important;
+  min-height: 48px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* 6. Matte Charcoal Dark Theme Surface Alignment (#1A1A1A canvas / #F2F2F2 ink) */
+html[data-theme="dark"] .bg-slate-950,
+html.dark .bg-slate-950 {
+  background-color: #1A1A1A !important;
+}
+
+html[data-theme="dark"] .bg-slate-900,
+html.dark .bg-slate-900,
+html[data-theme="dark"] .neuro-card-unstarted,
+html.dark .neuro-card-unstarted {
+  background-color: #242424 !important;
+  color: #F2F2F2 !important;
+}
+
+html[data-theme="dark"] .text-white,
+html.dark .text-white {
+  color: #F2F2F2 !important;
+}
+
+/* 7. Off-White Paper Light Theme Surface Alignment (#F7F7F7 canvas / #0A1128 ink) */
+html[data-theme="light"],
+html[data-theme="light"] body,
+html.light-theme,
+html.light-theme body,
+html.light-theme body.bg-\[\#0f172a\] {
+  background-color: #F7F7F7 !important;
+  color: #0A1128 !important;
+}
+
+html[data-theme="light"] .text-white,
+html.light-theme .text-white,
+html[data-theme="light"] .text-slate-100,
+html.light-theme .text-slate-100,
+html[data-theme="light"] .text-slate-200,
+html.light-theme .text-slate-200 {
+  color: #0A1128 !important;
+}
+
+/* 8. Fluid Portrait & Landscape Orientation Support */
+.fluid-app-shell {
+  width: 100%;
+  max-width: min(100%, 44rem);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (orientation: landscape) {
+  .fluid-app-shell,
+  #main-sticky-header > div,
+  main,
+  nav.fixed.bottom-0 > div {
+    max-width: min(100%, 64rem) !important;
+  }
+
+  /* Compact vertical chrome in short landscape mobile viewports (e.g. 844x390) */
+  @media (max-height: 520px) {
+    #main-sticky-header {
+      position: sticky !important;
+    }
+
+    #main-sticky-header > div {
+      padding-top: 0.25rem !important;
+      padding-bottom: 0.25rem !important;
+    }
+
+    main {
+      padding-top: 0.75rem !important;
+      padding-bottom: 5.5rem !important;
+    }
+
+    nav.fixed.bottom-0 {
+      padding-top: 0.25rem !important;
+      padding-bottom: 0.25rem !important;
+    }
+  }
+}
+
+/* Keyboard focus indicator (WCAG 2.2 Focus Appearance) */
+:focus-visible {
+  outline: 3px solid #38BDF8;
+  outline-offset: 2px;
+}

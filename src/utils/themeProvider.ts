@@ -1,7 +1,14 @@
 export type ThemeModePreference = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
+export type AccessibilityFontMode = 'default' | 'opendyslexic';
 
 export const THEME_STORAGE_KEY = 'budget_gym_theme_mode_v1';
+export const FONT_MODE_STORAGE_KEY = 'budget_gym_font_mode_v1';
+
+export const DEFAULT_DYSLEXIA_FRIENDLY_FONT_STACK =
+  "'Lexend', 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif";
+export const OPENDYSLEXIC_FONT_STACK =
+  "'OpenDyslexic', 'OpenDyslexic3', 'Lexend', 'Atkinson Hyperlegible', sans-serif";
 
 export interface AccessibleThemeTokens {
   canvasBg: string;
@@ -16,46 +23,103 @@ export interface AccessibleThemeTokens {
   warningBg: string;
   warningText: string;
   warningBorder: string;
+  dangerBg: string;
+  dangerText: string;
+  dangerBorder: string;
   themeColorMeta: string;
 }
 
+/**
+ * Dyslexia-friendly high-contrast color palettes (WCAG 2.2 AAA):
+ * - Light Mode: Off-white paper (#F7F7F7) + deep navy ink (#0A1128) => ~17.6:1 contrast (exceeds 15.8:1 target)
+ * - Dark Mode: Matte charcoal (#1A1A1A) + off-white ink (#F2F2F2) => ~15.5:1+ contrast (glare-free matte)
+ */
 export const ACCESSIBLE_THEME_TOKENS: Record<ResolvedTheme, AccessibleThemeTokens> = {
   dark: {
-    canvasBg: '#0f172a',
-    surfaceBg: '#1e293b',
-    surfaceAltBg: '#0b1220',
-    textPrimary: '#f8fafc',
-    textSecondary: '#cbd5e1',
-    borderSubtle: '#334155',
-    borderStrong: '#64748b',
-    accentPrimary: '#10b981',
-    accentOnPrimary: '#022c22',
-    warningBg: 'rgba(217, 119, 6, 0.16)',
-    warningText: '#fde68a',
-    warningBorder: '#d97706',
-    themeColorMeta: '#0f172a'
+    canvasBg: '#1A1A1A',
+    surfaceBg: '#242424',
+    surfaceAltBg: '#141414',
+    textPrimary: '#F2F2F2',
+    textSecondary: '#D4D4D8',
+    borderSubtle: '#3D3D3D',
+    borderStrong: '#737373',
+    accentPrimary: '#10B981',
+    accentOnPrimary: '#0A1128',
+    warningBg: 'rgba(217, 119, 6, 0.18)',
+    warningText: '#FDE68A',
+    warningBorder: '#D97706',
+    dangerBg: 'rgba(225, 29, 72, 0.18)',
+    dangerText: '#FECDD3',
+    dangerBorder: '#FB7185',
+    themeColorMeta: '#1A1A1A'
   },
   light: {
-    canvasBg: '#f4f6f9',
-    surfaceBg: '#fcfcfd',
-    surfaceAltBg: '#e8eef5',
-    textPrimary: '#0f172a',
-    textSecondary: '#334155',
-    borderSubtle: '#cbd5e1',
-    borderStrong: '#64748b',
+    canvasBg: '#F7F7F7',
+    surfaceBg: '#FFFFFF',
+    surfaceAltBg: '#EAECEF',
+    textPrimary: '#0A1128',
+    textSecondary: '#1E293B',
+    borderSubtle: '#CBD5E1',
+    borderStrong: '#475569',
     accentPrimary: '#047857',
-    accentOnPrimary: '#f8fafc',
-    warningBg: '#fef3c7',
-    warningText: '#78350f',
-    warningBorder: '#b45309',
-    themeColorMeta: '#f4f6f9'
+    accentOnPrimary: '#F7F7F7',
+    warningBg: '#FEF3C7',
+    warningText: '#78350F',
+    warningBorder: '#B45309',
+    dangerBg: '#FFE4E6',
+    dangerText: '#881337',
+    dangerBorder: '#BE123C',
+    themeColorMeta: '#F7F7F7'
   }
 };
+
+function hexToRgbChannels(hex: string): [number, number, number] {
+  const clean = String(hex || '').replace('#', '').trim();
+  const full =
+    clean.length === 3
+      ? clean
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : clean;
+  const r = parseInt(full.slice(0, 2), 16) || 0;
+  const g = parseInt(full.slice(2, 4), 16) || 0;
+  const b = parseInt(full.slice(4, 6), 16) || 0;
+  return [r, g, b];
+}
+
+function relativeLuminance(hex: string): number {
+  const [r8, g8, b8] = hexToRgbChannels(hex);
+  const toLinear = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * toLinear(r8) + 0.7152 * toLinear(g8) + 0.0722 * toLinear(b8);
+}
+
+/**
+ * Computes the WCAG 2.x contrast ratio between two hex colors.
+ */
+export function calculateWcagContrastRatio(hexA: string, hexB: string): number {
+  const l1 = relativeLuminance(hexA);
+  const l2 = relativeLuminance(hexB);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return Number(((lighter + 0.05) / (darker + 0.05)).toFixed(2));
+}
 
 export function normalizeThemeModePreference(raw: unknown): ThemeModePreference {
   const s = String(raw || '').trim().toLowerCase();
   if (s === 'light' || s === 'dark' || s === 'system') return s;
   return 'dark';
+}
+
+export function normalizeFontModePreference(raw: unknown): AccessibilityFontMode {
+  const s = String(raw || '').trim().toLowerCase();
+  if (s === 'opendyslexic' || s === 'dyslexic' || s === 'true' || s === 'on') {
+    return 'opendyslexic';
+  }
+  return 'default';
 }
 
 export function resolveEffectiveTheme(
@@ -108,6 +172,36 @@ export function saveThemePreference(
   return normalized;
 }
 
+export function loadStoredFontPreference(
+  storage?: Pick<Storage, 'getItem'> | null
+): AccessibilityFontMode {
+  try {
+    const store = storage ?? (typeof localStorage !== 'undefined' ? localStorage : null);
+    if (!store) return 'default';
+    const raw = store.getItem(FONT_MODE_STORAGE_KEY);
+    if (!raw) return 'default';
+    return normalizeFontModePreference(raw);
+  } catch {
+    return 'default';
+  }
+}
+
+export function saveFontPreference(
+  mode: AccessibilityFontMode,
+  storage?: Pick<Storage, 'setItem'> | null
+): AccessibilityFontMode {
+  const normalized = normalizeFontModePreference(mode);
+  try {
+    const store = storage ?? (typeof localStorage !== 'undefined' ? localStorage : null);
+    if (store) {
+      store.setItem(FONT_MODE_STORAGE_KEY, normalized);
+    }
+  } catch {
+    // Ignore storage restriction
+  }
+  return normalized;
+}
+
 export function applyThemeToDocument(
   preference: ThemeModePreference,
   doc?: Document | null,
@@ -137,6 +231,9 @@ export function applyThemeToDocument(
     html.style.setProperty('--border-strong', tokens.borderStrong);
     html.style.setProperty('--accent-primary', tokens.accentPrimary);
     html.style.setProperty('--accent-on-primary', tokens.accentOnPrimary);
+    html.style.setProperty('--danger-bg', tokens.dangerBg);
+    html.style.setProperty('--danger-text', tokens.dangerText);
+    html.style.setProperty('--danger-border', tokens.dangerBorder);
 
     const metaTheme = targetDoc.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
@@ -145,4 +242,23 @@ export function applyThemeToDocument(
   }
 
   return { preference: normalized, resolved, tokens };
+}
+
+export function applyDyslexiaFontToDocument(
+  mode: AccessibilityFontMode,
+  doc?: Document | null
+): { mode: AccessibilityFontMode; fontFamily: string } {
+  const normalized = normalizeFontModePreference(mode);
+  const fontFamily =
+    normalized === 'opendyslexic' ? OPENDYSLEXIC_FONT_STACK : DEFAULT_DYSLEXIA_FRIENDLY_FONT_STACK;
+
+  const targetDoc = doc ?? (typeof document !== 'undefined' ? document : null);
+  if (targetDoc && targetDoc.documentElement) {
+    const html = targetDoc.documentElement;
+    html.setAttribute('data-font-mode', normalized);
+    html.classList.toggle('font-opendyslexic', normalized === 'opendyslexic');
+    html.style.setProperty('--app-font-family', fontFamily);
+  }
+
+  return { mode: normalized, fontFamily };
 }

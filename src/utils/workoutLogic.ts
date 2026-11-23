@@ -6991,7 +6991,7 @@ export const UNCRUSHABLE_STEPPER_BTN_STYLE =
   'flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;';
 
 export const UNCRUSHABLE_NUMBER_DISPLAY_STYLE =
-  'flex-grow: 1; min-width: 0; width: 100%; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: visible; font-size: 15px; font-weight: 700;';
+  'flex-grow: 1; min-width: 0; width: 100%; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: visible; font-size: 0.9375rem; font-weight: 700;';
 
 // ============================================================================
 // UPGRADE 4: 1-TAP DELETE NOTE HELPER
@@ -8299,7 +8299,7 @@ export const SCHEDULE_SYNC_OUTLINE_BUTTON_SPEC = {
   placement: 'active-day-header-row-far-right',
   removedFromWeekRow: true,
   inlineStyle:
-    'border: 1px solid rgba(14, 165, 233, 0.4); color: #38bdf8; background: transparent; padding: 4px 10px; border-radius: 6px; font-size: 13px;',
+    'border: 1px solid rgba(14, 165, 233, 0.4); color: #38bdf8; background: transparent; padding: 4px 10px; border-radius: 6px; font-size: 0.8125rem;',
   closedLabel: 'Schedule, Sync & Stats ▼',
   openLabel: 'Schedule, Sync & Stats ▲'
 } as const;

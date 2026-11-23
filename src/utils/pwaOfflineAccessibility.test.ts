@@ -168,9 +168,9 @@ test('WCAG 2.2 AA audit: relative rem typography, pinch-zoom enabled, 44x44px to
     assert.doesNotMatch(content, /text-\[[0-9.]+px\]/, `${file} must not use px font sizes`);
   }
 
-  // Minimum 44x44px touch targets & ARIA semantics
-  assert.match(html, /min-height:\s*44px/);
-  assert.match(html, /min-width:\s*44px/);
+  // Minimum 44x44px (upgraded to 48x48px) touch targets & ARIA semantics
+  assert.match(html, /min-height:\s*(44|48)px/);
+  assert.match(html, /min-width:\s*(44|48)px/);
   assert.match(html, /id="header-timer-display"[^>]*role="timer"/);
   assert.match(html, /id="main-timer-display"[^>]*role="timer"/);
   assert.match(html, /id="adherence-neutral-status-text"[^>]*aria-live="polite"/);

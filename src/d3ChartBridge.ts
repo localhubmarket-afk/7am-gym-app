@@ -1,4 +1,5 @@
 import * as d3 from 'd3';
+import './styles/accessibility.css';
 import {
   AI_EXERCISE_WHITELIST_RULE,
   ONE_RM_LIFT_CONFIGS,
@@ -111,11 +112,18 @@ import {
 } from './utils/offlineSyncQueue';
 import {
   ACCESSIBLE_THEME_TOKENS,
+  DEFAULT_DYSLEXIA_FRIENDLY_FONT_STACK,
+  OPENDYSLEXIC_FONT_STACK,
+  applyDyslexiaFontToDocument,
   applyThemeToDocument,
+  calculateWcagContrastRatio,
   getSystemPrefersDark,
+  loadStoredFontPreference,
   loadStoredThemePreference,
+  normalizeFontModePreference,
   normalizeThemeModePreference,
   resolveEffectiveTheme,
+  saveFontPreference,
   saveThemePreference
 } from './utils/themeProvider';
 import {
@@ -246,7 +254,7 @@ export function renderOneRmD3Chart(options: RenderOneRmD3ChartOptions): {
     .style('background', 'transparent')
     .style('touch-action', 'pan-y')
     .style('overflow', 'visible')
-    .style('font-family', 'system-ui, -apple-system, sans-serif')
+    .style('font-family', 'var(--app-font-family)')
     .style('letter-spacing', '0.02em');
 
   // Subtle soft gradient under the curve
@@ -492,6 +500,53 @@ export function renderOneRmD3Chart(options: RenderOneRmD3ChartOptions): {
 
   // Default active point is the latest data point
   selectPoint(points.length - 1);
+
+  // Motor Ergonomics: Explicit visible single-tap Previous/Next buttons as non-drag alternative
+  if (points.length > 1) {
+    const controlsBar = document.createElement('div');
+    controlsBar.className = 'd3-chart-tap-controls flex flex-wrap items-center justify-between gap-2 mt-2';
+    controlsBar.setAttribute('role', 'group');
+    controlsBar.setAttribute('aria-label', `${liftCfg.fullName} chart point navigation`);
+
+    const prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className =
+      'min-h-[48px] min-w-[48px] px-3 py-2 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition';
+    prevBtn.setAttribute('aria-label', `Previous ${liftCfg.fullName} data point`);
+    prevBtn.textContent = '← Prev Point';
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className =
+      'min-h-[48px] min-w-[48px] px-3 py-2 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition';
+    nextBtn.setAttribute('aria-label', `Next ${liftCfg.fullName} data point`);
+    nextBtn.textContent = 'Next Point →';
+
+    const syncButtonsDisabled = () => {
+      prevBtn.disabled = activeIdx <= 0;
+      nextBtn.disabled = activeIdx >= points.length - 1;
+      prevBtn.style.opacity = prevBtn.disabled ? '0.45' : '1';
+      nextBtn.style.opacity = nextBtn.disabled ? '0.45' : '1';
+    };
+
+    prevBtn.addEventListener('click', () => {
+      if (activeIdx > 0) {
+        selectPoint(activeIdx - 1);
+        syncButtonsDisabled();
+      }
+    });
+    nextBtn.addEventListener('click', () => {
+      if (activeIdx < points.length - 1) {
+        selectPoint(activeIdx + 1);
+        syncButtonsDisabled();
+      }
+    });
+
+    syncButtonsDisabled();
+    controlsBar.appendChild(prevBtn);
+    controlsBar.appendChild(nextBtn);
+    container.appendChild(controlsBar);
+  }
 
   return {
     rendered: true,
@@ -819,11 +874,18 @@ declare global {
     isNetworkOnline?: typeof isNetworkOnline;
     readOfflineSyncQueue?: typeof readOfflineSyncQueue;
     ACCESSIBLE_THEME_TOKENS?: typeof ACCESSIBLE_THEME_TOKENS;
+    DEFAULT_DYSLEXIA_FRIENDLY_FONT_STACK?: string;
+    OPENDYSLEXIC_FONT_STACK?: string;
+    applyDyslexiaFontToDocument?: typeof applyDyslexiaFontToDocument;
     applyThemeToDocument?: typeof applyThemeToDocument;
+    calculateWcagContrastRatio?: typeof calculateWcagContrastRatio;
     getSystemPrefersDark?: typeof getSystemPrefersDark;
+    loadStoredFontPreference?: typeof loadStoredFontPreference;
     loadStoredThemePreference?: typeof loadStoredThemePreference;
+    normalizeFontModePreference?: typeof normalizeFontModePreference;
     normalizeThemeModePreference?: typeof normalizeThemeModePreference;
     resolveEffectiveTheme?: typeof resolveEffectiveTheme;
+    saveFontPreference?: typeof saveFontPreference;
     saveThemePreference?: typeof saveThemePreference;
     detectCsvSourceApp?: typeof detectCsvSourceApp;
     mapExternalExerciseToSchema?: typeof mapExternalExerciseToSchema;
@@ -951,11 +1013,18 @@ if (typeof window !== 'undefined') {
   window.isNetworkOnline = isNetworkOnline;
   window.readOfflineSyncQueue = readOfflineSyncQueue;
   window.ACCESSIBLE_THEME_TOKENS = ACCESSIBLE_THEME_TOKENS;
+  window.DEFAULT_DYSLEXIA_FRIENDLY_FONT_STACK = DEFAULT_DYSLEXIA_FRIENDLY_FONT_STACK;
+  window.OPENDYSLEXIC_FONT_STACK = OPENDYSLEXIC_FONT_STACK;
+  window.applyDyslexiaFontToDocument = applyDyslexiaFontToDocument;
   window.applyThemeToDocument = applyThemeToDocument;
+  window.calculateWcagContrastRatio = calculateWcagContrastRatio;
   window.getSystemPrefersDark = getSystemPrefersDark;
+  window.loadStoredFontPreference = loadStoredFontPreference;
   window.loadStoredThemePreference = loadStoredThemePreference;
+  window.normalizeFontModePreference = normalizeFontModePreference;
   window.normalizeThemeModePreference = normalizeThemeModePreference;
   window.resolveEffectiveTheme = resolveEffectiveTheme;
+  window.saveFontPreference = saveFontPreference;
   window.saveThemePreference = saveThemePreference;
   window.detectCsvSourceApp = detectCsvSourceApp;
   window.mapExternalExerciseToSchema = mapExternalExerciseToSchema;
