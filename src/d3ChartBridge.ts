@@ -74,6 +74,54 @@ import {
   validateScientificAlignment,
   validateWorkoutPlanExpertApproval
 } from './utils/contentValidationProtocol';
+import {
+  DEFAULT_IKEA_QUIZ_ANSWERS,
+  IKEA_QUIZ_STEPS,
+  adaptExerciseForEquipment,
+  buildIkeaQuizProgram,
+  createGuestSandboxStatePatch
+} from './utils/onboardingQuiz';
+import {
+  enqueueOfflineGymStateSync,
+  flushOfflineGymStateQueue,
+  isNetworkOnline,
+  readOfflineSyncQueue
+} from './utils/offlineSyncQueue';
+import {
+  ACCESSIBLE_THEME_TOKENS,
+  applyThemeToDocument,
+  getSystemPrefersDark,
+  loadStoredThemePreference,
+  normalizeThemeModePreference,
+  resolveEffectiveTheme,
+  saveThemePreference
+} from './utils/themeProvider';
+import {
+  detectCsvSourceApp,
+  mapExternalExerciseToSchema,
+  mergeImportedHistoryIntoGymState,
+  parseWorkoutHistoryCsv
+} from './utils/csvHistoryImporter';
+import { computeAdherenceNeutralWeeklyProgress } from './utils/adherenceEngine';
+import {
+  calculateEstimated1RM,
+  evaluateSessionMicroWins
+} from './utils/microWinsEngine';
+import { computeExplainableProgressionMath } from './utils/explainableMath';
+import {
+  parseNutritionLabelText,
+  parseWeightStackText,
+  scanNutritionLabelOCR,
+  scanWeightMachineStackOCR,
+  startDeviceCameraStream
+} from './utils/visionOcrStub';
+import {
+  applyBiometricVolumeToExercises,
+  calculateBiometricVolumeAdjustment,
+  fetchAppleHealthKitBiometricsStub,
+  fetchGoogleHealthConnectBiometricsStub
+} from './utils/biometricSync';
+import { createSmartwatchBridge } from './smartwatch/watchBridge';
 
 export interface RenderOneRmD3ChartOptions {
   container: HTMLElement;
@@ -717,6 +765,40 @@ declare global {
     validateWorkoutPlanExpertApproval?: typeof validateWorkoutPlanExpertApproval;
     validateScientificAlignment?: typeof validateScientificAlignment;
     runDeploymentValidationChecklist?: typeof runDeploymentValidationChecklist;
+    DEFAULT_IKEA_QUIZ_ANSWERS?: typeof DEFAULT_IKEA_QUIZ_ANSWERS;
+    IKEA_QUIZ_STEPS?: typeof IKEA_QUIZ_STEPS;
+    adaptExerciseForEquipment?: typeof adaptExerciseForEquipment;
+    buildIkeaQuizProgram?: typeof buildIkeaQuizProgram;
+    createGuestSandboxStatePatch?: typeof createGuestSandboxStatePatch;
+    enqueueOfflineGymStateSync?: typeof enqueueOfflineGymStateSync;
+    flushOfflineGymStateQueue?: typeof flushOfflineGymStateQueue;
+    isNetworkOnline?: typeof isNetworkOnline;
+    readOfflineSyncQueue?: typeof readOfflineSyncQueue;
+    ACCESSIBLE_THEME_TOKENS?: typeof ACCESSIBLE_THEME_TOKENS;
+    applyThemeToDocument?: typeof applyThemeToDocument;
+    getSystemPrefersDark?: typeof getSystemPrefersDark;
+    loadStoredThemePreference?: typeof loadStoredThemePreference;
+    normalizeThemeModePreference?: typeof normalizeThemeModePreference;
+    resolveEffectiveTheme?: typeof resolveEffectiveTheme;
+    saveThemePreference?: typeof saveThemePreference;
+    detectCsvSourceApp?: typeof detectCsvSourceApp;
+    mapExternalExerciseToSchema?: typeof mapExternalExerciseToSchema;
+    mergeImportedHistoryIntoGymState?: typeof mergeImportedHistoryIntoGymState;
+    parseWorkoutHistoryCsv?: typeof parseWorkoutHistoryCsv;
+    computeAdherenceNeutralWeeklyProgress?: typeof computeAdherenceNeutralWeeklyProgress;
+    calculateEstimated1RM?: typeof calculateEstimated1RM;
+    evaluateSessionMicroWins?: typeof evaluateSessionMicroWins;
+    computeExplainableProgressionMath?: typeof computeExplainableProgressionMath;
+    parseNutritionLabelText?: typeof parseNutritionLabelText;
+    parseWeightStackText?: typeof parseWeightStackText;
+    scanNutritionLabelOCR?: typeof scanNutritionLabelOCR;
+    scanWeightMachineStackOCR?: typeof scanWeightMachineStackOCR;
+    startDeviceCameraStream?: typeof startDeviceCameraStream;
+    applyBiometricVolumeToExercises?: typeof applyBiometricVolumeToExercises;
+    calculateBiometricVolumeAdjustment?: typeof calculateBiometricVolumeAdjustment;
+    fetchAppleHealthKitBiometricsStub?: typeof fetchAppleHealthKitBiometricsStub;
+    fetchGoogleHealthConnectBiometricsStub?: typeof fetchGoogleHealthConnectBiometricsStub;
+    createSmartwatchBridge?: typeof createSmartwatchBridge;
   }
 }
 
@@ -785,5 +867,39 @@ if (typeof window !== 'undefined') {
   window.validateWorkoutPlanExpertApproval = validateWorkoutPlanExpertApproval;
   window.validateScientificAlignment = validateScientificAlignment;
   window.runDeploymentValidationChecklist = runDeploymentValidationChecklist;
+  window.DEFAULT_IKEA_QUIZ_ANSWERS = DEFAULT_IKEA_QUIZ_ANSWERS;
+  window.IKEA_QUIZ_STEPS = IKEA_QUIZ_STEPS;
+  window.adaptExerciseForEquipment = adaptExerciseForEquipment;
+  window.buildIkeaQuizProgram = buildIkeaQuizProgram;
+  window.createGuestSandboxStatePatch = createGuestSandboxStatePatch;
+  window.enqueueOfflineGymStateSync = enqueueOfflineGymStateSync;
+  window.flushOfflineGymStateQueue = flushOfflineGymStateQueue;
+  window.isNetworkOnline = isNetworkOnline;
+  window.readOfflineSyncQueue = readOfflineSyncQueue;
+  window.ACCESSIBLE_THEME_TOKENS = ACCESSIBLE_THEME_TOKENS;
+  window.applyThemeToDocument = applyThemeToDocument;
+  window.getSystemPrefersDark = getSystemPrefersDark;
+  window.loadStoredThemePreference = loadStoredThemePreference;
+  window.normalizeThemeModePreference = normalizeThemeModePreference;
+  window.resolveEffectiveTheme = resolveEffectiveTheme;
+  window.saveThemePreference = saveThemePreference;
+  window.detectCsvSourceApp = detectCsvSourceApp;
+  window.mapExternalExerciseToSchema = mapExternalExerciseToSchema;
+  window.mergeImportedHistoryIntoGymState = mergeImportedHistoryIntoGymState;
+  window.parseWorkoutHistoryCsv = parseWorkoutHistoryCsv;
+  window.computeAdherenceNeutralWeeklyProgress = computeAdherenceNeutralWeeklyProgress;
+  window.calculateEstimated1RM = calculateEstimated1RM;
+  window.evaluateSessionMicroWins = evaluateSessionMicroWins;
+  window.computeExplainableProgressionMath = computeExplainableProgressionMath;
+  window.parseNutritionLabelText = parseNutritionLabelText;
+  window.parseWeightStackText = parseWeightStackText;
+  window.scanNutritionLabelOCR = scanNutritionLabelOCR;
+  window.scanWeightMachineStackOCR = scanWeightMachineStackOCR;
+  window.startDeviceCameraStream = startDeviceCameraStream;
+  window.applyBiometricVolumeToExercises = applyBiometricVolumeToExercises;
+  window.calculateBiometricVolumeAdjustment = calculateBiometricVolumeAdjustment;
+  window.fetchAppleHealthKitBiometricsStub = fetchAppleHealthKitBiometricsStub;
+  window.fetchGoogleHealthConnectBiometricsStub = fetchGoogleHealthConnectBiometricsStub;
+  window.createSmartwatchBridge = createSmartwatchBridge;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

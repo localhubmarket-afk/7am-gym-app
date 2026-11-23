@@ -16,14 +16,14 @@
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', ' system-ui', 'sans-serif'],
+            sans: ['"Atkinson Hyperlegible"', '"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
           },
           colors: {
             brand: {
@@ -204,6 +204,162 @@
         height: 30px;
       }
     }
+
+    /* Neurodivergent Accessibility (Dyslexia / ADHD / ESL) & High-Contrast Light/Dark Theme Tokens */
+    :root {
+      --bg-canvas: #0f172a;
+      --bg-surface: #1e293b;
+      --bg-surface-alt: #0b1220;
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --border-subtle: #334155;
+      --border-strong: #64748b;
+      --accent-primary: #10b981;
+      --accent-on-primary: #022c22;
+    }
+    html, body {
+      font-family: 'Atkinson Hyperlegible', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      line-height: 1.55;
+      letter-spacing: 0.015em;
+      text-align: left;
+    }
+    p, li, div, span {
+      text-align: inherit;
+    }
+    /* Soft, Glare-Reduced High-Contrast Light Mode (WCAG 2.1 AA >= 4.5:1) */
+    html.light-theme body {
+      background-color: #f4f6f9 !important;
+      color: #0f172a !important;
+    }
+    html.light-theme #main-sticky-header {
+      background-color: rgba(252, 252, 253, 0.98) !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08) !important;
+    }
+    html.light-theme nav.fixed.bottom-0 {
+      background-color: rgba(252, 252, 253, 0.98) !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+      box-shadow: 0 -4px 14px rgba(15, 23, 42, 0.06) !important;
+    }
+    html.light-theme #pinned-rest-timer-row,
+    html.light-theme .bg-slate-900,
+    html.light-theme .bg-slate-900\/95,
+    html.light-theme .bg-slate-900\/90,
+    html.light-theme .bg-slate-900\/85,
+    html.light-theme .bg-slate-900\/80,
+    html.light-theme .bg-\[\#0f172a\],
+    html.light-theme .bg-\[\#1e293b\],
+    html.light-theme .neuro-card-unstarted {
+      background-color: #fcfcfd !important;
+      background-image: none !important;
+      color: #0f172a !important;
+    }
+    html.light-theme #day-banner,
+    html.light-theme [class*="from-slate-9"],
+    html.light-theme [class*="from-slate-8"] {
+      background-color: #ffffff !important;
+      background-image: linear-gradient(135deg, #ffffff 0%, #eef5f2 100%) !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    html.light-theme .bg-slate-950,
+    html.light-theme .bg-slate-950\/95,
+    html.light-theme .bg-slate-950\/90,
+    html.light-theme .bg-slate-950\/85,
+    html.light-theme .bg-slate-950\/80,
+    html.light-theme .bg-slate-800,
+    html.light-theme .bg-slate-800\/90,
+    html.light-theme .weight-stepper,
+    html.light-theme .reps-stepper {
+      background-color: #e8eef5 !important;
+      color: #0f172a !important;
+    }
+    html.light-theme .bg-emerald-950\/40,
+    html.light-theme .bg-emerald-950\/50,
+    html.light-theme .bg-emerald-950\/80 {
+      background-color: #ecfdf5 !important;
+      color: #065f46 !important;
+    }
+    html.light-theme .bg-amber-950\/50,
+    html.light-theme .bg-amber-950\/40 {
+      background-color: #fffbeb !important;
+      color: #78350f !important;
+    }
+    html.light-theme .bg-sky-950\/50,
+    html.light-theme .bg-sky-950\/40 {
+      background-color: #f0f9ff !important;
+      color: #0c4a6e !important;
+    }
+    html.light-theme .border-slate-800,
+    html.light-theme .border-slate-800\/90,
+    html.light-theme .border-slate-700 {
+      border-color: #cbd5e1 !important;
+    }
+    html.light-theme .text-white,
+    html.light-theme .text-\[\#f8fafc\],
+    html.light-theme .text-slate-100,
+    html.light-theme .text-slate-200 {
+      color: #0f172a !important;
+    }
+    html.light-theme .text-slate-300,
+    html.light-theme .text-slate-400 {
+      color: #334155 !important;
+    }
+    html.light-theme .text-emerald-400,
+    html.light-theme .text-emerald-300,
+    html.light-theme .text-emerald-200,
+    html.light-theme .text-emerald-100 {
+      color: #047857 !important;
+    }
+    html.light-theme .text-sky-300,
+    html.light-theme .text-sky-200,
+    html.light-theme .text-sky-100,
+    html.light-theme .text-sky-400,
+    html.light-theme .text-cyan-200,
+    html.light-theme .text-cyan-300,
+    html.light-theme .text-cyan-400 {
+      color: #0369a1 !important;
+    }
+    html.light-theme .text-amber-100,
+    html.light-theme .text-amber-200,
+    html.light-theme .text-amber-300,
+    html.light-theme .text-amber-400 {
+      color: #92400e !important;
+    }
+    html.light-theme .text-rose-100,
+    html.light-theme .text-rose-200,
+    html.light-theme .text-rose-300,
+    html.light-theme .text-rose-400 {
+      color: #9f1239 !important;
+    }
+    html.light-theme .text-purple-100,
+    html.light-theme .text-purple-200,
+    html.light-theme .text-purple-300,
+    html.light-theme .text-indigo-200,
+    html.light-theme .text-indigo-300 {
+      color: #6b21a8 !important;
+    }
+    html.light-theme .bg-emerald-600,
+    html.light-theme .bg-sky-600,
+    html.light-theme .bg-emerald-500,
+    html.light-theme .neuro-btn-done {
+      color: #ffffff !important;
+    }
+    html.light-theme .bg-emerald-600 *,
+    html.light-theme .bg-sky-600 *,
+    html.light-theme .bg-emerald-500 *,
+    html.light-theme .neuro-btn-done * {
+      color: #ffffff !important;
+    }
+    html.light-theme input,
+    html.light-theme select,
+    html.light-theme textarea {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      border-color: #94a3b8 !important;
+    }
   </style>
 </head>
 <body class="bg-[#0f172a] text-[#f8fafc] min-h-screen pb-28 overflow-x-hidden w-full max-w-full selection:bg-emerald-600 selection:text-[#ecfdf5]">
@@ -347,6 +503,38 @@
 
     <!-- ==================== VIEW 1: WORKOUT & WEIGHT TRACKER ==================== -->
     <section id="view-workout" class="space-y-2.5">
+      <!-- Module 2: True Offline Mode Connectivity & Sync Queue Banner -->
+      <div id="offline-connectivity-banner" role="status" class="hidden rounded-2xl border border-amber-400/60 bg-amber-500/15 px-3.5 py-2.5 text-xs font-bold text-amber-100 flex items-center justify-between gap-2">
+        <span id="offline-connectivity-banner-text">Offline mode: Your workout sets are saved safely on this device and will sync automatically when you reconnect.</span>
+        <span class="shrink-0 rounded-md bg-amber-500/25 px-2 py-0.5 text-[10px] font-extrabold uppercase">Local-First</span>
+      </div>
+
+      <!-- Module 3: Adherence-Neutral Flexible Weekly Goal Card (Never Resets Streaks on Missed Days) -->
+      <div id="weekly-adherence-neutral-card" class="rounded-2xl border border-emerald-500/40 bg-slate-900/90 p-3 space-y-2 shadow-sm">
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Flexible Weekly Goal • Zero Streak Punishment</div>
+            <div id="adherence-neutral-status-text" class="text-xs sm:text-sm font-extrabold text-white mt-0.5">0 of 4 workouts completed this week</div>
+          </div>
+          <button type="button" id="open-micro-wins-preview-btn" class="shrink-0 min-h-[36px] px-2.5 py-1.5 rounded-xl border border-amber-400/60 bg-amber-600/20 hover:bg-amber-600/30 text-amber-100 text-[11px] font-extrabold transition whitespace-nowrap">
+            ★ View Session Wins
+          </button>
+        </div>
+        <div role="progressbar" aria-label="Weekly flexible workout goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="adherence-neutral-progress-bar" class="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+          <div id="adherence-neutral-progress-fill" class="h-full rounded-full bg-emerald-500 transition-all duration-300" style="width: 0%;"></div>
+        </div>
+        <p id="adherence-neutral-encouragement" class="text-[11px] text-slate-300 leading-relaxed">Move your gym days any way you need. Missing a day never resets your progress.</p>
+      </div>
+
+      <!-- Module 4: Biometric Readiness Banner (Sleep < 5h -> -10% Prescribed Sets) -->
+      <div id="biometric-readiness-banner" role="status" class="hidden rounded-2xl border border-sky-400/50 bg-sky-500/15 px-3.5 py-2.5 flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <div class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Biometric Recovery Guard</div>
+          <p id="biometric-readiness-text" class="text-xs font-bold text-slate-100 leading-relaxed mt-0.5"></p>
+        </div>
+        <span id="biometric-readiness-badge" class="shrink-0 rounded-lg bg-sky-500/25 border border-sky-400/50 px-2.5 py-1 text-[11px] font-extrabold text-sky-100 whitespace-nowrap">100% Volume</span>
+      </div>
+
       <!-- UPGRADE 6: First-Open & Daily Gym Time Prompt + Live Workout Time Auto-Sync Banner -->
       <div id="gym-time-top-banner-workout" class="space-y-2"></div>
       <div id="live-gym-time-autosync-banner" class="hidden"></div>
@@ -754,6 +942,9 @@
             <span id="vegan-logged-with-plan-badge" class="hidden text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-950/85 text-purple-200 border border-purple-400/50"></span>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" id="open-nutrition-ocr-btn" class="text-xs font-extrabold px-2.5 py-1.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/60 text-sky-200 transition whitespace-nowrap" title="Scan a food nutrition facts label with your camera">
+              📷 Scan Label
+            </button>
             <button type="button" id="reset-fuel-day-btn" class="text-xs font-extrabold px-2.5 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/60 text-rose-200 transition whitespace-nowrap" title="Reset meal prep and fuel logs for today only">
               ↺ Reset Fuel
             </button>
@@ -1863,6 +2054,10 @@
       if (state && state.cloudDbUrl && state.cloudDbUrl.trim()) {
         return state.cloudDbUrl.trim();
       }
+      // Module 1: Guest Sandbox runs 100% local-first with zero background cloud calls until user clicks "Save Account"
+      if (state && (state.isGuestMode || (state.userProfile && state.userProfile.isGuest) || !userEmail)) {
+        return '';
+      }
       const isNativeCapacitor = Boolean(
         (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) ||
         (window.location && /^(capacitor|ionic|file):/i.test(window.location.protocol || '')) ||
@@ -2228,15 +2423,29 @@
           history.replaceState(null, '', '#state=' + b64);
         }
       } catch (err) {}
-      // Task 2: Automatic silent background push to Supabase on EVERY active user input
-      // (set log, checkbox toggle, timer adjustment), paused automatically during hydration, startup boot, or the 5s undo window
-      if (!effectiveSkipCloud && !isPullingCloudTruth && !isDestructiveCloudPushDelayedLocal() && getActiveCloudEndpoint()) {
-        clearTimeout(cloudSyncTimeout);
-        const resolvedReason = syncReason || 'background_input';
-        cloudSyncTimeout = setTimeout(() => {
-          cloudSyncTimeout = null;
-          autoSyncWorkoutToSupabaseLocal(resolvedReason);
-        }, 300);
+      // Module 2 (True Offline Mode) + Task 2 (Auto Background Sync):
+      // Always persist locally first. If offline, queue gym_state for background Service Worker delivery when network returns.
+      const activeEndpoint = getActiveCloudEndpoint();
+      if (!effectiveSkipCloud && !isPullingCloudTruth && !isDestructiveCloudPushDelayedLocal() && activeEndpoint) {
+        const isOnlineNow = typeof navigator === 'undefined' || navigator.onLine !== false;
+        if (!isOnlineNow && typeof window.enqueueOfflineGymStateSync === 'function') {
+          window.enqueueOfflineGymStateSync({
+            stateObj: state,
+            endpoint: activeEndpoint,
+            reason: syncReason || 'offline_local_save',
+            localStateStorageKey: STORAGE_KEY
+          });
+          if (typeof updateOfflineConnectivityBannerUI === 'function') {
+            updateOfflineConnectivityBannerUI();
+          }
+        } else {
+          clearTimeout(cloudSyncTimeout);
+          const resolvedReason = syncReason || 'background_input';
+          cloudSyncTimeout = setTimeout(() => {
+            cloudSyncTimeout = null;
+            autoSyncWorkoutToSupabaseLocal(resolvedReason);
+          }, 300);
+        }
       }
     }
 
@@ -13533,6 +13742,7 @@
 
       const m = EXERCISE_META || {};
       let totalVolume = 0;
+      const currentSessionSets = [];
       (exercisesToday || []).forEach(ex => {
         const exMeta = m[ex.id] || { defaultWeightLbs: 0 };
         for (let s = 1; s <= ex.sets; s++) {
@@ -13541,6 +13751,13 @@
             const wVal = parseFloat(entry.weight) || exMeta.defaultWeightLbs || 0;
             const rVal = parseInt(entry.reps, 10) || parseInt(ex.reps, 10) || 8;
             totalVolume += wVal * rVal;
+            currentSessionSets.push({
+              exerciseId: ex.id,
+              exerciseName: ex.name || ex.id,
+              weight: wVal,
+              reps: rVal,
+              unit: entry.unit || state.weightUnit || 'lbs'
+            });
           }
         }
       });
@@ -13548,7 +13765,41 @@
       const statsEl = document.getElementById('modal-workout-complete-stats');
       if (statsEl) {
         const unitLbl = (state.weightUnit || 'lbs').toUpperCase();
-        statsEl.textContent = `${totalSetsCompleted} / ${totalSetsCompleted} Sets Logged • ${Math.round(totalVolume).toLocaleString()} ${unitLbl} Total Volume`;
+        statsEl.textContent = `${totalSetsCompleted} Sets Logged • ${Math.round(totalVolume).toLocaleString()} ${unitLbl} Total Volume`;
+      }
+
+      // Module 3: Micro-Wins Engine — celebrate 4 PR categories (Heaviest Weight, Highest Reps, Highest Volume, Improved e1RM)
+      const winsSection = document.getElementById('modal-micro-wins-section');
+      const winsHeadlineEl = document.getElementById('modal-micro-wins-headline');
+      const winsListEl = document.getElementById('modal-micro-wins-list');
+      if (winsSection && winsListEl && typeof window.evaluateSessionMicroWins === 'function') {
+        const winsSummary = window.evaluateSessionMicroWins({
+          currentSessionSets,
+          priorWorkoutLogs: state.workoutLogs || {},
+          priorExerciseHistory: state.exerciseHistory || {},
+          currentWeek: week,
+          currentDayIdx: dayIdx,
+          displayUnit: state.weightUnit === 'kg' ? 'kg' : 'lbs'
+        });
+        if (winsHeadlineEl) winsHeadlineEl.textContent = winsSummary.headline;
+        if (winsSummary.wins.length > 0) {
+          winsListEl.innerHTML = winsSummary.wins.slice(0, 6).map(win => `
+            <div class="rounded-xl border border-amber-400/50 bg-amber-500/10 px-3 py-2 space-y-0.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[11px] font-extrabold text-amber-200">★ ${win.title}</span>
+                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-200">${win.deltaLabel}</span>
+              </div>
+              <p class="text-[11px] text-slate-200 leading-snug">${win.eli12Message}</p>
+            </div>
+          `).join('');
+        } else {
+          winsListEl.innerHTML = `
+            <div class="rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-2 text-[11px] text-slate-300 leading-relaxed">
+              Log any weight and rep set today to unlock Heaviest Weight, Highest Reps, Highest Volume, and Estimated 1-Rep Max badges!
+            </div>
+          `;
+        }
+        winsSection.classList.remove('hidden');
       }
 
       const waterStatusEl = document.getElementById('modal-water-intake-status');
@@ -13562,7 +13813,9 @@
       clearGymLockerSilently();
       saveState(true);
       // Task 3: Automatically synchronize finished workout to Supabase without requiring a manual sync button
-      autoSyncWorkoutToSupabaseLocal('workout_finished');
+      if (getActiveCloudEndpoint()) {
+        autoSyncWorkoutToSupabaseLocal('workout_finished');
+      }
       const dynamicPostWorkoutBtnLabel = formatOpenPostWorkoutMealButtonLabelInline(new Date());
       const mealBtn = document.getElementById('modal-open-post-meal-btn');
       if (mealBtn) {
@@ -13915,7 +14168,7 @@
         }
       });
 
-      const exercisesToday = rawDayExercises.map((rawEx, exIdx) => {
+      let exercisesToday = rawDayExercises.map((rawEx, exIdx) => {
         const cleanBaseName = String(rawEx.name || '').replace(/^[A-Z]\d+[\.\:\-\)]\s*/i, '').trim();
         const canonicalId = resolveCanonicalExerciseIdInline(rawEx.id, cleanBaseName);
         let exObj = {
@@ -13943,6 +14196,24 @@
         return effectiveEx;
       });
 
+      // Module 4: Biometric Sleep/Steps Readiness Volume Guard (< 5h sleep -> -10% prescribed sets)
+      const bioBannerEl = document.getElementById('biometric-readiness-banner');
+      const bioTextEl = document.getElementById('biometric-readiness-text');
+      const bioBadgeEl = document.getElementById('biometric-readiness-badge');
+      if (state.biometricsSnapshot && typeof window.applyBiometricVolumeToExercises === 'function') {
+        const bioResult = window.applyBiometricVolumeToExercises(exercisesToday, state.biometricsSnapshot);
+        exercisesToday = bioResult.exercises;
+        if (bioBannerEl && bioResult.adjustment.reductionPercent > 0) {
+          bioBannerEl.classList.remove('hidden');
+          if (bioTextEl) bioTextEl.textContent = bioResult.adjustment.eli12Summary;
+          if (bioBadgeEl) bioBadgeEl.textContent = `${Math.round(bioResult.adjustment.volumeMultiplier * 100)}% Volume`;
+        } else if (bioBannerEl) {
+          bioBannerEl.classList.add('hidden');
+        }
+      } else if (bioBannerEl) {
+        bioBannerEl.classList.add('hidden');
+      }
+
       // Count sets completed today in current week BEFORE evaluating Pre-Gym Fuel Check-In banner
       let todayTotalSets = 0;
       let todayDoneSets = 0;
@@ -13953,6 +14224,34 @@
           if (entry && entry.done) todayDoneSets++;
         }
       });
+
+      // Module 3: Adherence-Neutral Weekly Goal Card (Never resets streaks on missed days)
+      if (typeof window.computeAdherenceNeutralWeeklyProgress === 'function') {
+        const targetDays = Number(state.weeklyWorkoutTarget || (state.programWizardConfig && state.programWizardConfig.daysPerWeek) || 4);
+        const adh = window.computeAdherenceNeutralWeeklyProgress({
+          weekNumber: week,
+          weeklyTarget: targetDays,
+          workoutLogs: state.workoutLogs || {},
+          pullupLogs: state.pullupLogs || {},
+          cardioLogs: state.cardioLogs || {}
+        });
+        const adhStatus = document.getElementById('adherence-neutral-status-text');
+        const adhBar = document.getElementById('adherence-neutral-progress-bar');
+        const adhFill = document.getElementById('adherence-neutral-progress-fill');
+        const adhEnc = document.getElementById('adherence-neutral-encouragement');
+        if (adhStatus) adhStatus.textContent = adh.statusLabel;
+        if (adhBar) adhBar.setAttribute('aria-valuenow', String(adh.percentComplete));
+        if (adhFill) adhFill.style.width = `${adh.percentComplete}%`;
+        if (adhEnc) adhEnc.textContent = adh.encouragementCopy;
+      }
+
+      // Wire "★ View Session Wins" preview button directly to Micro-Wins completion modal
+      const winsPreviewBtn = document.getElementById('open-micro-wins-preview-btn');
+      if (winsPreviewBtn) {
+        winsPreviewBtn.onclick = () => {
+          openWorkoutCompletionModal(week, dayIdx, todayDoneSets, exercisesToday);
+        };
+      }
 
       syncPyramidRestHelperToggle();
 
@@ -15325,6 +15624,8 @@
                     ${isCardioEx ? `<span class="text-[10px] font-extrabold bg-cyan-500/20 text-cyan-200 border border-cyan-400/45 px-2 py-0.5 rounded-md whitespace-nowrap">CARDIO</span>` : ''}
                     ${ex.isSwappedMachine ? `<span class="text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-md whitespace-nowrap">Machine</span>` : ''}
                     ${!isCardioEx ? `<span class="text-[11px] font-semibold text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded-md whitespace-nowrap">${isTimedHold ? `${ex.sets} Sets × ${targetHoldSec}s / side` : `${ex.sets} Sets × ${ex.reps}`}</span>` : ''}
+                    ${!isCardioEx ? `<button type="button" data-explain-ex="${ex.id}" data-explain-name="${String(displayExName || ex.name).replace(/"/g, '&quot;')}" data-explain-sets="${ex.sets}" data-explain-reps="${String(ex.reps || '8-12').replace(/"/g, '&quot;')}" data-explain-weight="${meta.defaultWeightLbs || 0}" data-explain-bw="${isBodyweightRepsOnly ? '1' : '0'}" class="explain-math-btn px-2 py-0.5 rounded-md border border-sky-400/55 bg-sky-500/15 hover:bg-sky-500/25 text-[10px] font-extrabold text-sky-200 whitespace-nowrap transition" title="See the exact math behind this weight and rep target">ⓘ Why?</button>` : ''}
+                    ${!isCardioEx && !isBodyweightRepsOnly ? `<button type="button" data-scan-pin-ex="${ex.id}" data-scan-pin-name="${String(displayExName || ex.name).replace(/"/g, '&quot;')}" data-scan-pin-slot="${slotIdx}" class="scan-pin-ocr-btn px-2 py-0.5 rounded-md border border-emerald-400/50 bg-emerald-500/15 hover:bg-emerald-500/25 text-[10px] font-extrabold text-emerald-200 whitespace-nowrap transition" title="Scan pin-loaded weight machine stack with camera">📷 Scan Pin</button>` : ''}
                     ${isExInProgress ? `<span data-ex-inprogress-badge="${ex.id}" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b;">IN PROGRESS • ${exDoneSets}/${ex.sets}</span>` : ''}
                     ${effectiveExComplete ? `<span class="text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">✓ Done</span>` : ''}
                   </div>
@@ -17690,6 +17991,54 @@
           saveState();
           renderWorkoutView();
           showToast(`Switched to ${roundedVal} ${targetUnit.toUpperCase()} (rounded)`);
+        });
+      });
+
+      listEl.querySelectorAll('.explain-math-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof window.openExplainableMathModal !== 'function') return;
+          const exId = btn.getAttribute('data-explain-ex') || '';
+          const exName = btn.getAttribute('data-explain-name') || exId;
+          const targetSets = parseInt(btn.getAttribute('data-explain-sets') || '3', 10) || 3;
+          const targetRepsLabel = btn.getAttribute('data-explain-reps') || '8-12';
+          const fallbackWeight = parseFloat(btn.getAttribute('data-explain-weight') || '0') || 0;
+          const isBodyweight = btn.getAttribute('data-explain-bw') === '1';
+          const activeEntry = getLogEntry(week, dayIdx, exId, 1);
+          const prevEntry = week > 1 ? getLogEntry(week - 1, dayIdx, exId, 1) : null;
+          const curWeight = (activeEntry && parseFloat(activeEntry.weight)) || fallbackWeight;
+          const prevWeight = prevEntry && parseFloat(prevEntry.weight) > 0 ? parseFloat(prevEntry.weight) : null;
+          const prevReps = prevEntry && parseInt(prevEntry.reps, 10) > 0 ? parseInt(prevEntry.reps, 10) : null;
+          window.openExplainableMathModal({
+            exerciseName: exName,
+            currentWeek: week,
+            targetSets,
+            targetRepsLabel,
+            targetWeight: curWeight,
+            unit: (activeEntry && activeEntry.unit) || state.weightUnit || 'lbs',
+            previousWeight: prevWeight,
+            previousReps: prevReps,
+            completedAllPreviousReps: Boolean(prevEntry && prevEntry.done),
+            isBodyweight,
+            biometricSleepHours: state.biometricsSnapshot ? state.biometricsSnapshot.sleepHours : null
+          });
+        });
+      });
+
+      listEl.querySelectorAll('.scan-pin-ocr-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof window.openCameraOcrScannerModal !== 'function') return;
+          window.openCameraOcrScannerModal('weight_machine', {
+            exerciseId: btn.getAttribute('data-scan-pin-ex') || '',
+            exerciseName: btn.getAttribute('data-scan-pin-name') || 'Weight Machine',
+            week,
+            dayIdx,
+            slotIdx: parseInt(btn.getAttribute('data-scan-pin-slot') || String(slotIdx), 10),
+            unit: state.weightUnit === 'kg' ? 'kg' : 'lbs'
+          });
         });
       });
 
@@ -23268,6 +23617,9 @@
           }
         }
         syncProgramWizardFromState();
+        if (typeof window.resetIkeaQuizToStep === 'function') {
+          window.resetIkeaQuizToStep(0);
+        }
         if (programWizardStatusEl) {
           programWizardStatusEl.textContent = '';
           programWizardStatusEl.classList.add('hidden');
@@ -23771,13 +24123,29 @@
           daysPerWeek,
           primaryFocus,
           difficulty,
+          goal: window.__ikeaWizardGoal || 'build_muscle',
+          equipment: window.__ikeaWizardEquipment || 'full_gym',
+          weeklyWorkoutTarget: daysPerWeek,
           diet: normDiet.id,
           baseDiet,
           intolerances,
           updatedAt: new Date().toISOString()
         };
+        state.weeklyWorkoutTarget = daysPerWeek;
+        state.onboardingComplete = true;
         state.userHasCompletedOnboarding = true;
         state.hasCompletedFirstSetup = true;
+        // Module 1: Drop new visitors directly into Guest Sandbox without mandatory login
+        if (state.isGuestMode || !state.userProfile || !state.userProfile.email || state.userProfile.isGuest || state.userProfile.authProvider === 'guest_local') {
+          state.isGuestMode = true;
+          state.userProfile = {
+            name: 'Guest',
+            email: '',
+            isGuest: true,
+            authProvider: 'guest_local',
+            signedInAt: new Date().toISOString()
+          };
+        }
         state.dismissedOvertrainingAlertKey = '';
         isWizardBlockingFirstOpen = false;
         if (closeProgramWizardBtn) closeProgramWizardBtn.classList.remove('hidden');
@@ -23795,10 +24163,10 @@
 
         if (runProgramWizardSubmitBtn) {
           runProgramWizardSubmitBtn.disabled = false;
-          runProgramWizardSubmitBtn.textContent = 'Build My Custom Weekly Program';
+          runProgramWizardSubmitBtn.textContent = 'Start My Free Plan';
         }
         if (programWizardModal) programWizardModal.classList.add('hidden');
-        showToast(`Week ${week} updated: ${daysPerWeek} Days • ${primaryFocus.toUpperCase()} • ${difficulty.toUpperCase()} • ${dietSummaryLabel}`);
+        showToast(`Week ${week} ready (${daysPerWeek} days/wk, ${dietSummaryLabel}). You are in Free Guest Mode — save an account anytime in Settings.`);
       }
 
       if (runProgramWizardSubmitBtn) {
@@ -27004,20 +27372,53 @@
       renderVeganView();
       renderShoppingView();
 
-      // Mandatory Smart Login Gate (Guests Not Available — Requires 1-Time Smart Sign-In)
+      // Module 1: Frictionless Onboarding & Guest Sandbox (Zero Mandatory Login Wall)
+      const isAutostart = /(?:^|[?&])autostart=1(?:&|$)/i.test(window.location.search || '');
       const hasCompletedOnboarding = Boolean(state.onboardingComplete || state.userHasCompletedOnboarding || state.hasCompletedFirstSetup);
-      if (!state.userProfile || !state.userProfile.email) {
-        const loginModal = document.getElementById('smart-login-modal');
-        const closeBtn = document.getElementById('close-smart-login-btn');
-        if (closeBtn) closeBtn.classList.add('hidden');
-        if (loginModal) loginModal.classList.remove('hidden');
-      } else if (!hasCompletedOnboarding && !/(?:^|[?&])autostart=1(?:&|$)/i.test(window.location.search || '')) {
-        // UPGRADE 22: Force First-Time Onboarding Wizard full-screen before showing Gym tab
-        window.openProgramSetupWizardModal(true, 1);
+      const closeLoginBtnInit = document.getElementById('close-smart-login-btn');
+      if (closeLoginBtnInit) closeLoginBtnInit.classList.remove('hidden');
+
+      const hasSavedCloudAccount = Boolean(
+        state.userProfile &&
+        state.userProfile.email &&
+        !state.userProfile.isGuest &&
+        state.userProfile.authProvider &&
+        state.userProfile.authProvider !== 'guest_local' &&
+        hasCompletedOnboarding
+      );
+
+      if (!hasCompletedOnboarding && !isAutostart) {
+        // Fresh user -> enter Guest Sandbox silently and open 5-step IKEA Effect Quiz immediately
+        if (!hasSavedCloudAccount) {
+          state.isGuestMode = true;
+          state.userProfile = {
+            name: 'Guest',
+            email: '',
+            isGuest: true,
+            authProvider: 'guest_local'
+          };
+        }
+        window.openProgramSetupWizardModal(false, 1);
+      } else if (!hasSavedCloudAccount) {
+        state.isGuestMode = true;
+        state.userProfile = {
+          name: 'Guest',
+          email: '',
+          isGuest: true,
+          authProvider: 'guest_local'
+        };
       }
-      claimAllPreviousLocalAndCloudDataIntoProfile({ isStartupInit: true });
+      if (!state.isGuestMode) {
+        claimAllPreviousLocalAndCloudDataIntoProfile({ isStartupInit: true });
+      }
+      if (typeof updateHeaderProfileUI === 'function') {
+        updateHeaderProfileUI();
+      }
       // Initial passive bootstrap is complete; active user inputs may now stamp `last_updated` and background-sync
       isBootstrappingApp = false;
+      if (typeof initStrategicUpgradesRuntime === 'function') {
+        initStrategicUpgradesRuntime();
+      }
       if (getActiveCloudEndpoint()) {
         // Task 1: "Most Advanced" Truth Engine — instantly fetch Supabase gym_state on load and compare `last_updated` timestamps
         pullStateFromCloud({ forceRemoteTruth: false });
@@ -27038,8 +27439,23 @@
       document.addEventListener('visibilitychange', triggerResumeCloudPull);
       window.addEventListener('focus', triggerResumeCloudPull);
       window.addEventListener('online', () => {
+        if (typeof updateOfflineConnectivityBannerUI === 'function') {
+          updateOfflineConnectivityBannerUI();
+        }
+        if (typeof window.flushOfflineGymStateQueue === 'function') {
+          window.flushOfflineGymStateQueue().then((res) => {
+            if (res && res.flushedCount > 0) {
+              showToast('Back online! Your offline workout logs synced.');
+            }
+          }).catch(() => {});
+        }
         if (getActiveCloudEndpoint() && !isDestructiveCloudPushDelayedLocal()) {
           pullStateFromCloud({ forceRemoteTruth: false });
+        }
+      });
+      window.addEventListener('offline', () => {
+        if (typeof updateOfflineConnectivityBannerUI === 'function') {
+          updateOfflineConnectivityBannerUI();
         }
       });
       window.addEventListener('pagehide', flushPendingCloudSyncNow);
@@ -27201,15 +27617,47 @@
         <button type="button" id="close-sync-settings-modal-btn" aria-label="Close" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
       </div>
 
-      <!-- Prominent Program Setup Wizard CTA + Diet & Intolerances Shortcut -->
+      <!-- Prominent Program Setup Wizard CTA + Optional Save Account + Diet & Intolerances Shortcut -->
       <div class="space-y-2">
+        <button type="button" id="settings-save-account-btn" class="w-full py-2.5 px-3 rounded-xl border border-emerald-400/70 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-100 text-xs font-extrabold transition flex items-center justify-center gap-2 shadow-sm">
+          <span>☁️ Save Account (Optional Cloud Sync)</span>
+        </button>
         <button type="button" id="open-program-wizard-btn" class="w-full py-2.5 px-3 rounded-xl border border-amber-500/70 bg-amber-600/20 hover:bg-amber-600/30 text-amber-100 text-xs font-extrabold transition flex items-center justify-center gap-2 shadow-sm">
-          <span>⚙️ Run Program Setup Wizard</span>
+          <span>⚙️ Run Program Setup Quiz</span>
         </button>
         <button type="button" id="open-settings-diet-modal-btn" class="w-full py-2 px-3 rounded-xl border border-cyan-500/50 bg-slate-950 hover:bg-slate-800 text-cyan-200 text-xs font-bold transition flex items-center justify-center gap-2">
           <span>⚙️ Diet &amp; Intolerances</span>
         </button>
       </div>
+
+      <!-- Module 2: Accessible Light / Dark / System Theme Mode Toggle -->
+      <div id="theme-mode-selector-group" role="radiogroup" aria-label="Color Theme Mode" class="rounded-xl border border-slate-700 bg-slate-950/90 p-3 space-y-2">
+        <div class="flex items-center justify-between text-xs font-extrabold text-white">
+          <span>Screen Mode (High Contrast)</span>
+          <span id="active-theme-readout" class="text-[11px] font-bold text-emerald-300">Dark</span>
+        </div>
+        <div class="grid grid-cols-3 gap-1.5" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));">
+          <button type="button" role="radio" aria-checked="false" data-theme-choice="light" class="theme-mode-choice-btn min-h-[40px] px-2 py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-200 text-xs font-extrabold transition">Light</button>
+          <button type="button" role="radio" aria-checked="true" data-theme-choice="dark" class="theme-mode-choice-btn min-h-[40px] px-2 py-1.5 rounded-lg border border-emerald-400 bg-emerald-600 text-white text-xs font-extrabold transition">✓ Dark</button>
+          <button type="button" role="radio" aria-checked="false" data-theme-choice="system" class="theme-mode-choice-btn min-h-[40px] px-2 py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-200 text-xs font-extrabold transition">System</button>
+        </div>
+      </div>
+
+      <!-- Module 2: CSV History Importer (Strong, Hevy, Fitbod) — Default Closed Accordion -->
+      <details id="csv-import-accordion" class="group rounded-xl border border-slate-700 bg-slate-950/90 overflow-hidden">
+        <summary class="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between gap-2 text-xs font-extrabold text-slate-200 hover:text-white select-none">
+          <span>📥 Import Workout History (Strong, Hevy, Fitbod CSV)</span>
+          <span class="text-[10px] text-slate-400 group-open:rotate-180 transition-transform">v</span>
+        </summary>
+        <div class="px-3 pb-3 pt-2 border-t border-slate-800 space-y-2 text-xs">
+          <p class="text-[11px] text-slate-300 leading-relaxed">Upload a CSV export from Strong, Hevy, or Fitbod. Your logged sets are never overwritten.</p>
+          <input type="file" id="csv-history-import-input" accept=".csv,text/csv" aria-label="Import Strong, Hevy, or Fitbod CSV file" class="block w-full rounded-lg border border-slate-700 bg-slate-900 p-1.5 text-[11px] text-slate-200" />
+          <button type="button" id="csv-import-sample-btn" class="w-full min-h-[38px] px-3 py-1.5 rounded-lg border border-sky-400/50 bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 text-[11px] font-extrabold transition">
+            Try Sample Strong CSV Import
+          </button>
+          <div id="csv-import-status" role="status" class="hidden rounded-lg border border-emerald-500/50 bg-emerald-950/50 px-2.5 py-2 text-[11px] font-bold text-emerald-200"></div>
+        </div>
+      </details>
 
       <!-- Cross-Week Continuity Banner & Re-Sync Week Controls -->
       <div id="cross-week-continuity-banner" class="rounded-xl bg-slate-950/90 border border-slate-800 p-2.5"></div>
@@ -27312,96 +27760,130 @@
     </div>
   </div>
 
-  <!-- MODAL 4: Program Setup Wizard Modal (Strict AI Difficulty Engine + Forced First-Time Onboarding) -->
-  <div id="program-setup-wizard-modal" class="hidden fixed inset-0 z-50 backdrop-blur-sm flex items-center justify-center p-3" style="background-color: rgba(15, 23, 42, 0.90); letter-spacing: 0.02em; line-height: 1.5; font-family: system-ui, sans-serif;" role="dialog" aria-modal="true" aria-labelledby="program-wizard-title">
-    <div class="border border-amber-500/50 rounded-2xl max-w-md w-full p-3.5 space-y-2.5 shadow-2xl max-h-[94vh] overflow-y-auto" style="background-color: #0f172a; color: #f8fafc;">
-      <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2">
-        <div>
-          <h3 id="program-wizard-title" class="text-sm sm:text-base font-extrabold" style="color: #f8fafc;">⚙️ Program Setup Wizard</h3>
-          <p id="program-wizard-subtitle" class="text-[11px] mt-0.5" style="color: #cbd5e1;">Pick your days, focus, difficulty, and diet to start.</p>
+  <!-- MODAL 4: Module 1 IKEA Effect Progressive Onboarding Quiz (5 Single-Action Screens + Guest Sandbox) -->
+  <div id="program-setup-wizard-modal" class="hidden fixed inset-0 z-50 backdrop-blur-sm flex items-center justify-center p-3" style="background-color: rgba(15, 23, 42, 0.90);" role="dialog" aria-modal="true" aria-labelledby="program-wizard-title">
+    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl max-w-md w-full p-4 space-y-3 shadow-2xl max-h-[94vh] overflow-y-auto text-slate-100">
+      <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
+        <div class="min-w-0">
+          <div id="ikea-quiz-step-badge" class="text-[11px] font-extrabold text-emerald-300">Step 1 of 5 • Free Beta (No Account Needed)</div>
+          <h3 id="program-wizard-title" class="text-base font-extrabold text-white mt-0.5">Build Your Custom Plan</h3>
+          <p id="program-wizard-subtitle" class="text-xs text-slate-300 mt-0.5">One simple choice per screen. Start right away in free Guest Mode.</p>
         </div>
         <button type="button" id="close-program-wizard-modal-btn" aria-label="Close" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
       </div>
 
-      <!-- Task 5: Returning User Login Bypass Directly on Program Setup Wizard -->
+      <!-- Accessible Progress Bar -->
+      <div id="ikea-quiz-progressbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="20" aria-label="Onboarding quiz progress" class="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
+        <div id="ikea-quiz-progress-fill" class="h-full rounded-full bg-emerald-500 transition-all duration-300" style="width: 20%;"></div>
+      </div>
+
+      <!-- Task 5: Returning User Login Bypass Directly on Onboarding Quiz -->
       <div class="rounded-xl border border-sky-400/50 bg-sky-500/10 p-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <span class="text-[11px] font-bold text-slate-200">Returning user? Skip setup and load your profile.</span>
-        <button
-          type="button"
-          id="wizard-returning-login-btn"
-          class="py-2 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold whitespace-nowrap shadow transition"
-        >
+        <span class="text-[11px] font-bold text-slate-200">Returning user? Load your saved cloud profile.</span>
+        <button type="button" id="wizard-returning-login-btn" class="py-1.5 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold whitespace-nowrap shadow transition">
           Already have an account? Log In
         </button>
       </div>
 
-      <!-- Question 1: Days Per Week -->
-      <div class="space-y-1.5">
-        <div class="text-xs font-extrabold text-slate-100">1. Days Per Week?</div>
+      <!-- STEP 1: Main Goal -->
+      <div class="ikea-quiz-step space-y-2" data-step="0">
+        <div class="text-sm font-extrabold text-white">1. What is your main goal?</div>
+        <p class="text-xs text-slate-300">Pick one goal. We match your reps and focus automatically.</p>
+        <div class="grid grid-cols-1 gap-2">
+          <button type="button" data-wizard-goal="build_muscle" aria-pressed="true" class="wizard-goal-pill min-h-[46px] py-2.5 px-3 rounded-xl border-2 text-left text-xs font-extrabold bg-emerald-600/20 text-emerald-100 border-emerald-400">✓ Build Muscle (8–12 reps)</button>
+          <button type="button" data-wizard-goal="get_stronger" aria-pressed="false" class="wizard-goal-pill min-h-[46px] py-2.5 px-3 rounded-xl border text-left text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Get Stronger (5–6 heavy reps)</button>
+          <button type="button" data-wizard-goal="lose_fat" aria-pressed="false" class="wizard-goal-pill min-h-[46px] py-2.5 px-3 rounded-xl border text-left text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Burn Fat &amp; Keep Muscle (10–15 reps)</button>
+          <button type="button" data-wizard-goal="stay_fit" aria-pressed="false" class="wizard-goal-pill min-h-[46px] py-2.5 px-3 rounded-xl border text-left text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Stay Healthy &amp; Active (Balanced)</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Experience & Primary Focus -->
+      <div class="ikea-quiz-step hidden space-y-3" data-step="1">
+        <div class="space-y-1.5">
+          <div class="text-sm font-extrabold text-white">2. How long have you lifted weights?</div>
+          <div class="grid grid-cols-1 gap-1.5">
+            <button type="button" data-wizard-diff="easy" class="wizard-diff-pill min-h-[44px] py-2 px-3 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700 text-left">Easy (Beginner) — Machines &amp; Cables Only, Max 3 Sets</button>
+            <button type="button" data-wizard-diff="medium" class="wizard-diff-pill min-h-[44px] py-2 px-3 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500 text-left">Medium (Standard) — Free Weights &amp; Machines, 3–4 Sets</button>
+            <button type="button" data-wizard-diff="hard" class="wizard-diff-pill min-h-[44px] py-2 px-3 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700 text-left">Hard (Advanced) — Heavy Barbell Compounds, 4–5 Sets</button>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <div class="text-xs font-extrabold text-slate-200">Optional muscle focus:</div>
+          <div class="grid grid-cols-4 gap-1.5" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));">
+            <button type="button" data-wizard-focus="balanced" class="wizard-focus-pill py-2 px-2 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500">Balanced</button>
+            <button type="button" data-wizard-focus="chest" class="wizard-focus-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Chest</button>
+            <button type="button" data-wizard-focus="legs" class="wizard-focus-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Legs</button>
+            <button type="button" data-wizard-focus="back" class="wizard-focus-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Back</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: Equipment -->
+      <div class="ikea-quiz-step hidden space-y-2" data-step="2">
+        <div class="text-sm font-extrabold text-white">3. What gear can you use?</div>
+        <p class="text-xs text-slate-300">We match exercises to the gear you actually have.</p>
+        <div class="grid grid-cols-1 gap-2">
+          <button type="button" data-wizard-equip="full_gym" aria-pressed="true" class="wizard-equip-pill min-h-[48px] py-2.5 px-3 rounded-xl border-2 text-left text-xs font-extrabold bg-emerald-600/20 text-emerald-100 border-emerald-400">✓ Full Gym (Barbells, Dumbbells, Cables, Machines)</button>
+          <button type="button" data-wizard-equip="dumbbells_only" aria-pressed="false" class="wizard-equip-pill min-h-[48px] py-2.5 px-3 rounded-xl border text-left text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Dumbbells Only</button>
+          <button type="button" data-wizard-equip="machines_cables" aria-pressed="false" class="wizard-equip-pill min-h-[48px] py-2.5 px-3 rounded-xl border text-left text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Machines &amp; Cables</button>
+          <button type="button" data-wizard-equip="home_bodyweight" aria-pressed="false" class="wizard-equip-pill min-h-[48px] py-2.5 px-3 rounded-xl border text-left text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Home Bodyweight (No Weights Needed)</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: Weekly Schedule -->
+      <div class="ikea-quiz-step hidden space-y-2" data-step="3">
+        <div class="text-sm font-extrabold text-white">4. How many days per week?</div>
+        <p class="text-xs text-slate-300">Flexible weekly target. Missing a day will never punish you.</p>
         <div class="grid grid-cols-4 gap-1.5" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));">
-          <button type="button" data-wizard-days="3" class="wizard-days-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">3 Days</button>
-          <button type="button" data-wizard-days="4" class="wizard-days-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">4 Days</button>
-          <button type="button" data-wizard-days="5" class="wizard-days-pill py-2 px-2 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500">5 Days</button>
-          <button type="button" data-wizard-days="6" class="wizard-days-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">6 Days</button>
+          <button type="button" data-wizard-days="3" class="wizard-days-pill min-h-[48px] py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">3 Days</button>
+          <button type="button" data-wizard-days="4" class="wizard-days-pill min-h-[48px] py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">4 Days</button>
+          <button type="button" data-wizard-days="5" class="wizard-days-pill min-h-[48px] py-2 px-2 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500">5 Days</button>
+          <button type="button" data-wizard-days="6" class="wizard-days-pill min-h-[48px] py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">6 Days</button>
         </div>
         <div id="program-wizard-overtraining-warning" role="alert" class="hidden rounded-xl border border-amber-500/60 bg-amber-500/15 px-3 py-2 text-xs font-bold text-amber-100 leading-relaxed">
           Warning: Muscles need rest to grow. It is best to rest after 3 or 4 days of lifting.
         </div>
       </div>
 
-      <!-- Question 2: Primary Focus -->
-      <div class="space-y-1.5">
-        <div class="text-xs font-extrabold text-slate-100">2. Primary Focus?</div>
-        <div class="grid grid-cols-4 gap-1.5" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));">
-          <button type="button" data-wizard-focus="balanced" class="wizard-focus-pill py-2 px-2 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500">Balanced</button>
-          <button type="button" data-wizard-focus="chest" class="wizard-focus-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Chest</button>
-          <button type="button" data-wizard-focus="legs" class="wizard-focus-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Legs</button>
-          <button type="button" data-wizard-focus="back" class="wizard-focus-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Back</button>
+      <!-- STEP 5: Diet & Intolerances -->
+      <div class="ikea-quiz-step hidden space-y-3" data-step="4">
+        <div class="space-y-1.5">
+          <div class="text-sm font-extrabold text-white">5. What is your base diet?</div>
+          <div class="grid grid-cols-2 gap-1.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;" role="group" aria-label="Base Diet Selection">
+            <button type="button" data-wizard-diet="Omnivore (Cheapest)" class="wizard-diet-pill min-h-[42px] py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Omnivore (Cheapest)</button>
+            <button type="button" data-wizard-diet="Vegan" class="wizard-diet-pill min-h-[42px] py-2 px-2.5 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500">Vegan</button>
+            <button type="button" data-wizard-diet="Vegetarian" class="wizard-diet-pill min-h-[42px] py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Vegetarian</button>
+            <button type="button" data-wizard-diet="Keto" class="wizard-diet-pill min-h-[42px] py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Keto</button>
+          </div>
         </div>
-      </div>
-
-      <!-- Question 3: Difficulty -->
-      <div class="space-y-1.5">
-        <div class="text-xs font-extrabold text-slate-100">3. Difficulty?</div>
-        <div class="grid grid-cols-1 gap-1.5" style="display: grid; grid-template-columns: minmax(0, 1fr);">
-          <button type="button" data-wizard-diff="easy" class="wizard-diff-pill py-2 px-3 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700 text-left">Easy (Beginner) — Machines &amp; Cables Only, Max 3 Sets</button>
-          <button type="button" data-wizard-diff="medium" class="wizard-diff-pill py-2 px-3 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500 text-left">Medium (Standard) — Free Weights &amp; Machines, 3-4 Sets</button>
-          <button type="button" data-wizard-diff="hard" class="wizard-diff-pill py-2 px-3 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700 text-left">Hard (Advanced) — Heavy Barbell Compounds, 4-5 Sets</button>
+        <div class="space-y-1.5">
+          <div class="text-xs font-extrabold text-slate-200">Any intolerances to block?</div>
+          <div class="grid grid-cols-3 gap-1.5" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;" role="group" aria-label="Dietary Intolerances Selection">
+            <button type="button" data-wizard-intol="Gluten-Free" aria-pressed="false" class="wizard-intol-pill min-h-[40px] py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1"><span class="intol-check-box" aria-hidden="true">☐</span><span>Gluten-Free</span></button>
+            <button type="button" data-wizard-intol="Nut-Free" aria-pressed="false" class="wizard-intol-pill min-h-[40px] py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1"><span class="intol-check-box" aria-hidden="true">☐</span><span>Nut-Free</span></button>
+            <button type="button" data-wizard-intol="Soy-Free" aria-pressed="false" class="wizard-intol-pill min-h-[40px] py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1"><span class="intol-check-box" aria-hidden="true">☐</span><span>Soy-Free</span></button>
+          </div>
         </div>
-      </div>
-
-      <!-- Question 4: What is your base diet? (Single-Select 2x2 Grid) -->
-      <div class="space-y-1.5">
-        <div class="text-xs font-extrabold text-slate-100">4. What is your base diet?</div>
-        <div class="grid grid-cols-2 gap-1.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;" role="group" aria-label="Base Diet Selection">
-          <button type="button" data-wizard-diet="Omnivore (Cheapest)" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Omnivore (Cheapest)</button>
-          <button type="button" data-wizard-diet="Vegan" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500">Vegan</button>
-          <button type="button" data-wizard-diet="Vegetarian" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Vegetarian</button>
-          <button type="button" data-wizard-diet="Keto" class="wizard-diet-pill py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Keto</button>
+        <div class="rounded-xl border border-slate-700 bg-slate-950 px-2.5 py-2 text-[11px] text-slate-300 leading-snug">
+          <span class="font-extrabold text-slate-100">Active Rules: </span>
+          <span id="program-wizard-rule-preview">Difficulty: MEDIUM. Base Diet: [Vegan].</span>
         </div>
-      </div>
-
-      <!-- Question 5: Any intolerances? (Multi-Select Checkbox Pills) -->
-      <div class="space-y-1.5">
-        <div class="text-xs font-extrabold text-slate-100">5. Any intolerances?</div>
-        <div class="grid grid-cols-3 gap-1.5" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;" role="group" aria-label="Dietary Intolerances Selection">
-          <button type="button" data-wizard-intol="Gluten-Free" aria-pressed="false" class="wizard-intol-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1"><span class="intol-check-box" aria-hidden="true">☐</span><span>Gluten-Free</span></button>
-          <button type="button" data-wizard-intol="Nut-Free" aria-pressed="false" class="wizard-intol-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1"><span class="intol-check-box" aria-hidden="true">☐</span><span>Nut-Free</span></button>
-          <button type="button" data-wizard-intol="Soy-Free" aria-pressed="false" class="wizard-intol-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1"><span class="intol-check-box" aria-hidden="true">☐</span><span>Soy-Free</span></button>
-        </div>
-      </div>
-
-      <!-- Strict AI Rule Preview -->
-      <div class="rounded-xl border border-slate-700 bg-slate-950 px-2.5 py-2 text-[11px] text-slate-300 leading-snug">
-        <span class="font-extrabold text-slate-100">Active Rules: </span>
-        <span id="program-wizard-rule-preview">Difficulty: MEDIUM. Base Diet: [Vegan].</span>
       </div>
 
       <div id="program-wizard-status" class="hidden rounded-xl border border-amber-500/50 bg-amber-600/15 px-3 py-2 text-xs font-bold text-amber-100"></div>
 
-      <button type="button" id="run-program-wizard-submit-btn" class="w-full py-2.5 px-4 rounded-xl neuro-btn-done text-xs font-extrabold shadow-md transition">
-        Build My Custom Weekly Program
-      </button>
+      <!-- Progressive Step Navigation Controls -->
+      <div class="flex items-center gap-2 pt-1">
+        <button type="button" id="ikea-quiz-prev-btn" class="hidden min-h-[46px] px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-extrabold transition">
+          ← Back
+        </button>
+        <button type="button" id="ikea-quiz-next-btn" class="flex-1 min-h-[46px] py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-extrabold shadow-md transition">
+          Next Step →
+        </button>
+        <button type="button" id="run-program-wizard-submit-btn" class="hidden flex-1 min-h-[46px] py-2.5 px-4 rounded-xl neuro-btn-done text-xs sm:text-sm font-extrabold shadow-md transition">
+          Start My Free Plan
+        </button>
+      </div>
     </div>
   </div>
 
@@ -28073,6 +28555,12 @@
         <button type="button" id="close-workout-complete-modal-btn" aria-label="Close Workout Complete Modal" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
       </div>
 
+      <!-- Module 3: Micro-Wins Engine PR Celebration Panel -->
+      <div id="modal-micro-wins-section" class="hidden space-y-2">
+        <div id="modal-micro-wins-headline" class="text-xs font-extrabold text-amber-300">★ Micro-Wins Personal Records</div>
+        <div id="modal-micro-wins-list" class="space-y-1.5 max-h-44 overflow-y-auto"></div>
+      </div>
+
       <!-- 1-Tap Post-Workout Hydration Card -->
       <div class="bg-slate-950/95 border border-sky-500/35 rounded-xl p-3 space-y-2">
         <div class="flex items-center justify-between gap-2">
@@ -28165,6 +28653,28 @@
         </div>
       </details>
 
+      <!-- Module 4: Biometric Sleep & Steps Sync (Apple HealthKit & Google Health Connect) -->
+      <div id="biometric-sync-panel" class="bg-slate-950/90 border border-sky-500/40 rounded-xl p-3 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-300">Sleep &amp; Steps Biometric Sync</span>
+          <span id="biometric-volume-badge" class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-sky-500/20 text-sky-200 border border-sky-400/40">Volume: 100%</span>
+        </div>
+        <p id="biometric-sync-summary" class="text-[11px] text-slate-300 leading-relaxed">
+          Sync Apple HealthKit or Google Health Connect. If sleep is under 5 hours, today&apos;s prescribed sets drop by 10% automatically.
+        </p>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button type="button" id="sync-apple-healthkit-btn" class="min-h-[38px] py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-100 text-[11px] font-bold transition">
+            Sync Apple HealthKit
+          </button>
+          <button type="button" id="sync-google-healthconnect-btn" class="min-h-[38px] py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-100 text-[11px] font-bold transition">
+            Sync Health Connect
+          </button>
+        </div>
+        <button type="button" id="test-low-sleep-biometric-btn" class="w-full min-h-[38px] py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/55 text-amber-100 text-[11px] font-extrabold transition">
+          Test Low Sleep (4.5h) → Lower Sets by 10%
+        </button>
+      </div>
+
       <details id="watch-modal-ble-chest-strap-accordion" class="group bg-slate-950/90 border border-slate-800 rounded-xl overflow-hidden">
         <summary class="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between gap-2 text-xs font-extrabold text-slate-300 hover:text-white select-none">
           <span>Optional: External BLE Chest Strap</span>
@@ -28216,6 +28726,486 @@
       </details>
     </div>
   </div>
+
+  <!-- Module 4: Explainable Math Progression Breakdown Modal -->
+  <div id="explainable-math-modal" role="dialog" aria-modal="true" aria-labelledby="explainable-math-modal-title" class="hidden fixed inset-0 z-[70] bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-sky-400/60 rounded-2xl max-w-md w-full p-4 space-y-3 shadow-2xl text-slate-100">
+      <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
+        <div>
+          <span id="explainable-math-ex-label" class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">Explainable Math</span>
+          <h3 id="explainable-math-modal-title" class="text-base font-extrabold text-white mt-0.5">Why this target?</h3>
+        </div>
+        <button type="button" id="close-explainable-math-btn" aria-label="Close" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
+      </div>
+      <p id="explainable-math-plain-text" class="rounded-xl border border-slate-700 bg-slate-950 p-3 text-sm font-semibold leading-relaxed text-slate-100"></p>
+      <div class="space-y-1">
+        <div class="text-xs font-extrabold text-slate-300">Exact math steps:</div>
+        <ul id="explainable-math-steps-list" class="list-disc pl-5 space-y-1 text-xs text-slate-300 leading-relaxed"></ul>
+      </div>
+      <div id="explainable-math-prescribed" class="rounded-xl border border-emerald-500/40 bg-emerald-950/40 px-3 py-2 text-xs font-bold text-emerald-200"></div>
+      <button type="button" id="confirm-explainable-math-btn" class="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-extrabold transition">
+        Got It
+      </button>
+    </div>
+  </div>
+
+  <!-- Module 4: Computer Vision Camera OCR Scanner Modal (Weight Machine Pin & Nutrition Label) -->
+  <div id="camera-ocr-modal" role="dialog" aria-modal="true" aria-labelledby="camera-ocr-modal-title" class="hidden fixed inset-0 z-[72] bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-emerald-400/60 rounded-2xl max-w-md w-full p-4 space-y-3 shadow-2xl text-slate-100">
+      <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
+        <div>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Camera Vision OCR</span>
+          <h3 id="camera-ocr-modal-title" class="text-base font-extrabold text-white mt-0.5">Scan Pin Stack or Food Label</h3>
+        </div>
+        <button type="button" id="close-camera-ocr-btn" aria-label="Close" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
+      </div>
+      <div class="rounded-xl border border-slate-700 bg-slate-950 p-2.5">
+        <video id="camera-ocr-video" autoplay playsinline muted class="hidden w-full h-44 object-cover rounded-lg"></video>
+        <p id="camera-ocr-fallback-box" class="text-xs text-slate-300 leading-relaxed">Point your camera at a pin-loaded weight stack or nutrition facts label, or upload a photo below.</p>
+      </div>
+      <input type="text" id="camera-ocr-hint-input" placeholder="Optional OCR test text (e.g. PIN 125 LBS or Calories: 210, Protein: 26g)" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white" />
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" id="camera-ocr-capture-btn" class="min-h-[42px] py-2 px-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-extrabold transition">
+          📷 Scan Now
+        </button>
+        <label class="min-h-[42px] py-2 px-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-bold flex items-center justify-center cursor-pointer">
+          Upload Photo
+          <input type="file" id="camera-ocr-file-input" accept="image/*" capture="environment" class="hidden" />
+        </label>
+      </div>
+      <div id="camera-ocr-result-box" class="hidden rounded-xl border border-emerald-500/50 bg-emerald-950/40 p-3 space-y-2">
+        <div id="camera-ocr-result-summary" class="text-xs font-extrabold text-emerald-200"></div>
+        <button type="button" id="camera-ocr-apply-btn" class="w-full min-h-[40px] py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold transition">
+          Auto-Fill Input
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function updateOfflineConnectivityBannerUI() {
+      const banner = document.getElementById('offline-connectivity-banner');
+      const textEl = document.getElementById('offline-connectivity-banner-text');
+      if (!banner || !textEl) return;
+      const isOnline = typeof navigator === 'undefined' || navigator.onLine !== false;
+      const queued = typeof window.readOfflineSyncQueue === 'function' ? window.readOfflineSyncQueue() : [];
+      if (!isOnline) {
+        banner.classList.remove('hidden');
+        textEl.textContent = queued.length > 0
+          ? `Offline mode: ${queued.length} workout update(s) saved safely on this device. Will sync when online.`
+          : 'Offline mode: Logging works 100% locally on this device. Will sync when online.';
+      } else if (queued.length > 0) {
+        banner.classList.remove('hidden');
+        textEl.textContent = `Back online: Syncing ${queued.length} queued offline workout update(s)...`;
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
+    function initStrategicUpgradesRuntime() {
+      // 1. Accessible Light / Dark / System Theme Provider
+      function applyThemePrefUI(pref) {
+        if (typeof window.applyThemeToDocument !== 'function') return false;
+        const normalized = typeof window.saveThemePreference === 'function' ? window.saveThemePreference(pref) : pref;
+        const res = window.applyThemeToDocument(normalized, document);
+        if (typeof state === 'object' && state) state.themeMode = normalized;
+        const readout = document.getElementById('active-theme-readout');
+        if (readout) {
+          readout.textContent = normalized === 'system' ? `System (${res.resolved})` : (res.resolved === 'light' ? 'Light' : 'Dark');
+        }
+        document.querySelectorAll('.theme-mode-choice-btn').forEach(btn => {
+          const val = btn.getAttribute('data-theme-choice');
+          const active = val === normalized;
+          btn.setAttribute('aria-checked', active ? 'true' : 'false');
+          btn.className = active
+            ? 'theme-mode-choice-btn min-h-[40px] px-2 py-1.5 rounded-lg border border-emerald-400 bg-emerald-600 text-white text-xs font-extrabold transition'
+            : 'theme-mode-choice-btn min-h-[40px] px-2 py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-200 text-xs font-extrabold transition';
+          const label = val === 'light' ? 'Light' : (val === 'dark' ? 'Dark' : 'System');
+          btn.textContent = active ? `✓ ${label}` : label;
+        });
+        return true;
+      }
+
+      const initialTheme = (typeof window.loadStoredThemePreference === 'function')
+        ? window.loadStoredThemePreference()
+        : ((typeof state === 'object' && state && state.themeMode) || 'dark');
+      const themeHydrated = applyThemePrefUI(initialTheme);
+
+      if (!themeHydrated || typeof window.computeAdherenceNeutralWeeklyProgress !== 'function') {
+        if (!window.__strategicBridgeWaitBound) {
+          window.__strategicBridgeWaitBound = true;
+          window.addEventListener('d3-onerm-bridge-ready', () => {
+            const prefNow = (typeof window.loadStoredThemePreference === 'function')
+              ? window.loadStoredThemePreference()
+              : ((typeof state === 'object' && state && state.themeMode) || 'dark');
+            applyThemePrefUI(prefNow);
+            updateOfflineConnectivityBannerUI();
+            if (typeof renderWorkoutView === 'function') renderWorkoutView();
+          }, { once: true });
+        }
+      }
+
+      if (window.__strategicUpgradesListenersWired) {
+        updateOfflineConnectivityBannerUI();
+        return;
+      }
+      window.__strategicUpgradesListenersWired = true;
+
+      document.querySelectorAll('.theme-mode-choice-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const nextMode = btn.getAttribute('data-theme-choice') || 'dark';
+          applyThemePrefUI(nextMode);
+          if (typeof showToast === 'function') showToast(`Theme set to ${nextMode.toUpperCase()}.`);
+        });
+      });
+
+      if (window.matchMedia) {
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        if (typeof mq.addEventListener === 'function') {
+          mq.addEventListener('change', () => {
+            const curPref = typeof window.loadStoredThemePreference === 'function' ? window.loadStoredThemePreference() : 'dark';
+            if (curPref === 'system') applyThemePrefUI('system');
+          });
+        }
+      }
+
+      // 2. Module 1: Optional "Save Account" Button in Settings for Guest Sandbox Users
+      const saveAcctBtn = document.getElementById('settings-save-account-btn');
+      if (saveAcctBtn) {
+        saveAcctBtn.addEventListener('click', () => {
+          const syncModal = document.getElementById('sync-settings-modal');
+          if (syncModal) syncModal.classList.add('hidden');
+          const loginModal = document.getElementById('smart-login-modal');
+          const closeBtn = document.getElementById('close-smart-login-btn');
+          if (closeBtn) closeBtn.classList.remove('hidden');
+          if (loginModal) loginModal.classList.remove('hidden');
+        });
+      }
+
+      // 3. Module 1: IKEA Effect Quiz Progressive Disclosure Steps (5 Single-Action Screens)
+      let ikeaStepIdx = 0;
+      const ikeaStepEls = Array.from(document.querySelectorAll('.ikea-quiz-step'));
+      const ikeaPrevBtn = document.getElementById('ikea-quiz-prev-btn');
+      const ikeaNextBtn = document.getElementById('ikea-quiz-next-btn');
+      const ikeaSubmitBtn = document.getElementById('run-program-wizard-submit-btn');
+      const ikeaStepBadge = document.getElementById('ikea-quiz-step-badge');
+      const ikeaBar = document.getElementById('ikea-quiz-progressbar');
+      const ikeaFill = document.getElementById('ikea-quiz-progress-fill');
+
+      function renderIkeaQuizStep(idx) {
+        const total = Math.max(1, ikeaStepEls.length);
+        ikeaStepIdx = Math.max(0, Math.min(total - 1, idx));
+        ikeaStepEls.forEach((el, i) => {
+          if (i === ikeaStepIdx) el.classList.remove('hidden');
+          else el.classList.add('hidden');
+        });
+        const pct = Math.round(((ikeaStepIdx + 1) / total) * 100);
+        if (ikeaStepBadge) ikeaStepBadge.textContent = `Step ${ikeaStepIdx + 1} of ${total} • Free Beta (No Account Needed)`;
+        if (ikeaBar) ikeaBar.setAttribute('aria-valuenow', String(pct));
+        if (ikeaFill) ikeaFill.style.width = `${pct}%`;
+        if (ikeaPrevBtn) ikeaPrevBtn.classList.toggle('hidden', ikeaStepIdx === 0);
+        if (ikeaNextBtn) ikeaNextBtn.classList.toggle('hidden', ikeaStepIdx >= total - 1);
+        if (ikeaSubmitBtn) ikeaSubmitBtn.classList.toggle('hidden', ikeaStepIdx < total - 1);
+      }
+      window.resetIkeaQuizToStep = renderIkeaQuizStep;
+      renderIkeaQuizStep(0);
+
+      if (ikeaPrevBtn) ikeaPrevBtn.addEventListener('click', () => renderIkeaQuizStep(ikeaStepIdx - 1));
+      if (ikeaNextBtn) ikeaNextBtn.addEventListener('click', () => renderIkeaQuizStep(ikeaStepIdx + 1));
+
+      window.__ikeaWizardGoal = (state.programWizardConfig && state.programWizardConfig.goal) || 'build_muscle';
+      window.__ikeaWizardEquipment = (state.programWizardConfig && state.programWizardConfig.equipment) || 'full_gym';
+
+      document.querySelectorAll('.wizard-goal-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          window.__ikeaWizardGoal = btn.getAttribute('data-wizard-goal') || 'build_muscle';
+          document.querySelectorAll('.wizard-goal-pill').forEach(b => {
+            const active = b.getAttribute('data-wizard-goal') === window.__ikeaWizardGoal;
+            b.setAttribute('aria-pressed', active ? 'true' : 'false');
+            b.className = active
+              ? 'wizard-goal-pill min-h-[46px] py-2.5 px-3 rounded-xl border-2 text-left text-xs font-extrabold bg-emerald-600/20 text-emerald-100 border-emerald-400'
+              : 'wizard-goal-pill min-h-[46px] py-2.5 px-3 rounded-xl border text-left text-xs font-bold bg-slate-950 text-slate-200 border-slate-700';
+            b.textContent = (active ? '✓ ' : '') + b.textContent.replace(/^✓\s*/, '');
+          });
+        });
+      });
+
+      document.querySelectorAll('.wizard-equip-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          window.__ikeaWizardEquipment = btn.getAttribute('data-wizard-equip') || 'full_gym';
+          document.querySelectorAll('.wizard-equip-pill').forEach(b => {
+            const active = b.getAttribute('data-wizard-equip') === window.__ikeaWizardEquipment;
+            b.setAttribute('aria-pressed', active ? 'true' : 'false');
+            b.className = active
+              ? 'wizard-equip-pill min-h-[48px] py-2.5 px-3 rounded-xl border-2 text-left text-xs font-extrabold bg-emerald-600/20 text-emerald-100 border-emerald-400'
+              : 'wizard-equip-pill min-h-[48px] py-2.5 px-3 rounded-xl border text-left text-xs font-bold bg-slate-950 text-slate-200 border-slate-700';
+            b.textContent = (active ? '✓ ' : '') + b.textContent.replace(/^✓\s*/, '');
+          });
+        });
+      });
+
+      // 4. Module 2: CSV History Importer (Strong, Hevy, Fitbod)
+      const csvInput = document.getElementById('csv-history-import-input');
+      const csvSampleBtn = document.getElementById('csv-import-sample-btn');
+      const csvStatusEl = document.getElementById('csv-import-status');
+
+      function applyImportedCsvText(csvText) {
+        if (typeof window.parseWorkoutHistoryCsv !== 'function' || typeof window.mergeImportedHistoryIntoGymState !== 'function') return;
+        const parsed = window.parseWorkoutHistoryCsv(csvText, { targetWeek: state.selectedWeek || 1 });
+        if (csvStatusEl) csvStatusEl.classList.remove('hidden');
+        if (parsed.errors.length > 0 && parsed.importedSetsCount === 0) {
+          if (csvStatusEl) csvStatusEl.textContent = parsed.errors[0];
+          return;
+        }
+        const merged = window.mergeImportedHistoryIntoGymState(state, parsed);
+        state.workoutLogs = merged.nextState.workoutLogs;
+        state.exerciseHistory = merged.nextState.exerciseHistory;
+        saveState();
+        if (typeof renderWorkoutView === 'function') renderWorkoutView();
+        const msg = `Imported ${parsed.importedSetsCount} sets from ${parsed.detectedApp.toUpperCase()} (${parsed.uniqueExercises.length} exercises).`;
+        if (csvStatusEl) csvStatusEl.textContent = msg;
+        if (typeof showToast === 'function') showToast(msg);
+      }
+
+      if (csvInput) {
+        csvInput.addEventListener('change', (ev) => {
+          const file = ev.target.files && ev.target.files[0];
+          if (!file) return;
+          file.text().then(applyImportedCsvText).catch(() => {});
+        });
+      }
+      if (csvSampleBtn) {
+        csvSampleBtn.addEventListener('click', () => {
+          const sampleStrongCsv = [
+            'Date,Workout Name,Exercise Name,Set Order,Weight,Reps',
+            '2026-11-18,Upper Strength,Bench Press (Barbell),1,135,8',
+            '2026-11-18,Upper Strength,Bench Press (Barbell),2,140,8',
+            '2026-11-18,Upper Strength,Pull Up,1,0,7'
+          ].join('\n');
+          applyImportedCsvText(sampleStrongCsv);
+        });
+      }
+
+      // 5. Module 4: Explainable Math Modal
+      const expModal = document.getElementById('explainable-math-modal');
+      const closeExpBtn = document.getElementById('close-explainable-math-btn');
+      const confirmExpBtn = document.getElementById('confirm-explainable-math-btn');
+      window.openExplainableMathModal = function(input) {
+        if (!expModal || typeof window.computeExplainableProgressionMath !== 'function') return;
+        const breakdown = window.computeExplainableProgressionMath(input);
+        const exLbl = document.getElementById('explainable-math-ex-label');
+        const titleEl = document.getElementById('explainable-math-modal-title');
+        const plainEl = document.getElementById('explainable-math-plain-text');
+        const stepsEl = document.getElementById('explainable-math-steps-list');
+        const prescEl = document.getElementById('explainable-math-prescribed');
+        if (exLbl) exLbl.textContent = `Explainable Math • ${breakdown.exerciseName}`;
+        if (titleEl) titleEl.textContent = breakdown.headline;
+        if (plainEl) plainEl.textContent = breakdown.plainEnglishExplanation;
+        if (stepsEl) {
+          stepsEl.innerHTML = breakdown.formulaSteps.map(s => `<li>${s}</li>`).join('');
+        }
+        if (prescEl) prescEl.textContent = breakdown.prescribedSummary;
+        expModal.classList.remove('hidden');
+      };
+      const hideExpModal = () => { if (expModal) expModal.classList.add('hidden'); };
+      if (closeExpBtn) closeExpBtn.addEventListener('click', hideExpModal);
+      if (confirmExpBtn) confirmExpBtn.addEventListener('click', hideExpModal);
+      if (expModal) expModal.addEventListener('click', (e) => { if (e.target === expModal) hideExpModal(); });
+
+      // 6. Module 4: Computer Vision Camera OCR Scanner Modal
+      const ocrModal = document.getElementById('camera-ocr-modal');
+      const ocrVideo = document.getElementById('camera-ocr-video');
+      const ocrFallback = document.getElementById('camera-ocr-fallback-box');
+      const ocrHintInput = document.getElementById('camera-ocr-hint-input');
+      const ocrCaptureBtn = document.getElementById('camera-ocr-capture-btn');
+      const ocrFileInput = document.getElementById('camera-ocr-file-input');
+      const ocrResultBox = document.getElementById('camera-ocr-result-box');
+      const ocrResultSummary = document.getElementById('camera-ocr-result-summary');
+      const ocrApplyBtn = document.getElementById('camera-ocr-apply-btn');
+      const closeOcrBtn = document.getElementById('close-camera-ocr-btn');
+      const openNutOcrBtn = document.getElementById('open-nutrition-ocr-btn');
+
+      let activeOcrMode = 'weight_machine';
+      let activeOcrContext = null;
+      let activeOcrResult = null;
+      let activeCameraHandle = null;
+
+      function closeCameraOcrModal() {
+        if (activeCameraHandle && typeof activeCameraHandle.stop === 'function') {
+          activeCameraHandle.stop();
+          activeCameraHandle = null;
+        }
+        if (ocrVideo) {
+          ocrVideo.srcObject = null;
+          ocrVideo.classList.add('hidden');
+        }
+        if (ocrModal) ocrModal.classList.add('hidden');
+      }
+
+      window.openCameraOcrScannerModal = function(mode, ctx) {
+        if (!ocrModal) return;
+        activeOcrMode = mode === 'nutrition_label' ? 'nutrition_label' : 'weight_machine';
+        activeOcrContext = ctx || null;
+        activeOcrResult = null;
+        if (ocrResultBox) ocrResultBox.classList.add('hidden');
+        if (ocrHintInput) ocrHintInput.value = '';
+        const titleEl = document.getElementById('camera-ocr-modal-title');
+        if (titleEl) {
+          titleEl.textContent = activeOcrMode === 'nutrition_label'
+            ? 'Scan Nutrition Facts Label'
+            : `Scan Pin Stack (${(ctx && ctx.exerciseName) || 'Weight Machine'})`;
+        }
+        ocrModal.classList.remove('hidden');
+
+        if (typeof window.startDeviceCameraStream === 'function') {
+          window.startDeviceCameraStream().then(handle => {
+            activeCameraHandle = handle;
+            if (handle.active && handle.stream && ocrVideo) {
+              ocrVideo.srcObject = handle.stream;
+              ocrVideo.classList.remove('hidden');
+              if (ocrFallback) ocrFallback.classList.add('hidden');
+            } else {
+              if (ocrVideo) ocrVideo.classList.add('hidden');
+              if (ocrFallback) {
+                ocrFallback.classList.remove('hidden');
+                ocrFallback.textContent = handle.error || 'Camera unavailable. Tap Scan Now or Upload Photo.';
+              }
+            }
+          });
+        }
+      };
+
+      async function runOcrStubNow(imageDataUrl) {
+        const hint = ocrHintInput ? ocrHintInput.value.trim() : '';
+        if (activeOcrMode === 'weight_machine' && typeof window.scanWeightMachineStackOCR === 'function') {
+          activeOcrResult = await window.scanWeightMachineStackOCR({
+            imageDataUrl: imageDataUrl || null,
+            simulatedLabelText: hint || undefined,
+            preferredUnit: (activeOcrContext && activeOcrContext.unit) || 'lbs'
+          });
+          if (ocrResultSummary) {
+            ocrResultSummary.textContent = `✓ Detected Pin Weight: ${activeOcrResult.detectedWeight} ${activeOcrResult.unit.toUpperCase()} (${Math.round(activeOcrResult.confidence * 100)}% match)`;
+          }
+          if (ocrResultBox) ocrResultBox.classList.remove('hidden');
+        } else if (typeof window.scanNutritionLabelOCR === 'function') {
+          activeOcrResult = await window.scanNutritionLabelOCR({
+            imageDataUrl: imageDataUrl || null,
+            simulatedLabelText: hint || undefined
+          });
+          if (ocrResultSummary) {
+            ocrResultSummary.textContent = `✓ Detected Label: ${activeOcrResult.calories} kcal • ${activeOcrResult.proteinGrams}g Protein • ${activeOcrResult.carbsGrams}g Carbs • ${activeOcrResult.fatGrams}g Fat`;
+          }
+          if (ocrResultBox) ocrResultBox.classList.remove('hidden');
+        }
+      }
+
+      if (ocrCaptureBtn) ocrCaptureBtn.addEventListener('click', () => { void runOcrStubNow(null); });
+      if (ocrFileInput) {
+        ocrFileInput.addEventListener('change', (ev) => {
+          const f = ev.target.files && ev.target.files[0];
+          if (!f) return;
+          const reader = new FileReader();
+          reader.onload = () => { void runOcrStubNow(typeof reader.result === 'string' ? reader.result : null); };
+          reader.readAsDataURL(f);
+        });
+      }
+      if (ocrApplyBtn) {
+        ocrApplyBtn.addEventListener('click', () => {
+          if (!activeOcrResult) return;
+          if (activeOcrResult.mode === 'weight_machine' && activeOcrContext && activeOcrContext.exerciseId) {
+            const w = activeOcrContext.week || state.selectedWeek || 1;
+            const d = activeOcrContext.dayIdx ?? state.selectedDayIndex ?? 0;
+            const slotIdx = activeOcrContext.slotIdx ?? d;
+            const exId = activeOcrContext.exerciseId;
+            const kIdx = exId === 'cable_ab_crunch' ? d : slotIdx;
+            for (let s = 1; s <= 5; s++) {
+              const key = `w${w}_${kIdx}_${exId}_${s}`;
+              const existing = state.workoutLogs[key] || { weight: '', reps: '', done: false, unit: activeOcrResult.unit };
+              if (!existing.done) {
+                state.workoutLogs[key] = Object.assign({}, existing, {
+                  weight: String(activeOcrResult.detectedWeight),
+                  unit: activeOcrResult.unit
+                });
+              }
+            }
+            saveState();
+            if (typeof renderWorkoutView === 'function') renderWorkoutView();
+            if (typeof showToast === 'function') {
+              showToast(`OCR filled ${activeOcrResult.detectedWeight} ${activeOcrResult.unit.toUpperCase()} into ${activeOcrContext.exerciseName}.`);
+            }
+          } else if (activeOcrResult.mode === 'nutrition_label') {
+            if (!Array.isArray(state.scannedNutritionItems)) state.scannedNutritionItems = [];
+            state.scannedNutritionItems.push(Object.assign({ scannedAt: new Date().toISOString() }, activeOcrResult));
+            saveState();
+            if (typeof showToast === 'function') {
+              showToast(`OCR scanned label: ${activeOcrResult.calories} kcal, ${activeOcrResult.proteinGrams}g protein saved.`);
+            }
+          }
+          closeCameraOcrModal();
+        });
+      }
+      if (closeOcrBtn) closeOcrBtn.addEventListener('click', closeCameraOcrModal);
+      if (ocrModal) ocrModal.addEventListener('click', (e) => { if (e.target === ocrModal) closeCameraOcrModal(); });
+      if (openNutOcrBtn) {
+        openNutOcrBtn.addEventListener('click', () => {
+          window.openCameraOcrScannerModal('nutrition_label', {});
+        });
+      }
+
+      // 7. Module 4: Biometric Sync (Apple HealthKit & Google Health Connect)
+      function applyBiometricsSnapshotUI(snap) {
+        state.biometricsSnapshot = snap;
+        const summaryEl = document.getElementById('biometric-sync-summary');
+        const volBadge = document.getElementById('biometric-volume-badge');
+        if (typeof window.calculateBiometricVolumeAdjustment === 'function') {
+          const adj = window.calculateBiometricVolumeAdjustment(20, snap);
+          if (summaryEl) summaryEl.textContent = adj.eli12Summary;
+          if (volBadge) volBadge.textContent = `Volume: ${Math.round(adj.volumeMultiplier * 100)}%`;
+        }
+        saveState();
+        if (typeof renderWorkoutView === 'function') renderWorkoutView();
+      }
+
+      const appleBioBtn = document.getElementById('sync-apple-healthkit-btn');
+      const googleBioBtn = document.getElementById('sync-google-healthconnect-btn');
+      const lowSleepBioBtn = document.getElementById('test-low-sleep-biometric-btn');
+      if (appleBioBtn) {
+        appleBioBtn.addEventListener('click', async () => {
+          if (typeof window.fetchAppleHealthKitBiometricsStub !== 'function') return;
+          const snap = await window.fetchAppleHealthKitBiometricsStub();
+          applyBiometricsSnapshotUI(snap);
+          if (typeof showToast === 'function') showToast(`Apple HealthKit synced: ${snap.sleepHours}h sleep, ${snap.dailySteps.toLocaleString()} steps.`);
+        });
+      }
+      if (googleBioBtn) {
+        googleBioBtn.addEventListener('click', async () => {
+          if (typeof window.fetchGoogleHealthConnectBiometricsStub !== 'function') return;
+          const snap = await window.fetchGoogleHealthConnectBiometricsStub();
+          applyBiometricsSnapshotUI(snap);
+          if (typeof showToast === 'function') showToast(`Health Connect synced: ${snap.sleepHours}h sleep, ${snap.dailySteps.toLocaleString()} steps.`);
+        });
+      }
+      if (lowSleepBioBtn) {
+        lowSleepBioBtn.addEventListener('click', async () => {
+          if (typeof window.fetchAppleHealthKitBiometricsStub !== 'function') return;
+          const snap = await window.fetchAppleHealthKitBiometricsStub({ sleepHours: 4.5, dailySteps: 9100 });
+          applyBiometricsSnapshotUI(snap);
+          if (typeof showToast === 'function') showToast('Low sleep (4.5h) detected: Workout sets lowered by 10%.');
+        });
+      }
+
+      // 8. Service Worker Offline Sync Notification Listener
+      if ('serviceWorker' in navigator && typeof navigator.serviceWorker.addEventListener === 'function') {
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'OFFLINE_GYM_STATE_SYNCED') {
+            updateOfflineConnectivityBannerUI();
+            if (typeof showToast === 'function') showToast('Background sync complete: Offline sets saved to cloud.');
+          }
+        });
+      }
+      updateOfflineConnectivityBannerUI();
+    }
+  </script>
 
   <script type="module" src="/src/d3ChartBridge.ts"></script>
 </body>
