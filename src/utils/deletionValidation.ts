@@ -1,7 +1,14 @@
 import { clearActiveDayWorkoutData } from './wizardValidation';
+import { buildStartFreshGymState } from './startFreshReset';
 
 export const WORKOUT_FUEL_RESET_PROMPT =
   'Would you like to delete your meal prep and fuel logs too?';
+
+export const DELETE_ALL_WEEKS_BUTTON_LABEL =
+  'Delete All Weeks (Complete Reset)';
+
+export const DELETE_ALL_WEEKS_CONFIRM_WARNING =
+  'Are you sure? This will permanently delete your entire workout history across all weeks.';
 
 export const DELETE_ACCOUNT_WARNING_PROMPT =
   'Are you sure you want to delete the account?';
@@ -26,6 +33,7 @@ export type DeletionScope =
   | 'workout_only'
   | 'workout_and_fuel'
   | 'fuel_only'
+  | 'all_weeks'
   | 'account';
 
 export interface DeletionValidationRequest {
@@ -221,55 +229,63 @@ export function validateDeletionTarget(
   const activeNorm = normalizeAccountUserId(request.activeUserId);
   const targetNorm = normalizeAccountUserId(request.targetUserId);
 
-  if (!isValidDeletableUserId(activeNorm)) {
-    return {
-      valid: false,
-      scope,
-      normalizedUserId: '',
-      supabaseRecordId: '',
-      week: null,
-      dayIndex: null,
-      dayKey: null,
-      errorCode: 'INVALID_ACTIVE_USER',
-      errorMessage: 'Sign in to an active account before deleting.'
-    };
+  const isLocalGuestSession =
+    scope !== 'account' &&
+    (activeNorm === '' || activeNorm === 'guest') &&
+    (targetNorm === '' || targetNorm === 'guest' || targetNorm === activeNorm);
+
+  if (!isLocalGuestSession) {
+    if (!isValidDeletableUserId(activeNorm)) {
+      return {
+        valid: false,
+        scope,
+        normalizedUserId: '',
+        supabaseRecordId: '',
+        week: null,
+        dayIndex: null,
+        dayKey: null,
+        errorCode: 'INVALID_ACTIVE_USER',
+        errorMessage: 'Sign in to an active account before deleting.'
+      };
+    }
+
+    if (!isValidDeletableUserId(targetNorm)) {
+      return {
+        valid: false,
+        scope,
+        normalizedUserId: activeNorm,
+        supabaseRecordId: '',
+        week: null,
+        dayIndex: null,
+        dayKey: null,
+        errorCode: 'INVALID_TARGET_USER',
+        errorMessage: 'Account email is missing or invalid.'
+      };
+    }
+
+    if (activeNorm !== targetNorm) {
+      return {
+        valid: false,
+        scope,
+        normalizedUserId: activeNorm,
+        supabaseRecordId: '',
+        week: null,
+        dayIndex: null,
+        dayKey: null,
+        errorCode: 'USER_ID_MISMATCH',
+        errorMessage: 'Deletion stopped because the selected account does not match your active login.'
+      };
+    }
   }
 
-  if (!isValidDeletableUserId(targetNorm)) {
-    return {
-      valid: false,
-      scope,
-      normalizedUserId: activeNorm,
-      supabaseRecordId: '',
-      week: null,
-      dayIndex: null,
-      dayKey: null,
-      errorCode: 'INVALID_TARGET_USER',
-      errorMessage: 'Account email is missing or invalid.'
-    };
-  }
+  const effectiveUserId = isLocalGuestSession ? (activeNorm || 'guest') : activeNorm;
+  const supabaseRecordId = isLocalGuestSession ? '' : `user_${activeNorm}`;
 
-  if (activeNorm !== targetNorm) {
-    return {
-      valid: false,
-      scope,
-      normalizedUserId: activeNorm,
-      supabaseRecordId: '',
-      week: null,
-      dayIndex: null,
-      dayKey: null,
-      errorCode: 'USER_ID_MISMATCH',
-      errorMessage: 'Deletion stopped because the selected account does not match your active login.'
-    };
-  }
-
-  const supabaseRecordId = `user_${activeNorm}`;
-
-  if (scope === 'account') {
+  if (scope === 'account' || scope === 'all_weeks') {
     return {
       valid: true,
       scope,
-      normalizedUserId: activeNorm,
+      normalizedUserId: effectiveUserId,
       supabaseRecordId,
       week: null,
       dayIndex: null,
@@ -358,7 +374,7 @@ export function validateDeletionTarget(
   return {
     valid: true,
     scope,
-    normalizedUserId: activeNorm,
+    normalizedUserId: effectiveUserId,
     supabaseRecordId,
     week: targetWeek,
     dayIndex: targetDay,
@@ -373,6 +389,7 @@ export interface FuelClearResult {
   validation: DeletionValidationResult;
   clearedMealKeys: number;
   clearedIngredientKeys: number;
+  clearedFuelLogEntries: number;
   clearedFlexOverrides: boolean;
   clearedQuickAdds: boolean;
   clearedWater: boolean;
@@ -380,7 +397,7 @@ export interface FuelClearResult {
 
 /**
  * Clears ONLY the active day's Muscle Fuel & meal prep logs after strict user ID + day validation.
- * Preserves all workout sets and all other days' fuel logs.
+ * Preserves all workout sets, all other days' fuel logs, and the user's active login session.
  */
 export function clearActiveDayFuelData(
   stateObj: Record<string, any> | null | undefined,
@@ -409,6 +426,7 @@ export function clearActiveDayFuelData(
       validation,
       clearedMealKeys: 0,
       clearedIngredientKeys: 0,
+      clearedFuelLogEntries: 0,
       clearedFlexOverrides: false,
       clearedQuickAdds: false,
       clearedWater: false
@@ -422,11 +440,12 @@ export function clearActiveDayFuelData(
   const altDayKey = `w${w}_${d}`;
   let clearedMealKeys = 0;
   let clearedIngredientKeys = 0;
+  let clearedFuelLogEntries = 0;
 
   const wipeMealMap = (mealsMap: Record<string, any> | undefined) => {
     if (!mealsMap || typeof mealsMap !== 'object') return;
     Object.keys(mealsMap).forEach((k) => {
-      if (k.startsWith(prefix)) {
+      if (k.startsWith(prefix) || k.startsWith(`${altDayKey}_`)) {
         delete mealsMap[k];
         clearedMealKeys += 1;
       }
@@ -441,18 +460,74 @@ export function clearActiveDayFuelData(
     }
   };
 
+  const wipeFuelLogsMap = (fLogs: Record<string, any> | undefined) => {
+    if (!fLogs || typeof fLogs !== 'object') return;
+    [dayKey, altDayKey].forEach((dk) => {
+      if (dk in fLogs) {
+        if (Array.isArray(fLogs[dk])) {
+          clearedFuelLogEntries += fLogs[dk].length || 1;
+          fLogs[dk] = [];
+        } else {
+          delete fLogs[dk];
+          clearedFuelLogEntries += 1;
+        }
+      }
+    });
+    Object.keys(fLogs).forEach((k) => {
+      if (k.startsWith(prefix) || k.startsWith(`${altDayKey}_`)) {
+        delete fLogs[k];
+        clearedFuelLogEntries += 1;
+      }
+    });
+    const weekBucket = fLogs[String(w)] || fLogs[`week_${w}`];
+    if (weekBucket && typeof weekBucket === 'object') {
+      [String(d), `day_${d}`, `d${d}`].forEach((dk) => {
+        if (dk in weekBucket) {
+          if (Array.isArray(weekBucket[dk])) {
+            clearedFuelLogEntries += weekBucket[dk].length || 1;
+            weekBucket[dk] = [];
+          } else {
+            delete weekBucket[dk];
+            clearedFuelLogEntries += 1;
+          }
+        }
+      });
+    }
+  };
+
   wipeMealMap(stateObj.checkedMeals);
+  wipeFuelLogsMap(stateObj.fuelLogs);
+
+  if (stateObj.fuelDaySnapshots && typeof stateObj.fuelDaySnapshots === 'object' && dayKey in stateObj.fuelDaySnapshots) {
+    delete stateObj.fuelDaySnapshots[dayKey];
+    clearedFuelLogEntries += 1;
+  }
+
+  if (stateObj.loggedMealSnapshots && typeof stateObj.loggedMealSnapshots === 'object') {
+    [1, 2, 3, 4].forEach((num) => {
+      const snapKey = `${dayKey}_fuel${num}`;
+      if (snapKey in stateObj.loggedMealSnapshots) {
+        delete stateObj.loggedMealSnapshots[snapKey];
+        clearedFuelLogEntries += 1;
+      }
+    });
+  }
 
   if (stateObj.accountsByEmail && typeof stateObj.accountsByEmail === 'object') {
     const activeAcct = stateObj.accountsByEmail[validation.normalizedUserId];
-    if (activeAcct && activeAcct.snapshot && typeof activeAcct.snapshot === 'object') {
-      wipeMealMap(activeAcct.snapshot.checkedMeals);
+    if (activeAcct && typeof activeAcct === 'object') {
+      wipeMealMap(activeAcct.checkedMeals);
+      wipeFuelLogsMap(activeAcct.fuelLogs);
+      if (activeAcct.snapshot && typeof activeAcct.snapshot === 'object') {
+        wipeMealMap(activeAcct.snapshot.checkedMeals);
+        wipeFuelLogsMap(activeAcct.snapshot.fuelLogs);
+      }
     }
   }
 
   if (stateObj.checkedMealIngredients && typeof stateObj.checkedMealIngredients === 'object') {
     Object.keys(stateObj.checkedMealIngredients).forEach((k) => {
-      if (k.startsWith(prefix)) {
+      if (k.startsWith(prefix) || k.startsWith(`${altDayKey}_`)) {
         delete stateObj.checkedMealIngredients[k];
         clearedIngredientKeys += 1;
       }
@@ -460,9 +535,17 @@ export function clearActiveDayFuelData(
   }
 
   let clearedFlexOverrides = false;
-  if (stateObj.flexMealOverridesByDay && typeof stateObj.flexMealOverridesByDay === 'object' && dayKey in stateObj.flexMealOverridesByDay) {
-    delete stateObj.flexMealOverridesByDay[dayKey];
-    clearedFlexOverrides = true;
+  if (stateObj.flexMealOverridesByDay && typeof stateObj.flexMealOverridesByDay === 'object') {
+    if (dayKey in stateObj.flexMealOverridesByDay) {
+      delete stateObj.flexMealOverridesByDay[dayKey];
+      clearedFlexOverrides = true;
+    }
+    Object.keys(stateObj.flexMealOverridesByDay).forEach((k) => {
+      if (k.startsWith(prefix)) {
+        delete stateObj.flexMealOverridesByDay[k];
+        clearedFlexOverrides = true;
+      }
+    });
   }
 
   let clearedQuickAdds = false;
@@ -498,6 +581,7 @@ export function clearActiveDayFuelData(
     validation,
     clearedMealKeys,
     clearedIngredientKeys,
+    clearedFuelLogEntries,
     clearedFlexOverrides,
     clearedQuickAdds,
     clearedWater
@@ -1047,4 +1131,370 @@ export function onDeleteSuccess(options: OnDeleteSuccessOptions = {}): OnDeleteS
 
   return payload;
 }
+
+export interface SessionSafeDayDeletionOptions {
+  stateObj: Record<string, any>;
+  activeWeek?: number;
+  activeDayIndex?: number;
+  endpoint?: string;
+  storageKey?: string;
+  storage?: Pick<Storage, 'setItem'> | null;
+  fetchImpl?: typeof fetch;
+  exerciseIds?: string[];
+  pullupDayNumber?: number | null;
+  logSlotKey?: string | null;
+  templateSlotIndex?: number | null;
+}
+
+export interface SessionSafeDayDeletionResult {
+  cleared: boolean;
+  includeFuel: boolean;
+  scope: 'workout_only' | 'fuel_only' | 'workout_and_fuel';
+  week: number;
+  dayIndex: number;
+  clearedWorkoutKeys: number;
+  fuelResult: FuelClearResult | null;
+  cloudSynced: boolean;
+  lastUpdated: string;
+  loggedOut: false;
+  preservedUserProfile: Record<string, any> | null;
+}
+
+async function pushMutatedGymStateToSupabase(options: {
+  nextState: Record<string, any>;
+  endpoint?: string;
+  storageKey?: string;
+  storage?: Pick<Storage, 'setItem'> | null;
+  fetchImpl?: typeof fetch;
+  forceOverwrite?: boolean;
+  resetReason?: 'day_reset' | 'fuel_reset' | 'delete_all_weeks' | 'start_fresh_reset';
+}): Promise<{ cloudSynced: boolean; lastUpdated: string }> {
+  const nowIso = new Date().toISOString();
+  options.nextState.last_updated = nowIso;
+  options.nextState.updatedAt = nowIso;
+
+  if (options.storageKey && options.storage) {
+    try {
+      options.storage.setItem(options.storageKey, JSON.stringify(options.nextState));
+    } catch {
+      // Ignore storage quota restrictions
+    }
+  }
+
+  const endpoint = String(options.endpoint || '').trim();
+  const fetchFn = options.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null);
+  let cloudSynced = false;
+  let authoritativeTs = nowIso;
+
+  if (endpoint && fetchFn) {
+    try {
+      const isFirebase = endpoint.includes('firebaseio.com') || endpoint.endsWith('.json');
+      const isSupabaseApi = endpoint.includes('/api/state');
+      const bodyPayloadObj = options.forceOverwrite
+        ? {
+            ...options.nextState,
+            forceOverwrite: true,
+            resetReason: options.resetReason || 'delete_all_weeks'
+          }
+        : options.nextState;
+      const bodyJson = JSON.stringify(bodyPayloadObj);
+
+      const resp = await fetchFn(endpoint, {
+        method: isFirebase ? 'PUT' : 'POST',
+        cache: 'no-store',
+        keepalive: bodyJson.length < 60000,
+        headers: {
+          'Content-Type': isSupabaseApi ? 'application/json' : 'text/plain;charset=utf-8'
+        },
+        body: bodyJson
+      });
+
+      const json = await resp.json().catch(() => ({}));
+      if (resp.ok && json && json.configured !== false) {
+        cloudSynced = true;
+        const serverTs =
+          (typeof json.last_updated === 'string' && json.last_updated) ||
+          (typeof json.updatedAt === 'string' && json.updatedAt) ||
+          nowIso;
+        authoritativeTs = serverTs;
+        options.nextState.last_updated = serverTs;
+        options.nextState.updatedAt = serverTs;
+        if (options.storageKey && options.storage) {
+          try {
+            options.storage.setItem(options.storageKey, JSON.stringify(options.nextState));
+          } catch {
+            // Ignore storage quota restrictions
+          }
+        }
+      }
+    } catch {
+      cloudSynced = false;
+    }
+  }
+
+  return { cloudSynced, lastUpdated: authoritativeTs };
+}
+
+/**
+ * Task 1 & Task 3: Strictly clears ONLY the active week & day workoutLogs in gym_state
+ * and immediately pushes the mutated state to Supabase.
+ * NEVER signs the user out, NEVER clears userProfile or session cookies.
+ */
+export async function deleteWorkoutForActiveDay(
+  options: SessionSafeDayDeletionOptions
+): Promise<SessionSafeDayDeletionResult> {
+  const stateObj = options.stateObj;
+  const preservedProfile = stateObj && stateObj.userProfile
+    ? JSON.parse(JSON.stringify(stateObj.userProfile))
+    : null;
+  const preservedGuestFlag = Boolean(stateObj && stateObj.isGuestMode);
+
+  const activeWeek = Math.max(
+    1,
+    Math.min(12, Math.floor(Number(options.activeWeek ?? stateObj?.selectedWeek ?? stateObj?.currentWeek ?? 1)))
+  );
+  const activeDayIndex = Math.max(
+    0,
+    Math.min(6, Math.floor(Number(options.activeDayIndex ?? stateObj?.selectedDayIndex ?? 0)))
+  );
+  const activeEmail = preservedProfile && typeof preservedProfile.email === 'string'
+    ? preservedProfile.email.trim().toLowerCase()
+    : '';
+
+  const workoutRes = clearActiveDayWorkoutData(stateObj, activeWeek, activeDayIndex, {
+    exerciseIds: options.exerciseIds,
+    pullupDayNumber: options.pullupDayNumber,
+    logSlotKey: options.logSlotKey,
+    templateSlotIndex: options.templateSlotIndex,
+    activeUserEmail: activeEmail
+  });
+
+  // Strictly guarantee active session remains logged in
+  if (preservedProfile) {
+    stateObj.userProfile = preservedProfile;
+  }
+  stateObj.isGuestMode = preservedGuestFlag;
+
+  const pushRes = await pushMutatedGymStateToSupabase({
+    nextState: stateObj,
+    endpoint: options.endpoint,
+    storageKey: options.storageKey,
+    storage: options.storage,
+    fetchImpl: options.fetchImpl,
+    forceOverwrite: false,
+    resetReason: 'day_reset'
+  });
+
+  return {
+    cleared: true,
+    includeFuel: false,
+    scope: 'workout_only',
+    week: activeWeek,
+    dayIndex: activeDayIndex,
+    clearedWorkoutKeys: workoutRes.clearedWorkoutKeys,
+    fuelResult: null,
+    cloudSynced: pushRes.cloudSynced,
+    lastUpdated: pushRes.lastUpdated,
+    loggedOut: false,
+    preservedUserProfile: preservedProfile
+  };
+}
+
+/**
+ * Task 1 & Task 3: Strictly clears ONLY the active week & day fuelLogs & meal prep entries
+ * in gym_state and immediately pushes the mutated state to Supabase.
+ * NEVER signs the user out, NEVER clears userProfile or session cookies.
+ */
+export async function deleteFuelForActiveDay(
+  options: SessionSafeDayDeletionOptions
+): Promise<SessionSafeDayDeletionResult> {
+  const stateObj = options.stateObj;
+  const preservedProfile = stateObj && stateObj.userProfile
+    ? JSON.parse(JSON.stringify(stateObj.userProfile))
+    : null;
+  const preservedGuestFlag = Boolean(stateObj && stateObj.isGuestMode);
+
+  const activeWeek = Math.max(
+    1,
+    Math.min(12, Math.floor(Number(options.activeWeek ?? stateObj?.selectedWeek ?? stateObj?.currentWeek ?? 1)))
+  );
+  const activeDayIndex = Math.max(
+    0,
+    Math.min(6, Math.floor(Number(options.activeDayIndex ?? stateObj?.selectedDayIndex ?? 0)))
+  );
+  const activeEmail = preservedProfile && typeof preservedProfile.email === 'string'
+    ? preservedProfile.email.trim().toLowerCase()
+    : '';
+
+  const fuelResult = clearActiveDayFuelData(stateObj, {
+    activeUserId: activeEmail,
+    targetUserId: activeEmail,
+    activeWeek,
+    targetWeek: activeWeek,
+    activeDayIndex,
+    targetDayIndex: activeDayIndex
+  });
+
+  if (preservedProfile) {
+    stateObj.userProfile = preservedProfile;
+  }
+  stateObj.isGuestMode = preservedGuestFlag;
+
+  const pushRes = await pushMutatedGymStateToSupabase({
+    nextState: stateObj,
+    endpoint: options.endpoint,
+    storageKey: options.storageKey,
+    storage: options.storage,
+    fetchImpl: options.fetchImpl,
+    forceOverwrite: false,
+    resetReason: 'fuel_reset'
+  });
+
+  return {
+    cleared: Boolean(fuelResult.cleared),
+    includeFuel: true,
+    scope: 'fuel_only',
+    week: activeWeek,
+    dayIndex: activeDayIndex,
+    clearedWorkoutKeys: 0,
+    fuelResult,
+    cloudSynced: pushRes.cloudSynced,
+    lastUpdated: pushRes.lastUpdated,
+    loggedOut: false,
+    preservedUserProfile: preservedProfile
+  };
+}
+
+/**
+ * Task 1 & Task 3: Strictly clears BOTH workoutLogs AND fuelLogs for the active week & day
+ * in gym_state and immediately pushes the mutated state to Supabase.
+ * NEVER signs the user out, NEVER clears userProfile or session cookies.
+ */
+export async function deleteWorkoutAndFuelForActiveDay(
+  options: SessionSafeDayDeletionOptions
+): Promise<SessionSafeDayDeletionResult> {
+  const stateObj = options.stateObj;
+  const preservedProfile = stateObj && stateObj.userProfile
+    ? JSON.parse(JSON.stringify(stateObj.userProfile))
+    : null;
+  const preservedGuestFlag = Boolean(stateObj && stateObj.isGuestMode);
+
+  const activeWeek = Math.max(
+    1,
+    Math.min(12, Math.floor(Number(options.activeWeek ?? stateObj?.selectedWeek ?? stateObj?.currentWeek ?? 1)))
+  );
+  const activeDayIndex = Math.max(
+    0,
+    Math.min(6, Math.floor(Number(options.activeDayIndex ?? stateObj?.selectedDayIndex ?? 0)))
+  );
+  const activeEmail = preservedProfile && typeof preservedProfile.email === 'string'
+    ? preservedProfile.email.trim().toLowerCase()
+    : '';
+
+  const workoutRes = clearActiveDayWorkoutData(stateObj, activeWeek, activeDayIndex, {
+    exerciseIds: options.exerciseIds,
+    pullupDayNumber: options.pullupDayNumber,
+    logSlotKey: options.logSlotKey,
+    templateSlotIndex: options.templateSlotIndex,
+    activeUserEmail: activeEmail
+  });
+
+  const fuelResult = clearActiveDayFuelData(stateObj, {
+    activeUserId: activeEmail,
+    targetUserId: activeEmail,
+    activeWeek,
+    targetWeek: activeWeek,
+    activeDayIndex,
+    targetDayIndex: activeDayIndex
+  });
+
+  // Strictly guarantee active session remains logged in
+  if (preservedProfile) {
+    stateObj.userProfile = preservedProfile;
+  }
+  stateObj.isGuestMode = preservedGuestFlag;
+
+  const pushRes = await pushMutatedGymStateToSupabase({
+    nextState: stateObj,
+    endpoint: options.endpoint,
+    storageKey: options.storageKey,
+    storage: options.storage,
+    fetchImpl: options.fetchImpl,
+    forceOverwrite: false,
+    resetReason: 'day_reset'
+  });
+
+  return {
+    cleared: true,
+    includeFuel: true,
+    scope: 'workout_and_fuel',
+    week: activeWeek,
+    dayIndex: activeDayIndex,
+    clearedWorkoutKeys: workoutRes.clearedWorkoutKeys,
+    fuelResult,
+    cloudSynced: pushRes.cloudSynced,
+    lastUpdated: pushRes.lastUpdated,
+    loggedOut: false,
+    preservedUserProfile: preservedProfile
+  };
+}
+
+export interface DeleteAllWeeksCompleteResetResult {
+  deletedAllWeeks: boolean;
+  nextState: Record<string, any>;
+  cloudSynced: boolean;
+  lastUpdated: string;
+  loggedOut: false;
+  preservedUserProfile: Record<string, any> | null;
+}
+
+/**
+ * Task 2 & Task 3: "Delete All Weeks (Complete Reset)" handler.
+ * Overwrites the entire gym_state with a completely empty, default baseline template (Week 1, Day 1),
+ * pushes immediately to Supabase with forceOverwrite: true, and STRICTLY preserves the user's active login session.
+ * NEVER calls signOut(), clearSession(), clearAllWebSessionCookies(), or triggers a login redirect.
+ */
+export async function deleteAllWeeksCompleteReset(options: {
+  currentState: Record<string, any> | null | undefined;
+  endpoint?: string;
+  storageKey?: string;
+  storage?: Pick<Storage, 'setItem'> | null;
+  fetchImpl?: typeof fetch;
+}): Promise<DeleteAllWeeksCompleteResetResult> {
+  const prev = options.currentState && typeof options.currentState === 'object' ? options.currentState : {};
+  const preservedProfile = prev.userProfile ? JSON.parse(JSON.stringify(prev.userProfile)) : null;
+  const preservedGuestFlag = Boolean(prev.isGuestMode);
+
+  const { nextState } = buildStartFreshGymState(prev);
+
+  // Enforce Week 1, Day 1 baseline and strict session preservation
+  nextState.currentWeek = 1;
+  nextState.selectedWeek = 1;
+  nextState.selectedDayIndex = 0;
+  nextState.maxUnlockedWeek = 1;
+  if (preservedProfile) {
+    nextState.userProfile = preservedProfile;
+  }
+  nextState.isGuestMode = preservedGuestFlag;
+
+  const pushRes = await pushMutatedGymStateToSupabase({
+    nextState,
+    endpoint: options.endpoint,
+    storageKey: options.storageKey,
+    storage: options.storage,
+    fetchImpl: options.fetchImpl,
+    forceOverwrite: true,
+    resetReason: 'delete_all_weeks'
+  });
+
+  return {
+    deletedAllWeeks: true,
+    nextState,
+    cloudSynced: pushRes.cloudSynced,
+    lastUpdated: pushRes.lastUpdated,
+    loggedOut: false,
+    preservedUserProfile: nextState.userProfile || null
+  };
+}
+
 

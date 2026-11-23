@@ -55,13 +55,19 @@ import {
   DELETE_ACCOUNT_BUTTON_LABELS,
   DELETE_ACCOUNT_MAIN_WARNING,
   DELETE_ACCOUNT_WARNING_PROMPT,
+  DELETE_ALL_WEEKS_BUTTON_LABEL,
+  DELETE_ALL_WEEKS_CONFIRM_WARNING,
   POST_DELETE_SELECT_ACCOUNT_PROMPT,
   WORKOUT_FUEL_RESET_PROMPT,
   buildPostDeleteSwitchPrompt,
   clearActiveDayFuelData,
   clearActiveDayWorkoutAndOptionalFuel,
   clearAllWebSessionCookies,
+  deleteAllWeeksCompleteReset,
+  deleteFuelForActiveDay,
   deleteUserAccountFromSupabase,
+  deleteWorkoutAndFuelForActiveDay,
+  deleteWorkoutForActiveDay,
   executeCompleteAccountDeletion,
   findSecondarySavedAccount,
   isValidDeletableUserId,
@@ -762,6 +768,8 @@ declare global {
     normalizeCardioExerciseName?: typeof normalizeCardioExerciseName;
     STANDARD_CARDIO_SESSIONS?: typeof STANDARD_CARDIO_SESSIONS;
     WORKOUT_FUEL_RESET_PROMPT?: string;
+    DELETE_ALL_WEEKS_BUTTON_LABEL?: string;
+    DELETE_ALL_WEEKS_CONFIRM_WARNING?: string;
     DELETE_ACCOUNT_WARNING_PROMPT?: string;
     DELETE_ACCOUNT_MAIN_WARNING?: string;
     DELETE_ACCOUNT_BUTTON_LABELS?: typeof DELETE_ACCOUNT_BUTTON_LABELS;
@@ -773,6 +781,10 @@ declare global {
     validateDeletionTarget?: typeof validateDeletionTarget;
     clearActiveDayFuelData?: typeof clearActiveDayFuelData;
     clearActiveDayWorkoutAndOptionalFuel?: typeof clearActiveDayWorkoutAndOptionalFuel;
+    deleteWorkoutForActiveDay?: typeof deleteWorkoutForActiveDay;
+    deleteFuelForActiveDay?: typeof deleteFuelForActiveDay;
+    deleteWorkoutAndFuelForActiveDay?: typeof deleteWorkoutAndFuelForActiveDay;
+    deleteAllWeeksCompleteReset?: typeof deleteAllWeeksCompleteReset;
     deleteUserAccountFromSupabase?: typeof deleteUserAccountFromSupabase;
     purgeDeletedAccountFromLocalState?: typeof purgeDeletedAccountFromLocalState;
     normalizeAccountUserId?: typeof normalizeAccountUserId;
@@ -876,6 +888,8 @@ if (typeof window !== 'undefined') {
   window.normalizeCardioExerciseName = normalizeCardioExerciseName;
   window.STANDARD_CARDIO_SESSIONS = STANDARD_CARDIO_SESSIONS;
   window.WORKOUT_FUEL_RESET_PROMPT = WORKOUT_FUEL_RESET_PROMPT;
+  window.DELETE_ALL_WEEKS_BUTTON_LABEL = DELETE_ALL_WEEKS_BUTTON_LABEL;
+  window.DELETE_ALL_WEEKS_CONFIRM_WARNING = DELETE_ALL_WEEKS_CONFIRM_WARNING;
   window.DELETE_ACCOUNT_WARNING_PROMPT = DELETE_ACCOUNT_WARNING_PROMPT;
   window.DELETE_ACCOUNT_MAIN_WARNING = DELETE_ACCOUNT_MAIN_WARNING;
   window.DELETE_ACCOUNT_BUTTON_LABELS = DELETE_ACCOUNT_BUTTON_LABELS;
@@ -887,6 +901,10 @@ if (typeof window !== 'undefined') {
   window.validateDeletionTarget = validateDeletionTarget;
   window.clearActiveDayFuelData = clearActiveDayFuelData;
   window.clearActiveDayWorkoutAndOptionalFuel = clearActiveDayWorkoutAndOptionalFuel;
+  window.deleteWorkoutForActiveDay = deleteWorkoutForActiveDay;
+  window.deleteFuelForActiveDay = deleteFuelForActiveDay;
+  window.deleteWorkoutAndFuelForActiveDay = deleteWorkoutAndFuelForActiveDay;
+  window.deleteAllWeeksCompleteReset = deleteAllWeeksCompleteReset;
   window.deleteUserAccountFromSupabase = deleteUserAccountFromSupabase;
   window.purgeDeletedAccountFromLocalState = purgeDeletedAccountFromLocalState;
   window.normalizeAccountUserId = normalizeAccountUserId;

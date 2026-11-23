@@ -4,6 +4,8 @@ import {
   DELETE_ACCOUNT_BUTTON_LABELS,
   DELETE_ACCOUNT_MAIN_WARNING,
   DELETE_ACCOUNT_WARNING_PROMPT,
+  DELETE_ALL_WEEKS_BUTTON_LABEL,
+  DELETE_ALL_WEEKS_CONFIRM_WARNING,
   FUEL_RESET_ONLY_PROMPT,
   POST_DELETE_SELECT_ACCOUNT_PROMPT,
   WORKOUT_FUEL_RESET_PROMPT,
@@ -14,6 +16,83 @@ import {
   type SavedAccountCandidate
 } from '../utils/deletionValidation';
 
+export interface DeleteAllWeeksConfirmModalProps {
+  isOpen: boolean;
+  isResetting?: boolean;
+  onConfirmDeleteAllWeeks: () => void;
+  onCancel: () => void;
+}
+
+/**
+ * Task 2: Strict, WCAG 2.2 / COGA accessible confirmation modal for "Delete All Weeks (Complete Reset)".
+ * - Exact warning text: "Are you sure? This will permanently delete your entire workout history across all weeks."
+ * - Zero technical jargon, high AAA contrast, dyslexia-friendly sans-serif with >= 1.5 line-height.
+ * - Single-action buttons with non-color icon & text cues.
+ */
+export const DeleteAllWeeksConfirmModal: React.FC<DeleteAllWeeksConfirmModalProps> = ({
+  isOpen,
+  isResetting = false,
+  onConfirmDeleteAllWeeks,
+  onCancel
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[82] bg-slate-950/95 backdrop-blur-sm flex items-center justify-center p-4 font-sans"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-all-weeks-modal-title"
+      aria-describedby="delete-all-weeks-modal-warning"
+    >
+      <div className="bg-slate-900 border-2 border-rose-400 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-left">
+        <div className="space-y-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-950 border border-rose-300 text-xs font-extrabold uppercase tracking-wider text-rose-100 leading-relaxed">
+            <span aria-hidden="true">⚠</span>
+            <span>Complete Reset</span>
+          </span>
+          <h3
+            id="delete-all-weeks-modal-title"
+            className="text-lg font-extrabold text-white leading-relaxed"
+          >
+            {DELETE_ALL_WEEKS_BUTTON_LABEL}
+          </h3>
+          <p
+            id="delete-all-weeks-modal-warning"
+            className="text-sm text-slate-100 leading-relaxed font-medium"
+          >
+            {DELETE_ALL_WEEKS_CONFIRM_WARNING}
+          </p>
+          <p className="text-xs text-slate-200 leading-relaxed">
+            You will stay signed in to your account and return to Week 1, Day 1.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2.5 pt-1">
+          <button
+            type="button"
+            disabled={isResetting}
+            onClick={onConfirmDeleteAllWeeks}
+            className="w-full min-h-[46px] py-3 px-4 rounded-xl bg-rose-400 hover:bg-rose-300 disabled:opacity-60 text-slate-950 text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
+          >
+            <span aria-hidden="true">🗑</span>
+            <span>{isResetting ? 'Clearing All Weeks...' : 'Yes, Delete All Weeks'}</span>
+          </button>
+          <button
+            type="button"
+            disabled={isResetting}
+            onClick={onCancel}
+            className="w-full min-h-[46px] py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border-2 border-slate-400 text-white text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
+          >
+            <span aria-hidden="true">✕</span>
+            <span>Cancel</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export interface ResetWorkoutFuelModalProps {
   isOpen: boolean;
   weekNumber: number;
@@ -21,13 +100,16 @@ export interface ResetWorkoutFuelModalProps {
   dayTitle?: string;
   onDeleteWorkoutOnly: () => void;
   onDeleteWorkoutAndFuel: () => void;
+  onDeleteAllWeeks?: () => void;
   onCancel: () => void;
 }
 
 /**
  * Pop-up triggered when user taps "Reset Workout".
- * Asks: "Would you like to delete your meal prep and fuel logs too?"
- * Provides two clear choices: "Delete Workout Only" and "Delete Workout and Fuel".
+ * - Asks: "Would you like to delete your meal prep and fuel logs too?"
+ * - Keeps "Delete Workout Only" and "Delete Workout and Fuel".
+ * - Adds "Delete All Weeks (Complete Reset)" with a strict accessible confirmation step.
+ * - Strictly preserves user login session (never logs the user out).
  */
 export const ResetWorkoutFuelModal: React.FC<ResetWorkoutFuelModalProps> = ({
   isOpen,
@@ -36,56 +118,94 @@ export const ResetWorkoutFuelModal: React.FC<ResetWorkoutFuelModalProps> = ({
   dayTitle,
   onDeleteWorkoutOnly,
   onDeleteWorkoutAndFuel,
+  onDeleteAllWeeks,
   onCancel
 }) => {
+  const [confirmingAllWeeks, setConfirmingAllWeeks] = useState(false);
+
   if (!isOpen) return null;
 
   const dayLabel = dayTitle || `Day ${dayIndex + 1}`;
 
+  if (confirmingAllWeeks) {
+    return (
+      <DeleteAllWeeksConfirmModal
+        isOpen={true}
+        onCancel={() => setConfirmingAllWeeks(false)}
+        onConfirmDeleteAllWeeks={() => {
+          setConfirmingAllWeeks(false);
+          onDeleteAllWeeks?.();
+        }}
+      />
+    );
+  }
+
   return (
     <div
-      className="fixed inset-0 z-[75] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[75] bg-slate-950/95 backdrop-blur-sm flex items-center justify-center p-4 font-sans"
       role="dialog"
       aria-modal="true"
       aria-labelledby="reset-workout-fuel-modal-title"
+      aria-describedby="reset-workout-fuel-modal-desc"
     >
-      <div className="bg-slate-900 border border-rose-400/55 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
-        <div className="space-y-1.5">
-          <span className="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-400/45 text-[10px] font-extrabold uppercase tracking-wider text-rose-200">
-            Week {weekNumber} • Day {dayIndex + 1}
+      <div className="bg-slate-900 border-2 border-slate-500 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-left">
+        <div className="space-y-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 border border-slate-400 text-xs font-extrabold uppercase tracking-wider text-white leading-relaxed">
+            <span aria-hidden="true">📅</span>
+            <span>Week {weekNumber} • Day {dayIndex + 1}</span>
           </span>
           <h3
             id="reset-workout-fuel-modal-title"
-            className="text-base font-extrabold text-white leading-snug"
+            className="text-base font-extrabold text-white leading-relaxed"
           >
             {WORKOUT_FUEL_RESET_PROMPT}
           </h3>
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Pick if you want to clear only {dayLabel} sets or also clear your food logs for today. Other days stay safe.
+          <p
+            id="reset-workout-fuel-modal-desc"
+            className="text-sm text-slate-100 leading-relaxed"
+          >
+            Choose one clear action below. Your other days stay safe unless you pick a full reset. You will stay signed in.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-2">
+        <div className="grid grid-cols-1 gap-2.5">
           <button
             type="button"
             onClick={onDeleteWorkoutOnly}
-            className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition"
+            className="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-amber-300 hover:bg-amber-200 text-slate-950 text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
           >
-            Delete Workout Only
+            <span aria-hidden="true">↺</span>
+            <span>Delete Workout Only ({dayLabel})</span>
           </button>
           <button
             type="button"
             onClick={onDeleteWorkoutAndFuel}
-            className="w-full py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition"
+            className="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-rose-300 hover:bg-rose-200 text-slate-950 text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
           >
-            Delete Workout and Fuel
+            <span aria-hidden="true">🍽</span>
+            <span>Delete Workout and Fuel</span>
           </button>
+          <div className="pt-2 mt-1 border-t border-slate-700">
+            <button
+              type="button"
+              onClick={() => {
+                if (onDeleteAllWeeks) {
+                  setConfirmingAllWeeks(true);
+                }
+              }}
+              className="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-rose-950 hover:bg-rose-900 border-2 border-rose-300 text-white text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
+            >
+              <span aria-hidden="true">⚠</span>
+              <span>{DELETE_ALL_WEEKS_BUTTON_LABEL}</span>
+            </button>
+          </div>
           <button
             type="button"
             onClick={onCancel}
-            className="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-xs font-extrabold transition"
+            className="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border-2 border-slate-400 text-white text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
           >
-            Cancel
+            <span aria-hidden="true">✕</span>
+            <span>Cancel</span>
           </button>
         </div>
       </div>

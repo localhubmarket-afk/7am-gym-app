@@ -2170,12 +2170,19 @@
         isDestructiveCloudPushDelayedLocal() &&
         syncReason !== 'undo_restore' &&
         syncReason !== 'day_reset' &&
+        syncReason !== 'fuel_reset' &&
+        syncReason !== 'delete_all_weeks' &&
         syncReason !== 'start_fresh_reset'
       ) {
         updateCloudSyncBadgeUI('paused_undo', 'Cloud push paused (5s undo window)...');
         return Promise.resolve({ synced: false, blockedByUndoGuard: true, blockedByEmptyStateGuard: false, reason: syncReason });
       }
-      if (syncReason === 'start_fresh_reset') {
+      if (
+        syncReason === 'start_fresh_reset' ||
+        syncReason === 'delete_all_weeks' ||
+        syncReason === 'day_reset' ||
+        syncReason === 'fuel_reset'
+      ) {
         cancelDelayedDestructiveCloudPushLocal();
       }
       clearTimeout(cloudSyncTimeout);
@@ -2217,6 +2224,8 @@
         pushReason !== 'undo_restore' &&
         pushReason !== 'delayed_sync' &&
         pushReason !== 'day_reset' &&
+        pushReason !== 'fuel_reset' &&
+        pushReason !== 'delete_all_weeks' &&
         pushReason !== 'start_fresh_reset'
       ) {
         updateCloudSyncBadgeUI('paused_undo', 'Cloud push paused (5s undo window)...');
@@ -2227,18 +2236,19 @@
       } else {
         stampStateTimestampLocal(state.last_updated || state.updatedAt);
       }
+      const isFullResetPush = pushReason === 'start_fresh_reset' || pushReason === 'delete_all_weeks';
       updateCloudSyncBadgeUI(
         'syncing',
         pushReason === 'undo_restore'
-          ? 'Restoring to Supabase...'
-          : pushReason === 'start_fresh_reset'
-            ? 'Clearing cloud data...'
-            : (pushReason === 'day_reset' ? 'Syncing cleared day to Supabase...' : 'Auto-syncing to Supabase...')
+          ? 'Restoring...'
+          : isFullResetPush
+            ? 'Saving fresh start...'
+            : (pushReason === 'day_reset' || pushReason === 'fuel_reset' ? 'Saving cleared day...' : 'Saving changes...')
       );
       const isFirebase = url.includes('firebaseio.com') || url.endsWith('.json');
       const isVercelApi = url.includes('/api/state');
-      const stateForPush = pushReason === 'start_fresh_reset'
-        ? Object.assign({}, state, { forceOverwrite: true, resetReason: 'start_fresh_reset' })
+      const stateForPush = isFullResetPush
+        ? Object.assign({}, state, { forceOverwrite: true, resetReason: pushReason })
         : state;
       const payloadJson = serializeStateWithoutUndoBackupLocal(stateForPush);
       return fetch(url, {
@@ -2249,7 +2259,7 @@
         body: payloadJson
       }).then(r => r.json().catch(() => ({}))).then(res => {
         if (res && res.configured === false) {
-          updateCloudSyncBadgeUI('local_only', 'Local Saved (Add Supabase in Vercel)');
+          updateCloudSyncBadgeUI('local_only', 'Saved on this device');
         } else {
           const serverTs = (res && typeof res.last_updated === 'string' && res.last_updated)
             || (res && typeof res.updatedAt === 'string' && res.updatedAt)
@@ -2264,10 +2274,10 @@
           updateCloudSyncBadgeUI(
             'saved',
             pushReason === 'undo_restore'
-              ? '✓ Undo Restored in Supabase'
-              : pushReason === 'start_fresh_reset'
-                ? '✓ Start Fresh Synced to Supabase'
-                : (pushReason === 'day_reset' ? '✓ Day Reset Synced' : '✓ Auto-Synced to Supabase')
+              ? '✓ Undo Restored'
+              : isFullResetPush
+                ? '✓ Complete Reset Saved'
+                : (pushReason === 'day_reset' || pushReason === 'fuel_reset' ? '✓ Day Reset Saved' : '✓ Changes Saved')
           );
         }
         return res;
@@ -10783,12 +10793,15 @@
       }
 
       const dayPrefix = `w${safeW}_${safeD}_`;
+      const altDayPrefix = `w${safeW}_d${safeD}_`;
       const legacyDayPrefix = safeW === 1 ? `${safeD}_` : '';
       const bonusPrefix = assign && assign.logSlotKey ? `w${safeW}_${assign.logSlotKey}_` : '';
       const templateSlotIdx = assign && typeof assign.templateSlotIndex === 'number' ? assign.templateSlotIndex : safeD;
+      const directDayKeys = new Set([`w${safeW}_d${safeD}`, `w${safeW}_${safeD}`]);
 
       const shouldDeleteWorkoutLogKey = (k) => {
-        if (k.startsWith(dayPrefix) || (bonusPrefix && k.startsWith(bonusPrefix))) return true;
+        if (directDayKeys.has(k)) return true;
+        if (k.startsWith(dayPrefix) || k.startsWith(altDayPrefix) || (bonusPrefix && k.startsWith(bonusPrefix))) return true;
         if (legacyDayPrefix && k.startsWith(legacyDayPrefix)) return true;
         const m = new RegExp(`^w${safeW}_(\\d+)_(.+)_(\\d+)$`).exec(k);
         if (m && targetExIds.has(m[2])) {
@@ -10809,7 +10822,7 @@
         return false;
       };
 
-      const pullupPrefixes = [];
+      const pullupPrefixes = [`w${safeW}_d${safeD}_`];
       targetExIds.forEach((exId) => {
         const pDay = PULLUP_EX_ID_TO_DAY[exId];
         if (pDay) {
@@ -10823,6 +10836,15 @@
           Object.keys(wLogs).forEach((k) => {
             if (shouldDeleteWorkoutLogKey(k)) delete wLogs[k];
           });
+          const weekBucket = wLogs[String(safeW)] || wLogs[`week_${safeW}`];
+          if (weekBucket && typeof weekBucket === 'object') {
+            [String(safeD), `day_${safeD}`, `d${safeD}`].forEach((dk) => {
+              if (dk in weekBucket) {
+                if (Array.isArray(weekBucket[dk])) weekBucket[dk] = [];
+                else delete weekBucket[dk];
+              }
+            });
+          }
         }
         if (pLogs && typeof pLogs === 'object' && pullupPrefixes.length > 0) {
           Object.keys(pLogs).forEach((pk) => {
@@ -10851,7 +10873,7 @@
       if (state.cardioLogs && typeof state.cardioLogs === 'object') {
         const cardioDayPrefix = `w${safeW}_d${safeD}_`;
         Object.keys(state.cardioLogs).forEach((ck) => {
-          if (ck.startsWith(cardioDayPrefix)) {
+          if (ck.startsWith(cardioDayPrefix) || ck.startsWith(dayPrefix)) {
             delete state.cardioLogs[ck];
           }
         });
@@ -10887,53 +10909,84 @@
       }
       const normActive = activeUserId.replace(/^user_/, '');
       const normTarget = String(targetUserId || '').trim().toLowerCase().replace(/^user_/, '');
+      const isLocalGuest = scope !== 'account' && (normActive === '' || normActive === 'guest') && (normTarget === '' || normTarget === 'guest' || normTarget === normActive);
       const badIds = { '': 1, default: 1, guest: 1, google: 1, apple: 1, 'member@gmail.com': 1, 'athlete@gmail.com': 1 };
-      if (!normActive || badIds[normActive] || !normActive.includes('@')) {
-        return { valid: false, errorCode: 'INVALID_ACTIVE_USER', errorMessage: 'Cannot delete data without a valid signed-in user account.' };
+      if (!isLocalGuest) {
+        if (!normActive || badIds[normActive] || !normActive.includes('@')) {
+          return { valid: false, errorCode: 'INVALID_ACTIVE_USER', errorMessage: 'Sign in to an active account before deleting.' };
+        }
+        if (normActive !== normTarget) {
+          return { valid: false, errorCode: 'USER_ID_MISMATCH', errorMessage: 'Deletion stopped because the selected account does not match your active login.' };
+        }
       }
-      if (normActive !== normTarget) {
-        return { valid: false, errorCode: 'USER_ID_MISMATCH', errorMessage: 'Blocked deletion: user ID mismatch.' };
+      if (scope !== 'account' && scope !== 'all_weeks' && (Number(targetWeek) !== activeWeek || Number(targetDayIdx) !== activeDay)) {
+        return { valid: false, errorCode: 'ACTIVE_DAY_MISMATCH', errorMessage: 'Deletion stopped because the chosen day does not match your current day.' };
       }
-      if (scope !== 'account' && (Number(targetWeek) !== activeWeek || Number(targetDayIdx) !== activeDay)) {
-        return { valid: false, errorCode: 'ACTIVE_DAY_MISMATCH', errorMessage: 'Blocked deletion: target day does not match active day.' };
-      }
-      return { valid: true, normalizedUserId: normActive, supabaseRecordId: 'user_' + normActive, week: activeWeek, dayIndex: activeDay, dayKey: `w${activeWeek}_d${activeDay}` };
+      return {
+        valid: true,
+        normalizedUserId: isLocalGuest ? (normActive || 'guest') : normActive,
+        supabaseRecordId: isLocalGuest ? '' : ('user_' + normActive),
+        week: scope === 'account' || scope === 'all_weeks' ? null : activeWeek,
+        dayIndex: scope === 'account' || scope === 'all_weeks' ? null : activeDay,
+        dayKey: scope === 'account' || scope === 'all_weeks' ? null : `w${activeWeek}_d${activeDay}`
+      };
     }
 
     function wipeSingleDayFuelLogsLocal(targetWeek, dayIdx) {
+      const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
+      const safeD = Math.max(0, Math.min(6, Math.floor(Number(dayIdx) || 0)));
       const activeUserId = (state && state.userProfile && state.userProfile.email) ? String(state.userProfile.email).trim().toLowerCase() : '';
       const activeWeek = Math.max(1, Math.min(12, Math.floor(Number(state.selectedWeek || state.currentWeek || 1))));
       const activeDay = Math.max(0, Math.min(6, Math.floor(Number(state.selectedDayIndex || 0))));
+      let bridgeResult = null;
       if (typeof window.clearActiveDayFuelData === 'function') {
-        return window.clearActiveDayFuelData(state, {
+        bridgeResult = window.clearActiveDayFuelData(state, {
           activeUserId,
           targetUserId: activeUserId,
           activeWeek,
-          targetWeek,
+          targetWeek: safeW,
           activeDayIndex: activeDay,
-          targetDayIndex: dayIdx
+          targetDayIndex: safeD
         });
+        if (!bridgeResult || !bridgeResult.cleared) {
+          return bridgeResult;
+        }
+      } else {
+        const validation = validateScopedDeletionLocal('fuel_only', activeUserId, safeW, safeD);
+        if (!validation.valid) return { cleared: false, validation };
       }
-      const validation = validateScopedDeletionLocal('fuel_only', activeUserId, targetWeek, dayIdx);
-      if (!validation.valid) return { cleared: false, validation };
-      const dayKey = `w${targetWeek}_d${dayIdx}`;
+
+      // Always clear day snapshots, fuelLogs, loggedMealSnapshots, checkedMeals, flex overrides, quick adds, and water
+      if (typeof resetDayFuelLogsAndSnapshots === 'function') {
+        resetDayFuelLogsAndSnapshots(state, safeW, safeD);
+      }
+      const dayKey = `w${safeW}_d${safeD}`;
       const prefix = `${dayKey}_`;
-      const altDayKey = `w${targetWeek}_${dayIdx}`;
+      const altDayKey = `w${safeW}_${safeD}`;
+      if (state.fuelLogs && typeof state.fuelLogs === 'object') {
+        if (Array.isArray(state.fuelLogs[dayKey])) state.fuelLogs[dayKey] = [];
+        else delete state.fuelLogs[dayKey];
+        if (Array.isArray(state.fuelLogs[altDayKey])) state.fuelLogs[altDayKey] = [];
+        else delete state.fuelLogs[altDayKey];
+      }
       if (state.checkedMeals && typeof state.checkedMeals === 'object') {
         Object.keys(state.checkedMeals).forEach((k) => {
-          if (k.startsWith(prefix)) delete state.checkedMeals[k];
+          if (k.startsWith(prefix) || k.startsWith(`${altDayKey}_`)) delete state.checkedMeals[k];
         });
-        if (targetWeek === 1 && dayIdx === 0) {
+        if (safeW === 1 && safeD === 0) {
           ['pre_shake', 'post_oats', 'lunch', 'dinner'].forEach((s) => { delete state.checkedMeals[s]; });
         }
       }
       if (state.checkedMealIngredients && typeof state.checkedMealIngredients === 'object') {
         Object.keys(state.checkedMealIngredients).forEach((k) => {
-          if (k.startsWith(prefix)) delete state.checkedMealIngredients[k];
+          if (k.startsWith(prefix) || k.startsWith(`${altDayKey}_`)) delete state.checkedMealIngredients[k];
         });
       }
       if (state.flexMealOverridesByDay && typeof state.flexMealOverridesByDay === 'object') {
         delete state.flexMealOverridesByDay[dayKey];
+        Object.keys(state.flexMealOverridesByDay).forEach((k) => {
+          if (k.startsWith(prefix)) delete state.flexMealOverridesByDay[k];
+        });
       }
       if (state.quickAddCaloriesByDay && typeof state.quickAddCaloriesByDay === 'object') {
         delete state.quickAddCaloriesByDay[dayKey];
@@ -10946,7 +10999,7 @@
         delete state.waterLogsMl[dayKey];
         delete state.waterLogsMl[altDayKey];
       }
-      return { cleared: true, validation };
+      return bridgeResult || { cleared: true, validation: { valid: true, dayKey } };
     }
 
     function prefillUnloggedDayFromLastSetHistoryLocal(targetWeek, dayIdx) {
@@ -23797,39 +23850,59 @@
         });
       }
 
-      // Task 1 & Task 3: Linked Reset Workout & Fuel Modal + Separate Muscle Fuel Reset Modal Wiring
+      // Task 1, Task 2 & Task 3: Linked Reset Workout & Fuel Modal + Delete All Weeks + Separate Muscle Fuel Reset Modal Wiring
       const resetDayConfirmModalEl = document.getElementById('reset-day-confirm-modal');
       const resetDayBadgeEl = document.getElementById('reset-day-confirm-badge');
       const resetDayDetailEl = document.getElementById('reset-day-confirm-detail');
       const cancelResetDayBtn = document.getElementById('cancel-reset-day-btn');
       const confirmResetWorkoutOnlyBtn = document.getElementById('confirm-reset-workout-only-btn');
       const confirmResetWorkoutAndFuelBtn = document.getElementById('confirm-reset-workout-and-fuel-btn');
+      const openDeleteAllWeeksFromResetBtn = document.getElementById('open-delete-all-weeks-from-reset-btn');
+      const settingsDeleteAllWeeksBtn = document.getElementById('settings-delete-all-weeks-btn');
+      const deleteAllWeeksConfirmModalEl = document.getElementById('delete-all-weeks-confirm-modal');
+      const cancelDeleteAllWeeksBtn = document.getElementById('cancel-delete-all-weeks-btn');
+      const confirmDeleteAllWeeksBtn = document.getElementById('confirm-delete-all-weeks-btn');
       let pendingResetDayTarget = null;
 
       window.openResetDayConfirmModal = function(weekNum, dayIndex, dayLabel) {
+        const activeWeek = Math.max(1, Math.min(12, Math.floor(Number(weekNum ?? state.selectedWeek ?? state.currentWeek ?? 1))));
+        const activeDay = Math.max(0, Math.min(6, Math.floor(Number(dayIndex ?? state.selectedDayIndex ?? 0))));
         const targetEmail = (state.userProfile && state.userProfile.email) ? String(state.userProfile.email).trim().toLowerCase() : '';
         pendingResetDayTarget = {
           userId: targetEmail,
-          week: weekNum,
-          dayIdx: dayIndex,
-          dayLabel: dayLabel || `Day ${dayIndex + 1}`
+          week: activeWeek,
+          dayIdx: activeDay,
+          dayLabel: dayLabel || `Day ${activeDay + 1}`
         };
-        if (resetDayBadgeEl) resetDayBadgeEl.textContent = `Week ${weekNum} • Day ${dayIndex + 1}`;
+        if (resetDayBadgeEl) resetDayBadgeEl.textContent = `Week ${activeWeek} • Day ${activeDay + 1}`;
         if (resetDayDetailEl) {
-          resetDayDetailEl.textContent = `Choose whether to erase only ${pendingResetDayTarget.dayLabel} sets or also clear today's meal prep and fuel logs. Other days stay safe.`;
+          resetDayDetailEl.textContent = `Choose one clear action for ${pendingResetDayTarget.dayLabel}. Other days stay safe unless you choose a complete reset. You will stay signed in.`;
         }
         if (resetDayConfirmModalEl) resetDayConfirmModalEl.classList.remove('hidden');
       };
 
       function executeValidatedWorkoutReset(includeFuel) {
-        if (!pendingResetDayTarget) return;
-        const { userId, week: wNum, dayIdx: dNum } = pendingResetDayTarget;
+        const activeWeek = Math.max(1, Math.min(12, Math.floor(Number(state.selectedWeek || state.currentWeek || 1))));
+        const activeDay = Math.max(0, Math.min(6, Math.floor(Number(state.selectedDayIndex || 0))));
+        const activeEmail = (state.userProfile && state.userProfile.email) ? String(state.userProfile.email).trim().toLowerCase() : '';
+        const target = pendingResetDayTarget || {
+          userId: activeEmail,
+          week: activeWeek,
+          dayIdx: activeDay,
+          dayLabel: `Day ${activeDay + 1}`
+        };
+        const { userId, week: wNum, dayIdx: dNum } = target;
         const scope = includeFuel ? 'workout_and_fuel' : 'workout_only';
         const validation = validateScopedDeletionLocal(scope, userId, wNum, dNum);
         if (!validation.valid) {
-          showToast(validation.errorMessage || 'Deletion blocked: active user or day mismatch.');
+          showToast(validation.errorMessage || 'Could not clear this day. Please try again.');
           return;
         }
+
+        // Strict Session Preservation (Task 3): snapshot login session before mutation so logout can NEVER occur
+        const preservedProfile = state.userProfile ? JSON.parse(JSON.stringify(state.userProfile)) : null;
+        const preservedGuestFlag = Boolean(state.isGuestMode);
+
         pendingResetDayTarget = null;
         if (resetDayConfirmModalEl) resetDayConfirmModalEl.classList.add('hidden');
 
@@ -23839,19 +23912,87 @@
         if (includeFuel) {
           wipeSingleDayFuelLogsLocal(wNum, dNum);
         }
+
+        // Guarantee user stays strictly signed in to their active account
+        if (preservedProfile) state.userProfile = preservedProfile;
+        state.isGuestMode = preservedGuestFlag;
+
         stampStateTimestampLocal();
         saveState(true);
-        // Immediately push the cleared day's state to Supabase (Single Source of Truth)
+        // Immediately push the cleared active day to overwrite the cloud copy
         autoSyncWorkoutToSupabaseLocal('day_reset');
         showSyncUndoToastLocal(
           includeFuel
-            ? `Day ${dNum + 1} workout & fuel logs cleared & synced.`
-            : `Day ${dNum + 1} workout cleared (fuel logs kept).`
+            ? `Day ${dNum + 1} workout and fuel logs cleared. You are still signed in.`
+            : `Day ${dNum + 1} workout cleared. Your fuel logs were kept.`
         );
         renderWorkoutView();
         renderPullupView();
         renderVeganView();
       }
+
+      function executeDeleteAllWeeksReset() {
+        // Strict Session Preservation (Task 3): NEVER call signOut(), clearSession(), or open login screen
+        const preservedProfile = state.userProfile ? JSON.parse(JSON.stringify(state.userProfile)) : null;
+        const preservedGuestFlag = Boolean(state.isGuestMode);
+
+        if (deleteAllWeeksConfirmModalEl) deleteAllWeeksConfirmModalEl.classList.add('hidden');
+        if (resetDayConfirmModalEl) resetDayConfirmModalEl.classList.add('hidden');
+        const syncModal = document.getElementById('sync-settings-modal');
+        if (syncModal) syncModal.classList.add('hidden');
+        pendingResetDayTarget = null;
+
+        let resetState = null;
+        if (typeof window.buildStartFreshGymState === 'function') {
+          resetState = window.buildStartFreshGymState(state).nextState;
+        } else {
+          // Fallback to existing start-fresh builder if module bridge is unavailable
+          if (typeof window.executeStartFreshReset === 'function') {
+            return window.executeStartFreshReset();
+          }
+          return Promise.resolve({ synced: false });
+        }
+
+        // Strictly reset to Week 1, Day 1 empty baseline while preserving the active signed-in user
+        resetState.currentWeek = 1;
+        resetState.selectedWeek = 1;
+        resetState.selectedDayIndex = 0;
+        resetState.maxUnlockedWeek = 1;
+        if (preservedProfile) resetState.userProfile = preservedProfile;
+        resetState.isGuestMode = preservedGuestFlag;
+
+        Object.keys(state).forEach((oldKey) => {
+          delete state[oldKey];
+        });
+        Object.keys(resetState).forEach((k) => {
+          state[k] = resetState[k];
+        });
+        window.__pendingHeavyWeightConfirmKey = null;
+
+        cancelDelayedDestructiveCloudPushLocal();
+        clearTimeout(cloudSyncTimeout);
+        cloudSyncTimeout = null;
+        stampStateTimestampLocal();
+        saveState(true);
+        const pushPromise = autoSyncWorkoutToSupabaseLocal('delete_all_weeks');
+
+        if (typeof renderWorkoutView === 'function') renderWorkoutView();
+        if (typeof renderPullupView === 'function') renderPullupView();
+        if (typeof renderVeganView === 'function') renderVeganView();
+        if (typeof renderShoppingView === 'function') renderShoppingView();
+        if (typeof renderRiceCookingTimerWidgets === 'function') renderRiceCookingTimerWidgets();
+        if (typeof showToast === 'function') {
+          showToast('All weeks cleared. You are back on Week 1, Day 1 and still signed in.');
+        }
+        return pushPromise;
+      }
+      window.executeDeleteAllWeeksReset = executeDeleteAllWeeksReset;
+
+      function openDeleteAllWeeksConfirmModal() {
+        if (resetDayConfirmModalEl) resetDayConfirmModalEl.classList.add('hidden');
+        if (deleteAllWeeksConfirmModalEl) deleteAllWeeksConfirmModalEl.classList.remove('hidden');
+      }
+      window.openDeleteAllWeeksConfirmModal = openDeleteAllWeeksConfirmModal;
 
       if (cancelResetDayBtn) {
         cancelResetDayBtn.addEventListener('click', () => {
@@ -23873,6 +24014,29 @@
       if (confirmResetWorkoutAndFuelBtn) {
         confirmResetWorkoutAndFuelBtn.addEventListener('click', () => executeValidatedWorkoutReset(true));
       }
+      if (openDeleteAllWeeksFromResetBtn) {
+        openDeleteAllWeeksFromResetBtn.addEventListener('click', () => openDeleteAllWeeksConfirmModal());
+      }
+      if (settingsDeleteAllWeeksBtn) {
+        settingsDeleteAllWeeksBtn.addEventListener('click', () => openDeleteAllWeeksConfirmModal());
+      }
+      if (cancelDeleteAllWeeksBtn) {
+        cancelDeleteAllWeeksBtn.addEventListener('click', () => {
+          if (deleteAllWeeksConfirmModalEl) deleteAllWeeksConfirmModalEl.classList.add('hidden');
+        });
+      }
+      if (deleteAllWeeksConfirmModalEl) {
+        deleteAllWeeksConfirmModalEl.addEventListener('click', (e) => {
+          if (e.target === deleteAllWeeksConfirmModalEl) {
+            deleteAllWeeksConfirmModalEl.classList.add('hidden');
+          }
+        });
+      }
+      if (confirmDeleteAllWeeksBtn) {
+        confirmDeleteAllWeeksBtn.addEventListener('click', () => {
+          executeDeleteAllWeeksReset();
+        });
+      }
 
       // Separate "Reset Fuel" Button & Modal on the Muscle Fuel Tab
       const resetFuelDayBtn = document.getElementById('reset-fuel-day-btn');
@@ -23884,11 +24048,13 @@
       let pendingResetFuelTarget = null;
 
       window.openResetFuelConfirmModal = function(weekNum, dayIndex) {
+        const activeWeek = Math.max(1, Math.min(12, Math.floor(Number(weekNum ?? state.selectedWeek ?? state.currentWeek ?? 1))));
+        const activeDay = Math.max(0, Math.min(6, Math.floor(Number(dayIndex ?? state.selectedDayIndex ?? 0))));
         const targetEmail = (state.userProfile && state.userProfile.email) ? String(state.userProfile.email).trim().toLowerCase() : '';
-        pendingResetFuelTarget = { userId: targetEmail, week: weekNum, dayIdx: dayIndex };
-        if (resetFuelBadgeEl) resetFuelBadgeEl.textContent = `Muscle Fuel • Week ${weekNum} • Day ${dayIndex + 1}`;
+        pendingResetFuelTarget = { userId: targetEmail, week: activeWeek, dayIdx: activeDay };
+        if (resetFuelBadgeEl) resetFuelBadgeEl.textContent = `Muscle Fuel • Week ${activeWeek} • Day ${activeDay + 1}`;
         if (resetFuelDetailEl) {
-          resetFuelDetailEl.textContent = `This clears logged meals, flex meals, quick adds, and water for Day ${dayIndex + 1} only. Your gym workout sets stay safe.`;
+          resetFuelDetailEl.textContent = `This clears logged meals, flex meals, quick adds, and water for Day ${activeDay + 1} only. Your gym workout sets stay safe and you stay signed in.`;
         }
         if (resetFuelConfirmModalEl) resetFuelConfirmModalEl.classList.remove('hidden');
       };
@@ -23916,13 +24082,21 @@
       }
       if (confirmResetFuelBtn) {
         confirmResetFuelBtn.addEventListener('click', () => {
-          if (!pendingResetFuelTarget) return;
-          const { userId, week: wNum, dayIdx: dNum } = pendingResetFuelTarget;
+          const activeWeek = Math.max(1, Math.min(12, Math.floor(Number(state.selectedWeek || state.currentWeek || 1))));
+          const activeDay = Math.max(0, Math.min(6, Math.floor(Number(state.selectedDayIndex || 0))));
+          const activeEmail = (state.userProfile && state.userProfile.email) ? String(state.userProfile.email).trim().toLowerCase() : '';
+          const target = pendingResetFuelTarget || { userId: activeEmail, week: activeWeek, dayIdx: activeDay };
+          const { userId, week: wNum, dayIdx: dNum } = target;
           const validation = validateScopedDeletionLocal('fuel_only', userId, wNum, dNum);
           if (!validation.valid) {
-            showToast(validation.errorMessage || 'Deletion blocked: active user or day mismatch.');
+            showToast(validation.errorMessage || 'Could not clear fuel logs for this day.');
             return;
           }
+
+          // Strict Session Preservation (Task 3): never sign the user out
+          const preservedProfile = state.userProfile ? JSON.parse(JSON.stringify(state.userProfile)) : null;
+          const preservedGuestFlag = Boolean(state.isGuestMode);
+
           pendingResetFuelTarget = null;
           if (resetFuelConfirmModalEl) resetFuelConfirmModalEl.classList.add('hidden');
 
@@ -23932,10 +24106,13 @@
             showToast('Could not reset fuel logs for this day.');
             return;
           }
+          if (preservedProfile) state.userProfile = preservedProfile;
+          state.isGuestMode = preservedGuestFlag;
+
           stampStateTimestampLocal();
           saveState(true);
-          autoSyncWorkoutToSupabaseLocal('day_reset');
-          showSyncUndoToastLocal(`Day ${dNum + 1} fuel logs cleared & synced.`);
+          autoSyncWorkoutToSupabaseLocal('fuel_reset');
+          showSyncUndoToastLocal(`Day ${dNum + 1} fuel logs cleared. You are still signed in.`);
           renderVeganView();
           renderWorkoutView();
         });
@@ -27863,14 +28040,19 @@
           </button>
         </div>
 
-        <!-- Task 2: Complete Data Removal ("Start Fresh") -->
-        <div class="pt-2.5 border-t border-slate-800/80 space-y-1.5">
-          <div class="text-[11px] font-extrabold uppercase tracking-wider text-rose-300">Reset All App Data</div>
-          <p class="text-[11px] text-slate-300 leading-relaxed">
-            Clear all logged workouts, fuel logs, fridge batch prep (oats and rice), and your shopping list to begin at 0.
+        <!-- Task 2: Complete Data Removal ("Start Fresh" & "Delete All Weeks") -->
+        <div class="pt-2.5 border-t border-slate-800/80 space-y-2 font-sans">
+          <div class="text-xs font-extrabold uppercase tracking-wider text-rose-200 leading-relaxed">Reset All App Data</div>
+          <p class="text-xs text-slate-200 leading-relaxed">
+            Clear all logged workouts, meal logs, fridge batch prep, and your shopping list to begin at Week 1, Day 1. You will stay signed in.
           </p>
-          <button type="button" id="settings-start-fresh-btn" class="w-full min-h-[44px] py-2.5 px-3 rounded-xl border border-rose-400/70 bg-rose-600/20 hover:bg-rose-600/30 text-rose-100 text-xs font-extrabold transition flex items-center justify-center gap-2">
-            <span>↺ Start Fresh</span>
+          <button type="button" id="settings-start-fresh-btn" class="w-full min-h-[44px] py-2.5 px-3 rounded-xl border-2 border-rose-300 bg-rose-950 hover:bg-rose-900 text-white text-xs font-extrabold leading-relaxed transition flex items-center justify-center gap-2">
+            <span aria-hidden="true">↺</span>
+            <span>Start Fresh</span>
+          </button>
+          <button type="button" id="settings-delete-all-weeks-btn" class="w-full min-h-[44px] py-2.5 px-3 rounded-xl border-2 border-rose-300 bg-rose-400 hover:bg-rose-300 text-slate-950 text-xs font-extrabold leading-relaxed transition flex items-center justify-center gap-2">
+            <span aria-hidden="true">⚠</span>
+            <span>Delete All Weeks (Complete Reset)</span>
           </button>
         </div>
       </div>
@@ -28063,29 +28245,69 @@
     </div>
   </div>
 
-  <!-- MODAL 4B: Task 1 — Linked Workout & Fuel Reset Modal -->
-  <div id="reset-day-confirm-modal" class="hidden fixed inset-0 z-[75] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="reset-day-confirm-title">
-    <div class="bg-slate-900 border border-rose-400/55 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
-      <div class="space-y-1.5">
-        <span id="reset-day-confirm-badge" class="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-400/45 text-[10px] font-extrabold uppercase tracking-wider text-rose-200">
+  <!-- MODAL 4B: Task 1 & Task 2 — Linked Workout & Fuel Reset Modal + Delete All Weeks (WCAG 2.2 / COGA AAA) -->
+  <div id="reset-day-confirm-modal" class="hidden fixed inset-0 z-[75] bg-slate-950/95 backdrop-blur-sm flex items-center justify-center p-4 font-sans" role="dialog" aria-modal="true" aria-labelledby="reset-day-confirm-title" aria-describedby="reset-day-confirm-detail">
+    <div class="bg-slate-900 border-2 border-slate-400 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-left">
+      <div class="space-y-2">
+        <span id="reset-day-confirm-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 border border-slate-400 text-xs font-extrabold uppercase tracking-wider text-white leading-relaxed">
           Active Day
         </span>
-        <h3 id="reset-day-confirm-title" class="text-base font-extrabold text-white leading-snug">
+        <h3 id="reset-day-confirm-title" class="text-base font-extrabold text-white leading-relaxed">
           Would you like to delete your meal prep and fuel logs too?
         </h3>
-        <p id="reset-day-confirm-detail" class="text-xs text-slate-300 leading-relaxed">
-          Choose whether to clear only today's workout sets or also clear today's meal prep and fuel logs. Other days stay safe.
+        <p id="reset-day-confirm-detail" class="text-sm text-slate-100 leading-relaxed">
+          Choose one clear action below. Other days stay safe unless you choose a complete reset. You will stay signed in.
         </p>
       </div>
-      <div class="grid grid-cols-1 gap-2">
-        <button type="button" id="confirm-reset-workout-only-btn" class="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition">
-          Delete Workout Only
+      <div class="grid grid-cols-1 gap-2.5">
+        <button type="button" id="confirm-reset-workout-only-btn" class="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-amber-300 hover:bg-amber-200 text-slate-950 text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white">
+          <span aria-hidden="true">↺</span>
+          <span>Delete Workout Only</span>
         </button>
-        <button type="button" id="confirm-reset-workout-and-fuel-btn" class="w-full py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition">
-          Delete Workout and Fuel
+        <button type="button" id="confirm-reset-workout-and-fuel-btn" class="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-rose-300 hover:bg-rose-200 text-slate-950 text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white">
+          <span aria-hidden="true">🍽</span>
+          <span>Delete Workout and Fuel</span>
         </button>
-        <button type="button" id="cancel-reset-day-btn" class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-xs font-extrabold transition">
-          Cancel
+        <div class="pt-2 mt-1 border-t border-slate-700">
+          <button type="button" id="open-delete-all-weeks-from-reset-btn" class="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-rose-950 hover:bg-rose-900 border-2 border-rose-300 text-white text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white">
+            <span aria-hidden="true">⚠</span>
+            <span>Delete All Weeks (Complete Reset)</span>
+          </button>
+        </div>
+        <button type="button" id="cancel-reset-day-btn" class="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border-2 border-slate-400 text-white text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white">
+          <span aria-hidden="true">✕</span>
+          <span>Cancel</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4C: Task 2 — Delete All Weeks (Complete Reset) Strict Accessible Confirmation Modal -->
+  <div id="delete-all-weeks-confirm-modal" class="hidden fixed inset-0 z-[82] bg-slate-950/95 backdrop-blur-sm flex items-center justify-center p-4 font-sans" role="dialog" aria-modal="true" aria-labelledby="delete-all-weeks-title" aria-describedby="delete-all-weeks-warning">
+    <div class="bg-slate-900 border-2 border-rose-400 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-left">
+      <div class="space-y-2">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-950 border border-rose-300 text-xs font-extrabold uppercase tracking-wider text-rose-100 leading-relaxed">
+          <span aria-hidden="true">⚠</span>
+          <span>Complete Reset</span>
+        </span>
+        <h3 id="delete-all-weeks-title" class="text-lg font-extrabold text-white leading-relaxed">
+          Delete All Weeks (Complete Reset)
+        </h3>
+        <p id="delete-all-weeks-warning" class="text-sm text-slate-100 leading-relaxed font-medium">
+          Are you sure? This will permanently delete your entire workout history across all weeks.
+        </p>
+        <p class="text-xs text-slate-200 leading-relaxed">
+          You will stay signed in to your account and return to Week 1, Day 1.
+        </p>
+      </div>
+      <div class="grid grid-cols-1 gap-2.5 pt-1">
+        <button type="button" id="confirm-delete-all-weeks-btn" class="w-full min-h-[46px] py-3 px-4 rounded-xl bg-rose-400 hover:bg-rose-300 text-slate-950 text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white">
+          <span aria-hidden="true">🗑</span>
+          <span>Yes, Delete All Weeks</span>
+        </button>
+        <button type="button" id="cancel-delete-all-weeks-btn" class="w-full min-h-[46px] py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border-2 border-slate-400 text-white text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white">
+          <span aria-hidden="true">✕</span>
+          <span>Cancel</span>
         </button>
       </div>
     </div>

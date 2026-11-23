@@ -147,7 +147,10 @@ export default async function handler(req, res) {
       const effectiveIso = clientMs > serverMs ? clientTsRaw : nowIso;
 
       const isStartFreshOverwrite = Boolean(
-        bodyObj && (bodyObj.forceOverwrite === true || bodyObj.resetReason === 'start_fresh_reset')
+        bodyObj &&
+        (bodyObj.forceOverwrite === true ||
+          bodyObj.resetReason === 'start_fresh_reset' ||
+          bodyObj.resetReason === 'delete_all_weeks')
       );
 
       const cleanBody = { ...bodyObj };
@@ -157,6 +160,10 @@ export default async function handler(req, res) {
       const payloadToStore = isStartFreshOverwrite
         ? {
             ...cleanBody,
+            selectedDayIndex: 0,
+            currentWeek: 1,
+            selectedWeek: 1,
+            maxUnlockedWeek: 1,
             workoutLogs: {},
             pullupLogs: {},
             cardioLogs: {},

@@ -15,6 +15,8 @@ export type AutoSyncTriggerReason =
   | 'cardio_logged'
   | 'workout_finished'
   | 'day_reset'
+  | 'fuel_reset'
+  | 'delete_all_weeks'
   | 'start_fresh_reset'
   | 'local_newer_sync'
   | 'delayed_sync'
@@ -368,12 +370,12 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
       phase: 'syncing',
       message:
         reason === 'undo_restore'
-          ? 'Restoring to Supabase...'
-          : reason === 'start_fresh_reset'
-            ? 'Clearing cloud data...'
-            : reason === 'day_reset'
-              ? 'Syncing cleared day to Supabase...'
-              : 'Auto-syncing to Supabase...',
+          ? 'Restoring...'
+          : reason === 'start_fresh_reset' || reason === 'delete_all_weeks'
+            ? 'Saving fresh start...'
+            : reason === 'day_reset' || reason === 'fuel_reset'
+              ? 'Saving cleared day...'
+              : 'Saving changes...',
       reason
     });
 
@@ -388,10 +390,10 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
 
     const isFirebase = endpoint.includes('firebaseio.com') || endpoint.endsWith('.json');
     const isSupabaseApi = endpoint.includes('/api/state');
-    const stateToPersist =
-      reason === 'start_fresh_reset'
-        ? { ...currentState, forceOverwrite: true, resetReason: 'start_fresh_reset' }
-        : currentState;
+    const isFullResetOverwrite = reason === 'start_fresh_reset' || reason === 'delete_all_weeks';
+    const stateToPersist = isFullResetOverwrite
+      ? { ...currentState, forceOverwrite: true, resetReason: reason }
+      : currentState;
     const payload = serializeStateForPersistence(stateToPersist);
 
     try {
@@ -432,12 +434,12 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
         phase: 'saved',
         message:
           reason === 'undo_restore'
-            ? 'Undo Restored in Supabase'
-            : reason === 'start_fresh_reset'
-              ? 'Start Fresh Synced to Supabase'
-              : reason === 'day_reset'
-                ? 'Day Reset Synced to Supabase'
-                : 'Auto-Synced to Supabase',
+            ? 'Undo Restored'
+            : reason === 'start_fresh_reset' || reason === 'delete_all_weeks'
+              ? 'Complete Reset Saved'
+              : reason === 'day_reset' || reason === 'fuel_reset'
+                ? 'Day Reset Saved'
+                : 'Changes Saved',
         reason
       });
       return {
@@ -484,11 +486,13 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
 
   async function autoSyncWorkoutToSupabase(reason: AutoSyncTriggerReason): Promise<AutoSyncResult> {
     // Respect the Data Protection & Undo Engine 5-second delay window so automatic syncs never push an unconfirmed week overwrite early.
-    // Explicit undo_restore, confirmed day_reset, and confirmed start_fresh_reset pushes execute immediately.
+    // Explicit undo_restore, confirmed day_reset, fuel_reset, delete_all_weeks, and start_fresh_reset pushes execute immediately.
     if (
       delayController.isWithinDelayWindow() &&
       reason !== 'undo_restore' &&
       reason !== 'day_reset' &&
+      reason !== 'fuel_reset' &&
+      reason !== 'delete_all_weeks' &&
       reason !== 'start_fresh_reset'
     ) {
       options.onStatusChange?.({
@@ -505,7 +509,7 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
         lastUpdated: getStateLastUpdatedIso(options.getState())
       };
     }
-    if (reason === 'start_fresh_reset') {
+    if (reason === 'start_fresh_reset' || reason === 'delete_all_weeks' || reason === 'day_reset' || reason === 'fuel_reset') {
       delayController.cancelDelayedPush();
     }
     cancelPendingBackgroundPush();
@@ -522,6 +526,8 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
       immediate ||
       backgroundDebounceMs === 0 ||
       reason === 'day_reset' ||
+      reason === 'fuel_reset' ||
+      reason === 'delete_all_weeks' ||
       reason === 'start_fresh_reset' ||
       reason === 'undo_restore'
     ) {

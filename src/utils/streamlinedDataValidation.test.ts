@@ -3,8 +3,15 @@ import assert from 'node:assert/strict';
 import {
   AVAILABLE_OAUTH_LOGIN_PROVIDERS,
   DELETE_ACCOUNT_MAIN_WARNING,
+  DELETE_ALL_WEEKS_BUTTON_LABEL,
+  DELETE_ALL_WEEKS_CONFIRM_WARNING,
   POST_DELETE_SELECT_ACCOUNT_PROMPT,
-  onDeleteSuccess
+  deleteAllWeeksCompleteReset,
+  deleteFuelForActiveDay,
+  deleteWorkoutAndFuelForActiveDay,
+  deleteWorkoutForActiveDay,
+  onDeleteSuccess,
+  validateDeletionTarget
 } from './deletionValidation';
 import {
   buildStartFreshGymState,
@@ -347,4 +354,233 @@ test('Task 5 (Strict Start Fresh Patch): Bypasses empty-state cloud guard, overw
   assert.equal(after.completedWorkoutsCount, 0);
   assert.equal(after.statusLabel, '0 of 5 workouts completed this week');
 });
+
+test('Task 6 (Delete Workout Only, Delete Workout & Fuel, Delete Fuel Only): Clears targeted active week/day state, pushes to Supabase, and NEVER logs user out', async () => {
+  const posted: any[] = [];
+  const fakeFetch: typeof fetch = (async (_url: any, init?: any) => {
+    posted.push(JSON.parse(String(init?.body || '{}')));
+    return {
+      ok: true,
+      json: async () => ({ configured: true, saved: true, last_updated: '2026-11-23T18:00:00.000Z' })
+    } as any;
+  }) as typeof fetch;
+
+  const makePopulatedMultiDayState = () => ({
+    userProfile: { name: 'François', email: 'francois@7amgym.app', isGuest: false, authProvider: 'google_oauth' },
+    isGuestMode: false,
+    selectedWeek: 2,
+    currentWeek: 2,
+    selectedDayIndex: 0,
+    completedWeeks: { 1: true, 2: true },
+    workoutLogs: {
+      w1_0_mon_bench_1: { weight: '135', reps: '8', done: true },
+      w2_0_mon_bench_1: { weight: '140', reps: '8', done: true },
+      w2_0_mon_bench_2: { weight: '140', reps: '8', done: true },
+      w2_1_tue_squat_1: { weight: '185', reps: '8', done: true }
+    },
+    pullupLogs: {
+      w2_d0_set_1: { reps: '7', done: true },
+      w2_day_2_set_1: { reps: '6', done: true }
+    },
+    cardioLogs: { w2_d0_bike_0: { done: true }, w2_d1_row_0: { done: true } },
+    warmupLogs: { w2_d0_warmup_0: true, w2_d1_warmup_0: true },
+    fuelLogs: {
+      w2_d0: { kcal: 2150, protein: 145 },
+      w2_d1: { kcal: 1950, protein: 138 }
+    },
+    fuelDaySnapshots: { w2_d0: { kcal: 2150 }, w2_d1: { kcal: 1950 } },
+    loggedMealSnapshots: { w2_d0_fuel1: { kcal: 300 }, w2_d1_fuel1: { kcal: 300 } },
+    checkedMeals: { w2_d0_pre_shake: true, w2_d0_lunch: true, w2_d1_pre_shake: true },
+    checkedMealIngredients: { w2_d0_oats: true, w2_d1_oats: true },
+    flexMealOverridesByDay: { w2_d0: { name: 'Tofu Bowl' }, w2_d1: { name: 'Tempeh' } },
+    quickAddCaloriesByDay: { w2_d0: [{ kcal: 250 }], w2_d1: [{ kcal: 150 }] },
+    waterIntakeLogs: { w2_d0: 2500, w2_d1: 2000 },
+    accountsByEmail: {
+      'francois@7amgym.app': {
+        workoutLogs: { w2_0_mon_bench_1: { weight: '140', reps: '8', done: true } },
+        fuelLogs: { w2_d0: { kcal: 2150 } },
+        checkedMeals: { w2_d0_pre_shake: true },
+        snapshot: {
+          workoutLogs: { w2_0_mon_bench_1: { weight: '140', reps: '8', done: true } },
+          fuelLogs: { w2_d0: { kcal: 2150 } },
+          checkedMeals: { w2_d0_pre_shake: true }
+        }
+      }
+    }
+  });
+
+  // A) Delete Workout Only: clears W2 D1 workoutLogs, keeps W2 D1 fuelLogs + W2 D2 + W1 D1, keeps François signed in
+  const s1 = makePopulatedMultiDayState();
+  const r1 = await deleteWorkoutForActiveDay({
+    stateObj: s1,
+    activeWeek: 2,
+    activeDayIndex: 0,
+    endpoint: '/api/state?email=francois%407amgym.app',
+    fetchImpl: fakeFetch
+  });
+  assert.equal(r1.cleared, true);
+  assert.equal(r1.cloudSynced, true);
+  assert.equal(r1.loggedOut, false);
+  assert.equal(s1.workoutLogs.w2_0_mon_bench_1, undefined);
+  assert.equal(s1.workoutLogs.w2_0_mon_bench_2, undefined);
+  assert.ok(s1.workoutLogs.w2_1_tue_squat_1, 'Day 2 workout must remain untouched');
+  assert.ok(s1.workoutLogs.w1_0_mon_bench_1, 'Week 1 workout must remain untouched');
+  assert.ok(s1.fuelLogs.w2_d0, 'Day 1 fuelLogs must be preserved for Delete Workout Only');
+  assert.equal(s1.checkedMeals.w2_d0_pre_shake, true);
+  assert.equal(s1.userProfile.email, 'francois@7amgym.app');
+  assert.equal(s1.userProfile.name, 'François');
+  assert.equal(s1.isGuestMode, false);
+
+  // B) Delete Workout and Fuel: clears BOTH W2 D1 workoutLogs AND W2 D1 fuelLogs, preserves other days & keeps François signed in
+  const s2 = makePopulatedMultiDayState();
+  const r2 = await deleteWorkoutAndFuelForActiveDay({
+    stateObj: s2,
+    activeWeek: 2,
+    activeDayIndex: 0,
+    endpoint: '/api/state?email=francois%407amgym.app',
+    fetchImpl: fakeFetch
+  });
+  assert.equal(r2.cleared, true);
+  assert.equal(r2.cloudSynced, true);
+  assert.equal(r2.loggedOut, false);
+  assert.equal(s2.workoutLogs.w2_0_mon_bench_1, undefined);
+  assert.equal(s2.fuelLogs.w2_d0, undefined);
+  assert.equal(s2.fuelDaySnapshots.w2_d0, undefined);
+  assert.equal(s2.loggedMealSnapshots.w2_d0_fuel1, undefined);
+  assert.equal(s2.checkedMeals.w2_d0_pre_shake, undefined);
+  assert.equal(s2.waterIntakeLogs.w2_d0, undefined);
+  assert.equal(s2.accountsByEmail['francois@7amgym.app'].fuelLogs.w2_d0, undefined);
+  assert.equal(s2.accountsByEmail['francois@7amgym.app'].workoutLogs.w2_0_mon_bench_1, undefined);
+  assert.ok(s2.workoutLogs.w2_1_tue_squat_1, 'Other day workouts stay safe');
+  assert.ok(s2.fuelLogs.w2_d1, 'Other day fuel logs stay safe');
+  assert.equal(s2.userProfile.email, 'francois@7amgym.app');
+  assert.equal(s2.isGuestMode, false);
+
+  // C) Delete Fuel Only: clears ONLY W2 D1 fuelLogs, keeps W2 D1 workoutLogs, keeps François signed in
+  const s3 = makePopulatedMultiDayState();
+  const r3 = await deleteFuelForActiveDay({
+    stateObj: s3,
+    activeWeek: 2,
+    activeDayIndex: 0,
+    endpoint: '/api/state?email=francois%407amgym.app',
+    fetchImpl: fakeFetch
+  });
+  assert.equal(r3.cleared, true);
+  assert.equal(r3.cloudSynced, true);
+  assert.equal(r3.loggedOut, false);
+  assert.ok(s3.workoutLogs.w2_0_mon_bench_1, 'Delete Fuel Only must keep Day 1 workout sets');
+  assert.equal(s3.fuelLogs.w2_d0, undefined);
+  assert.equal(s3.checkedMeals.w2_d0_pre_shake, undefined);
+  assert.equal(s3.userProfile.email, 'francois@7amgym.app');
+  assert.equal(s3.isGuestMode, false);
+
+  // D) Local guest session day reset is allowed (not wrongly blocked), while account deletion still requires valid email
+  const guestDayValidation = validateDeletionTarget({
+    scope: 'workout_and_fuel',
+    activeUserId: '',
+    targetUserId: '',
+    activeWeek: 1,
+    targetWeek: 1,
+    activeDayIndex: 0,
+    targetDayIndex: 0
+  });
+  assert.equal(guestDayValidation.valid, true);
+  const guestAccountValidation = validateDeletionTarget({
+    scope: 'account',
+    activeUserId: '',
+    targetUserId: ''
+  });
+  assert.equal(guestAccountValidation.valid, false);
+  assert.equal(posted.length, 3);
+});
+
+test('Task 7 (Delete All Weeks Complete Reset): Exact ELI12 warning copy, wipes all weeks to Week 1 Day 1, overwrites Supabase, and strictly preserves active login', async () => {
+  assert.equal(DELETE_ALL_WEEKS_BUTTON_LABEL, 'Delete All Weeks (Complete Reset)');
+  assert.equal(
+    DELETE_ALL_WEEKS_CONFIRM_WARNING,
+    'Are you sure? This will permanently delete your entire workout history across all weeks.'
+  );
+  assert.equal(DELETE_ALL_WEEKS_CONFIRM_WARNING.toLowerCase().includes('database'), false);
+  assert.equal(DELETE_ALL_WEEKS_CONFIRM_WARNING.toLowerCase().includes('supabase'), false);
+  assert.equal(DELETE_ALL_WEEKS_CONFIRM_WARNING.toLowerCase().includes('array'), false);
+
+  const postedPayloads: any[] = [];
+  const fakeFetch: typeof fetch = (async (_url: any, init?: any) => {
+    postedPayloads.push(JSON.parse(String(init?.body || '{}')));
+    return {
+      ok: true,
+      json: async () => ({ configured: true, saved: true, overwrittenBaseline: true, last_updated: '2026-11-23T18:05:00.000Z' })
+    } as any;
+  }) as typeof fetch;
+
+  const multiWeekState = {
+    userProfile: { name: 'François', email: 'francois@7amgym.app', isGuest: false, authProvider: 'google_oauth' },
+    isGuestMode: false,
+    weeklyWorkoutTarget: 5,
+    currentWeek: 4,
+    selectedWeek: 4,
+    selectedDayIndex: 3,
+    maxUnlockedWeek: 4,
+    completedWeeks: { 1: true, 2: true, 3: true },
+    workoutLogs: {
+      w1_0_mon_bench_1: { weight: '135', reps: '8', done: true },
+      w2_1_tue_squat_1: { weight: '185', reps: '8', done: true },
+      w3_2_thu_inc_db_1: { weight: '55', reps: '10', done: true },
+      w4_3_fri_rdl_1: { weight: '205', reps: '8', done: true }
+    },
+    fuelLogs: { w1_d0: { kcal: 2100 }, w4_d3: { kcal: 2200 } },
+    checkedMeals: { w4_d3_lunch: true },
+    batchInventory: { oatsJarsRemaining: 4, riceBowlsRemaining: 3, oatsPrepDay: 'Sun', ricePrepDay: 'Wed' },
+    checkedGroceries: { oats: true }
+  };
+
+  const result = await deleteAllWeeksCompleteReset({
+    currentState: multiWeekState,
+    endpoint: '/api/state?email=francois%407amgym.app',
+    fetchImpl: fakeFetch
+  });
+
+  assert.equal(result.deletedAllWeeks, true);
+  assert.equal(result.cloudSynced, true);
+  assert.equal(result.loggedOut, false);
+
+  // Reset cleanly to Week 1, Day 1 empty baseline
+  assert.equal(result.nextState.currentWeek, 1);
+  assert.equal(result.nextState.selectedWeek, 1);
+  assert.equal(result.nextState.selectedDayIndex, 0);
+  assert.equal(result.nextState.maxUnlockedWeek, 1);
+  assert.deepEqual(result.nextState.workoutLogs, {});
+  assert.deepEqual(result.nextState.fuelLogs, {});
+  assert.deepEqual(result.nextState.checkedMeals, {});
+  assert.deepEqual(result.nextState.completedWeeks, {});
+  assert.equal(result.nextState.batchInventory.oatsJarsRemaining, 0);
+  assert.equal(result.nextState.batchInventory.riceBowlsRemaining, 0);
+
+  // Strictly stayed logged in as François (ZERO involuntary logout!)
+  assert.equal(result.nextState.userProfile.email, 'francois@7amgym.app');
+  assert.equal(result.nextState.userProfile.name, 'François');
+  assert.equal(result.nextState.userProfile.isGuest, false);
+  assert.equal(result.nextState.isGuestMode, false);
+
+  // Immediately overwrote Supabase with forceOverwrite: true
+  assert.equal(postedPayloads.length, 1);
+  assert.equal(postedPayloads[0].forceOverwrite, true);
+  assert.equal(postedPayloads[0].resetReason, 'delete_all_weeks');
+  assert.deepEqual(postedPayloads[0].workoutLogs, {});
+  assert.equal(postedPayloads[0].userProfile.email, 'francois@7amgym.app');
+
+  // Verify AutoSupabaseSyncEngine also allows 'delete_all_weeks' & 'fuel_reset' immediately
+  const syncEngine = createAutoSupabaseSyncEngine({
+    getState: () => result.nextState,
+    getEndpoint: () => '/api/state?email=francois%407amgym.app',
+    fetchImpl: fakeFetch
+  });
+  syncEngine.recordKnownCloudLoggedSetCount(25);
+  syncEngine.scheduleDestructiveOverwritePush(5000);
+  const syncRes = await syncEngine.autoSyncWorkoutToSupabase('delete_all_weeks');
+  assert.equal(syncRes.synced, true);
+  assert.equal(syncRes.blockedByEmptyStateGuard, false);
+  assert.equal(syncRes.blockedByUndoGuard, false);
+});
+
 

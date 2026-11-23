@@ -917,62 +917,163 @@ export function clearActiveDayWorkoutData(
     exerciseIds?: string[];
     pullupDayNumber?: number | null;
     logSlotKey?: string | null;
-  }
-): { clearedKeysCount: number; week: number; dayIdx: number } {
+    templateSlotIndex?: number | null;
+    activeUserEmail?: string | null;
+  } | number
+): { clearedKeysCount: number; clearedWorkoutKeys: number; week: number; dayIdx: number } {
   const safeW = Math.max(1, Math.min(12, Math.floor(Number(targetWeek) || 1)));
   const safeD = Math.max(0, Math.min(6, Math.floor(Number(targetDayIdx) || 0)));
-  const targetExIds = new Set<string>(Array.isArray(options?.exerciseIds) ? options!.exerciseIds : []);
+  const opts = typeof options === 'number' ? { templateSlotIndex: options } : (options || {});
+  const targetExIds = new Set<string>(Array.isArray(opts.exerciseIds) ? opts.exerciseIds : []);
+  const templateSlotIdx =
+    typeof opts.templateSlotIndex === 'number' && Number.isFinite(opts.templateSlotIndex)
+      ? opts.templateSlotIndex
+      : safeD;
   let clearedKeysCount = 0;
 
-  if (stateObj && stateObj.workoutLogs && typeof stateObj.workoutLogs === 'object') {
-    const dayPrefix = `w${safeW}_${safeD}_`;
-    const bonusPrefix = options?.logSlotKey ? `w${safeW}_${options.logSlotKey}_` : '';
-    Object.keys(stateObj.workoutLogs).forEach((k) => {
-      if (k.startsWith(dayPrefix) || (bonusPrefix && k.startsWith(bonusPrefix))) {
-        delete stateObj.workoutLogs[k];
-        clearedKeysCount += 1;
-        return;
+  if (!stateObj || typeof stateObj !== 'object') {
+    return { clearedKeysCount: 0, clearedWorkoutKeys: 0, week: safeW, dayIdx: safeD };
+  }
+
+  // Strictly mark this day cleared so Week 1 seed helpers never resurrect erased sets
+  if (!stateObj.clearedDaysMap || typeof stateObj.clearedDaysMap !== 'object') {
+    stateObj.clearedDaysMap = {};
+  }
+  stateObj.clearedDaysMap[`w${safeW}_d${safeD}`] = true;
+
+  const dayPrefix = `w${safeW}_${safeD}_`;
+  const altDayPrefix = `w${safeW}_d${safeD}_`;
+  const legacyDayPrefix = safeW === 1 ? `${safeD}_` : '';
+  const bonusPrefix = opts.logSlotKey ? `w${safeW}_${opts.logSlotKey}_` : '';
+  const directDayKeys = new Set([`w${safeW}_d${safeD}`, `w${safeW}_${safeD}`]);
+
+  const shouldDeleteKey = (k: string): boolean => {
+    if (directDayKeys.has(k)) return true;
+    if (k.startsWith(dayPrefix) || k.startsWith(altDayPrefix) || (bonusPrefix && k.startsWith(bonusPrefix))) {
+      return true;
+    }
+    if (legacyDayPrefix && k.startsWith(legacyDayPrefix)) {
+      return true;
+    }
+    const m = new RegExp(`^w${safeW}_(\\d+)_(.+)_(\\d+)$`).exec(k);
+    if (m && targetExIds.has(m[2])) {
+      const keyDayOrSlot = parseInt(m[1], 10);
+      if (m[2] !== 'cable_ab_crunch' || keyDayOrSlot === safeD || keyDayOrSlot === templateSlotIdx) {
+        return true;
       }
-      const m = new RegExp(`^w${safeW}_(\\d+)_(.+)_(\\d+)$`).exec(k);
-      if (m && targetExIds.has(m[2])) {
-        const keyDayOrSlot = parseInt(m[1], 10);
-        if (m[2] !== 'cable_ab_crunch' || keyDayOrSlot === safeD) {
-          delete stateObj.workoutLogs[k];
-          clearedKeysCount += 1;
+    }
+    if (safeW === 1) {
+      const mLegacy = /^(\d+)_(.+)_(\d+)$/.exec(k);
+      if (mLegacy && targetExIds.has(mLegacy[2])) {
+        const keyDayOrSlot = parseInt(mLegacy[1], 10);
+        if (mLegacy[2] !== 'cable_ab_crunch' || keyDayOrSlot === safeD || keyDayOrSlot === templateSlotIdx) {
+          return true;
         }
       }
-    });
-  }
+    }
+    return false;
+  };
 
-  if (stateObj && stateObj.pullupLogs && typeof stateObj.pullupLogs === 'object' && options?.pullupDayNumber) {
-    const pPrefix = `w${safeW}_day_${options.pullupDayNumber}_set_`;
-    Object.keys(stateObj.pullupLogs).forEach((pk) => {
-      if (pk.startsWith(pPrefix)) {
-        delete stateObj.pullupLogs[pk];
+  const wipeWorkoutMap = (wLogs: Record<string, any> | null | undefined) => {
+    if (!wLogs || typeof wLogs !== 'object') return;
+    Object.keys(wLogs).forEach((k) => {
+      if (shouldDeleteKey(k)) {
+        delete wLogs[k];
         clearedKeysCount += 1;
+      }
+    });
+    // Support nested week/day structures (e.g., workoutLogs[week][day] = []) if present
+    const weekBucket = wLogs[String(safeW)] || wLogs[`week_${safeW}`];
+    if (weekBucket && typeof weekBucket === 'object') {
+      const dayKeys = [String(safeD), `day_${safeD}`, `d${safeD}`];
+      dayKeys.forEach((dk) => {
+        if (dk in weekBucket) {
+          if (Array.isArray(weekBucket[dk])) {
+            if (weekBucket[dk].length > 0) clearedKeysCount += weekBucket[dk].length;
+            weekBucket[dk] = [];
+          } else {
+            delete weekBucket[dk];
+            clearedKeysCount += 1;
+          }
+        }
+      });
+    }
+  };
+
+  const wipePullupMap = (pLogs: Record<string, any> | null | undefined) => {
+    if (!pLogs || typeof pLogs !== 'object') return;
+    if (opts.pullupDayNumber) {
+      const pPrefix = `w${safeW}_day_${opts.pullupDayNumber}_set_`;
+      const legacyPPrefix = safeW === 1 ? `day_${opts.pullupDayNumber}_set_` : '';
+      Object.keys(pLogs).forEach((pk) => {
+        if (pk.startsWith(pPrefix) || (legacyPPrefix && pk.startsWith(legacyPPrefix))) {
+          delete pLogs[pk];
+          clearedKeysCount += 1;
+        }
+      });
+    }
+    const dayPullupPrefix = `w${safeW}_d${safeD}_`;
+    Object.keys(pLogs).forEach((pk) => {
+      if (pk.startsWith(dayPullupPrefix)) {
+        delete pLogs[pk];
+        clearedKeysCount += 1;
+      }
+    });
+  };
+
+  wipeWorkoutMap(stateObj.workoutLogs);
+  wipePullupMap(stateObj.pullupLogs);
+
+  // Also scrub active user's cached snapshot inside accountsByEmail so reload never revives cleared day sets
+  if (stateObj.accountsByEmail && typeof stateObj.accountsByEmail === 'object') {
+    const emailKey = String(
+      opts.activeUserEmail || (stateObj.userProfile && stateObj.userProfile.email) || ''
+    )
+      .trim()
+      .toLowerCase();
+    const acctTargets = emailKey && stateObj.accountsByEmail[emailKey]
+      ? [stateObj.accountsByEmail[emailKey]]
+      : [];
+    acctTargets.forEach((acct) => {
+      if (!acct || typeof acct !== 'object') return;
+      wipeWorkoutMap(acct.workoutLogs);
+      wipePullupMap(acct.pullupLogs);
+      if (acct.snapshot && typeof acct.snapshot === 'object') {
+        wipeWorkoutMap(acct.snapshot.workoutLogs);
+        wipePullupMap(acct.snapshot.pullupLogs);
       }
     });
   }
 
-  if (stateObj && stateObj.cardioLogs && typeof stateObj.cardioLogs === 'object') {
+  if (stateObj.cardioLogs && typeof stateObj.cardioLogs === 'object') {
     const cPrefix = `w${safeW}_d${safeD}_`;
     Object.keys(stateObj.cardioLogs).forEach((ck) => {
-      if (ck.startsWith(cPrefix)) {
+      if (ck.startsWith(cPrefix) || ck.startsWith(dayPrefix)) {
         delete stateObj.cardioLogs[ck];
         clearedKeysCount += 1;
       }
     });
   }
 
-  if (stateObj && stateObj.warmupLogs && typeof stateObj.warmupLogs === 'object') {
+  if (stateObj.warmupLogs && typeof stateObj.warmupLogs === 'object') {
     Object.keys(stateObj.warmupLogs).forEach((wk) => {
-      if (wk.startsWith(`w${safeW}_${safeD}_`) || wk.startsWith(`w${safeW}_d${safeD}_`)) {
+      if (wk.startsWith(dayPrefix) || wk.startsWith(altDayPrefix)) {
         delete stateObj.warmupLogs[wk];
         clearedKeysCount += 1;
       }
     });
   }
 
-  return { clearedKeysCount, week: safeW, dayIdx: safeD };
+  if (stateObj.completedWeeks && typeof stateObj.completedWeeks === 'object') {
+    stateObj.completedWeeks[safeW] = false;
+  }
+
+  return {
+    clearedKeysCount,
+    clearedWorkoutKeys: clearedKeysCount,
+    week: safeW,
+    dayIdx: safeD
+  };
 }
+
 
