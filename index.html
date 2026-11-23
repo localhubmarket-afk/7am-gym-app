@@ -2497,78 +2497,7 @@
 
             const authoritativeRemote = resolved.state;
             const authoritativeTs = resolved.remoteLastUpdated || resolved.remoteUpdatedAt || authoritativeRemote.last_updated || authoritativeRemote.updatedAt || new Date().toISOString();
-            const keepUrl = state.cloudDbUrl;
-            const currentOpenPanels = state.openImagePanels || {};
-            const localProfile = (state.userProfile && state.userProfile.email)
-              ? JSON.parse(JSON.stringify(state.userProfile))
-              : null;
-            const localLeads = Array.isArray(state.capturedLeads) && state.capturedLeads.length > 0
-              ? JSON.parse(JSON.stringify(state.capturedLeads))
-              : null;
-            const localAccounts = state.accountsByEmail && Object.keys(state.accountsByEmail).length > 0
-              ? JSON.parse(JSON.stringify(state.accountsByEmail))
-              : null;
-
-            // Strict Single Source of Truth: overwrite local state & localStorage with authoritative Supabase gym_state
-            const nextState = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), authoritativeRemote, {
-              cloudDbUrl: keepUrl,
-              openImagePanels: currentOpenPanels,
-              pendingMachineSwapPreviews: {},
-              last_updated: authoritativeTs,
-              updatedAt: authoritativeTs
-            });
-
-            // Sync currentWeek & selectedWeek from remote authoritatively so Week 3 never falls back to Week 1
-            const remoteWeekNum = parseInt(authoritativeRemote.selectedWeek || authoritativeRemote.currentWeek || 0, 10);
-            if (remoteWeekNum >= 1 && remoteWeekNum <= 12) {
-              nextState.selectedWeek = remoteWeekNum;
-              nextState.currentWeek = remoteWeekNum;
-              nextState.maxUnlockedWeek = Math.max(parseInt(nextState.maxUnlockedWeek, 10) || 1, remoteWeekNum);
-            }
-
-            // Keep authenticated email/name clean (never display "Google" or "Apple" as username)
-            if (localProfile && (!nextState.userProfile || !nextState.userProfile.email)) {
-              nextState.userProfile = localProfile;
-            }
-            if (nextState.userProfile && nextState.userProfile.email) {
-              nextState.userProfile.name = resolveHeaderDisplayNameInline(nextState.userProfile);
-            }
-            if (localLeads) {
-              nextState.capturedLeads = Array.isArray(nextState.capturedLeads) && nextState.capturedLeads.length > 0
-                ? nextState.capturedLeads
-                : localLeads;
-            }
-            if (localAccounts) {
-              nextState.accountsByEmail = Object.assign({}, localAccounts, nextState.accountsByEmail || {});
-            }
-
-            // Returning cloud profiles with existing logged data automatically satisfy onboarding
-            if (nextState.userProfile && nextState.userProfile.email && (nextState.onboardingComplete || nextState.userHasCompletedOnboarding || nextState.hasCompletedFirstSetup || nextState.maxUnlockedWeek >= 2 || Object.keys(nextState.workoutLogs || {}).length > 0)) {
-              nextState.onboardingComplete = true;
-              nextState.userHasCompletedOnboarding = true;
-              nextState.hasCompletedFirstSetup = true;
-              const wizModal = document.getElementById('program-setup-wizard-modal');
-              if (wizModal) wizModal.classList.add('hidden');
-            }
-
-            // Normalize full state shape (intolerances, programWizardConfig, cardioLogs, gymLocker, etc.) so renderers never fail
-            state = normalizeLoadedStateShape(nextState, { runSeedCheck: false });
-            syncProgressiveWeekState(state);
-            autoMigrateExerciseNotesToMachineSwaps();
-
-            const eng = getAutoSupabaseSyncEngineLocal();
-            if (eng && typeof window.countTotalLoggedSetsInState === 'function') {
-              eng.recordKnownCloudLoggedSetCount(window.countTotalLoggedSetsInState(state));
-            }
-
-            // Overwrite localStorage immediately with authoritative remote state (without triggering a redundant push)
-            saveState(true);
-            renderWorkoutView();
-            renderPullupView();
-            renderVeganView();
-            renderShoppingView();
-            updateCloudSyncBadgeUI('saved', '✓ Synced from Supabase');
-            return true;
+            return applyAuthoritativeRemoteStateLocal(authoritativeRemote, authoritativeTs, 'cloud_pull');
           }
           return false;
         })
@@ -2581,6 +2510,112 @@
         .finally(() => {
           isPullingCloudTruth = false;
         });
+    }
+
+    function applyAuthoritativeRemoteStateLocal(authoritativeRemote, authoritativeTs, sourceKind) {
+      if (!authoritativeRemote || typeof authoritativeRemote !== 'object') return false;
+      const effectiveTs = authoritativeTs || authoritativeRemote.last_updated || authoritativeRemote.updatedAt || new Date().toISOString();
+      const keepUrl = state.cloudDbUrl;
+      const currentOpenPanels = state.openImagePanels || {};
+      const localProfile = (state.userProfile && state.userProfile.email)
+        ? JSON.parse(JSON.stringify(state.userProfile))
+        : null;
+      const localLeads = Array.isArray(state.capturedLeads) && state.capturedLeads.length > 0
+        ? JSON.parse(JSON.stringify(state.capturedLeads))
+        : null;
+      const localAccounts = state.accountsByEmail && Object.keys(state.accountsByEmail).length > 0
+        ? JSON.parse(JSON.stringify(state.accountsByEmail))
+        : null;
+
+      // Strict Single Source of Truth: overwrite local state & localStorage with authoritative Supabase gym_state
+      const nextState = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_STATE)), authoritativeRemote, {
+        cloudDbUrl: keepUrl,
+        openImagePanels: currentOpenPanels,
+        pendingMachineSwapPreviews: {},
+        last_updated: effectiveTs,
+        updatedAt: effectiveTs
+      });
+
+      // Sync currentWeek & selectedWeek from remote authoritatively so Week 3 never falls back to Week 1
+      const remoteWeekNum = parseInt(authoritativeRemote.selectedWeek || authoritativeRemote.currentWeek || 0, 10);
+      if (remoteWeekNum >= 1 && remoteWeekNum <= 12) {
+        nextState.selectedWeek = remoteWeekNum;
+        nextState.currentWeek = remoteWeekNum;
+        nextState.maxUnlockedWeek = Math.max(parseInt(nextState.maxUnlockedWeek, 10) || 1, remoteWeekNum);
+      }
+
+      // Keep authenticated email/name clean (never display "Google" or "Apple" as username)
+      if (localProfile && (!nextState.userProfile || !nextState.userProfile.email)) {
+        nextState.userProfile = localProfile;
+      }
+      if (nextState.userProfile && nextState.userProfile.email) {
+        nextState.userProfile.name = resolveHeaderDisplayNameInline(nextState.userProfile);
+      }
+      if (localLeads) {
+        nextState.capturedLeads = Array.isArray(nextState.capturedLeads) && nextState.capturedLeads.length > 0
+          ? nextState.capturedLeads
+          : localLeads;
+      }
+      if (localAccounts) {
+        nextState.accountsByEmail = Object.assign({}, localAccounts, nextState.accountsByEmail || {});
+      }
+
+      // Returning cloud profiles with existing logged data automatically satisfy onboarding
+      if (nextState.userProfile && nextState.userProfile.email && (nextState.onboardingComplete || nextState.userHasCompletedOnboarding || nextState.hasCompletedFirstSetup || nextState.maxUnlockedWeek >= 2 || Object.keys(nextState.workoutLogs || {}).length > 0)) {
+        nextState.onboardingComplete = true;
+        nextState.userHasCompletedOnboarding = true;
+        nextState.hasCompletedFirstSetup = true;
+        const wizModal = document.getElementById('program-setup-wizard-modal');
+        if (wizModal) wizModal.classList.add('hidden');
+      }
+
+      // Normalize full state shape (intolerances, programWizardConfig, cardioLogs, gymLocker, etc.) so renderers never fail
+      state = normalizeLoadedStateShape(nextState, { runSeedCheck: false });
+      syncProgressiveWeekState(state);
+      autoMigrateExerciseNotesToMachineSwaps();
+
+      const eng = getAutoSupabaseSyncEngineLocal();
+      if (eng && typeof window.countTotalLoggedSetsInState === 'function') {
+        eng.recordKnownCloudLoggedSetCount(window.countTotalLoggedSetsInState(state));
+      }
+
+      // Overwrite localStorage immediately with authoritative remote state (without triggering a redundant push)
+      const prevPullFlag = isPullingCloudTruth;
+      isPullingCloudTruth = true;
+      try {
+        saveState(true);
+      } finally {
+        isPullingCloudTruth = prevPullFlag;
+      }
+
+      renderWorkoutView();
+      renderPullupView();
+      renderVeganView();
+      renderShoppingView();
+      if (typeof updateConnectedWeeklyAdherenceCard === 'function') {
+        updateConnectedWeeklyAdherenceCard();
+      }
+      if (typeof window.__syncAccessibilityControlsFromState === 'function') {
+        window.__syncAccessibilityControlsFromState();
+      }
+      updateCloudSyncBadgeUI(
+        'saved',
+        sourceKind === 'realtime' ? '✓ Updated live from cloud' : '✓ Synced from Supabase'
+      );
+      return true;
+    }
+
+    function isAutoSyncDevicesEnabledLocal() {
+      if (typeof window.loadAutoSyncPreference === 'function') {
+        return window.loadAutoSyncPreference();
+      }
+      try {
+        const raw = localStorage.getItem('budget_gym_auto_sync_enabled_v1');
+        if (raw === null) return true;
+        return raw !== 'false' && raw !== '0';
+      } catch (_err) {
+        return true;
+      }
     }
 
     let isBootstrappingApp = true;
@@ -2616,10 +2651,11 @@
       if (typeof window.saveGymStateToIndexedDB === 'function') {
         window.saveGymStateToIndexedDB(state).catch(() => {});
       }
-      if (!effectiveSkipCloud && !isPullingCloudTruth && !isDestructiveCloudPushDelayedLocal() && activeEndpoint) {
+      const autoSyncEnabledNow = isAutoSyncDevicesEnabledLocal();
+      if (!effectiveSkipCloud && !isPullingCloudTruth && !isDestructiveCloudPushDelayedLocal() && autoSyncEnabledNow) {
         const isOnlineNow = typeof navigator === 'undefined' || navigator.onLine !== false;
         if (!isOnlineNow) {
-          if (typeof window.persistGymStateLocalFirst === 'function') {
+          if (activeEndpoint && typeof window.persistGymStateLocalFirst === 'function') {
             window.persistGymStateLocalFirst({
               stateObj: state,
               endpoint: activeEndpoint,
@@ -2631,7 +2667,7 @@
                 updateOfflineConnectivityBannerUI();
               }
             }).catch(() => {});
-          } else if (typeof window.enqueueOfflineGymStateSync === 'function') {
+          } else if (activeEndpoint && typeof window.enqueueOfflineGymStateSync === 'function') {
             window.enqueueOfflineGymStateSync({
               stateObj: state,
               endpoint: activeEndpoint,
@@ -2643,12 +2679,23 @@
             }
           }
         } else {
-          clearTimeout(cloudSyncTimeout);
-          const resolvedReason = syncReason || 'background_input';
-          cloudSyncTimeout = setTimeout(() => {
+          const resolvedReason = syncReason || 'state_mutation';
+          if (window.__gymRealtimeSyncManager && typeof window.__gymRealtimeSyncManager.scheduleDebouncedPush === 'function') {
+            clearTimeout(cloudSyncTimeout);
             cloudSyncTimeout = null;
-            autoSyncWorkoutToSupabaseLocal(resolvedReason);
-          }, 300);
+            window.__gymRealtimeSyncManager.scheduleDebouncedPush(state, resolvedReason);
+          } else if (activeEndpoint) {
+            clearTimeout(cloudSyncTimeout);
+            const debounceDelay = (typeof window.AUTO_SYNC_DEBOUNCE_MS === 'number' && window.AUTO_SYNC_DEBOUNCE_MS >= 0)
+              ? window.AUTO_SYNC_DEBOUNCE_MS
+              : 2000;
+            cloudSyncTimeout = setTimeout(() => {
+              cloudSyncTimeout = null;
+              if (isAutoSyncDevicesEnabledLocal()) {
+                autoSyncWorkoutToSupabaseLocal(resolvedReason);
+              }
+            }, debounceDelay);
+          }
         }
       }
     }
@@ -28434,6 +28481,40 @@
         </button>
       </div>
 
+      <!-- Real-Time Cloud Auto-Sync Control (Supabase Realtime Push/Pull + Offline Fallback + Force Sync Now) -->
+      <section id="auto-sync-devices-card" aria-label="Auto-Sync Devices" class="rounded-xl border border-sky-400/50 bg-slate-950/95 p-3 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-extrabold text-white">
+          <span>Auto-Sync Devices</span>
+          <span id="active-auto-sync-readout" role="status" aria-live="polite" class="text-[0.75rem] font-bold text-emerald-300">Auto-Sync ON</span>
+        </div>
+        <p id="auto-sync-devices-sublabel" class="text-[0.8125rem] text-slate-300 leading-relaxed">
+          Automatically saves your progress to the cloud and updates your other screens instantly.
+        </p>
+        <button
+          type="button"
+          id="toggle-auto-sync-devices-btn"
+          data-testid="toggle-auto-sync-devices-btn"
+          role="switch"
+          aria-checked="true"
+          aria-describedby="auto-sync-devices-sublabel"
+          class="w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-emerald-400 bg-emerald-600 text-white text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2"
+        >
+          <span>Auto-Sync Devices</span>
+          <span id="toggle-auto-sync-devices-status">ON — Tap to Turn Off</span>
+        </button>
+        <button
+          type="button"
+          id="force-sync-now-btn"
+          data-testid="force-sync-now-btn"
+          class="w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-sky-400/70 bg-slate-900 hover:bg-slate-800 text-sky-100 text-xs font-extrabold transition flex items-center justify-center gap-2"
+        >
+          <span>🔄 Force Sync Now</span>
+        </button>
+        <p id="auto-sync-status-message" role="status" aria-live="polite" class="text-[0.75rem] font-semibold text-slate-300 leading-relaxed">
+          Changes save automatically on this device and sync across your screens.
+        </p>
+      </section>
+
       <!-- Module 2: Accessible Light / Dark / System Theme Mode Toggle & One-Tap OpenDyslexic Font -->
       <div id="theme-mode-selector-group" role="radiogroup" aria-label="Color Theme Mode" class="rounded-xl border border-slate-700 bg-slate-950/90 p-3 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-extrabold text-white">
@@ -29926,6 +30007,105 @@
         }
       }
 
+      function updateAutoSyncStatusReadoutUI(statusKey, statusMessage) {
+        const readout = document.getElementById('active-auto-sync-readout');
+        const msgEl = document.getElementById('auto-sync-status-message');
+        const labelMap = {
+          connected: 'Live Sync Connected',
+          connecting: 'Connecting Live Sync...',
+          disconnected: 'Device-Only Fallback',
+          offline: 'Offline (Device Saved)',
+          disabled: 'Auto-Sync OFF',
+          local_only: 'Auto-Sync Ready'
+        };
+        if (readout) {
+          readout.textContent = labelMap[statusKey] || (isAutoSyncDevicesEnabledLocal() ? 'Auto-Sync ON' : 'Auto-Sync OFF');
+        }
+        if (msgEl && statusMessage) {
+          msgEl.textContent = statusMessage;
+        }
+      }
+
+      function applyAutoSyncDevicesUI(enabled) {
+        const clean = typeof window.saveAutoSyncPreference === 'function'
+          ? window.saveAutoSyncPreference(Boolean(enabled))
+          : (() => {
+              try {
+                localStorage.setItem('budget_gym_auto_sync_enabled_v1', enabled ? 'true' : 'false');
+              } catch (_err) {}
+              return Boolean(enabled);
+            })();
+        if (typeof state === 'object' && state) {
+          state.isAutoSyncEnabled = clean;
+        }
+        const btn = document.getElementById('toggle-auto-sync-devices-btn');
+        const statusEl = document.getElementById('toggle-auto-sync-devices-status');
+        if (btn) {
+          btn.setAttribute('aria-checked', clean ? 'true' : 'false');
+          btn.className = clean
+            ? 'w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-emerald-400 bg-emerald-600 text-white text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2'
+            : 'w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-slate-600 bg-slate-900 hover:bg-slate-800 text-slate-100 text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2';
+        }
+        if (statusEl) {
+          statusEl.textContent = clean ? 'ON — Tap to Turn Off' : 'OFF — Tap to Turn On';
+        }
+        if (window.__gymRealtimeSyncManager && typeof window.__gymRealtimeSyncManager.setEnabled === 'function') {
+          window.__gymRealtimeSyncManager.setEnabled(clean);
+        } else {
+          updateAutoSyncStatusReadoutUI(
+            clean ? 'local_only' : 'disabled',
+            clean
+              ? 'Changes save automatically on this device and sync across your screens.'
+              : 'Auto-Sync is off. Your progress stays saved on this device only.'
+          );
+        }
+      }
+
+      function initRealtimeAutoSyncManager() {
+        if (typeof window.createSupabaseRealtimeSyncManager !== 'function') return;
+        if (window.__gymRealtimeSyncManager && typeof window.__gymRealtimeSyncManager.destroy === 'function') {
+          window.__gymRealtimeSyncManager.destroy();
+        }
+        const manager = window.createSupabaseRealtimeSyncManager({
+          getLocalState: () => state,
+          getRecordId: () => {
+            const email = state && state.userProfile ? state.userProfile.email : '';
+            if (typeof window.resolveGymStateRecordId === 'function') {
+              return window.resolveGymStateRecordId(email);
+            }
+            const clean = String(email || '').trim().toLowerCase();
+            return clean && clean.includes('@') ? 'user_' + clean : 'default';
+          },
+          getApiEndpoint: () => getActiveCloudEndpoint(),
+          storageKey: STORAGE_KEY,
+          debounceMs: typeof window.AUTO_SYNC_DEBOUNCE_MS === 'number' ? window.AUTO_SYNC_DEBOUNCE_MS : 2000,
+          onRemoteStateApplied: (incomingState, incomingTs) => {
+            applyAuthoritativeRemoteStateLocal(incomingState, incomingTs, 'realtime');
+            if (typeof showToast === 'function') {
+              showToast('Updated automatically from your other screen.');
+            }
+          },
+          onStatusChange: (nextStatus, nextMsg) => {
+            updateAutoSyncStatusReadoutUI(nextStatus, nextMsg);
+          }
+        });
+        window.__gymRealtimeSyncManager = manager;
+        if (manager.isEnabled()) {
+          manager.subscribe();
+        } else {
+          updateAutoSyncStatusReadoutUI('disabled', 'Auto-Sync is off. Your progress stays saved on this device only.');
+        }
+      }
+
+      window.__syncAccessibilityControlsFromState = () => {
+        if (typeof state === 'object' && state) {
+          if (state.themeMode) applyThemePrefUI(state.themeMode);
+          if (state.fontMode) applyFontModeUI(state.fontMode);
+          if (typeof state.isSensoryCalm === 'boolean') applySensoryCalmUI(state.isSensoryCalm);
+          if (typeof state.advancedSubjectiveEnabled === 'boolean') applyAdvancedSubjectiveUI(state.advancedSubjectiveEnabled);
+        }
+      };
+
       const initialTheme = (typeof window.loadStoredThemePreference === 'function')
         ? window.loadStoredThemePreference()
         : ((typeof state === 'object' && state && state.themeMode) || 'dark');
@@ -29946,7 +30126,11 @@
         : Boolean(typeof state === 'object' && state && state.advancedSubjectiveEnabled);
       applyAdvancedSubjectiveUI(initialAdvSubj);
 
-      if (!themeHydrated || typeof window.computeAdherenceNeutralWeeklyProgress !== 'function') {
+      const initialAutoSync = isAutoSyncDevicesEnabledLocal();
+      applyAutoSyncDevicesUI(initialAutoSync);
+      initRealtimeAutoSyncManager();
+
+      if (!themeHydrated || typeof window.computeAdherenceNeutralWeeklyProgress !== 'function' || typeof window.createSupabaseRealtimeSyncManager !== 'function') {
         if (!window.__strategicBridgeWaitBound) {
           window.__strategicBridgeWaitBound = true;
           window.addEventListener('d3-onerm-bridge-ready', () => {
@@ -29967,6 +30151,8 @@
               ? window.loadAdvancedSubjectiveSetting()
               : Boolean(typeof state === 'object' && state && state.advancedSubjectiveEnabled);
             applyAdvancedSubjectiveUI(subjNow);
+            applyAutoSyncDevicesUI(isAutoSyncDevicesEnabledLocal());
+            initRealtimeAutoSyncManager();
             updateOfflineConnectivityBannerUI();
             if (typeof renderWorkoutView === 'function') renderWorkoutView();
           }, { once: true });
@@ -29979,10 +30165,76 @@
       }
       window.__strategicUpgradesListenersWired = true;
 
+      const autoSyncToggleBtn = document.getElementById('toggle-auto-sync-devices-btn');
+      if (autoSyncToggleBtn) {
+        autoSyncToggleBtn.addEventListener('click', () => {
+          const nextEnabled = !isAutoSyncDevicesEnabledLocal();
+          applyAutoSyncDevicesUI(nextEnabled);
+          if (typeof showToast === 'function') {
+            showToast(
+              nextEnabled
+                ? 'Auto-Sync Devices turned ON. Progress syncs across your screens.'
+                : 'Auto-Sync Devices turned OFF. Progress saves on this device only.'
+            );
+          }
+        });
+      }
+
+      const forceSyncNowBtn = document.getElementById('force-sync-now-btn');
+      if (forceSyncNowBtn) {
+        forceSyncNowBtn.addEventListener('click', async () => {
+          const originalHtml = forceSyncNowBtn.innerHTML;
+          forceSyncNowBtn.disabled = true;
+          forceSyncNowBtn.textContent = 'Syncing now...';
+          try {
+            if (window.__gymRealtimeSyncManager && typeof window.__gymRealtimeSyncManager.forceSyncNow === 'function') {
+              const res = await window.__gymRealtimeSyncManager.forceSyncNow();
+              updateAutoSyncStatusReadoutUI(
+                res.offlineFallback ? 'offline' : 'connected',
+                res.message
+              );
+              if (typeof showToast === 'function') showToast(res.message);
+            } else {
+              const pulled = typeof pullStateFromCloud === 'function'
+                ? await pullStateFromCloud(false, false)
+                : false;
+              if (!pulled && typeof autoSyncWorkoutToSupabaseLocal === 'function') {
+                await autoSyncWorkoutToSupabaseLocal('manual_force_sync');
+              }
+              const fallbackMsg = 'Synced your latest workout progress.';
+              updateAutoSyncStatusReadoutUI('connected', fallbackMsg);
+              if (typeof showToast === 'function') showToast(fallbackMsg);
+            }
+          } catch (_err) {
+            const errMsg = 'Offline — your progress is safely saved on this device.';
+            updateAutoSyncStatusReadoutUI('offline', errMsg);
+            if (typeof showToast === 'function') showToast(errMsg);
+          } finally {
+            forceSyncNowBtn.disabled = false;
+            forceSyncNowBtn.innerHTML = originalHtml;
+          }
+        });
+      }
+
+      window.addEventListener('online', () => {
+        if (window.__gymRealtimeSyncManager && isAutoSyncDevicesEnabledLocal()) {
+          window.__gymRealtimeSyncManager.subscribe();
+          window.__gymRealtimeSyncManager.scheduleDebouncedPush(state, 'reconnect_sync');
+        }
+      });
+
+      window.addEventListener('offline', () => {
+        if (window.__gymRealtimeSyncManager) {
+          window.__gymRealtimeSyncManager.unsubscribe();
+        }
+        updateAutoSyncStatusReadoutUI('offline', 'Offline — saved safely on this device.');
+      });
+
       document.querySelectorAll('.theme-mode-choice-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const nextMode = btn.getAttribute('data-theme-choice') || 'dark';
           applyThemePrefUI(nextMode);
+          if (typeof saveState === 'function') saveState(false, 'setting_changed');
           if (typeof showToast === 'function') showToast(`Theme set to ${nextMode.toUpperCase()}.`);
         });
       });
@@ -29995,6 +30247,7 @@
             : (document.documentElement.getAttribute('data-font-mode') || 'default');
           const nextFont = curFont === 'opendyslexic' ? 'default' : 'opendyslexic';
           applyFontModeUI(nextFont);
+          if (typeof saveState === 'function') saveState(false, 'setting_changed');
           if (typeof showToast === 'function') {
             showToast(nextFont === 'opendyslexic' ? 'OpenDyslexic font enabled.' : 'Standard Lexend font enabled.');
           }
@@ -30006,7 +30259,7 @@
         sensoryCalmBtn.addEventListener('click', () => {
           const nextCalm = !isSensoryCalmModeActive();
           applySensoryCalmUI(nextCalm);
-          if (typeof saveState === 'function') saveState(true);
+          if (typeof saveState === 'function') saveState(false, 'setting_changed');
           if (typeof showToast === 'function') {
             showToast(nextCalm ? 'Sensory-Calm Mode enabled (low saturation, motion off, audio/haptics muted).' : 'Sensory-Calm Mode turned off.');
           }
@@ -30018,7 +30271,7 @@
         advSubjBtn.addEventListener('click', () => {
           const nextVal = !(typeof state === 'object' && state && state.advancedSubjectiveEnabled);
           applyAdvancedSubjectiveUI(nextVal);
-          if (typeof saveState === 'function') saveState(true);
+          if (typeof saveState === 'function') saveState(false, 'setting_changed');
           if (typeof renderWorkoutView === 'function') renderWorkoutView();
           if (typeof showToast === 'function') {
             showToast(nextVal ? 'Optional RPE/RIR note fields shown.' : 'Optional RPE/RIR note fields hidden.');

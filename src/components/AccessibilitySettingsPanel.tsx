@@ -1,9 +1,15 @@
 import React from 'react';
 import { useAccessibilityTheme } from '../context/AccessibilityThemeProvider';
 import type { ThemeModePreference } from '../utils/themeProvider';
+import { AutoSyncSettingsControl } from './AutoSyncSettingsControl';
+import type { RealtimeSyncConnectionStatus } from '../utils/realtimeAutoSync';
 
 export interface AccessibilitySettingsPanelProps {
   className?: string;
+  onForceSyncNow?: () => void | Promise<void>;
+  realtimeStatus?: RealtimeSyncConnectionStatus;
+  isSyncingNow?: boolean;
+  syncStatusMessage?: string;
 }
 
 const THEME_OPTIONS: Array<{ value: ThemeModePreference; label: string }> = [
@@ -13,14 +19,19 @@ const THEME_OPTIONS: Array<{ value: ThemeModePreference; label: string }> = [
 ];
 
 /**
- * Dyslexia-Friendly Display & Reading Settings Panel
+ * Dyslexia-Friendly Display, Sync & Reading Settings Panel
+ * - Real-time Auto-Sync Devices switch + Force Sync Now manual fallback
  * - High-contrast Light (#F7F7F7 / #0A1128) and Dark (#1A1A1A / #F2F2F2) toggles
  * - Prominent one-tap OpenDyslexic font toggle button
  * - Minimum 48x48px touch targets with >= 8px (gap-2 / 0.5rem) separation
  * - 100% relative rem typography with flex-wrap reflow at 200% zoom
  */
 export const AccessibilitySettingsPanel: React.FC<AccessibilitySettingsPanelProps> = ({
-  className = ''
+  className = '',
+  onForceSyncNow,
+  realtimeStatus,
+  isSyncingNow = false,
+  syncStatusMessage
 }) => {
   const {
     themePreference,
@@ -28,17 +39,27 @@ export const AccessibilitySettingsPanel: React.FC<AccessibilitySettingsPanelProp
     isOpenDyslexicEnabled,
     isSensoryCalm,
     isAdvancedSubjectiveEnabled,
+    isAutoSyncEnabled,
     setThemePreference,
     toggleOpenDyslexicFont,
     toggleSensoryCalm,
-    toggleAdvancedSubjective
+    toggleAdvancedSubjective,
+    toggleAutoSyncEnabled
   } = useAccessibilityTheme();
 
   return (
     <section
-      aria-label="Visual and Reading Accessibility Settings"
+      aria-label="Visual, Sync, and Reading Accessibility Settings"
       className={`rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 space-y-4 text-[var(--text-primary)] ${className}`.trim()}
     >
+      <AutoSyncSettingsControl
+        isAutoSyncEnabled={isAutoSyncEnabled}
+        onToggleAutoSync={toggleAutoSyncEnabled}
+        onForceSyncNow={onForceSyncNow}
+        connectionStatus={realtimeStatus}
+        isSyncingNow={isSyncingNow}
+        statusMessage={syncStatusMessage}
+      />
       <div className="space-y-2" role="radiogroup" aria-label="Color Theme Mode">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-extrabold leading-relaxed">

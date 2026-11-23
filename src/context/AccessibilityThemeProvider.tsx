@@ -21,6 +21,10 @@ import {
   loadAdvancedSubjectiveSetting,
   saveAdvancedSubjectiveSetting
 } from '../utils/doubleProgressionEngine';
+import {
+  loadAutoSyncPreference,
+  saveAutoSyncPreference
+} from '../utils/realtimeAutoSync';
 
 export interface AccessibilityThemeContextValue {
   themePreference: ThemeModePreference;
@@ -30,6 +34,7 @@ export interface AccessibilityThemeContextValue {
   isOpenDyslexicEnabled: boolean;
   isSensoryCalm: boolean;
   isAdvancedSubjectiveEnabled: boolean;
+  isAutoSyncEnabled: boolean;
   setThemePreference: (next: ThemeModePreference) => void;
   toggleLightDarkTheme: () => void;
   setFontMode: (next: AccessibilityFontMode) => void;
@@ -38,6 +43,8 @@ export interface AccessibilityThemeContextValue {
   toggleSensoryCalm: () => void;
   setAdvancedSubjectiveEnabled: (enabled: boolean) => void;
   toggleAdvancedSubjective: () => void;
+  setAutoSyncEnabled: (enabled: boolean) => void;
+  toggleAutoSyncEnabled: () => void;
 }
 
 const AccessibilityThemeContext = createContext<AccessibilityThemeContextValue | null>(null);
@@ -57,6 +64,9 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
   );
   const [isAdvancedSubjectiveEnabled, setAdvancedSubjectiveState] = useState<boolean>(() =>
     loadAdvancedSubjectiveSetting()
+  );
+  const [isAutoSyncEnabled, setAutoSyncState] = useState<boolean>(() =>
+    loadAutoSyncPreference()
   );
 
   const resolvedTheme = resolveEffectiveTheme(themePreference, systemPrefersDark);
@@ -123,6 +133,15 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
     setAdvancedSubjectiveEnabled(!isAdvancedSubjectiveEnabled);
   }, [isAdvancedSubjectiveEnabled, setAdvancedSubjectiveEnabled]);
 
+  const setAutoSyncEnabled = useCallback((enabled: boolean) => {
+    const saved = saveAutoSyncPreference(enabled);
+    setAutoSyncState(saved);
+  }, []);
+
+  const toggleAutoSyncEnabled = useCallback(() => {
+    setAutoSyncEnabled(!isAutoSyncEnabled);
+  }, [isAutoSyncEnabled, setAutoSyncEnabled]);
+
   const value = useMemo<AccessibilityThemeContextValue>(
     () => ({
       themePreference,
@@ -132,6 +151,7 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
       isOpenDyslexicEnabled: fontMode === 'opendyslexic',
       isSensoryCalm,
       isAdvancedSubjectiveEnabled,
+      isAutoSyncEnabled,
       setThemePreference,
       toggleLightDarkTheme,
       setFontMode,
@@ -139,7 +159,9 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
       setSensoryCalm,
       toggleSensoryCalm,
       setAdvancedSubjectiveEnabled,
-      toggleAdvancedSubjective
+      toggleAdvancedSubjective,
+      setAutoSyncEnabled,
+      toggleAutoSyncEnabled
     }),
     [
       themePreference,
@@ -148,6 +170,7 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
       fontMode,
       isSensoryCalm,
       isAdvancedSubjectiveEnabled,
+      isAutoSyncEnabled,
       setThemePreference,
       toggleLightDarkTheme,
       setFontMode,
@@ -155,7 +178,9 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
       setSensoryCalm,
       toggleSensoryCalm,
       setAdvancedSubjectiveEnabled,
-      toggleAdvancedSubjective
+      toggleAdvancedSubjective,
+      setAutoSyncEnabled,
+      toggleAutoSyncEnabled
     ]
   );
 

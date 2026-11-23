@@ -10,6 +10,7 @@
     "lint": "node --check api/state.js && node --check api/gemini.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.2",
     "@types/d3": "^7.4.3",
     "d3": "^7.9.2",
     "idb": "^8.0.4",

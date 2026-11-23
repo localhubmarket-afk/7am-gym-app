@@ -198,6 +198,26 @@ import {
   persistGymStateLocalFirst,
   startOfflineFirstBackgroundSync
 } from './utils/offlineFirstSync';
+import {
+  getSupabaseClient,
+  isSupabaseRealtimeConfigured,
+  resolveGymStateRecordId
+} from './lib/supabaseClient';
+import {
+  AUTO_SYNC_DEBOUNCE_MS,
+  AUTO_SYNC_STORAGE_KEY,
+  AUTO_SYNC_TOGGLE_LABEL,
+  AUTO_SYNC_TOGGLE_SUBLABEL,
+  DEFAULT_AUTO_SYNC_ENABLED,
+  FORCE_SYNC_NOW_LABEL,
+  createDebounce,
+  createSupabaseRealtimeSyncManager,
+  evaluateRealtimeIncomingPayload,
+  loadAutoSyncPreference,
+  normalizeAutoSyncPreference,
+  saveAutoSyncPreference,
+  type SupabaseRealtimeSyncManager
+} from './utils/realtimeAutoSync';
 
 export interface RenderOneRmD3ChartOptions {
   container: HTMLElement;
@@ -981,6 +1001,22 @@ declare global {
     dispatchRestTimerCompletionAlert?: typeof dispatchRestTimerCompletionAlert;
     shouldMuteSensoryOutput?: typeof shouldMuteSensoryOutput;
     triggerSafeHapticFeedback?: typeof triggerSafeHapticFeedback;
+    getSupabaseClient?: typeof getSupabaseClient;
+    isSupabaseRealtimeConfigured?: typeof isSupabaseRealtimeConfigured;
+    resolveGymStateRecordId?: typeof resolveGymStateRecordId;
+    AUTO_SYNC_DEBOUNCE_MS?: number;
+    AUTO_SYNC_STORAGE_KEY?: string;
+    AUTO_SYNC_TOGGLE_LABEL?: string;
+    AUTO_SYNC_TOGGLE_SUBLABEL?: string;
+    DEFAULT_AUTO_SYNC_ENABLED?: boolean;
+    FORCE_SYNC_NOW_LABEL?: string;
+    createDebounce?: typeof createDebounce;
+    createSupabaseRealtimeSyncManager?: typeof createSupabaseRealtimeSyncManager;
+    evaluateRealtimeIncomingPayload?: typeof evaluateRealtimeIncomingPayload;
+    loadAutoSyncPreference?: typeof loadAutoSyncPreference;
+    normalizeAutoSyncPreference?: typeof normalizeAutoSyncPreference;
+    saveAutoSyncPreference?: typeof saveAutoSyncPreference;
+    __gymRealtimeSyncManager?: SupabaseRealtimeSyncManager<any> | null;
   }
 }
 
@@ -1142,5 +1178,20 @@ if (typeof window !== 'undefined') {
   window.dispatchRestTimerCompletionAlert = dispatchRestTimerCompletionAlert;
   window.shouldMuteSensoryOutput = shouldMuteSensoryOutput;
   window.triggerSafeHapticFeedback = triggerSafeHapticFeedback;
+  window.getSupabaseClient = getSupabaseClient;
+  window.isSupabaseRealtimeConfigured = isSupabaseRealtimeConfigured;
+  window.resolveGymStateRecordId = resolveGymStateRecordId;
+  window.AUTO_SYNC_DEBOUNCE_MS = AUTO_SYNC_DEBOUNCE_MS;
+  window.AUTO_SYNC_STORAGE_KEY = AUTO_SYNC_STORAGE_KEY;
+  window.AUTO_SYNC_TOGGLE_LABEL = AUTO_SYNC_TOGGLE_LABEL;
+  window.AUTO_SYNC_TOGGLE_SUBLABEL = AUTO_SYNC_TOGGLE_SUBLABEL;
+  window.DEFAULT_AUTO_SYNC_ENABLED = DEFAULT_AUTO_SYNC_ENABLED;
+  window.FORCE_SYNC_NOW_LABEL = FORCE_SYNC_NOW_LABEL;
+  window.createDebounce = createDebounce;
+  window.createSupabaseRealtimeSyncManager = createSupabaseRealtimeSyncManager;
+  window.evaluateRealtimeIncomingPayload = evaluateRealtimeIncomingPayload;
+  window.loadAutoSyncPreference = loadAutoSyncPreference;
+  window.normalizeAutoSyncPreference = normalizeAutoSyncPreference;
+  window.saveAutoSyncPreference = saveAutoSyncPreference;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }
