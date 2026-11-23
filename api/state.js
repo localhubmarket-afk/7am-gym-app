@@ -4,7 +4,7 @@
 export default async function handler(req, res) {
   // Enable cross-origin requests from Capacitor native mobile apps & prevent stale browser caching
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma');
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
@@ -137,5 +137,55 @@ export default async function handler(req, res) {
       return res.status(200).json({ configured: true, accountId: recordId, saved: false, last_updated: null, updatedAt: null });
     }
   }
+
+  if (req.method === 'DELETE') {
+    try {
+      const requestedEmail = (
+        queryEmail ||
+        (bodyObj && typeof bodyObj.email === 'string' ? bodyObj.email.trim().toLowerCase() : '') ||
+        bodyEmail
+      ).trim().toLowerCase();
+
+      const disallowedIds = new Set(['', 'default', 'guest', 'anonymous', 'google', 'apple', 'member@gmail.com', 'athlete@gmail.com']);
+      if (!requestedEmail || disallowedIds.has(requestedEmail) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requestedEmail)) {
+        return res.status(400).json({
+          configured: true,
+          deleted: false,
+          error: 'Valid authenticated user email is required for account deletion.'
+        });
+      }
+
+      const targetRecordId = 'user_' + requestedEmail;
+      const deleteResp = await fetch(
+        supabaseUrl + '/rest/v1/gym_state?id=eq.' + encodeURIComponent(targetRecordId),
+        {
+          method: 'DELETE',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': 'Bearer ' + supabaseKey,
+            'Prefer': 'return=representation'
+          }
+        }
+      );
+
+      if (!deleteResp.ok) {
+        return res.status(500).json({
+          configured: true,
+          accountId: targetRecordId,
+          deleted: false,
+          error: 'Failed to delete user row from Supabase.'
+        });
+      }
+
+      return res.status(200).json({
+        configured: true,
+        accountId: targetRecordId,
+        deleted: true
+      });
+    } catch (e) {
+      return res.status(500).json({ configured: true, accountId: recordId, deleted: false });
+    }
+  }
+
   return res.status(405).json({ error: 'Method not allowed' });
 }

@@ -48,6 +48,17 @@ import {
   resolveSingleSourceOfTruthState,
   stampGymStateLastUpdated
 } from './utils/workoutSyncEngine';
+import {
+  DELETE_ACCOUNT_WARNING_PROMPT,
+  WORKOUT_FUEL_RESET_PROMPT,
+  clearActiveDayFuelData,
+  clearActiveDayWorkoutAndOptionalFuel,
+  deleteUserAccountFromSupabase,
+  isValidDeletableUserId,
+  normalizeAccountUserId,
+  purgeDeletedAccountFromLocalState,
+  validateDeletionTarget
+} from './utils/deletionValidation';
 
 export interface RenderOneRmD3ChartOptions {
   container: HTMLElement;
@@ -669,6 +680,15 @@ declare global {
     orderExercisesWithPullUpsFirst?: typeof orderExercisesWithPullUpsFirst;
     normalizeCardioExerciseName?: typeof normalizeCardioExerciseName;
     STANDARD_CARDIO_SESSIONS?: typeof STANDARD_CARDIO_SESSIONS;
+    WORKOUT_FUEL_RESET_PROMPT?: string;
+    DELETE_ACCOUNT_WARNING_PROMPT?: string;
+    validateDeletionTarget?: typeof validateDeletionTarget;
+    clearActiveDayFuelData?: typeof clearActiveDayFuelData;
+    clearActiveDayWorkoutAndOptionalFuel?: typeof clearActiveDayWorkoutAndOptionalFuel;
+    deleteUserAccountFromSupabase?: typeof deleteUserAccountFromSupabase;
+    purgeDeletedAccountFromLocalState?: typeof purgeDeletedAccountFromLocalState;
+    normalizeAccountUserId?: typeof normalizeAccountUserId;
+    isValidDeletableUserId?: typeof isValidDeletableUserId;
   }
 }
 
@@ -715,5 +735,14 @@ if (typeof window !== 'undefined') {
   window.orderExercisesWithPullUpsFirst = orderExercisesWithPullUpsFirst;
   window.normalizeCardioExerciseName = normalizeCardioExerciseName;
   window.STANDARD_CARDIO_SESSIONS = STANDARD_CARDIO_SESSIONS;
+  window.WORKOUT_FUEL_RESET_PROMPT = WORKOUT_FUEL_RESET_PROMPT;
+  window.DELETE_ACCOUNT_WARNING_PROMPT = DELETE_ACCOUNT_WARNING_PROMPT;
+  window.validateDeletionTarget = validateDeletionTarget;
+  window.clearActiveDayFuelData = clearActiveDayFuelData;
+  window.clearActiveDayWorkoutAndOptionalFuel = clearActiveDayWorkoutAndOptionalFuel;
+  window.deleteUserAccountFromSupabase = deleteUserAccountFromSupabase;
+  window.purgeDeletedAccountFromLocalState = purgeDeletedAccountFromLocalState;
+  window.normalizeAccountUserId = normalizeAccountUserId;
+  window.isValidDeletableUserId = isValidDeletableUserId;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

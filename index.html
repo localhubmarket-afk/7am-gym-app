@@ -747,15 +747,20 @@
 
       <!-- Simplified Daily Food & Water Header Card (MacroFactor / Hevy Standard) -->
       <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-3">
-        <!-- Row 1: Title "Daily Food & Water" on left + green button "✓ Log All 4 Meals" on right -->
-        <div class="flex items-center justify-between gap-2">
+        <!-- Row 1: Title "Daily Food & Water" on left + "Log All 4 Meals" & "Reset Fuel" buttons on right -->
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="min-w-0 flex items-center gap-1.5">
             <h2 id="vegan-main-plan-heading" class="text-base sm:text-lg font-extrabold text-white tracking-tight leading-snug whitespace-nowrap">Daily Food &amp; Water</h2>
             <span id="vegan-logged-with-plan-badge" class="hidden text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-950/85 text-purple-200 border border-purple-400/50"></span>
           </div>
-          <button type="button" id="log-all-vegan-day-btn" class="text-xs font-extrabold px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition whitespace-nowrap shadow-sm">
-            ✓ Log All 4 Meals
-          </button>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" id="reset-fuel-day-btn" class="text-xs font-extrabold px-2.5 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/60 text-rose-200 transition whitespace-nowrap" title="Reset meal prep and fuel logs for today only">
+              ↺ Reset Fuel
+            </button>
+            <button type="button" id="log-all-vegan-day-btn" class="text-xs font-extrabold px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition whitespace-nowrap shadow-sm">
+              ✓ Log All 4 Meals
+            </button>
+          </div>
         </div>
 
         <!-- Row 2: Subtitle "1,325 kcal • 139g Protein (173cm • 69kg)" on left + G | LB unit switch & Recipes & Prep button on right -->
@@ -10625,6 +10630,85 @@
       if (state.completedWeeks && typeof state.completedWeeks === 'object') {
         state.completedWeeks[safeW] = false;
       }
+    }
+
+    function validateScopedDeletionLocal(scope, targetUserId, targetWeek, targetDayIdx) {
+      const activeUserId = (state && state.userProfile && state.userProfile.email) ? String(state.userProfile.email).trim().toLowerCase() : '';
+      const activeWeek = Math.max(1, Math.min(12, Math.floor(Number(state.selectedWeek || state.currentWeek || 1))));
+      const activeDay = Math.max(0, Math.min(6, Math.floor(Number(state.selectedDayIndex || 0))));
+      if (typeof window.validateDeletionTarget === 'function') {
+        return window.validateDeletionTarget({
+          scope,
+          activeUserId,
+          targetUserId,
+          activeWeek,
+          targetWeek,
+          activeDayIndex: activeDay,
+          targetDayIndex: targetDayIdx
+        });
+      }
+      const normActive = activeUserId.replace(/^user_/, '');
+      const normTarget = String(targetUserId || '').trim().toLowerCase().replace(/^user_/, '');
+      const badIds = { '': 1, default: 1, guest: 1, google: 1, apple: 1, 'member@gmail.com': 1, 'athlete@gmail.com': 1 };
+      if (!normActive || badIds[normActive] || !normActive.includes('@')) {
+        return { valid: false, errorCode: 'INVALID_ACTIVE_USER', errorMessage: 'Cannot delete data without a valid signed-in user account.' };
+      }
+      if (normActive !== normTarget) {
+        return { valid: false, errorCode: 'USER_ID_MISMATCH', errorMessage: 'Blocked deletion: user ID mismatch.' };
+      }
+      if (scope !== 'account' && (Number(targetWeek) !== activeWeek || Number(targetDayIdx) !== activeDay)) {
+        return { valid: false, errorCode: 'ACTIVE_DAY_MISMATCH', errorMessage: 'Blocked deletion: target day does not match active day.' };
+      }
+      return { valid: true, normalizedUserId: normActive, supabaseRecordId: 'user_' + normActive, week: activeWeek, dayIndex: activeDay, dayKey: `w${activeWeek}_d${activeDay}` };
+    }
+
+    function wipeSingleDayFuelLogsLocal(targetWeek, dayIdx) {
+      const activeUserId = (state && state.userProfile && state.userProfile.email) ? String(state.userProfile.email).trim().toLowerCase() : '';
+      const activeWeek = Math.max(1, Math.min(12, Math.floor(Number(state.selectedWeek || state.currentWeek || 1))));
+      const activeDay = Math.max(0, Math.min(6, Math.floor(Number(state.selectedDayIndex || 0))));
+      if (typeof window.clearActiveDayFuelData === 'function') {
+        return window.clearActiveDayFuelData(state, {
+          activeUserId,
+          targetUserId: activeUserId,
+          activeWeek,
+          targetWeek,
+          activeDayIndex: activeDay,
+          targetDayIndex: dayIdx
+        });
+      }
+      const validation = validateScopedDeletionLocal('fuel_only', activeUserId, targetWeek, dayIdx);
+      if (!validation.valid) return { cleared: false, validation };
+      const dayKey = `w${targetWeek}_d${dayIdx}`;
+      const prefix = `${dayKey}_`;
+      const altDayKey = `w${targetWeek}_${dayIdx}`;
+      if (state.checkedMeals && typeof state.checkedMeals === 'object') {
+        Object.keys(state.checkedMeals).forEach((k) => {
+          if (k.startsWith(prefix)) delete state.checkedMeals[k];
+        });
+        if (targetWeek === 1 && dayIdx === 0) {
+          ['pre_shake', 'post_oats', 'lunch', 'dinner'].forEach((s) => { delete state.checkedMeals[s]; });
+        }
+      }
+      if (state.checkedMealIngredients && typeof state.checkedMealIngredients === 'object') {
+        Object.keys(state.checkedMealIngredients).forEach((k) => {
+          if (k.startsWith(prefix)) delete state.checkedMealIngredients[k];
+        });
+      }
+      if (state.flexMealOverridesByDay && typeof state.flexMealOverridesByDay === 'object') {
+        delete state.flexMealOverridesByDay[dayKey];
+      }
+      if (state.quickAddCaloriesByDay && typeof state.quickAddCaloriesByDay === 'object') {
+        delete state.quickAddCaloriesByDay[dayKey];
+      }
+      if (state.waterIntakeLogs && typeof state.waterIntakeLogs === 'object') {
+        delete state.waterIntakeLogs[dayKey];
+        delete state.waterIntakeLogs[altDayKey];
+      }
+      if (state.waterLogsMl && typeof state.waterLogsMl === 'object') {
+        delete state.waterLogsMl[dayKey];
+        delete state.waterLogsMl[altDayKey];
+      }
+      return { cleared: true, validation };
     }
 
     function prefillUnloggedDayFromLastSetHistoryLocal(targetWeek, dayIdx) {
@@ -23221,22 +23305,61 @@
         });
       }
 
-      // Task 2: Reset Day / Clear Day Warning Modal Wiring (with Undo Engine protection)
+      // Task 1 & Task 3: Linked Reset Workout & Fuel Modal + Separate Muscle Fuel Reset Modal Wiring
       const resetDayConfirmModalEl = document.getElementById('reset-day-confirm-modal');
       const resetDayBadgeEl = document.getElementById('reset-day-confirm-badge');
       const resetDayDetailEl = document.getElementById('reset-day-confirm-detail');
       const cancelResetDayBtn = document.getElementById('cancel-reset-day-btn');
-      const confirmResetDayBtn = document.getElementById('confirm-reset-day-btn');
+      const confirmResetWorkoutOnlyBtn = document.getElementById('confirm-reset-workout-only-btn');
+      const confirmResetWorkoutAndFuelBtn = document.getElementById('confirm-reset-workout-and-fuel-btn');
       let pendingResetDayTarget = null;
 
       window.openResetDayConfirmModal = function(weekNum, dayIndex, dayLabel) {
-        pendingResetDayTarget = { week: weekNum, dayIdx: dayIndex, dayLabel: dayLabel || `Day ${dayIndex + 1}` };
+        const targetEmail = (state.userProfile && state.userProfile.email) ? String(state.userProfile.email).trim().toLowerCase() : '';
+        pendingResetDayTarget = {
+          userId: targetEmail,
+          week: weekNum,
+          dayIdx: dayIndex,
+          dayLabel: dayLabel || `Day ${dayIndex + 1}`
+        };
         if (resetDayBadgeEl) resetDayBadgeEl.textContent = `Week ${weekNum} • Day ${dayIndex + 1}`;
         if (resetDayDetailEl) {
-          resetDayDetailEl.textContent = `This will erase all logged sets for ${pendingResetDayTarget.dayLabel} (Day ${dayIndex + 1}) only. Your other days stay safe.`;
+          resetDayDetailEl.textContent = `Choose whether to erase only ${pendingResetDayTarget.dayLabel} sets or also clear today's meal prep and fuel logs. Other days stay safe.`;
         }
         if (resetDayConfirmModalEl) resetDayConfirmModalEl.classList.remove('hidden');
       };
+
+      function executeValidatedWorkoutReset(includeFuel) {
+        if (!pendingResetDayTarget) return;
+        const { userId, week: wNum, dayIdx: dNum } = pendingResetDayTarget;
+        const scope = includeFuel ? 'workout_and_fuel' : 'workout_only';
+        const validation = validateScopedDeletionLocal(scope, userId, wNum, dNum);
+        if (!validation.valid) {
+          showToast(validation.errorMessage || 'Deletion blocked: active user or day mismatch.');
+          return;
+        }
+        pendingResetDayTarget = null;
+        if (resetDayConfirmModalEl) resetDayConfirmModalEl.classList.add('hidden');
+
+        // Save full state backup for Undo recovery before clearing
+        saveSyncUndoSnapshotLocal();
+        wipeSingleDayCheckmarksLocal(wNum, dNum);
+        if (includeFuel) {
+          wipeSingleDayFuelLogsLocal(wNum, dNum);
+        }
+        stampStateTimestampLocal();
+        saveState(true);
+        // Immediately push the cleared day's state to Supabase (Single Source of Truth)
+        autoSyncWorkoutToSupabaseLocal('day_reset');
+        showSyncUndoToastLocal(
+          includeFuel
+            ? `Day ${dNum + 1} workout & fuel logs cleared & synced.`
+            : `Day ${dNum + 1} workout cleared (fuel logs kept).`
+        );
+        renderWorkoutView();
+        renderPullupView();
+        renderVeganView();
+      }
 
       if (cancelResetDayBtn) {
         cancelResetDayBtn.addEventListener('click', () => {
@@ -23252,23 +23375,77 @@
           }
         });
       }
-      if (confirmResetDayBtn) {
-        confirmResetDayBtn.addEventListener('click', () => {
-          if (!pendingResetDayTarget) return;
-          const { week: wNum, dayIdx: dNum } = pendingResetDayTarget;
-          pendingResetDayTarget = null;
-          if (resetDayConfirmModalEl) resetDayConfirmModalEl.classList.add('hidden');
+      if (confirmResetWorkoutOnlyBtn) {
+        confirmResetWorkoutOnlyBtn.addEventListener('click', () => executeValidatedWorkoutReset(false));
+      }
+      if (confirmResetWorkoutAndFuelBtn) {
+        confirmResetWorkoutAndFuelBtn.addEventListener('click', () => executeValidatedWorkoutReset(true));
+      }
 
-          // Save full state backup for Undo recovery before clearing
+      // Separate "Reset Fuel" Button & Modal on the Muscle Fuel Tab
+      const resetFuelDayBtn = document.getElementById('reset-fuel-day-btn');
+      const resetFuelConfirmModalEl = document.getElementById('reset-fuel-confirm-modal');
+      const resetFuelBadgeEl = document.getElementById('reset-fuel-confirm-badge');
+      const resetFuelDetailEl = document.getElementById('reset-fuel-confirm-detail');
+      const cancelResetFuelBtn = document.getElementById('cancel-reset-fuel-btn');
+      const confirmResetFuelBtn = document.getElementById('confirm-reset-fuel-btn');
+      let pendingResetFuelTarget = null;
+
+      window.openResetFuelConfirmModal = function(weekNum, dayIndex) {
+        const targetEmail = (state.userProfile && state.userProfile.email) ? String(state.userProfile.email).trim().toLowerCase() : '';
+        pendingResetFuelTarget = { userId: targetEmail, week: weekNum, dayIdx: dayIndex };
+        if (resetFuelBadgeEl) resetFuelBadgeEl.textContent = `Muscle Fuel • Week ${weekNum} • Day ${dayIndex + 1}`;
+        if (resetFuelDetailEl) {
+          resetFuelDetailEl.textContent = `This clears logged meals, flex meals, quick adds, and water for Day ${dayIndex + 1} only. Your gym workout sets stay safe.`;
+        }
+        if (resetFuelConfirmModalEl) resetFuelConfirmModalEl.classList.remove('hidden');
+      };
+
+      if (resetFuelDayBtn) {
+        resetFuelDayBtn.addEventListener('click', () => {
+          const wNum = Math.max(1, Math.min(12, Math.floor(Number(state.selectedWeek || state.currentWeek || 1))));
+          const dNum = Math.max(0, Math.min(6, Math.floor(Number(state.selectedDayIndex || 0))));
+          window.openResetFuelConfirmModal(wNum, dNum);
+        });
+      }
+      if (cancelResetFuelBtn) {
+        cancelResetFuelBtn.addEventListener('click', () => {
+          pendingResetFuelTarget = null;
+          if (resetFuelConfirmModalEl) resetFuelConfirmModalEl.classList.add('hidden');
+        });
+      }
+      if (resetFuelConfirmModalEl) {
+        resetFuelConfirmModalEl.addEventListener('click', (e) => {
+          if (e.target === resetFuelConfirmModalEl) {
+            pendingResetFuelTarget = null;
+            resetFuelConfirmModalEl.classList.add('hidden');
+          }
+        });
+      }
+      if (confirmResetFuelBtn) {
+        confirmResetFuelBtn.addEventListener('click', () => {
+          if (!pendingResetFuelTarget) return;
+          const { userId, week: wNum, dayIdx: dNum } = pendingResetFuelTarget;
+          const validation = validateScopedDeletionLocal('fuel_only', userId, wNum, dNum);
+          if (!validation.valid) {
+            showToast(validation.errorMessage || 'Deletion blocked: active user or day mismatch.');
+            return;
+          }
+          pendingResetFuelTarget = null;
+          if (resetFuelConfirmModalEl) resetFuelConfirmModalEl.classList.add('hidden');
+
           saveSyncUndoSnapshotLocal();
-          wipeSingleDayCheckmarksLocal(wNum, dNum);
-          state.updatedAt = new Date().toISOString();
+          const fuelRes = wipeSingleDayFuelLogsLocal(wNum, dNum);
+          if (!fuelRes || !fuelRes.cleared) {
+            showToast('Could not reset fuel logs for this day.');
+            return;
+          }
+          stampStateTimestampLocal();
           saveState(true);
-          // Immediately push the cleared day's empty state to Supabase (Single Source of Truth)
           autoSyncWorkoutToSupabaseLocal('day_reset');
-          showSyncUndoToastLocal(`Day ${dNum + 1} cleared & synced to cloud.`);
+          showSyncUndoToastLocal(`Day ${dNum + 1} fuel logs cleared & synced.`);
+          renderVeganView();
           renderWorkoutView();
-          renderPullupView();
         });
       }
       document.addEventListener('keydown', (e) => {
@@ -24800,19 +24977,107 @@
       if (appleOauthBtn) appleOauthBtn.addEventListener('click', () => handleSocialProviderClick('Apple'));
       if (googleOauthBtn) googleOauthBtn.addEventListener('click', () => handleSocialProviderClick('Google'));
 
+      // Task 2 & Task 3: Highly Visible "Delete Account" Button + Strict Warning Pop-Up + Supabase Row Deletion
+      const deleteAccountConfirmModalEl = document.getElementById('delete-account-confirm-modal');
+      const deleteAccountEmailDispEl = document.getElementById('delete-account-target-email');
+      const cancelDeleteAccountBtn = document.getElementById('cancel-delete-account-btn');
+      const confirmDeleteAccountBtn = document.getElementById('confirm-delete-account-btn');
+      let pendingDeleteAccountEmail = '';
+
       if (deleteAccountDataBtn) {
         deleteAccountDataBtn.addEventListener('click', () => {
-          const curEmail = (state.userProfile && state.userProfile.email || '').toLowerCase();
-          if (curEmail && state.accountsByEmail && state.accountsByEmail[curEmail]) {
-            delete state.accountsByEmail[curEmail];
+          const curEmail = (state.userProfile && state.userProfile.email || '').trim().toLowerCase();
+          const validation = validateScopedDeletionLocal('account', curEmail);
+          if (!validation.valid) {
+            showToast(validation.errorMessage || 'Sign in to an active account before deleting.');
+            return;
           }
-          state.capturedLeads = (state.capturedLeads || []).filter(l => !l.email || l.email.toLowerCase() !== curEmail);
-          state.userProfile = { name: '', email: '', phone: '', goal: '6-Pack Recomp', diet: '100% Plant-Based ($5.55/day)', gymTime: '07:00', signedInAt: null };
-          saveState();
-          setAuthTabMode('login');
-          syncSmartLoginFormUI(true);
-          renderWorkoutView();
-          showToast('Account removed from this device.');
+          pendingDeleteAccountEmail = validation.normalizedUserId;
+          if (deleteAccountEmailDispEl) deleteAccountEmailDispEl.textContent = pendingDeleteAccountEmail;
+          if (deleteAccountConfirmModalEl) deleteAccountConfirmModalEl.classList.remove('hidden');
+        });
+      }
+      if (cancelDeleteAccountBtn) {
+        cancelDeleteAccountBtn.addEventListener('click', () => {
+          pendingDeleteAccountEmail = '';
+          if (deleteAccountConfirmModalEl) deleteAccountConfirmModalEl.classList.add('hidden');
+        });
+      }
+      if (deleteAccountConfirmModalEl) {
+        deleteAccountConfirmModalEl.addEventListener('click', (e) => {
+          if (e.target === deleteAccountConfirmModalEl) {
+            pendingDeleteAccountEmail = '';
+            deleteAccountConfirmModalEl.classList.add('hidden');
+          }
+        });
+      }
+      if (confirmDeleteAccountBtn) {
+        confirmDeleteAccountBtn.addEventListener('click', async () => {
+          const activeEmail = (state.userProfile && state.userProfile.email || '').trim().toLowerCase();
+          const targetEmail = pendingDeleteAccountEmail;
+          const validation = validateScopedDeletionLocal('account', targetEmail);
+          if (!validation.valid || validation.normalizedUserId !== activeEmail) {
+            showToast('Account deletion blocked: active user ID did not match.');
+            return;
+          }
+
+          confirmDeleteAccountBtn.disabled = true;
+          confirmDeleteAccountBtn.textContent = 'Deleting...';
+          try {
+            const endpointUrl = getActiveCloudEndpoint();
+            if (typeof window.deleteUserAccountFromSupabase === 'function') {
+              await window.deleteUserAccountFromSupabase({
+                endpoint: endpointUrl,
+                activeUserId: activeEmail,
+                targetUserId: targetEmail
+              });
+            } else if (endpointUrl) {
+              await fetch(endpointUrl, {
+                method: 'DELETE',
+                cache: 'no-store',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: validation.normalizedUserId, confirmDeleteAccount: true })
+              }).catch(() => {});
+            }
+
+            // Cancel any pending background sync or undo snapshot so the deleted account is never restored or re-pushed
+            clearTimeout(cloudSyncTimeout);
+            cloudSyncTimeout = null;
+            cancelDelayedDestructiveCloudPushLocal();
+            state.undoBackup = null;
+            if (typeof hideSyncUndoToastLocal === 'function') hideSyncUndoToastLocal();
+            if (typeof window.purgeDeletedAccountFromLocalState === 'function') {
+              window.purgeDeletedAccountFromLocalState(state, targetEmail);
+            } else {
+              if (state.accountsByEmail && state.accountsByEmail[validation.normalizedUserId]) {
+                delete state.accountsByEmail[validation.normalizedUserId];
+              }
+              state.capturedLeads = (state.capturedLeads || []).filter(l => !l.email || l.email.toLowerCase() !== validation.normalizedUserId);
+              state.userProfile = { name: '', email: '', phone: '', goal: '6-Pack Recomp', diet: '100% Plant-Based ($5.55/day)', gymTime: '07:00', signedInAt: null };
+            }
+
+            saveState(true);
+            pendingDeleteAccountEmail = '';
+            if (deleteAccountConfirmModalEl) deleteAccountConfirmModalEl.classList.add('hidden');
+            if (leadEmailInp) leadEmailInp.value = '';
+            if (leadNameInp) leadNameInp.value = '';
+            const pwdInp = document.getElementById('lead-password-input');
+            if (pwdInp) pwdInp.value = '';
+
+            // Return user directly to the Login screen
+            if (smartLoginModal) smartLoginModal.classList.remove('hidden');
+            if (closeSmartLoginBtn) closeSmartLoginBtn.classList.add('hidden');
+            const acctTabBtn = document.getElementById('profile-section-account-btn');
+            if (acctTabBtn) acctTabBtn.click();
+            setAuthTabMode('login');
+            syncSmartLoginFormUI(true);
+            renderWorkoutView();
+            renderVeganView();
+            showToast('Account deleted from Supabase. Please sign in to continue.');
+          } finally {
+            confirmDeleteAccountBtn.disabled = false;
+            confirmDeleteAccountBtn.textContent = 'Yes, Delete Account';
+          }
         });
       }
 
@@ -27022,7 +27287,7 @@
     </div>
   </div>
 
-  <!-- MODAL 4B: Task 2 — Reset Day / Clear Day Warning Modal -->
+  <!-- MODAL 4B: Task 1 — Linked Workout & Fuel Reset Modal -->
   <div id="reset-day-confirm-modal" class="hidden fixed inset-0 z-[75] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="reset-day-confirm-title">
     <div class="bg-slate-900 border border-rose-400/55 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
       <div class="space-y-1.5">
@@ -27030,18 +27295,71 @@
           Active Day
         </span>
         <h3 id="reset-day-confirm-title" class="text-base font-extrabold text-white leading-snug">
-          Are you sure you want to clear all data for this day?
+          Would you like to delete your meal prep and fuel logs too?
         </h3>
         <p id="reset-day-confirm-detail" class="text-xs text-slate-300 leading-relaxed">
-          This will erase all logged sets for this day only. Your other workout days stay safe.
+          Choose whether to clear only today's workout sets or also clear today's meal prep and fuel logs. Other days stay safe.
+        </p>
+      </div>
+      <div class="grid grid-cols-1 gap-2">
+        <button type="button" id="confirm-reset-workout-only-btn" class="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition">
+          Delete Workout Only
+        </button>
+        <button type="button" id="confirm-reset-workout-and-fuel-btn" class="w-full py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition">
+          Delete Workout and Fuel
+        </button>
+        <button type="button" id="cancel-reset-day-btn" class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-xs font-extrabold transition">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4D: Task 1 — Standalone Muscle Fuel Reset Confirmation Modal -->
+  <div id="reset-fuel-confirm-modal" class="hidden fixed inset-0 z-[76] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="reset-fuel-confirm-title">
+    <div class="bg-slate-900 border border-rose-400/55 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div class="space-y-1.5">
+        <span id="reset-fuel-confirm-badge" class="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-400/45 text-[10px] font-extrabold uppercase tracking-wider text-rose-200">
+          Muscle Fuel • Active Day
+        </span>
+        <h3 id="reset-fuel-confirm-title" class="text-base font-extrabold text-white leading-snug">
+          Reset your meal prep and fuel logs for this day?
+        </h3>
+        <p id="reset-fuel-confirm-detail" class="text-xs text-slate-300 leading-relaxed">
+          This clears logged meals, flex meals, quick adds, and water for today only. Your gym workout sets stay safe.
         </p>
       </div>
       <div class="grid grid-cols-2 gap-2">
-        <button type="button" id="cancel-reset-day-btn" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition">
+        <button type="button" id="cancel-reset-fuel-btn" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition">
           Cancel
         </button>
-        <button type="button" id="confirm-reset-day-btn" class="py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition">
-          Clear Day
+        <button type="button" id="confirm-reset-fuel-btn" class="py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition">
+          Reset Fuel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4E: Task 2 — Strict Account Deletion Warning Modal -->
+  <div id="delete-account-confirm-modal" class="hidden fixed inset-0 z-[85] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-account-confirm-title">
+    <div class="bg-slate-900 border border-rose-500/70 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div class="space-y-1.5">
+        <span class="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/60 text-[10px] font-extrabold uppercase tracking-wider text-rose-200">
+          Permanent Account Deletion
+        </span>
+        <h3 id="delete-account-confirm-title" class="text-base font-extrabold text-white leading-snug">
+          Are you sure you want to delete the account?
+        </h3>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          This permanently deletes <strong id="delete-account-target-email" class="text-rose-200">your account</strong> from Supabase and returns you to the login screen.
+        </p>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" id="cancel-delete-account-btn" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition">
+          Cancel
+        </button>
+        <button type="button" id="confirm-delete-account-btn" class="py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition">
+          Yes, Delete Account
         </button>
       </div>
     </div>
@@ -27352,14 +27670,16 @@
 
           <div id="saved-accounts-switcher-list" class="space-y-1 pt-0.5"></div>
 
-          <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
-            <button type="button" id="sign-out-new-account-btn" class="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-bold transition">
-              Switch Account / Log Out
-            </button>
-            <button type="button" id="open-fresh-start-confirm-btn" class="py-1.5 px-2.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 text-[10px] font-bold transition">
-              ↺ Fresh Start Reset
-            </button>
-            <button type="button" id="delete-account-data-btn" class="py-1.5 px-2.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10px] font-semibold transition" title="App Store Guideline 5.1.1(v) Account Deletion">
+          <div class="pt-2 border-t border-slate-800/80 space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <button type="button" id="sign-out-new-account-btn" class="flex-1 py-2 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition">
+                Switch Account / Log Out
+              </button>
+              <button type="button" id="open-fresh-start-confirm-btn" class="py-2 px-2.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 text-xs font-bold transition">
+                ↺ Fresh Start Reset
+              </button>
+            </div>
+            <button type="button" id="delete-account-data-btn" class="w-full py-2.5 px-3 rounded-xl bg-rose-600/20 hover:bg-rose-600/35 border border-rose-400/70 text-rose-100 text-xs font-extrabold transition" title="Permanently delete your account from Supabase">
               Delete Account
             </button>
           </div>

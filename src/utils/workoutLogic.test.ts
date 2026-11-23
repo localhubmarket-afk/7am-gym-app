@@ -3846,6 +3846,216 @@ test('Subtest 52: Most Advanced Truth Engine (last_updated comparison) & Automat
   bgEngine.cancelPendingDestructivePush();
 });
 
+test('Subtest 53: Linked Workout & Fuel Deletion, Muscle Fuel Reset, Account Deletion with Supabase DELETE & Strict Content Validation', async () => {
+  const {
+    WORKOUT_FUEL_RESET_PROMPT,
+    DELETE_ACCOUNT_WARNING_PROMPT,
+    validateDeletionTarget,
+    clearActiveDayFuelData,
+    clearActiveDayWorkoutAndOptionalFuel,
+    deleteUserAccountFromSupabase,
+    purgeDeletedAccountFromLocalState
+  } = await import('./deletionValidation');
+
+  // 1. Exact prompt copy checks
+  assert.equal(
+    WORKOUT_FUEL_RESET_PROMPT,
+    'Would you like to delete your meal prep and fuel logs too?'
+  );
+  assert.equal(
+    DELETE_ACCOUNT_WARNING_PROMPT,
+    'Are you sure you want to delete the account?'
+  );
+
+  // 2. Task 3: Strict Content Validation rejects user ID mismatch, invalid IDs, and active day/week mismatch
+  const mismatchedUser = validateDeletionTarget({
+    scope: 'workout_and_fuel',
+    activeUserId: 'francois@7amgym.app',
+    targetUserId: 'other@example.com',
+    activeWeek: 3,
+    targetWeek: 3,
+    activeDayIndex: 0,
+    targetDayIndex: 0
+  });
+  assert.equal(mismatchedUser.valid, false);
+  assert.equal(mismatchedUser.errorCode, 'USER_ID_MISMATCH');
+
+  const placeholderUser = validateDeletionTarget({
+    scope: 'account',
+    activeUserId: 'google',
+    targetUserId: 'google'
+  });
+  assert.equal(placeholderUser.valid, false);
+  assert.equal(placeholderUser.errorCode, 'INVALID_ACTIVE_USER');
+
+  const mismatchedDay = validateDeletionTarget({
+    scope: 'fuel_only',
+    activeUserId: 'francois@7amgym.app',
+    targetUserId: 'francois@7amgym.app',
+    activeWeek: 3,
+    targetWeek: 3,
+    activeDayIndex: 0,
+    targetDayIndex: 2
+  });
+  assert.equal(mismatchedDay.valid, false);
+  assert.equal(mismatchedDay.errorCode, 'ACTIVE_DAY_MISMATCH');
+
+  const mismatchedWeek = validateDeletionTarget({
+    scope: 'workout_only',
+    activeUserId: 'francois@7amgym.app',
+    targetUserId: 'francois@7amgym.app',
+    activeWeek: 3,
+    targetWeek: 2,
+    activeDayIndex: 0,
+    targetDayIndex: 0
+  });
+  assert.equal(mismatchedWeek.valid, false);
+  assert.equal(mismatchedWeek.errorCode, 'ACTIVE_WEEK_MISMATCH');
+
+  // 3. Task 1A: "Delete Workout Only" clears Day 1 workout logs while keeping Day 1 fuel & Day 2 data intact
+  const makeTestState = () => ({
+    userProfile: { email: 'francois@7amgym.app', name: 'François' },
+    selectedWeek: 3,
+    selectedDayIndex: 0,
+    workoutLogs: {
+      w3_0_pullup_1: { weight: 'BW', reps: '9', done: true },
+      w3_1_squat_1: { weight: '185', reps: '8', done: true }
+    },
+    pullupLogs: {},
+    cardioLogs: { w3_d0_bike_0: { done: true } },
+    warmupLogs: { w3_d0_warmup_0: true },
+    checkedMeals: {
+      w3_d0_pre_shake: true,
+      w3_d0_lunch: true,
+      w3_d1_pre_shake: true
+    },
+    checkedMealIngredients: {
+      w3_d0_pre_shake_pea: true,
+      w3_d1_pre_shake_pea: true
+    },
+    flexMealOverridesByDay: {
+      w3_d0: { lunch: { foodName: 'Tofu Wrap', calories: 600, protein: 35 } },
+      w3_d1: { lunch: { foodName: 'Poke Bowl', calories: 650, protein: 40 } }
+    },
+    quickAddCaloriesByDay: {
+      w3_d0: [{ id: 'qa1', label: 'Treat', calories: 200 }],
+      w3_d1: [{ id: 'qa2', label: 'Drink', calories: 150 }]
+    },
+    waterIntakeLogs: { w3_d0: 1500, w3_d1: 2000 },
+    waterLogsMl: { w3_d0: 1500, w3_d1: 2000 },
+    accountsByEmail: {
+      'francois@7amgym.app': {
+        profile: { email: 'francois@7amgym.app', name: 'François' },
+        snapshot: { checkedMeals: { w3_d0_pre_shake: true, w3_d1_pre_shake: true } }
+      },
+      'partner@7amgym.app': {
+        profile: { email: 'partner@7amgym.app', name: 'Alex' }
+      }
+    },
+    capturedLeads: [
+      { email: 'francois@7amgym.app', name: 'François' },
+      { email: 'partner@7amgym.app', name: 'Alex' }
+    ]
+  });
+
+  const stateWorkoutOnly = makeTestState();
+  const workoutOnlyRes = clearActiveDayWorkoutAndOptionalFuel(stateWorkoutOnly, {
+    includeFuel: false,
+    activeUserId: 'francois@7amgym.app',
+    targetUserId: 'francois@7amgym.app',
+    activeWeek: 3,
+    targetWeek: 3,
+    activeDayIndex: 0,
+    targetDayIndex: 0
+  });
+  assert.equal(workoutOnlyRes.cleared, true);
+  assert.equal(workoutOnlyRes.includeFuel, false);
+  assert.equal(stateWorkoutOnly.workoutLogs.w3_0_pullup_1, undefined);
+  assert.equal(stateWorkoutOnly.workoutLogs.w3_1_squat_1.done, true); // Day 2 preserved
+  assert.equal(stateWorkoutOnly.checkedMeals.w3_d0_pre_shake, true); // Day 1 fuel preserved!
+  assert.equal(stateWorkoutOnly.waterIntakeLogs.w3_d0, 1500);
+
+  // 4. Task 1B: "Delete Workout and Fuel" clears BOTH Day 1 workout AND Day 1 fuel, preserving Day 2
+  const stateWorkoutAndFuel = makeTestState();
+  const bothRes = clearActiveDayWorkoutAndOptionalFuel(stateWorkoutAndFuel, {
+    includeFuel: true,
+    activeUserId: 'francois@7amgym.app',
+    targetUserId: 'francois@7amgym.app',
+    activeWeek: 3,
+    targetWeek: 3,
+    activeDayIndex: 0,
+    targetDayIndex: 0
+  });
+  assert.equal(bothRes.cleared, true);
+  assert.equal(bothRes.fuelResult?.cleared, true);
+  assert.equal(stateWorkoutAndFuel.workoutLogs.w3_0_pullup_1, undefined);
+  assert.equal(stateWorkoutAndFuel.checkedMeals.w3_d0_pre_shake, undefined);
+  assert.equal(stateWorkoutAndFuel.checkedMealIngredients.w3_d0_pre_shake_pea, undefined);
+  assert.equal(stateWorkoutAndFuel.flexMealOverridesByDay.w3_d0, undefined);
+  assert.equal(stateWorkoutAndFuel.quickAddCaloriesByDay.w3_d0, undefined);
+  assert.equal(stateWorkoutAndFuel.waterIntakeLogs.w3_d0, undefined);
+  // Day 2 workout + Day 2 fuel stay completely safe
+  assert.equal(stateWorkoutAndFuel.workoutLogs.w3_1_squat_1.done, true);
+  assert.equal(stateWorkoutAndFuel.checkedMeals.w3_d1_pre_shake, true);
+  assert.equal(stateWorkoutAndFuel.waterIntakeLogs.w3_d1, 2000);
+
+  // 5. Task 1C: Standalone "Reset Fuel" clears Day 1 fuel ONLY and preserves Day 1 workout sets
+  const stateFuelOnly = makeTestState();
+  const fuelOnlyRes = clearActiveDayFuelData(stateFuelOnly, {
+    activeUserId: 'francois@7amgym.app',
+    targetUserId: 'francois@7amgym.app',
+    activeWeek: 3,
+    targetWeek: 3,
+    activeDayIndex: 0,
+    targetDayIndex: 0
+  });
+  assert.equal(fuelOnlyRes.cleared, true);
+  assert.equal(stateFuelOnly.checkedMeals.w3_d0_pre_shake, undefined);
+  assert.equal(stateFuelOnly.waterIntakeLogs.w3_d0, undefined);
+  assert.equal(stateFuelOnly.workoutLogs.w3_0_pullup_1.done, true); // Day 1 workout preserved!
+  assert.equal(stateFuelOnly.checkedMeals.w3_d1_pre_shake, true); // Day 2 fuel preserved!
+
+  // 6. Task 2: Account Deletion validates user ID, sends DELETE to Supabase API, and purges only that user locally
+  const deleteCalls: Array<{ url: string; method: string; body: any }> = [];
+  const blockedDelete = await deleteUserAccountFromSupabase({
+    endpoint: 'https://7am-gym-app.vercel.app/api/state',
+    activeUserId: 'francois@7amgym.app',
+    targetUserId: 'partner@7amgym.app',
+    fetchImpl: async (url, init) => {
+      deleteCalls.push({ url: String(url), method: String(init?.method), body: JSON.parse(String(init?.body || '{}')) });
+      return { ok: true, json: async () => ({ configured: true, deleted: true }) } as Response;
+    }
+  });
+  assert.equal(blockedDelete.deleted, false);
+  assert.equal(deleteCalls.length, 0); // Strict validation stopped cross-account deletion before any network call!
+
+  const validDelete = await deleteUserAccountFromSupabase({
+    endpoint: 'https://7am-gym-app.vercel.app/api/state',
+    activeUserId: 'francois@7amgym.app',
+    targetUserId: 'francois@7amgym.app',
+    fetchImpl: async (url, init) => {
+      deleteCalls.push({ url: String(url), method: String(init?.method), body: JSON.parse(String(init?.body || '{}')) });
+      return { ok: true, json: async () => ({ configured: true, deleted: true, accountId: 'user_francois@7amgym.app' }) } as Response;
+    }
+  });
+  assert.equal(validDelete.deleted, true);
+  assert.equal(validDelete.remoteDeleted, true);
+  assert.equal(validDelete.accountId, 'user_francois@7amgym.app');
+  assert.equal(deleteCalls.length, 1);
+  assert.equal(deleteCalls[0].method, 'DELETE');
+  assert.equal(deleteCalls[0].url.includes('email=francois%407amgym.app'), true);
+
+  const stateToPurge = makeTestState();
+  const purged = purgeDeletedAccountFromLocalState(stateToPurge, 'francois@7amgym.app');
+  assert.equal(purged, true);
+  assert.equal(stateToPurge.userProfile.email, '');
+  assert.equal(stateToPurge.accountsByEmail['francois@7amgym.app'], undefined);
+  assert.equal(stateToPurge.accountsByEmail['partner@7amgym.app'].profile.name, 'Alex'); // Other device account untouched
+  assert.equal(stateToPurge.capturedLeads.length, 1);
+  assert.equal(stateToPurge.capturedLeads[0].email, 'partner@7amgym.app');
+});
+
+
 
 
 
