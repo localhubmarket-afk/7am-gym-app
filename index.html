@@ -393,9 +393,9 @@
             id="zone-a-sync-settings-btn"
             style="min-height: 38px; border-color: #334155; letter-spacing: 0;"
             class="px-1 py-1.5 rounded-xl bg-[#0f172a] hover:bg-slate-800 border text-sky-200 text-[9.5px] sm:text-[11px] font-bold whitespace-nowrap transition inline-flex items-center justify-center text-center overflow-hidden"
-            title="Re-Sync Week, Setup Wizard and Display Settings"
+            title="Program Setup Wizard, Week Plan and Display Settings"
           >
-            🔄 Sync &amp; Settings
+            ⚙️ Settings &amp; Plan
           </button>
           <button
             type="button"
@@ -1098,9 +1098,9 @@
           <button id="copy-gas-script-btn" type="button" class="text-[11px] text-slate-400 hover:text-slate-200 underline font-semibold">
              Copy Free 12-Line Google Sheet DB Script
           </button>
-          <button id="sync-now-cloud-btn" type="button" class="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold">
-             Sync Now
-          </button>
+          <span id="auto-sync-status-label" class="text-[11px] text-emerald-400 font-bold">
+             ✓ Auto-Sync Active
+          </span>
         </div>
       </div>
 
@@ -6505,7 +6505,7 @@
           releaseWakeLock();
           updateTimerUI();
           updateWatchAndHeartRateUI();
-          saveState();
+          saveState(false, 'timer_completed');
           playTimerChime();
           triggerWatchWristTimerNotification(completedRiceStage);
           triggerRiceTimerStageComplete(completedRiceStage);
@@ -26740,16 +26740,7 @@
         });
       }
 
-      const syncNowBtn = document.getElementById('sync-now-cloud-btn');
-      if (syncNowBtn) {
-        syncNowBtn.addEventListener('click', () => {
-          if (!state.cloudDbUrl) {
-            showToast('Paste a Cloud DB URL first to sync');
-            return;
-          }
-          pullStateFromCloud();
-        });
-      }
+      // Manual "Sync Now" button eliminated — automatic debounced background sync runs on every active input.
 
       const copySqlBtn = document.getElementById('copy-supabase-sql-btn');
       if (copySqlBtn) {
@@ -27204,8 +27195,8 @@
     <div class="bg-slate-900 border border-sky-400/45 rounded-2xl max-w-md w-full p-4 space-y-3 shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
         <div>
-          <h3 id="sync-settings-modal-title" class="text-base font-extrabold text-white">🔄 Sync &amp; Settings</h3>
-          <p class="text-xs text-slate-300 mt-0.5">Run the Program Setup Wizard, re-sync your week, or adjust display options.</p>
+          <h3 id="sync-settings-modal-title" class="text-base font-extrabold text-white">⚙️ Settings &amp; Plan</h3>
+          <p class="text-xs text-slate-300 mt-0.5">Run the Program Setup Wizard, manage your week plan, or adjust display options.</p>
         </div>
         <button type="button" id="close-sync-settings-modal-btn" aria-label="Close" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
       </div>
@@ -28169,7 +28160,7 @@
             Sync Workouts &amp; Nutrition with Android Health Connect / Samsung Health &amp; Apple Health
           </button>
           <button type="button" id="watch-modal-health-sync-btn" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-sky-400 to-emerald-400 hover:from-sky-300 hover:to-emerald-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-sky-500/20 transition">
-            Sync Now / Export Health Data
+            Export Health Data
           </button>
         </div>
       </details>

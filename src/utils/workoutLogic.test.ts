@@ -4323,6 +4323,120 @@ test('Account Deletion Redesign, Concurrent 3-Layer Data Sanitization, Auto Acco
   assert.equal(readyDeploy.failedGates.length, 0);
 });
 
+test('Task 4 & Task 5: Zero Manual Sync Buttons, Debounced Auto-Sync on Fuel/Timer & Strict Vegan + Difficulty Multipliers', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const {
+    buildValidatedWizardProgram,
+    getDifficultyMultipliers
+  } = await import('./wizardValidation');
+  const { createAutoSupabaseSyncEngine } = await import('./workoutSyncEngine');
+
+  // 1. Verify no manual "sync-now-cloud-btn" exists in index.html
+  const html = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf8');
+  assert.equal(html.includes('id="sync-now-cloud-btn"'), false);
+  assert.equal(html.includes('id="lead-password-input"'), true);
+  assert.equal(html.includes('id="reset-fuel-day-btn"'), true);
+  assert.equal(html.includes('Already have an account? Log In'), true);
+
+  // 2. Verify Difficulty Multipliers (volume & movement complexity)
+  const easyMult = getDifficultyMultipliers('easy');
+  assert.equal(easyMult.volumeMultiplier, 0.75);
+  assert.equal(easyMult.complexityTier, 'beginner_machines');
+
+  const hardMult = getDifficultyMultipliers('hard');
+  assert.equal(hardMult.volumeMultiplier, 1.25);
+  assert.equal(hardMult.complexityTier, 'advanced_compounds');
+
+  // 3. Verify buildValidatedWizardProgram strictly blocks animal products when diet === 'vegan'
+  //    and applies difficulty multipliers directly to workout sets & movement complexity
+  const candidateMeals = [
+    { id: 'm1', title: 'Crispy Tofu & Jasmine Rice', ingredients: ['tofu', 'jasmine rice', 'broccoli'] },
+    { id: 'm2', title: 'Pea Protein Oat Milk Shake', ingredients: ['pea protein', 'oat milk', 'peanut butter'] },
+    { id: 'm3', title: 'Grilled Chicken Breast Bowl', ingredients: ['chicken', 'rice'] },
+    { id: 'm4', title: 'Greek Yogurt & Whey Parfait', ingredients: ['greek yogurt', 'whey', 'honey'] },
+    { id: 'm5', title: 'Scrambled Eggs & Cheddar', ingredients: ['eggs', 'cheddar'] }
+  ];
+  const baseSchedule = [
+    {
+      title: 'Upper Body',
+      exercises: [
+        { id: 'ex1', name: 'Barbell Bench Press', sets: 4, reps: '8-10', equipType: 'barbell' },
+        { id: 'ex2', name: 'Barbell Back Squat', sets: 4, reps: '6-8', equipType: 'barbell' }
+      ]
+    }
+  ];
+
+  const veganEasyProgram = buildValidatedWizardProgram(
+    { daysPerWeek: 4, primaryFocus: 'balanced', difficulty: 'easy', baseDiet: 'Vegan', intolerances: [] },
+    candidateMeals,
+    baseSchedule
+  );
+  assert.equal(veganEasyProgram.config.diet, 'vegan');
+  assert.deepEqual(
+    veganEasyProgram.mealPlan.map((m) => m.id),
+    ['m1', 'm2']
+  );
+  assert.equal(veganEasyProgram.blockedMeals.length, 3);
+  const easyDay = veganEasyProgram.workoutSchedule[0] as any;
+  assert.equal(easyDay.exercises[0].name, 'Seated Chest Press Machine');
+  assert.equal(easyDay.exercises[0].sets, 3); // 4 * 0.75 = 3
+  assert.equal(easyDay.exercises[1].name, 'Leg Press Machine');
+  assert.equal(easyDay.exercises[1].sets, 3);
+
+  const veganHardProgram = buildValidatedWizardProgram(
+    { daysPerWeek: 5, primaryFocus: 'balanced', difficulty: 'hard', baseDiet: 'Vegan', intolerances: [] },
+    candidateMeals,
+    [
+      {
+        title: 'Lower Body',
+        exercises: [
+          { id: 'ex3', name: 'Leg Press Machine', sets: 4, reps: '8-10', equipType: 'machine' }
+        ]
+      }
+    ]
+  );
+  const hardDay = veganHardProgram.workoutSchedule[0] as any;
+  assert.equal(hardDay.exercises[0].name, 'Barbell Back Squat');
+  assert.equal(hardDay.exercises[0].sets, 5); // 4 * 1.25 = 5
+
+  // 4. Verify debounced background push handles fuel_checked and timer_completed silently
+  const stateObj: Record<string, any> = {
+    workoutLogs: { w3_0_pullup_1: { reps: 8, done: true } },
+    checkedMeals: { w3_d0_pre_shake: true },
+    last_updated: null
+  };
+  const pushedBodies: any[] = [];
+  let scheduledFn: (() => void) | null = null;
+  const engine = createAutoSupabaseSyncEngine({
+    getState: () => stateObj,
+    getEndpoint: () => 'https://7am-gym-app.vercel.app/api/state?email=francois%407amgym.app',
+    backgroundDebounceMs: 250,
+    setTimer: (fn) => {
+      scheduledFn = fn;
+      return 1;
+    },
+    clearTimer: () => {
+      scheduledFn = null;
+    },
+    fetchImpl: async (_url, init) => {
+      pushedBodies.push(JSON.parse(String(init?.body || '{}')));
+      return { ok: true, json: async () => ({ configured: true, saved: true }) } as Response;
+    }
+  });
+
+  engine.pushGymStateInBackground('fuel_checked');
+  assert.ok(stateObj.last_updated, 'last_updated must be stamped immediately on fuel check');
+  engine.pushGymStateInBackground('timer_completed');
+  assert.equal(pushedBodies.length, 0, 'Debounced rapid inputs collapse into one background push');
+  assert.ok(scheduledFn);
+  scheduledFn();
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(pushedBodies.length, 1);
+  assert.ok(pushedBodies[0].last_updated);
+});
+
+
 
 
 

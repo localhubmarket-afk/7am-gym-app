@@ -656,16 +656,53 @@ export function groupExercisesByCategory<T extends RoutineExerciseLike>(
   return groups;
 }
 
+export interface DifficultyMultiplierSpec {
+  difficulty: WizardDifficulty;
+  volumeMultiplier: number;
+  minSets: number;
+  maxSets: number;
+  complexityTier: 'beginner_machines' | 'standard_hybrid' | 'advanced_compounds';
+  defaultRestSeconds: number;
+}
+
+export function getDifficultyMultipliers(difficultyInput: string): DifficultyMultiplierSpec {
+  const normalized = String(difficultyInput || '').trim().toLowerCase();
+  if (normalized === 'easy') {
+    return {
+      difficulty: 'easy',
+      volumeMultiplier: 0.75,
+      minSets: 2,
+      maxSets: 3,
+      complexityTier: 'beginner_machines',
+      defaultRestSeconds: 90
+    };
+  }
+  if (normalized === 'hard') {
+    return {
+      difficulty: 'hard',
+      volumeMultiplier: 1.25,
+      minSets: 4,
+      maxSets: 5,
+      complexityTier: 'advanced_compounds',
+      defaultRestSeconds: 120
+    };
+  }
+  return {
+    difficulty: 'medium',
+    volumeMultiplier: 1.0,
+    minSets: 3,
+    maxSets: 4,
+    complexityTier: 'standard_hybrid',
+    defaultRestSeconds: 90
+  };
+}
+
 export function enforceDifficultyOnExercise<T extends RoutineExerciseLike>(
   ex: T,
   difficultyInput: string
 ): T {
-  const diff: WizardDifficulty =
-    String(difficultyInput).toLowerCase() === 'easy'
-      ? 'easy'
-      : String(difficultyInput).toLowerCase() === 'hard'
-        ? 'hard'
-        : 'medium';
+  const mult = getDifficultyMultipliers(difficultyInput);
+  const diff = mult.difficulty;
 
   const cloned: T = { ...ex };
   const category = classifyExerciseCategory(cloned);
@@ -674,9 +711,10 @@ export function enforceDifficultyOnExercise<T extends RoutineExerciseLike>(
   }
 
   const baseSets = Number(cloned.sets) || 3;
+  const scaledSets = Math.round(baseSets * mult.volumeMultiplier);
 
   if (diff === 'easy') {
-    // Strictly beginner-safe machine/cable/bodyweight movements + max 3 sets
+    // Strictly beginner-safe machine/cable/bodyweight movements + volume multiplier (0.75x, capped 2-3 sets)
     if (category === 'weightlifting') {
       for (const swap of EASY_BARBELL_TO_MACHINE_SWAPS) {
         if (swap.pattern.test(cloned.name)) {
@@ -691,14 +729,15 @@ export function enforceDifficultyOnExercise<T extends RoutineExerciseLike>(
         cloned.equipLabel = 'Machine';
       }
     }
-    cloned.sets = Math.max(2, Math.min(3, Math.round(baseSets)));
+    cloned.sets = Math.max(mult.minSets, Math.min(mult.maxSets, scaledSets));
     if (!cloned.reps || /^\s*[1-5](?:\s*-\s*[3-6])?\s*$/.test(cloned.reps)) {
       cloned.reps = '10-12';
     }
-    const restSec = Math.max(60, Math.min(120, Number(cloned.rest) || 90));
+    const restSec = Math.max(60, Math.min(120, Number(cloned.rest) || mult.defaultRestSeconds));
     cloned.rest = restSec;
     cloned.restTimer = `${restSec}s`;
   } else if (diff === 'hard') {
+    // Heavy barbell compound upgrades + volume multiplier (1.25x, 4-5 sets)
     if (category === 'weightlifting') {
       for (const upg of HARD_MACHINE_TO_BARBELL_UPGRADES) {
         if (upg.pattern.test(cloned.name)) {
@@ -709,20 +748,20 @@ export function enforceDifficultyOnExercise<T extends RoutineExerciseLike>(
         }
       }
     }
-    cloned.sets = Math.max(4, Math.min(5, Math.round(baseSets)));
+    cloned.sets = Math.max(mult.minSets, Math.min(mult.maxSets, scaledSets));
     if (!cloned.reps) {
       cloned.reps = '5-8';
     }
-    const restSec = Math.max(90, Math.min(180, Number(cloned.rest) || 120));
+    const restSec = Math.max(90, Math.min(180, Number(cloned.rest) || mult.defaultRestSeconds));
     cloned.rest = restSec;
     cloned.restTimer = `${restSec}s`;
   } else {
-    // Medium: 3 to 4 sets balanced mix
-    cloned.sets = Math.max(3, Math.min(4, Math.round(baseSets)));
+    // Medium: 1.0x volume multiplier (3-4 sets) balanced free-weight & machine mix
+    cloned.sets = Math.max(mult.minSets, Math.min(mult.maxSets, scaledSets));
     if (!cloned.reps) {
       cloned.reps = '8-12';
     }
-    const restSec = Math.max(60, Math.min(150, Number(cloned.rest) || 90));
+    const restSec = Math.max(60, Math.min(150, Number(cloned.rest) || mult.defaultRestSeconds));
     cloned.rest = restSec;
     cloned.restTimer = `${restSec}s`;
   }
@@ -746,6 +785,56 @@ export function enforceDifficultyOnRoutine<T extends RoutineDayLike | number>(
       exercises: slot.exercises.map((ex) => enforceDifficultyOnExercise(ex, difficultyInput))
     };
   });
+}
+
+export interface ValidatedWizardProgramOutput<
+  TMeal extends DietRecipeLike,
+  TDay extends RoutineDayLike | number
+> {
+  validation: WizardValidationResult;
+  config: ProgramWizardConfig;
+  difficultyMultipliers: DifficultyMultiplierSpec;
+  mealPlan: TMeal[];
+  blockedMeals: Array<{ recipe: TMeal; reason: string }>;
+  workoutSchedule: TDay[];
+}
+
+/**
+ * Task 5: Binds programWizardConfig strictly to both meal plan arrays and workout routines.
+ * - If diet === 'vegan', blocks 100% of animal product meals (meat, seafood, dairy, eggs, whey, honey).
+ * - Applies difficulty volume multiplier & movement complexity directly to every workout day.
+ */
+export function buildValidatedWizardProgram<
+  TMeal extends DietRecipeLike,
+  TDay extends RoutineDayLike | number
+>(
+  rawConfig: unknown,
+  candidateMeals: TMeal[],
+  baseSchedule: TDay[]
+): ValidatedWizardProgramOutput<TMeal, TDay> {
+  const validation = validateProgramWizardConfig(rawConfig);
+  const config = validation.sanitizedConfig;
+  const difficultyMultipliers = getDifficultyMultipliers(config.difficulty);
+
+  // Explicit conditional binding for diet === 'vegan' (and all base diets + intolerances)
+  const effectiveDiet = config.diet === 'vegan' ? 'Vegan' : config.baseDiet;
+  const filteredMeals = filterRecipesByDietAndIntolerances(
+    candidateMeals || [],
+    effectiveDiet,
+    config.intolerances
+  );
+
+  // Explicit conditional binding for difficulty multiplier on volume and complexity
+  const workoutSchedule = enforceDifficultyOnRoutine(baseSchedule || [], config.difficulty);
+
+  return {
+    validation,
+    config,
+    difficultyMultipliers,
+    mealPlan: filteredMeals.accepted,
+    blockedMeals: filteredMeals.rejected,
+    workoutSchedule
+  };
 }
 
 export type BikingEnvironment = 'indoor' | 'outdoor';

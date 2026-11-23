@@ -8,7 +8,9 @@ import {
 export type AutoSyncTriggerReason =
   | 'set_logged'
   | 'checkbox_toggled'
+  | 'fuel_checked'
   | 'timer_adjusted'
+  | 'timer_completed'
   | 'pullup_logged'
   | 'cardio_logged'
   | 'workout_finished'
@@ -337,7 +339,9 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
     const isPassiveAutoSync =
       reason === 'set_logged' ||
       reason === 'checkbox_toggled' ||
+      reason === 'fuel_checked' ||
       reason === 'timer_adjusted' ||
+      reason === 'timer_completed' ||
       reason === 'pullup_logged' ||
       reason === 'cardio_logged' ||
       reason === 'workout_finished' ||

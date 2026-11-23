@@ -25,11 +25,13 @@ import {
 } from './utils/workoutLogic';
 import {
   STANDARD_CARDIO_SESSIONS,
+  buildValidatedWizardProgram,
   classifyExerciseCategory,
   clearActiveDayWorkoutData,
   enforceDifficultyOnExercise,
   enforceDifficultyOnRoutine,
   filterRecipesByDietAndIntolerances,
+  getDifficultyMultipliers,
   groupExercisesByCategory,
   isBikingExercise,
   isOverhandPullUpsExercise,
@@ -673,6 +675,8 @@ declare global {
     clampRepsInputValue?: typeof clampRepsInputValue;
     AI_EXERCISE_WHITELIST_RULE?: string;
     validateProgramWizardConfig?: typeof validateProgramWizardConfig;
+    getDifficultyMultipliers?: typeof getDifficultyMultipliers;
+    buildValidatedWizardProgram?: typeof buildValidatedWizardProgram;
     isRecipeAllowedForDiet?: typeof isRecipeAllowedForDiet;
     filterRecipesByDietAndIntolerances?: typeof filterRecipesByDietAndIntolerances;
     classifyExerciseCategory?: typeof classifyExerciseCategory;
@@ -739,6 +743,8 @@ if (typeof window !== 'undefined') {
   window.clampRepsInputValue = clampRepsInputValue;
   window.AI_EXERCISE_WHITELIST_RULE = AI_EXERCISE_WHITELIST_RULE;
   window.validateProgramWizardConfig = validateProgramWizardConfig;
+  window.getDifficultyMultipliers = getDifficultyMultipliers;
+  window.buildValidatedWizardProgram = buildValidatedWizardProgram;
   window.isRecipeAllowedForDiet = isRecipeAllowedForDiet;
   window.filterRecipesByDietAndIntolerances = filterRecipesByDietAndIntolerances;
   window.classifyExerciseCategory = classifyExerciseCategory;
