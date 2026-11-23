@@ -24,19 +24,22 @@ export const ExplainableMathModal: React.FC<ExplainableMathModalProps> = ({
       <div className="w-full max-w-md rounded-2xl border border-sky-500/60 bg-slate-900 p-5 text-left text-slate-100 shadow-2xl">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-sky-300">
-              ⓘ Explainable Math • {breakdown.exerciseName}
+            <span className="text-[0.6875rem] font-extrabold uppercase tracking-wider text-sky-300">
+              <span aria-hidden="true">ⓘ </span>
+              <span>Explainable Math • {breakdown.exerciseName}</span>
             </span>
-            <h2 id="explainable-math-heading" className="mt-0.5 text-base font-extrabold text-white">
+            <h2 id="explainable-math-heading" className="mt-0.5 text-base font-extrabold leading-relaxed text-white">
               {breakdown.headline}
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[38px] rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-slate-700"
+            aria-label="Close Explainable Math window"
+            className="min-h-[44px] min-w-[44px] rounded-lg bg-slate-800 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-slate-700"
           >
-            ✕ Close
+            <span aria-hidden="true">✕ </span>
+            <span>Close</span>
           </button>
         </div>
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { resolveDisplayUsername } from '../utils/wizardValidation';
+import { PWAInstallButton } from './PWAInstallButton';
 
 export interface MobileHeaderProfile {
   name?: string | null;
@@ -10,6 +11,7 @@ export interface MobileHeaderProfile {
 export interface MobileHeaderProps {
   profile: MobileHeaderProfile | null | undefined;
   subtitle?: string;
+  showInstallButton?: boolean;
   onOpenAiCoach?: () => void;
   onOpenWatchModal?: () => void;
   onOpenProfileModal: () => void;
@@ -17,13 +19,14 @@ export interface MobileHeaderProps {
 }
 
 /**
- * Task 1: Mobile Application Header
- * Extracts the user's real first name (e.g. "François") from profile data
- * and displays it beside the profile icon — never generic auth providers ("Google" / "Apple").
+ * Mobile Application Header (WCAG 2.2 Level AA)
+ * Extracts the user's real first name (e.g. "François") from profile data,
+ * uses relative rem typography, 44x44px touch targets, and explicit ARIA labels.
  */
 export const MobileHeader: React.FC<MobileHeaderProps> = ({
   profile,
   subtitle = 'Full-Body • $6.35/d',
+  showInstallButton = false,
   onOpenAiCoach,
   onOpenWatchModal,
   onOpenProfileModal,
@@ -32,28 +35,38 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   const displayFirstName = resolveDisplayUsername(profile);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/95 px-3 py-2 backdrop-blur-md">
+    <header
+      role="banner"
+      aria-label="Budget Gym application header"
+      className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/95 px-3 py-2 backdrop-blur-md"
+    >
       <div className="mx-auto flex max-w-xl items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-[11px] font-black text-slate-950">
+          <div
+            aria-hidden="true"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-[0.6875rem] font-black text-slate-950"
+          >
             GYM
           </div>
           <div className="min-w-0">
-            <h1 className="truncate whitespace-nowrap text-xs font-extrabold leading-tight tracking-tight text-white sm:text-sm">
+            <h1 className="truncate whitespace-nowrap text-xs font-extrabold leading-relaxed tracking-tight text-white sm:text-sm">
               Budget Gym
             </h1>
-            <p className="truncate whitespace-nowrap text-[9px] font-semibold leading-tight text-emerald-400 sm:text-[10px]">
+            <p className="truncate whitespace-nowrap text-[0.625rem] font-semibold leading-relaxed text-emerald-400 sm:text-[0.6875rem]">
               {subtitle}
             </p>
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <nav aria-label="Header quick actions" className="flex shrink-0 items-center gap-1.5">
+          {showInstallButton && <PWAInstallButton />}
+
           {onOpenAiCoach && (
             <button
               type="button"
               onClick={onOpenAiCoach}
-              className="flex items-center gap-1 whitespace-nowrap rounded-xl border border-purple-400/40 bg-purple-500/20 px-2 py-1 text-[10px] font-extrabold text-purple-200 transition hover:bg-purple-500/30 sm:text-[11px]"
+              aria-label="Open AI Workout Coach"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-purple-400/40 bg-purple-500/20 px-2.5 py-2 text-[0.6875rem] font-extrabold text-purple-200 transition hover:bg-purple-500/30 focus:outline-none focus:ring-2 focus:ring-purple-300"
             >
               <span>AI</span>
             </button>
@@ -63,7 +76,8 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
             <button
               type="button"
               onClick={onOpenWatchModal}
-              className="flex items-center gap-1 whitespace-nowrap rounded-xl border border-rose-400/40 bg-rose-500/15 px-2 py-1 text-[10px] font-extrabold text-rose-200 transition hover:bg-rose-500/25 sm:text-[11px]"
+              aria-label="Open Watch and Heart Rate settings"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-rose-400/40 bg-rose-500/15 px-2.5 py-2 text-[0.6875rem] font-extrabold text-rose-200 transition hover:bg-rose-500/25 focus:outline-none focus:ring-2 focus:ring-rose-300"
             >
               <span>Watch</span>
             </button>
@@ -74,7 +88,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
             onClick={onOpenProfileModal}
             title="Account & Profile"
             aria-label={`Open account profile for ${displayFirstName}`}
-            className="flex items-center gap-1 whitespace-nowrap rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-2 py-1 text-[10px] font-extrabold text-emerald-300 transition hover:bg-emerald-500/25 sm:text-[11px]"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-2.5 py-2 text-[0.6875rem] font-extrabold text-emerald-300 transition hover:bg-emerald-500/25 focus:outline-none focus:ring-2 focus:ring-emerald-300"
           >
             <svg
               className="h-3.5 w-3.5 shrink-0"
@@ -96,12 +110,13 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
             <button
               type="button"
               onClick={onOpenShareModal}
-              className="flex items-center gap-1 whitespace-nowrap rounded-xl border border-sky-500/40 bg-sky-500/15 px-2 py-1 text-[10px] font-bold text-sky-300 transition hover:bg-sky-500/25 sm:text-[11px]"
+              aria-label="Share your workout plan"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-sky-500/40 bg-sky-500/15 px-2.5 py-2 text-[0.6875rem] font-bold text-sky-300 transition hover:bg-sky-500/25 focus:outline-none focus:ring-2 focus:ring-sky-300"
             >
               <span>Share</span>
             </button>
           )}
-        </div>
+        </nav>
       </div>
     </header>
   );

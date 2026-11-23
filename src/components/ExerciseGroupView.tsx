@@ -58,8 +58,9 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
           type="button"
           role="tab"
           aria-selected={activeTab === 'all'}
+          aria-label={`Show all exercises, ${exercises.length} total`}
           onClick={() => setActiveTab('all')}
-          className={`rounded-xl px-2 py-2 text-xs font-extrabold transition ${
+          className={`min-h-[44px] min-w-[44px] rounded-xl px-2 py-2 text-xs font-extrabold transition ${
             activeTab === 'all'
               ? 'bg-sky-400 text-slate-950'
               : 'bg-slate-900 text-slate-200 hover:bg-slate-800'
@@ -71,8 +72,9 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
           type="button"
           role="tab"
           aria-selected={activeTab === 'weightlifting'}
+          aria-label={`Show weightlifting exercises, ${grouped.weightlifting.length} total`}
           onClick={() => setActiveTab('weightlifting')}
-          className={`rounded-xl px-2 py-2 text-xs font-extrabold transition ${
+          className={`min-h-[44px] min-w-[44px] rounded-xl px-2 py-2 text-xs font-extrabold transition ${
             activeTab === 'weightlifting'
               ? 'bg-sky-400 text-slate-950'
               : 'bg-slate-900 text-slate-200 hover:bg-slate-800'
@@ -84,8 +86,9 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
           type="button"
           role="tab"
           aria-selected={activeTab === 'bodyweight'}
+          aria-label={`Show bodyweight exercises, ${grouped.bodyweight.length} total`}
           onClick={() => setActiveTab('bodyweight')}
-          className={`rounded-xl px-2 py-2 text-xs font-extrabold transition ${
+          className={`min-h-[44px] min-w-[44px] rounded-xl px-2 py-2 text-xs font-extrabold transition ${
             activeTab === 'bodyweight'
               ? 'bg-emerald-400 text-slate-950'
               : 'bg-slate-900 text-slate-200 hover:bg-slate-800'
@@ -97,8 +100,9 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
           type="button"
           role="tab"
           aria-selected={activeTab === 'cardio'}
+          aria-label={`Show cardio sessions, ${grouped.cardio.length} total`}
           onClick={() => setActiveTab('cardio')}
-          className={`rounded-xl px-2 py-2 text-xs font-extrabold transition ${
+          className={`min-h-[44px] min-w-[44px] rounded-xl px-2 py-2 text-xs font-extrabold transition ${
             activeTab === 'cardio'
               ? 'bg-cyan-400 text-slate-950'
               : 'bg-slate-900 text-slate-200 hover:bg-slate-800'
@@ -115,7 +119,7 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
             <h3 id="section-pullups-lead-heading" className="text-xs font-extrabold uppercase tracking-wider text-amber-300">
               First Exercise • Overhand Pull-Ups
             </h3>
-            <span className="text-[11px] font-bold text-slate-300">
+            <span className="text-[0.6875rem] font-bold text-slate-300">
               Right after Warm-Up
             </span>
           </div>
@@ -136,7 +140,7 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
             <h3 id="section-weightlifting-heading" className="text-xs font-extrabold uppercase tracking-wider text-sky-300">
               Weightlifting Movements
             </h3>
-            <span className="text-[11px] font-bold text-slate-400">
+            <span className="text-[0.6875rem] font-bold text-slate-400">
               {grouped.weightlifting.length} loaded {grouped.weightlifting.length === 1 ? 'exercise' : 'exercises'}
             </span>
           </div>
@@ -157,7 +161,7 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
             <h3 id="section-bodyweight-heading" className="text-xs font-extrabold uppercase tracking-wider text-emerald-300">
               Bodyweight Movements
             </h3>
-            <span className="text-[11px] font-bold text-slate-400">
+            <span className="text-[0.6875rem] font-bold text-slate-400">
               No weights needed ({grouped.otherBodyweight.length})
             </span>
           </div>
@@ -178,7 +182,7 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
             <h3 id="section-cardio-heading" className="text-xs font-extrabold uppercase tracking-wider text-cyan-300">
               Cardio Zone
             </h3>
-            <span className="text-[11px] font-bold text-slate-300">
+            <span className="text-[0.6875rem] font-bold text-slate-300">
               {grouped.cardio.length} {grouped.cardio.length === 1 ? 'session' : 'sessions'}
             </span>
           </div>
@@ -204,8 +208,9 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
                           <button
                             type="button"
                             aria-pressed={activeEnv === 'indoor'}
+                            aria-label="Set biking environment to Indoor"
                             onClick={() => handleBikingToggle(exId, 'indoor')}
-                            className={`rounded-md px-2.5 py-1 text-[11px] font-extrabold transition ${
+                            className={`min-h-[44px] min-w-[44px] rounded-md px-3 py-2 text-[0.6875rem] font-extrabold transition ${
                               activeEnv === 'indoor'
                                 ? 'bg-cyan-400 text-slate-950'
                                 : 'text-slate-300 hover:text-white'
@@ -216,8 +221,9 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
                           <button
                             type="button"
                             aria-pressed={activeEnv === 'outdoor'}
+                            aria-label="Set biking environment to Outdoor"
                             onClick={() => handleBikingToggle(exId, 'outdoor')}
-                            className={`rounded-md px-2.5 py-1 text-[11px] font-extrabold transition ${
+                            className={`min-h-[44px] min-w-[44px] rounded-md px-3 py-2 text-[0.6875rem] font-extrabold transition ${
                               activeEnv === 'outdoor'
                                 ? 'bg-cyan-400 text-slate-950'
                                 : 'text-slate-300 hover:text-white'
@@ -234,21 +240,22 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
               })}
             </div>
           ) : (
-            <p className="text-xs text-slate-300">
+            <p className="text-xs leading-relaxed text-slate-300">
               No cardio added today. Pick a cardio session below to track live time or log past cardio.
             </p>
           )}
 
           {onQuickAddCardio && (
             <div className="space-y-1.5 pt-1">
-              <div className="text-[11px] font-bold text-cyan-200">Add Cardio Session</div>
+              <div className="text-[0.6875rem] font-bold text-cyan-200">Add Cardio Session</div>
               <div className="flex flex-wrap gap-1.5">
                 {STANDARD_CARDIO_SESSIONS.map((preset) => (
                   <button
                     key={preset}
                     type="button"
+                    aria-label={`Add ${preset} cardio session`}
                     onClick={() => onQuickAddCardio(preset)}
-                    className="rounded-xl border border-cyan-500/40 bg-slate-950 px-2.5 py-2 text-[11px] font-extrabold text-cyan-200 transition hover:bg-slate-800"
+                    className="min-h-[44px] min-w-[44px] rounded-xl border border-cyan-500/40 bg-slate-950 px-3 py-2 text-[0.6875rem] font-extrabold text-cyan-200 transition hover:bg-slate-800"
                   >
                     + {preset === 'Rowing Machine' ? 'Rowing' : preset}
                   </button>

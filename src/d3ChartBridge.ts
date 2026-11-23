@@ -144,6 +144,22 @@ import {
   fetchGoogleHealthConnectBiometricsStub
 } from './utils/biometricSync';
 import { createSmartwatchBridge } from './smartwatch/watchBridge';
+import {
+  clearAllGymIndexedDbStores,
+  clearIndexedDbSyncOutbox,
+  enqueueIndexedDbSyncItem,
+  getPendingIndexedDbSyncItems,
+  loadGymStateFromIndexedDB,
+  removeIndexedDbSyncItem,
+  saveGymStateToIndexedDB
+} from './utils/gymIndexedDb';
+import {
+  flushIndexedDbSyncOutbox,
+  hydrateGymStateLocalFirst,
+  notifyServiceWorkerToSync,
+  persistGymStateLocalFirst,
+  startOfflineFirstBackgroundSync
+} from './utils/offlineFirstSync';
 
 export interface RenderOneRmD3ChartOptions {
   container: HTMLElement;
@@ -275,7 +291,7 @@ export function renderOneRmD3Chart(options: RenderOneRmD3ChartOptions): {
     .attr('dy', '0.32em')
     .attr('text-anchor', 'end')
     .attr('fill', '#94a3b8')
-    .style('font-size', '10px')
+    .style('font-size', '0.625rem')
     .style('font-weight', '600')
     .style('letter-spacing', '0.02em')
     .text((d) => `${d}`);
@@ -299,7 +315,7 @@ export function renderOneRmD3Chart(options: RenderOneRmD3ChartOptions): {
     .attr('y', innerH + 20)
     .attr('text-anchor', 'middle')
     .attr('fill', '#cbd5e1')
-    .style('font-size', '10px')
+    .style('font-size', '0.625rem')
     .style('font-weight', '700')
     .style('letter-spacing', '0.02em')
     .text((d) => d.pt.dateLabel);
@@ -376,7 +392,7 @@ export function renderOneRmD3Chart(options: RenderOneRmD3ChartOptions): {
     .attr('fill', '#f8fafc')
     .attr('text-anchor', 'middle')
     .attr('dy', '0.35em')
-    .style('font-size', '11px')
+    .style('font-size', '0.6875rem')
     .style('font-weight', '800')
     .style('font-family', 'system-ui, -apple-system, sans-serif')
     .style('letter-spacing', '0.02em');
@@ -591,7 +607,7 @@ export function renderWeeklyVolumeD3BarChart(options: RenderWeeklyVolumeBarChart
     .attr('dy', '0.32em')
     .attr('text-anchor', 'end')
     .attr('fill', '#94a3b8')
-    .style('font-size', '10px')
+    .style('font-size', '0.625rem')
     .style('font-weight', '600')
     .text((d) => formatCompactLbs(d));
 
@@ -606,7 +622,7 @@ export function renderWeeklyVolumeD3BarChart(options: RenderWeeklyVolumeBarChart
     .attr('y', innerH + 18)
     .attr('text-anchor', 'middle')
     .attr('fill', '#f8fafc')
-    .style('font-size', '11px')
+    .style('font-size', '0.6875rem')
     .style('font-weight', '800')
     .text((d) => d.label);
 
@@ -644,7 +660,7 @@ export function renderWeeklyVolumeD3BarChart(options: RenderWeeklyVolumeBarChart
     .attr('y', (d) => Math.max(4, Math.min(innerH - 12, yScale(d.tonnageLbs) - 5)))
     .attr('text-anchor', 'middle')
     .attr('fill', '#e0f2fe')
-    .style('font-size', '9.5px')
+    .style('font-size', '0.6rem')
     .style('font-weight', '700')
     .text((d) => formatCompactLbs(d.tonnageLbs));
 
@@ -839,6 +855,18 @@ declare global {
     getHistoricalMaxWeightForExercise?: typeof getHistoricalMaxWeightForExercise;
     buildHeavyWeightWarningMessage?: typeof buildHeavyWeightWarningMessage;
     validateSetWeightSanity?: typeof validateSetWeightSanity;
+    saveGymStateToIndexedDB?: typeof saveGymStateToIndexedDB;
+    loadGymStateFromIndexedDB?: typeof loadGymStateFromIndexedDB;
+    enqueueIndexedDbSyncItem?: typeof enqueueIndexedDbSyncItem;
+    getPendingIndexedDbSyncItems?: typeof getPendingIndexedDbSyncItems;
+    removeIndexedDbSyncItem?: typeof removeIndexedDbSyncItem;
+    clearIndexedDbSyncOutbox?: typeof clearIndexedDbSyncOutbox;
+    clearAllGymIndexedDbStores?: typeof clearAllGymIndexedDbStores;
+    hydrateGymStateLocalFirst?: typeof hydrateGymStateLocalFirst;
+    persistGymStateLocalFirst?: typeof persistGymStateLocalFirst;
+    flushIndexedDbSyncOutbox?: typeof flushIndexedDbSyncOutbox;
+    notifyServiceWorkerToSync?: typeof notifyServiceWorkerToSync;
+    startOfflineFirstBackgroundSync?: typeof startOfflineFirstBackgroundSync;
   }
 }
 
@@ -959,5 +987,17 @@ if (typeof window !== 'undefined') {
   window.getHistoricalMaxWeightForExercise = getHistoricalMaxWeightForExercise;
   window.buildHeavyWeightWarningMessage = buildHeavyWeightWarningMessage;
   window.validateSetWeightSanity = validateSetWeightSanity;
+  window.saveGymStateToIndexedDB = saveGymStateToIndexedDB;
+  window.loadGymStateFromIndexedDB = loadGymStateFromIndexedDB;
+  window.enqueueIndexedDbSyncItem = enqueueIndexedDbSyncItem;
+  window.getPendingIndexedDbSyncItems = getPendingIndexedDbSyncItems;
+  window.removeIndexedDbSyncItem = removeIndexedDbSyncItem;
+  window.clearIndexedDbSyncOutbox = clearIndexedDbSyncOutbox;
+  window.clearAllGymIndexedDbStores = clearAllGymIndexedDbStores;
+  window.hydrateGymStateLocalFirst = hydrateGymStateLocalFirst;
+  window.persistGymStateLocalFirst = persistGymStateLocalFirst;
+  window.flushIndexedDbSyncOutbox = flushIndexedDbSyncOutbox;
+  window.notifyServiceWorkerToSync = notifyServiceWorkerToSync;
+  window.startOfflineFirstBackgroundSync = startOfflineFirstBackgroundSync;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

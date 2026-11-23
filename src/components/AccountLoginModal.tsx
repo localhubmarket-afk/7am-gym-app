@@ -155,25 +155,25 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
       >
         <div className="w-full max-w-md space-y-4 rounded-2xl border border-sky-400/50 bg-slate-900 p-5 text-slate-100 shadow-2xl">
           <div className="border-b border-slate-800 pb-3">
-            <span className="inline-block rounded-full border border-sky-400/40 bg-sky-500/15 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-sky-300">
+            <span className="inline-block rounded-full border border-sky-400/40 bg-sky-500/15 px-2.5 py-0.5 text-[0.625rem] font-extrabold uppercase tracking-wider text-sky-300">
               Account Verification
             </span>
-            <h2 id="account-verify-title" className="mt-1.5 text-base font-extrabold text-white">
+            <h2 id="account-verify-title" className="mt-1.5 text-base font-extrabold leading-relaxed text-white">
               Is this the correct account?
             </h2>
-            <p className="mt-1 text-xs text-slate-300">
+            <p className="mt-1 text-xs leading-relaxed text-slate-300">
               Confirm your profile before we load your saved workouts.
             </p>
           </div>
 
           <div className="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-950 p-3.5">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-base font-extrabold text-slate-950">
+            <div aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-base font-extrabold text-slate-950">
               {pendingVerification.displayName.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-extrabold text-white">{pendingVerification.displayName}</div>
               <div className="truncate text-xs text-slate-300">{pendingVerification.email}</div>
-              <div className="mt-0.5 text-[11px] font-bold text-sky-300">{providerLabel}</div>
+              <div className="mt-0.5 text-[0.6875rem] font-bold text-sky-300">{providerLabel}</div>
             </div>
           </div>
 
@@ -182,7 +182,8 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
               type="button"
               disabled={isSubmitting}
               onClick={handleConfirmVerification}
-              className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-emerald-400 disabled:opacity-60"
+              aria-label={`Continue as ${pendingVerification.displayName}`}
+              className="min-h-[44px] min-w-[44px] w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-emerald-400 disabled:opacity-60"
             >
               {isSubmitting ? 'Signing In...' : `Yes, Continue as ${pendingVerification.displayName}`}
             </button>
@@ -190,7 +191,8 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
               type="button"
               disabled={isSubmitting}
               onClick={handleSwitchAccount}
-              className="w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-2.5 text-xs font-extrabold text-slate-100 transition hover:bg-slate-700 disabled:opacity-60"
+              aria-label="Switch to a different account"
+              className="min-h-[44px] min-w-[44px] w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-2.5 text-xs font-extrabold text-slate-100 transition hover:bg-slate-700 disabled:opacity-60"
             >
               Switch Account
             </button>
@@ -222,7 +224,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
               type="button"
               onClick={onClose}
               aria-label="Close login modal"
-              className="rounded-lg bg-slate-800 px-2.5 py-1 text-xs font-bold text-slate-200 hover:bg-slate-700"
+              className="min-h-[44px] min-w-[44px] rounded-lg bg-slate-800 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-slate-700"
             >
               Close
             </button>
@@ -234,7 +236,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
             type="button"
             onClick={() => setMode('login')}
             aria-pressed={mode === 'login'}
-            className={`rounded-lg py-1.5 text-xs font-extrabold transition ${
+            className={`min-h-[44px] min-w-[44px] rounded-lg py-2 text-xs font-extrabold transition ${
               mode === 'login' ? 'bg-emerald-500 text-slate-950' : 'text-slate-300 hover:text-white'
             }`}
           >
@@ -244,7 +246,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
             type="button"
             onClick={() => setMode('signup')}
             aria-pressed={mode === 'signup'}
-            className={`rounded-lg py-1.5 text-xs font-extrabold transition ${
+            className={`min-h-[44px] min-w-[44px] rounded-lg py-2 text-xs font-extrabold transition ${
               mode === 'signup' ? 'bg-emerald-500 text-slate-950' : 'text-slate-300 hover:text-white'
             }`}
           >
@@ -258,7 +260,8 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
             type="button"
             disabled={isSubmitting}
             onClick={() => handleProviderClick('apple')}
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-slate-100 disabled:opacity-60"
+            aria-label="Continue with Apple Sign-In"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-slate-100 disabled:opacity-60"
           >
             <span>Continue with Apple</span>
           </button>
@@ -266,13 +269,14 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
             type="button"
             disabled={isSubmitting}
             onClick={() => handleProviderClick('google')}
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs font-extrabold text-white transition hover:bg-slate-800 disabled:opacity-60"
+            aria-label="Continue with Google Sign-In"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs font-extrabold text-white transition hover:bg-slate-800 disabled:opacity-60"
           >
             <span>Continue with Google</span>
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-slate-400">
+        <div className="flex items-center gap-2 text-[0.625rem] font-bold uppercase text-slate-400">
           <div className="h-px flex-1 bg-slate-800" />
           <span>Or Log In with Email &amp; Password</span>
           <div className="h-px flex-1 bg-slate-800" />
@@ -291,7 +295,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="Enter your first name"
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-semibold text-white placeholder-slate-400 focus:border-sky-400 focus:outline-none"
+                className="min-h-[44px] w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs font-semibold text-white placeholder-slate-400 focus:border-sky-400 focus:outline-none"
               />
             </div>
           )}
@@ -309,7 +313,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-semibold text-white placeholder-slate-400 focus:border-sky-400 focus:outline-none"
+              className="min-h-[44px] w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs font-semibold text-white placeholder-slate-400 focus:border-sky-400 focus:outline-none"
             />
           </div>
 
@@ -323,7 +327,8 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
                 aria-pressed={showPassword}
-                className="text-[11px] font-bold text-sky-400 hover:text-sky-300"
+                aria-label={showPassword ? 'Hide password characters' : 'Show password characters'}
+                className="min-h-[44px] min-w-[44px] px-2 text-[0.6875rem] font-bold text-sky-400 hover:text-sky-300"
               >
                 {showPassword ? 'Hide' : 'Show'}
               </button>
@@ -337,12 +342,12 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-semibold text-white placeholder-slate-400 focus:border-sky-400 focus:outline-none"
+              className="min-h-[44px] w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs font-semibold text-white placeholder-slate-400 focus:border-sky-400 focus:outline-none"
             />
           </div>
 
           {errorMessage && (
-            <p role="alert" className="rounded-lg border border-rose-500/40 bg-rose-950/60 px-3 py-2 text-xs font-semibold text-rose-200">
+            <p role="alert" aria-live="polite" className="rounded-lg border border-rose-500/40 bg-rose-950/60 px-3 py-2 text-xs font-semibold text-rose-200">
               {errorMessage}
             </p>
           )}
@@ -350,7 +355,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-xl bg-sky-400 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-sky-300 disabled:opacity-60"
+            className="min-h-[44px] min-w-[44px] w-full rounded-xl bg-sky-400 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-sky-300 disabled:opacity-60"
           >
             {isSubmitting ? 'Checking Account...' : mode === 'signup' ? 'Create Account' : 'Log In'}
           </button>

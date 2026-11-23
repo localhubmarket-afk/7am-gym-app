@@ -73,12 +73,12 @@ export const StartFreshControl: React.FC<StartFreshControlProps> = ({
         >
           <div className="bg-slate-900 border border-rose-400/70 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-left">
             <div className="space-y-2">
-              <span className="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/60 text-[10px] font-extrabold uppercase tracking-wider text-rose-200">
+              <span className="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/60 text-[0.625rem] font-extrabold uppercase tracking-wider text-rose-200">
                 Start Fresh
               </span>
               <h3
                 id="start-fresh-modal-title"
-                className="text-base font-extrabold text-white leading-snug"
+                className="text-base font-extrabold text-white leading-relaxed"
               >
                 {START_FRESH_CONFIRM_TITLE}
               </h3>
@@ -101,7 +101,8 @@ export const StartFreshControl: React.FC<StartFreshControlProps> = ({
                 type="button"
                 disabled={isResetting}
                 onClick={() => setConfirmOpen(false)}
-                className="min-h-[42px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition disabled:opacity-60"
+                aria-label="Cancel starting fresh"
+                className="min-h-[44px] min-w-[44px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -109,7 +110,8 @@ export const StartFreshControl: React.FC<StartFreshControlProps> = ({
                 type="button"
                 disabled={isResetting}
                 onClick={handleConfirm}
-                className="min-h-[42px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition disabled:opacity-60"
+                aria-label="Confirm starting fresh and clearing all workouts and meals"
+                className="min-h-[44px] min-w-[44px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition disabled:opacity-60"
               >
                 {isResetting ? 'Clearing...' : 'Yes, Start Fresh'}
               </button>

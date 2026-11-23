@@ -24,29 +24,32 @@ export const PostWorkoutMicroWinsModal: React.FC<PostWorkoutMicroWinsModalProps>
       <div className="max-h-[88vh] w-full max-w-md overflow-y-auto rounded-2xl border border-amber-500/60 bg-slate-900 p-5 text-left text-slate-100 shadow-2xl">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-300">
-              ★ Micro-Wins Celebration
+            <span className="text-[0.6875rem] font-extrabold uppercase tracking-wider text-amber-300">
+              <span aria-hidden="true">★ </span>
+              <span>Micro-Wins Celebration</span>
             </span>
-            <h2 id="micro-wins-modal-heading" className="mt-0.5 text-lg font-extrabold text-white">
+            <h2 id="micro-wins-modal-heading" className="mt-0.5 text-lg font-extrabold leading-relaxed text-white">
               {summary.headline}
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[38px] rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-slate-700"
+            aria-label="Close micro-wins window"
+            className="min-h-[44px] min-w-[44px] rounded-lg bg-slate-800 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-slate-700"
           >
-            ✕ Close
+            <span aria-hidden="true">✕ </span>
+            <span>Close</span>
           </button>
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2.5">
           <div className="rounded-xl border border-slate-700 bg-slate-950 p-3">
-            <div className="text-[11px] font-bold text-slate-400">Completed Sets</div>
+            <div className="text-[0.6875rem] font-bold text-slate-400">Completed Sets</div>
             <div className="text-lg font-extrabold text-emerald-300">{summary.totalSetsCompleted}</div>
           </div>
           <div className="rounded-xl border border-slate-700 bg-slate-950 p-3">
-            <div className="text-[11px] font-bold text-slate-400">Total Volume</div>
+            <div className="text-[0.6875rem] font-bold text-slate-400">Total Volume</div>
             <div className="text-lg font-extrabold text-sky-300">
               {summary.totalSessionVolume.toLocaleString()} {summary.unit}
             </div>
@@ -61,8 +64,11 @@ export const PostWorkoutMicroWinsModal: React.FC<PostWorkoutMicroWinsModalProps>
                 className="rounded-xl border border-emerald-500/40 bg-emerald-950/30 p-3"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-extrabold text-amber-300">★ {win.title}</span>
-                  <span className="rounded-md bg-emerald-600/30 px-2 py-0.5 text-[11px] font-extrabold text-emerald-200">
+                  <span className="text-xs font-extrabold text-amber-300">
+                    <span aria-hidden="true">★ </span>
+                    {win.title}
+                  </span>
+                  <span className="rounded-md bg-emerald-600/30 px-2 py-0.5 text-[0.6875rem] font-extrabold text-emerald-200">
                     {win.deltaLabel}
                   </span>
                 </div>

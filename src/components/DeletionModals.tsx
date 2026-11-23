@@ -224,9 +224,11 @@ export const ResetFuelButton: React.FC<ResetFuelButtonProps> = ({ onClick }) => 
   <button
     type="button"
     onClick={onClick}
-    className="text-xs font-extrabold px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/60 text-rose-200 transition whitespace-nowrap"
+    aria-label="Reset fuel logs for today"
+    className="min-h-[44px] min-w-[44px] text-xs font-extrabold px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/60 text-rose-200 transition whitespace-nowrap"
   >
-    ↺ Reset Fuel
+    <span aria-hidden="true">↺ </span>
+    <span>Reset Fuel</span>
   </button>
 );
 
@@ -256,10 +258,10 @@ export const ResetFuelConfirmModal: React.FC<ResetFuelConfirmModalProps> = ({
     >
       <div className="bg-slate-900 border border-rose-400/55 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
         <div className="space-y-1.5">
-          <span className="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-400/45 text-[10px] font-extrabold uppercase tracking-wider text-rose-200">
+          <span className="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-400/45 text-[0.625rem] font-extrabold uppercase tracking-wider text-rose-200">
             Muscle Fuel • Week {weekNumber} • Day {dayIndex + 1}
           </span>
-          <h3 id="reset-fuel-only-title" className="text-base font-extrabold text-white leading-snug">
+          <h3 id="reset-fuel-only-title" className="text-base font-extrabold text-white leading-relaxed">
             {FUEL_RESET_ONLY_PROMPT}
           </h3>
           <p className="text-xs text-slate-300 leading-relaxed">
@@ -270,14 +272,14 @@ export const ResetFuelConfirmModal: React.FC<ResetFuelConfirmModalProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition"
+            className="min-h-[44px] min-w-[44px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition"
+            className="min-h-[44px] min-w-[44px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition"
           >
             Reset Fuel
           </button>
@@ -299,7 +301,8 @@ export const DeleteAccountButton: React.FC<DeleteAccountButtonProps> = ({ onClic
     type="button"
     onClick={onClick}
     title="Permanently delete your account"
-    className="w-full py-2.5 px-3 rounded-xl bg-rose-600/20 hover:bg-rose-600/35 border border-rose-400/70 text-rose-100 text-xs font-extrabold transition"
+    aria-label="Permanently delete your account"
+    className="min-h-[44px] min-w-[44px] w-full py-2.5 px-3 rounded-xl bg-rose-600/20 hover:bg-rose-600/35 border border-rose-400/70 text-rose-100 text-xs font-extrabold transition"
   >
     Delete Account
   </button>
@@ -338,12 +341,12 @@ export const DeleteAccountWarningModal: React.FC<DeleteAccountWarningModalProps>
     >
       <div className="bg-slate-900 border border-rose-500/70 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
         <div className="space-y-2">
-          <span className="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/60 text-[10px] font-extrabold uppercase tracking-wider text-rose-200">
+          <span className="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/60 text-[0.625rem] font-extrabold uppercase tracking-wider text-rose-200">
             Delete Account
           </span>
           <h3
             id="delete-account-warning-title"
-            className="text-base font-extrabold text-white leading-snug"
+            className="text-base font-extrabold text-white leading-relaxed"
           >
             {DELETE_ACCOUNT_WARNING_PROMPT}
           </h3>
@@ -363,7 +366,7 @@ export const DeleteAccountWarningModal: React.FC<DeleteAccountWarningModalProps>
             type="button"
             disabled={isDeleting}
             onClick={onCancel}
-            className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition disabled:opacity-50"
+            className="min-h-[44px] min-w-[44px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition disabled:opacity-50"
           >
             {DELETE_ACCOUNT_BUTTON_LABELS.cancel}
           </button>
@@ -371,7 +374,7 @@ export const DeleteAccountWarningModal: React.FC<DeleteAccountWarningModalProps>
             type="button"
             disabled={isDeleting}
             onClick={onConfirmDelete}
-            className="py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition disabled:opacity-50"
+            className="min-h-[44px] min-w-[44px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition disabled:opacity-50"
           >
             {isDeleting ? 'Deleting...' : DELETE_ACCOUNT_BUTTON_LABELS.confirm}
           </button>
@@ -418,12 +421,12 @@ export const PostDeleteSwitchAccountModal: React.FC<PostDeleteSwitchAccountModal
     >
       <div className="bg-slate-900 border border-emerald-400/60 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-left">
         <div className="space-y-2">
-          <span className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-[10px] font-extrabold uppercase tracking-wider text-emerald-200">
+          <span className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-[0.625rem] font-extrabold uppercase tracking-wider text-emerald-200">
             Account Deleted
           </span>
           <h3
             id="post-delete-switch-title"
-            className="text-base font-extrabold text-white leading-snug"
+            className="text-base font-extrabold text-white leading-relaxed"
           >
             {POST_DELETE_SELECT_ACCOUNT_PROMPT}
           </h3>
@@ -432,7 +435,7 @@ export const PostDeleteSwitchAccountModal: React.FC<PostDeleteSwitchAccountModal
         {secondaryAccount && (
           <div className="space-y-2">
             <div className="flex items-center gap-3 rounded-xl bg-slate-950 border border-slate-700 p-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-sm flex items-center justify-center shrink-0">
+              <div aria-hidden="true" className="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-sm flex items-center justify-center shrink-0">
                 {initialLetter}
               </div>
               <div className="min-w-0">
@@ -443,7 +446,7 @@ export const PostDeleteSwitchAccountModal: React.FC<PostDeleteSwitchAccountModal
             <button
               type="button"
               onClick={() => onOneClickContinue(secondaryAccount)}
-              className="w-full min-h-[42px] py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition"
+              className="w-full min-h-[44px] min-w-[44px] py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition"
             >
               Continue as {secondaryAccount.name}
             </button>
@@ -451,14 +454,14 @@ export const PostDeleteSwitchAccountModal: React.FC<PostDeleteSwitchAccountModal
         )}
 
         <div className="space-y-2">
-          <div className="text-[11px] font-bold text-slate-300">Sign in with one tap:</div>
+          <div className="text-[0.6875rem] font-bold text-slate-300">Sign in with one tap:</div>
           <div className="grid grid-cols-1 gap-2">
             {oauthProviders.map((provider) => (
               <button
                 key={provider}
                 type="button"
                 onClick={() => onSelectOAuthProvider?.(provider)}
-                className="w-full min-h-[42px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-extrabold transition"
+                className="w-full min-h-[44px] min-w-[44px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-extrabold transition"
               >
                 Continue with {provider}
               </button>
@@ -467,7 +470,7 @@ export const PostDeleteSwitchAccountModal: React.FC<PostDeleteSwitchAccountModal
           <button
             type="button"
             onClick={onUseAnotherAccount}
-            className="w-full min-h-[40px] py-2 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold transition"
+            className="w-full min-h-[44px] min-w-[44px] py-2 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold transition"
           >
             Log In with Email &amp; Password
           </button>
