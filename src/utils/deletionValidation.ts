@@ -7,7 +7,12 @@ export const DELETE_ACCOUNT_WARNING_PROMPT =
   'Are you sure you want to delete the account?';
 
 export const DELETE_ACCOUNT_MAIN_WARNING =
-  'This will permanently erase your account and all your data. You cannot get it back.';
+  'Are you sure you want to delete this account forever? All your saved workouts and meals will be gone.';
+
+export const POST_DELETE_SELECT_ACCOUNT_PROMPT =
+  'Account deleted. Please select your active account to continue.';
+
+export const AVAILABLE_OAUTH_LOGIN_PROVIDERS = ['Google', 'Apple'] as const;
 
 export const DELETE_ACCOUNT_BUTTON_LABELS = {
   cancel: 'Cancel',
@@ -999,3 +1004,47 @@ export async function executeCompleteAccountDeletion(
     switchPromptText: secondaryAccount ? buildPostDeleteSwitchPrompt(secondaryAccount.name) : null
   };
 }
+
+export interface OnDeleteSuccessOptions {
+  deletedEmail?: string | null;
+  secondaryAccount?: SavedAccountCandidate | null;
+  oauthProviders?: readonly string[];
+  onOpenAccountSelectModal?: (payload: OnDeleteSuccessPayload) => void;
+}
+
+export interface OnDeleteSuccessPayload {
+  modalPrompt: string;
+  deletedEmail: string;
+  oauthProviders: string[];
+  secondaryAccount: SavedAccountCandidate | null;
+  shouldOpenAccountSelectModal: true;
+}
+
+/**
+ * Task 1: Streamlined Account Deletion `onDeleteSuccess` handler.
+ * Triggered immediately once the account is deleted from Supabase.
+ * Opens the post-delete modal with exact text:
+ * "Account deleted. Please select your active account to continue."
+ * and surfaces available OAuth login options (Google, Apple) inside the modal.
+ */
+export function onDeleteSuccess(options: OnDeleteSuccessOptions = {}): OnDeleteSuccessPayload {
+  const oauthProviders =
+    Array.isArray(options.oauthProviders) && options.oauthProviders.length > 0
+      ? [...options.oauthProviders]
+      : [...AVAILABLE_OAUTH_LOGIN_PROVIDERS];
+
+  const payload: OnDeleteSuccessPayload = {
+    modalPrompt: POST_DELETE_SELECT_ACCOUNT_PROMPT,
+    deletedEmail: normalizeAccountUserId(options.deletedEmail),
+    oauthProviders,
+    secondaryAccount: options.secondaryAccount || null,
+    shouldOpenAccountSelectModal: true
+  };
+
+  if (typeof options.onOpenAccountSelectModal === 'function') {
+    options.onOpenAccountSelectModal(payload);
+  }
+
+  return payload;
+}
+

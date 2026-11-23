@@ -4074,7 +4074,7 @@ test('Account Deletion Redesign, Concurrent 3-Layer Data Sanitization, Auto Acco
   // 1. Account Deletion Redesign: exact jargon-free ELI12 copy & button structure
   assert.equal(
     DELETE_ACCOUNT_MAIN_WARNING,
-    'This will permanently erase your account and all your data. You cannot get it back.'
+    'Are you sure you want to delete this account forever? All your saved workouts and meals will be gone.'
   );
   assert.equal(DELETE_ACCOUNT_MAIN_WARNING.toLowerCase().includes('supabase'), false);
   assert.equal(DELETE_ACCOUNT_BUTTON_LABELS.cancel, 'Cancel');

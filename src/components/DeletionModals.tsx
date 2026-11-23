@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import {
+  AVAILABLE_OAUTH_LOGIN_PROVIDERS,
   DELETE_ACCOUNT_BUTTON_LABELS,
   DELETE_ACCOUNT_MAIN_WARNING,
   DELETE_ACCOUNT_WARNING_PROMPT,
   FUEL_RESET_ONLY_PROMPT,
+  POST_DELETE_SELECT_ACCOUNT_PROMPT,
   WORKOUT_FUEL_RESET_PROMPT,
-  buildPostDeleteSwitchPrompt,
   executeCompleteAccountDeletion,
+  onDeleteSuccess,
   type CompleteAccountDeletionResult,
+  type OnDeleteSuccessPayload,
   type SavedAccountCandidate
 } from '../utils/deletionValidation';
 
@@ -261,25 +264,30 @@ export const DeleteAccountWarningModal: React.FC<DeleteAccountWarningModalProps>
 export interface PostDeleteSwitchAccountModalProps {
   isOpen: boolean;
   secondaryAccount: SavedAccountCandidate | null;
+  oauthProviders?: readonly string[];
+  onSelectOAuthProvider?: (provider: string) => void;
   onOneClickContinue: (account: SavedAccountCandidate) => void;
   onUseAnotherAccount: () => void;
 }
 
 /**
- * Automated Post-Deletion Account Switch Modal:
- * Shown immediately after deletion when another saved profile exists on the device.
- * Exact prompt: "Account deleted. Do you want to continue as [Other Account Name]?"
+ * Task 1: Post-Deletion Account Selection Modal triggered by `onDeleteSuccess`.
+ * Exact prompt: "Account deleted. Please select your active account to continue."
+ * Displays available OAuth login options (Google, Apple) plus any saved account shortcut.
  */
 export const PostDeleteSwitchAccountModal: React.FC<PostDeleteSwitchAccountModalProps> = ({
   isOpen,
   secondaryAccount,
+  oauthProviders = AVAILABLE_OAUTH_LOGIN_PROVIDERS,
+  onSelectOAuthProvider,
   onOneClickContinue,
   onUseAnotherAccount
 }) => {
-  if (!isOpen || !secondaryAccount) return null;
+  if (!isOpen) return null;
 
-  const promptText = buildPostDeleteSwitchPrompt(secondaryAccount.name);
-  const initialLetter = (secondaryAccount.name || 'A').trim().charAt(0).toUpperCase();
+  const initialLetter = secondaryAccount
+    ? (secondaryAccount.name || 'A').trim().charAt(0).toUpperCase()
+    : 'A';
 
   return (
     <div
@@ -288,7 +296,7 @@ export const PostDeleteSwitchAccountModal: React.FC<PostDeleteSwitchAccountModal
       aria-modal="true"
       aria-labelledby="post-delete-switch-title"
     >
-      <div className="bg-slate-900 border border-emerald-400/60 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div className="bg-slate-900 border border-emerald-400/60 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-left">
         <div className="space-y-2">
           <span className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-[10px] font-extrabold uppercase tracking-wider text-emerald-200">
             Account Deleted
@@ -297,34 +305,51 @@ export const PostDeleteSwitchAccountModal: React.FC<PostDeleteSwitchAccountModal
             id="post-delete-switch-title"
             className="text-base font-extrabold text-white leading-snug"
           >
-            {promptText}
+            {POST_DELETE_SELECT_ACCOUNT_PROMPT}
           </h3>
         </div>
 
-        <div className="flex items-center gap-3 rounded-xl bg-slate-950 border border-slate-700 p-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-sm flex items-center justify-center shrink-0">
-            {initialLetter}
+        {secondaryAccount && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 rounded-xl bg-slate-950 border border-slate-700 p-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-sm flex items-center justify-center shrink-0">
+                {initialLetter}
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm font-extrabold text-white truncate">{secondaryAccount.name}</div>
+                <div className="text-xs text-slate-300 truncate">{secondaryAccount.email}</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onOneClickContinue(secondaryAccount)}
+              className="w-full min-h-[42px] py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition"
+            >
+              Continue as {secondaryAccount.name}
+            </button>
           </div>
-          <div className="min-w-0">
-            <div className="text-sm font-extrabold text-white truncate">{secondaryAccount.name}</div>
-            <div className="text-xs text-slate-300 truncate">{secondaryAccount.email}</div>
-          </div>
-        </div>
+        )}
 
         <div className="space-y-2">
-          <button
-            type="button"
-            onClick={() => onOneClickContinue(secondaryAccount)}
-            className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition"
-          >
-            Continue as {secondaryAccount.name}
-          </button>
+          <div className="text-[11px] font-bold text-slate-300">Sign in with one tap:</div>
+          <div className="grid grid-cols-1 gap-2">
+            {oauthProviders.map((provider) => (
+              <button
+                key={provider}
+                type="button"
+                onClick={() => onSelectOAuthProvider?.(provider)}
+                className="w-full min-h-[42px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-extrabold transition"
+              >
+                Continue with {provider}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             onClick={onUseAnotherAccount}
-            className="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition"
+            className="w-full min-h-[40px] py-2 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold transition"
           >
-            Log In with Another Account
+            Log In with Email &amp; Password
           </button>
         </div>
       </div>
@@ -339,14 +364,16 @@ export interface AccountDeletionFlowControllerProps {
   isWarningOpen: boolean;
   onCloseWarning: () => void;
   onAutoSwitchLogin: (account: SavedAccountCandidate) => void;
+  onSelectOAuthProvider?: (provider: string) => void;
+  onDeleteCompleted?: (payload: OnDeleteSuccessPayload) => void;
   onFallbackEmptyLogin: (result: CompleteAccountDeletionResult) => void;
 }
 
 /**
  * Full Account Deletion Flow Controller:
- * 1. Displays jargon-free warning modal.
+ * 1. Displays jargon-free ELI12 warning modal.
  * 2. Runs Server + Mobile Client + Web Cookie cleanup concurrently via Promise.all.
- * 3. Automatically offers one-click login into another saved profile if found.
+ * 3. Calls `onDeleteSuccess` immediately after deletion to open the active account picker with OAuth options.
  */
 export const AccountDeletionFlowController: React.FC<AccountDeletionFlowControllerProps> = ({
   endpoint,
@@ -355,10 +382,12 @@ export const AccountDeletionFlowController: React.FC<AccountDeletionFlowControll
   isWarningOpen,
   onCloseWarning,
   onAutoSwitchLogin,
+  onSelectOAuthProvider,
+  onDeleteCompleted,
   onFallbackEmptyLogin
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
-  const [switchCandidate, setSwitchCandidate] = useState<SavedAccountCandidate | null>(null);
+  const [postDeletePayload, setPostDeletePayload] = useState<OnDeleteSuccessPayload | null>(null);
   const [lastResult, setLastResult] = useState<CompleteAccountDeletionResult | null>(null);
 
   const handleConfirmDelete = async () => {
@@ -374,10 +403,15 @@ export const AccountDeletionFlowController: React.FC<AccountDeletionFlowControll
       setLastResult(result);
       onCloseWarning();
 
-      if (result.deleted && result.secondaryAccount) {
-        setSwitchCandidate(result.secondaryAccount);
-      } else if (result.deleted) {
-        onFallbackEmptyLogin(result);
+      if (result.deleted) {
+        onDeleteSuccess({
+          deletedEmail: activeEmail,
+          secondaryAccount: result.secondaryAccount,
+          onOpenAccountSelectModal: (payload) => {
+            setPostDeletePayload(payload);
+            onDeleteCompleted?.(payload);
+          }
+        });
       }
     } finally {
       setIsDeleting(false);
@@ -385,12 +419,17 @@ export const AccountDeletionFlowController: React.FC<AccountDeletionFlowControll
   };
 
   const handleOneClickContinue = (account: SavedAccountCandidate) => {
-    setSwitchCandidate(null);
+    setPostDeletePayload(null);
     onAutoSwitchLogin(account);
   };
 
+  const handleSelectOAuth = (provider: string) => {
+    setPostDeletePayload(null);
+    onSelectOAuthProvider?.(provider);
+  };
+
   const handleUseAnother = () => {
-    setSwitchCandidate(null);
+    setPostDeletePayload(null);
     if (lastResult) {
       onFallbackEmptyLogin(lastResult);
     }
@@ -406,8 +445,10 @@ export const AccountDeletionFlowController: React.FC<AccountDeletionFlowControll
         onCancel={onCloseWarning}
       />
       <PostDeleteSwitchAccountModal
-        isOpen={Boolean(switchCandidate)}
-        secondaryAccount={switchCandidate}
+        isOpen={Boolean(postDeletePayload)}
+        secondaryAccount={postDeletePayload?.secondaryAccount || null}
+        oauthProviders={postDeletePayload?.oauthProviders || AVAILABLE_OAUTH_LOGIN_PROVIDERS}
+        onSelectOAuthProvider={handleSelectOAuth}
         onOneClickContinue={handleOneClickContinue}
         onUseAnotherAccount={handleUseAnother}
       />

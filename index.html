@@ -509,12 +509,12 @@
         <span class="shrink-0 rounded-md bg-amber-500/25 px-2 py-0.5 text-[10px] font-extrabold uppercase">Local-First</span>
       </div>
 
-      <!-- Module 3: Adherence-Neutral Flexible Weekly Goal Card (Never Resets Streaks on Missed Days) -->
-      <div id="weekly-adherence-neutral-card" class="rounded-2xl border border-emerald-500/40 bg-slate-900/90 p-3 space-y-2 shadow-sm">
+      <!-- Module 3: Adherence-Neutral Flexible Weekly Goal Card (Dynamically Bound to gym_state.workoutLogs) -->
+      <div id="weekly-adherence-neutral-card" data-adherence-source="workoutLogs" class="rounded-2xl border border-emerald-500/40 bg-slate-900/90 p-3 space-y-2 shadow-sm">
         <div class="flex items-center justify-between gap-2">
           <div class="min-w-0">
             <div class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">Flexible Weekly Goal • Zero Streak Punishment</div>
-            <div id="adherence-neutral-status-text" class="text-xs sm:text-sm font-extrabold text-white mt-0.5">0 of 4 workouts completed this week</div>
+            <div id="adherence-neutral-status-text" data-completed-workouts="0" class="text-xs sm:text-sm font-extrabold text-white mt-0.5"></div>
           </div>
           <button type="button" id="open-micro-wins-preview-btn" class="shrink-0 min-h-[36px] px-2.5 py-1.5 rounded-xl border border-amber-400/60 bg-amber-600/20 hover:bg-amber-600/30 text-amber-100 text-[11px] font-extrabold transition whitespace-nowrap">
             ★ View Session Wins
@@ -523,7 +523,7 @@
         <div role="progressbar" aria-label="Weekly flexible workout goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="adherence-neutral-progress-bar" class="h-2 w-full overflow-hidden rounded-full bg-slate-800">
           <div id="adherence-neutral-progress-fill" class="h-full rounded-full bg-emerald-500 transition-all duration-300" style="width: 0%;"></div>
         </div>
-        <p id="adherence-neutral-encouragement" class="text-[11px] text-slate-300 leading-relaxed">Move your gym days any way you need. Missing a day never resets your progress.</p>
+        <p id="adherence-neutral-encouragement" class="text-[11px] text-slate-300 leading-relaxed"></p>
       </div>
 
       <!-- Module 4: Biometric Readiness Banner (Sleep < 5h -> -10% Prescribed Sets) -->
@@ -14225,25 +14225,67 @@
         }
       });
 
-      // Module 3: Adherence-Neutral Weekly Goal Card (Never resets streaks on missed days)
-      if (typeof window.computeAdherenceNeutralWeeklyProgress === 'function') {
-        const targetDays = Number(state.weeklyWorkoutTarget || (state.programWizardConfig && state.programWizardConfig.daysPerWeek) || 4);
-        const adh = window.computeAdherenceNeutralWeeklyProgress({
-          weekNumber: week,
-          weeklyTarget: targetDays,
-          workoutLogs: state.workoutLogs || {},
-          pullupLogs: state.pullupLogs || {},
-          cardioLogs: state.cardioLogs || {}
-        });
+      // Module 3 / Task 3: Adherence-Neutral Weekly Goal Card (Strictly Bound to state.workoutLogs — Never Hardcoded)
+      (function updateConnectedWeeklyAdherenceCard() {
+        const targetDays = Math.max(
+          1,
+          Math.min(7, Number(state.weeklyWorkoutTarget || (state.programWizardConfig && state.programWizardConfig.daysPerWeek) || 5))
+        );
+        const logs = state.workoutLogs && typeof state.workoutLogs === 'object' ? state.workoutLogs : {};
+        let adh = null;
+        if (typeof window.computeAdherenceNeutralWeeklyProgress === 'function') {
+          adh = window.computeAdherenceNeutralWeeklyProgress({
+            weekNumber: week,
+            weeklyTarget: targetDays,
+            workoutLogs: logs,
+            pullupLogs: state.pullupLogs || {},
+            cardioLogs: state.cardioLogs || {}
+          });
+        } else {
+          // Synchronous workoutLogs-bound fallback before ES bridge hydrates
+          const doneDays = new Set();
+          const wPref = `w${week}_`;
+          Object.entries(logs).forEach(([k, v]) => {
+            if (!v || (v.done !== true && v.isLogged !== true)) return;
+            if (k.startsWith(wPref)) {
+              const m = k.match(/^w\d+_(\d+)_/);
+              if (m) doneDays.add(parseInt(m[1], 10));
+            } else if (week === 1) {
+              const lm = k.match(/^(\d+)_[a-z]/i);
+              if (lm) doneDays.add(parseInt(lm[1], 10));
+            }
+          });
+          const count = doneDays.size;
+          const pct = Math.min(100, Math.round((count / targetDays) * 100));
+          const rem = Math.max(0, targetDays - count);
+          adh = {
+            completedWorkoutsCount: count,
+            weeklyTarget: targetDays,
+            percentComplete: pct,
+            statusLabel: count === 0
+              ? `0 of ${targetDays} workouts completed this week`
+              : (count >= targetDays
+                ? `${count} of ${targetDays} workouts completed this week (Goal hit!)`
+                : `${count} of ${targetDays} workouts completed this week`),
+            encouragementCopy: count === 0
+              ? 'Start whenever you are ready. Any day counts toward your weekly goal.'
+              : (count >= targetDays
+                ? 'You hit your flexible weekly target. Great consistency.'
+                : `${rem} more workout${rem === 1 ? '' : 's'} any day this week. Take rest days when you need them.`)
+          };
+        }
         const adhStatus = document.getElementById('adherence-neutral-status-text');
         const adhBar = document.getElementById('adherence-neutral-progress-bar');
         const adhFill = document.getElementById('adherence-neutral-progress-fill');
         const adhEnc = document.getElementById('adherence-neutral-encouragement');
-        if (adhStatus) adhStatus.textContent = adh.statusLabel;
+        if (adhStatus) {
+          adhStatus.textContent = adh.statusLabel;
+          adhStatus.setAttribute('data-completed-workouts', String(adh.completedWorkoutsCount));
+        }
         if (adhBar) adhBar.setAttribute('aria-valuenow', String(adh.percentComplete));
         if (adhFill) adhFill.style.width = `${adh.percentComplete}%`;
         if (adhEnc) adhEnc.textContent = adh.encouragementCopy;
-      }
+      })();
 
       // Wire "★ View Session Wins" preview button directly to Micro-Wins completion modal
       const winsPreviewBtn = document.getElementById('open-micro-wins-preview-btn');
@@ -18091,6 +18133,75 @@
           }
           const exObjForSet = exercisesToday.find(e => e.id === exId);
           const isTimedHoldSet = Boolean((exObjForSet && exObjForSet.isTimedHold) || exId === 'tue_side_plank');
+          const wasAlreadyDone = Boolean(state.workoutLogs[key] && state.workoutLogs[key].done);
+          let candidateWeightForSanity = '';
+          if (!isTimedHoldSet) {
+            if (weightInput && weightInput.value !== '') {
+              candidateWeightForSanity = clampWeightInputLocal(weightInput.value).value;
+            } else if (state.workoutLogs[key].weight !== '') {
+              candidateWeightForSanity = String(state.workoutLogs[key].weight);
+            } else if (weightInput && weightInput.placeholder) {
+              candidateWeightForSanity = clampWeightInputLocal(weightInput.placeholder).value;
+            }
+          }
+
+          // Task 4: Content Validation (250% Historical Max Sanity Check — Requires 2nd Tap on "Log Set" to Force Save)
+          if (!wasAlreadyDone && !isTimedHoldSet && !PULLUP_EX_ID_TO_DAY[exId] && candidateWeightForSanity !== '') {
+            const parsedW = parseFloat(candidateWeightForSanity);
+            if (Number.isFinite(parsedW) && parsedW > 0) {
+              let sanityRes = null;
+              if (typeof window.validateSetWeightSanity === 'function') {
+                sanityRes = window.validateSetWeightSanity({
+                  exerciseId: exId,
+                  canonicalExerciseId: exObjForSet ? exObjForSet.exerciseID : null,
+                  setKey: key,
+                  enteredWeight: parsedW,
+                  unit: exUnit,
+                  workoutLogs: state.workoutLogs,
+                  exerciseHistory: state.exerciseHistory,
+                  pendingConfirmationKey: window.__pendingHeavyWeightConfirmKey || null
+                });
+              } else {
+                // Inline fallback if bridge not hydrated yet
+                let histMax = 0;
+                const exLower = String(exId || '').toLowerCase();
+                Object.entries(state.workoutLogs || {}).forEach(([lk, lv]) => {
+                  if (lk === key || !lv || !lv.done) return;
+                  if (!lk.toLowerCase().includes(`_${exLower}_`)) return;
+                  const lw = parseFloat(lv.weight);
+                  if (Number.isFinite(lw) && lw > histMax) histMax = lw;
+                });
+                const confirmKey = `${key}::${parsedW}`;
+                if (histMax > 0 && parsedW > histMax * 2.5 && window.__pendingHeavyWeightConfirmKey !== confirmKey) {
+                  sanityRes = {
+                    allowed: false,
+                    requiresSecondTap: true,
+                    warningMessage: `That looks heavy! Did you mean to log ${parsedW} ${exUnit}?`,
+                    confirmationKey: confirmKey
+                  };
+                } else {
+                  sanityRes = { allowed: true, confirmationKey: null };
+                }
+              }
+
+              if (sanityRes && !sanityRes.allowed) {
+                window.__pendingHeavyWeightConfirmKey = sanityRes.confirmationKey;
+                btn.setAttribute('data-heavy-confirm-armed', 'true');
+                btn.classList.remove('bg-slate-800', 'bg-slate-900', 'text-slate-300', 'text-slate-400', 'border-slate-700', 'hover:bg-slate-700');
+                btn.classList.add('ring-2', 'ring-amber-300', 'border-amber-300', 'font-black');
+                btn.style.backgroundColor = '#fbbf24';
+                btn.style.color = '#0f172a';
+                btn.textContent = 'Tap Again';
+                showToast(sanityRes.warningMessage || `That looks heavy! Did you mean to log ${parsedW} ${exUnit}?`);
+                return;
+              }
+              window.__pendingHeavyWeightConfirmKey = null;
+              btn.removeAttribute('data-heavy-confirm-armed');
+              btn.style.backgroundColor = '';
+              btn.style.color = '';
+            }
+          }
+
           if (isTimedHoldSet) {
             const holdSec = parseInt((state.timedHoldSetSeconds && state.timedHoldSetSeconds[key]) || (state.timedHoldSeconds && state.timedHoldSeconds[exId]), 10) || 30;
             state.workoutLogs[key].weight = '0';
@@ -25544,35 +25655,78 @@
             const pwdInp = document.getElementById('lead-password-input');
             if (pwdInp) pwdInp.value = '';
 
-            if (secondaryAccount && postDeleteSwitchModalEl) {
-              // Automated Account Switch: offer 1-click login instead of dropping user on an empty login screen
-              pendingSecondarySwitchAccount = secondaryAccount;
-              const promptLabel =
-                switchPromptText ||
-                (typeof window.buildPostDeleteSwitchPrompt === 'function'
-                  ? window.buildPostDeleteSwitchPrompt(secondaryAccount.name)
-                  : `Account deleted. Do you want to continue as ${secondaryAccount.name}?`);
+            // Task 1: Streamlined Account Deletion `onDeleteSuccess` -> Instantly show active account selector modal with OAuth options
+            function onDeleteSuccessLocal(deletedEmailVal, savedSecondary) {
+              const payload = typeof window.onDeleteSuccess === 'function'
+                ? window.onDeleteSuccess({ deletedEmail: deletedEmailVal, secondaryAccount: savedSecondary })
+                : {
+                    modalPrompt: 'Account deleted. Please select your active account to continue.',
+                    oauthProviders: ['Google', 'Apple'],
+                    secondaryAccount: savedSecondary || null
+                  };
+
               if (smartLoginModal) smartLoginModal.classList.add('hidden');
-              if (postDeleteSwitchTitleEl) postDeleteSwitchTitleEl.textContent = promptLabel;
-              if (postDeleteSwitchAvatarEl) {
-                postDeleteSwitchAvatarEl.textContent = (secondaryAccount.name || 'A').trim().charAt(0).toUpperCase();
+              if (postDeleteSwitchModalEl) {
+                if (postDeleteSwitchTitleEl) {
+                  postDeleteSwitchTitleEl.textContent = payload.modalPrompt || 'Account deleted. Please select your active account to continue.';
+                }
+                const secWrap = document.getElementById('post-delete-secondary-card-wrap');
+                if (savedSecondary) {
+                  pendingSecondarySwitchAccount = savedSecondary;
+                  if (secWrap) secWrap.classList.remove('hidden');
+                  if (postDeleteSwitchAvatarEl) {
+                    postDeleteSwitchAvatarEl.textContent = (savedSecondary.name || 'A').trim().charAt(0).toUpperCase();
+                  }
+                  if (postDeleteSwitchNameEl) postDeleteSwitchNameEl.textContent = savedSecondary.name;
+                  if (postDeleteSwitchEmailEl) postDeleteSwitchEmailEl.textContent = savedSecondary.email;
+                  if (oneClickSwitchAccountBtn) {
+                    oneClickSwitchAccountBtn.textContent = `Continue as ${savedSecondary.name}`;
+                  }
+                } else {
+                  pendingSecondarySwitchAccount = null;
+                  if (secWrap) secWrap.classList.add('hidden');
+                }
+                postDeleteSwitchModalEl.classList.remove('hidden');
+                renderWorkoutView();
+                renderVeganView();
+                renderShoppingView();
+              } else {
+                routeToEmptyLoginAfterDelete();
               }
-              if (postDeleteSwitchNameEl) postDeleteSwitchNameEl.textContent = secondaryAccount.name;
-              if (postDeleteSwitchEmailEl) postDeleteSwitchEmailEl.textContent = secondaryAccount.email;
-              if (oneClickSwitchAccountBtn) {
-                oneClickSwitchAccountBtn.textContent = `Continue as ${secondaryAccount.name}`;
-              }
-              postDeleteSwitchModalEl.classList.remove('hidden');
-              renderWorkoutView();
-              renderVeganView();
-            } else {
-              routeToEmptyLoginAfterDelete();
-              showToast('Account deleted. You can log in anytime.');
             }
+            window.handleAccountDeleteSuccessUI = onDeleteSuccessLocal;
+            onDeleteSuccessLocal(targetEmail, secondaryAccount);
           } finally {
             confirmDeleteAccountBtn.disabled = false;
             confirmDeleteAccountBtn.textContent = 'Yes, Delete Account';
           }
+        });
+      }
+
+      const postDeleteGoogleBtn = document.getElementById('post-delete-google-oauth-btn');
+      const postDeleteAppleBtn = document.getElementById('post-delete-apple-oauth-btn');
+      const postDeleteGuestBtn = document.getElementById('post-delete-guest-btn');
+      if (postDeleteGoogleBtn) {
+        postDeleteGoogleBtn.addEventListener('click', () => {
+          if (postDeleteSwitchModalEl) postDeleteSwitchModalEl.classList.add('hidden');
+          handleSocialProviderClick('Google');
+        });
+      }
+      if (postDeleteAppleBtn) {
+        postDeleteAppleBtn.addEventListener('click', () => {
+          if (postDeleteSwitchModalEl) postDeleteSwitchModalEl.classList.add('hidden');
+          handleSocialProviderClick('Apple');
+        });
+      }
+      if (postDeleteGuestBtn) {
+        postDeleteGuestBtn.addEventListener('click', () => {
+          if (postDeleteSwitchModalEl) postDeleteSwitchModalEl.classList.add('hidden');
+          state.isGuestMode = true;
+          state.userProfile = { name: 'Guest', email: '', isGuest: true, authProvider: 'guest_local' };
+          saveState(true);
+          if (typeof updateHeaderProfileUI === 'function') updateHeaderProfileUI();
+          renderWorkoutView();
+          showToast('Continuing in Free Guest Mode.');
         });
       }
 
@@ -27697,6 +27851,17 @@
             Show/Hide All Diagrams
           </button>
         </div>
+
+        <!-- Task 2: Complete Data Removal ("Start Fresh") -->
+        <div class="pt-2.5 border-t border-slate-800/80 space-y-1.5">
+          <div class="text-[11px] font-extrabold uppercase tracking-wider text-rose-300">Reset All App Data</div>
+          <p class="text-[11px] text-slate-300 leading-relaxed">
+            Clear all logged workouts, fuel logs, fridge batch prep (oats and rice), and your shopping list to begin at 0.
+          </p>
+          <button type="button" id="settings-start-fresh-btn" class="w-full min-h-[44px] py-2.5 px-3 rounded-xl border border-rose-400/70 bg-rose-600/20 hover:bg-rose-600/30 text-rose-100 text-xs font-extrabold transition flex items-center justify-center gap-2">
+            <span>↺ Start Fresh</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -27940,7 +28105,7 @@
     </div>
   </div>
 
-  <!-- MODAL 4E: Redesigned Account Deletion Warning Modal (Jargon-Free ELI12 Copy) -->
+  <!-- MODAL 4E: Streamlined Account Deletion Confirmation Modal (Jargon-Free ELI12 Copy) -->
   <div id="delete-account-confirm-modal" class="hidden fixed inset-0 z-[85] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-account-confirm-title" aria-describedby="delete-account-confirm-copy">
     <div class="bg-slate-900 border border-rose-500/70 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
       <div class="space-y-2">
@@ -27948,25 +28113,25 @@
           Delete Account
         </span>
         <h3 id="delete-account-confirm-title" class="text-base font-extrabold text-white leading-snug">
-          Are you sure you want to delete the account?
+          Delete Account Forever?
         </h3>
         <div id="delete-account-target-email" class="text-xs font-bold text-rose-200 truncate">your account</div>
         <p id="delete-account-confirm-copy" class="text-xs text-slate-200 leading-relaxed">
-          This will permanently erase your account and all your data. You cannot get it back.
+          Are you sure you want to delete this account forever? All your saved workouts and meals will be gone.
         </p>
       </div>
       <div class="grid grid-cols-2 gap-2">
-        <button type="button" id="cancel-delete-account-btn" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition">
+        <button type="button" id="cancel-delete-account-btn" class="min-h-[42px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition">
           Cancel
         </button>
-        <button type="button" id="confirm-delete-account-btn" class="py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition">
+        <button type="button" id="confirm-delete-account-btn" class="min-h-[42px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition">
           Yes, Delete Account
         </button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 4F: Automated Post-Deletion One-Click Account Switch Modal -->
+  <!-- MODAL 4F: Streamlined Post-Deletion Account Selection Modal (Triggered by onDeleteSuccess) -->
   <div id="post-delete-switch-modal" class="hidden fixed inset-0 z-[86] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="post-delete-switch-title">
     <div class="bg-slate-900 border border-emerald-400/60 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
       <div class="space-y-2">
@@ -27974,24 +28139,69 @@
           Account Deleted
         </span>
         <h3 id="post-delete-switch-title" class="text-base font-extrabold text-white leading-snug">
-          Account deleted. Do you want to continue as your other account?
+          Account deleted. Please select your active account to continue.
         </h3>
       </div>
-      <div class="flex items-center gap-3 rounded-xl bg-slate-950 border border-slate-700 p-3">
-        <div id="post-delete-switch-avatar" class="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-sm flex items-center justify-center shrink-0">
-          A
+
+      <div id="post-delete-secondary-card-wrap" class="hidden space-y-2">
+        <div class="flex items-center gap-3 rounded-xl bg-slate-950 border border-slate-700 p-3">
+          <div id="post-delete-switch-avatar" class="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-sm flex items-center justify-center shrink-0">
+            A
+          </div>
+          <div class="min-w-0">
+            <div id="post-delete-switch-name" class="text-sm font-extrabold text-white truncate">Saved Account</div>
+            <div id="post-delete-switch-email" class="text-xs text-slate-300 truncate">account@7amgym.app</div>
+          </div>
         </div>
-        <div class="min-w-0">
-          <div id="post-delete-switch-name" class="text-sm font-extrabold text-white truncate">Saved Account</div>
-          <div id="post-delete-switch-email" class="text-xs text-slate-300 truncate">account@7amgym.app</div>
-        </div>
-      </div>
-      <div class="space-y-2">
-        <button type="button" id="one-click-switch-account-btn" class="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition">
+        <button type="button" id="one-click-switch-account-btn" class="w-full min-h-[42px] py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition">
           Continue as Saved Account
         </button>
-        <button type="button" id="post-delete-use-another-btn" class="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition">
-          Log In with Another Account
+      </div>
+
+      <div class="space-y-2">
+        <div class="text-[11px] font-bold text-slate-300">Choose how to sign in:</div>
+        <button type="button" id="post-delete-google-oauth-btn" class="w-full min-h-[42px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-extrabold transition flex items-center justify-center gap-2">
+          <span>Continue with Google</span>
+        </button>
+        <button type="button" id="post-delete-apple-oauth-btn" class="w-full min-h-[42px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-extrabold transition flex items-center justify-center gap-2">
+          <span>Continue with Apple</span>
+        </button>
+        <button type="button" id="post-delete-use-another-btn" class="w-full min-h-[40px] py-2 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold transition">
+          Log In with Email &amp; Password
+        </button>
+        <button type="button" id="post-delete-guest-btn" class="w-full min-h-[38px] py-1.5 px-3 rounded-xl bg-transparent hover:bg-slate-800 text-slate-300 text-xs font-semibold transition">
+          Continue in Free Guest Mode
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4G: Task 2 — Start Fresh Complete Data Removal Confirmation Modal -->
+  <div id="start-fresh-confirm-modal" class="hidden fixed inset-0 z-[88] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="start-fresh-confirm-title" aria-describedby="start-fresh-confirm-copy">
+    <div class="bg-slate-900 border border-rose-400/70 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div class="space-y-2">
+        <span class="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/60 text-[10px] font-extrabold uppercase tracking-wider text-rose-200">
+          Start Fresh
+        </span>
+        <h3 id="start-fresh-confirm-title" class="text-base font-extrabold text-white leading-snug">
+          Start Fresh and Clear Your Data?
+        </h3>
+        <p id="start-fresh-confirm-copy" class="text-xs text-slate-200 leading-relaxed">
+          This will clear all logged workouts, meal and fuel logs, fridge batch prep (oats and rice), and your shopping list. You will start back at 0.
+        </p>
+        <ul class="list-disc pl-5 text-xs text-slate-300 space-y-1 leading-relaxed">
+          <li>All logged workouts and weekly goal (resets to 0)</li>
+          <li>All meal and fuel logs</li>
+          <li>Oats jars and rice bowls left in the fridge</li>
+          <li>Your active shopping list</li>
+        </ul>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" id="cancel-start-fresh-btn" class="min-h-[42px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition">
+          Cancel
+        </button>
+        <button type="button" id="confirm-start-fresh-btn" class="min-h-[42px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition">
+          Yes, Start Fresh
         </button>
       </div>
     </div>
@@ -29203,6 +29413,103 @@
           }
         });
       }
+
+      // 9. Task 2: "Start Fresh" Complete Data Removal (Workouts, Fuel, Fridge Batch Prep, Shopping List)
+      const settingsStartFreshBtn = document.getElementById('settings-start-fresh-btn');
+      const startFreshModal = document.getElementById('start-fresh-confirm-modal');
+      const cancelStartFreshBtn = document.getElementById('cancel-start-fresh-btn');
+      const confirmStartFreshBtn = document.getElementById('confirm-start-fresh-btn');
+
+      function executeStartFreshReset() {
+        let resetState = null;
+        if (typeof window.buildStartFreshGymState === 'function') {
+          resetState = window.buildStartFreshGymState(state, DEFAULT_STATE).nextState;
+        } else {
+          resetState = Object.assign({}, state, {
+            selectedDayIndex: 0,
+            currentWeek: 1,
+            selectedWeek: 1,
+            maxUnlockedWeek: 1,
+            completedWeeks: {},
+            workoutLogs: {},
+            pullupLogs: {},
+            cardioLogs: {},
+            warmupLogs: {},
+            exerciseHistory: {},
+            exerciseNotes: {},
+            timedHoldSeconds: {},
+            timedHoldCompletedSets: {},
+            customDayExercises: {},
+            undoBackup: null,
+            fuelLogs: {},
+            checkedMeals: {},
+            checkedMealIngredients: {},
+            waterIntakeLogs: {},
+            flexMealOverridesByDay: {},
+            quickAddCaloriesByDay: {},
+            fuelDaySnapshots: {},
+            loggedMealSnapshots: {},
+            dismissedPreFuelPrompt: {},
+            dismissedChronoAlertsByDay: {},
+            batchInventory: { oatsJarsRemaining: 0, riceBowlsRemaining: 0, oatsPrepDay: null, ricePrepDay: null },
+            oatsPrepDay: null,
+            ricePrepDay: null,
+            recipePrepLogs: {},
+            prepNotes: {},
+            activeRiceTimerStage: null,
+            riceCookPhaseCompleted: false,
+            riceCooldownPhaseCompleted: false,
+            riceTimerAlertBanner: '',
+            checkedEssentials: {},
+            checkedGroceries: {},
+            customShoppingItems: [],
+            shopBrandOverrides: {},
+            last_updated: new Date().toISOString()
+          });
+        }
+
+        // Apply clean baseline state onto live state object
+        Object.keys(resetState).forEach((k) => {
+          state[k] = resetState[k];
+        });
+        window.__pendingHeavyWeightConfirmKey = null;
+
+        saveState();
+        if (typeof renderWorkoutView === 'function') renderWorkoutView();
+        if (typeof renderPullupView === 'function') renderPullupView();
+        if (typeof renderVeganView === 'function') renderVeganView();
+        if (typeof renderShoppingView === 'function') renderShoppingView();
+        if (typeof renderRiceCookingTimerWidgets === 'function') renderRiceCookingTimerWidgets();
+        if (startFreshModal) startFreshModal.classList.add('hidden');
+        const syncModal = document.getElementById('sync-settings-modal');
+        if (syncModal) syncModal.classList.add('hidden');
+        if (typeof showToast === 'function') {
+          showToast('Started fresh! Workouts, fuel, fridge prep, and shopping list cleared to 0.');
+        }
+      }
+      window.executeStartFreshReset = executeStartFreshReset;
+
+      if (settingsStartFreshBtn && startFreshModal) {
+        settingsStartFreshBtn.addEventListener('click', () => {
+          startFreshModal.classList.remove('hidden');
+        });
+      }
+      if (cancelStartFreshBtn && startFreshModal) {
+        cancelStartFreshBtn.addEventListener('click', () => {
+          startFreshModal.classList.add('hidden');
+        });
+      }
+      if (startFreshModal) {
+        startFreshModal.addEventListener('click', (e) => {
+          if (e.target === startFreshModal) startFreshModal.classList.add('hidden');
+        });
+      }
+      if (confirmStartFreshBtn) {
+        confirmStartFreshBtn.addEventListener('click', () => {
+          executeStartFreshReset();
+        });
+      }
+
       updateOfflineConnectivityBannerUI();
     }
   </script>

@@ -51,9 +51,11 @@ import {
   stampGymStateLastUpdated
 } from './utils/workoutSyncEngine';
 import {
+  AVAILABLE_OAUTH_LOGIN_PROVIDERS,
   DELETE_ACCOUNT_BUTTON_LABELS,
   DELETE_ACCOUNT_MAIN_WARNING,
   DELETE_ACCOUNT_WARNING_PROMPT,
+  POST_DELETE_SELECT_ACCOUNT_PROMPT,
   WORKOUT_FUEL_RESET_PROMPT,
   buildPostDeleteSwitchPrompt,
   clearActiveDayFuelData,
@@ -64,10 +66,22 @@ import {
   findSecondarySavedAccount,
   isValidDeletableUserId,
   normalizeAccountUserId,
+  onDeleteSuccess,
   purgeDeletedAccountFromLocalState,
   purgeMobileClientStorage,
   validateDeletionTarget
 } from './utils/deletionValidation';
+import {
+  START_FRESH_CONFIRM_COPY,
+  START_FRESH_CONFIRM_TITLE,
+  buildStartFreshGymState
+} from './utils/startFreshReset';
+import {
+  HEAVY_WEIGHT_MULTIPLIER_THRESHOLD,
+  buildHeavyWeightWarningMessage,
+  getHistoricalMaxWeightForExercise,
+  validateSetWeightSanity
+} from './utils/workoutSanityCheck';
 import {
   runDeploymentValidationChecklist,
   scanContentForBrokenLinksAndTypos,
@@ -799,6 +813,16 @@ declare global {
     fetchAppleHealthKitBiometricsStub?: typeof fetchAppleHealthKitBiometricsStub;
     fetchGoogleHealthConnectBiometricsStub?: typeof fetchGoogleHealthConnectBiometricsStub;
     createSmartwatchBridge?: typeof createSmartwatchBridge;
+    POST_DELETE_SELECT_ACCOUNT_PROMPT?: string;
+    AVAILABLE_OAUTH_LOGIN_PROVIDERS?: typeof AVAILABLE_OAUTH_LOGIN_PROVIDERS;
+    onDeleteSuccess?: typeof onDeleteSuccess;
+    START_FRESH_CONFIRM_TITLE?: string;
+    START_FRESH_CONFIRM_COPY?: string;
+    buildStartFreshGymState?: typeof buildStartFreshGymState;
+    HEAVY_WEIGHT_MULTIPLIER_THRESHOLD?: number;
+    getHistoricalMaxWeightForExercise?: typeof getHistoricalMaxWeightForExercise;
+    buildHeavyWeightWarningMessage?: typeof buildHeavyWeightWarningMessage;
+    validateSetWeightSanity?: typeof validateSetWeightSanity;
   }
 }
 
@@ -901,5 +925,15 @@ if (typeof window !== 'undefined') {
   window.fetchAppleHealthKitBiometricsStub = fetchAppleHealthKitBiometricsStub;
   window.fetchGoogleHealthConnectBiometricsStub = fetchGoogleHealthConnectBiometricsStub;
   window.createSmartwatchBridge = createSmartwatchBridge;
+  window.POST_DELETE_SELECT_ACCOUNT_PROMPT = POST_DELETE_SELECT_ACCOUNT_PROMPT;
+  window.AVAILABLE_OAUTH_LOGIN_PROVIDERS = AVAILABLE_OAUTH_LOGIN_PROVIDERS;
+  window.onDeleteSuccess = onDeleteSuccess;
+  window.START_FRESH_CONFIRM_TITLE = START_FRESH_CONFIRM_TITLE;
+  window.START_FRESH_CONFIRM_COPY = START_FRESH_CONFIRM_COPY;
+  window.buildStartFreshGymState = buildStartFreshGymState;
+  window.HEAVY_WEIGHT_MULTIPLIER_THRESHOLD = HEAVY_WEIGHT_MULTIPLIER_THRESHOLD;
+  window.getHistoricalMaxWeightForExercise = getHistoricalMaxWeightForExercise;
+  window.buildHeavyWeightWarningMessage = buildHeavyWeightWarningMessage;
+  window.validateSetWeightSanity = validateSetWeightSanity;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

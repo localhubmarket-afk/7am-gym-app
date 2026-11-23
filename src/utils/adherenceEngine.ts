@@ -25,13 +25,25 @@ export function computeAdherenceNeutralWeeklyProgress(options: {
   const workoutLogs = options.workoutLogs || {};
   const wPrefix = `w${safeWeek}_`;
   Object.entries(workoutLogs).forEach(([key, val]) => {
-    if (!key.startsWith(wPrefix)) return;
     if (!val || (val.done !== true && val.isLogged !== true)) return;
-    const match = key.match(/^w\d+_(\d+)_/);
-    if (match) {
-      const dayIdx = parseInt(match[1], 10);
-      if (dayIdx >= 0 && dayIdx <= 6) {
-        completedDays.add(dayIdx);
+    if (key.startsWith(wPrefix)) {
+      const match = key.match(/^w\d+_(\d+)_/);
+      if (match) {
+        const dayIdx = parseInt(match[1], 10);
+        if (dayIdx >= 0 && dayIdx <= 6) {
+          completedDays.add(dayIdx);
+        }
+      }
+      return;
+    }
+    // Support legacy Week 1 unprefixed workoutLogs keys (e.g. "0_mon_bench_1")
+    if (safeWeek === 1) {
+      const legacyMatch = key.match(/^(\d+)_[a-z]/i);
+      if (legacyMatch) {
+        const dayIdx = parseInt(legacyMatch[1], 10);
+        if (dayIdx >= 0 && dayIdx <= 6) {
+          completedDays.add(dayIdx);
+        }
       }
     }
   });
@@ -74,7 +86,7 @@ export function computeAdherenceNeutralWeeklyProgress(options: {
     statusLabel = `0 of ${weeklyTarget} workouts completed this week`;
     encouragementCopy = 'Start whenever you are ready. Any day counts toward your weekly goal.';
   } else if (completedWorkoutsCount >= weeklyTarget) {
-    statusLabel = `${completedWorkoutsCount} workouts completed this week (Goal hit!)`;
+    statusLabel = `${completedWorkoutsCount} of ${weeklyTarget} workouts completed this week (Goal hit!)`;
     encouragementCopy = 'You hit your flexible weekly target. Great consistency.';
   } else if (remainingWorkouts === 1) {
     statusLabel = `${completedWorkoutsCount} of ${weeklyTarget} workouts completed this week`;

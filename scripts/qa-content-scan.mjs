@@ -71,7 +71,7 @@ if (fs.existsSync(indexPath)) {
   const deleteModalMatch = html.match(/<div id="delete-account-confirm-modal"[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/);
   if (deleteModalMatch) {
     scanSnippet('index.html#delete-account-confirm-modal', deleteModalMatch[0]);
-    if (!deleteModalMatch[0].includes('This will permanently erase your account and all your data. You cannot get it back.')) {
+    if (!deleteModalMatch[0].includes('Are you sure you want to delete this account forever? All your saved workouts and meals will be gone.')) {
       findings.push('[COPY] index.html#delete-account-confirm-modal: missing exact required deletion warning text.');
     }
   } else {
@@ -81,6 +81,9 @@ if (fs.existsSync(indexPath)) {
   const switchModalMatch = html.match(/<div id="post-delete-switch-modal"[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/);
   if (switchModalMatch) {
     scanSnippet('index.html#post-delete-switch-modal', switchModalMatch[0]);
+    if (!switchModalMatch[0].includes('Account deleted. Please select your active account to continue.')) {
+      findings.push('[COPY] index.html#post-delete-switch-modal: missing exact required post-delete prompt.');
+    }
   } else {
     findings.push('[MISSING] index.html#post-delete-switch-modal not found.');
   }
