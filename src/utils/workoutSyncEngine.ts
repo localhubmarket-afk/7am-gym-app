@@ -15,6 +15,7 @@ export type AutoSyncTriggerReason =
   | 'cardio_logged'
   | 'workout_finished'
   | 'day_reset'
+  | 'start_fresh_reset'
   | 'local_newer_sync'
   | 'delayed_sync'
   | 'undo_restore'
@@ -368,9 +369,11 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
       message:
         reason === 'undo_restore'
           ? 'Restoring to Supabase...'
-          : reason === 'day_reset'
-            ? 'Syncing cleared day to Supabase...'
-            : 'Auto-syncing to Supabase...',
+          : reason === 'start_fresh_reset'
+            ? 'Clearing cloud data...'
+            : reason === 'day_reset'
+              ? 'Syncing cleared day to Supabase...'
+              : 'Auto-syncing to Supabase...',
       reason
     });
 
@@ -385,7 +388,11 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
 
     const isFirebase = endpoint.includes('firebaseio.com') || endpoint.endsWith('.json');
     const isSupabaseApi = endpoint.includes('/api/state');
-    const payload = serializeStateForPersistence(currentState);
+    const stateToPersist =
+      reason === 'start_fresh_reset'
+        ? { ...currentState, forceOverwrite: true, resetReason: 'start_fresh_reset' }
+        : currentState;
+    const payload = serializeStateForPersistence(stateToPersist);
 
     try {
       const resp = await fetchFn(endpoint, {
@@ -426,9 +433,11 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
         message:
           reason === 'undo_restore'
             ? 'Undo Restored in Supabase'
-            : reason === 'day_reset'
-              ? 'Day Reset Synced to Supabase'
-              : 'Auto-Synced to Supabase',
+            : reason === 'start_fresh_reset'
+              ? 'Start Fresh Synced to Supabase'
+              : reason === 'day_reset'
+                ? 'Day Reset Synced to Supabase'
+                : 'Auto-Synced to Supabase',
         reason
       });
       return {
@@ -475,8 +484,13 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
 
   async function autoSyncWorkoutToSupabase(reason: AutoSyncTriggerReason): Promise<AutoSyncResult> {
     // Respect the Data Protection & Undo Engine 5-second delay window so automatic syncs never push an unconfirmed week overwrite early.
-    // Explicit undo_restore and confirmed day_reset pushes execute immediately.
-    if (delayController.isWithinDelayWindow() && reason !== 'undo_restore' && reason !== 'day_reset') {
+    // Explicit undo_restore, confirmed day_reset, and confirmed start_fresh_reset pushes execute immediately.
+    if (
+      delayController.isWithinDelayWindow() &&
+      reason !== 'undo_restore' &&
+      reason !== 'day_reset' &&
+      reason !== 'start_fresh_reset'
+    ) {
       options.onStatusChange?.({
         phase: 'paused_undo',
         message: 'Cloud push paused (5s undo window)...',
@@ -491,6 +505,9 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
         lastUpdated: getStateLastUpdatedIso(options.getState())
       };
     }
+    if (reason === 'start_fresh_reset') {
+      delayController.cancelDelayedPush();
+    }
     cancelPendingBackgroundPush();
     return executePushNow(reason);
   }
@@ -501,7 +518,13 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
     if (currentState && typeof currentState === 'object') {
       stampGymStateLastUpdated(currentState, new Date().toISOString());
     }
-    if (immediate || backgroundDebounceMs === 0 || reason === 'day_reset' || reason === 'undo_restore') {
+    if (
+      immediate ||
+      backgroundDebounceMs === 0 ||
+      reason === 'day_reset' ||
+      reason === 'start_fresh_reset' ||
+      reason === 'undo_restore'
+    ) {
       return autoSyncWorkoutToSupabase(reason);
     }
     cancelPendingBackgroundPush();

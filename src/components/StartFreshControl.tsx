@@ -1,25 +1,56 @@
 import React, { useState } from 'react';
 import {
   START_FRESH_CONFIRM_COPY,
-  START_FRESH_CONFIRM_TITLE
+  START_FRESH_CONFIRM_TITLE,
+  executeStartFreshAndPushToSupabase,
+  type StartFreshCloudPushResult
 } from '../utils/startFreshReset';
 
 export interface StartFreshControlProps {
-  onConfirmStartFresh: () => void;
+  /** Optional direct gym_state + endpoint wiring for immediate Supabase overwrite */
+  currentState?: Record<string, any> | null;
+  supabaseEndpoint?: string;
+  storageKey?: string;
+  onStateReset?: (result: StartFreshCloudPushResult) => void;
+  /** Backwards-compatible callback */
+  onConfirmStartFresh?: () => void | Promise<void>;
 }
 
 /**
- * Task 2: Accessible "Start Fresh" button & ELI12 confirmation modal for Settings.
- * Resets logged workouts, fuel logs, fridge batch prep (oats/rice), and shopping list.
+ * Task 1: Accessible "Start Fresh" button & ELI12 confirmation modal for Settings.
+ * Strictly overwrites gym_state with an empty default baseline and immediately pushes
+ * the cleared state to Supabase.
  */
 export const StartFreshControl: React.FC<StartFreshControlProps> = ({
+  currentState,
+  supabaseEndpoint = '/api/state',
+  storageKey = 'bws_vegan_7am_app_v1',
+  onStateReset,
   onConfirmStartFresh
 }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
-  const handleConfirm = () => {
-    setConfirmOpen(false);
-    onConfirmStartFresh();
+  const handleConfirm = async () => {
+    if (isResetting) return;
+    setIsResetting(true);
+    try {
+      if (onStateReset) {
+        const result = await executeStartFreshAndPushToSupabase({
+          currentState,
+          endpoint: supabaseEndpoint,
+          storageKey,
+          storage: typeof window !== 'undefined' ? window.localStorage : null
+        });
+        onStateReset(result);
+      }
+      if (onConfirmStartFresh) {
+        await onConfirmStartFresh();
+      }
+    } finally {
+      setIsResetting(false);
+      setConfirmOpen(false);
+    }
   };
 
   return (
@@ -68,17 +99,19 @@ export const StartFreshControl: React.FC<StartFreshControlProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
+                disabled={isResetting}
                 onClick={() => setConfirmOpen(false)}
-                className="min-h-[42px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition"
+                className="min-h-[42px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition disabled:opacity-60"
               >
                 Cancel
               </button>
               <button
                 type="button"
+                disabled={isResetting}
                 onClick={handleConfirm}
-                className="min-h-[42px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition"
+                className="min-h-[42px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition disabled:opacity-60"
               >
-                Yes, Start Fresh
+                {isResetting ? 'Clearing...' : 'Yes, Start Fresh'}
               </button>
             </div>
           </div>

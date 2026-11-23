@@ -1628,6 +1628,12 @@
         });
       }
 
+      // Respect explicit "Start Fresh" complete data clearance: never re-inject seeded Week 1 workouts on reload
+      if (!forceOverwrite && (target.hasStartedFresh === true || Boolean(target.startFreshResetAt))) {
+        syncProgressiveWeekState(target);
+        return target;
+      }
+
       const activeProfName = (target.userProfile && target.userProfile.name) ? target.userProfile.name.trim().toLowerCase() : 'françois';
       const activeProfEmail = (target.userProfile && target.userProfile.email) ? target.userProfile.email.trim().toLowerCase() : 'francois@7amgym.app';
       const isFrancoisActive = !activeProfName || activeProfName.includes('fran') || activeProfEmail.includes('francois') || activeProfEmail === 'francois@7amgym.app';
@@ -2159,10 +2165,18 @@
     function autoSyncWorkoutToSupabaseLocal(reason) {
       const syncReason = reason || 'set_logged';
       // Respect Data Protection & Undo Engine 5-second delay window before pushing passive syncs.
-      // Explicit undo_restore and confirmed day_reset pushes execute immediately.
-      if (isDestructiveCloudPushDelayedLocal() && syncReason !== 'undo_restore' && syncReason !== 'day_reset') {
+      // Explicit undo_restore, confirmed day_reset, and confirmed start_fresh_reset pushes execute immediately.
+      if (
+        isDestructiveCloudPushDelayedLocal() &&
+        syncReason !== 'undo_restore' &&
+        syncReason !== 'day_reset' &&
+        syncReason !== 'start_fresh_reset'
+      ) {
         updateCloudSyncBadgeUI('paused_undo', 'Cloud push paused (5s undo window)...');
         return Promise.resolve({ synced: false, blockedByUndoGuard: true, blockedByEmptyStateGuard: false, reason: syncReason });
+      }
+      if (syncReason === 'start_fresh_reset') {
+        cancelDelayedDestructiveCloudPushLocal();
       }
       clearTimeout(cloudSyncTimeout);
       cloudSyncTimeout = null;
@@ -2197,10 +2211,16 @@
 
     function pushStateToCloud(pushReason) {
       const url = getActiveCloudEndpoint();
-      if (!url) return;
-      if (isDestructiveCloudPushDelayedLocal() && pushReason !== 'undo_restore' && pushReason !== 'delayed_sync' && pushReason !== 'day_reset') {
+      if (!url) return Promise.resolve({ saved: false, configured: false });
+      if (
+        isDestructiveCloudPushDelayedLocal() &&
+        pushReason !== 'undo_restore' &&
+        pushReason !== 'delayed_sync' &&
+        pushReason !== 'day_reset' &&
+        pushReason !== 'start_fresh_reset'
+      ) {
         updateCloudSyncBadgeUI('paused_undo', 'Cloud push paused (5s undo window)...');
-        return;
+        return Promise.resolve({ saved: false, paused: true });
       }
       if (pushReason !== 'local_newer_sync' || (!state.last_updated && !state.updatedAt)) {
         stampStateTimestampLocal();
@@ -2211,12 +2231,17 @@
         'syncing',
         pushReason === 'undo_restore'
           ? 'Restoring to Supabase...'
-          : (pushReason === 'day_reset' ? 'Syncing cleared day to Supabase...' : 'Auto-syncing to Supabase...')
+          : pushReason === 'start_fresh_reset'
+            ? 'Clearing cloud data...'
+            : (pushReason === 'day_reset' ? 'Syncing cleared day to Supabase...' : 'Auto-syncing to Supabase...')
       );
       const isFirebase = url.includes('firebaseio.com') || url.endsWith('.json');
       const isVercelApi = url.includes('/api/state');
-      const payloadJson = serializeStateWithoutUndoBackupLocal(state);
-      fetch(url, {
+      const stateForPush = pushReason === 'start_fresh_reset'
+        ? Object.assign({}, state, { forceOverwrite: true, resetReason: 'start_fresh_reset' })
+        : state;
+      const payloadJson = serializeStateWithoutUndoBackupLocal(stateForPush);
+      return fetch(url, {
         method: isFirebase ? 'PUT' : 'POST',
         cache: 'no-store',
         keepalive: payloadJson.length < 60000,
@@ -2240,11 +2265,15 @@
             'saved',
             pushReason === 'undo_restore'
               ? '✓ Undo Restored in Supabase'
-              : (pushReason === 'day_reset' ? '✓ Day Reset Synced' : '✓ Auto-Synced to Supabase')
+              : pushReason === 'start_fresh_reset'
+                ? '✓ Start Fresh Synced to Supabase'
+                : (pushReason === 'day_reset' ? '✓ Day Reset Synced' : '✓ Auto-Synced to Supabase')
           );
         }
+        return res;
       }).catch(() => {
         updateCloudSyncBadgeUI('local_only', 'Local Saved');
+        return { saved: false };
       });
     }
 
@@ -27181,30 +27210,12 @@
       }
       if (freshStartBtn) {
         freshStartBtn.addEventListener('click', () => {
-          state.workoutLogs = {};
-          state.pullupLogs = {};
-          state.checkedMeals = {};
-          state.checkedMealIngredients = {};
-          state.checkedGroceries = {};
-          state.completedWeeks = {};
-          state.warmupLogs = {};
-          state.waterIntakeLogs = {};
-          state.waterLogsMl = {};
-          state.selectedWeek = 1;
-          state.currentWeek = 1;
-          state.maxUnlockedWeek = 1;
-          state.selectedDayIndex = 0;
-          state.cardCollapsedState = {};
-          state.geminiChatHistory = [];
-          saveState();
-          renderWorkoutView();
-          renderPullupView();
-          renderVeganView();
-          renderShoppingView();
+          if (typeof window.executeStartFreshReset === 'function') {
+            window.executeStartFreshReset();
+          }
           if (freshStartConfirmBox) freshStartConfirmBox.classList.add('hidden');
           if (smartLoginModal) smartLoginModal.classList.add('hidden');
           if (shareModal) shareModal.classList.add('hidden');
-          showToast(' Fresh Start Complete! Ready for Week 1 • Day 1.');
         });
       }
 
@@ -29421,11 +29432,57 @@
       const confirmStartFreshBtn = document.getElementById('confirm-start-fresh-btn');
 
       function executeStartFreshReset() {
+        const nowIso = new Date().toISOString();
         let resetState = null;
         if (typeof window.buildStartFreshGymState === 'function') {
-          resetState = window.buildStartFreshGymState(state, DEFAULT_STATE).nextState;
+          resetState = window.buildStartFreshGymState(state).nextState;
         } else {
-          resetState = Object.assign({}, state, {
+          const preservedProfile = state.userProfile ? JSON.parse(JSON.stringify(state.userProfile)) : { name: 'Guest', email: '', isGuest: true, authProvider: 'guest_local' };
+          const preservedWizard = state.programWizardConfig ? JSON.parse(JSON.stringify(state.programWizardConfig)) : { daysPerWeek: 5, primaryFocus: 'balanced', difficulty: 'medium', diet: 'vegan', baseDiet: 'Vegan', intolerances: [] };
+          const scrubbedAccounts = state.accountsByEmail && typeof state.accountsByEmail === 'object'
+            ? JSON.parse(JSON.stringify(state.accountsByEmail))
+            : {};
+          const activeEmailKey = preservedProfile && preservedProfile.email ? String(preservedProfile.email).trim().toLowerCase() : '';
+          if (activeEmailKey && scrubbedAccounts[activeEmailKey]) {
+            scrubbedAccounts[activeEmailKey].workoutLogs = {};
+            scrubbedAccounts[activeEmailKey].pullupLogs = {};
+            scrubbedAccounts[activeEmailKey].cardioLogs = {};
+            scrubbedAccounts[activeEmailKey].fuelLogs = {};
+            scrubbedAccounts[activeEmailKey].checkedMeals = {};
+            scrubbedAccounts[activeEmailKey].checkedGroceries = {};
+            scrubbedAccounts[activeEmailKey].completedWeeks = {};
+            scrubbedAccounts[activeEmailKey].hasStartedFresh = true;
+            scrubbedAccounts[activeEmailKey].startFreshResetAt = nowIso;
+            if (scrubbedAccounts[activeEmailKey].snapshot) {
+              scrubbedAccounts[activeEmailKey].snapshot.workoutLogs = {};
+              scrubbedAccounts[activeEmailKey].snapshot.pullupLogs = {};
+              scrubbedAccounts[activeEmailKey].snapshot.cardioLogs = {};
+              scrubbedAccounts[activeEmailKey].snapshot.completedWeeks = {};
+              scrubbedAccounts[activeEmailKey].snapshot.hasStartedFresh = true;
+            }
+          }
+          resetState = {
+            userProfile: preservedProfile,
+            isGuestMode: Boolean(state.isGuestMode),
+            themeMode: state.themeMode || 'dark',
+            weightUnit: state.weightUnit || 'lbs',
+            soundEnabled: state.soundEnabled !== undefined ? state.soundEnabled : true,
+            audioMode: state.audioMode || 'sound_vibe',
+            timerTone: state.timerTone || 'warm_marimba',
+            timerVolume: typeof state.timerVolume === 'number' ? state.timerVolume : 0.55,
+            baseDiet: state.baseDiet || 'Vegan',
+            diet: state.diet || 'Vegan',
+            dietPreference: state.dietPreference || 'vegan',
+            intolerances: Array.isArray(state.intolerances) ? [...state.intolerances] : [],
+            programWizardConfig: preservedWizard,
+            weeklyWorkoutTarget: Math.max(1, Math.min(7, Number(state.weeklyWorkoutTarget || preservedWizard.daysPerWeek || 5))),
+            onboardingComplete: Boolean(state.onboardingComplete || state.userHasCompletedOnboarding || state.hasCompletedFirstSetup),
+            userHasCompletedOnboarding: Boolean(state.onboardingComplete || state.userHasCompletedOnboarding || state.hasCompletedFirstSetup),
+            hasCompletedFirstSetup: Boolean(state.onboardingComplete || state.userHasCompletedOnboarding || state.hasCompletedFirstSetup),
+            capturedLeads: Array.isArray(state.capturedLeads) ? JSON.parse(JSON.stringify(state.capturedLeads)) : [],
+            accountsByEmail: scrubbedAccounts,
+            cloudDbUrl: typeof state.cloudDbUrl === 'string' ? state.cloudDbUrl : '',
+            geminiApiKeyLocal: typeof state.geminiApiKeyLocal === 'string' ? state.geminiApiKeyLocal : '',
             selectedDayIndex: 0,
             currentWeek: 1,
             selectedWeek: 1,
@@ -29434,47 +29491,98 @@
             workoutLogs: {},
             pullupLogs: {},
             cardioLogs: {},
+            cardioUiModeByEx: {},
             warmupLogs: {},
             exerciseHistory: {},
             exerciseNotes: {},
+            exerciseUnitPrefs: {},
             timedHoldSeconds: {},
+            timedHoldSetSeconds: {},
             timedHoldCompletedSets: {},
             customDayExercises: {},
+            customDayScheduleByWeek: {},
+            manualScheduleOverrideByWeek: {},
+            weeklyRestDays: { default: [5, 6] },
+            crunchDays: [0, 1, 2, 3, 4, 5, 6],
+            exerciseSwaps: {},
+            historyExerciseSwaps: {},
+            revertedMachineSwaps: {},
+            convertedExercises: {},
+            pendingMachineSwapPreviews: {},
+            expandedDoneCards: {},
+            manualCollapsedCards: {},
+            cardCollapsedState: {},
+            openImagePanels: {},
+            openNotePanels: {},
+            warmupClosedByDay: {},
+            clearedDaysMap: { w1_d0: true, w1_d1: true, w1_d2: true, w1_d3: true, w1_d4: true, w1_d5: true, w1_d6: true },
+            francoisWeek1RestoredV2: true,
+            hasStartedFresh: true,
+            startFreshResetAt: nowIso,
             undoBackup: null,
             fuelLogs: {},
             checkedMeals: {},
             checkedMealIngredients: {},
+            hiddenMealChecklists: {},
+            openMealFormulas: {},
+            openPreFuelDetails: false,
             waterIntakeLogs: {},
+            waterLogsMl: {},
             flexMealOverridesByDay: {},
             quickAddCaloriesByDay: {},
             fuelDaySnapshots: {},
             loggedMealSnapshots: {},
+            fuelCustomizations: {},
             dismissedPreFuelPrompt: {},
             dismissedChronoAlertsByDay: {},
+            wakeUpTimeByDay: {},
+            restDayCarbMode: 'match',
             batchInventory: { oatsJarsRemaining: 0, riceBowlsRemaining: 0, oatsPrepDay: null, ricePrepDay: null },
             oatsPrepDay: null,
             ricePrepDay: null,
+            oatsBatchDays: 4,
+            oatsBatchPortions: 4,
+            riceBatchPortions: 4,
             recipePrepLogs: {},
             prepNotes: {},
+            openPrepNoteCards: {},
             activeRiceTimerStage: null,
             riceCookPhaseCompleted: false,
             riceCooldownPhaseCompleted: false,
             riceTimerAlertBanner: '',
+            riceBannerDismissed: false,
+            forceShowRiceTimerInKeto: false,
             checkedEssentials: {},
             checkedGroceries: {},
             customShoppingItems: [],
             shopBrandOverrides: {},
-            last_updated: new Date().toISOString()
-          });
+            subscriptionChecklist: { cancelCreatineAutoship: false, dropPeaTo3Containers: false },
+            gymLocker: { pin: '', photoDataUrl: '', updatedAt: null },
+            biometricsSnapshot: null,
+            geminiChatHistory: [],
+            selectedOneRmChartLift: 'bench',
+            migratedDailyAbsV3: true,
+            last_updated: nowIso,
+            updatedAt: nowIso
+          };
         }
 
-        // Apply clean baseline state onto live state object
+        // Strictly overwrite the active gym_state object (purge any stale keys first so nothing survives)
+        Object.keys(state).forEach((oldKey) => {
+          delete state[oldKey];
+        });
         Object.keys(resetState).forEach((k) => {
           state[k] = resetState[k];
         });
         window.__pendingHeavyWeightConfirmKey = null;
 
-        saveState();
+        // Cancel any 5s undo protection window / debounced sync, persist locally, and IMMEDIATELY overwrite Supabase cloud state
+        cancelDelayedDestructiveCloudPushLocal();
+        clearTimeout(cloudSyncTimeout);
+        cloudSyncTimeout = null;
+        saveState(true);
+        const pushPromise = autoSyncWorkoutToSupabaseLocal('start_fresh_reset');
+
         if (typeof renderWorkoutView === 'function') renderWorkoutView();
         if (typeof renderPullupView === 'function') renderPullupView();
         if (typeof renderVeganView === 'function') renderVeganView();
@@ -29486,6 +29594,7 @@
         if (typeof showToast === 'function') {
           showToast('Started fresh! Workouts, fuel, fridge prep, and shopping list cleared to 0.');
         }
+        return pushPromise;
       }
       window.executeStartFreshReset = executeStartFreshReset;
 

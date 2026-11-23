@@ -146,7 +146,60 @@ export default async function handler(req, res) {
       const serverMs = Date.parse(nowIso) || Date.now();
       const effectiveIso = clientMs > serverMs ? clientTsRaw : nowIso;
 
-      const payloadToStore = { ...bodyObj, last_updated: effectiveIso, updatedAt: effectiveIso };
+      const isStartFreshOverwrite = Boolean(
+        bodyObj && (bodyObj.forceOverwrite === true || bodyObj.resetReason === 'start_fresh_reset')
+      );
+
+      const cleanBody = { ...bodyObj };
+      delete cleanBody.forceOverwrite;
+      delete cleanBody.resetReason;
+
+      const payloadToStore = isStartFreshOverwrite
+        ? {
+            ...cleanBody,
+            workoutLogs: {},
+            pullupLogs: {},
+            cardioLogs: {},
+            warmupLogs: {},
+            exerciseHistory: {},
+            completedWeeks: {},
+            fuelLogs: {},
+            checkedMeals: {},
+            checkedMealIngredients: {},
+            waterIntakeLogs: {},
+            waterLogsMl: {},
+            quickAddCaloriesByDay: {},
+            flexMealOverridesByDay: {},
+            batchInventory: {
+              oatsJarsRemaining: 0,
+              riceBowlsRemaining: 0,
+              oatsPrepDay: null,
+              ricePrepDay: null
+            },
+            oatsPrepDay: null,
+            ricePrepDay: null,
+            recipePrepLogs: {},
+            checkedEssentials: {},
+            checkedGroceries: {},
+            customShoppingItems: [],
+            shopBrandOverrides: {},
+            hasStartedFresh: true,
+            startFreshResetAt: effectiveIso,
+            francoisWeek1RestoredV2: true,
+            clearedDaysMap: {
+              w1_d0: true,
+              w1_d1: true,
+              w1_d2: true,
+              w1_d3: true,
+              w1_d4: true,
+              w1_d5: true,
+              w1_d6: true
+            },
+            last_updated: effectiveIso,
+            updatedAt: effectiveIso
+          }
+        : { ...cleanBody, last_updated: effectiveIso, updatedAt: effectiveIso };
+
       const upsertRows = [{ id: recordId, data: payloadToStore, updated_at: effectiveIso }];
       if (recordId !== 'default') {
         upsertRows.push({ id: 'default', data: payloadToStore, updated_at: effectiveIso });
@@ -165,6 +218,7 @@ export default async function handler(req, res) {
         configured: true,
         accountId: recordId,
         saved: true,
+        overwrittenBaseline: isStartFreshOverwrite,
         last_updated: effectiveIso,
         updatedAt: effectiveIso
       });

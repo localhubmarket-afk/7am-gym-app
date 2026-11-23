@@ -6,8 +6,12 @@ import {
   POST_DELETE_SELECT_ACCOUNT_PROMPT,
   onDeleteSuccess
 } from './deletionValidation';
-import { buildStartFreshGymState } from './startFreshReset';
+import {
+  buildStartFreshGymState,
+  executeStartFreshAndPushToSupabase
+} from './startFreshReset';
 import { computeAdherenceNeutralWeeklyProgress } from './adherenceEngine';
+import { createAutoSupabaseSyncEngine } from './workoutSyncEngine';
 import {
   HEAVY_WEIGHT_MULTIPLIER_THRESHOLD,
   buildHeavyWeightWarningMessage,
@@ -234,3 +238,113 @@ test('Task 4: 250% Historical Max Sanity Check triggers warning toast on 1st tap
   assert.equal(differentHeavyTap.allowed, false);
   assert.equal(differentHeavyTap.warningMessage, 'That looks heavy! Did you mean to log 400 lbs?');
 });
+
+test('Task 5 (Strict Start Fresh Patch): Bypasses empty-state cloud guard, overwrites Supabase immediately, scrubs cached account logs, and drops 4 of 5 to 0 of 5', async () => {
+  // Simulate user stuck at "4 of 5 workouts completed this week" with 12 sets already saved in Supabase
+  let liveState: Record<string, any> = {
+    userProfile: { name: 'François', email: 'francois@7amgym.app', isGuest: false, authProvider: 'google' },
+    weeklyWorkoutTarget: 5,
+    currentWeek: 1,
+    selectedWeek: 1,
+    workoutLogs: {
+      w1_0_mon_bench_1: { weight: '135', reps: '8', done: true },
+      w1_1_tue_squat_1: { weight: '185', reps: '8', done: true },
+      w1_2_thu_inc_db_1: { weight: '55', reps: '10', done: true },
+      w1_3_fri_rdl_1: { weight: '205', reps: '8', done: true }
+    },
+    pullupLogs: { w1_day_1_set_1: { reps: '5', done: true } },
+    fuelLogs: { w1_d0: { kcal: 2200 } },
+    checkedGroceries: { oats: true, tofu: true },
+    batchInventory: { oatsJarsRemaining: 4, riceBowlsRemaining: 4, oatsPrepDay: 'Sun', ricePrepDay: 'Sun' },
+    accountsByEmail: {
+      'francois@7amgym.app': {
+        workoutLogs: { w1_0_mon_bench_1: { weight: '135', reps: '8', done: true } },
+        pullupLogs: { w1_day_1_set_1: { reps: '5', done: true } },
+        snapshot: {
+          workoutLogs: { w1_0_mon_bench_1: { weight: '135', reps: '8', done: true } }
+        }
+      }
+    }
+  };
+
+  // Before reset: "4 of 5 workouts completed this week"
+  const before = computeAdherenceNeutralWeeklyProgress({
+    weekNumber: 1,
+    weeklyTarget: 5,
+    workoutLogs: liveState.workoutLogs,
+    pullupLogs: liveState.pullupLogs
+  });
+  assert.equal(before.completedWorkoutsCount, 4);
+  assert.equal(before.statusLabel, '4 of 5 workouts completed this week');
+
+  // 1. Verify Start Fresh engine pushes through AutoSupabaseSyncEngine even when cloud had 12 logged sets & undo window is active
+  const postedPayloads: any[] = [];
+  const fakeFetch: typeof fetch = (async (_url: any, init?: any) => {
+    postedPayloads.push(JSON.parse(String(init?.body || '{}')));
+    return {
+      ok: true,
+      json: async () => ({ configured: true, saved: true, overwrittenBaseline: true, last_updated: '2026-11-23T17:15:00.000Z' })
+    } as any;
+  }) as typeof fetch;
+
+  const syncEngine = createAutoSupabaseSyncEngine({
+    getState: () => liveState,
+    getEndpoint: () => '/api/state?email=francois%407amgym.app',
+    fetchImpl: fakeFetch
+  });
+  syncEngine.recordKnownCloudLoggedSetCount(12);
+  syncEngine.scheduleDestructiveOverwritePush(5000); // simulate active 5s delay window
+
+  // Pass a populated DEFAULT_STATE as baselineDefaults to prove seeded logs are NEVER inherited
+  const { nextState } = buildStartFreshGymState(liveState, {
+    workoutLogs: { w1_0_mon_bench_1: { weight: '45', reps: '8', done: true } }
+  });
+  liveState = nextState;
+
+  assert.deepEqual(liveState.workoutLogs, {});
+  assert.deepEqual(liveState.pullupLogs, {});
+  assert.deepEqual(liveState.fuelLogs, {});
+  assert.deepEqual(liveState.checkedGroceries, {});
+  assert.equal(liveState.batchInventory.oatsJarsRemaining, 0);
+  assert.equal(liveState.batchInventory.riceBowlsRemaining, 0);
+  assert.equal(liveState.hasStartedFresh, true);
+  assert.equal(liveState.francoisWeek1RestoredV2, true);
+  assert.deepEqual(liveState.accountsByEmail['francois@7amgym.app'].workoutLogs, {});
+  assert.deepEqual(liveState.accountsByEmail['francois@7amgym.app'].snapshot.workoutLogs, {});
+
+  // Passive background_input WOULD be blocked, but deliberate start_fresh_reset MUST push immediately!
+  const syncRes = await syncEngine.autoSyncWorkoutToSupabase('start_fresh_reset');
+  assert.equal(syncRes.synced, true);
+  assert.equal(syncRes.blockedByEmptyStateGuard, false);
+  assert.equal(syncRes.blockedByUndoGuard, false);
+  assert.equal(syncEngine.getLastSyncedLoggedSetCount(), 0);
+  assert.equal(postedPayloads.length, 1);
+  assert.deepEqual(postedPayloads[0].workoutLogs, {});
+  assert.equal(postedPayloads[0].forceOverwrite, true);
+  assert.equal(postedPayloads[0].resetReason, 'start_fresh_reset');
+
+  // 2. Verify standalone executeStartFreshAndPushToSupabase helper also overwrites storage + Supabase
+  const stored: Record<string, string> = {};
+  const cloudRes = await executeStartFreshAndPushToSupabase({
+    currentState: { workoutLogs: { w1_0_mon_bench_1: { weight: '135', reps: '8', done: true } }, weeklyWorkoutTarget: 5 },
+    endpoint: '/api/state?email=francois%407amgym.app',
+    storageKey: 'bws_vegan_7am_app_v1',
+    storage: { setItem: (k, v) => { stored[k] = v; } },
+    fetchImpl: fakeFetch
+  });
+  assert.equal(cloudRes.cloudSynced, true);
+  assert.deepEqual(cloudRes.nextState.workoutLogs, {});
+  assert.deepEqual(JSON.parse(stored['bws_vegan_7am_app_v1']).workoutLogs, {});
+
+  // 3. After reset: Flexible Weekly Goal immediately renders "0 of 5 workouts completed this week"
+  const after = computeAdherenceNeutralWeeklyProgress({
+    weekNumber: liveState.selectedWeek,
+    weeklyTarget: liveState.weeklyWorkoutTarget,
+    workoutLogs: liveState.workoutLogs,
+    pullupLogs: liveState.pullupLogs,
+    cardioLogs: liveState.cardioLogs
+  });
+  assert.equal(after.completedWorkoutsCount, 0);
+  assert.equal(after.statusLabel, '0 of 5 workouts completed this week');
+});
+

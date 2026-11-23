@@ -1,26 +1,94 @@
-import React from 'react';
-import type { WeeklyAdherenceSummary } from '../utils/adherenceEngine';
+import React, { useMemo } from 'react';
+import {
+  computeAdherenceNeutralWeeklyProgress,
+  type WeeklyAdherenceSummary
+} from '../utils/adherenceEngine';
+
+export interface GymStateForWeeklyGoal {
+  currentWeek?: number;
+  selectedWeek?: number;
+  weeklyWorkoutTarget?: number;
+  programWizardConfig?: {
+    daysPerWeek?: number;
+  };
+  workoutLogs?: Record<string, any> | null;
+  pullupLogs?: Record<string, any> | null;
+  cardioLogs?: Record<string, any> | null;
+}
 
 export interface WeeklyAdherenceCardProps {
-  summary: WeeklyAdherenceSummary;
+  /** Preferred live binding: pass active gym_state directly so UI always reflects workoutLogs */
+  gymState?: GymStateForWeeklyGoal | null;
+  /** Optional pre-computed summary (preserved for backwards compatibility) */
+  summary?: WeeklyAdherenceSummary;
   onViewMicroWins?: () => void;
 }
 
+/**
+ * Task 2: Flexible Weekly Goal card strictly bound to active gym_state.workoutLogs.
+ * Zero hardcoded visual counts — when workoutLogs is empty, instantly renders
+ * "0 of 5 workouts completed this week" (or the user's configured weekly target).
+ */
 export const WeeklyAdherenceCard: React.FC<WeeklyAdherenceCardProps> = ({
+  gymState,
   summary,
   onViewMicroWins
 }) => {
+  const activeSummary = useMemo<WeeklyAdherenceSummary>(() => {
+    if (gymState) {
+      const weekNumber = Math.max(
+        1,
+        Number(gymState.selectedWeek || gymState.currentWeek || 1)
+      );
+      const weeklyTarget = Math.max(
+        1,
+        Math.min(
+          7,
+          Number(
+            gymState.weeklyWorkoutTarget ||
+              gymState.programWizardConfig?.daysPerWeek ||
+              5
+          )
+        )
+      );
+      return computeAdherenceNeutralWeeklyProgress({
+        weekNumber,
+        weeklyTarget,
+        workoutLogs: gymState.workoutLogs || {},
+        pullupLogs: gymState.pullupLogs || {},
+        cardioLogs: gymState.cardioLogs || {}
+      });
+    }
+    if (summary) {
+      return summary;
+    }
+    return computeAdherenceNeutralWeeklyProgress({
+      weekNumber: 1,
+      weeklyTarget: 5,
+      workoutLogs: {},
+      pullupLogs: {},
+      cardioLogs: {}
+    });
+  }, [gymState, summary]);
+
   return (
     <section
       aria-label="Weekly flexible workout goal"
+      data-completed-workouts={activeSummary.completedWorkoutsCount}
+      data-weekly-target={activeSummary.weeklyTarget}
       className="rounded-2xl border border-emerald-500/40 bg-slate-900/90 p-3.5 text-left"
     >
       <div className="flex items-center justify-between gap-2">
         <div>
           <div className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-300">
-            Flexible Weekly Goal • Week {summary.weekNumber}
+            Flexible Weekly Goal • Week {activeSummary.weekNumber}
           </div>
-          <div className="mt-0.5 text-sm font-extrabold text-white">{summary.statusLabel}</div>
+          <div
+            data-testid="weekly-goal-status-text"
+            className="mt-0.5 text-sm font-extrabold text-white"
+          >
+            {activeSummary.statusLabel}
+          </div>
         </div>
         {onViewMicroWins && (
           <button
@@ -37,16 +105,18 @@ export const WeeklyAdherenceCard: React.FC<WeeklyAdherenceCardProps> = ({
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={summary.percentComplete}
+        aria-valuenow={activeSummary.percentComplete}
         className="mt-2.5 h-2.5 w-full overflow-hidden rounded-full bg-slate-800"
       >
         <div
           className="h-full rounded-full bg-emerald-500 transition-all"
-          style={{ width: `${summary.percentComplete}%` }}
+          style={{ width: `${activeSummary.percentComplete}%` }}
         />
       </div>
 
-      <p className="mt-2 text-xs leading-relaxed text-slate-300">{summary.encouragementCopy}</p>
+      <p className="mt-2 text-xs leading-relaxed text-slate-300">
+        {activeSummary.encouragementCopy}
+      </p>
     </section>
   );
 };

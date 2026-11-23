@@ -74,7 +74,9 @@ import {
 import {
   START_FRESH_CONFIRM_COPY,
   START_FRESH_CONFIRM_TITLE,
-  buildStartFreshGymState
+  buildStartFreshGymState,
+  createEmptyBaselineGymState,
+  executeStartFreshAndPushToSupabase
 } from './utils/startFreshReset';
 import {
   HEAVY_WEIGHT_MULTIPLIER_THRESHOLD,
@@ -819,6 +821,8 @@ declare global {
     START_FRESH_CONFIRM_TITLE?: string;
     START_FRESH_CONFIRM_COPY?: string;
     buildStartFreshGymState?: typeof buildStartFreshGymState;
+    createEmptyBaselineGymState?: typeof createEmptyBaselineGymState;
+    executeStartFreshAndPushToSupabase?: typeof executeStartFreshAndPushToSupabase;
     HEAVY_WEIGHT_MULTIPLIER_THRESHOLD?: number;
     getHistoricalMaxWeightForExercise?: typeof getHistoricalMaxWeightForExercise;
     buildHeavyWeightWarningMessage?: typeof buildHeavyWeightWarningMessage;
@@ -931,6 +935,8 @@ if (typeof window !== 'undefined') {
   window.START_FRESH_CONFIRM_TITLE = START_FRESH_CONFIRM_TITLE;
   window.START_FRESH_CONFIRM_COPY = START_FRESH_CONFIRM_COPY;
   window.buildStartFreshGymState = buildStartFreshGymState;
+  window.createEmptyBaselineGymState = createEmptyBaselineGymState;
+  window.executeStartFreshAndPushToSupabase = executeStartFreshAndPushToSupabase;
   window.HEAVY_WEIGHT_MULTIPLIER_THRESHOLD = HEAVY_WEIGHT_MULTIPLIER_THRESHOLD;
   window.getHistoricalMaxWeightForExercise = getHistoricalMaxWeightForExercise;
   window.buildHeavyWeightWarningMessage = buildHeavyWeightWarningMessage;
