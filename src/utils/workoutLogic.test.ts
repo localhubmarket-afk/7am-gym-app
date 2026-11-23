@@ -3700,5 +3700,152 @@ test('Subtest 51: Overhand Pull-Ups First Ordering, Single Source of Truth Cloud
   assert.equal(Object.keys(pushedPayloads[0].body.workoutLogs).length, 0);
 });
 
+test('Subtest 52: Most Advanced Truth Engine (last_updated comparison) & Automatic Silent Background Sync for Sets, Checkboxes, and Timers', async () => {
+  const {
+    resolveSingleSourceOfTruthState,
+    fetchLatestCloudStateAsSingleSourceOfTruth,
+    createAutoSupabaseSyncEngine,
+    getStateLastUpdatedIso,
+    stampGymStateLastUpdated
+  } = await import('./workoutSyncEngine');
+
+  // 1. Task 1A: Cloud `last_updated` is newer than Local `last_updated` -> Cloud wins & overwrites localStorage
+  const olderPhoneState = {
+    selectedWeek: 1,
+    maxUnlockedWeek: 1,
+    last_updated: '2026-11-22T10:00:00.000Z',
+    workoutLogs: { w1_0_bench_1: { weight: '135', reps: '10', done: true } }
+  };
+  const newerComputerCloudState = {
+    selectedWeek: 3,
+    maxUnlockedWeek: 3,
+    last_updated: '2026-11-22T23:30:00.000Z',
+    workoutLogs: { w3_0_pullup_1: { weight: 'BW', reps: '9', done: true } }
+  };
+
+  const cloudWins = resolveSingleSourceOfTruthState(olderPhoneState, newerComputerCloudState);
+  assert.equal(cloudWins.winner, 'cloud');
+  assert.equal(cloudWins.appliedRemote, true);
+  assert.equal(cloudWins.shouldPushLocalToCloud, false);
+  assert.equal(cloudWins.state?.selectedWeek, 3);
+  assert.equal(cloudWins.state?.last_updated, '2026-11-22T23:30:00.000Z');
+
+  // 2. Task 1B: Local `last_updated` is newer than Cloud `last_updated` -> Local wins & pushes up to Supabase
+  const newerOfflinePhoneState = {
+    selectedWeek: 4,
+    maxUnlockedWeek: 4,
+    last_updated: '2026-11-23T02:15:00.000Z',
+    workoutLogs: { w4_0_pullup_1: { weight: 'BW', reps: '10', done: true } }
+  };
+  const localWins = resolveSingleSourceOfTruthState(newerOfflinePhoneState, newerComputerCloudState);
+  assert.equal(localWins.winner, 'local');
+  assert.equal(localWins.appliedRemote, false);
+  assert.equal(localWins.shouldPushLocalToCloud, true);
+  assert.equal(localWins.state?.selectedWeek, 4);
+
+  const pushedUp: Array<{ method: string; body: any }> = [];
+  const storageMap = new Map<string, string>();
+  const mockStorage = {
+    getItem: (k: string) => storageMap.get(k) ?? null,
+    setItem: (k: string, v: string) => { storageMap.set(k, v); }
+  };
+
+  const localNewerFetch = await fetchLatestCloudStateAsSingleSourceOfTruth({
+    endpoint: 'https://7am-gym-app.vercel.app/api/state?email=francois@example.com',
+    localState: newerOfflinePhoneState,
+    storageKey: 'gym_state_truth_test',
+    storage: mockStorage,
+    pushLocalIfNewer: true,
+    fetchImpl: async (_url, init) => {
+      if (init?.method === 'POST') {
+        pushedUp.push({ method: 'POST', body: JSON.parse(String(init.body || '{}')) });
+        return { ok: true, json: async () => ({ configured: true, saved: true }) } as Response;
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          configured: true,
+          last_updated: '2026-11-22T23:30:00.000Z',
+          data: newerComputerCloudState
+        })
+      } as Response;
+    }
+  });
+  assert.equal(localNewerFetch.winner, 'local');
+  assert.equal(localNewerFetch.shouldPushLocalToCloud, true);
+  assert.equal(pushedUp.length, 1);
+  assert.equal(pushedUp[0].body.selectedWeek, 4);
+  assert.equal(pushedUp[0].body.last_updated, '2026-11-23T02:15:00.000Z');
+
+  // 3. Task 1C: Fresh device with no `last_updated` -> Cloud wins unconditionally
+  const freshDeviceState = { selectedWeek: 1, last_updated: null, workoutLogs: {} };
+  const freshResolved = resolveSingleSourceOfTruthState(freshDeviceState, newerComputerCloudState);
+  assert.equal(freshResolved.winner, 'cloud');
+  assert.equal(freshResolved.appliedRemote, true);
+  assert.equal(freshResolved.state?.selectedWeek, 3);
+
+  // 4. Task 2: Silent background push attaches to Log Set, Checkbox Toggle, and Timer Adjustment
+  let liveState: Record<string, any> = {
+    selectedWeek: 3,
+    timerSeconds: 90,
+    warmupLogs: {},
+    workoutLogs: { w3_0_pullup_1: { weight: 'BW', reps: '9', done: true } },
+    last_updated: '2026-11-22T20:00:00.000Z'
+  };
+  const bgPushes: Array<{ body: any; keepalive: boolean | undefined }> = [];
+  const bgEngine = createAutoSupabaseSyncEngine({
+    getEndpoint: () => 'https://7am-gym-app.vercel.app/api/state?email=francois@example.com',
+    getState: () => liveState,
+    backgroundDebounceMs: 0,
+    fetchImpl: async (_url, init) => {
+      const parsed = JSON.parse(String(init?.body || '{}'));
+      bgPushes.push({ body: parsed, keepalive: init?.keepalive });
+      return {
+        ok: true,
+        json: async () => ({ configured: true, saved: true, last_updated: parsed.last_updated })
+      } as Response;
+    }
+  });
+
+  // 4a. Log Set
+  liveState.workoutLogs.w3_0_pullup_2 = { weight: 'BW', reps: '10', done: true };
+  const setRes = await bgEngine.pushGymStateInBackground('set_logged', true);
+  assert.equal(setRes?.synced, true);
+  assert.equal(setRes?.reason, 'set_logged');
+  assert.equal(typeof setRes?.lastUpdated, 'string');
+
+  // 4b. Checkbox Toggle
+  liveState.warmupLogs.w3_d0_wu_0 = true;
+  const cbRes = await bgEngine.pushGymStateInBackground('checkbox_toggled', true);
+  assert.equal(cbRes?.synced, true);
+  assert.equal(cbRes?.reason, 'checkbox_toggled');
+
+  // 4c. Timer Adjustment
+  liveState.timerSeconds = 105;
+  const timerRes = await bgEngine.pushGymStateInBackground('timer_adjusted', true);
+  assert.equal(timerRes?.synced, true);
+  assert.equal(timerRes?.reason, 'timer_adjusted');
+
+  assert.equal(bgPushes.length, 3);
+  assert.equal(bgPushes[0].keepalive, true);
+  assert.equal(bgPushes[1].body.warmupLogs.w3_d0_wu_0, true);
+  assert.equal(bgPushes[2].body.timerSeconds, 105);
+  assert.ok(getStateLastUpdatedIso(bgPushes[2].body));
+
+  // 4d. Stamp helper keeps `last_updated` and `updatedAt` synchronized
+  const stamped = stampGymStateLastUpdated({ selectedWeek: 3 }, '2026-11-23T05:00:00.000Z');
+  assert.equal(stamped.last_updated, '2026-11-23T05:00:00.000Z');
+  assert.equal(stamped.updatedAt, '2026-11-23T05:00:00.000Z');
+
+  // 4e. Undo 5-second delay window still blocks passive background syncs until window clears
+  bgEngine.scheduleDestructiveOverwritePush(5000);
+  assert.equal(bgEngine.isUndoProtectionWindowActive(), true);
+  const blockedRes = await bgEngine.pushGymStateInBackground('checkbox_toggled', true);
+  assert.equal(blockedRes?.synced, false);
+  assert.equal(blockedRes?.blockedByUndoGuard, true);
+  bgEngine.cancelPendingDestructivePush();
+});
+
+
 
 

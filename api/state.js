@@ -45,12 +45,23 @@ export default async function handler(req, res) {
       const exactRow = allRows.find(row => row && row.id === recordId && row.data);
       const defaultRow = allRows.find(row => row && row.id === 'default' && row.data);
 
-      // Compare exact user row vs default row by updated_at so computer & phone always read the newest timestamped state
+      // Compare exact user row vs default row by newest `last_updated` / `updated_at` timestamp
+      const getRowTimestampMs = (row) => {
+        if (!row) return 0;
+        const candidates = [
+          row.data && row.data.last_updated,
+          row.updated_at,
+          row.data && row.data.updatedAt
+        ];
+        return candidates.reduce((best, raw) => {
+          const ms = typeof raw === 'string' && raw.trim() ? (Date.parse(raw) || 0) : 0;
+          return ms > best ? ms : best;
+        }, 0);
+      };
+
       let chosenRow = exactRow || defaultRow || allRows[0];
       if (exactRow && defaultRow) {
-        const exactTs = Date.parse(exactRow.updated_at || (exactRow.data && exactRow.data.updatedAt) || '') || 0;
-        const defaultTs = Date.parse(defaultRow.updated_at || (defaultRow.data && defaultRow.data.updatedAt) || '') || 0;
-        chosenRow = defaultTs > exactTs ? defaultRow : exactRow;
+        chosenRow = getRowTimestampMs(defaultRow) > getRowTimestampMs(exactRow) ? defaultRow : exactRow;
       }
 
       const baseData = chosenRow && chosenRow.data && typeof chosenRow.data === 'object'
@@ -66,31 +77,44 @@ export default async function handler(req, res) {
             ? { ...baseData[legacyPullupKey] }
             : {};
         }
-        const authoritativeUpdatedAt = chosenRow.updated_at || baseData.updatedAt || new Date().toISOString();
-        baseData.updatedAt = authoritativeUpdatedAt;
+        const authoritativeLastUpdated =
+          (typeof baseData.last_updated === 'string' && baseData.last_updated.trim() && baseData.last_updated) ||
+          chosenRow.updated_at ||
+          baseData.updatedAt ||
+          new Date().toISOString();
+        baseData.last_updated = authoritativeLastUpdated;
+        baseData.updatedAt = authoritativeLastUpdated;
         return res.status(200).json({
           configured: true,
           accountId: recordId,
           sourceRowId: chosenRow.id,
-          updatedAt: authoritativeUpdatedAt,
+          last_updated: authoritativeLastUpdated,
+          updatedAt: authoritativeLastUpdated,
           data: baseData
         });
       }
 
-      return res.status(200).json({ configured: true, accountId: recordId, updatedAt: null, data: null });
+      return res.status(200).json({ configured: true, accountId: recordId, last_updated: null, updatedAt: null, data: null });
     } catch (e) {
-      return res.status(200).json({ configured: true, accountId: recordId, updatedAt: null, data: null });
+      return res.status(200).json({ configured: true, accountId: recordId, last_updated: null, updatedAt: null, data: null });
     }
   }
 
   if (req.method === 'POST') {
     try {
-      // Stamp authoritative server timestamp and upsert both user_<email> and default so web & mobile stay 100% synced
+      // Preserve valid client `last_updated` or stamp server time so newest device timestamp always wins accurately
       const nowIso = new Date().toISOString();
-      const payloadToStore = { ...bodyObj, updatedAt: nowIso };
-      const upsertRows = [{ id: recordId, data: payloadToStore, updated_at: nowIso }];
+      const clientTsRaw = (bodyObj && typeof bodyObj.last_updated === 'string' && bodyObj.last_updated.trim())
+        ? bodyObj.last_updated
+        : (bodyObj && typeof bodyObj.updatedAt === 'string' && bodyObj.updatedAt.trim() ? bodyObj.updatedAt : '');
+      const clientMs = clientTsRaw ? (Date.parse(clientTsRaw) || 0) : 0;
+      const serverMs = Date.parse(nowIso) || Date.now();
+      const effectiveIso = clientMs > serverMs ? clientTsRaw : nowIso;
+
+      const payloadToStore = { ...bodyObj, last_updated: effectiveIso, updatedAt: effectiveIso };
+      const upsertRows = [{ id: recordId, data: payloadToStore, updated_at: effectiveIso }];
       if (recordId !== 'default') {
-        upsertRows.push({ id: 'default', data: payloadToStore, updated_at: nowIso });
+        upsertRows.push({ id: 'default', data: payloadToStore, updated_at: effectiveIso });
       }
       await fetch(supabaseUrl + '/rest/v1/gym_state', {
         method: 'POST',
@@ -102,9 +126,15 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify(upsertRows)
       });
-      return res.status(200).json({ configured: true, accountId: recordId, saved: true, updatedAt: nowIso });
+      return res.status(200).json({
+        configured: true,
+        accountId: recordId,
+        saved: true,
+        last_updated: effectiveIso,
+        updatedAt: effectiveIso
+      });
     } catch (e) {
-      return res.status(200).json({ configured: true, accountId: recordId, saved: false, updatedAt: null });
+      return res.status(200).json({ configured: true, accountId: recordId, saved: false, last_updated: null, updatedAt: null });
     }
   }
   return res.status(405).json({ error: 'Method not allowed' });

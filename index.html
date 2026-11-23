@@ -1348,7 +1348,8 @@
       diet: 'Vegan',
       shopBrandOverrides: {},
       forceShowRiceTimerInKeto: false,
-      cloudDbUrl: ''
+      cloudDbUrl: '',
+      last_updated: null
     };
     /*__BAKED_STATE_END__*/
 
@@ -1557,6 +1558,15 @@
       if (!merged.clearedDaysMap || typeof merged.clearedDaysMap !== 'object') merged.clearedDaysMap = {};
       if (!merged.workoutLogs || typeof merged.workoutLogs !== 'object') merged.workoutLogs = {};
       if (!merged.pullupLogs || typeof merged.pullupLogs !== 'object') merged.pullupLogs = {};
+      const resolvedTs = (typeof merged.last_updated === 'string' && merged.last_updated)
+        || (typeof merged.updatedAt === 'string' && merged.updatedAt)
+        || null;
+      if (resolvedTs) {
+        merged.last_updated = resolvedTs;
+        merged.updatedAt = resolvedTs;
+      } else if (typeof merged.last_updated === 'undefined') {
+        merged.last_updated = null;
+      }
       if (opts && opts.runSeedCheck) {
         ensureFrancoisWeek1Data(merged, false);
       }
@@ -1939,6 +1949,13 @@
       }
     }
 
+    function stampStateTimestampLocal(explicitIso) {
+      const iso = (typeof explicitIso === 'string' && explicitIso.trim()) ? explicitIso : new Date().toISOString();
+      state.last_updated = iso;
+      state.updatedAt = iso;
+      return iso;
+    }
+
     function autoSyncWorkoutToSupabaseLocal(reason) {
       const syncReason = reason || 'set_logged';
       // Respect Data Protection & Undo Engine 5-second delay window before pushing passive syncs.
@@ -1949,7 +1966,11 @@
       }
       clearTimeout(cloudSyncTimeout);
       cloudSyncTimeout = null;
-      state.updatedAt = new Date().toISOString();
+      if (syncReason !== 'local_newer_sync' || (!state.last_updated && !state.updatedAt)) {
+        stampStateTimestampLocal();
+      } else {
+        stampStateTimestampLocal(state.last_updated || state.updatedAt);
+      }
       const eng = getAutoSupabaseSyncEngineLocal();
       if (eng && typeof eng.autoSyncWorkoutToSupabase === 'function') {
         return eng.autoSyncWorkoutToSupabase(syncReason);
@@ -1959,6 +1980,21 @@
     }
     window.autoSyncWorkoutToSupabase = autoSyncWorkoutToSupabaseLocal;
 
+    function flushPendingCloudSyncNow() {
+      if (cloudSyncTimeout !== null) {
+        clearTimeout(cloudSyncTimeout);
+        cloudSyncTimeout = null;
+        if (!isPullingCloudTruth && !isDestructiveCloudPushDelayedLocal() && getActiveCloudEndpoint()) {
+          pushStateToCloud('background_input');
+        }
+      }
+      const eng = getAutoSupabaseSyncEngineLocal();
+      if (eng && typeof eng.flushPendingBackgroundPush === 'function' && !isDestructiveCloudPushDelayedLocal()) {
+        eng.flushPendingBackgroundPush();
+      }
+    }
+    window.flushPendingCloudSyncNow = flushPendingCloudSyncNow;
+
     function pushStateToCloud(pushReason) {
       const url = getActiveCloudEndpoint();
       if (!url) return;
@@ -1966,7 +2002,11 @@
         updateCloudSyncBadgeUI('paused_undo', 'Cloud push paused (5s undo window)...');
         return;
       }
-      state.updatedAt = new Date().toISOString();
+      if (pushReason !== 'local_newer_sync' || (!state.last_updated && !state.updatedAt)) {
+        stampStateTimestampLocal();
+      } else {
+        stampStateTimestampLocal(state.last_updated || state.updatedAt);
+      }
       updateCloudSyncBadgeUI(
         'syncing',
         pushReason === 'undo_restore'
@@ -1979,14 +2019,18 @@
       fetch(url, {
         method: isFirebase ? 'PUT' : 'POST',
         cache: 'no-store',
+        keepalive: payloadJson.length < 60000,
         headers: { 'Content-Type': isVercelApi ? 'application/json' : 'text/plain;charset=utf-8' },
         body: payloadJson
       }).then(r => r.json().catch(() => ({}))).then(res => {
         if (res && res.configured === false) {
           updateCloudSyncBadgeUI('local_only', 'Local Saved (Add Supabase in Vercel)');
         } else {
-          if (res && typeof res.updatedAt === 'string') {
-            state.updatedAt = res.updatedAt;
+          const serverTs = (res && typeof res.last_updated === 'string' && res.last_updated)
+            || (res && typeof res.updatedAt === 'string' && res.updatedAt)
+            || null;
+          if (serverTs) {
+            stampStateTimestampLocal(serverTs);
           }
           const eng = getAutoSupabaseSyncEngineLocal();
           if (eng && typeof window.countTotalLoggedSetsInState === 'function') {
@@ -2011,8 +2055,11 @@
       if (!url) return Promise.resolve(false);
       // Cancel any queued local push so stale local state can never overwrite Supabase during hydration
       clearTimeout(cloudSyncTimeout);
+      cloudSyncTimeout = null;
       isPullingCloudTruth = true;
-      const forceRemoteTruth = !(pullOptions && pullOptions.forceRemoteTruth === false);
+      // Task 1 Truth Engine: compare cloud vs local `last_updated` by default;
+      // only force remote unconditionally when explicitly requested (e.g., fresh returning-user login)
+      const forceRemoteTruth = Boolean(pullOptions && pullOptions.forceRemoteTruth === true);
       const sep = url.includes('?') ? '&' : '?';
       const cacheBustedUrl = url + sep + 't=' + Date.now();
       return fetch(cacheBustedUrl, {
@@ -2024,23 +2071,45 @@
         .then(res => {
           if (!res) return false;
           const remote = (res && res.configured && res.data) ? res.data : (res && res.data ? res.data : res);
-          const remoteUpdatedAt = (res && typeof res.updatedAt === 'string' && res.updatedAt)
+          const remoteLastUpdated = (res && typeof res.last_updated === 'string' && res.last_updated)
+            || (res && typeof res.updatedAt === 'string' && res.updatedAt)
+            || (remote && typeof remote.last_updated === 'string' && remote.last_updated)
             || (remote && typeof remote.updatedAt === 'string' && remote.updatedAt)
             || null;
 
           if (remote && typeof remote === 'object' && (remote.workoutLogs || remote.selectedDayIndex !== undefined)) {
-            const resolved = typeof window.resolveSingleSourceOfTruthState === 'function'
-              ? window.resolveSingleSourceOfTruthState(state, remote, {
-                  forceRemoteOnInit: forceRemoteTruth,
-                  remoteUpdatedAt
-                })
-              : { appliedRemote: true, state: remote, remoteUpdatedAt };
+            let resolved;
+            if (typeof window.resolveSingleSourceOfTruthState === 'function') {
+              resolved = window.resolveSingleSourceOfTruthState(state, remote, {
+                forceRemoteOnInit: forceRemoteTruth,
+                remoteLastUpdated: remoteLastUpdated,
+                remoteUpdatedAt: remoteLastUpdated
+              });
+            } else {
+              const localMs = Date.parse(state.last_updated || state.updatedAt || '') || 0;
+              const remoteMs = Date.parse(remoteLastUpdated || '') || 0;
+              if (forceRemoteTruth || localMs === 0 || remoteMs > localMs) {
+                resolved = { winner: 'cloud', appliedRemote: true, shouldPushLocalToCloud: false, state: remote, remoteLastUpdated };
+              } else if (localMs > remoteMs) {
+                resolved = { winner: 'local', appliedRemote: false, shouldPushLocalToCloud: true, state: state, remoteLastUpdated };
+              } else {
+                resolved = { winner: 'equal', appliedRemote: false, shouldPushLocalToCloud: false, state: state, remoteLastUpdated };
+              }
+            }
 
             if (!resolved || !resolved.appliedRemote || !resolved.state) {
+              // Local device holds a strictly newer `last_updated` timestamp: keep local as Single Source of Truth and push it up to Supabase!
+              if (resolved && resolved.shouldPushLocalToCloud && !isDestructiveCloudPushDelayedLocal()) {
+                isPullingCloudTruth = false;
+                autoSyncWorkoutToSupabaseLocal('local_newer_sync');
+              } else if (resolved && resolved.winner === 'equal') {
+                updateCloudSyncBadgeUI('saved', '✓ Synced with Supabase');
+              }
               return false;
             }
 
             const authoritativeRemote = resolved.state;
+            const authoritativeTs = resolved.remoteLastUpdated || resolved.remoteUpdatedAt || authoritativeRemote.last_updated || authoritativeRemote.updatedAt || new Date().toISOString();
             const keepUrl = state.cloudDbUrl;
             const currentOpenPanels = state.openImagePanels || {};
             const localProfile = (state.userProfile && state.userProfile.email)
@@ -2058,7 +2127,8 @@
               cloudDbUrl: keepUrl,
               openImagePanels: currentOpenPanels,
               pendingMachineSwapPreviews: {},
-              updatedAt: resolved.remoteUpdatedAt || authoritativeRemote.updatedAt || new Date().toISOString()
+              last_updated: authoritativeTs,
+              updatedAt: authoritativeTs
             });
 
             // Sync currentWeek & selectedWeek from remote authoritatively so Week 3 never falls back to Week 1
@@ -2126,12 +2196,16 @@
         });
     }
 
-    function saveState(skipCloud) {
-      if (skipCloud || isPullingCloudTruth) {
+    let isBootstrappingApp = true;
+
+    function saveState(skipCloud, syncReason) {
+      const effectiveSkipCloud = Boolean(skipCloud || isBootstrappingApp);
+      if (effectiveSkipCloud || isPullingCloudTruth) {
         clearTimeout(cloudSyncTimeout);
+        cloudSyncTimeout = null;
       }
-      if (!skipCloud) {
-        state.updatedAt = new Date().toISOString();
+      if (!effectiveSkipCloud) {
+        stampStateTimestampLocal();
       }
       const jsonStr = serializeStateWithoutUndoBackupLocal(state);
       // Save to localStorage
@@ -2149,12 +2223,15 @@
           history.replaceState(null, '', '#state=' + b64);
         }
       } catch (err) {}
-      // Debounced Cloud DB Sync (paused automatically during cloud hydration or the 5-second destructive overwrite undo window)
-      if (!skipCloud && !isPullingCloudTruth && !isDestructiveCloudPushDelayedLocal() && getActiveCloudEndpoint()) {
+      // Task 2: Automatic silent background push to Supabase on EVERY active user input
+      // (set log, checkbox toggle, timer adjustment), paused automatically during hydration, startup boot, or the 5s undo window
+      if (!effectiveSkipCloud && !isPullingCloudTruth && !isDestructiveCloudPushDelayedLocal() && getActiveCloudEndpoint()) {
         clearTimeout(cloudSyncTimeout);
+        const resolvedReason = syncReason || 'background_input';
         cloudSyncTimeout = setTimeout(() => {
-          autoSyncWorkoutToSupabaseLocal('set_logged');
-        }, 600);
+          cloudSyncTimeout = null;
+          autoSyncWorkoutToSupabaseLocal(resolvedReason);
+        }, 300);
       }
     }
 
@@ -6519,7 +6596,7 @@
         releaseWakeLock();
         updateTimerUI();
         updateWatchAndHeartRateUI();
-        saveState();
+        saveState(false, 'timer_adjusted');
       } else {
         if (state.timerSeconds <= 0) {
           const fallbackSec = Math.max(5, Number(state.lastUsedTimerSeconds) || Number(state.timerTotalSeconds) || 90);
@@ -6550,7 +6627,7 @@
       releaseWakeLock();
       updateTimerUI();
       updateWatchAndHeartRateUI();
-      saveState();
+      saveState(false, 'timer_adjusted');
     }
 
     function getUnloggedWorkoutSummaryForToday() {
@@ -12942,7 +13019,7 @@
 
           const allPart1Done = drills.every((d, idx) => Boolean(state.warmupLogs[`w${week}_d${dayIdx}_warmup_${d.id || idx}`]));
           const allPart2Done = part2Sets.every(ps => Boolean(state.warmupLogs[`w${week}_d${dayIdx}_warmup_${ps.id}`]));
-          saveState();
+          saveState(false, 'checkbox_toggled');
           renderWarmupCard(dayObj);
 
           if (allPart1Done && allPart2Done) {
@@ -22166,8 +22243,9 @@
       return mergedCount;
     }
 
-    function claimAllPreviousLocalAndCloudDataIntoProfile() {
+    function claimAllPreviousLocalAndCloudDataIntoProfile(claimOpts) {
       let totalRecovered = 0;
+      const isStartupInit = Boolean(claimOpts && claimOpts.isStartupInit);
       // Auto-restore userProfile if it was previously cleared by a cloud pull but exists in capturedLeads or accountsByEmail
       if (!state.userProfile || !state.userProfile.name || !state.userProfile.email) {
         if (Array.isArray(state.capturedLeads) && state.capturedLeads.length > 0) {
@@ -22202,8 +22280,8 @@
           }
         });
       }
-      // Note: Cross-device Supabase Single Source of Truth hydration runs via pullStateFromCloud({ forceRemoteTruth: true }),
-      // which compares user_<email> vs default by newest updated_at on the server without resurrecting cleared days.
+      // Note: Cross-device Supabase Single Source of Truth hydration runs via pullStateFromCloud({ forceRemoteTruth: false }),
+      // which compares local vs Supabase `last_updated` timestamps so the newest device always wins without resurrecting stale data.
       if (state.userProfile && state.userProfile.email) {
         if (!state.accountsByEmail) state.accountsByEmail = {};
         state.accountsByEmail[state.userProfile.email.toLowerCase()] = {
@@ -22211,7 +22289,7 @@
           snapshot: getAccountSnapshotFromCurrentState()
         };
       }
-      saveState();
+      saveState(isStartupInit);
       renderWorkoutView();
       renderPullupView();
       return totalRecovered;
@@ -24164,7 +24242,7 @@
           }
           if (timerRunning && state.timerEndTime) state.timerEndTime -= 15000;
           updateTimerUI();
-          saveState();
+          saveState(false, 'timer_adjusted');
         });
       }
       if (pinnedPlusBtn) {
@@ -24177,7 +24255,7 @@
           }
           if (timerRunning && state.timerEndTime) state.timerEndTime += 15000;
           updateTimerUI();
-          saveState();
+          saveState(false, 'timer_adjusted');
         });
       }
       document.getElementById('timer-minus-15').addEventListener('click', () => {
@@ -24192,7 +24270,7 @@
           state.timerEndTime -= 15000;
         }
         updateTimerUI();
-        saveState();
+        saveState(false, 'timer_adjusted');
       });
       document.getElementById('timer-plus-15').addEventListener('click', () => {
         syncWallClockTimer();
@@ -24205,7 +24283,7 @@
           state.timerEndTime += 15000;
         }
         updateTimerUI();
-        saveState();
+        saveState(false, 'timer_adjusted');
       });
       const timerSoundToggleBtn = document.getElementById('timer-sound-toggle');
       if (timerSoundToggleBtn) {
@@ -26554,23 +26632,34 @@
         // UPGRADE 22: Force First-Time Onboarding Wizard full-screen before showing Gym tab
         window.openProgramSetupWizardModal(true, 1);
       }
-      claimAllPreviousLocalAndCloudDataIntoProfile();
+      claimAllPreviousLocalAndCloudDataIntoProfile({ isStartupInit: true });
+      // Initial passive bootstrap is complete; active user inputs may now stamp `last_updated` and background-sync
+      isBootstrappingApp = false;
       if (getActiveCloudEndpoint()) {
-        // Strict Single Source of Truth on app initialization: fetch latest timestamped Supabase state & overwrite stale local cache
-        pullStateFromCloud({ forceRemoteTruth: true });
+        // Task 1: "Most Advanced" Truth Engine — instantly fetch Supabase gym_state on load and compare `last_updated` timestamps
+        pullStateFromCloud({ forceRemoteTruth: false });
       }
       let lastResumeSyncAt = Date.now();
       const triggerResumeCloudPull = () => {
-        if (document.visibilityState && document.visibilityState !== 'visible') return;
+        if (document.visibilityState === 'hidden') {
+          flushPendingCloudSyncNow();
+          return;
+        }
         const now = Date.now();
         if (now - lastResumeSyncAt < 2500) return;
         lastResumeSyncAt = now;
         if (getActiveCloudEndpoint() && !isDestructiveCloudPushDelayedLocal()) {
-          pullStateFromCloud({ forceRemoteTruth: true });
+          pullStateFromCloud({ forceRemoteTruth: false });
         }
       };
       document.addEventListener('visibilitychange', triggerResumeCloudPull);
       window.addEventListener('focus', triggerResumeCloudPull);
+      window.addEventListener('online', () => {
+        if (getActiveCloudEndpoint() && !isDestructiveCloudPushDelayedLocal()) {
+          pullStateFromCloud({ forceRemoteTruth: false });
+        }
+      });
+      window.addEventListener('pagehide', flushPendingCloudSyncNow);
     }
 
     window.addEventListener('DOMContentLoaded', initApp);

@@ -43,7 +43,10 @@ import {
   countTotalLoggedSetsInState,
   createAutoSupabaseSyncEngine,
   fetchLatestCloudStateAsSingleSourceOfTruth,
-  resolveSingleSourceOfTruthState
+  getStateLastUpdatedIso,
+  parseTimestampMs,
+  resolveSingleSourceOfTruthState,
+  stampGymStateLastUpdated
 } from './utils/workoutSyncEngine';
 
 export interface RenderOneRmD3ChartOptions {
@@ -656,6 +659,9 @@ declare global {
     countTotalLoggedSetsInState?: typeof countTotalLoggedSetsInState;
     resolveSingleSourceOfTruthState?: typeof resolveSingleSourceOfTruthState;
     fetchLatestCloudStateAsSingleSourceOfTruth?: typeof fetchLatestCloudStateAsSingleSourceOfTruth;
+    getStateLastUpdatedIso?: typeof getStateLastUpdatedIso;
+    parseTimestampMs?: typeof parseTimestampMs;
+    stampGymStateLastUpdated?: typeof stampGymStateLastUpdated;
     resolveDisplayUsername?: typeof resolveDisplayUsername;
     clearActiveDayWorkoutData?: typeof clearActiveDayWorkoutData;
     isBikingExercise?: typeof isBikingExercise;
@@ -699,6 +705,9 @@ if (typeof window !== 'undefined') {
   window.countTotalLoggedSetsInState = countTotalLoggedSetsInState;
   window.resolveSingleSourceOfTruthState = resolveSingleSourceOfTruthState;
   window.fetchLatestCloudStateAsSingleSourceOfTruth = fetchLatestCloudStateAsSingleSourceOfTruth;
+  window.getStateLastUpdatedIso = getStateLastUpdatedIso;
+  window.parseTimestampMs = parseTimestampMs;
+  window.stampGymStateLastUpdated = stampGymStateLastUpdated;
   window.resolveDisplayUsername = resolveDisplayUsername;
   window.clearActiveDayWorkoutData = clearActiveDayWorkoutData;
   window.isBikingExercise = isBikingExercise;

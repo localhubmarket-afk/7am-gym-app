@@ -7,12 +7,21 @@ import {
 
 export type AutoSyncTriggerReason =
   | 'set_logged'
+  | 'checkbox_toggled'
+  | 'timer_adjusted'
   | 'pullup_logged'
   | 'cardio_logged'
   | 'workout_finished'
   | 'day_reset'
+  | 'local_newer_sync'
   | 'delayed_sync'
-  | 'undo_restore';
+  | 'undo_restore'
+  | 'background_input';
+
+export interface GymStateTimestamped extends Record<string, any> {
+  last_updated?: string | null;
+  updatedAt?: string | null;
+}
 
 export interface AutoSyncResult {
   synced: boolean;
@@ -20,10 +29,11 @@ export interface AutoSyncResult {
   blockedByEmptyStateGuard: boolean;
   reason: AutoSyncTriggerReason;
   endpoint: string;
+  lastUpdated: string | null;
 }
 
 export interface AutoSyncEngineOptions {
-  getState: () => Record<string, any>;
+  getState: () => GymStateTimestamped;
   getEndpoint: () => string;
   fetchImpl?: typeof fetch;
   onStatusChange?: (status: {
@@ -32,18 +42,36 @@ export interface AutoSyncEngineOptions {
     reason: AutoSyncTriggerReason;
   }) => void;
   delayMs?: number;
+  backgroundDebounceMs?: number;
   setTimer?: (fn: () => void, ms: number) => any;
   clearTimer?: (handle: any) => void;
 }
 
 export interface AutoSupabaseSyncEngine {
   autoSyncWorkoutToSupabase: (reason: AutoSyncTriggerReason) => Promise<AutoSyncResult>;
+  pushGymStateInBackground: (reason: AutoSyncTriggerReason, immediate?: boolean) => Promise<AutoSyncResult> | void;
+  flushPendingBackgroundPush: () => Promise<AutoSyncResult | null>;
+  cancelPendingBackgroundPush: () => void;
   scheduleDestructiveOverwritePush: (delayOverrideMs?: number) => void;
   flushUndoRestorePush: () => Promise<AutoSyncResult>;
   cancelPendingDestructivePush: () => void;
   isUndoProtectionWindowActive: () => boolean;
   getLastSyncedLoggedSetCount: () => number;
   recordKnownCloudLoggedSetCount: (count: number) => void;
+}
+
+export type TruthSourceWinner = 'cloud' | 'local' | 'equal';
+
+export interface SingleSourceOfTruthResult<T extends GymStateTimestamped = GymStateTimestamped> {
+  winner: TruthSourceWinner;
+  appliedRemote: boolean;
+  shouldPushLocalToCloud: boolean;
+  remoteLastUpdated: string | null;
+  localLastUpdated: string | null;
+  // Backwards-compatible aliases
+  remoteUpdatedAt: string | null;
+  localUpdatedAt: string | null;
+  state: T | null;
 }
 
 export function countTotalLoggedSetsInState(stateObj: Record<string, any> | null | undefined): number {
@@ -66,13 +94,6 @@ export function countTotalLoggedSetsInState(stateObj: Record<string, any> | null
   return total;
 }
 
-export interface SingleSourceOfTruthResult {
-  appliedRemote: boolean;
-  remoteUpdatedAt: string | null;
-  localUpdatedAt: string | null;
-  state: Record<string, any> | null;
-}
-
 export function parseTimestampMs(raw: unknown): number {
   if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
   if (typeof raw === 'string' && raw.trim()) {
@@ -82,61 +103,139 @@ export function parseTimestampMs(raw: unknown): number {
   return 0;
 }
 
-export function resolveSingleSourceOfTruthState(
-  localState: Record<string, any> | null | undefined,
-  remoteState: Record<string, any> | null | undefined,
+export function getStateLastUpdatedIso(stateObj: GymStateTimestamped | null | undefined): string | null {
+  if (!stateObj || typeof stateObj !== 'object') return null;
+  const candidates = [stateObj.last_updated, stateObj.updatedAt, stateObj.updated_at];
+  let bestIso: string | null = null;
+  let bestMs = 0;
+  candidates.forEach((raw) => {
+    if (typeof raw === 'string' && raw.trim()) {
+      const ms = parseTimestampMs(raw);
+      if (ms >= bestMs) {
+        bestMs = ms;
+        bestIso = raw;
+      }
+    }
+  });
+  return bestIso;
+}
+
+export function stampGymStateLastUpdated<T extends GymStateTimestamped>(
+  stateObj: T,
+  nowIso: string = new Date().toISOString()
+): T {
+  if (stateObj && typeof stateObj === 'object') {
+    stateObj.last_updated = nowIso;
+    stateObj.updatedAt = nowIso;
+  }
+  return stateObj;
+}
+
+/**
+ * Task 1: The "Most Advanced" Truth Engine
+ * Compares cloud `last_updated` vs local `last_updated` and designates the newest timestamp
+ * as the strict Single Source of Truth.
+ */
+export function resolveSingleSourceOfTruthState<T extends GymStateTimestamped = GymStateTimestamped>(
+  localState: T | null | undefined,
+  remoteState: T | null | undefined,
   options?: {
     forceRemoteOnInit?: boolean;
+    remoteLastUpdated?: string | null;
     remoteUpdatedAt?: string | null;
   }
-): SingleSourceOfTruthResult {
-  const localTs = parseTimestampMs(localState?.updatedAt);
-  const remoteIso =
-    (typeof options?.remoteUpdatedAt === 'string' && options.remoteUpdatedAt) ||
-    (typeof remoteState?.updatedAt === 'string' && remoteState.updatedAt) ||
+): SingleSourceOfTruthResult<T> {
+  const localIso = getStateLastUpdatedIso(localState);
+  const localTs = parseTimestampMs(localIso);
+
+  const remoteStateIso = getStateLastUpdatedIso(remoteState);
+  const explicitRemoteIso =
+    (typeof options?.remoteLastUpdated === 'string' && options.remoteLastUpdated.trim() && options.remoteLastUpdated) ||
+    (typeof options?.remoteUpdatedAt === 'string' && options.remoteUpdatedAt.trim() && options.remoteUpdatedAt) ||
     null;
-  const remoteTs = parseTimestampMs(remoteIso);
+
+  const explicitRemoteMs = parseTimestampMs(explicitRemoteIso);
+  const remoteStateMs = parseTimestampMs(remoteStateIso);
+  const remoteTs = Math.max(explicitRemoteMs, remoteStateMs);
+  const remoteIso = explicitRemoteMs >= remoteStateMs ? (explicitRemoteIso || remoteStateIso) : (remoteStateIso || explicitRemoteIso);
 
   if (!remoteState || typeof remoteState !== 'object') {
     return {
+      winner: localState ? 'local' : 'equal',
       appliedRemote: false,
+      shouldPushLocalToCloud: Boolean(localState && localTs > 0),
+      remoteLastUpdated: null,
+      localLastUpdated: localIso,
       remoteUpdatedAt: null,
-      localUpdatedAt: typeof localState?.updatedAt === 'string' ? localState.updatedAt : null,
-      state: localState ? { ...localState } : null
+      localUpdatedAt: localIso,
+      state: localState ? ({ ...localState } as T) : null
     };
   }
 
-  // Strict Single Source of Truth on app init: Supabase always wins and overwrites stale local storage
-  const shouldAdoptRemote = Boolean(options?.forceRemoteOnInit) || remoteTs >= localTs || !localState;
-  if (!shouldAdoptRemote) {
+  // Cloud wins when:
+  // 1. Explicit returning-user login override (`forceRemoteOnInit: true`), OR
+  // 2. Local device has no state / no `last_updated` timestamp (`localTs === 0`), OR
+  // 3. Cloud `last_updated` is strictly newer than Local `last_updated` (`remoteTs > localTs`).
+  const cloudIsNewer = remoteTs > localTs;
+  const localHasNoTimestamp = !localState || localTs === 0;
+  const shouldAdoptRemote = Boolean(options?.forceRemoteOnInit) || cloudIsNewer || (localHasNoTimestamp && remoteTs >= 0);
+
+  if (shouldAdoptRemote) {
+    const authoritative = JSON.parse(JSON.stringify(remoteState)) as T;
+    const effectiveIso = remoteIso || new Date().toISOString();
+    authoritative.last_updated = effectiveIso;
+    authoritative.updatedAt = effectiveIso;
     return {
-      appliedRemote: false,
-      remoteUpdatedAt: remoteIso,
-      localUpdatedAt: typeof localState?.updatedAt === 'string' ? localState.updatedAt : null,
-      state: { ...localState }
+      winner: 'cloud',
+      appliedRemote: true,
+      shouldPushLocalToCloud: false,
+      remoteLastUpdated: effectiveIso,
+      localLastUpdated: localIso,
+      remoteUpdatedAt: effectiveIso,
+      localUpdatedAt: localIso,
+      state: authoritative
     };
   }
 
-  const authoritative = JSON.parse(JSON.stringify(remoteState));
-  if (remoteIso) {
-    authoritative.updatedAt = remoteIso;
+  if (localTs > remoteTs) {
+    const localCopy = JSON.parse(JSON.stringify(localState)) as T;
+    if (localIso) {
+      localCopy.last_updated = localIso;
+      localCopy.updatedAt = localIso;
+    }
+    return {
+      winner: 'local',
+      appliedRemote: false,
+      shouldPushLocalToCloud: true,
+      remoteLastUpdated: remoteIso,
+      localLastUpdated: localIso,
+      remoteUpdatedAt: remoteIso,
+      localUpdatedAt: localIso,
+      state: localCopy
+    };
   }
+
   return {
-    appliedRemote: true,
+    winner: 'equal',
+    appliedRemote: false,
+    shouldPushLocalToCloud: false,
+    remoteLastUpdated: remoteIso,
+    localLastUpdated: localIso,
     remoteUpdatedAt: remoteIso,
-    localUpdatedAt: typeof localState?.updatedAt === 'string' ? localState.updatedAt : null,
-    state: authoritative
+    localUpdatedAt: localIso,
+    state: localState ? ({ ...localState } as T) : null
   };
 }
 
-export async function fetchLatestCloudStateAsSingleSourceOfTruth(options: {
+export async function fetchLatestCloudStateAsSingleSourceOfTruth<T extends GymStateTimestamped = GymStateTimestamped>(options: {
   endpoint: string;
-  localState: Record<string, any> | null;
+  localState: T | null;
   storageKey?: string;
   storage?: Pick<Storage, 'setItem'> | null;
   fetchImpl?: typeof fetch;
   forceRemoteOnInit?: boolean;
-}): Promise<SingleSourceOfTruthResult> {
+  pushLocalIfNewer?: boolean;
+}): Promise<SingleSourceOfTruthResult<T>> {
   const endpoint = String(options.endpoint || '').trim();
   const fetchFn = options.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null);
   if (!endpoint || !fetchFn) {
@@ -159,19 +258,20 @@ export async function fetchLatestCloudStateAsSingleSourceOfTruth(options: {
       return resolveSingleSourceOfTruthState(options.localState, null);
     }
     const payload = await response.json().catch(() => null);
-    const remoteState = payload && payload.configured && payload.data ? payload.data : payload?.data || payload;
-    const remoteUpdatedAt =
+    const remoteState = (payload && payload.configured && payload.data ? payload.data : payload?.data || payload) as T | null;
+    const remoteLastUpdated =
+      (payload && typeof payload.last_updated === 'string' && payload.last_updated) ||
       (payload && typeof payload.updatedAt === 'string' && payload.updatedAt) ||
-      (remoteState && typeof remoteState.updatedAt === 'string' && remoteState.updatedAt) ||
-      null;
+      getStateLastUpdatedIso(remoteState);
 
     if (!remoteState || typeof remoteState !== 'object' || (!remoteState.workoutLogs && remoteState.selectedDayIndex === undefined)) {
       return resolveSingleSourceOfTruthState(options.localState, null);
     }
 
+    // Strict timestamp comparison by default (unless caller explicitly passes forceRemoteOnInit: true)
     const resolved = resolveSingleSourceOfTruthState(options.localState, remoteState, {
-      forceRemoteOnInit: options.forceRemoteOnInit !== false,
-      remoteUpdatedAt
+      forceRemoteOnInit: Boolean(options.forceRemoteOnInit),
+      remoteLastUpdated
     });
 
     if (resolved.appliedRemote && resolved.state && options.storageKey && options.storage) {
@@ -179,6 +279,25 @@ export async function fetchLatestCloudStateAsSingleSourceOfTruth(options: {
         options.storage.setItem(options.storageKey, serializeStateForPersistence(resolved.state));
       } catch {
         // Ignore storage quota issues in restricted environments
+      }
+    }
+
+    // If local storage holds a strictly newer `last_updated` timestamp (e.g., offline edits), sync local up to Supabase
+    if (options.pushLocalIfNewer && resolved.shouldPushLocalToCloud && resolved.state) {
+      try {
+        const isSupabaseApi = endpoint.includes('/api/state');
+        const localPayload = serializeStateForPersistence(resolved.state);
+        await fetchFn(endpoint, {
+          method: 'POST',
+          cache: 'no-store',
+          keepalive: localPayload.length < 60000,
+          headers: {
+            'Content-Type': isSupabaseApi ? 'application/json' : 'text/plain;charset=utf-8'
+          },
+          body: localPayload
+        });
+      } catch {
+        // Best-effort silent background push
       }
     }
 
@@ -190,7 +309,12 @@ export async function fetchLatestCloudStateAsSingleSourceOfTruth(options: {
 
 export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): AutoSupabaseSyncEngine {
   const fetchFn = options.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null);
+  const setTimerFn = options.setTimer || ((fn: () => void, ms: number) => setTimeout(fn, ms));
+  const clearTimerFn = options.clearTimer || ((handle: any) => clearTimeout(handle));
+  const backgroundDebounceMs = Math.max(0, options.backgroundDebounceMs ?? 300);
   let lastKnownCloudLoggedSets = 0;
+  let pendingBgHandle: any = null;
+  let pendingBgReason: AutoSyncTriggerReason | null = null;
 
   async function executePushNow(reason: AutoSyncTriggerReason): Promise<AutoSyncResult> {
     const endpoint = String(options.getEndpoint() || '').trim();
@@ -200,7 +324,8 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
         blockedByUndoGuard: false,
         blockedByEmptyStateGuard: false,
         reason,
-        endpoint
+        endpoint,
+        lastUpdated: null
       };
     }
 
@@ -208,9 +333,16 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
     const localLoggedCount = countTotalLoggedSetsInState(currentState);
 
     // Prevent an unexpected blank local state from wiping populated cloud data during passive auto-sync.
-    // Deliberate user-confirmed day_reset / delayed_sync / undo_restore pushes are always allowed through.
+    // Deliberate user-confirmed day_reset / delayed_sync / undo_restore / local_newer_sync pushes are always allowed through.
     const isPassiveAutoSync =
-      reason === 'set_logged' || reason === 'pullup_logged' || reason === 'cardio_logged' || reason === 'workout_finished';
+      reason === 'set_logged' ||
+      reason === 'checkbox_toggled' ||
+      reason === 'timer_adjusted' ||
+      reason === 'pullup_logged' ||
+      reason === 'cardio_logged' ||
+      reason === 'workout_finished' ||
+      reason === 'background_input';
+
     if (isPassiveAutoSync && lastKnownCloudLoggedSets > 0 && localLoggedCount === 0) {
       options.onStatusChange?.({
         phase: 'error',
@@ -222,7 +354,8 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
         blockedByUndoGuard: false,
         blockedByEmptyStateGuard: true,
         reason,
-        endpoint
+        endpoint,
+        lastUpdated: getStateLastUpdatedIso(currentState)
       };
     }
 
@@ -237,8 +370,14 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
       reason
     });
 
-    // Stamp monotonic ISO timestamp so cross-device Single Source of Truth always identifies the newest state
-    currentState.updatedAt = new Date().toISOString();
+    // Stamp monotonic ISO `last_updated` + `updatedAt` timestamp so the Truth Engine always knows which device is newest
+    const nowIso = new Date().toISOString();
+    if (reason !== 'local_newer_sync' || !getStateLastUpdatedIso(currentState)) {
+      stampGymStateLastUpdated(currentState, nowIso);
+    } else {
+      const existingIso = getStateLastUpdatedIso(currentState) || nowIso;
+      stampGymStateLastUpdated(currentState, existingIso);
+    }
 
     const isFirebase = endpoint.includes('firebaseio.com') || endpoint.endsWith('.json');
     const isSupabaseApi = endpoint.includes('/api/state');
@@ -248,6 +387,7 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
       const resp = await fetchFn(endpoint, {
         method: isFirebase ? 'PUT' : 'POST',
         cache: 'no-store',
+        keepalive: payload.length < 60000,
         headers: {
           'Content-Type': isSupabaseApi ? 'application/json' : 'text/plain;charset=utf-8'
         },
@@ -265,11 +405,16 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
           blockedByUndoGuard: false,
           blockedByEmptyStateGuard: false,
           reason,
-          endpoint
+          endpoint,
+          lastUpdated: getStateLastUpdatedIso(currentState)
         };
       }
-      if (json && typeof json.updatedAt === 'string') {
-        currentState.updatedAt = json.updatedAt;
+      const serverTs =
+        (json && typeof json.last_updated === 'string' && json.last_updated) ||
+        (json && typeof json.updatedAt === 'string' && json.updatedAt) ||
+        getStateLastUpdatedIso(currentState);
+      if (serverTs) {
+        stampGymStateLastUpdated(currentState, serverTs);
       }
       lastKnownCloudLoggedSets = localLoggedCount;
       options.onStatusChange?.({
@@ -287,7 +432,8 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
         blockedByUndoGuard: false,
         blockedByEmptyStateGuard: false,
         reason,
-        endpoint
+        endpoint,
+        lastUpdated: serverTs
       };
     } catch {
       options.onStatusChange?.({
@@ -300,7 +446,8 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
         blockedByUndoGuard: false,
         blockedByEmptyStateGuard: false,
         reason,
-        endpoint
+        endpoint,
+        lastUpdated: getStateLastUpdatedIso(currentState)
       };
     }
   }
@@ -310,9 +457,17 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
     pushFn: (reason) => {
       void executePushNow(reason);
     },
-    setTimer: options.setTimer,
-    clearTimer: options.clearTimer
+    setTimer: setTimerFn,
+    clearTimer: clearTimerFn
   });
+
+  function cancelPendingBackgroundPush() {
+    if (pendingBgHandle !== null) {
+      clearTimerFn(pendingBgHandle);
+      pendingBgHandle = null;
+    }
+    pendingBgReason = null;
+  }
 
   async function autoSyncWorkoutToSupabase(reason: AutoSyncTriggerReason): Promise<AutoSyncResult> {
     // Respect the Data Protection & Undo Engine 5-second delay window so automatic syncs never push an unconfirmed week overwrite early.
@@ -328,13 +483,42 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
         blockedByUndoGuard: true,
         blockedByEmptyStateGuard: false,
         reason,
-        endpoint: options.getEndpoint()
+        endpoint: options.getEndpoint(),
+        lastUpdated: getStateLastUpdatedIso(options.getState())
       };
     }
+    cancelPendingBackgroundPush();
     return executePushNow(reason);
   }
 
+  function pushGymStateInBackground(reason: AutoSyncTriggerReason, immediate = false): Promise<AutoSyncResult> | void {
+    // Stamp `last_updated` immediately on the active state at the exact instant of user input
+    const currentState = options.getState();
+    if (currentState && typeof currentState === 'object') {
+      stampGymStateLastUpdated(currentState, new Date().toISOString());
+    }
+    if (immediate || backgroundDebounceMs === 0 || reason === 'day_reset' || reason === 'undo_restore') {
+      return autoSyncWorkoutToSupabase(reason);
+    }
+    cancelPendingBackgroundPush();
+    pendingBgReason = reason;
+    pendingBgHandle = setTimerFn(() => {
+      const nextReason = pendingBgReason || reason;
+      pendingBgHandle = null;
+      pendingBgReason = null;
+      void autoSyncWorkoutToSupabase(nextReason);
+    }, backgroundDebounceMs);
+  }
+
+  async function flushPendingBackgroundPush(): Promise<AutoSyncResult | null> {
+    if (pendingBgHandle === null && !pendingBgReason) return null;
+    const reason = pendingBgReason || 'background_input';
+    cancelPendingBackgroundPush();
+    return autoSyncWorkoutToSupabase(reason);
+  }
+
   function scheduleDestructiveOverwritePush(delayOverrideMs?: number) {
+    cancelPendingBackgroundPush();
     options.onStatusChange?.({
       phase: 'paused_undo',
       message: 'Cloud push paused (5s undo window)...',
@@ -344,12 +528,16 @@ export function createAutoSupabaseSyncEngine(options: AutoSyncEngineOptions): Au
   }
 
   async function flushUndoRestorePush(): Promise<AutoSyncResult> {
+    cancelPendingBackgroundPush();
     delayController.cancelDelayedPush();
     return executePushNow('undo_restore');
   }
 
   return {
     autoSyncWorkoutToSupabase,
+    pushGymStateInBackground,
+    flushPendingBackgroundPush,
+    cancelPendingBackgroundPush,
     scheduleDestructiveOverwritePush,
     flushUndoRestorePush,
     cancelPendingDestructivePush: () => delayController.cancelDelayedPush(),
