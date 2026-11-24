@@ -4,18 +4,23 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "tsx server.ts",
+    "start": "tsx server.ts",
     "build": "vite build",
     "preview": "vite preview --port 3000 --host 0.0.0.0",
-    "lint": "node --check api/state.js && node --check api/gemini.js"
+    "lint": "node --check api/state.js && node --check api/gemini.js && node --check api/biometrics.js"
   },
   "dependencies": {
+    "@google/genai": "^3.6.1",
     "@supabase/supabase-js": "^2.119.2",
     "@types/d3": "^7.4.3",
+    "@types/express": "^5.0.6",
     "d3": "^7.9.2",
+    "express": "^5.3.0",
     "idb": "^8.0.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "tsx": "^4.23.15",
     "vite-plugin-pwa": "^2.0.0"
   },
   "devDependencies": {

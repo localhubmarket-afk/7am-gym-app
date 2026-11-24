@@ -678,6 +678,17 @@
         <span id="biometric-readiness-badge" class="shrink-0 rounded-lg bg-sky-500/25 border border-sky-400/50 px-2.5 py-1 text-[0.6875rem] font-extrabold text-sky-100 whitespace-nowrap">100% Volume</span>
       </div>
 
+      <!-- Phase 2 Task 3: Low-Spoons Active Scaling Banner -->
+      <div id="low-spoons-active-banner" data-testid="low-spoons-active-banner" role="status" class="hidden rounded-2xl border border-amber-400/60 bg-amber-500/15 px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2">
+        <div class="min-w-0 flex-1">
+          <div class="text-[0.625rem] font-extrabold uppercase tracking-wider text-amber-200">Low-Spoons Safe Preset Active</div>
+          <p id="low-spoons-active-text" class="text-xs font-bold text-slate-100 leading-relaxed mt-0.5"></p>
+        </div>
+        <button type="button" id="low-spoons-banner-reset-btn" class="min-h-[44px] px-3 py-1.5 rounded-xl bg-slate-900 border border-amber-300/60 text-xs font-extrabold text-amber-100 hover:bg-slate-800 shrink-0">
+          Reset 100%
+        </button>
+      </div>
+
       <!-- UPGRADE 6: First-Open & Daily Gym Time Prompt + Live Workout Time Auto-Sync Banner -->
       <div id="gym-time-top-banner-workout" class="space-y-2"></div>
       <div id="live-gym-time-autosync-banner" class="hidden"></div>
@@ -791,6 +802,30 @@
         </button>
         <div id="accessible-video-guide-panel" class="hidden border-t border-slate-800 p-3">
           <div id="accessible-video-player-react-mount"></div>
+        </div>
+      </div>
+
+      <!-- Phase 2 Blueprint Hub: Voice-to-Log + 1-Tap Undo, Plain-Language Coach (Bounded Gemini), Low-Spoons Triage & Biometrics -->
+      <div id="phase2-accessibility-hub-card" class="bg-slate-900 border border-emerald-400/45 rounded-2xl overflow-hidden">
+        <button
+          type="button"
+          id="toggle-phase2-hub-btn"
+          data-testid="toggle-phase2-hub-btn"
+          aria-expanded="false"
+          aria-controls="phase2-accessibility-hub-panel"
+          class="w-full min-h-[48px] px-3.5 py-2.5 flex items-center justify-between gap-2 text-left hover:bg-slate-800/60 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+        >
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-xs sm:text-sm font-extrabold text-white">Voice Log, Plain Coach &amp; Low-Spoons Hub</span>
+              <span class="text-[0.625rem] font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-100 border border-amber-400/40">Phase 2 · Accessible AI</span>
+            </div>
+            <p class="text-[0.6875rem] text-slate-300 mt-0.5">Hands-free voice sets with 1-tap Undo, Grade 6–8 math coach &amp; energy scaling</p>
+          </div>
+          <span id="phase2-hub-chevron" class="text-emerald-300 text-xs font-extrabold shrink-0">Show ▼</span>
+        </button>
+        <div id="phase2-accessibility-hub-panel" class="hidden border-t border-slate-800 p-3">
+          <div id="phase2-hub-react-mount"></div>
         </div>
       </div>
 
@@ -14608,6 +14643,32 @@
         bioBannerEl.classList.add('hidden');
       }
 
+      // Phase 2 Task 3: Deterministic Low-Spoons Triage Preset Scaling (Volume trim + optional stable machine swaps)
+      const lowSpoonsBannerEl = document.getElementById('low-spoons-active-banner');
+      const lowSpoonsTextEl = document.getElementById('low-spoons-active-text');
+      if (
+        state.activeLowSpoonsPreset &&
+        state.activeLowSpoonsPreset.presetId !== 'full_capacity' &&
+        typeof window.applyLowSpoonsPresetToExercises === 'function'
+      ) {
+        const lsResult = window.applyLowSpoonsPresetToExercises(exercisesToday, state.activeLowSpoonsPreset);
+        exercisesToday = lsResult.exercises;
+        if (lowSpoonsBannerEl) {
+          lowSpoonsBannerEl.classList.remove('hidden');
+          const swapCount = lsResult.changes.filter(c => c.swappedToMachine).length;
+          const swapNote = swapCount > 0 ? ` · ${swapCount} barbell lift${swapCount === 1 ? '' : 's'} swapped to stable machines` : '';
+          if (lowSpoonsTextEl) {
+            lowSpoonsTextEl.textContent = `${state.activeLowSpoonsPreset.title} (${lsResult.originalTotalSets} → ${lsResult.adjustedTotalSets} sets${swapNote}).`;
+          }
+        }
+      } else if (lowSpoonsBannerEl) {
+        lowSpoonsBannerEl.classList.add('hidden');
+      }
+
+      if (typeof window.__syncPhase2AccessibilityHubUI === 'function') {
+        try { window.__syncPhase2AccessibilityHubUI(exercisesToday); } catch (e) {}
+      }
+
       // Count sets completed today in current week BEFORE evaluating Pre-Gym Fuel Check-In banner
       let todayTotalSets = 0;
       let todayDoneSets = 0;
@@ -26546,7 +26607,241 @@
         if (accessibleVideoPanel && !accessibleVideoPanel.classList.contains('hidden')) {
           ensureAccessibleVideoPlayerMounted();
         }
+        if (phase2HubPanel && !phase2HubPanel.classList.contains('hidden')) {
+          renderPhase2AccessibilityHub();
+        }
       });
+
+      // Phase 2 Blueprint Hub: Voice-to-Log + 1-Tap Undo, Plain-Language Coach, Low-Spoons Triage & Biometrics
+      const togglePhase2HubBtn = document.getElementById('toggle-phase2-hub-btn');
+      const phase2HubPanel = document.getElementById('phase2-accessibility-hub-panel');
+      const phase2HubChevron = document.getElementById('phase2-hub-chevron');
+      const phase2HubMountEl = document.getElementById('phase2-hub-react-mount');
+      const lowSpoonsBannerResetBtn = document.getElementById('low-spoons-banner-reset-btn');
+      let lastVoiceUndoRecord = null;
+      let latestExercisesForPhase2 = [];
+
+      function resolvePhase2ActiveVoiceTarget(exercisesOverride) {
+        const week = state.currentWeek || 1;
+        const dayIdx = state.selectedDayIndex || 0;
+        const slotIdx = typeof getDayAssignment === 'function'
+          ? getDayAssignment(week, dayIdx).templateSlotIndex
+          : dayIdx;
+        const list = Array.isArray(exercisesOverride) && exercisesOverride.length > 0
+          ? exercisesOverride
+          : (Array.isArray(latestExercisesForPhase2) && latestExercisesForPhase2.length > 0
+              ? latestExercisesForPhase2
+              : ((DAYS_SCHEDULE[slotIdx] && DAYS_SCHEDULE[slotIdx].exercises) || []));
+
+        for (let i = 0; i < list.length; i++) {
+          const ex = list[i];
+          if (!ex || ex.isCardio) continue;
+          const totalSets = Math.max(1, Number(ex.sets) || 3);
+          const pDay = (typeof PULLUP_EX_ID_TO_DAY !== 'undefined' && PULLUP_EX_ID_TO_DAY[ex.id]) || 0;
+          const targetSlot = pDay ? (pDay - 1) : slotIdx;
+          for (let s = 1; s <= totalSets; s++) {
+            const entry = getLogEntry(week, dayIdx, ex.id, s);
+            if (!entry || !entry.done) {
+              const meta = (typeof EXERCISE_META !== 'undefined' && EXERCISE_META[ex.id]) || {};
+              const isBw = Boolean(ex.isBodyweight || pDay > 0 || meta.defaultWeightLbs === 0 || /pull[\s-]*up|push[\s-]*up|bodyweight/i.test(String(ex.name || '')));
+              return {
+                week,
+                daySlotIndex: targetSlot,
+                exerciseId: ex.id,
+                exerciseName: String(ex.name || 'Exercise').replace(/^\d+\.\s*/, ''),
+                setNumber: s,
+                totalSets,
+                repRangeLabel: String(ex.reps || '8-12'),
+                defaultUnit: getExerciseUnit ? getExerciseUnit(ex.id) : 'lbs',
+                defaultWeight: isBw ? 0 : Number(meta.defaultWeightLbs || 45),
+                isBodyweight: isBw,
+                pullupDayNumber: pDay || null
+              };
+            }
+          }
+        }
+        const firstEx = list.find(e => e && !e.isCardio) || { id: 'mon_bench', name: 'Barbell Bench Press', sets: 3, reps: '8-10' };
+        const firstMeta = (typeof EXERCISE_META !== 'undefined' && EXERCISE_META[firstEx.id]) || {};
+        const firstIsBw = Boolean(firstEx.isBodyweight || firstMeta.defaultWeightLbs === 0 || /pull[\s-]*up|push[\s-]*up|bodyweight/i.test(String(firstEx.name || '')));
+        return {
+          week,
+          daySlotIndex: slotIdx,
+          exerciseId: firstEx.id,
+          exerciseName: String(firstEx.name || 'Barbell Bench Press').replace(/^\d+\.\s*/, ''),
+          setNumber: 1,
+          totalSets: Math.max(1, Number(firstEx.sets) || 3),
+          repRangeLabel: String(firstEx.reps || '8-10'),
+          defaultUnit: 'lbs',
+          defaultWeight: firstIsBw ? 0 : Number(firstMeta.defaultWeightLbs || 45),
+          isBodyweight: firstIsBw,
+          pullupDayNumber: null
+        };
+      }
+
+      function buildPhase2CoachSnapshot(target) {
+        if (typeof window.evaluateExerciseDoubleProgressionFromGymState === 'function' && typeof window.buildBoundedProgressionSnapshot === 'function') {
+          const prog = window.evaluateExerciseDoubleProgressionFromGymState({
+            gymState: state,
+            exerciseId: target.exerciseId,
+            exerciseName: target.exerciseName,
+            currentWeek: target.week,
+            daySlotIndex: target.daySlotIndex,
+            targetSets: target.totalSets,
+            repRangeLabel: target.repRangeLabel,
+            baselineWeight: target.isBodyweight ? 0 : target.defaultWeight,
+            unit: target.defaultUnit,
+            isBodyweight: Boolean(target.isBodyweight)
+          });
+          return window.buildBoundedProgressionSnapshot(prog, null, state.biometricsSnapshot || null);
+        }
+        return Object.freeze({
+          exerciseName: target.exerciseName,
+          action: 'start_baseline',
+          previousWeight: null,
+          previousReps: null,
+          previousCompletedSets: 0,
+          targetSets: target.totalSets,
+          minReps: 8,
+          maxReps: 12,
+          nextTargetWeight: target.defaultWeight,
+          nextTargetReps: 8,
+          weightDelta: 0,
+          unit: target.defaultUnit || 'lbs',
+          deterministicSummary: `Start at ${target.defaultWeight} ${target.defaultUnit || 'lbs'} for 8–12 reps.`,
+          formulaSteps: [`Baseline: ${target.totalSets} sets × 8–12 reps at ${target.defaultWeight} ${target.defaultUnit || 'lbs'}.`]
+        });
+      }
+
+      function renderPhase2AccessibilityHub(exercisesOverride) {
+        if (Array.isArray(exercisesOverride) && exercisesOverride.length > 0) {
+          latestExercisesForPhase2 = exercisesOverride;
+        }
+        if (!phase2HubMountEl || !phase2HubPanel || phase2HubPanel.classList.contains('hidden')) return;
+        if (typeof window.mountPhase2AccessibilityHub !== 'function') return;
+
+        const target = resolvePhase2ActiveVoiceTarget(latestExercisesForPhase2);
+        const coachSnapshot = buildPhase2CoachSnapshot(target);
+        const plannedSets = (latestExercisesForPhase2 || []).reduce(
+          (acc, ex) => (ex && !ex.isCardio ? acc + Math.max(1, Number(ex.sets) || 1) : acc),
+          12
+        );
+
+        window.mountPhase2AccessibilityHub(phase2HubMountEl, {
+          activeExerciseName: target.exerciseName,
+          activeSetNumber: target.setNumber,
+          defaultUnit: target.defaultUnit,
+          lastUndoRecord: lastVoiceUndoRecord,
+          coachMathSnapshot: coachSnapshot,
+          activeLowSpoonsPreset: state.activeLowSpoonsPreset || null,
+          biometricsSnapshot: state.biometricsSnapshot || null,
+          plannedTotalSets: plannedSets,
+          onVoiceLogParsed: async (parsed) => {
+            if (typeof window.applyVoiceLogToGymState !== 'function') return;
+            const effectiveTarget = Object.assign({}, target, {
+              setNumber: parsed.setNumberHint || target.setNumber
+            });
+            const applied = window.applyVoiceLogToGymState(state, parsed, effectiveTarget);
+            state.workoutLogs = applied.nextState.workoutLogs;
+            state.pullupLogs = applied.nextState.pullupLogs;
+            state.lastWorkoutActivityAt = applied.nextState.lastWorkoutActivityAt;
+            state.last_updated = applied.nextState.last_updated;
+            state.updatedAt = applied.nextState.updatedAt;
+            lastVoiceUndoRecord = applied.undoRecord;
+            saveState(false, 'voice_log');
+            pushStateToCloud('voice_log');
+            if (window.__gymRealtimeSyncManager && typeof window.__gymRealtimeSyncManager.pushNow === 'function') {
+              window.__gymRealtimeSyncManager.pushNow(state, 'voice_log').catch(() => {});
+            }
+            renderWorkoutView();
+            renderPullupView();
+            showToast(applied.summaryText);
+            renderPhase2AccessibilityHub();
+          },
+          onVoiceUndo: async (record) => {
+            if (typeof window.revertVoiceLogFromGymState !== 'function') return;
+            const reverted = window.revertVoiceLogFromGymState(state, record);
+            state.workoutLogs = reverted.nextState.workoutLogs;
+            state.pullupLogs = reverted.nextState.pullupLogs;
+            state.last_updated = reverted.nextState.last_updated;
+            state.updatedAt = reverted.nextState.updatedAt;
+            lastVoiceUndoRecord = null;
+            saveState(true);
+            await pushStateToCloud('voice_log_undo');
+            if (window.__gymRealtimeSyncManager && typeof window.__gymRealtimeSyncManager.pushNow === 'function') {
+              await window.__gymRealtimeSyncManager.pushNow(state, 'voice_log_undo').catch(() => {});
+            }
+            renderWorkoutView();
+            renderPullupView();
+            showToast(reverted.summaryText);
+            renderPhase2AccessibilityHub();
+          },
+          onApplyLowSpoonsPreset: (preset) => {
+            state.activeLowSpoonsPreset = preset;
+            if (preset && preset.recommendSensoryCalmMode && typeof window.applySensoryCalmToDocument === 'function') {
+              const prevCalm = typeof window.loadStoredSensoryCalmPreference === 'function' ? window.loadStoredSensoryCalmPreference() : false;
+              if (!prevCalm) state.lowSpoonsAutoEnabledCalm = true;
+              window.applySensoryCalmToDocument(true);
+            }
+            saveState(false, 'low_spoons_preset');
+            renderWorkoutView();
+            showToast(`Applied "${preset.title}" to today's workout.`);
+            renderPhase2AccessibilityHub();
+          },
+          onResetLowSpoonsPreset: () => {
+            state.activeLowSpoonsPreset = null;
+            if (state.lowSpoonsAutoEnabledCalm && typeof window.applySensoryCalmToDocument === 'function') {
+              window.applySensoryCalmToDocument(false);
+              state.lowSpoonsAutoEnabledCalm = false;
+            }
+            saveState(false, 'low_spoons_reset');
+            renderWorkoutView();
+            showToast('Reset back to your full 100% workout plan.');
+            renderPhase2AccessibilityHub();
+          },
+          onSyncBiometrics: async (snapshot) => {
+            state.biometricsSnapshot = snapshot;
+            saveState(false, 'biometrics_sync');
+            renderWorkoutView();
+            const acctEmail = state && state.userProfile && state.userProfile.email ? String(state.userProfile.email).trim().toLowerCase() : '';
+            if (acctEmail && typeof window.syncDailyBiometricsToSupabase === 'function') {
+              await window.syncDailyBiometricsToSupabase({
+                accountKey: acctEmail,
+                snapshot
+              }).catch(() => {});
+            }
+            showToast(`Recovery biometrics synced (${snapshot.sleepHours.toFixed(1)}h sleep, ${snapshot.dailySteps.toLocaleString()} steps).`);
+            renderPhase2AccessibilityHub();
+          }
+        });
+      }
+
+      window.__syncPhase2AccessibilityHubUI = renderPhase2AccessibilityHub;
+
+      if (togglePhase2HubBtn && phase2HubPanel) {
+        togglePhase2HubBtn.addEventListener('click', () => {
+          const isHidden = phase2HubPanel.classList.contains('hidden');
+          if (isHidden) {
+            phase2HubPanel.classList.remove('hidden');
+            togglePhase2HubBtn.setAttribute('aria-expanded', 'true');
+            if (phase2HubChevron) phase2HubChevron.textContent = 'Hide ▲';
+            renderPhase2AccessibilityHub();
+          } else {
+            phase2HubPanel.classList.add('hidden');
+            togglePhase2HubBtn.setAttribute('aria-expanded', 'false');
+            if (phase2HubChevron) phase2HubChevron.textContent = 'Show ▼';
+          }
+        });
+      }
+
+      if (lowSpoonsBannerResetBtn) {
+        lowSpoonsBannerResetBtn.addEventListener('click', () => {
+          state.activeLowSpoonsPreset = null;
+          saveState(false, 'low_spoons_reset');
+          renderWorkoutView();
+          renderPhase2AccessibilityHub();
+          showToast('Reset back to your full 100% workout plan.');
+        });
+      }
 
       // Account Deletion Redesign: Jargon-Free Warning + Concurrent 3-Layer Sanitization + Automated One-Click Account Switch
       const deleteAccountConfirmModalEl = document.getElementById('delete-account-confirm-modal');
@@ -30413,11 +30708,15 @@
         <ul id="explainable-math-steps-list" class="list-disc pl-5 space-y-1 text-xs text-slate-300 leading-relaxed"></ul>
       </div>
       <div id="explainable-math-prescribed" class="rounded-xl border border-emerald-500/40 bg-emerald-950/40 px-3 py-2 text-xs font-bold text-emerald-200"></div>
+      <button type="button" id="open-ai-coach-from-math-btn" class="w-full min-h-[48px] py-2.5 px-4 rounded-xl border border-sky-400/70 bg-slate-800 hover:bg-slate-700 text-sky-100 text-xs font-extrabold transition">
+        Ask Plain-Language Coach (Grade 6–8 AI)
+      </button>
       <button type="button" id="confirm-explainable-math-btn" class="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-extrabold transition">
         Got It
       </button>
     </div>
   </div>
+  <div id="plain-language-coach-modal-mount"></div>
 
   <!-- Module 4: Computer Vision Camera OCR Scanner Modal (Weight Machine Pin & Nutrition Label) -->
   <div id="camera-ocr-modal" role="dialog" aria-modal="true" aria-labelledby="camera-ocr-modal-title" class="hidden fixed inset-0 z-[72] bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
@@ -31429,13 +31728,18 @@
         });
       }
 
-      // 5. Module 4: Explainable Math Modal
+      // 5. Module 4: Explainable Math Modal (+ Phase 2 Bounded Plain-Language Coach Trigger)
       const expModal = document.getElementById('explainable-math-modal');
       const closeExpBtn = document.getElementById('close-explainable-math-btn');
       const confirmExpBtn = document.getElementById('confirm-explainable-math-btn');
+      const openAiCoachFromMathBtn = document.getElementById('open-ai-coach-from-math-btn');
+      const coachModalMountEl = document.getElementById('plain-language-coach-modal-mount');
+      let lastExplainableMathContext = null;
+
       window.openExplainableMathModal = function(input) {
         if (!expModal || typeof window.computeExplainableProgressionMath !== 'function') return;
         const breakdown = window.computeExplainableProgressionMath(input);
+        lastExplainableMathContext = { input, breakdown };
         const exLbl = document.getElementById('explainable-math-ex-label');
         const titleEl = document.getElementById('explainable-math-modal-title');
         const plainEl = document.getElementById('explainable-math-plain-text');
@@ -31454,6 +31758,39 @@
       if (closeExpBtn) closeExpBtn.addEventListener('click', hideExpModal);
       if (confirmExpBtn) confirmExpBtn.addEventListener('click', hideExpModal);
       if (expModal) expModal.addEventListener('click', (e) => { if (e.target === expModal) hideExpModal(); });
+      if (openAiCoachFromMathBtn) {
+        openAiCoachFromMathBtn.addEventListener('click', () => {
+          if (!lastExplainableMathContext || !coachModalMountEl || typeof window.mountPlainLanguageCoachModal !== 'function') return;
+          const { input, breakdown } = lastExplainableMathContext;
+          const unit = input.unit === 'kg' ? 'kg' : 'lbs';
+          const snapshot = Object.freeze({
+            exerciseName: breakdown.exerciseName,
+            action: breakdown.incrementApplied > 0 ? 'increase_weight' : 'hold_and_build',
+            previousWeight: typeof input.previousWeight === 'number' ? input.previousWeight : null,
+            previousReps: typeof input.previousReps === 'number' ? input.previousReps : null,
+            previousCompletedSets: input.completedAllPreviousReps ? Number(input.targetSets || 3) : 0,
+            targetSets: Number(input.targetSets || 3),
+            minReps: 8,
+            maxReps: 12,
+            nextTargetWeight: Number(input.targetWeight || 0),
+            nextTargetReps: 8,
+            weightDelta: Number(breakdown.incrementApplied || 0),
+            unit,
+            biometricSleepHours: typeof input.biometricSleepHours === 'number' ? input.biometricSleepHours : null,
+            deterministicSummary: breakdown.plainEnglishExplanation,
+            formulaSteps: breakdown.formulaSteps
+          });
+          hideExpModal();
+          const renderCoach = (openFlag) => {
+            window.mountPlainLanguageCoachModal(coachModalMountEl, {
+              isOpen: openFlag,
+              mathSnapshot: snapshot,
+              onClose: () => renderCoach(false)
+            });
+          };
+          renderCoach(true);
+        });
+      }
 
       // 6. Module 4: Computer Vision Camera OCR Scanner Modal
       const ocrModal = document.getElementById('camera-ocr-modal');

@@ -1,0 +1,6 @@
+{
+  "name": "7AM Budget Gym & Vegan Muscle Hub",
+  "description": "Accessible offline-first strength training, pull-up progression, vegan meal prep, and neurodivergent-friendly workout companion.",
+  "requestFramePermissions": ["microphone", "camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

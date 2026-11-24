@@ -3,6 +3,8 @@ import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import './styles/accessibility.css';
 import { AccessibleVideoPlayer, type AccessibleVideoPlayerProps } from './components/AccessibleVideoPlayer';
+import { Phase2AccessibilityHub, type Phase2AccessibilityHubProps } from './components/Phase2AccessibilityHub';
+import { PlainLanguageCoachModal, type PlainLanguageCoachModalProps } from './components/PlainLanguageCoachModal';
 import {
   AI_EXERCISE_WHITELIST_RULE,
   ONE_RM_LIFT_CONFIGS,
@@ -210,7 +212,9 @@ import {
   applyBiometricVolumeToExercises,
   calculateBiometricVolumeAdjustment,
   fetchAppleHealthKitBiometricsStub,
-  fetchGoogleHealthConnectBiometricsStub
+  fetchGoogleHealthConnectBiometricsStub,
+  fetchLatestBiometricsFromSupabase,
+  syncDailyBiometricsToSupabase
 } from './utils/biometricSync';
 import { createSmartwatchBridge } from './smartwatch/watchBridge';
 import {
@@ -286,7 +290,31 @@ import {
   sanitizeMediaUrl
 } from './utils/accessibleVideoMedia';
 
+import {
+  applyVoiceLogToGymState,
+  createBrowserSpeechRecognizer,
+  isWebSpeechRecognitionSupported,
+  normalizeSpokenNumbers,
+  parseSpokenSetPhrase,
+  revertVoiceLogFromGymState
+} from './utils/voiceToLog';
+import {
+  PLAIN_LANGUAGE_COACH_SYSTEM_INSTRUCTION,
+  buildBoundedProgressionSnapshot,
+  requestPlainLanguageCoachExplanation
+} from './utils/plainLanguageCoach';
+import {
+  BARBELL_TO_MACHINE_SWAPS,
+  LOW_SPOONS_PRESETS,
+  applyLowSpoonsPresetToExercises,
+  classifyLowSpoonsWithGemini,
+  findStableMachineVariation,
+  mapClassificationToValidatedPreset
+} from './utils/lowSpoonsTriage';
+
 const mountedVideoPlayerRoots = new WeakMap<HTMLElement, Root>();
+const mountedPhase2HubRoots = new WeakMap<HTMLElement, Root>();
+const mountedCoachModalRoots = new WeakMap<HTMLElement, Root>();
 
 export function mountAccessibleVideoPlayer(
   container: HTMLElement,
@@ -304,6 +332,48 @@ export function mountAccessibleVideoPlayer(
       if (existing) {
         existing.unmount();
         mountedVideoPlayerRoots.delete(container);
+      }
+    }
+  };
+}
+
+export function mountPhase2AccessibilityHub(
+  container: HTMLElement,
+  props: Phase2AccessibilityHubProps
+): { unmount: () => void } {
+  let root = mountedPhase2HubRoots.get(container);
+  if (!root) {
+    root = createRoot(container);
+    mountedPhase2HubRoots.set(container, root);
+  }
+  root.render(React.createElement(Phase2AccessibilityHub, props));
+  return {
+    unmount: () => {
+      const existing = mountedPhase2HubRoots.get(container);
+      if (existing) {
+        existing.unmount();
+        mountedPhase2HubRoots.delete(container);
+      }
+    }
+  };
+}
+
+export function mountPlainLanguageCoachModal(
+  container: HTMLElement,
+  props: PlainLanguageCoachModalProps
+): { unmount: () => void } {
+  let root = mountedCoachModalRoots.get(container);
+  if (!root) {
+    root = createRoot(container);
+    mountedCoachModalRoots.set(container, root);
+  }
+  root.render(React.createElement(PlainLanguageCoachModal, props));
+  return {
+    unmount: () => {
+      const existing = mountedCoachModalRoots.get(container);
+      if (existing) {
+        existing.unmount();
+        mountedCoachModalRoots.delete(container);
       }
     }
   };
@@ -1162,6 +1232,25 @@ declare global {
     formatSecondsClock?: typeof formatSecondsClock;
     sanitizeMediaUrl?: typeof sanitizeMediaUrl;
     mountAccessibleVideoPlayer?: typeof mountAccessibleVideoPlayer;
+    mountPhase2AccessibilityHub?: typeof mountPhase2AccessibilityHub;
+    mountPlainLanguageCoachModal?: typeof mountPlainLanguageCoachModal;
+    normalizeSpokenNumbers?: typeof normalizeSpokenNumbers;
+    parseSpokenSetPhrase?: typeof parseSpokenSetPhrase;
+    applyVoiceLogToGymState?: typeof applyVoiceLogToGymState;
+    revertVoiceLogFromGymState?: typeof revertVoiceLogFromGymState;
+    isWebSpeechRecognitionSupported?: typeof isWebSpeechRecognitionSupported;
+    createBrowserSpeechRecognizer?: typeof createBrowserSpeechRecognizer;
+    PLAIN_LANGUAGE_COACH_SYSTEM_INSTRUCTION?: string;
+    buildBoundedProgressionSnapshot?: typeof buildBoundedProgressionSnapshot;
+    requestPlainLanguageCoachExplanation?: typeof requestPlainLanguageCoachExplanation;
+    LOW_SPOONS_PRESETS?: typeof LOW_SPOONS_PRESETS;
+    BARBELL_TO_MACHINE_SWAPS?: typeof BARBELL_TO_MACHINE_SWAPS;
+    mapClassificationToValidatedPreset?: typeof mapClassificationToValidatedPreset;
+    findStableMachineVariation?: typeof findStableMachineVariation;
+    applyLowSpoonsPresetToExercises?: typeof applyLowSpoonsPresetToExercises;
+    classifyLowSpoonsWithGemini?: typeof classifyLowSpoonsWithGemini;
+    syncDailyBiometricsToSupabase?: typeof syncDailyBiometricsToSupabase;
+    fetchLatestBiometricsFromSupabase?: typeof fetchLatestBiometricsFromSupabase;
   }
 }
 
@@ -1393,5 +1482,24 @@ if (typeof window !== 'undefined') {
   window.formatSecondsClock = formatSecondsClock;
   window.sanitizeMediaUrl = sanitizeMediaUrl;
   window.mountAccessibleVideoPlayer = mountAccessibleVideoPlayer;
+  window.mountPhase2AccessibilityHub = mountPhase2AccessibilityHub;
+  window.mountPlainLanguageCoachModal = mountPlainLanguageCoachModal;
+  window.normalizeSpokenNumbers = normalizeSpokenNumbers;
+  window.parseSpokenSetPhrase = parseSpokenSetPhrase;
+  window.applyVoiceLogToGymState = applyVoiceLogToGymState;
+  window.revertVoiceLogFromGymState = revertVoiceLogFromGymState;
+  window.isWebSpeechRecognitionSupported = isWebSpeechRecognitionSupported;
+  window.createBrowserSpeechRecognizer = createBrowserSpeechRecognizer;
+  window.PLAIN_LANGUAGE_COACH_SYSTEM_INSTRUCTION = PLAIN_LANGUAGE_COACH_SYSTEM_INSTRUCTION;
+  window.buildBoundedProgressionSnapshot = buildBoundedProgressionSnapshot;
+  window.requestPlainLanguageCoachExplanation = requestPlainLanguageCoachExplanation;
+  window.LOW_SPOONS_PRESETS = LOW_SPOONS_PRESETS;
+  window.BARBELL_TO_MACHINE_SWAPS = BARBELL_TO_MACHINE_SWAPS;
+  window.mapClassificationToValidatedPreset = mapClassificationToValidatedPreset;
+  window.findStableMachineVariation = findStableMachineVariation;
+  window.applyLowSpoonsPresetToExercises = applyLowSpoonsPresetToExercises;
+  window.classifyLowSpoonsWithGemini = classifyLowSpoonsWithGemini;
+  window.syncDailyBiometricsToSupabase = syncDailyBiometricsToSupabase;
+  window.fetchLatestBiometricsFromSupabase = fetchLatestBiometricsFromSupabase;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }
