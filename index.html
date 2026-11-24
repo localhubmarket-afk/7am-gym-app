@@ -28721,16 +28721,69 @@
           <span>Auto-Sync Devices</span>
           <span id="toggle-auto-sync-devices-status">ON — Tap to Turn Off</span>
         </button>
-        <button
-          type="button"
-          id="force-sync-now-btn"
-          data-testid="force-sync-now-btn"
-          class="w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-sky-400/70 bg-slate-900 hover:bg-slate-800 text-sky-100 text-xs font-extrabold transition flex items-center justify-center gap-2"
-        >
-          <span>🔄 Force Sync Now</span>
-        </button>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button
+            type="button"
+            id="force-sync-now-btn"
+            data-testid="force-sync-now-btn"
+            class="w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-sky-400/70 bg-slate-900 hover:bg-slate-800 text-sky-100 text-xs font-extrabold transition flex items-center justify-center gap-2"
+          >
+            <span>🔄 Force Sync Now</span>
+          </button>
+          <button
+            type="button"
+            id="force-pull-cloud-btn"
+            data-testid="force-pull-cloud-btn"
+            aria-label="Force Pull from Cloud"
+            class="w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-indigo-400/70 bg-indigo-950/70 hover:bg-indigo-900/70 text-indigo-100 text-xs font-extrabold transition flex items-center justify-center gap-2"
+          >
+            <span>⬇️ Force Pull from Cloud</span>
+          </button>
+        </div>
         <p id="auto-sync-status-message" role="status" aria-live="polite" class="text-[0.75rem] font-semibold text-slate-300 leading-relaxed">
           Changes save automatically on this device and sync across your screens.
+        </p>
+      </section>
+
+      <!-- Task 2: Data Backup & Migration (JSON Export / Import + Auto Supabase Push) -->
+      <section id="data-backup-migration-card" data-testid="data-backup-migration-panel" aria-label="Data Backup &amp; Migration" class="rounded-xl border border-amber-400/50 bg-slate-950/95 p-3 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-extrabold text-white">
+          <span>Data Backup &amp; Migration</span>
+          <span class="text-[0.75rem] font-bold text-amber-300">JSON File</span>
+        </div>
+        <p class="text-[0.8125rem] text-slate-300 leading-relaxed">
+          Save a copy of your workouts and meals as a JSON file, or upload a backup file to move your progress into this account.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button
+            type="button"
+            id="export-gym-json-btn"
+            data-testid="export-gym-json-btn"
+            aria-label="Export JSON backup as 7am_gym_backup.json"
+            class="w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-emerald-400/70 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-100 text-xs font-extrabold transition flex items-center justify-center gap-2"
+          >
+            <span>💾 Export JSON Backup</span>
+          </button>
+          <button
+            type="button"
+            id="import-gym-json-btn"
+            data-testid="import-gym-json-btn"
+            aria-label="Import JSON backup file"
+            class="w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-amber-400/70 bg-amber-600/20 hover:bg-amber-600/30 text-amber-100 text-xs font-extrabold transition flex items-center justify-center gap-2"
+          >
+            <span>📂 Import JSON Backup</span>
+          </button>
+          <input
+            type="file"
+            id="import-gym-json-input"
+            data-testid="import-gym-json-input"
+            accept=".json,application/json"
+            aria-label="Choose a JSON backup file to import"
+            class="sr-only"
+          />
+        </div>
+        <p id="data-migration-status-message" data-testid="data-migration-status-message" role="status" aria-live="polite" class="text-[0.75rem] font-semibold text-slate-300 leading-relaxed">
+          Exports save as 7am_gym_backup.json. Imports save locally and push to your cloud account right away.
         </p>
       </section>
 
@@ -30659,6 +30712,180 @@
           } finally {
             forceSyncNowBtn.disabled = false;
             forceSyncNowBtn.innerHTML = originalHtml;
+          }
+        });
+      }
+
+      // Task 1: Manual "Force Pull from Cloud" Button (Queries Supabase gym_state for authenticated user & overwrites local state + localStorage)
+      const forcePullCloudBtn = document.getElementById('force-pull-cloud-btn');
+      if (forcePullCloudBtn) {
+        forcePullCloudBtn.addEventListener('click', async () => {
+          const originalHtml = forcePullCloudBtn.innerHTML;
+          forcePullCloudBtn.disabled = true;
+          forcePullCloudBtn.textContent = 'Downloading from cloud...';
+          try {
+            clearTimeout(cloudSyncTimeout);
+            cloudSyncTimeout = null;
+            if (window.__gymRealtimeSyncManager && typeof window.__gymRealtimeSyncManager.forcePullFromCloud === 'function') {
+              const pullRes = await window.__gymRealtimeSyncManager.forcePullFromCloud();
+              updateAutoSyncStatusReadoutUI(
+                pullRes.ok ? 'connected' : 'local_only',
+                pullRes.toastMessage
+              );
+              if (typeof showToast === 'function') showToast(pullRes.toastMessage);
+            } else if (typeof window.forcePullGymStateFromCloud === 'function') {
+              const activeEmail = state && state.userProfile ? state.userProfile.email : '';
+              const pullRes = await window.forcePullGymStateFromCloud({
+                userEmail: activeEmail,
+                storageKey: STORAGE_KEY,
+                apiEndpoint: getActiveCloudEndpoint(),
+                onStateOverwritten: (cloudState, effectiveTs) => {
+                  applyAuthoritativeRemoteStateLocal(cloudState, effectiveTs, 'cloud_pull');
+                }
+              });
+              updateAutoSyncStatusReadoutUI(
+                pullRes.ok ? 'connected' : 'local_only',
+                pullRes.toastMessage
+              );
+              if (typeof showToast === 'function') showToast(pullRes.toastMessage);
+            } else if (typeof pullStateFromCloud === 'function') {
+              const applied = await pullStateFromCloud({ forceRemoteTruth: true });
+              const msg = applied
+                ? 'Cloud data downloaded successfully. This device now matches your cloud account.'
+                : 'No saved cloud backup was found for this account yet.';
+              updateAutoSyncStatusReadoutUI(applied ? 'connected' : 'local_only', msg);
+              if (typeof showToast === 'function') showToast(msg);
+            }
+          } catch (_err) {
+            const errMsg = 'Could not download from the cloud right now. Local data was kept safe.';
+            updateAutoSyncStatusReadoutUI('offline', errMsg);
+            if (typeof showToast === 'function') showToast(errMsg);
+          } finally {
+            forcePullCloudBtn.disabled = false;
+            forcePullCloudBtn.innerHTML = originalHtml;
+          }
+        });
+      }
+
+      // Task 2: Data Backup & Migration (JSON Export / Import + Immediate Supabase Push)
+      const exportGymJsonBtn = document.getElementById('export-gym-json-btn');
+      const importGymJsonBtn = document.getElementById('import-gym-json-btn');
+      const importGymJsonInput = document.getElementById('import-gym-json-input');
+      const dataMigrationStatusEl = document.getElementById('data-migration-status-message');
+
+      function updateDataMigrationStatusUI(message, isError) {
+        if (!dataMigrationStatusEl) return;
+        dataMigrationStatusEl.textContent = message;
+        dataMigrationStatusEl.className = isError
+          ? 'text-[0.75rem] font-bold text-rose-300 leading-relaxed'
+          : 'text-[0.75rem] font-bold text-emerald-300 leading-relaxed';
+      }
+
+      if (exportGymJsonBtn) {
+        exportGymJsonBtn.addEventListener('click', () => {
+          try {
+            const filename = (typeof window.DEFAULT_BACKUP_FILENAME === 'string' && window.DEFAULT_BACKUP_FILENAME)
+              ? window.DEFAULT_BACKUP_FILENAME
+              : '7am_gym_backup.json';
+            if (typeof window.triggerGymStateJsonDownload === 'function') {
+              window.triggerGymStateJsonDownload(state, filename);
+            } else {
+              const jsonText = JSON.stringify({ backupFormat: '7am-gym-app-backup', schemaVersion: 1, exportedAt: new Date().toISOString(), gym_state: state }, null, 2);
+              const blob = new Blob([jsonText], { type: 'application/json;charset=utf-8' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = filename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+            const msg = `Downloaded ${filename} with your latest workouts and meals.`;
+            updateDataMigrationStatusUI(msg, false);
+            if (typeof showToast === 'function') showToast(msg);
+          } catch (_err) {
+            const errMsg = 'Could not create the JSON backup file. Please try again.';
+            updateDataMigrationStatusUI(errMsg, true);
+            if (typeof showToast === 'function') showToast(errMsg);
+          }
+        });
+      }
+
+      if (importGymJsonBtn && importGymJsonInput) {
+        importGymJsonBtn.addEventListener('click', () => {
+          importGymJsonInput.click();
+        });
+
+        importGymJsonInput.addEventListener('change', async (evt) => {
+          const inputEl = evt.target;
+          const file = inputEl && inputEl.files && inputEl.files[0];
+          if (inputEl) inputEl.value = '';
+          if (!file) return;
+
+          if (!String(file.name || '').toLowerCase().endsWith('.json') && file.type !== 'application/json') {
+            const typeErr = 'Please select a valid .json backup file (example: 7am_gym_backup.json).';
+            updateDataMigrationStatusUI(typeErr, true);
+            if (typeof showToast === 'function') showToast(typeErr);
+            return;
+          }
+
+          const originalHtml = importGymJsonBtn.innerHTML;
+          importGymJsonBtn.disabled = true;
+          importGymJsonBtn.textContent = 'Importing & syncing...';
+
+          try {
+            const jsonText = await file.text();
+            if (typeof window.importGymStateFromJsonText === 'function') {
+              const result = await window.importGymStateFromJsonText({
+                jsonText,
+                currentState: state,
+                preserveActiveAccountProfile: true,
+                storageKey: STORAGE_KEY,
+                onApplyLocalState: (migratedState) => {
+                  applyAuthoritativeRemoteStateLocal(
+                    migratedState,
+                    migratedState.last_updated || new Date().toISOString(),
+                    'json_migration'
+                  );
+                },
+                pushToSupabase: async (migratedState) => {
+                  let pushed = false;
+                  if (window.__gymRealtimeSyncManager && typeof window.__gymRealtimeSyncManager.pushNow === 'function') {
+                    const pushRes = await window.__gymRealtimeSyncManager.pushNow(migratedState, 'json_migration_import');
+                    pushed = Boolean(pushRes && pushRes.pushed);
+                  }
+                  if (!pushed && typeof autoSyncWorkoutToSupabaseLocal === 'function') {
+                    await autoSyncWorkoutToSupabaseLocal('json_migration_import');
+                    pushed = true;
+                  }
+                  return { pushed, lastUpdated: migratedState.last_updated || null };
+                }
+              });
+
+              updateDataMigrationStatusUI(result.toastMessage, !result.ok);
+              if (typeof showToast === 'function') showToast(result.toastMessage);
+            } else {
+              const parsed = JSON.parse(jsonText);
+              const candidate = (parsed && parsed.gym_state && typeof parsed.gym_state === 'object') ? parsed.gym_state : parsed;
+              if (!candidate || typeof candidate !== 'object' || (!candidate.workoutLogs && candidate.selectedDayIndex === undefined)) {
+                throw new Error('Invalid backup format');
+              }
+              applyAuthoritativeRemoteStateLocal(candidate, new Date().toISOString(), 'json_migration');
+              if (typeof autoSyncWorkoutToSupabaseLocal === 'function') {
+                await autoSyncWorkoutToSupabaseLocal('json_migration_import');
+              }
+              const okMsg = 'Backup imported and saved to your active account.';
+              updateDataMigrationStatusUI(okMsg, false);
+              if (typeof showToast === 'function') showToast(okMsg);
+            }
+          } catch (_err) {
+            const errMsg = 'Could not import that file. Please choose a valid 7am_gym_backup.json file.';
+            updateDataMigrationStatusUI(errMsg, true);
+            if (typeof showToast === 'function') showToast(errMsg);
+          } finally {
+            importGymJsonBtn.disabled = false;
+            importGymJsonBtn.innerHTML = originalHtml;
           }
         });
       }

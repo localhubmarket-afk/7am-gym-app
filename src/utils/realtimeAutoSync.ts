@@ -8,6 +8,11 @@ import {
 } from './workoutSyncEngine';
 import { serializeStateForPersistence } from './workoutLogic';
 import { getSupabaseClient, resolveGymStateRecordId } from '../lib/supabaseClient';
+import {
+  FORCE_PULL_CLOUD_LABEL,
+  forcePullGymStateFromCloud,
+  type ForcePullCloudResult
+} from './dataMigrationAndPull';
 
 export const AUTO_SYNC_STORAGE_KEY = 'budget_gym_auto_sync_enabled_v1';
 export const AUTO_SYNC_DEBOUNCE_MS = 2000;
@@ -17,6 +22,7 @@ export const AUTO_SYNC_TOGGLE_LABEL = 'Auto-Sync Devices';
 export const AUTO_SYNC_TOGGLE_SUBLABEL =
   'Automatically saves your progress to the cloud and updates your other screens instantly.';
 export const FORCE_SYNC_NOW_LABEL = 'Force Sync Now';
+export { FORCE_PULL_CLOUD_LABEL };
 
 export type RealtimeSyncConnectionStatus =
   | 'connected'
@@ -32,7 +38,8 @@ export type RealtimePushReason =
   | 'setting_changed'
   | 'state_mutation'
   | 'manual_force_sync'
-  | 'reconnect_sync';
+  | 'reconnect_sync'
+  | 'json_migration_import';
 
 export interface DebouncedController<TArgs extends any[]> {
   call: (...args: TArgs) => void;
@@ -286,6 +293,7 @@ export interface SupabaseRealtimeSyncManager<T extends GymStateTimestamped = Gym
   cancelPendingPush: () => void;
   pushNow: (nextState: T, reason?: RealtimePushReason) => Promise<{ pushed: boolean; lastUpdated: string | null; offlineFallback: boolean }>;
   forceSyncNow: () => Promise<ForceSyncResult<T>>;
+  forcePullFromCloud: (overrideUserId?: string | null) => Promise<ForcePullCloudResult<T>>;
   handleRealtimeRowUpdate: (row: GymStateRowPayload<T>) => boolean;
   destroy: () => void;
 }
@@ -303,7 +311,8 @@ export function createSupabaseRealtimeSyncManager<T extends GymStateTimestamped 
 ): SupabaseRealtimeSyncManager<T> {
   const storage = options.storage ?? (typeof localStorage !== 'undefined' ? localStorage : null);
   const storageKey = options.storageKey || 'bws_vegan_7am_app_v1';
-  const fetchFn = options.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null);
+  const resolveFetch = (): typeof fetch | null =>
+    options.fetchImpl || (typeof globalThis.fetch === 'function' ? globalThis.fetch.bind(globalThis) : null);
   const checkOnline =
     options.isOnlineFn ||
     (() => (typeof navigator === 'undefined' ? true : navigator.onLine !== false));
@@ -383,10 +392,11 @@ export function createSupabaseRealtimeSyncManager<T extends GymStateTimestamped 
 
     // 2. Fallback to existing /api/state endpoint (handles server-side Supabase credentials on Vercel)
     const endpoint = String(options.getApiEndpoint() || '').trim();
-    if (endpoint && fetchFn) {
+    const activeFetch = resolveFetch();
+    if (endpoint && activeFetch) {
       try {
         const payloadStr = serializeStateForPersistence(stamped);
-        const resp = await fetchFn(endpoint, {
+        const resp = await activeFetch(endpoint, {
           method: 'POST',
           cache: 'no-store',
           keepalive: payloadStr.length < 60000,
@@ -607,13 +617,14 @@ export function createSupabaseRealtimeSyncManager<T extends GymStateTimestamped 
       }
     } else {
       const endpoint = String(options.getApiEndpoint() || '').trim();
-      if (endpoint && fetchFn) {
+      const activeFetch = resolveFetch();
+      if (endpoint && activeFetch) {
         const truth = await fetchLatestCloudStateAsSingleSourceOfTruth<T>({
           endpoint,
           localState,
           storageKey,
           storage,
-          fetchImpl: fetchFn,
+          fetchImpl: activeFetch,
           forceRemoteOnInit: false,
           pushLocalIfNewer: false
         });
@@ -665,6 +676,46 @@ export function createSupabaseRealtimeSyncManager<T extends GymStateTimestamped 
     };
   }
 
+  async function forcePullFromCloud(
+    overrideUserId?: string | null
+  ): Promise<ForcePullCloudResult<T>> {
+    // Cancel any queued push so stale local edits never race and overwrite the pulled cloud state
+    debouncedPush.cancel();
+    const localState = options.getLocalState();
+    const recordId = options.getRecordId() || resolveGymStateRecordId(localState?.userProfile?.email);
+
+    const pullResult = await forcePullGymStateFromCloud<T>({
+      userId: overrideUserId || null,
+      userEmail: localState?.userProfile?.email || null,
+      recordId,
+      storageKey,
+      storage,
+      apiEndpoint: options.getApiEndpoint(),
+      supabaseClient: resolveClient(),
+      fetchImpl: resolveFetch() || undefined,
+      isOnlineFn: checkOnline,
+      onStateOverwritten: (cloudState, effectiveTs) => {
+        isApplyingRemote = true;
+        try {
+          persistLocalSnapshot(cloudState);
+          options.onRemoteStateApplied(cloudState, effectiveTs);
+        } finally {
+          isApplyingRemote = false;
+        }
+      }
+    });
+
+    if (pullResult.ok) {
+      updateStatus(activeChannel ? 'connected' : 'local_only', pullResult.toastMessage);
+    } else if (!checkOnline()) {
+      updateStatus('offline', pullResult.toastMessage);
+    } else {
+      updateStatus('local_only', pullResult.toastMessage);
+    }
+
+    return pullResult;
+  }
+
   function setEnabled(nextEnabled: boolean) {
     enabled = saveAutoSyncPreference(nextEnabled, storage);
     if (enabled) {
@@ -693,6 +744,7 @@ export function createSupabaseRealtimeSyncManager<T extends GymStateTimestamped 
     cancelPendingPush: () => debouncedPush.cancel(),
     pushNow,
     forceSyncNow,
+    forcePullFromCloud,
     handleRealtimeRowUpdate,
     destroy
   };

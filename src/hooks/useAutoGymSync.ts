@@ -21,6 +21,13 @@ import {
   type SupabaseRealtimeSyncManager
 } from '../utils/realtimeAutoSync';
 import { resolveGymStateRecordId } from '../lib/supabaseClient';
+import {
+  DEFAULT_BACKUP_FILENAME,
+  importGymStateFromJsonText,
+  triggerGymStateJsonDownload,
+  type ForcePullCloudResult,
+  type ImportGymStateResult
+} from '../utils/dataMigrationAndPull';
 
 export interface UseAutoGymSyncOptions<T extends GymStateTimestamped> {
   storageKey: string;
@@ -46,6 +53,8 @@ export interface UseAutoGymSyncReturn<T extends GymStateTimestamped> {
   realtimeStatus: RealtimeSyncConnectionStatus;
   realtimeMessage: string;
   isForcingSync: boolean;
+  isForcingPull: boolean;
+  isImportingBackup: boolean;
   updateAndSyncState: (
     updater: (prev: T) => T,
     reason: AutoSyncTriggerReason,
@@ -56,6 +65,9 @@ export interface UseAutoGymSyncReturn<T extends GymStateTimestamped> {
   adjustTimerAndSync: (updater: (prev: T) => T) => void;
   reconcileWithSupabase: (forceRemoteOnInit?: boolean) => Promise<void>;
   forceSyncNow: () => Promise<ForceSyncResult<T>>;
+  forcePullFromCloud: (overrideUserId?: string | null) => Promise<ForcePullCloudResult<T>>;
+  exportGymStateBackup: (filename?: string) => { ok: boolean; filename: string; bytes: number; jsonText: string };
+  importGymStateBackup: (jsonText: string) => Promise<ImportGymStateResult<T>>;
 }
 
 /**
@@ -104,6 +116,8 @@ export function useAutoGymSync<T extends GymStateTimestamped>({
   );
   const [realtimeMessage, setRealtimeMessage] = useState<string>('');
   const [isForcingSync, setIsForcingSync] = useState<boolean>(false);
+  const [isForcingPull, setIsForcingPull] = useState<boolean>(false);
+  const [isImportingBackup, setIsImportingBackup] = useState<boolean>(false);
 
   const stateRef = useRef<T>(gymState);
   stateRef.current = gymState;
@@ -353,6 +367,90 @@ export function useAutoGymSync<T extends GymStateTimestamped>({
     }
   }, []);
 
+  // Task 1: Manual "Force Pull from Cloud" — queries Supabase gym_state for authenticated user & overwrites local state + localStorage
+  const forcePullFromCloud = useCallback(
+    async (overrideUserId?: string | null): Promise<ForcePullCloudResult<T>> => {
+      const manager = realtimeManagerRef.current;
+      if (!manager) {
+        return {
+          ok: false,
+          source: 'none',
+          recordId: null,
+          state: null,
+          lastUpdated: null,
+          toastMessage: 'Could not reach cloud sync right now.'
+        };
+      }
+      setIsForcingPull(true);
+      setSyncStatus('syncing');
+      engineRef.current?.cancelPendingBackgroundPush();
+      try {
+        const result = await manager.forcePullFromCloud(overrideUserId);
+        setSyncStatus(result.ok ? 'saved' : 'local_only');
+        setRealtimeMessage(result.toastMessage);
+        if (result.ok) {
+          setTruthSource('cloud');
+        }
+        return result;
+      } finally {
+        setIsForcingPull(false);
+      }
+    },
+    []
+  );
+
+  // Task 2: Export active gym_state as 7am_gym_backup.json
+  const exportGymStateBackup = useCallback(
+    (filename: string = DEFAULT_BACKUP_FILENAME) => {
+      return triggerGymStateJsonDownload(stateRef.current, filename);
+    },
+    []
+  );
+
+  // Task 2: Import JSON backup -> validate gym_state schema -> overwrite local state -> immediately push to Supabase
+  const importGymStateBackup = useCallback(
+    async (jsonText: string): Promise<ImportGymStateResult<T>> => {
+      setIsImportingBackup(true);
+      engineRef.current?.cancelPendingBackgroundPush();
+      realtimeManagerRef.current?.cancelPendingPush();
+      try {
+        const result = await importGymStateFromJsonText<T>({
+          jsonText,
+          currentState: stateRef.current,
+          preserveActiveAccountProfile: true,
+          storageKey,
+          storage: typeof window !== 'undefined' ? window.localStorage : null,
+          onApplyLocalState: (migratedState) => {
+            const merged = { ...initialState, ...migratedState } as T;
+            isApplyingRemoteUpdateRef.current = true;
+            stateRef.current = merged;
+            lastPushedSignatureRef.current = serializeStateForPersistence(merged);
+            setGymState(merged);
+            persistLocalOnly(merged);
+            onHydratedRef.current?.(merged);
+            queueMicrotask(() => {
+              isApplyingRemoteUpdateRef.current = false;
+            });
+          },
+          pushToSupabase: async (migratedState) => {
+            const manager = realtimeManagerRef.current;
+            if (manager) {
+              const res = await manager.pushNow(migratedState, 'json_migration_import');
+              return { pushed: res.pushed, lastUpdated: res.lastUpdated };
+            }
+            return { pushed: false };
+          }
+        });
+        setSyncStatus(result.ok ? (result.pushedToCloud ? 'saved' : 'local_only') : 'error');
+        setRealtimeMessage(result.toastMessage);
+        return result;
+      } finally {
+        setIsImportingBackup(false);
+      }
+    },
+    [initialState, persistLocalOnly, storageKey]
+  );
+
   // Preserved active-input helpers (stamp `last_updated`, save locally, and trigger debounced sync when enabled)
   const updateAndSyncState = useCallback(
     (updater: (prev: T) => T, reason: AutoSyncTriggerReason, immediate = false) => {
@@ -396,12 +494,17 @@ export function useAutoGymSync<T extends GymStateTimestamped>({
     realtimeStatus,
     realtimeMessage,
     isForcingSync,
+    isForcingPull,
+    isImportingBackup,
     updateAndSyncState,
     logSetAndSync,
     toggleCheckboxAndSync,
     adjustTimerAndSync,
     reconcileWithSupabase,
-    forceSyncNow
+    forceSyncNow,
+    forcePullFromCloud,
+    exportGymStateBackup,
+    importGymStateBackup
   };
 }
 

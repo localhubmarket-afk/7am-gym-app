@@ -2,6 +2,7 @@ import React from 'react';
 import {
   AUTO_SYNC_TOGGLE_LABEL,
   AUTO_SYNC_TOGGLE_SUBLABEL,
+  FORCE_PULL_CLOUD_LABEL,
   FORCE_SYNC_NOW_LABEL,
   type RealtimeSyncConnectionStatus
 } from '../utils/realtimeAutoSync';
@@ -10,8 +11,10 @@ export interface AutoSyncSettingsControlProps {
   isAutoSyncEnabled: boolean;
   onToggleAutoSync: () => void;
   onForceSyncNow?: () => void | Promise<void>;
+  onForcePullFromCloud?: () => void | Promise<void>;
   connectionStatus?: RealtimeSyncConnectionStatus;
   isSyncingNow?: boolean;
+  isPullingNow?: boolean;
   statusMessage?: string;
   className?: string;
 }
@@ -49,8 +52,10 @@ export const AutoSyncSettingsControl: React.FC<AutoSyncSettingsControlProps> = (
   isAutoSyncEnabled,
   onToggleAutoSync,
   onForceSyncNow,
+  onForcePullFromCloud,
   connectionStatus,
   isSyncingNow = false,
+  isPullingNow = false,
   statusMessage,
   className = ''
 }) => {
@@ -94,18 +99,33 @@ export const AutoSyncSettingsControl: React.FC<AutoSyncSettingsControlProps> = (
         <span>{isAutoSyncEnabled ? 'ON (Tap to turn off)' : 'OFF (Tap to turn on)'}</span>
       </button>
 
-      <button
-        type="button"
-        disabled={isSyncingNow}
-        data-testid="force-sync-now-btn"
-        aria-label={FORCE_SYNC_NOW_LABEL}
-        onClick={() => {
-          if (onForceSyncNow) void onForceSyncNow();
-        }}
-        className="w-full min-h-[48px] min-w-[48px] px-4 py-2.5 rounded-xl border border-sky-400/70 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-sky-100 text-sm font-extrabold transition"
-      >
-        {isSyncingNow ? 'Syncing Now...' : FORCE_SYNC_NOW_LABEL}
-      </button>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <button
+          type="button"
+          disabled={isSyncingNow || isPullingNow}
+          data-testid="force-sync-now-btn"
+          aria-label={FORCE_SYNC_NOW_LABEL}
+          onClick={() => {
+            if (onForceSyncNow) void onForceSyncNow();
+          }}
+          className="w-full min-h-[48px] min-w-[48px] px-4 py-2.5 rounded-xl border border-sky-400/70 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-sky-100 text-sm font-extrabold transition"
+        >
+          {isSyncingNow ? 'Syncing Now...' : FORCE_SYNC_NOW_LABEL}
+        </button>
+
+        <button
+          type="button"
+          disabled={isPullingNow || isSyncingNow}
+          data-testid="force-pull-cloud-btn"
+          aria-label={FORCE_PULL_CLOUD_LABEL}
+          onClick={() => {
+            if (onForcePullFromCloud) void onForcePullFromCloud();
+          }}
+          className="w-full min-h-[48px] min-w-[48px] px-4 py-2.5 rounded-xl border border-indigo-400/70 bg-indigo-950/70 hover:bg-indigo-900/70 disabled:opacity-60 text-indigo-100 text-sm font-extrabold transition"
+        >
+          {isPullingNow ? 'Downloading...' : FORCE_PULL_CLOUD_LABEL}
+        </button>
+      </div>
 
       {statusMessage && (
         <p

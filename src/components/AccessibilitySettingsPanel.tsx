@@ -2,14 +2,22 @@ import React from 'react';
 import { useAccessibilityTheme } from '../context/AccessibilityThemeProvider';
 import type { ThemeModePreference } from '../utils/themeProvider';
 import { AutoSyncSettingsControl } from './AutoSyncSettingsControl';
+import { DataMigrationPanel } from './DataMigrationPanel';
 import type { RealtimeSyncConnectionStatus } from '../utils/realtimeAutoSync';
 
 export interface AccessibilitySettingsPanelProps {
   className?: string;
   onForceSyncNow?: () => void | Promise<void>;
+  onForcePullFromCloud?: () => void | Promise<void>;
   realtimeStatus?: RealtimeSyncConnectionStatus;
   isSyncingNow?: boolean;
+  isPullingNow?: boolean;
   syncStatusMessage?: string;
+  onExportJsonBackup?: () => void | Promise<void>;
+  onImportJsonFile?: (jsonText: string, fileName: string) => void | Promise<void>;
+  isImportingBackup?: boolean;
+  migrationStatusMessage?: string | null;
+  migrationStatusKind?: 'idle' | 'success' | 'error';
 }
 
 const THEME_OPTIONS: Array<{ value: ThemeModePreference; label: string }> = [
@@ -29,9 +37,16 @@ const THEME_OPTIONS: Array<{ value: ThemeModePreference; label: string }> = [
 export const AccessibilitySettingsPanel: React.FC<AccessibilitySettingsPanelProps> = ({
   className = '',
   onForceSyncNow,
+  onForcePullFromCloud,
   realtimeStatus,
   isSyncingNow = false,
-  syncStatusMessage
+  isPullingNow = false,
+  syncStatusMessage,
+  onExportJsonBackup,
+  onImportJsonFile,
+  isImportingBackup = false,
+  migrationStatusMessage = null,
+  migrationStatusKind = 'idle'
 }) => {
   const {
     themePreference,
@@ -60,9 +75,18 @@ export const AccessibilitySettingsPanel: React.FC<AccessibilitySettingsPanelProp
         isAutoSyncEnabled={isAutoSyncEnabled}
         onToggleAutoSync={toggleAutoSyncEnabled}
         onForceSyncNow={onForceSyncNow}
+        onForcePullFromCloud={onForcePullFromCloud}
         connectionStatus={realtimeStatus}
         isSyncingNow={isSyncingNow}
+        isPullingNow={isPullingNow}
         statusMessage={syncStatusMessage}
+      />
+      <DataMigrationPanel
+        onExportJsonBackup={onExportJsonBackup}
+        onImportJsonFile={onImportJsonFile}
+        isImporting={isImportingBackup}
+        statusMessage={migrationStatusMessage}
+        statusKind={migrationStatusKind}
       />
       <div className="space-y-2" role="radiogroup" aria-label="Color Theme Mode">
         <div className="flex flex-wrap items-center justify-between gap-2">

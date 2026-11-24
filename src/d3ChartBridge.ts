@@ -237,6 +237,7 @@ import {
   AUTO_SYNC_TOGGLE_LABEL,
   AUTO_SYNC_TOGGLE_SUBLABEL,
   DEFAULT_AUTO_SYNC_ENABLED,
+  FORCE_PULL_CLOUD_LABEL,
   FORCE_SYNC_NOW_LABEL,
   createDebounce,
   createSupabaseRealtimeSyncManager,
@@ -246,6 +247,17 @@ import {
   saveAutoSyncPreference,
   type SupabaseRealtimeSyncManager
 } from './utils/realtimeAutoSync';
+import {
+  DATA_BACKUP_MIGRATION_TITLE,
+  DEFAULT_BACKUP_FILENAME,
+  FORCE_PULL_SUCCESS_TOAST,
+  forcePullGymStateFromCloud,
+  importGymStateFromJsonText,
+  resolveAuthenticatedGymStateIds,
+  serializeGymStateForJsonExport,
+  triggerGymStateJsonDownload,
+  validateGymStateBackupSchema
+} from './utils/dataMigrationAndPull';
 
 export interface RenderOneRmD3ChartOptions {
   container: HTMLElement;
@@ -1069,6 +1081,16 @@ declare global {
     restoreViewportScrollAnchor?: typeof restoreViewportScrollAnchor;
     scrollContainerHorizontallyWithoutVerticalJump?: typeof scrollContainerHorizontallyWithoutVerticalJump;
     withStableViewportScroll?: typeof withStableViewportScroll;
+    FORCE_PULL_CLOUD_LABEL?: string;
+    FORCE_PULL_SUCCESS_TOAST?: string;
+    DATA_BACKUP_MIGRATION_TITLE?: string;
+    DEFAULT_BACKUP_FILENAME?: string;
+    resolveAuthenticatedGymStateIds?: typeof resolveAuthenticatedGymStateIds;
+    forcePullGymStateFromCloud?: typeof forcePullGymStateFromCloud;
+    validateGymStateBackupSchema?: typeof validateGymStateBackupSchema;
+    serializeGymStateForJsonExport?: typeof serializeGymStateForJsonExport;
+    triggerGymStateJsonDownload?: typeof triggerGymStateJsonDownload;
+    importGymStateFromJsonText?: typeof importGymStateFromJsonText;
   }
 }
 
@@ -1269,5 +1291,15 @@ if (typeof window !== 'undefined') {
   window.restoreViewportScrollAnchor = restoreViewportScrollAnchor;
   window.scrollContainerHorizontallyWithoutVerticalJump = scrollContainerHorizontallyWithoutVerticalJump;
   window.withStableViewportScroll = withStableViewportScroll;
+  window.FORCE_PULL_CLOUD_LABEL = FORCE_PULL_CLOUD_LABEL;
+  window.FORCE_PULL_SUCCESS_TOAST = FORCE_PULL_SUCCESS_TOAST;
+  window.DATA_BACKUP_MIGRATION_TITLE = DATA_BACKUP_MIGRATION_TITLE;
+  window.DEFAULT_BACKUP_FILENAME = DEFAULT_BACKUP_FILENAME;
+  window.resolveAuthenticatedGymStateIds = resolveAuthenticatedGymStateIds;
+  window.forcePullGymStateFromCloud = forcePullGymStateFromCloud;
+  window.validateGymStateBackupSchema = validateGymStateBackupSchema;
+  window.serializeGymStateForJsonExport = serializeGymStateForJsonExport;
+  window.triggerGymStateJsonDownload = triggerGymStateJsonDownload;
+  window.importGymStateFromJsonText = importGymStateFromJsonText;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }
