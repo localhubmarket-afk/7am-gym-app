@@ -422,3 +422,79 @@ html[data-sensory-calm="true"] .animate-spin {
   }
 }
 
+/* ============================================================================
+ * 10. Onboarding Special Screen Layouts (Task 2: ADHD & Dyslexia Views)
+ *     + Exercise Logging Viewport Stability (Task 3)
+ * - ZERO deletion: all buttons and features stay 100% visible and interactive.
+ * - Strictly rem/em units (zero px font sizes).
+ * ============================================================================ */
+
+/* Task 3: Prevent browser scroll-anchoring jitter during exercise set re-renders */
+#workout-list,
+.exercise-card-item {
+  overflow-anchor: none;
+}
+
+/* Task 2A: ADHD-Friendly View (High Focus, Single-Task Framing) */
+html.adhd-friendly-view,
+html[data-adhd-view="true"] {
+  --adhd-focus-ring: #38BDF8;
+}
+
+html.adhd-friendly-view .neuro-card-active,
+html[data-adhd-view="true"] .neuro-card-active {
+  border-width: 2px !important;
+  border-color: var(--adhd-focus-ring) !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25) !important;
+}
+
+html.adhd-friendly-view .neuro-card-unstarted,
+html[data-adhd-view="true"] .neuro-card-unstarted {
+  opacity: 0.78;
+}
+
+html.adhd-friendly-view .neuro-card-unstarted:hover,
+html.adhd-friendly-view .neuro-card-unstarted:focus-within,
+html[data-adhd-view="true"] .neuro-card-unstarted:hover,
+html[data-adhd-view="true"] .neuro-card-unstarted:focus-within {
+  opacity: 1;
+}
+
+html.adhd-friendly-view .set-check-btn,
+html[data-adhd-view="true"] .set-check-btn {
+  min-height: 52px !important;
+  font-weight: 800 !important;
+}
+
+/* Task 2B: Dyslexia-Friendly View (OpenDyslexic Font + Wide Distinct Spacing) */
+html.dyslexia-friendly-view,
+html[data-dyslexia-view="true"] {
+  --app-font-family: 'OpenDyslexic', 'OpenDyslexic3', 'Lexend', 'Atkinson Hyperlegible', sans-serif;
+  --app-line-height: 1.75;
+}
+
+html.dyslexia-friendly-view body,
+html[data-dyslexia-view="true"] body,
+html.dyslexia-friendly-view p,
+html[data-dyslexia-view="true"] p,
+html.dyslexia-friendly-view li,
+html[data-dyslexia-view="true"] li,
+html.dyslexia-friendly-view label,
+html[data-dyslexia-view="true"] label,
+html.dyslexia-friendly-view button,
+html[data-dyslexia-view="true"] button {
+  font-family: var(--app-font-family) !important;
+  letter-spacing: 0.045em !important;
+  word-spacing: 0.14em !important;
+  line-height: 1.75 !important;
+  text-align: left;
+}
+
+html.dyslexia-friendly-view p + p,
+html[data-dyslexia-view="true"] p + p,
+html.dyslexia-friendly-view li + li,
+html[data-dyslexia-view="true"] li + li {
+  margin-top: 0.5rem;
+}
+
+

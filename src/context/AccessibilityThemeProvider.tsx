@@ -1,14 +1,20 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   ACCESSIBLE_THEME_TOKENS,
+  applyAdhdFriendlyViewToDocument,
   applyDyslexiaFontToDocument,
+  applyDyslexiaFriendlyViewToDocument,
   applySensoryCalmToDocument,
   applyThemeToDocument,
   getSystemPrefersDark,
+  loadStoredAdhdViewPreference,
+  loadStoredDyslexiaViewPreference,
   loadStoredFontPreference,
   loadStoredSensoryCalmPreference,
   loadStoredThemePreference,
   resolveEffectiveTheme,
+  saveAdhdViewPreference,
+  saveDyslexiaViewPreference,
   saveFontPreference,
   saveSensoryCalmPreference,
   saveThemePreference,
@@ -33,6 +39,8 @@ export interface AccessibilityThemeContextValue {
   fontMode: AccessibilityFontMode;
   isOpenDyslexicEnabled: boolean;
   isSensoryCalm: boolean;
+  isAdhdFriendlyView: boolean;
+  isDyslexiaFriendlyView: boolean;
   isAdvancedSubjectiveEnabled: boolean;
   isAutoSyncEnabled: boolean;
   setThemePreference: (next: ThemeModePreference) => void;
@@ -41,6 +49,10 @@ export interface AccessibilityThemeContextValue {
   toggleOpenDyslexicFont: () => void;
   setSensoryCalm: (enabled: boolean) => void;
   toggleSensoryCalm: () => void;
+  setAdhdFriendlyView: (enabled: boolean) => void;
+  toggleAdhdFriendlyView: () => void;
+  setDyslexiaFriendlyView: (enabled: boolean) => void;
+  toggleDyslexiaFriendlyView: () => void;
   setAdvancedSubjectiveEnabled: (enabled: boolean) => void;
   toggleAdvancedSubjective: () => void;
   setAutoSyncEnabled: (enabled: boolean) => void;
@@ -61,6 +73,12 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
   );
   const [isSensoryCalm, setSensoryCalmState] = useState<boolean>(() =>
     loadStoredSensoryCalmPreference()
+  );
+  const [isAdhdFriendlyView, setAdhdFriendlyViewState] = useState<boolean>(() =>
+    loadStoredAdhdViewPreference()
+  );
+  const [isDyslexiaFriendlyView, setDyslexiaFriendlyViewState] = useState<boolean>(() =>
+    loadStoredDyslexiaViewPreference()
   );
   const [isAdvancedSubjectiveEnabled, setAdvancedSubjectiveState] = useState<boolean>(() =>
     loadAdvancedSubjectiveSetting()
@@ -83,6 +101,14 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
   useEffect(() => {
     applySensoryCalmToDocument(isSensoryCalm, document);
   }, [isSensoryCalm]);
+
+  useEffect(() => {
+    applyAdhdFriendlyViewToDocument(isAdhdFriendlyView, document);
+  }, [isAdhdFriendlyView]);
+
+  useEffect(() => {
+    applyDyslexiaFriendlyViewToDocument(isDyslexiaFriendlyView, document);
+  }, [isDyslexiaFriendlyView]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
@@ -124,6 +150,28 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
     setSensoryCalm(!isSensoryCalm);
   }, [isSensoryCalm, setSensoryCalm]);
 
+  const setAdhdFriendlyView = useCallback((enabled: boolean) => {
+    const saved = saveAdhdViewPreference(enabled);
+    setAdhdFriendlyViewState(saved);
+  }, []);
+
+  const toggleAdhdFriendlyView = useCallback(() => {
+    setAdhdFriendlyView(!isAdhdFriendlyView);
+  }, [isAdhdFriendlyView, setAdhdFriendlyView]);
+
+  const setDyslexiaFriendlyView = useCallback((enabled: boolean) => {
+    const saved = saveDyslexiaViewPreference(enabled);
+    setDyslexiaFriendlyViewState(saved);
+    if (saved) {
+      const savedFont = saveFontPreference('opendyslexic');
+      setFontModeState(savedFont);
+    }
+  }, []);
+
+  const toggleDyslexiaFriendlyView = useCallback(() => {
+    setDyslexiaFriendlyView(!isDyslexiaFriendlyView);
+  }, [isDyslexiaFriendlyView, setDyslexiaFriendlyView]);
+
   const setAdvancedSubjectiveEnabled = useCallback((enabled: boolean) => {
     const saved = saveAdvancedSubjectiveSetting(enabled);
     setAdvancedSubjectiveState(saved);
@@ -150,6 +198,8 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
       fontMode,
       isOpenDyslexicEnabled: fontMode === 'opendyslexic',
       isSensoryCalm,
+      isAdhdFriendlyView,
+      isDyslexiaFriendlyView,
       isAdvancedSubjectiveEnabled,
       isAutoSyncEnabled,
       setThemePreference,
@@ -158,6 +208,10 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
       toggleOpenDyslexicFont,
       setSensoryCalm,
       toggleSensoryCalm,
+      setAdhdFriendlyView,
+      toggleAdhdFriendlyView,
+      setDyslexiaFriendlyView,
+      toggleDyslexiaFriendlyView,
       setAdvancedSubjectiveEnabled,
       toggleAdvancedSubjective,
       setAutoSyncEnabled,
@@ -169,6 +223,8 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
       tokens,
       fontMode,
       isSensoryCalm,
+      isAdhdFriendlyView,
+      isDyslexiaFriendlyView,
       isAdvancedSubjectiveEnabled,
       isAutoSyncEnabled,
       setThemePreference,
@@ -177,6 +233,10 @@ export const AccessibilityThemeProvider: React.FC<{ children: React.ReactNode }>
       toggleOpenDyslexicFont,
       setSensoryCalm,
       toggleSensoryCalm,
+      setAdhdFriendlyView,
+      toggleAdhdFriendlyView,
+      setDyslexiaFriendlyView,
+      toggleDyslexiaFriendlyView,
       setAdvancedSubjectiveEnabled,
       toggleAdvancedSubjective,
       setAutoSyncEnabled,

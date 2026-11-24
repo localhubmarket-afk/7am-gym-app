@@ -317,3 +317,112 @@ export function applySensoryCalmToDocument(
   };
 }
 
+export const ADHD_VIEW_STORAGE_KEY = 'budget_gym_adhd_view_v1';
+export const DYSLEXIA_VIEW_STORAGE_KEY = 'budget_gym_dyslexia_view_v1';
+
+export interface AccessibilityLayoutPreferences {
+  adhdFriendlyView: boolean;
+  dyslexiaFriendlyView: boolean;
+}
+
+export function normalizeBooleanAccessibilityPref(raw: unknown): boolean {
+  if (typeof raw === 'boolean') return raw;
+  const s = String(raw ?? '').trim().toLowerCase();
+  return s === 'true' || s === '1' || s === 'on' || s === 'enabled';
+}
+
+export function loadStoredAdhdViewPreference(
+  storage?: Pick<Storage, 'getItem'> | null
+): boolean {
+  try {
+    const store = storage ?? (typeof localStorage !== 'undefined' ? localStorage : null);
+    if (!store) return false;
+    return normalizeBooleanAccessibilityPref(store.getItem(ADHD_VIEW_STORAGE_KEY));
+  } catch {
+    return false;
+  }
+}
+
+export function saveAdhdViewPreference(
+  enabled: boolean,
+  storage?: Pick<Storage, 'setItem'> | null
+): boolean {
+  const normalized = Boolean(enabled);
+  try {
+    const store = storage ?? (typeof localStorage !== 'undefined' ? localStorage : null);
+    if (store) {
+      store.setItem(ADHD_VIEW_STORAGE_KEY, normalized ? 'true' : 'false');
+    }
+  } catch {
+    // Ignore storage restrictions
+  }
+  return normalized;
+}
+
+export function applyAdhdFriendlyViewToDocument(
+  enabled: boolean,
+  doc?: Document | null
+): { adhdFriendlyView: boolean; singleTaskFocusEnabled: boolean } {
+  const adhdFriendlyView = Boolean(enabled);
+  const targetDoc = doc ?? (typeof document !== 'undefined' ? document : null);
+  if (targetDoc && targetDoc.documentElement) {
+    const html = targetDoc.documentElement;
+    html.classList.toggle('adhd-friendly-view', adhdFriendlyView);
+    html.setAttribute('data-adhd-view', adhdFriendlyView ? 'true' : 'false');
+  }
+  return {
+    adhdFriendlyView,
+    singleTaskFocusEnabled: adhdFriendlyView
+  };
+}
+
+export function loadStoredDyslexiaViewPreference(
+  storage?: Pick<Storage, 'getItem'> | null
+): boolean {
+  try {
+    const store = storage ?? (typeof localStorage !== 'undefined' ? localStorage : null);
+    if (!store) return false;
+    return normalizeBooleanAccessibilityPref(store.getItem(DYSLEXIA_VIEW_STORAGE_KEY));
+  } catch {
+    return false;
+  }
+}
+
+export function saveDyslexiaViewPreference(
+  enabled: boolean,
+  storage?: Pick<Storage, 'setItem'> | null
+): boolean {
+  const normalized = Boolean(enabled);
+  try {
+    const store = storage ?? (typeof localStorage !== 'undefined' ? localStorage : null);
+    if (store) {
+      store.setItem(DYSLEXIA_VIEW_STORAGE_KEY, normalized ? 'true' : 'false');
+    }
+  } catch {
+    // Ignore storage restrictions
+  }
+  return normalized;
+}
+
+export function applyDyslexiaFriendlyViewToDocument(
+  enabled: boolean,
+  doc?: Document | null
+): { dyslexiaFriendlyView: boolean; fontMode: AccessibilityFontMode } {
+  const dyslexiaFriendlyView = Boolean(enabled);
+  const targetDoc = doc ?? (typeof document !== 'undefined' ? document : null);
+  const fontMode: AccessibilityFontMode = dyslexiaFriendlyView ? 'opendyslexic' : 'default';
+  if (targetDoc && targetDoc.documentElement) {
+    const html = targetDoc.documentElement;
+    html.classList.toggle('dyslexia-friendly-view', dyslexiaFriendlyView);
+    html.setAttribute('data-dyslexia-view', dyslexiaFriendlyView ? 'true' : 'false');
+    if (dyslexiaFriendlyView) {
+      applyDyslexiaFontToDocument('opendyslexic', targetDoc);
+    }
+  }
+  return {
+    dyslexiaFriendlyView,
+    fontMode
+  };
+}
+
+

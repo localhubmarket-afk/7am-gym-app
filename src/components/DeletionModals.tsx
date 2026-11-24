@@ -3,6 +3,7 @@ import {
   AVAILABLE_OAUTH_LOGIN_PROVIDERS,
   DELETE_ACCOUNT_BUTTON_LABELS,
   DELETE_ACCOUNT_MAIN_WARNING,
+  DELETE_ACCOUNT_WARNING_BULLETS,
   DELETE_ACCOUNT_WARNING_PROMPT,
   DELETE_ALL_WEEKS_BUTTON_LABEL,
   DELETE_ALL_WEEKS_CONFIRM_WARNING,
@@ -355,10 +356,15 @@ export const DeleteAccountWarningModal: React.FC<DeleteAccountWarningModalProps>
           ) : null}
           <p
             id="delete-account-warning-copy"
-            className="text-xs text-slate-200 leading-relaxed"
+            className="text-sm text-slate-100 leading-relaxed"
           >
             {DELETE_ACCOUNT_MAIN_WARNING}
           </p>
+          <ul className="list-disc pl-5 space-y-1.5 text-xs text-slate-200 leading-relaxed">
+            {DELETE_ACCOUNT_WARNING_BULLETS.map((bullet) => (
+              <li key={bullet}>{bullet}</li>
+            ))}
+          </ul>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
@@ -366,7 +372,7 @@ export const DeleteAccountWarningModal: React.FC<DeleteAccountWarningModalProps>
             type="button"
             disabled={isDeleting}
             onClick={onCancel}
-            className="min-h-[44px] min-w-[44px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition disabled:opacity-50"
+            className="min-h-[48px] min-w-[48px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition disabled:opacity-50"
           >
             {DELETE_ACCOUNT_BUTTON_LABELS.cancel}
           </button>
@@ -374,7 +380,7 @@ export const DeleteAccountWarningModal: React.FC<DeleteAccountWarningModalProps>
             type="button"
             disabled={isDeleting}
             onClick={onConfirmDelete}
-            className="min-h-[44px] min-w-[44px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition disabled:opacity-50"
+            className="min-h-[48px] min-w-[48px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition disabled:opacity-50"
           >
             {isDeleting ? 'Deleting...' : DELETE_ACCOUNT_BUTTON_LABELS.confirm}
           </button>
@@ -387,30 +393,37 @@ export const DeleteAccountWarningModal: React.FC<DeleteAccountWarningModalProps>
 export interface PostDeleteSwitchAccountModalProps {
   isOpen: boolean;
   secondaryAccount: SavedAccountCandidate | null;
+  remainingAccounts?: SavedAccountCandidate[];
   oauthProviders?: readonly string[];
   onSelectOAuthProvider?: (provider: string) => void;
   onOneClickContinue: (account: SavedAccountCandidate) => void;
   onUseAnotherAccount: () => void;
+  onContinueAsGuest?: () => void;
 }
 
 /**
  * Task 1: Post-Deletion Account Selection Modal triggered by `onDeleteSuccess`.
  * Exact prompt: "Account deleted. Please select your active account to continue."
- * Displays available OAuth login options (Google, Apple) plus any saved account shortcut.
+ * Displays ALL remaining saved accounts on this device plus remaining login options (Google, Apple, Email, Guest).
  */
 export const PostDeleteSwitchAccountModal: React.FC<PostDeleteSwitchAccountModalProps> = ({
   isOpen,
   secondaryAccount,
+  remainingAccounts,
   oauthProviders = AVAILABLE_OAUTH_LOGIN_PROVIDERS,
   onSelectOAuthProvider,
   onOneClickContinue,
-  onUseAnotherAccount
+  onUseAnotherAccount,
+  onContinueAsGuest
 }) => {
   if (!isOpen) return null;
 
-  const initialLetter = secondaryAccount
-    ? (secondaryAccount.name || 'A').trim().charAt(0).toUpperCase()
-    : 'A';
+  const accountsToShow: SavedAccountCandidate[] =
+    Array.isArray(remainingAccounts) && remainingAccounts.length > 0
+      ? remainingAccounts
+      : secondaryAccount
+        ? [secondaryAccount]
+        : [];
 
   return (
     <div
@@ -419,9 +432,9 @@ export const PostDeleteSwitchAccountModal: React.FC<PostDeleteSwitchAccountModal
       aria-modal="true"
       aria-labelledby="post-delete-switch-title"
     >
-      <div className="bg-slate-900 border border-emerald-400/60 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-left">
+      <div className="bg-slate-900 border border-emerald-400/60 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-left max-h-[90vh] overflow-y-auto">
         <div className="space-y-2">
-          <span className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-[0.625rem] font-extrabold uppercase tracking-wider text-emerald-200">
+          <span className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-xs font-extrabold uppercase tracking-wider text-emerald-200">
             Account Deleted
           </span>
           <h3
@@ -430,38 +443,54 @@ export const PostDeleteSwitchAccountModal: React.FC<PostDeleteSwitchAccountModal
           >
             {POST_DELETE_SELECT_ACCOUNT_PROMPT}
           </h3>
+          <p className="text-xs text-slate-200 leading-relaxed">
+            Pick one of your other active accounts below, or sign in with another option.
+          </p>
         </div>
 
-        {secondaryAccount && (
+        {accountsToShow.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center gap-3 rounded-xl bg-slate-950 border border-slate-700 p-3">
-              <div aria-hidden="true" className="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-sm flex items-center justify-center shrink-0">
-                {initialLetter}
-              </div>
-              <div className="min-w-0">
-                <div className="text-sm font-extrabold text-white truncate">{secondaryAccount.name}</div>
-                <div className="text-xs text-slate-300 truncate">{secondaryAccount.email}</div>
-              </div>
+            <div className="text-xs font-bold text-emerald-200">
+              Your other saved accounts:
             </div>
-            <button
-              type="button"
-              onClick={() => onOneClickContinue(secondaryAccount)}
-              className="w-full min-h-[44px] min-w-[44px] py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition"
-            >
-              Continue as {secondaryAccount.name}
-            </button>
+            {accountsToShow.map((acct) => {
+              const letter = (acct.name || 'A').trim().charAt(0).toUpperCase();
+              return (
+                <div key={acct.email} className="space-y-2 rounded-xl bg-slate-950 border border-slate-700 p-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      aria-hidden="true"
+                      className="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-sm flex items-center justify-center shrink-0"
+                    >
+                      {letter}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-extrabold text-white truncate">{acct.name}</div>
+                      <div className="text-xs text-slate-300 truncate">{acct.email}</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onOneClickContinue(acct)}
+                    className="w-full min-h-[48px] min-w-[48px] py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition"
+                  >
+                    Switch to {acct.name}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
 
         <div className="space-y-2">
-          <div className="text-[0.6875rem] font-bold text-slate-300">Sign in with one tap:</div>
+          <div className="text-xs font-bold text-slate-200">Other login options:</div>
           <div className="grid grid-cols-1 gap-2">
             {oauthProviders.map((provider) => (
               <button
                 key={provider}
                 type="button"
                 onClick={() => onSelectOAuthProvider?.(provider)}
-                className="w-full min-h-[44px] min-w-[44px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-extrabold transition"
+                className="w-full min-h-[48px] min-w-[48px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-extrabold transition"
               >
                 Continue with {provider}
               </button>
@@ -470,10 +499,19 @@ export const PostDeleteSwitchAccountModal: React.FC<PostDeleteSwitchAccountModal
           <button
             type="button"
             onClick={onUseAnotherAccount}
-            className="w-full min-h-[44px] min-w-[44px] py-2 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold transition"
+            className="w-full min-h-[48px] min-w-[48px] py-2.5 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold transition"
           >
             Log In with Email &amp; Password
           </button>
+          {onContinueAsGuest && (
+            <button
+              type="button"
+              onClick={onContinueAsGuest}
+              className="w-full min-h-[48px] min-w-[48px] py-2 px-3 rounded-xl bg-transparent hover:bg-slate-800 text-slate-300 text-xs font-semibold transition"
+            >
+              Continue in Free Guest Mode
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -530,6 +568,7 @@ export const AccountDeletionFlowController: React.FC<AccountDeletionFlowControll
         onDeleteSuccess({
           deletedEmail: activeEmail,
           secondaryAccount: result.secondaryAccount,
+          remainingAccounts: result.remainingAccounts,
           onOpenAccountSelectModal: (payload) => {
             setPostDeletePayload(payload);
             onDeleteCompleted?.(payload);
@@ -570,6 +609,7 @@ export const AccountDeletionFlowController: React.FC<AccountDeletionFlowControll
       <PostDeleteSwitchAccountModal
         isOpen={Boolean(postDeletePayload)}
         secondaryAccount={postDeletePayload?.secondaryAccount || null}
+        remainingAccounts={postDeletePayload?.remainingAccounts || []}
         oauthProviders={postDeletePayload?.oauthProviders || AVAILABLE_OAUTH_LOGIN_PROVIDERS}
         onSelectOAuthProvider={handleSelectOAuth}
         onOneClickContinue={handleOneClickContinue}

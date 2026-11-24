@@ -14973,8 +14973,20 @@
           });
         });
         const activeWeekPillEl = weekPillsContainer.querySelector(`.progressive-week-pill-btn[data-prog-week="${week}"]`);
-        if (activeWeekPillEl && typeof activeWeekPillEl.scrollIntoView === 'function') {
-          try { activeWeekPillEl.scrollIntoView({ inline: 'nearest', block: 'nearest' }); } catch (e) {}
+        if (activeWeekPillEl) {
+          if (typeof window.scrollContainerHorizontallyWithoutVerticalJump === 'function') {
+            window.scrollContainerHorizontallyWithoutVerticalJump(weekPillsContainer, activeWeekPillEl);
+          } else {
+            const cRect = weekPillsContainer.getBoundingClientRect();
+            const tRect = activeWeekPillEl.getBoundingClientRect();
+            const relLeft = tRect.left - cRect.left;
+            const relRight = relLeft + tRect.width;
+            if (relLeft < 0) {
+              weekPillsContainer.scrollLeft = Math.max(0, weekPillsContainer.scrollLeft + relLeft - 12);
+            } else if (relRight > cRect.width) {
+              weekPillsContainer.scrollLeft = Math.max(0, weekPillsContainer.scrollLeft + (relRight - cRect.width) + 12);
+            }
+          }
         }
       }
 
@@ -18409,17 +18421,37 @@
           if (!state.workoutLogs[key]) {
             state.workoutLogs[key] = { weight: '', reps: '', done: false, unit: exUnit };
           }
-          // UPGRADE 24: Strict Stepper Limits (Weight capped at 999 lbs, Reps capped at 100)
+          // UPGRADE 24 + Task 4: Strict Stepper Limits & ELI12 Validation Feedback (Weight capped at 999 lbs / 455 kg, Reps capped at 100)
           if (field === 'weight') {
+            const maxWeightForUnit = exUnit === 'kg' ? 455 : 999;
+            const rawNum = parseFloat(String(inp.value ?? '').trim());
             const clampedW = clampWeightInputLocal(inp.value);
-            if (clampedW.wasClamped) {
-              inp.value = clampedW.value;
+            if (clampedW.wasClamped || (Number.isFinite(rawNum) && rawNum > maxWeightForUnit)) {
+              const safeVal = Number.isFinite(rawNum) && rawNum > maxWeightForUnit ? String(maxWeightForUnit) : clampedW.value;
+              inp.value = safeVal;
+              inp.setAttribute('aria-invalid', 'true');
+              inp.classList.add('ring-2', 'ring-amber-400');
+              if (typeof showToast === 'function') {
+                showToast(`Weight must stay between 0 and ${maxWeightForUnit} ${exUnit}. We adjusted it for you.`);
+              }
+              state.workoutLogs[key].weight = safeVal;
+            } else {
+              inp.removeAttribute('aria-invalid');
+              inp.classList.remove('ring-2', 'ring-amber-400');
+              state.workoutLogs[key].weight = clampedW.value;
             }
-            state.workoutLogs[key].weight = clampedW.value;
           } else if (field === 'reps') {
             const clampedR = clampRepsInputLocal(inp.value);
             if (clampedR.wasClamped) {
               inp.value = clampedR.value;
+              inp.setAttribute('aria-invalid', 'true');
+              inp.classList.add('ring-2', 'ring-amber-400');
+              if (typeof showToast === 'function') {
+                showToast('Reps must stay between 1 and 100. We adjusted it for you.');
+              }
+            } else {
+              inp.removeAttribute('aria-invalid');
+              inp.classList.remove('ring-2', 'ring-amber-400');
             }
             state.workoutLogs[key].reps = clampedR.value;
           } else {
@@ -18695,7 +18727,14 @@
             delete state.timedHoldCompletedSets[key];
           }
           saveState();
-          renderWorkoutView();
+          const deleteCardAnchor = btn.closest('article[id^="ex-card-"]');
+          if (typeof window.withStableViewportScroll === 'function') {
+            window.withStableViewportScroll(deleteCardAnchor, () => {
+              renderWorkoutView();
+            });
+          } else {
+            renderWorkoutView();
+          }
           if (typeof showToast === 'function') {
             showToast(`Cleared ${exName} Set ${setIdx}.`);
           }
@@ -18725,6 +18764,50 @@
           const exObjForSet = exercisesToday.find(e => e.id === exId);
           const isTimedHoldSet = Boolean((exObjForSet && exObjForSet.isTimedHold) || exId === 'tue_side_plank');
           const wasAlreadyDone = Boolean(state.workoutLogs[key] && state.workoutLogs[key].done);
+
+          // Task 4: Strict ELI12 Content Validation for Weight and Reps before saving
+          if (!wasAlreadyDone && !isTimedHoldSet) {
+            if (weightInput && weightInput.value.trim() !== '') {
+              const weightCheck = typeof window.validateLoggedWeight === 'function'
+                ? window.validateLoggedWeight(weightInput.value, exUnit)
+                : (() => {
+                    const n = Number(weightInput.value.trim());
+                    const maxW = exUnit === 'kg' ? 455 : 999;
+                    if (!Number.isFinite(n) || n < 0 || n > maxW) {
+                      return { valid: false, errorMessage: `Please enter a weight between 0 and ${maxW} ${exUnit}.` };
+                    }
+                    return { valid: true, errorMessage: null };
+                  })();
+              if (!weightCheck.valid) {
+                weightInput.setAttribute('aria-invalid', 'true');
+                weightInput.classList.add('ring-2', 'ring-amber-400');
+                showToast(weightCheck.errorMessage || `Please check your weight (${exUnit}).`);
+                return;
+              }
+              weightInput.removeAttribute('aria-invalid');
+              weightInput.classList.remove('ring-2', 'ring-amber-400');
+            }
+            if (repsInput && repsInput.value.trim() !== '') {
+              const repsCheck = typeof window.validateLoggedReps === 'function'
+                ? window.validateLoggedReps(repsInput.value)
+                : (() => {
+                    const r = Number(repsInput.value.trim());
+                    if (!Number.isInteger(r) || r < 1 || r > 100) {
+                      return { valid: false, errorMessage: 'Please enter a whole number of reps from 1 to 100.' };
+                    }
+                    return { valid: true, errorMessage: null };
+                  })();
+              if (!repsCheck.valid) {
+                repsInput.setAttribute('aria-invalid', 'true');
+                repsInput.classList.add('ring-2', 'ring-amber-400');
+                showToast(repsCheck.errorMessage || 'Please enter a whole number of reps from 1 to 100.');
+                return;
+              }
+              repsInput.removeAttribute('aria-invalid');
+              repsInput.classList.remove('ring-2', 'ring-amber-400');
+            }
+          }
+
           let candidateWeightForSanity = '';
           if (!isTimedHoldSet) {
             if (weightInput && weightInput.value !== '') {
@@ -18987,15 +19070,23 @@
           saveState(true);
           autoSyncWorkoutToSupabaseLocal('set_logged');
           checkAndRenderForgottenSetReminder(false);
-          renderWorkoutView();
-          renderVeganView();
 
-          if (autoOpenedNextEx && !isSensoryCalmModeActive()) {
-            setTimeout(() => {
-              const nextCard = document.getElementById(`ex-card-${autoOpenedNextEx.id}`);
-              if (nextCard) nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 280);
+          // Task 3: Exercise Logging UI Stability — keep viewport anchored with ZERO automatic scroll jumps
+          const activeCardAnchorEl = document.getElementById(`ex-card-${exId}`);
+          if (typeof window.withStableViewportScroll === 'function') {
+            window.withStableViewportScroll(activeCardAnchorEl, () => {
+              renderWorkoutView();
+              renderVeganView();
+            });
+          } else {
+            const savedScrollX = window.scrollX;
+            const savedScrollY = window.scrollY;
+            renderWorkoutView();
+            renderVeganView();
+            window.scrollTo({ left: savedScrollX, top: savedScrollY, behavior: 'auto' });
+            requestAnimationFrame(() => window.scrollTo({ left: savedScrollX, top: savedScrollY, behavior: 'auto' }));
           }
+
           if (state.workoutLogs[key].done) {
             if (shouldStopTimerOnFinalSet) {
               resetTimer();
@@ -19012,11 +19103,7 @@
                 const pairEx = exercisesToday.find(e => e.id === exObj.supersetPair);
                 const pairName = pairEx ? pairEx.name : 'Superset Partner';
                 startTimer(restSec, `Superset Rest -> Next: ${pairName}`);
-                showToast(`Logged! 60s Superset rest -> Go to ${pairName}`);
-                setTimeout(() => {
-                  const pairCard = document.getElementById(`ex-card-${exObj.supersetPair}`);
-                  if (pairCard) pairCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 350);
+                showToast(`Logged! 60s Superset rest -> Next move: ${pairName}`);
               } else {
                 const effectiveRest = pullupDayNum
                   ? getPullupSetRestSec(pullupDayNum, setIdx, state.workoutLogs[key].reps, restSec, week)
@@ -19046,17 +19133,20 @@
           const dIdx = parseInt(btn.getAttribute('data-day-idx'), 10);
           const targetDay = isNaN(dIdx) ? dayIdx : dIdx;
           const isComp = btn.getAttribute('data-is-complete') === '1';
-          const nowCollapsed = toggleExerciseSetsCollapsed(targetDay, exId, isComp);
+          toggleExerciseSetsCollapsed(targetDay, exId, isComp);
           saveState();
-          renderWorkoutView();
-          if (PULLUP_EX_ID_TO_DAY[exId]) renderPullupView();
-          if (!nowCollapsed && exId) {
-            setTimeout(() => {
-              const cardEl = document.getElementById(`ex-card-${exId}`);
-              if (cardEl && typeof cardEl.scrollIntoView === 'function') {
-                cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }
-            }, 90);
+          const cardAnchorEl = exId ? document.getElementById(`ex-card-${exId}`) : null;
+          if (typeof window.withStableViewportScroll === 'function') {
+            window.withStableViewportScroll(cardAnchorEl, () => {
+              renderWorkoutView();
+              if (PULLUP_EX_ID_TO_DAY[exId]) renderPullupView();
+            });
+          } else {
+            const savedX = window.scrollX;
+            const savedY = window.scrollY;
+            renderWorkoutView();
+            if (PULLUP_EX_ID_TO_DAY[exId]) renderPullupView();
+            window.scrollTo({ left: savedX, top: savedY, behavior: 'auto' });
           }
         });
       });
@@ -19089,7 +19179,7 @@
             } else if (nextW < minPositiveStep) {
               nextW = delta > 0 ? minPositiveStep : 0;
             }
-            nextW = Math.min(999, nextW);
+            nextW = Math.min(exUnit === 'kg' ? 455 : 999, nextW);
             curEntry.weight = String(nextW);
             if (inp) inp.value = String(nextW);
             cascadeSetModificationToSubsequentUnloggedSets(exId, setIdx, curEntry.weight, null);
@@ -19113,7 +19203,17 @@
             renderPullupView();
           }
           saveState();
-          renderWorkoutView();
+          const stepCardAnchor = document.getElementById(`ex-card-${exId}`);
+          if (typeof window.withStableViewportScroll === 'function') {
+            window.withStableViewportScroll(stepCardAnchor, () => {
+              renderWorkoutView();
+            });
+          } else {
+            const savedX = window.scrollX;
+            const savedY = window.scrollY;
+            renderWorkoutView();
+            window.scrollTo({ left: savedX, top: savedY, behavior: 'auto' });
+          }
         });
       });
 
@@ -24945,6 +25045,12 @@
         state.dietPreference = normDiet.id;
         state.diet = baseDiet;
         state.forceShowRiceTimerInKeto = false;
+        const adhdPref = Boolean(window.__ikeaWizardAdhdView);
+        const dyslexiaPref = Boolean(window.__ikeaWizardDyslexiaView);
+        state.adhdFriendlyView = adhdPref;
+        state.dyslexiaFriendlyView = dyslexiaPref;
+        if (adhdPref) state.defaultAllHidden = true;
+        if (dyslexiaPref) state.fontMode = 'opendyslexic';
         state.programWizardConfig = {
           daysPerWeek,
           primaryFocus,
@@ -24955,6 +25061,8 @@
           diet: normDiet.id,
           baseDiet,
           intolerances,
+          adhdFriendlyView: adhdPref,
+          dyslexiaFriendlyView: dyslexiaPref,
           updatedAt: new Date().toISOString()
         };
         state.weeklyWorkoutTarget = daysPerWeek;
@@ -24969,8 +25077,20 @@
             email: '',
             isGuest: true,
             authProvider: 'guest_local',
-            signedInAt: new Date().toISOString()
+            signedInAt: new Date().toISOString(),
+            accessibilityPreferences: {
+              adhdFriendlyView: adhdPref,
+              dyslexiaFriendlyView: dyslexiaPref
+            }
           };
+        } else {
+          state.userProfile.accessibilityPreferences = {
+            adhdFriendlyView: adhdPref,
+            dyslexiaFriendlyView: dyslexiaPref
+          };
+        }
+        if (typeof window.__applyOnboardingAccessibilityPrefs === 'function') {
+          window.__applyOnboardingAccessibilityPrefs(adhdPref, dyslexiaPref);
         }
         state.dismissedOvertrainingAlertKey = '';
         isWizardBlockingFirstOpen = false;
@@ -24980,7 +25100,7 @@
           programWizardModal.style.zIndex = '50';
         }
         state.selectedDayIndex = 0;
-        saveState();
+        saveState(false, 'setting_changed');
         renderWorkoutView();
         renderPullupView();
         renderRiceCookingTimerWidgets();
@@ -26300,6 +26420,7 @@
 
             const endpointUrl = getActiveCloudEndpoint();
             let secondaryAccount = null;
+            let remainingAccounts = [];
             let switchPromptText = null;
 
             if (typeof window.executeCompleteAccountDeletion === 'function') {
@@ -26310,7 +26431,12 @@
                 stateObj: state,
                 storageKey: STORAGE_KEY
               });
-              secondaryAccount = deletionRes && deletionRes.secondaryAccount ? deletionRes.secondaryAccount : null;
+              remainingAccounts = Array.isArray(deletionRes && deletionRes.remainingAccounts)
+                ? deletionRes.remainingAccounts
+                : [];
+              secondaryAccount = deletionRes && deletionRes.secondaryAccount
+                ? deletionRes.secondaryAccount
+                : (remainingAccounts[0] || null);
               switchPromptText = deletionRes && deletionRes.switchPromptText ? deletionRes.switchPromptText : null;
             } else {
               // Concurrent fallback across Server, Mobile Storage/Cache, and Web Cookies
@@ -26328,15 +26454,16 @@
                 const leads = (state.capturedLeads || []).filter(
                   l => l && l.email && l.email.toLowerCase() !== validation.normalizedUserId && l.email !== 'member@gmail.com' && l.email !== 'athlete@gmail.com'
                 );
-                if (leads.length > 0) {
-                  secondaryAccount = {
-                    name: leads[0].name || leads[0].email.split('@')[0],
-                    email: leads[0].email.toLowerCase(),
-                    phone: leads[0].phone || '',
-                    goal: leads[0].goal || '6-Pack Recomp',
-                    diet: leads[0].diet || '100% Plant-Based ($5.55/day)',
-                    snapshot: state.accountsByEmail && state.accountsByEmail[leads[0].email.toLowerCase()] ? state.accountsByEmail[leads[0].email.toLowerCase()].snapshot : null
-                  };
+                remainingAccounts = leads.map(l => ({
+                  name: l.name || l.email.split('@')[0],
+                  email: l.email.toLowerCase(),
+                  phone: l.phone || '',
+                  goal: l.goal || '6-Pack Recomp',
+                  diet: l.diet || '100% Plant-Based ($5.55/day)',
+                  snapshot: state.accountsByEmail && state.accountsByEmail[l.email.toLowerCase()] ? state.accountsByEmail[l.email.toLowerCase()].snapshot : null
+                }));
+                if (remainingAccounts.length > 0) {
+                  secondaryAccount = remainingAccounts[0];
                 }
                 if (state.accountsByEmail && state.accountsByEmail[validation.normalizedUserId]) {
                   delete state.accountsByEmail[validation.normalizedUserId];
@@ -26344,7 +26471,7 @@
                 state.capturedLeads = (state.capturedLeads || []).filter(l => !l.email || l.email.toLowerCase() !== validation.normalizedUserId);
                 state.userProfile = { name: '', email: '', phone: '', goal: '6-Pack Recomp', diet: '100% Plant-Based ($5.55/day)', gymTime: '07:00', signedInAt: null };
                 try { sessionStorage.clear(); } catch (e) {}
-                if (!secondaryAccount) {
+                if (remainingAccounts.length === 0) {
                   try { localStorage.removeItem(STORAGE_KEY); localStorage.clear(); } catch (e) {}
                 }
                 if (typeof caches !== 'undefined' && caches.keys) {
@@ -26360,7 +26487,7 @@
               }
             }
 
-            if (secondaryAccount) {
+            if (secondaryAccount || remainingAccounts.length > 0) {
               saveState(true);
             }
             pendingDeleteAccountEmail = '';
@@ -26370,14 +26497,51 @@
             const pwdInp = document.getElementById('lead-password-input');
             if (pwdInp) pwdInp.value = '';
 
-            // Task 1: Streamlined Account Deletion `onDeleteSuccess` -> Instantly show active account selector modal with OAuth options
-            function onDeleteSuccessLocal(deletedEmailVal, savedSecondary) {
+            function switchDirectlyToSavedAccountLocal(targetAcct) {
+              if (!targetAcct || !targetAcct.email) {
+                routeToEmptyLoginAfterDelete();
+                return;
+              }
+              pendingSecondarySwitchAccount = null;
+              if (postDeleteSwitchModalEl) postDeleteSwitchModalEl.classList.add('hidden');
+              if (smartLoginModal) smartLoginModal.classList.add('hidden');
+              if (leadNameInp) leadNameInp.value = targetAcct.name || '';
+              if (leadEmailInp) leadEmailInp.value = targetAcct.email || '';
+              if (leadPhoneInp) leadPhoneInp.value = targetAcct.phone || '';
+              if (targetAcct.snapshot && typeof targetAcct.snapshot === 'object') {
+                applyAccountSnapshotToCurrentState(targetAcct.snapshot);
+              }
+              saveUserLeadProfile({
+                name: targetAcct.name,
+                email: targetAcct.email,
+                phone: targetAcct.phone || '',
+                goal: targetAcct.goal || '6-Pack Recomp',
+                diet: targetAcct.diet || '100% Plant-Based ($5.55/day)',
+                skipInitialPush: true
+              });
+              syncSmartLoginFormUI(false);
+              if (typeof pullStateFromCloud === 'function') {
+                pullStateFromCloud({ forceRemoteTruth: false }).catch(() => {});
+              }
+              showToast(`Switched to ${targetAcct.name}.`);
+            }
+
+            // Task 1: Streamlined Account Deletion `onDeleteSuccess` -> Auto-redirect to active account switcher with ALL remaining accounts & login options
+            function onDeleteSuccessLocal(deletedEmailVal, savedSecondary, allRemaining) {
+              const remainingList = Array.isArray(allRemaining) && allRemaining.length > 0
+                ? allRemaining
+                : (savedSecondary ? [savedSecondary] : []);
               const payload = typeof window.onDeleteSuccess === 'function'
-                ? window.onDeleteSuccess({ deletedEmail: deletedEmailVal, secondaryAccount: savedSecondary })
+                ? window.onDeleteSuccess({
+                    deletedEmail: deletedEmailVal,
+                    secondaryAccount: savedSecondary,
+                    remainingAccounts: remainingList
+                  })
                 : {
                     modalPrompt: 'Account deleted. Please select your active account to continue.',
                     oauthProviders: ['Google', 'Apple'],
-                    secondaryAccount: savedSecondary || null
+                    secondaryAccount: savedSecondary || null,
+                    remainingAccounts: remainingList
                   };
 
               if (smartLoginModal) smartLoginModal.classList.add('hidden');
@@ -26386,6 +26550,7 @@
                   postDeleteSwitchTitleEl.textContent = payload.modalPrompt || 'Account deleted. Please select your active account to continue.';
                 }
                 const secWrap = document.getElementById('post-delete-secondary-card-wrap');
+                const extraListEl = document.getElementById('post-delete-remaining-accounts-list');
                 if (savedSecondary) {
                   pendingSecondarySwitchAccount = savedSecondary;
                   if (secWrap) secWrap.classList.remove('hidden');
@@ -26401,6 +26566,39 @@
                   pendingSecondarySwitchAccount = null;
                   if (secWrap) secWrap.classList.add('hidden');
                 }
+                if (extraListEl) {
+                  const extraAccounts = remainingList.slice(1);
+                  extraListEl.textContent = '';
+                  if (extraAccounts.length > 0) {
+                    extraListEl.classList.remove('hidden');
+                    extraAccounts.forEach((acct) => {
+                      const btn = document.createElement('button');
+                      btn.type = 'button';
+                      btn.className = 'post-delete-extra-acct-btn w-full min-h-[48px] py-2.5 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-emerald-400/50 text-left flex items-center justify-between gap-2 transition';
+                      const infoWrap = document.createElement('span');
+                      infoWrap.className = 'min-w-0';
+                      const nameSpan = document.createElement('span');
+                      nameSpan.className = 'block text-xs font-extrabold text-white truncate';
+                      nameSpan.textContent = String(acct.name || '');
+                      const emailSpan = document.createElement('span');
+                      emailSpan.className = 'block text-xs text-slate-300 truncate';
+                      emailSpan.textContent = String(acct.email || '');
+                      infoWrap.appendChild(nameSpan);
+                      infoWrap.appendChild(emailSpan);
+                      const ctaSpan = document.createElement('span');
+                      ctaSpan.className = 'text-xs font-extrabold text-emerald-300 shrink-0';
+                      ctaSpan.textContent = 'Switch →';
+                      btn.appendChild(infoWrap);
+                      btn.appendChild(ctaSpan);
+                      btn.addEventListener('click', () => {
+                        switchDirectlyToSavedAccountLocal(acct);
+                      });
+                      extraListEl.appendChild(btn);
+                    });
+                  } else {
+                    extraListEl.classList.add('hidden');
+                  }
+                }
                 postDeleteSwitchModalEl.classList.remove('hidden');
                 renderWorkoutView();
                 renderVeganView();
@@ -26410,7 +26608,7 @@
               }
             }
             window.handleAccountDeleteSuccessUI = onDeleteSuccessLocal;
-            onDeleteSuccessLocal(targetEmail, secondaryAccount);
+            onDeleteSuccessLocal(targetEmail, secondaryAccount, remainingAccounts);
           } finally {
             confirmDeleteAccountBtn.disabled = false;
             confirmDeleteAccountBtn.textContent = 'Yes, Delete Account';
@@ -27653,17 +27851,38 @@
           const passwordVal = passwordInp ? String(passwordInp.value || '') : '';
           const phoneVal = leadPhoneInp ? leadPhoneInp.value.trim() : '';
 
-          if (!emailVal || !emailVal.includes('@')) {
-            showLeadAuthError('Please enter a valid email address.');
-            showToast('Please enter a valid email address.');
-            if (leadEmailInp) leadEmailInp.focus();
-            return;
-          }
-          if (passwordVal.length < 6) {
-            showLeadAuthError('Password must be at least 6 characters.');
-            showToast('Password must be at least 6 characters.');
-            if (passwordInp) passwordInp.focus();
-            return;
+          if (typeof window.validateAccountProfileInput === 'function') {
+            const profileCheck = window.validateAccountProfileInput({
+              name: rawName,
+              email: emailVal,
+              password: passwordVal,
+              phone: phoneVal,
+              requireName: currentAuthTabMode === 'signup',
+              requirePassword: true
+            });
+            if (!profileCheck.valid) {
+              const firstErr = profileCheck.errors[0] || 'Please check your account details.';
+              showLeadAuthError(firstErr);
+              showToast(firstErr);
+              if (profileCheck.fieldErrors.name && leadNameInp) leadNameInp.focus();
+              else if (profileCheck.fieldErrors.email && leadEmailInp) leadEmailInp.focus();
+              else if (profileCheck.fieldErrors.password && passwordInp) passwordInp.focus();
+              else if (profileCheck.fieldErrors.phone && leadPhoneInp) leadPhoneInp.focus();
+              return;
+            }
+          } else {
+            if (!emailVal || !emailVal.includes('@')) {
+              showLeadAuthError('Please type a valid email address (example: name@email.com).');
+              showToast('Please type a valid email address.');
+              if (leadEmailInp) leadEmailInp.focus();
+              return;
+            }
+            if (passwordVal.length < 6) {
+              showLeadAuthError('Password must be at least 6 characters long.');
+              showToast('Password must be at least 6 characters long.');
+              if (passwordInp) passwordInp.focus();
+              return;
+            }
           }
 
           const existingSavedRecord = (state.accountsByEmail && state.accountsByEmail[emailVal]) ? state.accountsByEmail[emailVal] : null;
@@ -28538,6 +28757,25 @@
           </button>
         </div>
 
+        <!-- Task 2: Special Screen Layouts (ADHD-friendly view & Dyslexia-friendly view) -->
+        <div class="pt-2.5 border-t border-slate-800 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-extrabold text-white">
+            <span>Special Screen Layouts</span>
+            <span id="active-special-layout-readout" class="text-[0.75rem] font-bold text-emerald-300">Standard Layout</span>
+          </div>
+          <p class="text-[0.75rem] text-slate-300 leading-relaxed">
+            Pick a special view to make reading or focusing easier. Changes save to your profile right away.
+          </p>
+          <button type="button" id="toggle-adhd-view-btn" data-testid="settings-adhd-view-toggle" role="switch" aria-checked="false" class="w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-sky-400/60 bg-slate-900 hover:bg-slate-800 text-slate-100 text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2">
+            <span>ADHD-friendly view (High focus, single tasks)</span>
+            <span id="toggle-adhd-view-status">OFF — Tap to Enable</span>
+          </button>
+          <button type="button" id="toggle-dyslexia-view-btn" data-testid="settings-dyslexia-view-toggle" role="switch" aria-checked="false" class="w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-sky-400/60 bg-slate-900 hover:bg-slate-800 text-slate-100 text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2">
+            <span>Dyslexia-friendly view (Special fonts &amp; spacing)</span>
+            <span id="toggle-dyslexia-view-status">OFF — Tap to Enable</span>
+          </button>
+        </div>
+
         <!-- Task 4: Global Sensory-Calm Mode Toggle -->
         <div class="pt-2.5 border-t border-slate-800 space-y-2">
           <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-extrabold text-white">
@@ -28707,7 +28945,7 @@
     <div class="bg-slate-900 border border-amber-500/50 rounded-2xl max-w-md w-full p-4 space-y-3 shadow-2xl max-h-[94vh] overflow-y-auto text-slate-100">
       <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
         <div class="min-w-0">
-          <div id="ikea-quiz-step-badge" class="text-[0.6875rem] font-extrabold text-emerald-300">Step 1 of 5 • Free Beta (No Account Needed)</div>
+          <div id="ikea-quiz-step-badge" class="text-[0.6875rem] font-extrabold text-emerald-300">Step 1 of 6 • Free Beta (No Account Needed)</div>
           <h3 id="program-wizard-title" class="text-base font-extrabold text-white mt-0.5">Build Your Custom Plan</h3>
           <p id="program-wizard-subtitle" class="text-xs text-slate-300 mt-0.5">One simple choice per screen. Start right away in free Guest Mode.</p>
         </div>
@@ -28715,8 +28953,8 @@
       </div>
 
       <!-- Accessible Progress Bar -->
-      <div id="ikea-quiz-progressbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="20" aria-label="Onboarding quiz progress" class="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
-        <div id="ikea-quiz-progress-fill" class="h-full rounded-full bg-emerald-500 transition-all duration-300" style="width: 20%;"></div>
+      <div id="ikea-quiz-progressbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="17" aria-label="Onboarding quiz progress" class="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
+        <div id="ikea-quiz-progress-fill" class="h-full rounded-full bg-emerald-500 transition-all duration-300" style="width: 17%;"></div>
       </div>
 
       <!-- Task 5: Returning User Login Bypass Directly on Onboarding Quiz -->
@@ -28809,6 +29047,53 @@
         <div class="rounded-xl border border-slate-700 bg-slate-950 px-2.5 py-2 text-[0.6875rem] text-slate-300 leading-snug">
           <span class="font-extrabold text-slate-100">Active Rules: </span>
           <span id="program-wizard-rule-preview">Difficulty: MEDIUM. Base Diet: [Vegan].</span>
+        </div>
+      </div>
+
+      <!-- STEP 6 (Task 2): Special Screen Layout Accessibility Customization -->
+      <div class="ikea-quiz-step hidden space-y-3" data-step="5" id="wizard-accessibility-step" data-testid="onboarding-accessibility-step">
+        <div class="space-y-1">
+          <div id="wizard-accessibility-question" class="text-sm font-extrabold text-white">Do you need a special screen layout?</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Pick one or both options below if they help you read or stay focused. You can change this anytime in Settings.
+          </p>
+        </div>
+        <div class="space-y-2.5">
+          <button
+            type="button"
+            id="wizard-adhd-view-toggle"
+            data-testid="onboarding-adhd-view-toggle"
+            role="switch"
+            aria-checked="false"
+            class="w-full min-h-[60px] py-3 px-3.5 rounded-xl border-2 border-slate-700 bg-slate-950 hover:border-slate-500 text-left text-slate-200 transition"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm font-extrabold text-white">ADHD-friendly view</span>
+              <span id="wizard-adhd-view-badge" class="text-xs font-extrabold text-slate-300">OFF</span>
+            </div>
+            <ul class="mt-1.5 list-disc pl-4 space-y-0.5 text-xs text-slate-300 leading-relaxed">
+              <li>High focus on one exercise at a time.</li>
+              <li>Clear border around your active task.</li>
+            </ul>
+          </button>
+
+          <button
+            type="button"
+            id="wizard-dyslexia-view-toggle"
+            data-testid="onboarding-dyslexia-view-toggle"
+            role="switch"
+            aria-checked="false"
+            class="w-full min-h-[60px] py-3 px-3.5 rounded-xl border-2 border-slate-700 bg-slate-950 hover:border-slate-500 text-left text-slate-200 transition"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm font-extrabold text-white">Dyslexia-friendly view</span>
+              <span id="wizard-dyslexia-view-badge" class="text-xs font-extrabold text-slate-300">OFF</span>
+            </div>
+            <ul class="mt-1.5 list-disc pl-4 space-y-0.5 text-xs text-slate-300 leading-relaxed">
+              <li>Turns on the OpenDyslexic reading font.</li>
+              <li>Adds wider spacing between letters and lines.</li>
+            </ul>
+          </button>
         </div>
       </div>
 
@@ -28922,45 +29207,54 @@
     </div>
   </div>
 
-  <!-- MODAL 4E: Streamlined Account Deletion Confirmation Modal (Jargon-Free ELI12 Copy) -->
+  <!-- MODAL 4E: Streamlined Account Deletion Confirmation Modal (Jargon-Free ELI12 Copy + Bullets) -->
   <div id="delete-account-confirm-modal" class="hidden fixed inset-0 z-[85] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-account-confirm-title" aria-describedby="delete-account-confirm-copy">
-    <div class="bg-slate-900 border border-rose-500/70 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+    <div class="bg-slate-900 border border-rose-500/70 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-left">
       <div class="space-y-2">
-        <span class="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/60 text-[0.625rem] font-extrabold uppercase tracking-wider text-rose-200">
+        <span class="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/60 text-xs font-extrabold uppercase tracking-wider text-rose-200">
           Delete Account
         </span>
         <h3 id="delete-account-confirm-title" class="text-base font-extrabold text-white leading-snug">
           Delete Account Forever?
         </h3>
         <div id="delete-account-target-email" class="text-xs font-bold text-rose-200 truncate">your account</div>
-        <p id="delete-account-confirm-copy" class="text-xs text-slate-200 leading-relaxed">
+        <p id="delete-account-confirm-copy" class="text-sm text-slate-100 leading-relaxed">
           Are you sure you want to delete this account forever? All your saved workouts and meals will be gone.
         </p>
+        <ul id="delete-account-confirm-bullets" class="list-disc pl-5 space-y-1 text-xs text-slate-200 leading-relaxed">
+          <li>All saved workouts, weights, and meal logs for this account will be deleted forever.</li>
+          <li>You cannot undo this step after you tap confirm.</li>
+          <li>Right after deleting, you can pick another account or sign in again.</li>
+        </ul>
       </div>
       <div class="grid grid-cols-2 gap-2">
-        <button type="button" id="cancel-delete-account-btn" class="min-h-[42px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition">
+        <button type="button" id="cancel-delete-account-btn" class="min-h-[48px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition">
           Cancel
         </button>
-        <button type="button" id="confirm-delete-account-btn" class="min-h-[42px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition">
+        <button type="button" id="confirm-delete-account-btn" class="min-h-[48px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition">
           Yes, Delete Account
         </button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 4F: Streamlined Post-Deletion Account Selection Modal (Triggered by onDeleteSuccess) -->
+  <!-- MODAL 4F: Streamlined Post-Deletion Account Selection Modal (Triggered Automatically by onDeleteSuccess) -->
   <div id="post-delete-switch-modal" class="hidden fixed inset-0 z-[86] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="post-delete-switch-title">
-    <div class="bg-slate-900 border border-emerald-400/60 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+    <div class="bg-slate-900 border border-emerald-400/60 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-left max-h-[90vh] overflow-y-auto">
       <div class="space-y-2">
-        <span class="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-[0.625rem] font-extrabold uppercase tracking-wider text-emerald-200">
+        <span class="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-xs font-extrabold uppercase tracking-wider text-emerald-200">
           Account Deleted
         </span>
         <h3 id="post-delete-switch-title" class="text-base font-extrabold text-white leading-snug">
           Account deleted. Please select your active account to continue.
         </h3>
+        <p class="text-xs text-slate-200 leading-relaxed">
+          Switch to another active account below, or pick a login option to keep training.
+        </p>
       </div>
 
       <div id="post-delete-secondary-card-wrap" class="hidden space-y-2">
+        <div class="text-xs font-bold text-emerald-200">Switch to an active account:</div>
         <div class="flex items-center gap-3 rounded-xl bg-slate-950 border border-slate-700 p-3">
           <div id="post-delete-switch-avatar" class="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-sm flex items-center justify-center shrink-0">
             A
@@ -28970,23 +29264,25 @@
             <div id="post-delete-switch-email" class="text-xs text-slate-300 truncate">account@7amgym.app</div>
           </div>
         </div>
-        <button type="button" id="one-click-switch-account-btn" class="w-full min-h-[42px] py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition">
+        <button type="button" id="one-click-switch-account-btn" class="w-full min-h-[48px] py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition">
           Continue as Saved Account
         </button>
       </div>
 
+      <div id="post-delete-remaining-accounts-list" class="hidden space-y-2"></div>
+
       <div class="space-y-2">
-        <div class="text-[0.6875rem] font-bold text-slate-300">Choose how to sign in:</div>
-        <button type="button" id="post-delete-google-oauth-btn" class="w-full min-h-[42px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-extrabold transition flex items-center justify-center gap-2">
+        <div class="text-xs font-bold text-slate-200">Other login options:</div>
+        <button type="button" id="post-delete-google-oauth-btn" class="w-full min-h-[48px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-extrabold transition flex items-center justify-center gap-2">
           <span>Continue with Google</span>
         </button>
-        <button type="button" id="post-delete-apple-oauth-btn" class="w-full min-h-[42px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-extrabold transition flex items-center justify-center gap-2">
+        <button type="button" id="post-delete-apple-oauth-btn" class="w-full min-h-[48px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-extrabold transition flex items-center justify-center gap-2">
           <span>Continue with Apple</span>
         </button>
-        <button type="button" id="post-delete-use-another-btn" class="w-full min-h-[40px] py-2 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold transition">
+        <button type="button" id="post-delete-use-another-btn" class="w-full min-h-[48px] py-2 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold transition">
           Log In with Email &amp; Password
         </button>
-        <button type="button" id="post-delete-guest-btn" class="w-full min-h-[38px] py-1.5 px-3 rounded-xl bg-transparent hover:bg-slate-800 text-slate-300 text-xs font-semibold transition">
+        <button type="button" id="post-delete-guest-btn" class="w-full min-h-[48px] py-1.5 px-3 rounded-xl bg-transparent hover:bg-slate-800 text-slate-300 text-xs font-semibold transition">
           Continue in Free Guest Mode
         </button>
       </div>
@@ -30097,12 +30393,143 @@
         }
       }
 
+      function syncSpecialLayoutReadoutUI() {
+        const adhdOn = Boolean(document.documentElement.classList.contains('adhd-friendly-view'));
+        const dyslexiaOn = Boolean(document.documentElement.classList.contains('dyslexia-friendly-view'));
+        const readout = document.getElementById('active-special-layout-readout');
+        if (readout) {
+          if (adhdOn && dyslexiaOn) readout.textContent = 'ADHD + Dyslexia Active';
+          else if (adhdOn) readout.textContent = 'ADHD-Friendly Active';
+          else if (dyslexiaOn) readout.textContent = 'Dyslexia-Friendly Active';
+          else readout.textContent = 'Standard Layout';
+        }
+      }
+
+      function syncWizardAccessibilityToggleUI() {
+        const adhdOn = Boolean(window.__ikeaWizardAdhdView);
+        const dyslexiaOn = Boolean(window.__ikeaWizardDyslexiaView);
+        const wizAdhdBtn = document.getElementById('wizard-adhd-view-toggle');
+        const wizAdhdBadge = document.getElementById('wizard-adhd-view-badge');
+        if (wizAdhdBtn) {
+          wizAdhdBtn.setAttribute('aria-checked', adhdOn ? 'true' : 'false');
+          wizAdhdBtn.className = adhdOn
+            ? 'w-full min-h-[60px] py-3 px-3.5 rounded-xl border-2 border-emerald-400 bg-emerald-600/20 text-left text-white transition'
+            : 'w-full min-h-[60px] py-3 px-3.5 rounded-xl border-2 border-slate-700 bg-slate-950 hover:border-slate-500 text-left text-slate-200 transition';
+        }
+        if (wizAdhdBadge) {
+          wizAdhdBadge.textContent = adhdOn ? 'ON' : 'OFF';
+          wizAdhdBadge.className = adhdOn ? 'text-xs font-extrabold text-emerald-300' : 'text-xs font-extrabold text-slate-300';
+        }
+        const wizDysBtn = document.getElementById('wizard-dyslexia-view-toggle');
+        const wizDysBadge = document.getElementById('wizard-dyslexia-view-badge');
+        if (wizDysBtn) {
+          wizDysBtn.setAttribute('aria-checked', dyslexiaOn ? 'true' : 'false');
+          wizDysBtn.className = dyslexiaOn
+            ? 'w-full min-h-[60px] py-3 px-3.5 rounded-xl border-2 border-emerald-400 bg-emerald-600/20 text-left text-white transition'
+            : 'w-full min-h-[60px] py-3 px-3.5 rounded-xl border-2 border-slate-700 bg-slate-950 hover:border-slate-500 text-left text-slate-200 transition';
+        }
+        if (wizDysBadge) {
+          wizDysBadge.textContent = dyslexiaOn ? 'ON' : 'OFF';
+          wizDysBadge.className = dyslexiaOn ? 'text-xs font-extrabold text-emerald-300' : 'text-xs font-extrabold text-slate-300';
+        }
+      }
+
+      function applyAdhdViewUI(enabled) {
+        const clean = typeof window.saveAdhdViewPreference === 'function'
+          ? window.saveAdhdViewPreference(Boolean(enabled))
+          : (() => {
+              try { localStorage.setItem('budget_gym_adhd_view_v1', enabled ? 'true' : 'false'); } catch (_e) {}
+              return Boolean(enabled);
+            })();
+        if (typeof window.applyAdhdFriendlyViewToDocument === 'function') {
+          window.applyAdhdFriendlyViewToDocument(clean, document);
+        } else {
+          document.documentElement.classList.toggle('adhd-friendly-view', clean);
+          document.documentElement.setAttribute('data-adhd-view', clean ? 'true' : 'false');
+        }
+        window.__ikeaWizardAdhdView = clean;
+        if (typeof state === 'object' && state) {
+          state.adhdFriendlyView = clean;
+          if (clean) state.defaultAllHidden = true;
+          if (state.userProfile && typeof state.userProfile === 'object') {
+            state.userProfile.accessibilityPreferences = Object.assign(
+              {},
+              state.userProfile.accessibilityPreferences || {},
+              { adhdFriendlyView: clean }
+            );
+          }
+        }
+        const btn = document.getElementById('toggle-adhd-view-btn');
+        const statusEl = document.getElementById('toggle-adhd-view-status');
+        if (btn) {
+          btn.setAttribute('aria-checked', clean ? 'true' : 'false');
+          btn.className = clean
+            ? 'w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-emerald-400 bg-emerald-600 text-white text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2'
+            : 'w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-sky-400/60 bg-slate-900 hover:bg-slate-800 text-slate-100 text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2';
+        }
+        if (statusEl) statusEl.textContent = clean ? 'ON — Tap to Disable' : 'OFF — Tap to Enable';
+        syncSpecialLayoutReadoutUI();
+        syncWizardAccessibilityToggleUI();
+      }
+
+      function applyDyslexiaViewUI(enabled) {
+        const clean = typeof window.saveDyslexiaViewPreference === 'function'
+          ? window.saveDyslexiaViewPreference(Boolean(enabled))
+          : (() => {
+              try { localStorage.setItem('budget_gym_dyslexia_view_v1', enabled ? 'true' : 'false'); } catch (_e) {}
+              return Boolean(enabled);
+            })();
+        if (typeof window.applyDyslexiaFriendlyViewToDocument === 'function') {
+          window.applyDyslexiaFriendlyViewToDocument(clean, document);
+        } else {
+          document.documentElement.classList.toggle('dyslexia-friendly-view', clean);
+          document.documentElement.setAttribute('data-dyslexia-view', clean ? 'true' : 'false');
+        }
+        if (clean) {
+          applyFontModeUI('opendyslexic');
+        }
+        window.__ikeaWizardDyslexiaView = clean;
+        if (typeof state === 'object' && state) {
+          state.dyslexiaFriendlyView = clean;
+          if (state.userProfile && typeof state.userProfile === 'object') {
+            state.userProfile.accessibilityPreferences = Object.assign(
+              {},
+              state.userProfile.accessibilityPreferences || {},
+              { dyslexiaFriendlyView: clean }
+            );
+          }
+        }
+        const btn = document.getElementById('toggle-dyslexia-view-btn');
+        const statusEl = document.getElementById('toggle-dyslexia-view-status');
+        if (btn) {
+          btn.setAttribute('aria-checked', clean ? 'true' : 'false');
+          btn.className = clean
+            ? 'w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-emerald-400 bg-emerald-600 text-white text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2'
+            : 'w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-sky-400/60 bg-slate-900 hover:bg-slate-800 text-slate-100 text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2';
+        }
+        if (statusEl) statusEl.textContent = clean ? 'ON — Tap to Disable' : 'OFF — Tap to Enable';
+        syncSpecialLayoutReadoutUI();
+        syncWizardAccessibilityToggleUI();
+      }
+
+      window.__applyOnboardingAccessibilityPrefs = (adhdOn, dyslexiaOn) => {
+        applyAdhdViewUI(Boolean(adhdOn));
+        applyDyslexiaViewUI(Boolean(dyslexiaOn));
+      };
+
       window.__syncAccessibilityControlsFromState = () => {
         if (typeof state === 'object' && state) {
           if (state.themeMode) applyThemePrefUI(state.themeMode);
           if (state.fontMode) applyFontModeUI(state.fontMode);
           if (typeof state.isSensoryCalm === 'boolean') applySensoryCalmUI(state.isSensoryCalm);
           if (typeof state.advancedSubjectiveEnabled === 'boolean') applyAdvancedSubjectiveUI(state.advancedSubjectiveEnabled);
+          const profileA11y = state.userProfile && state.userProfile.accessibilityPreferences ? state.userProfile.accessibilityPreferences : null;
+          if (typeof state.adhdFriendlyView === 'boolean' || (profileA11y && typeof profileA11y.adhdFriendlyView === 'boolean')) {
+            applyAdhdViewUI(Boolean(state.adhdFriendlyView || (profileA11y && profileA11y.adhdFriendlyView)));
+          }
+          if (typeof state.dyslexiaFriendlyView === 'boolean' || (profileA11y && typeof profileA11y.dyslexiaFriendlyView === 'boolean')) {
+            applyDyslexiaViewUI(Boolean(state.dyslexiaFriendlyView || (profileA11y && profileA11y.dyslexiaFriendlyView)));
+          }
         }
       };
 
@@ -30125,6 +30552,20 @@
         ? window.loadAdvancedSubjectiveSetting()
         : Boolean(typeof state === 'object' && state && state.advancedSubjectiveEnabled);
       applyAdvancedSubjectiveUI(initialAdvSubj);
+
+      const initialAdhdView = (typeof window.loadStoredAdhdViewPreference === 'function')
+        ? window.loadStoredAdhdViewPreference()
+        : (() => {
+            try { return localStorage.getItem('budget_gym_adhd_view_v1') === 'true'; } catch (_e) { return Boolean(state && state.adhdFriendlyView); }
+          })();
+      applyAdhdViewUI(initialAdhdView);
+
+      const initialDyslexiaView = (typeof window.loadStoredDyslexiaViewPreference === 'function')
+        ? window.loadStoredDyslexiaViewPreference()
+        : (() => {
+            try { return localStorage.getItem('budget_gym_dyslexia_view_v1') === 'true'; } catch (_e) { return Boolean(state && state.dyslexiaFriendlyView); }
+          })();
+      applyDyslexiaViewUI(initialDyslexiaView);
 
       const initialAutoSync = isAutoSyncDevicesEnabledLocal();
       applyAutoSyncDevicesUI(initialAutoSync);
@@ -30151,6 +30592,12 @@
               ? window.loadAdvancedSubjectiveSetting()
               : Boolean(typeof state === 'object' && state && state.advancedSubjectiveEnabled);
             applyAdvancedSubjectiveUI(subjNow);
+            if (typeof window.loadStoredAdhdViewPreference === 'function') {
+              applyAdhdViewUI(window.loadStoredAdhdViewPreference());
+            }
+            if (typeof window.loadStoredDyslexiaViewPreference === 'function') {
+              applyDyslexiaViewUI(window.loadStoredDyslexiaViewPreference());
+            }
             applyAutoSyncDevicesUI(isAutoSyncDevicesEnabledLocal());
             initRealtimeAutoSyncManager();
             updateOfflineConnectivityBannerUI();
@@ -30263,6 +30710,46 @@
           if (typeof showToast === 'function') {
             showToast(nextCalm ? 'Sensory-Calm Mode enabled (low saturation, motion off, audio/haptics muted).' : 'Sensory-Calm Mode turned off.');
           }
+        });
+      }
+
+      const adhdSettingsBtn = document.getElementById('toggle-adhd-view-btn');
+      if (adhdSettingsBtn) {
+        adhdSettingsBtn.addEventListener('click', () => {
+          const nextVal = !document.documentElement.classList.contains('adhd-friendly-view');
+          applyAdhdViewUI(nextVal);
+          if (typeof saveState === 'function') saveState(false, 'setting_changed');
+          if (typeof showToast === 'function') {
+            showToast(nextVal ? 'ADHD-friendly view turned ON.' : 'ADHD-friendly view turned OFF.');
+          }
+        });
+      }
+
+      const dyslexiaSettingsBtn = document.getElementById('toggle-dyslexia-view-btn');
+      if (dyslexiaSettingsBtn) {
+        dyslexiaSettingsBtn.addEventListener('click', () => {
+          const nextVal = !document.documentElement.classList.contains('dyslexia-friendly-view');
+          applyDyslexiaViewUI(nextVal);
+          if (typeof saveState === 'function') saveState(false, 'setting_changed');
+          if (typeof showToast === 'function') {
+            showToast(nextVal ? 'Dyslexia-friendly view turned ON.' : 'Dyslexia-friendly view turned OFF.');
+          }
+        });
+      }
+
+      const wizAdhdToggleBtn = document.getElementById('wizard-adhd-view-toggle');
+      if (wizAdhdToggleBtn) {
+        wizAdhdToggleBtn.addEventListener('click', () => {
+          window.__ikeaWizardAdhdView = !Boolean(window.__ikeaWizardAdhdView);
+          applyAdhdViewUI(window.__ikeaWizardAdhdView);
+        });
+      }
+
+      const wizDyslexiaToggleBtn = document.getElementById('wizard-dyslexia-view-toggle');
+      if (wizDyslexiaToggleBtn) {
+        wizDyslexiaToggleBtn.addEventListener('click', () => {
+          window.__ikeaWizardDyslexiaView = !Boolean(window.__ikeaWizardDyslexiaView);
+          applyDyslexiaViewUI(window.__ikeaWizardDyslexiaView);
         });
       }
 

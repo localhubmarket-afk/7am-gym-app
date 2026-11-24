@@ -55,6 +55,7 @@ import {
   AVAILABLE_OAUTH_LOGIN_PROVIDERS,
   DELETE_ACCOUNT_BUTTON_LABELS,
   DELETE_ACCOUNT_MAIN_WARNING,
+  DELETE_ACCOUNT_WARNING_BULLETS,
   DELETE_ACCOUNT_WARNING_PROMPT,
   DELETE_ALL_WEEKS_BUTTON_LABEL,
   DELETE_ALL_WEEKS_CONFIRM_WARNING,
@@ -70,6 +71,7 @@ import {
   deleteWorkoutAndFuelForActiveDay,
   deleteWorkoutForActiveDay,
   executeCompleteAccountDeletion,
+  findAllRemainingSavedAccounts,
   findSecondarySavedAccount,
   isValidDeletableUserId,
   normalizeAccountUserId,
@@ -99,7 +101,10 @@ import {
 } from './utils/contentValidationProtocol';
 import {
   DEFAULT_IKEA_QUIZ_ANSWERS,
+  IKEA_QUIZ_ALL_STEPS,
   IKEA_QUIZ_STEPS,
+  ONBOARDING_ACCESSIBILITY_QUESTION,
+  ONBOARDING_ACCESSIBILITY_STEP,
   adaptExerciseForEquipment,
   buildIkeaQuizProgram,
   createGuestSandboxStatePatch
@@ -112,14 +117,20 @@ import {
 } from './utils/offlineSyncQueue';
 import {
   ACCESSIBLE_THEME_TOKENS,
+  ADHD_VIEW_STORAGE_KEY,
   DEFAULT_DYSLEXIA_FRIENDLY_FONT_STACK,
+  DYSLEXIA_VIEW_STORAGE_KEY,
   OPENDYSLEXIC_FONT_STACK,
   SENSORY_CALM_STORAGE_KEY,
+  applyAdhdFriendlyViewToDocument,
   applyDyslexiaFontToDocument,
+  applyDyslexiaFriendlyViewToDocument,
   applySensoryCalmToDocument,
   applyThemeToDocument,
   calculateWcagContrastRatio,
   getSystemPrefersDark,
+  loadStoredAdhdViewPreference,
+  loadStoredDyslexiaViewPreference,
   loadStoredFontPreference,
   loadStoredSensoryCalmPreference,
   loadStoredThemePreference,
@@ -127,10 +138,27 @@ import {
   normalizeSensoryCalmPreference,
   normalizeThemeModePreference,
   resolveEffectiveTheme,
+  saveAdhdViewPreference,
+  saveDyslexiaViewPreference,
   saveFontPreference,
   saveSensoryCalmPreference,
   saveThemePreference
 } from './utils/themeProvider';
+import {
+  DEFAULT_VALIDATION_LIMITS,
+  validateAccountProfileInput,
+  validateGymTimeInput,
+  validateLoggedReps,
+  validateLoggedWeight,
+  validateQuickAddFuelInput
+} from './utils/inputValidation';
+import {
+  captureViewportScrollAnchor,
+  computeStableScrollTargetY,
+  restoreViewportScrollAnchor,
+  scrollContainerHorizontallyWithoutVerticalJump,
+  withStableViewportScroll
+} from './utils/viewportStability';
 import {
   detectCsvSourceApp,
   mapExternalExerciseToSchema,
@@ -1017,6 +1045,30 @@ declare global {
     normalizeAutoSyncPreference?: typeof normalizeAutoSyncPreference;
     saveAutoSyncPreference?: typeof saveAutoSyncPreference;
     __gymRealtimeSyncManager?: SupabaseRealtimeSyncManager<any> | null;
+    DELETE_ACCOUNT_WARNING_BULLETS?: typeof DELETE_ACCOUNT_WARNING_BULLETS;
+    findAllRemainingSavedAccounts?: typeof findAllRemainingSavedAccounts;
+    IKEA_QUIZ_ALL_STEPS?: typeof IKEA_QUIZ_ALL_STEPS;
+    ONBOARDING_ACCESSIBILITY_QUESTION?: string;
+    ONBOARDING_ACCESSIBILITY_STEP?: typeof ONBOARDING_ACCESSIBILITY_STEP;
+    ADHD_VIEW_STORAGE_KEY?: string;
+    DYSLEXIA_VIEW_STORAGE_KEY?: string;
+    applyAdhdFriendlyViewToDocument?: typeof applyAdhdFriendlyViewToDocument;
+    applyDyslexiaFriendlyViewToDocument?: typeof applyDyslexiaFriendlyViewToDocument;
+    loadStoredAdhdViewPreference?: typeof loadStoredAdhdViewPreference;
+    loadStoredDyslexiaViewPreference?: typeof loadStoredDyslexiaViewPreference;
+    saveAdhdViewPreference?: typeof saveAdhdViewPreference;
+    saveDyslexiaViewPreference?: typeof saveDyslexiaViewPreference;
+    DEFAULT_VALIDATION_LIMITS?: typeof DEFAULT_VALIDATION_LIMITS;
+    validateAccountProfileInput?: typeof validateAccountProfileInput;
+    validateGymTimeInput?: typeof validateGymTimeInput;
+    validateLoggedReps?: typeof validateLoggedReps;
+    validateLoggedWeight?: typeof validateLoggedWeight;
+    validateQuickAddFuelInput?: typeof validateQuickAddFuelInput;
+    captureViewportScrollAnchor?: typeof captureViewportScrollAnchor;
+    computeStableScrollTargetY?: typeof computeStableScrollTargetY;
+    restoreViewportScrollAnchor?: typeof restoreViewportScrollAnchor;
+    scrollContainerHorizontallyWithoutVerticalJump?: typeof scrollContainerHorizontallyWithoutVerticalJump;
+    withStableViewportScroll?: typeof withStableViewportScroll;
   }
 }
 
@@ -1193,5 +1245,29 @@ if (typeof window !== 'undefined') {
   window.loadAutoSyncPreference = loadAutoSyncPreference;
   window.normalizeAutoSyncPreference = normalizeAutoSyncPreference;
   window.saveAutoSyncPreference = saveAutoSyncPreference;
+  window.DELETE_ACCOUNT_WARNING_BULLETS = DELETE_ACCOUNT_WARNING_BULLETS;
+  window.findAllRemainingSavedAccounts = findAllRemainingSavedAccounts;
+  window.IKEA_QUIZ_ALL_STEPS = IKEA_QUIZ_ALL_STEPS;
+  window.ONBOARDING_ACCESSIBILITY_QUESTION = ONBOARDING_ACCESSIBILITY_QUESTION;
+  window.ONBOARDING_ACCESSIBILITY_STEP = ONBOARDING_ACCESSIBILITY_STEP;
+  window.ADHD_VIEW_STORAGE_KEY = ADHD_VIEW_STORAGE_KEY;
+  window.DYSLEXIA_VIEW_STORAGE_KEY = DYSLEXIA_VIEW_STORAGE_KEY;
+  window.applyAdhdFriendlyViewToDocument = applyAdhdFriendlyViewToDocument;
+  window.applyDyslexiaFriendlyViewToDocument = applyDyslexiaFriendlyViewToDocument;
+  window.loadStoredAdhdViewPreference = loadStoredAdhdViewPreference;
+  window.loadStoredDyslexiaViewPreference = loadStoredDyslexiaViewPreference;
+  window.saveAdhdViewPreference = saveAdhdViewPreference;
+  window.saveDyslexiaViewPreference = saveDyslexiaViewPreference;
+  window.DEFAULT_VALIDATION_LIMITS = DEFAULT_VALIDATION_LIMITS;
+  window.validateAccountProfileInput = validateAccountProfileInput;
+  window.validateGymTimeInput = validateGymTimeInput;
+  window.validateLoggedReps = validateLoggedReps;
+  window.validateLoggedWeight = validateLoggedWeight;
+  window.validateQuickAddFuelInput = validateQuickAddFuelInput;
+  window.captureViewportScrollAnchor = captureViewportScrollAnchor;
+  window.computeStableScrollTargetY = computeStableScrollTargetY;
+  window.restoreViewportScrollAnchor = restoreViewportScrollAnchor;
+  window.scrollContainerHorizontallyWithoutVerticalJump = scrollContainerHorizontallyWithoutVerticalJump;
+  window.withStableViewportScroll = withStableViewportScroll;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

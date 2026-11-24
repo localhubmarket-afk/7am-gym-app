@@ -16,6 +16,12 @@ export const DELETE_ACCOUNT_WARNING_PROMPT =
 export const DELETE_ACCOUNT_MAIN_WARNING =
   'Are you sure you want to delete this account forever? All your saved workouts and meals will be gone.';
 
+export const DELETE_ACCOUNT_WARNING_BULLETS = [
+  'All saved workouts, weights, and meal logs for this account will be deleted forever.',
+  'You cannot undo this step after you tap confirm.',
+  'Right after deleting, you can pick another account or sign in again.'
+] as const;
+
 export const POST_DELETE_SELECT_ACCOUNT_PROMPT =
   'Account deleted. Please select your active account to continue.';
 
@@ -136,14 +142,14 @@ export function buildPostDeleteSwitchPrompt(accountName: string): string {
 }
 
 /**
- * Checks local device profiles for another valid saved account after deletion.
- * Ignores the deleted email and placeholder emails so users never hit an empty login screen unnecessarily.
+ * Returns ALL remaining valid saved accounts on this device (excluding the deleted email),
+ * sorted with the most recently used account first.
  */
-export function findSecondarySavedAccount(
+export function findAllRemainingSavedAccounts(
   stateObj: Record<string, any> | null | undefined,
   excludedEmail: string | null | undefined
-): SavedAccountCandidate | null {
-  if (!stateObj || typeof stateObj !== 'object') return null;
+): SavedAccountCandidate[] {
+  if (!stateObj || typeof stateObj !== 'object') return [];
 
   const excludedNorm = normalizeAccountUserId(excludedEmail);
   const candidatesByEmail = new Map<string, { candidate: SavedAccountCandidate; sortMs: number }>();
@@ -178,7 +184,6 @@ export function findSecondarySavedAccount(
       return;
     }
 
-    // Prefer entry with snapshot or newer timestamp
     const mergedSnapshot = candidate.snapshot || existing.candidate.snapshot || null;
     const mergedName =
       candidate.name !== formatFallbackNameFromEmail(emailNorm)
@@ -212,10 +217,23 @@ export function findSecondarySavedAccount(
     });
   }
 
-  if (candidatesByEmail.size === 0) return null;
+  if (candidatesByEmail.size === 0) return [];
 
-  const sorted = Array.from(candidatesByEmail.values()).sort((a, b) => b.sortMs - a.sortMs);
-  return sorted[0].candidate;
+  return Array.from(candidatesByEmail.values())
+    .sort((a, b) => b.sortMs - a.sortMs)
+    .map((entry) => entry.candidate);
+}
+
+/**
+ * Checks local device profiles for another valid saved account after deletion.
+ * Ignores the deleted email and placeholder emails so users never hit an empty login screen unnecessarily.
+ */
+export function findSecondarySavedAccount(
+  stateObj: Record<string, any> | null | undefined,
+  excludedEmail: string | null | undefined
+): SavedAccountCandidate | null {
+  const remaining = findAllRemainingSavedAccounts(stateObj, excludedEmail);
+  return remaining.length > 0 ? remaining[0] : null;
 }
 
 /**
@@ -1015,6 +1033,7 @@ export interface CompleteAccountDeletionResult {
   clearedCacheCount: number;
   cookiesClearedCount: number;
   secondaryAccount: SavedAccountCandidate | null;
+  remainingAccounts: SavedAccountCandidate[];
   switchPromptText: string | null;
 }
 
@@ -1024,8 +1043,8 @@ export interface CompleteAccountDeletionResult {
  * 2. Mobile client localStorage, sessionStorage, caches, undo snapshots, and preferences
  * 3. Web client session cookie invalidation
  *
- * After completion, checks for another saved authenticated profile on the device
- * and returns the automated switch prompt if one exists.
+ * After completion, checks for other saved authenticated profiles on the device
+ * and returns the automated switch prompt and remaining account list.
  */
 export async function executeCompleteAccountDeletion(
   options: CompleteAccountDeletionOptions
@@ -1047,12 +1066,14 @@ export async function executeCompleteAccountDeletion(
       clearedCacheCount: 0,
       cookiesClearedCount: 0,
       secondaryAccount: null,
+      remainingAccounts: [],
       switchPromptText: null
     };
   }
 
   // Inspect remaining saved authenticated accounts BEFORE wiping active user state
-  const secondaryAccount = findSecondarySavedAccount(options.stateObj, validation.normalizedUserId);
+  const remainingAccounts = findAllRemainingSavedAccounts(options.stateObj, validation.normalizedUserId);
+  const secondaryAccount = remainingAccounts.length > 0 ? remainingAccounts[0] : null;
 
   // Run Server deletion, Mobile storage/cache purge, and Web cookie invalidation CONCURRENTLY
   const [serverRes, mobileRes, cookiesClearedCount] = await Promise.all([
@@ -1066,7 +1087,7 @@ export async function executeCompleteAccountDeletion(
       storageKey: options.storageKey,
       deletedEmail: validation.normalizedUserId,
       stateObj: options.stateObj,
-      preserveRemainingProfiles: Boolean(secondaryAccount),
+      preserveRemainingProfiles: remainingAccounts.length > 0,
       localStorageImpl: options.localStorageImpl,
       sessionStorageImpl: options.sessionStorageImpl,
       cachesImpl: options.cachesImpl,
@@ -1085,6 +1106,7 @@ export async function executeCompleteAccountDeletion(
     clearedCacheCount: mobileRes.clearedCacheCount,
     cookiesClearedCount,
     secondaryAccount,
+    remainingAccounts,
     switchPromptText: secondaryAccount ? buildPostDeleteSwitchPrompt(secondaryAccount.name) : null
   };
 }
@@ -1092,6 +1114,7 @@ export async function executeCompleteAccountDeletion(
 export interface OnDeleteSuccessOptions {
   deletedEmail?: string | null;
   secondaryAccount?: SavedAccountCandidate | null;
+  remainingAccounts?: SavedAccountCandidate[];
   oauthProviders?: readonly string[];
   onOpenAccountSelectModal?: (payload: OnDeleteSuccessPayload) => void;
 }
@@ -1101,15 +1124,16 @@ export interface OnDeleteSuccessPayload {
   deletedEmail: string;
   oauthProviders: string[];
   secondaryAccount: SavedAccountCandidate | null;
+  remainingAccounts: SavedAccountCandidate[];
   shouldOpenAccountSelectModal: true;
 }
 
 /**
  * Task 1: Streamlined Account Deletion `onDeleteSuccess` handler.
- * Triggered immediately once the account is deleted from Supabase.
- * Opens the post-delete modal with exact text:
+ * Triggered immediately once the account is deleted.
+ * Opens the post-delete account switcher modal with exact text:
  * "Account deleted. Please select your active account to continue."
- * and surfaces available OAuth login options (Google, Apple) inside the modal.
+ * and surfaces all remaining saved accounts plus login options (Google, Apple, Email, Guest).
  */
 export function onDeleteSuccess(options: OnDeleteSuccessOptions = {}): OnDeleteSuccessPayload {
   const oauthProviders =
@@ -1117,11 +1141,21 @@ export function onDeleteSuccess(options: OnDeleteSuccessOptions = {}): OnDeleteS
       ? [...options.oauthProviders]
       : [...AVAILABLE_OAUTH_LOGIN_PROVIDERS];
 
+  const remainingAccounts = Array.isArray(options.remainingAccounts)
+    ? [...options.remainingAccounts]
+    : options.secondaryAccount
+      ? [options.secondaryAccount]
+      : [];
+
+  const primarySecondary =
+    options.secondaryAccount || (remainingAccounts.length > 0 ? remainingAccounts[0] : null);
+
   const payload: OnDeleteSuccessPayload = {
     modalPrompt: POST_DELETE_SELECT_ACCOUNT_PROMPT,
     deletedEmail: normalizeAccountUserId(options.deletedEmail),
     oauthProviders,
-    secondaryAccount: options.secondaryAccount || null,
+    secondaryAccount: primarySecondary,
+    remainingAccounts,
     shouldOpenAccountSelectModal: true
   };
 

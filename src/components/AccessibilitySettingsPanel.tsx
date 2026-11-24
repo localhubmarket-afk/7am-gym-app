@@ -38,11 +38,15 @@ export const AccessibilitySettingsPanel: React.FC<AccessibilitySettingsPanelProp
     resolvedTheme,
     isOpenDyslexicEnabled,
     isSensoryCalm,
+    isAdhdFriendlyView,
+    isDyslexiaFriendlyView,
     isAdvancedSubjectiveEnabled,
     isAutoSyncEnabled,
     setThemePreference,
     toggleOpenDyslexicFont,
     toggleSensoryCalm,
+    toggleAdhdFriendlyView,
+    toggleDyslexiaFriendlyView,
     toggleAdvancedSubjective,
     toggleAutoSyncEnabled
   } = useAccessibilityTheme();
@@ -116,6 +120,48 @@ export const AccessibilitySettingsPanel: React.FC<AccessibilitySettingsPanelProp
         >
           <span>OpenDyslexic Font</span>
           <span>{isOpenDyslexicEnabled ? 'ON (Tap to turn off)' : 'OFF (Tap to turn on)'}</span>
+        </button>
+      </div>
+
+      {/* Task 2: Special Screen Layout Toggles (ADHD-friendly view & Dyslexia-friendly view) */}
+      <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-sm font-extrabold leading-relaxed">
+            Special Screen Layouts
+          </span>
+          <span className="text-xs font-bold text-emerald-500">
+            {isAdhdFriendlyView || isDyslexiaFriendlyView ? 'Custom Layout Active' : 'Standard Layout'}
+          </span>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isAdhdFriendlyView}
+          onClick={toggleAdhdFriendlyView}
+          data-testid="toggle-adhd-friendly-view-btn"
+          className={`w-full min-h-[48px] min-w-[48px] px-4 py-3 rounded-xl border text-sm font-extrabold transition flex flex-wrap items-center justify-between gap-2 ${
+            isAdhdFriendlyView
+              ? 'border-emerald-400 bg-emerald-600 text-white'
+              : 'border-[var(--border-strong)] bg-[var(--bg-surface-alt)] text-[var(--text-primary)]'
+          }`}
+        >
+          <span>ADHD-friendly view (High focus, single tasks)</span>
+          <span>{isAdhdFriendlyView ? 'ON' : 'OFF'}</span>
+        </button>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isDyslexiaFriendlyView}
+          onClick={toggleDyslexiaFriendlyView}
+          data-testid="toggle-dyslexia-friendly-view-btn"
+          className={`w-full min-h-[48px] min-w-[48px] px-4 py-3 rounded-xl border text-sm font-extrabold transition flex flex-wrap items-center justify-between gap-2 ${
+            isDyslexiaFriendlyView
+              ? 'border-emerald-400 bg-emerald-600 text-white'
+              : 'border-[var(--border-strong)] bg-[var(--bg-surface-alt)] text-[var(--text-primary)]'
+          }`}
+        >
+          <span>Dyslexia-friendly view (Special fonts &amp; spacing)</span>
+          <span>{isDyslexiaFriendlyView ? 'ON' : 'OFF'}</span>
         </button>
       </div>
 

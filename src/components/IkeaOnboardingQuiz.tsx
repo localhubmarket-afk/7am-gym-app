@@ -1,13 +1,20 @@
 import React, { useState } from 'react';
 import {
   DEFAULT_IKEA_QUIZ_ANSWERS,
-  IKEA_QUIZ_STEPS,
+  IKEA_QUIZ_ALL_STEPS,
   buildIkeaQuizProgram,
   createGuestSandboxStatePatch,
   type IkeaQuizAnswers,
   type OnboardingEquipment,
   type OnboardingGoal
 } from '../utils/onboardingQuiz';
+import {
+  applyAdhdFriendlyViewToDocument,
+  applyDyslexiaFriendlyViewToDocument,
+  saveAdhdViewPreference,
+  saveDyslexiaViewPreference,
+  saveFontPreference
+} from '../utils/themeProvider';
 import type { WizardBaseDiet, WizardDifficulty, WizardIntolerance } from '../utils/wizardValidation';
 
 export interface IkeaOnboardingQuizProps {
@@ -50,8 +57,8 @@ export const IkeaOnboardingQuiz: React.FC<IkeaOnboardingQuizProps> = ({
     ...initialAnswers
   });
 
-  const currentStep = IKEA_QUIZ_STEPS[stepIndex];
-  const progressPct = Math.round(((stepIndex + 1) / IKEA_QUIZ_STEPS.length) * 100);
+  const currentStep = IKEA_QUIZ_ALL_STEPS[stepIndex];
+  const progressPct = Math.round(((stepIndex + 1) / IKEA_QUIZ_ALL_STEPS.length) * 100);
 
   function toggleIntolerance(item: WizardIntolerance) {
     setAnswers((prev) => {
@@ -64,6 +71,17 @@ export const IkeaOnboardingQuiz: React.FC<IkeaOnboardingQuizProps> = ({
   }
 
   function handleFinish() {
+    const adhdOn = Boolean(answers.adhdFriendlyView);
+    const dyslexiaOn = Boolean(answers.dyslexiaFriendlyView);
+    saveAdhdViewPreference(adhdOn);
+    saveDyslexiaViewPreference(dyslexiaOn);
+    if (dyslexiaOn) {
+      saveFontPreference('opendyslexic');
+    }
+    if (typeof document !== 'undefined') {
+      applyAdhdFriendlyViewToDocument(adhdOn, document);
+      applyDyslexiaFriendlyViewToDocument(dyslexiaOn, document);
+    }
     const program = buildIkeaQuizProgram(answers);
     const patch = createGuestSandboxStatePatch(program, null);
     onComplete(patch, answers);
@@ -76,7 +94,7 @@ export const IkeaOnboardingQuiz: React.FC<IkeaOnboardingQuizProps> = ({
     >
       <div className="mb-3 flex items-center justify-between text-xs font-bold text-emerald-300">
         <span>
-          Step {currentStep.stepNumber} of {IKEA_QUIZ_STEPS.length} • Free Beta
+          Step {currentStep.stepNumber} of {IKEA_QUIZ_ALL_STEPS.length} • Free Beta
         </span>
         <span>{progressPct}%</span>
       </div>
@@ -254,6 +272,62 @@ export const IkeaOnboardingQuiz: React.FC<IkeaOnboardingQuizProps> = ({
         </div>
       )}
 
+      {currentStep.id === 'accessibility' && (
+        <div className="space-y-3" data-testid="onboarding-accessibility-step">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={Boolean(answers.adhdFriendlyView)}
+            data-testid="onboarding-adhd-view-toggle"
+            onClick={() =>
+              setAnswers((p) => ({ ...p, adhdFriendlyView: !p.adhdFriendlyView }))
+            }
+            className={`w-full min-h-[60px] rounded-xl border-2 px-4 py-3 text-left transition ${
+              answers.adhdFriendlyView
+                ? 'border-emerald-400 bg-emerald-600/20 text-white'
+                : 'border-slate-700 bg-slate-950 text-slate-200 hover:border-slate-500'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-extrabold">ADHD-friendly view</span>
+              <span className="text-xs font-extrabold text-emerald-300">
+                {answers.adhdFriendlyView ? 'ON' : 'OFF'}
+              </span>
+            </div>
+            <ul className="mt-1.5 list-disc pl-4 space-y-0.5 text-xs leading-relaxed text-slate-300">
+              <li>High focus on one exercise at a time.</li>
+              <li>Clear border around your active move.</li>
+            </ul>
+          </button>
+
+          <button
+            type="button"
+            role="switch"
+            aria-checked={Boolean(answers.dyslexiaFriendlyView)}
+            data-testid="onboarding-dyslexia-view-toggle"
+            onClick={() =>
+              setAnswers((p) => ({ ...p, dyslexiaFriendlyView: !p.dyslexiaFriendlyView }))
+            }
+            className={`w-full min-h-[60px] rounded-xl border-2 px-4 py-3 text-left transition ${
+              answers.dyslexiaFriendlyView
+                ? 'border-emerald-400 bg-emerald-600/20 text-white'
+                : 'border-slate-700 bg-slate-950 text-slate-200 hover:border-slate-500'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-extrabold">Dyslexia-friendly view</span>
+              <span className="text-xs font-extrabold text-emerald-300">
+                {answers.dyslexiaFriendlyView ? 'ON' : 'OFF'}
+              </span>
+            </div>
+            <ul className="mt-1.5 list-disc pl-4 space-y-0.5 text-xs leading-relaxed text-slate-300">
+              <li>Turns on the OpenDyslexic reading font.</li>
+              <li>Adds extra space between letters and lines.</li>
+            </ul>
+          </button>
+        </div>
+      )}
+
       <div className="mt-5 flex items-center gap-2.5">
         {stepIndex > 0 && (
           <button
@@ -264,10 +338,10 @@ export const IkeaOnboardingQuiz: React.FC<IkeaOnboardingQuizProps> = ({
             Back
           </button>
         )}
-        {stepIndex < IKEA_QUIZ_STEPS.length - 1 ? (
+        {stepIndex < IKEA_QUIZ_ALL_STEPS.length - 1 ? (
           <button
             type="button"
-            onClick={() => setStepIndex((i) => Math.min(IKEA_QUIZ_STEPS.length - 1, i + 1))}
+            onClick={() => setStepIndex((i) => Math.min(IKEA_QUIZ_ALL_STEPS.length - 1, i + 1))}
             className="min-h-[48px] flex-1 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-emerald-500"
           >
             Next Step

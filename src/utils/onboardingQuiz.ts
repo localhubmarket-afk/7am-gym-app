@@ -21,14 +21,25 @@ export interface IkeaQuizAnswers {
   daysPerWeek: number;
   baseDiet: WizardBaseDiet;
   intolerances: WizardIntolerance[];
+  adhdFriendlyView?: boolean;
+  dyslexiaFriendlyView?: boolean;
 }
 
 export interface IkeaQuizStepDefinition {
   stepNumber: number;
-  id: 'goal' | 'experience' | 'equipment' | 'schedule' | 'diet';
+  id: 'goal' | 'experience' | 'equipment' | 'schedule' | 'diet' | 'accessibility';
   title: string;
   helperText: string;
 }
+
+export const ONBOARDING_ACCESSIBILITY_QUESTION = 'Do you need a special screen layout?';
+
+export const ONBOARDING_ACCESSIBILITY_STEP: IkeaQuizStepDefinition = {
+  stepNumber: 6,
+  id: 'accessibility',
+  title: ONBOARDING_ACCESSIBILITY_QUESTION,
+  helperText: 'Turn on either layout below if it helps you read or focus. You can change this anytime in Settings.'
+};
 
 export const IKEA_QUIZ_STEPS: IkeaQuizStepDefinition[] = [
   {
@@ -63,13 +74,20 @@ export const IKEA_QUIZ_STEPS: IkeaQuizStepDefinition[] = [
   }
 ];
 
+export const IKEA_QUIZ_ALL_STEPS: IkeaQuizStepDefinition[] = [
+  ...IKEA_QUIZ_STEPS,
+  ONBOARDING_ACCESSIBILITY_STEP
+];
+
 export const DEFAULT_IKEA_QUIZ_ANSWERS: IkeaQuizAnswers = {
   goal: 'build_muscle',
   experience: 'medium',
   equipment: 'full_gym',
   daysPerWeek: 4,
   baseDiet: 'Vegan',
-  intolerances: []
+  intolerances: [],
+  adhdFriendlyView: false,
+  dyslexiaFriendlyView: false
 };
 
 export function mapGoalToPrimaryFocus(goal: OnboardingGoal): string {
@@ -163,6 +181,8 @@ export interface IkeaQuizProgramOutput<
     goal: OnboardingGoal;
     equipment: OnboardingEquipment;
     weeklyWorkoutTarget: number;
+    adhdFriendlyView: boolean;
+    dyslexiaFriendlyView: boolean;
   };
   mealPlan: TMeal[];
   blockedMeals: Array<{ recipe: TMeal; reason: string }>;
@@ -173,6 +193,10 @@ export interface IkeaQuizProgramOutput<
     isGuest: boolean;
     authProvider: 'guest_local';
     signedInAt: string;
+    accessibilityPreferences: {
+      adhdFriendlyView: boolean;
+      dyslexiaFriendlyView: boolean;
+    };
   };
 }
 
@@ -211,6 +235,8 @@ export function buildIkeaQuizProgram<
   const daysPerWeek = Number.isFinite(rawDays) ? Math.max(2, Math.min(6, Math.round(rawDays))) : 4;
   const baseDiet = normalizeBaseDietStrict(rawAnswers.baseDiet || 'Vegan');
   const intolerances = normalizeIntolerancesStrict(rawAnswers.intolerances || []);
+  const adhdFriendlyView = Boolean(rawAnswers.adhdFriendlyView);
+  const dyslexiaFriendlyView = Boolean(rawAnswers.dyslexiaFriendlyView);
 
   const answers: IkeaQuizAnswers = {
     goal,
@@ -218,7 +244,9 @@ export function buildIkeaQuizProgram<
     equipment,
     daysPerWeek,
     baseDiet,
-    intolerances
+    intolerances,
+    adhdFriendlyView,
+    dyslexiaFriendlyView
   };
 
   const validated = buildValidatedWizardProgram(
@@ -258,7 +286,9 @@ export function buildIkeaQuizProgram<
       ...validated.config,
       goal,
       equipment,
-      weeklyWorkoutTarget: daysPerWeek
+      weeklyWorkoutTarget: daysPerWeek,
+      adhdFriendlyView,
+      dyslexiaFriendlyView
     },
     mealPlan: validated.mealPlan,
     blockedMeals: validated.blockedMeals,
@@ -268,14 +298,18 @@ export function buildIkeaQuizProgram<
       email: '',
       isGuest: true,
       authProvider: 'guest_local',
-      signedInAt: new Date().toISOString()
+      signedInAt: new Date().toISOString(),
+      accessibilityPreferences: {
+        adhdFriendlyView,
+        dyslexiaFriendlyView
+      }
     }
   };
 }
 
 export function createGuestSandboxStatePatch(
   quizOutput: IkeaQuizProgramOutput<any, any>,
-  existingUserProfile?: { email?: string; name?: string; isGuest?: boolean } | null
+  existingUserProfile?: { email?: string; name?: string; isGuest?: boolean; [key: string]: any } | null
 ): Record<string, any> {
   const hasRealAccount = Boolean(
     existingUserProfile &&
@@ -284,13 +318,30 @@ export function createGuestSandboxStatePatch(
       !existingUserProfile.isGuest
   );
 
+  const adhdFriendlyView = Boolean(quizOutput.answers.adhdFriendlyView);
+  const dyslexiaFriendlyView = Boolean(quizOutput.answers.dyslexiaFriendlyView);
+
+  const mergedProfile = hasRealAccount
+    ? {
+        ...existingUserProfile,
+        accessibilityPreferences: {
+          adhdFriendlyView,
+          dyslexiaFriendlyView
+        }
+      }
+    : quizOutput.guestSandboxProfile;
+
   return {
     isGuestMode: !hasRealAccount,
-    userProfile: hasRealAccount ? existingUserProfile : quizOutput.guestSandboxProfile,
+    userProfile: mergedProfile,
     programWizardConfig: quizOutput.programWizardConfig,
     weeklyWorkoutTarget: quizOutput.answers.daysPerWeek,
     baseDiet: quizOutput.answers.baseDiet,
     intolerances: quizOutput.answers.intolerances,
+    adhdFriendlyView,
+    dyslexiaFriendlyView,
+    fontMode: dyslexiaFriendlyView ? 'opendyslexic' : 'default',
+    defaultAllHidden: adhdFriendlyView ? true : undefined,
     onboardingComplete: true,
     userHasCompletedOnboarding: true,
     hasCompletedFirstSetup: true
