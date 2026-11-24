@@ -1,0 +1,111 @@
+{
+  "schema": "apple-app-store-accessibility-nutrition-labels-v1",
+  "appName": "7AM Budget Gym & Vegan Muscle Hub",
+  "lastReviewed": "2026-11-24",
+  "standardReference": "Apple App Store Connect Accessibility Nutrition Labels (9 Core Categories)",
+  "summary": {
+    "totalLabels": 9,
+    "supportedCount": 8,
+    "partiallySupportedCount": 1,
+    "plannedCount": 0
+  },
+  "labels": [
+    {
+      "id": "voiceover",
+      "appleLabel": "VoiceOver",
+      "supported": true,
+      "status": "supported",
+      "description": "Screen reader navigation across core workout, login, and settings flows.",
+      "codebaseEvidence": [
+        "Semantic HTML landmarks, native <button>/<input>/<label> controls, and descriptive aria-label attributes across AccountLoginModal, AccessibilitySettingsPanel, DataMigrationPanel, and AccessibleVideoPlayer.",
+        "Live status announcements using role='status', role='alert', and aria-live='polite' for Force Pull, JSON Backup import, Magic Link OTP, and set completion."
+      ]
+    },
+    {
+      "id": "voice_control",
+      "appleLabel": "Voice Control",
+      "supported": true,
+      "status": "supported",
+      "description": "Hands-free voice command targeting of interactive buttons and form inputs.",
+      "codebaseEvidence": [
+        "Visible button text aligns directly with accessible names (WCAG 2.5.3 Label in Name) such as 'Send Magic Link', 'Force Pull from Cloud', 'Export JSON Backup', and 'Play Slow-Mo'.",
+        "All interactive targets are >= 44x44px to 48x48px native controls with clear single-tap alternatives to drag gestures."
+      ]
+    },
+    {
+      "id": "larger_text",
+      "appleLabel": "Larger Text",
+      "supported": true,
+      "status": "supported",
+      "description": "Scales text cleanly to 200%+ without clipping or horizontal overflow (Web Dynamic Type equivalent).",
+      "codebaseEvidence": [
+        "100% relative rem typography tokens in src/styles/accessibility.css and Tailwind components.",
+        "Flexible flex-wrap and responsive grid reflow tested at 390x844 mobile viewport plus Dyslexia-friendly spacing presets."
+      ]
+    },
+    {
+      "id": "dark_interface",
+      "appleLabel": "Dark Interface",
+      "supported": true,
+      "status": "supported",
+      "description": "First-class high-contrast Dark Mode respecting OS preference and manual override.",
+      "codebaseEvidence": [
+        "AccessibilityThemeProvider & src/utils/themeProvider.ts provide Dark (#1A1A1A / #F2F2F2), Light (#F7F7F7 / #0A1128), and System themes persisted to localStorage."
+      ]
+    },
+    {
+      "id": "differentiate_without_color_alone",
+      "appleLabel": "Differentiate Without Color Alone",
+      "supported": true,
+      "status": "supported",
+      "description": "Never relies solely on color to communicate status, progress, or errors.",
+      "codebaseEvidence": [
+        "Completed sets, toggle states ('ON'/'OFF'), Adherence-Neutral 30-day consistency scores, Visual Plate Loader weights, and form alerts pair high-contrast text labels and icons with color.",
+        "Sensory-Calm Mode reduces color saturation under 5% while keeping every state legible."
+      ]
+    },
+    {
+      "id": "sufficient_contrast",
+      "appleLabel": "Sufficient Contrast",
+      "supported": true,
+      "status": "supported",
+      "description": "Meets or exceeds WCAG 2.2 AA contrast ratios (>= 4.5:1 text, >= 3:1 UI borders/icons).",
+      "codebaseEvidence": [
+        "Automated contrast verification via calculateWcagContrastRatio in unit tests.",
+        "High-contrast Light and Dark theme tokens plus high-contrast black-backed WebVTT caption overlays in AccessibleVideoPlayer."
+      ]
+    },
+    {
+      "id": "reduced_motion",
+      "appleLabel": "Reduced Motion",
+      "supported": true,
+      "status": "supported",
+      "description": "Minimizes or removes UI motion, animations, and sudden layout jumps.",
+      "codebaseEvidence": [
+        "Global Sensory-Calm Mode and prefers-reduced-motion CSS rules disable transitions/animations and lock layout stability.",
+        "withStableViewportScroll prevents vertical scroll jumping during set logging; AccessibleVideoPlayer defaults to calm 0.5x slow-motion playback."
+      ]
+    },
+    {
+      "id": "captions",
+      "appleLabel": "Captions",
+      "supported": true,
+      "status": "supported",
+      "description": "Synchronized closed captions enabled by default on exercise demonstration videos.",
+      "codebaseEvidence": [
+        "AccessibleVideoPlayer parses and displays synchronized WebVTT (.vtt) closed captions by default (captionsEnabled: true) with both visual overlay and native <track kind='captions'> plus full text transcript."
+      ]
+    },
+    {
+      "id": "audio_descriptions",
+      "appleLabel": "Audio Descriptions",
+      "supported": false,
+      "status": "partially_supported_text_alternative",
+      "description": "Spoken audio-description tracks for prerecorded exercise videos.",
+      "codebaseEvidence": [
+        "Current Phase 1 provides synchronized Grade 6-8 literal text steps, posterAlt descriptions, and full text scripts for muted-by-default playback.",
+        "Dedicated spoken WebVTT/audio-description voice tracks are scheduled for Phase 2 native iOS/App Store submission before checking this label in App Store Connect."
+      ]
+    }
+  ]
+}

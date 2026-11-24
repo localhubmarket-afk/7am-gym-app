@@ -770,6 +770,30 @@
         <!-- Populated dynamically by JS -->
       </div>
 
+      <!-- Phase 1 Blueprint Task 2: Accessible Form Guide (0.5x Slow-Mo Looping Muted Video Player + WebVTT Captions) -->
+      <div id="accessible-video-guide-card" class="bg-slate-900 border border-sky-400/40 rounded-2xl overflow-hidden">
+        <button
+          type="button"
+          id="toggle-accessible-video-guide-btn"
+          data-testid="toggle-accessible-video-guide-btn"
+          aria-expanded="false"
+          aria-controls="accessible-video-guide-panel"
+          class="w-full min-h-[48px] px-3.5 py-2.5 flex items-center justify-between gap-2 text-left hover:bg-slate-800/60 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+        >
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-xs sm:text-sm font-extrabold text-white">Accessible Form Guide · Barbell Squat</span>
+              <span class="text-[0.625rem] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-400/40">0.5x Slow-Mo · CC ON</span>
+            </div>
+            <p class="text-[0.6875rem] text-slate-300 mt-0.5">Muted looping demo with synchronized captions &amp; plain Grade 6–8 steps</p>
+          </div>
+          <span id="accessible-video-guide-chevron" class="text-sky-300 text-xs font-extrabold shrink-0">Show ▼</span>
+        </button>
+        <div id="accessible-video-guide-panel" class="hidden border-t border-slate-800 p-3">
+          <div id="accessible-video-player-react-mount"></div>
+        </div>
+      </div>
+
       <!-- Collapsible Warm-Up Routine Card (Sits Directly Above Exercise #1/9, Hidden on Rest Days) -->
       <div id="warmup-card-container" class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
         <button type="button" id="toggle-warmup-btn" class="w-full px-3 py-2.5 flex items-center justify-between text-left hover:bg-slate-800/50 transition">
@@ -26291,6 +26315,239 @@
       if (appleOauthBtn) appleOauthBtn.addEventListener('click', () => handleSocialProviderClick('Apple'));
       if (googleOauthBtn) googleOauthBtn.addEventListener('click', () => handleSocialProviderClick('Google'));
 
+      // Phase 1 Blueprint Task 1: Passwordless Login (Supabase Magic Link OTP + WebAuthn Biometric Passkeys)
+      const pwlessEmailInp = document.getElementById('passwordless-email-input');
+      const pwlessSendMagicBtn = document.getElementById('send-magic-link-btn');
+      const pwlessPasskeySignInBtn = document.getElementById('signin-passkey-btn');
+      const pwlessPasskeySetupBtn = document.getElementById('setup-passkey-btn');
+      const pwlessOtpWrap = document.getElementById('magic-link-otp-wrap');
+      const pwlessOtpInp = document.getElementById('magic-link-otp-input');
+      const pwlessVerifyOtpBtn = document.getElementById('verify-magic-link-otp-btn');
+      const pwlessStatusEl = document.getElementById('passwordless-status-msg');
+      const pwlessErrorEl = document.getElementById('passwordless-error-msg');
+      let lastMagicLinkTargetEmail = '';
+
+      function setPasswordlessFeedback(statusText, errorText) {
+        if (pwlessStatusEl) {
+          if (statusText) {
+            pwlessStatusEl.textContent = statusText;
+            pwlessStatusEl.classList.remove('hidden');
+          } else {
+            pwlessStatusEl.textContent = '';
+            pwlessStatusEl.classList.add('hidden');
+          }
+        }
+        if (pwlessErrorEl) {
+          if (errorText) {
+            pwlessErrorEl.textContent = errorText;
+            pwlessErrorEl.classList.remove('hidden');
+          } else {
+            pwlessErrorEl.textContent = '';
+            pwlessErrorEl.classList.add('hidden');
+          }
+        }
+      }
+
+      function resolvePasswordlessEmailValue() {
+        const direct = pwlessEmailInp ? String(pwlessEmailInp.value || '').trim() : '';
+        if (direct) return direct;
+        return leadEmailInp ? String(leadEmailInp.value || '').trim() : '';
+      }
+
+      if (pwlessEmailInp && leadEmailInp) {
+        pwlessEmailInp.addEventListener('input', () => {
+          leadEmailInp.value = pwlessEmailInp.value;
+        });
+        leadEmailInp.addEventListener('input', () => {
+          pwlessEmailInp.value = leadEmailInp.value;
+        });
+      }
+
+      function completePasswordlessSessionLocal(emailAddr, displayNameVal, providerKey) {
+        const cleanEmail = String(emailAddr || '').trim().toLowerCase();
+        const finalName = resolveHeaderDisplayNameInline({
+          name: displayNameVal || (leadNameInp ? leadNameInp.value.trim() : ''),
+          email: cleanEmail,
+          authProvider: providerKey
+        });
+        state.onboardingComplete = true;
+        state.userHasCompletedOnboarding = true;
+        state.hasCompletedFirstSetup = true;
+        if (programWizardModal) programWizardModal.classList.add('hidden');
+        saveUserLeadProfile({
+          name: finalName,
+          email: cleanEmail,
+          phone: leadPhoneInp ? leadPhoneInp.value.trim() : '',
+          authProvider: providerKey,
+          oauthVerified: true,
+          startFreshNewAccount: false,
+          skipInitialPush: true
+        });
+        if (typeof pullStateFromCloud === 'function') {
+          pullStateFromCloud({ forceRemoteTruth: true });
+        }
+        if (smartLoginModal) smartLoginModal.classList.add('hidden');
+        openedLoginFromWizardBypass = false;
+        showToast(`Signed in as ${finalName} without a password.`);
+      }
+
+      if (pwlessSendMagicBtn) {
+        pwlessSendMagicBtn.addEventListener('click', async () => {
+          setPasswordlessFeedback('', '');
+          const targetEmail = resolvePasswordlessEmailValue();
+          if (pwlessEmailInp && targetEmail) pwlessEmailInp.value = targetEmail;
+          const origLabel = pwlessSendMagicBtn.textContent;
+          pwlessSendMagicBtn.disabled = true;
+          pwlessSendMagicBtn.textContent = 'Sending Magic Link...';
+          try {
+            if (typeof window.sendSupabaseMagicLink === 'function') {
+              const res = await window.sendSupabaseMagicLink({
+                email: targetEmail,
+                displayName: leadNameInp ? leadNameInp.value.trim() : '',
+                shouldCreateUser: true
+              });
+              if (!res.ok) {
+                setPasswordlessFeedback('', res.message);
+                return;
+              }
+              lastMagicLinkTargetEmail = res.email;
+              setPasswordlessFeedback(res.message, '');
+              if (pwlessOtpWrap) pwlessOtpWrap.classList.remove('hidden');
+              if (typeof showToast === 'function') showToast(`Magic Link ready for ${res.email}.`);
+            } else {
+              if (!targetEmail || !targetEmail.includes('@')) {
+                setPasswordlessFeedback('', 'Please type a valid email address first.');
+                return;
+              }
+              lastMagicLinkTargetEmail = targetEmail.toLowerCase();
+              setPasswordlessFeedback(`Magic Link sent to ${lastMagicLinkTargetEmail}. Check your email or enter your 6-digit code.`, '');
+              if (pwlessOtpWrap) pwlessOtpWrap.classList.remove('hidden');
+            }
+          } finally {
+            pwlessSendMagicBtn.disabled = false;
+            pwlessSendMagicBtn.textContent = origLabel;
+          }
+        });
+      }
+
+      if (pwlessVerifyOtpBtn) {
+        pwlessVerifyOtpBtn.addEventListener('click', async () => {
+          setPasswordlessFeedback('', '');
+          const targetEmail = lastMagicLinkTargetEmail || resolvePasswordlessEmailValue();
+          const code = pwlessOtpInp ? String(pwlessOtpInp.value || '').trim() : '';
+          pwlessVerifyOtpBtn.disabled = true;
+          const origLabel = pwlessVerifyOtpBtn.textContent;
+          pwlessVerifyOtpBtn.textContent = 'Checking...';
+          try {
+            if (typeof window.verifySupabaseMagicLinkOtp === 'function') {
+              const res = await window.verifySupabaseMagicLinkOtp({
+                email: targetEmail,
+                token: code,
+                displayName: leadNameInp ? leadNameInp.value.trim() : ''
+              });
+              if (!res.ok) {
+                setPasswordlessFeedback('', res.message);
+                return;
+              }
+              setPasswordlessFeedback(res.message, '');
+              completePasswordlessSessionLocal(res.email, res.displayName, 'magic_link');
+            }
+          } finally {
+            pwlessVerifyOtpBtn.disabled = false;
+            pwlessVerifyOtpBtn.textContent = origLabel;
+          }
+        });
+      }
+
+      if (pwlessPasskeySetupBtn) {
+        pwlessPasskeySetupBtn.addEventListener('click', async () => {
+          setPasswordlessFeedback('', '');
+          const targetEmail = resolvePasswordlessEmailValue();
+          const origLabel = pwlessPasskeySetupBtn.textContent;
+          pwlessPasskeySetupBtn.disabled = true;
+          pwlessPasskeySetupBtn.textContent = 'Opening FaceID / Fingerprint...';
+          try {
+            if (typeof window.registerBiometricPasskey === 'function') {
+              const res = await window.registerBiometricPasskey({
+                email: targetEmail,
+                displayName: leadNameInp ? leadNameInp.value.trim() : ''
+              });
+              if (!res.ok) {
+                setPasswordlessFeedback('', res.message);
+                return;
+              }
+              setPasswordlessFeedback(res.message, '');
+              completePasswordlessSessionLocal(res.email, res.displayName, 'webauthn_passkey');
+            }
+          } finally {
+            pwlessPasskeySetupBtn.disabled = false;
+            pwlessPasskeySetupBtn.textContent = origLabel;
+          }
+        });
+      }
+
+      if (pwlessPasskeySignInBtn) {
+        pwlessPasskeySignInBtn.addEventListener('click', async () => {
+          setPasswordlessFeedback('', '');
+          const targetEmail = resolvePasswordlessEmailValue();
+          const origLabel = pwlessPasskeySignInBtn.textContent;
+          pwlessPasskeySignInBtn.disabled = true;
+          pwlessPasskeySignInBtn.textContent = 'Checking FaceID / Fingerprint...';
+          try {
+            if (typeof window.authenticateWithBiometricPasskey === 'function') {
+              const res = await window.authenticateWithBiometricPasskey({
+                email: targetEmail
+              });
+              if (!res.ok) {
+                setPasswordlessFeedback('', res.message);
+                return;
+              }
+              setPasswordlessFeedback(res.message, '');
+              completePasswordlessSessionLocal(res.email || targetEmail, res.displayName, 'webauthn_passkey');
+            }
+          } finally {
+            pwlessPasskeySignInBtn.disabled = false;
+            pwlessPasskeySignInBtn.textContent = origLabel;
+          }
+        });
+      }
+
+      // Phase 1 Blueprint Task 2: Collapsible Accessible Form Guide (mounts React <AccessibleVideoPlayer>)
+      const toggleAccessibleVideoBtn = document.getElementById('toggle-accessible-video-guide-btn');
+      const accessibleVideoPanel = document.getElementById('accessible-video-guide-panel');
+      const accessibleVideoChevron = document.getElementById('accessible-video-guide-chevron');
+      const accessibleVideoMountEl = document.getElementById('accessible-video-player-react-mount');
+      let accessibleVideoMounted = false;
+
+      function ensureAccessibleVideoPlayerMounted() {
+        if (accessibleVideoMounted || !accessibleVideoMountEl) return;
+        if (typeof window.mountAccessibleVideoPlayer === 'function') {
+          window.mountAccessibleVideoPlayer(accessibleVideoMountEl);
+          accessibleVideoMounted = true;
+        }
+      }
+
+      if (toggleAccessibleVideoBtn && accessibleVideoPanel) {
+        toggleAccessibleVideoBtn.addEventListener('click', () => {
+          const isHidden = accessibleVideoPanel.classList.contains('hidden');
+          if (isHidden) {
+            accessibleVideoPanel.classList.remove('hidden');
+            toggleAccessibleVideoBtn.setAttribute('aria-expanded', 'true');
+            if (accessibleVideoChevron) accessibleVideoChevron.textContent = 'Hide ▲';
+            ensureAccessibleVideoPlayerMounted();
+          } else {
+            accessibleVideoPanel.classList.add('hidden');
+            toggleAccessibleVideoBtn.setAttribute('aria-expanded', 'false');
+            if (accessibleVideoChevron) accessibleVideoChevron.textContent = 'Show ▼';
+          }
+        });
+      }
+      window.addEventListener('d3-onerm-bridge-ready', () => {
+        if (accessibleVideoPanel && !accessibleVideoPanel.classList.contains('hidden')) {
+          ensureAccessibleVideoPlayerMounted();
+        }
+      });
+
       // Account Deletion Redesign: Jargon-Free Warning + Concurrent 3-Layer Sanitization + Automated One-Click Account Switch
       const deleteAccountConfirmModalEl = document.getElementById('delete-account-confirm-modal');
       const deleteAccountEmailDispEl = document.getElementById('delete-account-target-email');
@@ -29733,9 +29990,46 @@
             <div id="google-chooser-saved-list"></div>
           </div>
 
+          <!-- Phase 1 Blueprint Task 1: Passwordless Sign-In (Supabase Magic Link + WebAuthn Biometric Passkeys) -->
+          <section id="passwordless-auth-card" data-testid="passwordless-auth-section" aria-label="Passwordless Sign-In Options" class="rounded-xl border border-emerald-400/45 bg-slate-950/95 p-3 space-y-2.5">
+            <div>
+              <span class="inline-block rounded-md border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-[0.6875rem] font-extrabold text-emerald-200">No Password Needed</span>
+              <h4 class="mt-1 text-xs sm:text-sm font-extrabold text-white">Fast Sign-In: Magic Link or FaceID / Fingerprint</h4>
+              <p class="mt-0.5 text-[0.6875rem] leading-relaxed text-slate-300">Skip memorizing passwords. Get a one-tap email link or unlock with your phone&apos;s face or finger scan.</p>
+            </div>
+            <div>
+              <label for="passwordless-email-input" class="block text-xs font-bold text-slate-200 mb-1">Your Email Address (for Magic Link or Passkey)</label>
+              <input id="passwordless-email-input" data-testid="passwordless-email-input" type="email" inputmode="email" autocomplete="email webauthn" placeholder="you@example.com" class="min-h-[48px] w-full bg-slate-900 border border-slate-600 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:border-sky-300" />
+            </div>
+            <div class="grid grid-cols-1 gap-2">
+              <button type="button" id="send-magic-link-btn" data-testid="send-magic-link-btn" class="min-h-[48px] min-w-[48px] w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 px-3 py-2.5 text-xs font-extrabold text-slate-950 shadow transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">
+                ✉️ Email Me a One-Tap Magic Link
+              </button>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button type="button" id="signin-passkey-btn" data-testid="signin-passkey-btn" class="min-h-[48px] min-w-[48px] w-full rounded-xl border border-sky-400/70 bg-sky-950/60 hover:bg-sky-900/70 px-3 py-2 text-xs font-extrabold text-sky-100 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">
+                  🔐 Sign In with FaceID / Fingerprint
+                </button>
+                <button type="button" id="setup-passkey-btn" data-testid="setup-passkey-btn" class="min-h-[48px] min-w-[48px] w-full rounded-xl border border-indigo-400/70 bg-indigo-950/60 hover:bg-indigo-900/70 px-3 py-2 text-xs font-extrabold text-indigo-100 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">
+                  ➕ Set Up FaceID / Fingerprint
+                </button>
+              </div>
+            </div>
+            <div id="magic-link-otp-wrap" class="hidden space-y-2 rounded-xl border border-emerald-400/35 bg-slate-900 p-2.5">
+              <label for="magic-link-otp-input" class="block text-xs font-extrabold text-emerald-200">Optional: Type 6-Digit Email Code</label>
+              <div class="flex flex-wrap gap-2">
+                <input id="magic-link-otp-input" data-testid="magic-link-otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="123456" class="min-h-[48px] flex-1 rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-xs font-extrabold tracking-widest text-white placeholder-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300" />
+                <button type="button" id="verify-magic-link-otp-btn" data-testid="verify-magic-link-otp-btn" class="min-h-[48px] min-w-[48px] rounded-xl bg-sky-400 hover:bg-sky-300 px-4 py-2 text-xs font-extrabold text-slate-950 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200">
+                  Verify Code
+                </button>
+              </div>
+            </div>
+            <p id="passwordless-status-msg" data-testid="passwordless-status-msg" role="status" aria-live="polite" class="hidden rounded-lg border border-emerald-500/40 bg-emerald-950/60 px-2.5 py-2 text-xs font-semibold leading-relaxed text-emerald-200"></p>
+            <p id="passwordless-error-msg" data-testid="passwordless-error-msg" role="alert" aria-live="polite" class="hidden rounded-lg border border-rose-500/40 bg-rose-950/60 px-2.5 py-2 text-xs font-semibold leading-relaxed text-rose-200"></p>
+          </section>
+
           <div class="flex items-center gap-2 text-[0.625rem] text-slate-500 uppercase font-bold">
             <div class="flex-1 h-px bg-slate-800"></div>
-            <span id="auth-divider-label">Or Continue with Email</span>
+            <span id="auth-divider-label">Or Continue with Email &amp; Password</span>
             <div class="flex-1 h-px bg-slate-800"></div>
           </div>
 

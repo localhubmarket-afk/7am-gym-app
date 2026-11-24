@@ -1,0 +1,93 @@
+[
+  {
+    "id": "barbell-squat-accessible-v1",
+    "exerciseName": "Barbell Squat",
+    "category": "Lower Body Compound",
+    "equipment": "Barbell + Squat Rack",
+    "readingLevel": "Grade 6-8",
+    "durationSeconds": 20,
+    "videoUrl": "/media/barbell-squat-demo.mp4",
+    "posterAlt": "Slow-motion side view of a lifter performing a controlled Barbell Squat inside a power rack.",
+    "defaultSettings": {
+      "loop": true,
+      "muted": true,
+      "playbackRate": 0.5,
+      "captionsEnabled": true
+    },
+    "script": [
+      {
+        "startSeconds": 0,
+        "endSeconds": 4,
+        "speaker": "Coach",
+        "text": "Walk under the bar and rest it across the meaty part of your upper back. Place your hands just outside your shoulders."
+      },
+      {
+        "startSeconds": 4,
+        "endSeconds": 8,
+        "speaker": "Coach",
+        "text": "Stand up tall to lift the bar off the hooks. Take two small steps back and set your feet shoulder-width apart."
+      },
+      {
+        "startSeconds": 8,
+        "endSeconds": 12,
+        "speaker": "Coach",
+        "text": "Take a big breath into your belly and tighten your stomach. Push your hips back and bend your knees at the same time."
+      },
+      {
+        "startSeconds": 12,
+        "endSeconds": 16,
+        "speaker": "Coach",
+        "text": "Lower down slowly until your hips are level with your knees. Keep your heels flat on the floor the whole time."
+      },
+      {
+        "startSeconds": 16,
+        "endSeconds": 20,
+        "speaker": "Coach",
+        "text": "Push the floor away through your whole foot to stand back up straight. Breathe out near the top."
+      }
+    ],
+    "vttCaptions": "WEBVTT\n\n1\n00:00.000 --> 00:04.000\nStep 1: Rest the bar on your upper back, not your neck. Grip outside your shoulders.\n\n2\n00:04.000 --> 00:08.000\nStep 2: Stand up to unrack. Take two small steps back with feet shoulder-width apart.\n\n3\n00:08.000 --> 00:12.000\nStep 3: Breathe into your belly and brace tight. Push hips back and bend knees together.\n\n4\n00:12.000 --> 00:16.000\nStep 4: Lower slowly until thighs match the floor. Keep both heels flat on the ground.\n\n5\n00:16.000 --> 00:20.000\nStep 5: Push through your whole foot to stand tall. Breathe out at the top.",
+    "literalSteps": [
+      {
+        "stepNumber": 1,
+        "title": "Set the Bar on Your Upper Back",
+        "instruction": "Step under the bar. Place it on the flat muscle across your upper back, below your neck. Hold the bar tightly just outside your shoulders.",
+        "safetyCue": "Do not rest the bar on the bony part of your neck.",
+        "startSeconds": 0,
+        "endSeconds": 4
+      },
+      {
+        "stepNumber": 2,
+        "title": "Stand Up and Step Back",
+        "instruction": "Stand straight up to lift the bar off the rack. Take two calm steps back. Set your feet about shoulder-width apart with toes turned out slightly.",
+        "safetyCue": "Stop moving your feet before you start bending.",
+        "startSeconds": 4,
+        "endSeconds": 8
+      },
+      {
+        "stepNumber": 3,
+        "title": "Breathe In and Brace Your Belly",
+        "instruction": "Take one deep breath into your belly. Make your stomach firm like you are about to cough. Bend your hips and knees together.",
+        "safetyCue": "Keep your chest facing forward, not down at your shoes.",
+        "startSeconds": 8,
+        "endSeconds": 12
+      },
+      {
+        "stepNumber": 4,
+        "title": "Lower Down Under Control",
+        "instruction": "Sit down slowly between your heels until your thighs are flat like a chair seat. Keep your knees pointing the same way as your toes.",
+        "safetyCue": "Keep your heels glued flat on the floor.",
+        "startSeconds": 12,
+        "endSeconds": 16
+      },
+      {
+        "stepNumber": 5,
+        "title": "Push the Floor Away to Stand",
+        "instruction": "Press hard through the middle of both feet to stand all the way back up. Let your breath out as you reach the top.",
+        "safetyCue": "Pause for 1 second before starting your next rep.",
+        "startSeconds": 16,
+        "endSeconds": 20
+      }
+    ]
+  }
+]

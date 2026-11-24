@@ -1,5 +1,8 @@
 import * as d3 from 'd3';
+import React from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 import './styles/accessibility.css';
+import { AccessibleVideoPlayer, type AccessibleVideoPlayerProps } from './components/AccessibleVideoPlayer';
 import {
   AI_EXERCISE_WHITELIST_RULE,
   ONE_RM_LIFT_CONFIGS,
@@ -258,6 +261,53 @@ import {
   triggerGymStateJsonDownload,
   validateGymStateBackupSchema
 } from './utils/dataMigrationAndPull';
+import {
+  PASSKEY_REGISTRY_STORAGE_KEY,
+  authenticateWithBiometricPasskey,
+  buildSafeMagicLinkRedirectUrl,
+  checkPlatformBiometricPasskeyAvailability,
+  hasRegisteredPasskeyForEmail,
+  isWebAuthnPasskeySupported,
+  loadRegisteredPasskeys,
+  registerBiometricPasskey,
+  sendSupabaseMagicLink,
+  validatePasswordlessEmail,
+  verifySupabaseMagicLinkOtp
+} from './utils/passwordlessAuth';
+import {
+  ALLOWED_PLAYBACK_RATES,
+  BARBELL_SQUAT_MEDIA_SAMPLES,
+  DEFAULT_ACCESSIBLE_VIDEO_SETTINGS,
+  formatSecondsClock,
+  getActiveLiteralStepAtTime,
+  getActiveVttCaptionAtTime,
+  parseVttTimestampToSeconds,
+  parseWebVttCaptions,
+  sanitizeMediaUrl
+} from './utils/accessibleVideoMedia';
+
+const mountedVideoPlayerRoots = new WeakMap<HTMLElement, Root>();
+
+export function mountAccessibleVideoPlayer(
+  container: HTMLElement,
+  props: AccessibleVideoPlayerProps = {}
+): { unmount: () => void } {
+  let root = mountedVideoPlayerRoots.get(container);
+  if (!root) {
+    root = createRoot(container);
+    mountedVideoPlayerRoots.set(container, root);
+  }
+  root.render(React.createElement(AccessibleVideoPlayer, props));
+  return {
+    unmount: () => {
+      const existing = mountedVideoPlayerRoots.get(container);
+      if (existing) {
+        existing.unmount();
+        mountedVideoPlayerRoots.delete(container);
+      }
+    }
+  };
+}
 
 export interface RenderOneRmD3ChartOptions {
   container: HTMLElement;
@@ -1091,6 +1141,27 @@ declare global {
     serializeGymStateForJsonExport?: typeof serializeGymStateForJsonExport;
     triggerGymStateJsonDownload?: typeof triggerGymStateJsonDownload;
     importGymStateFromJsonText?: typeof importGymStateFromJsonText;
+    PASSKEY_REGISTRY_STORAGE_KEY?: string;
+    validatePasswordlessEmail?: typeof validatePasswordlessEmail;
+    buildSafeMagicLinkRedirectUrl?: typeof buildSafeMagicLinkRedirectUrl;
+    sendSupabaseMagicLink?: typeof sendSupabaseMagicLink;
+    verifySupabaseMagicLinkOtp?: typeof verifySupabaseMagicLinkOtp;
+    isWebAuthnPasskeySupported?: typeof isWebAuthnPasskeySupported;
+    checkPlatformBiometricPasskeyAvailability?: typeof checkPlatformBiometricPasskeyAvailability;
+    loadRegisteredPasskeys?: typeof loadRegisteredPasskeys;
+    hasRegisteredPasskeyForEmail?: typeof hasRegisteredPasskeyForEmail;
+    registerBiometricPasskey?: typeof registerBiometricPasskey;
+    authenticateWithBiometricPasskey?: typeof authenticateWithBiometricPasskey;
+    ALLOWED_PLAYBACK_RATES?: typeof ALLOWED_PLAYBACK_RATES;
+    BARBELL_SQUAT_MEDIA_SAMPLES?: typeof BARBELL_SQUAT_MEDIA_SAMPLES;
+    DEFAULT_ACCESSIBLE_VIDEO_SETTINGS?: typeof DEFAULT_ACCESSIBLE_VIDEO_SETTINGS;
+    parseVttTimestampToSeconds?: typeof parseVttTimestampToSeconds;
+    parseWebVttCaptions?: typeof parseWebVttCaptions;
+    getActiveVttCaptionAtTime?: typeof getActiveVttCaptionAtTime;
+    getActiveLiteralStepAtTime?: typeof getActiveLiteralStepAtTime;
+    formatSecondsClock?: typeof formatSecondsClock;
+    sanitizeMediaUrl?: typeof sanitizeMediaUrl;
+    mountAccessibleVideoPlayer?: typeof mountAccessibleVideoPlayer;
   }
 }
 
@@ -1301,5 +1372,26 @@ if (typeof window !== 'undefined') {
   window.serializeGymStateForJsonExport = serializeGymStateForJsonExport;
   window.triggerGymStateJsonDownload = triggerGymStateJsonDownload;
   window.importGymStateFromJsonText = importGymStateFromJsonText;
+  window.PASSKEY_REGISTRY_STORAGE_KEY = PASSKEY_REGISTRY_STORAGE_KEY;
+  window.validatePasswordlessEmail = validatePasswordlessEmail;
+  window.buildSafeMagicLinkRedirectUrl = buildSafeMagicLinkRedirectUrl;
+  window.sendSupabaseMagicLink = sendSupabaseMagicLink;
+  window.verifySupabaseMagicLinkOtp = verifySupabaseMagicLinkOtp;
+  window.isWebAuthnPasskeySupported = isWebAuthnPasskeySupported;
+  window.checkPlatformBiometricPasskeyAvailability = checkPlatformBiometricPasskeyAvailability;
+  window.loadRegisteredPasskeys = loadRegisteredPasskeys;
+  window.hasRegisteredPasskeyForEmail = hasRegisteredPasskeyForEmail;
+  window.registerBiometricPasskey = registerBiometricPasskey;
+  window.authenticateWithBiometricPasskey = authenticateWithBiometricPasskey;
+  window.ALLOWED_PLAYBACK_RATES = ALLOWED_PLAYBACK_RATES;
+  window.BARBELL_SQUAT_MEDIA_SAMPLES = BARBELL_SQUAT_MEDIA_SAMPLES;
+  window.DEFAULT_ACCESSIBLE_VIDEO_SETTINGS = DEFAULT_ACCESSIBLE_VIDEO_SETTINGS;
+  window.parseVttTimestampToSeconds = parseVttTimestampToSeconds;
+  window.parseWebVttCaptions = parseWebVttCaptions;
+  window.getActiveVttCaptionAtTime = getActiveVttCaptionAtTime;
+  window.getActiveLiteralStepAtTime = getActiveLiteralStepAtTime;
+  window.formatSecondsClock = formatSecondsClock;
+  window.sanitizeMediaUrl = sanitizeMediaUrl;
+  window.mountAccessibleVideoPlayer = mountAccessibleVideoPlayer;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

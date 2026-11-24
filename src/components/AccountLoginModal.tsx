@@ -1,5 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { resolveDisplayUsername } from '../utils/wizardValidation';
+import {
+  authenticateWithBiometricPasskey,
+  checkPlatformBiometricPasskeyAvailability,
+  hasRegisteredPasskeyForEmail,
+  registerBiometricPasskey,
+  sendSupabaseMagicLink,
+  verifySupabaseMagicLinkOtp,
+  type SupabasePasswordlessClientLike
+} from '../utils/passwordlessAuth';
 
 export type AuthMode = 'login' | 'signup';
 export type OAuthProvider = 'google' | 'apple';
@@ -11,12 +20,21 @@ export interface EmailPasswordCredentials {
   password: string;
 }
 
+export interface PasswordlessAuthPayload {
+  method: 'magic_link' | 'webauthn_passkey';
+  email: string;
+  displayName: string;
+  userId?: string | null;
+  credentialId?: string | null;
+}
+
 export interface PendingAccountCandidate {
   displayName: string;
   email: string;
-  provider: 'email_password' | 'google_oauth' | 'apple_oauth';
+  provider: 'email_password' | 'google_oauth' | 'apple_oauth' | 'magic_link' | 'webauthn_passkey';
   credentials?: EmailPasswordCredentials;
   oauthProvider?: OAuthProvider;
+  passwordlessPayload?: PasswordlessAuthPayload;
 }
 
 export interface AccountLoginModalProps {
@@ -24,6 +42,8 @@ export interface AccountLoginModalProps {
   onClose?: () => void;
   onEmailPasswordLogin: (credentials: EmailPasswordCredentials) => Promise<void> | void;
   onOAuthLogin: (provider: OAuthProvider, resolvedEmail?: string) => Promise<void> | void;
+  onPasswordlessLogin?: (payload: PasswordlessAuthPayload) => Promise<void> | void;
+  supabaseClient?: SupabasePasswordlessClientLike | null;
   initialEmail?: string;
   initialName?: string;
 }
@@ -41,6 +61,8 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
   onClose,
   onEmailPasswordLogin,
   onOAuthLogin,
+  onPasswordlessLogin,
+  supabaseClient,
   initialEmail = '',
   initialName = ''
 }) => {
@@ -53,7 +75,155 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingVerification, setPendingVerification] = useState<PendingAccountCandidate | null>(null);
 
+  // Task 1: Passwordless Login (Supabase Magic Link OTP + WebAuthn Biometric Passkeys)
+  const [magicLinkSentTo, setMagicLinkSentTo] = useState<string>('');
+  const [otpCode, setOtpCode] = useState<string>('');
+  const [passwordlessStatus, setPasswordlessStatus] = useState<string>('');
+  const [passwordlessError, setPasswordlessError] = useState<string>('');
+  const [isSendingMagicLink, setIsSendingMagicLink] = useState<boolean>(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState<boolean>(false);
+  const [isRunningPasskey, setIsRunningPasskey] = useState<boolean>(false);
+  const [passkeySupported, setPasskeySupported] = useState<boolean>(true);
+  const [hasSavedPasskey, setHasSavedPasskey] = useState<boolean>(() =>
+    hasRegisteredPasskeyForEmail(initialEmail)
+  );
+
+  useEffect(() => {
+    let active = true;
+    void checkPlatformBiometricPasskeyAvailability().then((supported) => {
+      if (active) setPasskeySupported(supported);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setHasSavedPasskey(hasRegisteredPasskeyForEmail(email));
+  }, [email]);
+
   if (!isOpen) return null;
+
+  async function handleSendMagicLink() {
+    setPasswordlessError('');
+    setPasswordlessStatus('');
+    setErrorMessage('');
+    setIsSendingMagicLink(true);
+    try {
+      const res = await sendSupabaseMagicLink({
+        email,
+        displayName: firstName,
+        shouldCreateUser: true,
+        supabaseClient
+      });
+      if (!res.ok) {
+        setPasswordlessError(res.message);
+        return;
+      }
+      setMagicLinkSentTo(res.email);
+      setPasswordlessStatus(res.message);
+    } finally {
+      setIsSendingMagicLink(false);
+    }
+  }
+
+  async function handleVerifyMagicLinkOtp() {
+    setPasswordlessError('');
+    setPasswordlessStatus('');
+    setIsVerifyingOtp(true);
+    try {
+      const res = await verifySupabaseMagicLinkOtp({
+        email: magicLinkSentTo || email,
+        token: otpCode,
+        displayName: firstName,
+        supabaseClient
+      });
+      if (!res.ok) {
+        setPasswordlessError(res.message);
+        return;
+      }
+      const displayName = resolveDisplayUsername({
+        name: res.displayName || firstName.trim(),
+        email: res.email,
+        authProvider: 'magic_link'
+      });
+      setPendingVerification({
+        displayName,
+        email: res.email,
+        provider: 'magic_link',
+        passwordlessPayload: {
+          method: 'magic_link',
+          email: res.email,
+          displayName,
+          userId: res.userId
+        }
+      });
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  }
+
+  async function handlePasskeySetup() {
+    setPasswordlessError('');
+    setPasswordlessStatus('');
+    setErrorMessage('');
+    setIsRunningPasskey(true);
+    try {
+      const res = await registerBiometricPasskey({
+        email,
+        displayName: firstName,
+        supabaseClient
+      });
+      if (!res.ok) {
+        setPasswordlessError(res.message);
+        return;
+      }
+      setHasSavedPasskey(true);
+      setPasswordlessStatus(res.message);
+      setPendingVerification({
+        displayName: res.displayName,
+        email: res.email,
+        provider: 'webauthn_passkey',
+        passwordlessPayload: {
+          method: 'webauthn_passkey',
+          email: res.email,
+          displayName: res.displayName,
+          credentialId: res.credentialId
+        }
+      });
+    } finally {
+      setIsRunningPasskey(false);
+    }
+  }
+
+  async function handlePasskeySignIn() {
+    setPasswordlessError('');
+    setPasswordlessStatus('');
+    setErrorMessage('');
+    setIsRunningPasskey(true);
+    try {
+      const res = await authenticateWithBiometricPasskey({ email });
+      if (!res.ok) {
+        setPasswordlessError(res.message);
+        return;
+      }
+      setPasswordlessStatus(res.message);
+      const resolvedEmail = res.email || email.trim().toLowerCase();
+      setPendingVerification({
+        displayName: res.displayName,
+        email: resolvedEmail,
+        provider: 'webauthn_passkey',
+        passwordlessPayload: {
+          method: 'webauthn_passkey',
+          email: resolvedEmail,
+          displayName: res.displayName,
+          credentialId: res.credentialId
+        }
+      });
+    } finally {
+      setIsRunningPasskey(false);
+    }
+  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -118,6 +288,12 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
     try {
       if (pendingVerification.provider === 'email_password' && pendingVerification.credentials) {
         await onEmailPasswordLogin(pendingVerification.credentials);
+      } else if (pendingVerification.passwordlessPayload) {
+        if (onPasswordlessLogin) {
+          await onPasswordlessLogin(pendingVerification.passwordlessPayload);
+        } else {
+          await onOAuthLogin('google', pendingVerification.email);
+        }
       } else if (pendingVerification.oauthProvider) {
         await onOAuthLogin(pendingVerification.oauthProvider, pendingVerification.email);
       }
@@ -135,6 +311,10 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
     setEmail('');
     setPassword('');
     setFirstName('');
+    setOtpCode('');
+    setMagicLinkSentTo('');
+    setPasswordlessStatus('');
+    setPasswordlessError('');
     setErrorMessage('');
   }
 
@@ -144,7 +324,11 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
         ? 'Google Sign-In'
         : pendingVerification.provider === 'apple_oauth'
           ? 'Apple Sign-In'
-          : 'Email & Password';
+          : pendingVerification.provider === 'magic_link'
+            ? 'Email Magic Link (No Password)'
+            : pendingVerification.provider === 'webauthn_passkey'
+              ? 'FaceID / Fingerprint Passkey'
+              : 'Email & Password';
 
     return (
       <div
@@ -275,6 +459,141 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
             <span>Continue with Google</span>
           </button>
         </div>
+
+        {/* Task 1: Fast Passwordless Sign-In (Supabase Magic Link + WebAuthn Biometric Passkeys) */}
+        <section
+          aria-label="Passwordless Sign-In Options"
+          data-testid="passwordless-auth-section"
+          className="space-y-3 rounded-xl border border-emerald-400/40 bg-slate-950/95 p-3.5"
+        >
+          <div>
+            <span className="inline-block rounded-md border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-[0.6875rem] font-extrabold text-emerald-200">
+              No Password Needed
+            </span>
+            <h3 className="mt-1 text-sm font-extrabold text-white">
+              Fast Sign-In with Magic Link or FaceID / Fingerprint
+            </h3>
+            <p className="mt-0.5 text-xs leading-relaxed text-slate-300">
+              Skip memorizing passwords. Pick a one-tap email link or unlock with your phone&apos;s face or finger scan.
+            </p>
+          </div>
+
+          <div>
+            <label
+              htmlFor="react-passwordless-email"
+              className="mb-1 block text-xs font-bold text-slate-200"
+            >
+              Your Email Address (for Magic Link or Passkey)
+            </label>
+            <input
+              id="react-passwordless-email"
+              data-testid="passwordless-email-input"
+              type="email"
+              inputMode="email"
+              autoComplete="email webauthn"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="min-h-[48px] w-full rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white placeholder-slate-400 focus-visible:border-sky-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-2">
+            <button
+              type="button"
+              disabled={isSendingMagicLink || isSubmitting}
+              data-testid="send-magic-link-btn"
+              onClick={() => void handleSendMagicLink()}
+              className="min-h-[48px] min-w-[48px] w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-emerald-400 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+            >
+              {isSendingMagicLink ? 'Sending Magic Link...' : 'Email Me a One-Tap Magic Link'}
+            </button>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                disabled={isRunningPasskey || isSubmitting}
+                data-testid="signin-passkey-btn"
+                onClick={() => void handlePasskeySignIn()}
+                className="min-h-[48px] min-w-[48px] w-full rounded-xl border border-sky-400/70 bg-sky-950/60 px-3 py-2.5 text-xs font-extrabold text-sky-100 transition hover:bg-sky-900/70 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+              >
+                {isRunningPasskey ? 'Checking...' : 'Sign In with FaceID / Fingerprint'}
+              </button>
+
+              <button
+                type="button"
+                disabled={isRunningPasskey || isSubmitting}
+                data-testid="setup-passkey-btn"
+                onClick={() => void handlePasskeySetup()}
+                className="min-h-[48px] min-w-[48px] w-full rounded-xl border border-indigo-400/70 bg-indigo-950/60 px-3 py-2.5 text-xs font-extrabold text-indigo-100 transition hover:bg-indigo-900/70 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+              >
+                {hasSavedPasskey ? 'Add Another Passkey' : 'Set Up FaceID / Fingerprint'}
+              </button>
+            </div>
+          </div>
+
+          {!passkeySupported && (
+            <p className="text-[0.6875rem] leading-relaxed text-amber-200">
+              This browser window does not support biometric Passkeys. Use the Magic Link button above instead.
+            </p>
+          )}
+
+          {magicLinkSentTo && (
+            <div className="space-y-2 rounded-xl border border-emerald-400/35 bg-slate-900 p-3">
+              <label
+                htmlFor="react-magic-link-otp"
+                className="block text-xs font-extrabold text-emerald-200"
+              >
+                Optional: Enter 6-Digit Email Code for {magicLinkSentTo}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <input
+                  id="react-magic-link-otp"
+                  data-testid="magic-link-otp-input"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={8}
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  placeholder="123456"
+                  className="min-h-[48px] flex-1 rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-sm font-extrabold tracking-widest text-white placeholder-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+                />
+                <button
+                  type="button"
+                  disabled={isVerifyingOtp}
+                  data-testid="verify-magic-link-otp-btn"
+                  onClick={() => void handleVerifyMagicLinkOtp()}
+                  className="min-h-[48px] min-w-[48px] rounded-xl bg-sky-400 px-4 py-2 text-xs font-extrabold text-slate-950 hover:bg-sky-300 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
+                >
+                  {isVerifyingOtp ? 'Checking...' : 'Verify Code'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {passwordlessStatus && (
+            <p
+              role="status"
+              aria-live="polite"
+              data-testid="passwordless-status-msg"
+              className="rounded-lg border border-emerald-500/40 bg-emerald-950/60 px-3 py-2 text-xs font-semibold leading-relaxed text-emerald-200"
+            >
+              {passwordlessStatus}
+            </p>
+          )}
+
+          {passwordlessError && (
+            <p
+              role="alert"
+              aria-live="polite"
+              data-testid="passwordless-error-msg"
+              className="rounded-lg border border-rose-500/40 bg-rose-950/60 px-3 py-2 text-xs font-semibold leading-relaxed text-rose-200"
+            >
+              {passwordlessError}
+            </p>
+          )}
+        </section>
 
         <div className="flex items-center gap-2 text-[0.625rem] font-bold uppercase text-slate-400">
           <div className="h-px flex-1 bg-slate-800" />
