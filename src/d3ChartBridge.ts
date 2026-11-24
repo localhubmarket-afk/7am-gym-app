@@ -289,10 +289,15 @@ import {
   isWebAuthnPasskeySupported,
   loadRegisteredPasskeys,
   registerBiometricPasskey,
+  resolveDynamicAuthRedirectUrl,
   sendSupabaseMagicLink,
   validatePasswordlessEmail,
   verifySupabaseMagicLinkOtp
 } from './utils/passwordlessAuth';
+import {
+  hardDeleteAccount,
+  purgeSupabaseAuthStorageKeys
+} from './utils/hardDeleteAccount';
 import {
   ALLOWED_PLAYBACK_RATES,
   BARBELL_SQUAT_MEDIA_SAMPLES,
@@ -1082,6 +1087,9 @@ declare global {
     deleteWorkoutAndFuelForActiveDay?: typeof deleteWorkoutAndFuelForActiveDay;
     deleteAllWeeksCompleteReset?: typeof deleteAllWeeksCompleteReset;
     deleteUserAccountFromSupabase?: typeof deleteUserAccountFromSupabase;
+    hardDeleteAccount?: typeof hardDeleteAccount;
+    purgeSupabaseAuthStorageKeys?: typeof purgeSupabaseAuthStorageKeys;
+    resolveDynamicAuthRedirectUrl?: typeof resolveDynamicAuthRedirectUrl;
     purgeDeletedAccountFromLocalState?: typeof purgeDeletedAccountFromLocalState;
     normalizeAccountUserId?: typeof normalizeAccountUserId;
     isValidDeletableUserId?: typeof isValidDeletableUserId;
@@ -1491,9 +1499,12 @@ if (typeof window !== 'undefined') {
   window.importGymStateFromJsonText = importGymStateFromJsonText;
   window.PASSKEY_REGISTRY_STORAGE_KEY = PASSKEY_REGISTRY_STORAGE_KEY;
   window.validatePasswordlessEmail = validatePasswordlessEmail;
+  window.resolveDynamicAuthRedirectUrl = resolveDynamicAuthRedirectUrl;
   window.buildSafeMagicLinkRedirectUrl = buildSafeMagicLinkRedirectUrl;
   window.sendSupabaseMagicLink = sendSupabaseMagicLink;
   window.verifySupabaseMagicLinkOtp = verifySupabaseMagicLinkOtp;
+  window.hardDeleteAccount = hardDeleteAccount;
+  window.purgeSupabaseAuthStorageKeys = purgeSupabaseAuthStorageKeys;
   window.isWebAuthnPasskeySupported = isWebAuthnPasskeySupported;
   window.checkPlatformBiometricPasskeyAvailability = checkPlatformBiometricPasskeyAvailability;
   window.loadRegisteredPasskeys = loadRegisteredPasskeys;

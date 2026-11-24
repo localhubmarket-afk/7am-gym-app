@@ -5,6 +5,7 @@ import geminiHandler from './api/gemini.js';
 import stateHandler from './api/state.js';
 import biometricsHandler from './api/biometrics.js';
 import authLeadHandler from './api/auth-lead.js';
+import deleteAccountHandler from './api/delete-account.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
@@ -33,6 +34,7 @@ async function startServer() {
   app.all('/api/state', (req, res) => stateHandler(req, res));
   app.all('/api/biometrics', (req, res) => biometricsHandler(req, res));
   app.all('/api/auth-lead', (req, res) => authLeadHandler(req, res));
+  app.all('/api/delete-account', (req, res) => deleteAccountHandler(req, res));
 
   if (!isProduction) {
     const { createServer: createViteServer } = await import('vite');

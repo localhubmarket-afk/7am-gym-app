@@ -532,6 +532,32 @@
     html[data-theme="light"] .text-indigo-300 {
       color: #4C1D95 !important;
     }
+    /* Strict WCAG 2.2 AA Green Contrast Protection (Dark & Light Mode) */
+    .bg-green-600,
+    .bg-green-700,
+    .bg-green-800,
+    .btn-save-account-solid,
+    .btn-auto-sync-active,
+    html.dark-theme .bg-green-600,
+    html[data-theme="dark"] .bg-green-600,
+    html.dark-theme .bg-green-700,
+    html[data-theme="dark"] .bg-green-700,
+    html.dark-theme .bg-green-800,
+    html[data-theme="dark"] .bg-green-800,
+    html.dark-theme .btn-save-account-solid,
+    html[data-theme="dark"] .btn-save-account-solid,
+    html.dark-theme .btn-auto-sync-active,
+    html[data-theme="dark"] .btn-auto-sync-active,
+    html.light-theme .bg-green-600,
+    html[data-theme="light"] .bg-green-600,
+    html.light-theme .bg-green-700,
+    html[data-theme="light"] .bg-green-700,
+    html.light-theme .bg-green-800,
+    html[data-theme="light"] .bg-green-800,
+    html.light-theme .btn-save-account-solid,
+    html[data-theme="light"] .btn-save-account-solid,
+    html.light-theme .btn-auto-sync-active,
+    html[data-theme="light"] .btn-auto-sync-active,
     html.light-theme .bg-emerald-600,
     html[data-theme="light"] .bg-emerald-600,
     html.light-theme .bg-sky-600,
@@ -544,6 +570,31 @@
     html[data-theme="light"] .neuro-btn-done {
       color: #FFFFFF !important;
     }
+    .bg-green-600 *,
+    .bg-green-700 *,
+    .bg-green-800 *,
+    .btn-save-account-solid *,
+    .btn-auto-sync-active *,
+    html.dark-theme .bg-green-600 *,
+    html[data-theme="dark"] .bg-green-600 *,
+    html.dark-theme .bg-green-700 *,
+    html[data-theme="dark"] .bg-green-700 *,
+    html.dark-theme .bg-green-800 *,
+    html[data-theme="dark"] .bg-green-800 *,
+    html.dark-theme .btn-save-account-solid *,
+    html[data-theme="dark"] .btn-save-account-solid *,
+    html.dark-theme .btn-auto-sync-active *,
+    html[data-theme="dark"] .btn-auto-sync-active *,
+    html.light-theme .bg-green-600 *,
+    html[data-theme="light"] .bg-green-600 *,
+    html.light-theme .bg-green-700 *,
+    html[data-theme="light"] .bg-green-700 *,
+    html.light-theme .bg-green-800 *,
+    html[data-theme="light"] .bg-green-800 *,
+    html.light-theme .btn-save-account-solid *,
+    html[data-theme="light"] .btn-save-account-solid *,
+    html.light-theme .btn-auto-sync-active *,
+    html[data-theme="light"] .btn-auto-sync-active *,
     html.light-theme .bg-emerald-600 *,
     html[data-theme="light"] .bg-emerald-600 *,
     html.light-theme .bg-sky-600 *,
@@ -555,6 +606,45 @@
     html.light-theme .neuro-btn-done *,
     html[data-theme="light"] .neuro-btn-done * {
       color: #FFFFFF !important;
+    }
+    .bg-green-100,
+    .bg-green-200,
+    .bg-emerald-100,
+    .bg-emerald-200,
+    html.light-theme .bg-green-100,
+    html[data-theme="light"] .bg-green-100,
+    html.light-theme .bg-green-200,
+    html[data-theme="light"] .bg-green-200,
+    html.light-theme .bg-emerald-100,
+    html[data-theme="light"] .bg-emerald-100,
+    html.light-theme .bg-emerald-200,
+    html[data-theme="light"] .bg-emerald-200 {
+      color: #111827 !important;
+    }
+    .bg-green-100 *,
+    .bg-green-200 *,
+    .bg-emerald-100 *,
+    .bg-emerald-200 *,
+    html.light-theme .bg-green-100 *,
+    html[data-theme="light"] .bg-green-100 *,
+    html.light-theme .bg-green-200 *,
+    html[data-theme="light"] .bg-green-200 *,
+    html.light-theme .bg-emerald-100 *,
+    html[data-theme="light"] .bg-emerald-100 *,
+    html.light-theme .bg-emerald-200 *,
+    html[data-theme="light"] .bg-emerald-200 * {
+      color: #111827 !important;
+    }
+    .auth-modal-shell {
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      max-height: 90dvh !important;
+    }
+    .auth-modal-scroll-body {
+      max-height: 80vh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
     html.light-theme .bg-emerald-500,
     html[data-theme="light"] .bg-emerald-500,
@@ -26566,9 +26656,15 @@
           pwlessSendMagicBtn.textContent = 'Sending Magic Link...';
           try {
             if (typeof window.sendSupabaseMagicLink === 'function') {
+              const dynamicRedirectTo = typeof window.resolveDynamicAuthRedirectUrl === 'function'
+                ? window.resolveDynamicAuthRedirectUrl()
+                : (typeof window !== 'undefined' && window.location && window.location.origin
+                    ? window.location.origin
+                    : undefined);
               const res = await window.sendSupabaseMagicLink({
                 email: targetEmail,
                 displayName: leadNameInp ? leadNameInp.value.trim() : '',
+                redirectTo: dynamicRedirectTo,
                 shouldCreateUser: true
               });
               if (!res.ok) {
@@ -26675,6 +26771,28 @@
             pwlessPasskeySignInBtn.textContent = origLabel;
           }
         });
+      }
+
+      // Hydrate Supabase Magic Link callback sessions automatically on active origin
+      if (!window.__magicLinkAuthListenerBound && typeof window.getSupabaseClient === 'function') {
+        try {
+          const sbClient = window.getSupabaseClient();
+          if (sbClient && sbClient.auth && typeof sbClient.auth.onAuthStateChange === 'function') {
+            window.__magicLinkAuthListenerBound = true;
+            sbClient.auth.onAuthStateChange((event, session) => {
+              if (event === 'SIGNED_IN' && session && session.user && session.user.email) {
+                const signedEmail = String(session.user.email).trim().toLowerCase();
+                const currentEmail = String((state && state.userProfile && state.userProfile.email) || '').trim().toLowerCase();
+                if (signedEmail && signedEmail !== currentEmail) {
+                  const metaName = session.user.user_metadata && session.user.user_metadata.full_name
+                    ? String(session.user.user_metadata.full_name)
+                    : '';
+                  completePasswordlessSessionLocal(signedEmail, metaName, 'magic_link');
+                }
+              }
+            });
+          }
+        } catch (_err) {}
       }
 
       // Phase 1 Blueprint Task 2: Collapsible Accessible Form Guide (mounts React <AccessibleVideoPlayer>)
@@ -27113,7 +27231,23 @@
             let remainingAccounts = [];
             let switchPromptText = null;
 
-            if (typeof window.executeCompleteAccountDeletion === 'function') {
+            if (typeof window.hardDeleteAccount === 'function') {
+              const deletionRes = await window.hardDeleteAccount({
+                activeUserId: activeEmail,
+                targetUserId: targetEmail,
+                stateObj: state,
+                adminDeleteEndpoint: '/api/delete-account',
+                legacyStateEndpoint: endpointUrl,
+                storageKey: STORAGE_KEY
+              });
+              remainingAccounts = Array.isArray(deletionRes && deletionRes.remainingAccounts)
+                ? deletionRes.remainingAccounts
+                : [];
+              secondaryAccount = deletionRes && deletionRes.secondaryAccount
+                ? deletionRes.secondaryAccount
+                : (remainingAccounts[0] || null);
+              switchPromptText = deletionRes && deletionRes.switchPromptText ? deletionRes.switchPromptText : null;
+            } else if (typeof window.executeCompleteAccountDeletion === 'function') {
               const deletionRes = await window.executeCompleteAccountDeletion({
                 endpoint: endpointUrl,
                 activeUserId: activeEmail,
@@ -29379,7 +29513,7 @@
 
       <!-- Prominent Program Setup Wizard CTA + Optional Save Account + Diet & Intolerances Shortcut -->
       <div class="space-y-2">
-        <button type="button" id="settings-save-account-btn" class="w-full py-2.5 px-3 rounded-xl border border-emerald-400/70 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-100 text-xs font-extrabold transition flex items-center justify-center gap-2 shadow-sm">
+        <button type="button" id="settings-save-account-btn" class="btn-save-account-solid w-full min-h-[48px] py-2.5 px-3 rounded-xl border border-green-500 bg-green-700 hover:bg-green-800 text-white text-xs font-extrabold transition flex items-center justify-center gap-2 shadow-sm">
           <span>☁️ Save Account (Optional Cloud Sync)</span>
         </button>
         <button type="button" id="open-program-wizard-btn" class="w-full py-2.5 px-3 rounded-xl border border-amber-500/70 bg-amber-600/20 hover:bg-amber-600/30 text-amber-100 text-xs font-extrabold transition flex items-center justify-center gap-2 shadow-sm">
@@ -29394,7 +29528,7 @@
       <section id="auto-sync-devices-card" aria-label="Auto-Sync Devices" class="rounded-xl border border-sky-400/50 bg-slate-950/95 p-3 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-extrabold text-white">
           <span>Auto-Sync Devices</span>
-          <span id="active-auto-sync-readout" role="status" aria-live="polite" class="text-[0.75rem] font-bold text-emerald-300">Auto-Sync ON</span>
+          <span id="active-auto-sync-readout" role="status" aria-live="polite" class="rounded-md bg-green-100 px-2 py-0.5 text-[0.75rem] font-extrabold text-gray-900">Auto-Sync ON</span>
         </div>
         <p id="auto-sync-devices-sublabel" class="text-[0.8125rem] text-slate-300 leading-relaxed">
           Automatically saves your progress to the cloud and updates your other screens instantly.
@@ -29406,7 +29540,7 @@
           role="switch"
           aria-checked="true"
           aria-describedby="auto-sync-devices-sublabel"
-          class="w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-emerald-400 bg-emerald-600 text-white text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2"
+          class="btn-auto-sync-active w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-green-500 bg-green-700 hover:bg-green-800 text-white text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2"
         >
           <span>Auto-Sync Devices</span>
           <span id="toggle-auto-sync-devices-status">ON — Tap to Turn Off</span>
@@ -30310,272 +30444,278 @@
   </div>
 
   <!-- App Store-Grade 4-Tab Athlete Hub Modal (Dashboard • Body & Photos • Gear & Shoes • Account & Sync) -->
-  <div id="smart-login-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-4 space-y-3 shadow-2xl max-h-[92vh] overflow-y-auto">
-      <div class="flex items-start justify-between border-b border-slate-800 pb-2.5">
-        <div>
-          <span id="smart-login-badge" class="text-[0.625rem] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">● 4-Tab Athlete Hub</span>
-          <h3 class="text-sm sm:text-base font-extrabold text-white mt-1" id="smart-login-modal-title">François — Progress, Body &amp; Gear Hub</h3>
-          <p class="text-[0.6875rem] text-slate-400 mt-0.5" id="smart-login-modal-sub">Analytics Dashboard, 7-Day Trend Weight, Progress Photos &amp; Gear.</p>
+  <div id="smart-login-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div id="smart-login-modal-card" class="auth-modal-shell bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full shadow-2xl flex flex-col overflow-hidden">
+      <!-- Fixed Modal Header (Always Visible Above Inner Scroll Area) -->
+      <div class="shrink-0 flex items-start justify-between gap-2 border-b border-slate-800 px-4 py-2.5">
+        <div class="min-w-0">
+          <span id="smart-login-badge" class="inline-block text-[0.625rem] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-green-100 text-gray-900 border border-green-300">● 4-Tab Athlete Hub</span>
+          <h3 class="text-sm sm:text-base font-extrabold text-white mt-0.5 truncate" id="smart-login-modal-title">François — Progress, Body &amp; Gear Hub</h3>
+          <p class="text-[0.6875rem] text-slate-300 mt-0.5 truncate" id="smart-login-modal-sub">Analytics Dashboard, 7-Day Trend Weight, Progress Photos &amp; Gear.</p>
         </div>
-        <button type="button" id="close-smart-login-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
+        <button type="button" id="close-smart-login-btn" aria-label="Close Account Modal" class="min-h-[44px] min-w-[44px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold shrink-0">✕</button>
       </div>
 
-      <!-- 4-Tab Athlete Hub Navigation: [1. Dashboard] | [2. Body & Photos] | [3. Gear & Shoes] | [4. Account & Sync] -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800">
-        <button type="button" id="profile-section-dashboard-btn" class="py-1.5 px-1.5 rounded-lg text-[0.6875rem] font-extrabold bg-sky-400 text-slate-950 flex items-center justify-center gap-1 transition">
-           1. Dashboard
-        </button>
-        <button type="button" id="profile-section-body-photos-btn" class="py-1.5 px-1.5 rounded-lg text-[0.6875rem] font-bold text-slate-300 hover:text-white flex items-center justify-center gap-1 transition">
-           2. Body &amp; Photos
-        </button>
-        <button type="button" id="profile-section-gear-btn" class="py-1.5 px-1.5 rounded-lg text-[0.6875rem] font-bold text-slate-300 hover:text-white flex items-center justify-center gap-1 transition">
-          <span> 3. Gear</span>
-          <span id="shoe-header-pill" class="text-[0.625rem] font-extrabold px-1.5 py-0.5 rounded-full bg-slate-800 text-sky-300">98%</span>
-        </button>
-        <button type="button" id="profile-section-account-btn" class="py-1.5 px-1.5 rounded-lg text-[0.6875rem] font-bold text-slate-300 hover:text-white flex items-center justify-center gap-1 transition">
-           4. Account
-        </button>
+      <!-- Fixed 4-Tab Athlete Hub Navigation: [1. Dashboard] | [2. Body & Photos] | [3. Gear & Shoes] | [4. Account & Sync] -->
+      <div class="shrink-0 px-4 pt-2 pb-1.5 border-b border-slate-800/70">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800">
+          <button type="button" id="profile-section-dashboard-btn" class="py-1.5 px-1.5 rounded-lg text-[0.6875rem] font-extrabold bg-sky-400 text-slate-950 flex items-center justify-center gap-1 transition">
+             1. Dashboard
+          </button>
+          <button type="button" id="profile-section-body-photos-btn" class="py-1.5 px-1.5 rounded-lg text-[0.6875rem] font-bold text-slate-300 hover:text-white flex items-center justify-center gap-1 transition">
+             2. Body &amp; Photos
+          </button>
+          <button type="button" id="profile-section-gear-btn" class="py-1.5 px-1.5 rounded-lg text-[0.6875rem] font-bold text-slate-300 hover:text-white flex items-center justify-center gap-1 transition">
+            <span> 3. Gear</span>
+            <span id="shoe-header-pill" class="text-[0.625rem] font-extrabold px-1.5 py-0.5 rounded-full bg-slate-800 text-sky-300">98%</span>
+          </button>
+          <button type="button" id="profile-section-account-btn" class="py-1.5 px-1.5 rounded-lg text-[0.6875rem] font-bold text-slate-300 hover:text-white flex items-center justify-center gap-1 transition">
+             4. Account
+          </button>
+        </div>
       </div>
 
-      <!-- TAB 1: COMPETITOR-GRADE ANALYTICS & PROGRESS DASHBOARD -->
-      <div id="profile-dashboard-section-wrap" class="space-y-3"></div>
+      <!-- Inner Scrollable Flex Container (ONLY this inner body scrolls; max-h-[80vh] keeps header & close fixed on desktop) -->
+      <div id="smart-login-scroll-body" data-testid="auth-modal-scroll-body" class="auth-modal-scroll-body flex flex-col max-h-[80vh] overflow-y-auto px-4 py-2.5">
+        <!-- TAB 1: COMPETITOR-GRADE ANALYTICS & PROGRESS DASHBOARD -->
+        <div id="profile-dashboard-section-wrap" class="space-y-3"></div>
 
-      <!-- TAB 2: BIOMETRIC PROFILE, 7-DAY TREND WEIGHT & DATED PROGRESS PHOTOS -->
-      <div id="profile-body-photos-section-wrap" class="hidden space-y-3"></div>
+        <!-- TAB 2: BIOMETRIC PROFILE, 7-DAY TREND WEIGHT & DATED PROGRESS PHOTOS -->
+        <div id="profile-body-photos-section-wrap" class="hidden space-y-3"></div>
 
-      <!-- TAB 4: ACCOUNT, LOGIN & SIGN-UP -->
-      <div id="profile-account-section-wrap" class="hidden space-y-3">
-        <!-- VIEW 1: Active Signed-In Account Card -->
-        <div id="active-account-status-box" class="space-y-3">
-          <div class="bg-slate-950 border border-emerald-500/35 rounded-xl p-3 flex items-center justify-between gap-2.5">
-            <div class="flex items-center gap-2.5 min-w-0">
-              <div id="active-account-avatar" class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 text-slate-950 font-extrabold text-sm flex items-center justify-center shrink-0">F</div>
-              <div class="min-w-0">
-                <div class="flex items-center gap-1.5">
-                  <span class="text-xs font-extrabold text-white truncate" id="active-account-name-disp">François</span>
-                  <span class="inline-block w-2 h-2 rounded-full bg-emerald-400" title="Account Active"></span>
+        <!-- TAB 4: ACCOUNT, LOGIN & SIGN-UP -->
+        <div id="profile-account-section-wrap" class="hidden space-y-2.5">
+          <!-- VIEW 1: Active Signed-In Account Card -->
+          <div id="active-account-status-box" class="space-y-2.5">
+            <div class="bg-slate-950 border border-emerald-500/35 rounded-xl p-2.5 flex items-center justify-between gap-2.5">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div id="active-account-avatar" class="w-9 h-9 rounded-full bg-green-700 text-white font-extrabold text-sm flex items-center justify-center shrink-0">F</div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-extrabold text-white truncate" id="active-account-name-disp">François</span>
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-400" title="Account Active"></span>
+                  </div>
+                  <div class="text-[0.625rem] text-slate-300 truncate" id="active-account-email-disp">francois@7amgym.app</div>
                 </div>
-                <div class="text-[0.625rem] text-slate-400 truncate" id="active-account-email-disp">francois@7amgym.app</div>
+              </div>
+              <span class="shrink-0 text-[0.625rem] font-extrabold px-2 py-0.5 rounded-full bg-green-100 text-gray-900 border border-green-300">Active</span>
+            </div>
+
+            <button type="button" id="continue-active-account-btn" class="w-full min-h-[44px] py-2 px-4 rounded-xl bg-green-700 hover:bg-green-800 text-white font-extrabold text-xs shadow transition">
+              ✓ Continue to Workout
+            </button>
+
+            <div id="saved-accounts-switcher-list" class="space-y-1 pt-0.5"></div>
+
+            <div class="pt-2 border-t border-slate-800/80 space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <button type="button" id="sign-out-new-account-btn" class="flex-1 min-h-[44px] py-2 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-xs font-bold transition">
+                  Switch Account / Log Out
+                </button>
+                <button type="button" id="open-fresh-start-confirm-btn" class="min-h-[44px] py-2 px-2.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-200 text-xs font-bold transition">
+                  ↺ Fresh Start Reset
+                </button>
+              </div>
+              <button type="button" id="delete-account-data-btn" class="w-full min-h-[44px] py-2 px-3 rounded-xl bg-rose-600/20 hover:bg-rose-600/35 border border-rose-400/70 text-rose-100 text-xs font-extrabold transition" title="Permanently delete your account">
+                Delete Account
+              </button>
+            </div>
+
+            <!-- Confirmation Prompt for Destructive Fresh Start Reset (Error Prevention Heuristic) -->
+            <div id="fresh-start-confirm-box" class="hidden bg-rose-950/35 border border-rose-500/40 rounded-xl p-2.5 space-y-2 text-[0.6875rem]">
+              <div class="font-extrabold text-rose-200"> Confirm Fresh Start (Reset Device Logs)</div>
+              <p class="text-slate-300 leading-snug">Are you sure you want to clear all logged workout sets, meals, and completed weeks on this device and return to Week 1 • Day 1?</p>
+              <div class="flex items-center gap-2">
+                <button type="button" id="fresh-start-reset-btn" class="flex-1 py-1.5 px-3 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs transition">
+                  Yes, Reset to Week 1
+                </button>
+                <button type="button" id="cancel-fresh-start-btn" class="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs transition">
+                  Cancel
+                </button>
               </div>
             </div>
-            <span class="shrink-0 text-[0.625rem] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Active</span>
           </div>
 
-          <button type="button" id="continue-active-account-btn" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition">
-            ✓ Continue to Workout
-          </button>
-
-          <div id="saved-accounts-switcher-list" class="space-y-1 pt-0.5"></div>
-
-          <div class="pt-2 border-t border-slate-800/80 space-y-2">
-            <div class="flex items-center justify-between gap-2">
-              <button type="button" id="sign-out-new-account-btn" class="flex-1 py-2 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition">
-                Switch Account / Log Out
+          <!-- VIEW 2: Compact General App Store Log In / Sign Up Screen -->
+          <div id="new-account-form-wrap" class="hidden space-y-2">
+            <div class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800">
+              <button type="button" id="auth-tab-login-btn" class="min-h-[44px] py-1.5 rounded-lg text-xs font-extrabold bg-green-700 text-white transition">
+                Log In
               </button>
-              <button type="button" id="open-fresh-start-confirm-btn" class="py-2 px-2.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 text-xs font-bold transition">
-                ↺ Fresh Start Reset
+              <button type="button" id="auth-tab-signup-btn" class="min-h-[44px] py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition">
+                Sign Up
               </button>
             </div>
-            <button type="button" id="delete-account-data-btn" class="w-full py-2.5 px-3 rounded-xl bg-rose-600/20 hover:bg-rose-600/35 border border-rose-400/70 text-rose-100 text-xs font-extrabold transition" title="Permanently delete your account">
-              Delete Account
+
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" id="apple-oauth-btn" class="min-h-[44px] py-1.5 px-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow transition">
+                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 170 170"><path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.13-1.9-14.34-6.08-3.69-3.03-7.61-7.82-11.77-14.37-5.93-9.19-10.72-19.74-14.38-31.67-3.66-11.92-5.49-22.95-5.49-33.08 0-12.82 3.19-23.22 9.56-31.21 6.38-7.99 14.39-12.11 24.04-12.37 4.92 0 10.31 1.48 16.16 4.44 5.85 2.96 9.63 4.49 11.34 4.61 1.34 0 5.47-1.78 12.4-5.34 6.93-3.56 12.79-5.08 17.59-4.56 13.08 1.05 22.93 6.18 29.55 15.39-11.73 7.12-17.46 16.96-17.19 29.52.27 9.85 3.94 18.06 11.02 24.64 4.92 4.65 10.77 7.45 17.56 8.4-.99 3.09-2.09 6.08-3.31 8.98zM119.22 31.01c0 7.72-2.82 14.94-8.46 21.66-6.81 7.96-15.05 12.55-23.97 11.83-.19-.94-.29-1.95-.29-3.04 0-7.41 3.1-15.32 9.3-22.34 2.97-3.41 6.74-6.24 11.31-8.5 4.57-2.25 8.9-3.5 12.99-3.74.08 1.42.12 2.8.12 4.13z"/></svg>
+                <span>Apple</span>
+              </button>
+              <button type="button" id="google-oauth-btn" class="min-h-[44px] py-1.5 px-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z"/><path fill="#FBBC05" d="M5.3 14.8c-.2-.8-.4-1.6-.4-2.5s.2-1.7.4-2.5L1.6 7C.6 9 0 11.2 0 13.5s.6 4.5 1.6 6.5l3.7-2.9z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.9C3.5 21.4 7.4 24 12 24z"/></svg>
+                <span>Google</span>
+              </button>
+            </div>
+
+            <div id="google-account-chooser-drawer" class="hidden">
+              <div id="google-chooser-saved-list"></div>
+            </div>
+
+            <!-- Phase 1 Blueprint Task 1: Compact Passwordless Sign-In (Supabase Magic Link + WebAuthn Biometric Passkeys) -->
+            <section id="passwordless-auth-card" data-testid="passwordless-auth-section" aria-label="Passwordless Sign-In Options" class="rounded-xl border border-green-500/45 bg-slate-950/95 p-2.5 space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-1.5">
+                <h4 class="text-xs font-extrabold text-white">Fast Sign-In: Magic Link or Passkey</h4>
+                <span class="inline-block rounded-md border border-green-300 bg-green-100 px-2 py-0.5 text-[0.6875rem] font-extrabold text-gray-900">No Password Needed</span>
+              </div>
+              <p class="text-[0.6875rem] leading-snug text-slate-300">Get a one-tap email link or unlock with FaceID / Fingerprint.</p>
+              <div>
+                <label for="passwordless-email-input" class="block text-[0.6875rem] font-bold text-slate-200 mb-0.5">Your Email Address (for Magic Link or Passkey)</label>
+                <input id="passwordless-email-input" data-testid="passwordless-email-input" type="email" inputmode="email" autocomplete="email webauthn" placeholder="you@example.com" class="min-h-[44px] w-full bg-slate-900 border border-slate-600 rounded-xl px-3 py-1.5 text-xs font-bold text-white placeholder-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:border-sky-300" />
+              </div>
+              <div class="grid grid-cols-1 gap-1.5">
+                <button type="button" id="send-magic-link-btn" data-testid="send-magic-link-btn" class="min-h-[44px] min-w-[44px] w-full rounded-xl border border-green-500 bg-green-700 hover:bg-green-800 px-3 py-2 text-xs font-extrabold text-white shadow transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">
+                  ✉️ Email Me a One-Tap Magic Link
+                </button>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  <button type="button" id="signin-passkey-btn" data-testid="signin-passkey-btn" class="min-h-[44px] min-w-[44px] w-full rounded-xl border border-sky-400/70 bg-sky-950/60 hover:bg-sky-900/70 px-2.5 py-1.5 text-xs font-extrabold text-sky-100 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">
+                    🔐 Sign In with FaceID / Fingerprint
+                  </button>
+                  <button type="button" id="setup-passkey-btn" data-testid="setup-passkey-btn" class="min-h-[44px] min-w-[44px] w-full rounded-xl border border-indigo-400/70 bg-indigo-950/60 hover:bg-indigo-900/70 px-2.5 py-1.5 text-xs font-extrabold text-indigo-100 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">
+                    ➕ Set Up FaceID / Fingerprint
+                  </button>
+                </div>
+              </div>
+              <div id="magic-link-otp-wrap" class="hidden space-y-1.5 rounded-xl border border-green-500/40 bg-slate-900 p-2">
+                <label for="magic-link-otp-input" class="block text-xs font-extrabold text-emerald-200">Optional: Type 6-Digit Email Code</label>
+                <div class="flex flex-wrap gap-1.5">
+                  <input id="magic-link-otp-input" data-testid="magic-link-otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="123456" class="min-h-[44px] flex-1 rounded-xl border border-slate-600 bg-slate-950 px-3 py-1.5 text-xs font-extrabold tracking-widest text-white placeholder-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300" />
+                  <button type="button" id="verify-magic-link-otp-btn" data-testid="verify-magic-link-otp-btn" class="min-h-[44px] min-w-[44px] rounded-xl bg-sky-400 hover:bg-sky-300 px-3.5 py-1.5 text-xs font-extrabold text-slate-950 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200">
+                    Verify Code
+                  </button>
+                </div>
+              </div>
+              <p id="passwordless-status-msg" data-testid="passwordless-status-msg" role="status" aria-live="polite" class="hidden rounded-lg border border-green-300 bg-green-100 px-2.5 py-1.5 text-xs font-semibold leading-snug text-gray-900"></p>
+              <p id="passwordless-error-msg" data-testid="passwordless-error-msg" role="alert" aria-live="polite" class="hidden rounded-lg border border-rose-500/40 bg-rose-950/60 px-2.5 py-1.5 text-xs font-semibold leading-snug text-rose-200"></p>
+            </section>
+
+            <div class="flex items-center gap-2 text-[0.625rem] text-slate-400 uppercase font-bold py-0.5">
+              <div class="flex-1 h-px bg-slate-800"></div>
+              <span id="auth-divider-label">Or Continue with Email &amp; Password</span>
+              <div class="flex-1 h-px bg-slate-800"></div>
+            </div>
+
+            <div class="space-y-1.5 text-xs">
+              <div id="lead-name-field-wrap" class="hidden">
+                <label for="lead-name-input" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-0.5">First Name</label>
+                <input id="lead-name-input" type="text" autocomplete="given-name" placeholder="Enter your first name" class="min-h-[44px] w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-white placeholder-slate-400 focus:outline-none focus:border-emerald-400" />
+              </div>
+              <div>
+                <label for="lead-email-input" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-0.5">Email Address</label>
+                <input id="lead-email-input" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" class="min-h-[44px] w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-white placeholder-slate-400 focus:outline-none focus:border-emerald-400" />
+              </div>
+              <div>
+                <label for="lead-password-input" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-0.5">Password</label>
+                <div class="relative flex items-center">
+                  <input id="lead-password-input" type="password" autocomplete="current-password" minlength="6" placeholder="Enter your password" class="min-h-[44px] w-full bg-slate-950 border border-slate-700 rounded-xl pl-3 pr-14 py-1.5 text-xs font-bold text-white placeholder-slate-400 focus:outline-none focus:border-emerald-400" />
+                  <button type="button" id="toggle-lead-password-btn" aria-pressed="false" class="absolute right-2 px-2 py-1 rounded-lg text-[0.625rem] font-extrabold text-sky-300 hover:text-white bg-slate-900 border border-slate-700 transition">
+                    Show
+                  </button>
+                </div>
+              </div>
+              <p id="lead-auth-error-msg" role="alert" class="hidden rounded-lg border border-rose-500/40 bg-rose-950/50 px-2.5 py-1.5 text-[0.6875rem] font-bold text-rose-200"></p>
+              <input id="lead-phone-input" type="hidden" value="" />
+            </div>
+
+            <button type="button" id="submit-smart-login-btn" class="w-full min-h-[44px] py-2 px-4 rounded-xl border border-green-500 bg-green-700 hover:bg-green-800 text-white font-extrabold text-xs shadow transition">
+              Log In →
             </button>
-          </div>
 
-          <!-- Confirmation Prompt for Destructive Fresh Start Reset (Error Prevention Heuristic) -->
-          <div id="fresh-start-confirm-box" class="hidden bg-rose-950/35 border border-rose-500/40 rounded-xl p-2.5 space-y-2 text-[0.6875rem]">
-            <div class="font-extrabold text-rose-200"> Confirm Fresh Start (Reset Device Logs)</div>
-            <p class="text-slate-300 leading-snug">Are you sure you want to clear all logged workout sets, meals, and completed weeks on this device and return to Week 1 • Day 1?</p>
-            <div class="flex items-center gap-2">
-              <button type="button" id="fresh-start-reset-btn" class="flex-1 py-1.5 px-3 rounded-lg bg-rose-500 hover:bg-rose-400 text-slate-950 font-extrabold text-xs transition">
-                Yes, Reset to Week 1
-              </button>
-              <button type="button" id="cancel-fresh-start-btn" class="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs transition">
-                Cancel
-              </button>
-            </div>
+            <button type="button" id="cancel-new-account-btn" class="w-full py-1 text-[0.6875rem] font-bold text-slate-300 hover:text-white transition">
+              ← Back to Active Account
+            </button>
           </div>
         </div>
 
-        <!-- VIEW 2: General App Store Log In / Sign Up Screen -->
-        <div id="new-account-form-wrap" class="hidden space-y-3">
-          <div class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800">
-            <button type="button" id="auth-tab-login-btn" class="py-1.5 rounded-lg text-xs font-extrabold bg-emerald-500 text-slate-950 transition">
-              Log In
-            </button>
-            <button type="button" id="auth-tab-signup-btn" class="py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
-              Sign Up
-            </button>
+        <!-- SECTION B: MY GEAR & GYM SHOES (Placed Inside Profile > My Gear Like Strava, Garmin & Runkeeper!) -->
+        <div id="profile-gear-section-wrap" class="hidden space-y-3 text-xs">
+          <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3 space-y-2.5">
+            <div class="flex items-center gap-2.5">
+              <div id="shoe-photo-preview-wrap" class="w-14 h-14 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
+                <img id="shoe-photo-preview-img" src="" alt="Gym Shoe Preview" class="hidden w-full h-full object-cover" />
+                <span id="shoe-photo-placeholder-icon" class="text-xl"></span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <span class="text-[0.625rem] font-extrabold uppercase tracking-wider text-sky-400" id="shoe-ai-status-badge"> AI Vision Shoe Scanner</span>
+                <div class="text-xs font-extrabold text-white truncate mt-0.5" id="shoe-detected-summary">Active Shoe</div>
+                <p class="text-[0.625rem] text-slate-400 leading-snug" id="shoe-detected-sub">Snap a photo to auto-detect Brand/Model &amp; set Date Bought to Today.</p>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <label for="shoe-camera-input" class="flex-1 py-2 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 font-extrabold text-xs text-center cursor-pointer transition whitespace-nowrap">
+                 Take Shoe Photo
+              </label>
+              <input id="shoe-camera-input" type="file" accept="image/*" capture="environment" class="hidden" />
+              <label for="shoe-gallery-input" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs text-center cursor-pointer transition whitespace-nowrap">
+                 Upload Photo
+              </label>
+              <input id="shoe-gallery-input" type="file" accept="image/*" class="hidden" />
+            </div>
+
+            <div class="space-y-1 pt-1 border-t border-slate-800/80">
+              <span class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-400">1-Tap Gym Shoe Presets:</span>
+              <div class="flex flex-wrap gap-1">
+                <button type="button" data-shoe-preset-brand="Nike" data-shoe-preset-model="Metcon 9" data-shoe-preset-cat="cross_trainer" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[0.625rem] font-bold text-slate-200 transition">Nike Metcon 9</button>
+                <button type="button" data-shoe-preset-brand="Reebok" data-shoe-preset-model="Nano X4" data-shoe-preset-cat="cross_trainer" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[0.625rem] font-bold text-slate-200 transition">Reebok Nano X4</button>
+                <button type="button" data-shoe-preset-brand="Adidas" data-shoe-preset-model="Dropset 3" data-shoe-preset-cat="cross_trainer" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[0.625rem] font-bold text-slate-200 transition">Adidas Dropset 3</button>
+                <button type="button" data-shoe-preset-brand="Converse" data-shoe-preset-model="Chuck Taylor Flat" data-shoe-preset-cat="flat_lifter" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[0.625rem] font-bold text-slate-200 transition">Converse Flat</button>
+                <button type="button" data-shoe-preset-brand="Nike" data-shoe-preset-model="Pegasus / Runner" data-shoe-preset-cat="running_cushioned" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[0.625rem] font-bold text-slate-200 transition">Running Shoe</button>
+              </div>
+            </div>
           </div>
 
           <div class="grid grid-cols-2 gap-2">
-            <button type="button" id="apple-oauth-btn" class="py-2 px-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-[0.6875rem] flex items-center justify-center gap-1.5 shadow transition">
-              <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 170 170"><path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.13-1.9-14.34-6.08-3.69-3.03-7.61-7.82-11.77-14.37-5.93-9.19-10.72-19.74-14.38-31.67-3.66-11.92-5.49-22.95-5.49-33.08 0-12.82 3.19-23.22 9.56-31.21 6.38-7.99 14.39-12.11 24.04-12.37 4.92 0 10.31 1.48 16.16 4.44 5.85 2.96 9.63 4.49 11.34 4.61 1.34 0 5.47-1.78 12.4-5.34 6.93-3.56 12.79-5.08 17.59-4.56 13.08 1.05 22.93 6.18 29.55 15.39-11.73 7.12-17.46 16.96-17.19 29.52.27 9.85 3.94 18.06 11.02 24.64 4.92 4.65 10.77 7.45 17.56 8.4-.99 3.09-2.09 6.08-3.31 8.98zM119.22 31.01c0 7.72-2.82 14.94-8.46 21.66-6.81 7.96-15.05 12.55-23.97 11.83-.19-.94-.29-1.95-.29-3.04 0-7.41 3.1-15.32 9.3-22.34 2.97-3.41 6.74-6.24 11.31-8.5 4.57-2.25 8.9-3.5 12.99-3.74.08 1.42.12 2.8.12 4.13z"/></svg>
-              <span>Apple</span>
-            </button>
-            <button type="button" id="google-oauth-btn" class="py-2 px-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-white font-extrabold text-[0.6875rem] flex items-center justify-center gap-1.5 transition">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z"/><path fill="#FBBC05" d="M5.3 14.8c-.2-.8-.4-1.6-.4-2.5s.2-1.7.4-2.5L1.6 7C.6 9 0 11.2 0 13.5s.6 4.5 1.6 6.5l3.7-2.9z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.9C3.5 21.4 7.4 24 12 24z"/></svg>
-              <span>Google</span>
-            </button>
-          </div>
-
-          <div id="google-account-chooser-drawer" class="hidden">
-            <div id="google-chooser-saved-list"></div>
-          </div>
-
-          <!-- Phase 1 Blueprint Task 1: Passwordless Sign-In (Supabase Magic Link + WebAuthn Biometric Passkeys) -->
-          <section id="passwordless-auth-card" data-testid="passwordless-auth-section" aria-label="Passwordless Sign-In Options" class="rounded-xl border border-emerald-400/45 bg-slate-950/95 p-3 space-y-2.5">
-            <div>
-              <span class="inline-block rounded-md border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-[0.6875rem] font-extrabold text-emerald-200">No Password Needed</span>
-              <h4 class="mt-1 text-xs sm:text-sm font-extrabold text-white">Fast Sign-In: Magic Link or FaceID / Fingerprint</h4>
-              <p class="mt-0.5 text-[0.6875rem] leading-relaxed text-slate-300">Skip memorizing passwords. Get a one-tap email link or unlock with your phone&apos;s face or finger scan.</p>
-            </div>
-            <div>
-              <label for="passwordless-email-input" class="block text-xs font-bold text-slate-200 mb-1">Your Email Address (for Magic Link or Passkey)</label>
-              <input id="passwordless-email-input" data-testid="passwordless-email-input" type="email" inputmode="email" autocomplete="email webauthn" placeholder="you@example.com" class="min-h-[48px] w-full bg-slate-900 border border-slate-600 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:border-sky-300" />
-            </div>
-            <div class="grid grid-cols-1 gap-2">
-              <button type="button" id="send-magic-link-btn" data-testid="send-magic-link-btn" class="min-h-[48px] min-w-[48px] w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 px-3 py-2.5 text-xs font-extrabold text-slate-950 shadow transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">
-                ✉️ Email Me a One-Tap Magic Link
-              </button>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button type="button" id="signin-passkey-btn" data-testid="signin-passkey-btn" class="min-h-[48px] min-w-[48px] w-full rounded-xl border border-sky-400/70 bg-sky-950/60 hover:bg-sky-900/70 px-3 py-2 text-xs font-extrabold text-sky-100 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">
-                  🔐 Sign In with FaceID / Fingerprint
-                </button>
-                <button type="button" id="setup-passkey-btn" data-testid="setup-passkey-btn" class="min-h-[48px] min-w-[48px] w-full rounded-xl border border-indigo-400/70 bg-indigo-950/60 hover:bg-indigo-900/70 px-3 py-2 text-xs font-extrabold text-indigo-100 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">
-                  ➕ Set Up FaceID / Fingerprint
-                </button>
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
+              <div class="flex items-center justify-between mb-1">
+                <label for="shoe-purchase-date-input" class="text-[0.625rem] font-bold uppercase tracking-wider text-slate-300"> Date Bought</label>
+                <button type="button" id="shoe-date-today-btn" class="text-[0.625rem] font-bold text-sky-400 hover:text-sky-300">Today</button>
               </div>
+              <input id="shoe-purchase-date-input" type="date" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-extrabold text-white focus:outline-none focus:border-sky-400" />
             </div>
-            <div id="magic-link-otp-wrap" class="hidden space-y-2 rounded-xl border border-emerald-400/35 bg-slate-900 p-2.5">
-              <label for="magic-link-otp-input" class="block text-xs font-extrabold text-emerald-200">Optional: Type 6-Digit Email Code</label>
-              <div class="flex flex-wrap gap-2">
-                <input id="magic-link-otp-input" data-testid="magic-link-otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="123456" class="min-h-[48px] flex-1 rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-xs font-extrabold tracking-widest text-white placeholder-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300" />
-                <button type="button" id="verify-magic-link-otp-btn" data-testid="verify-magic-link-otp-btn" class="min-h-[48px] min-w-[48px] rounded-xl bg-sky-400 hover:bg-sky-300 px-4 py-2 text-xs font-extrabold text-slate-950 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200">
-                  Verify Code
-                </button>
-              </div>
-            </div>
-            <p id="passwordless-status-msg" data-testid="passwordless-status-msg" role="status" aria-live="polite" class="hidden rounded-lg border border-emerald-500/40 bg-emerald-950/60 px-2.5 py-2 text-xs font-semibold leading-relaxed text-emerald-200"></p>
-            <p id="passwordless-error-msg" data-testid="passwordless-error-msg" role="alert" aria-live="polite" class="hidden rounded-lg border border-rose-500/40 bg-rose-950/60 px-2.5 py-2 text-xs font-semibold leading-relaxed text-rose-200"></p>
-          </section>
 
-          <div class="flex items-center gap-2 text-[0.625rem] text-slate-500 uppercase font-bold">
-            <div class="flex-1 h-px bg-slate-800"></div>
-            <span id="auth-divider-label">Or Continue with Email &amp; Password</span>
-            <div class="flex-1 h-px bg-slate-800"></div>
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
+              <label for="shoe-category-select" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-1"> Sole Type</label>
+              <select id="shoe-category-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-sky-400">
+                <option value="cross_trainer">Cross-Trainer (150 sess)</option>
+                <option value="flat_lifter">Flat Lifter (180 sess)</option>
+                <option value="running_cushioned">Running Shoe (110 sess)</option>
+                <option value="weightlifting_heel">Lifting Heel (300 sess)</option>
+              </select>
+            </div>
+
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
+              <label for="shoe-brand-input" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-1"> Brand</label>
+              <input id="shoe-brand-input" type="text" placeholder="e.g., Nike" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400" />
+            </div>
+
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
+              <label for="shoe-model-input" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-1"> Model</label>
+              <input id="shoe-model-input" type="text" placeholder="e.g., Metcon 9" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400" />
+            </div>
           </div>
 
-          <div class="space-y-2 text-xs">
-            <div id="lead-name-field-wrap" class="hidden">
-              <label for="lead-name-input" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-1">First Name</label>
-              <input id="lead-name-input" type="text" autocomplete="given-name" placeholder="Enter your first name" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
-            </div>
-            <div>
-              <label for="lead-email-input" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-1">Email Address</label>
-              <input id="lead-email-input" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
-            </div>
-            <div>
-              <label for="lead-password-input" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-1">Password</label>
-              <div class="relative flex items-center">
-                <input id="lead-password-input" type="password" autocomplete="current-password" minlength="6" placeholder="Enter your password" class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-3 pr-14 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400" />
-                <button type="button" id="toggle-lead-password-btn" aria-pressed="false" class="absolute right-2 px-2 py-1 rounded-lg text-[0.625rem] font-extrabold text-sky-300 hover:text-white bg-slate-900 border border-slate-700 transition">
-                  Show
-                </button>
-              </div>
-            </div>
-            <p id="lead-auth-error-msg" role="alert" class="hidden rounded-lg border border-rose-500/40 bg-rose-950/50 px-2.5 py-1.5 text-[0.6875rem] font-bold text-rose-200"></p>
-            <input id="lead-phone-input" type="hidden" value="" />
+          <div id="shoe-lifespan-dashboard" class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+            <!-- Populated dynamically by JS -->
           </div>
 
-          <button type="button" id="submit-smart-login-btn" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition">
-            Log In →
-          </button>
-
-          <button type="button" id="cancel-new-account-btn" class="w-full py-1 text-[0.6875rem] font-bold text-slate-400 hover:text-slate-200 transition">
-            ← Back to Active Account
-          </button>
+          <!-- Hidden legacy header IDs preserved for clean JS compatibility -->
+          <span id="shoe-header-title" class="hidden"></span>
+          <span id="shoe-header-subtitle" class="hidden"></span>
+          <span id="toggle-shoe-tracker-btn" class="hidden"></span>
+          <span id="shoe-tracker-panel" class="hidden"></span>
+          <span id="shoe-tracker-chevron" class="hidden"></span>
         </div>
-      </div>
-
-      <!-- SECTION B: MY GEAR & GYM SHOES (Placed Inside Profile > My Gear Like Strava, Garmin & Runkeeper!) -->
-      <div id="profile-gear-section-wrap" class="hidden space-y-3 text-xs">
-        <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3 space-y-2.5">
-          <div class="flex items-center gap-2.5">
-            <div id="shoe-photo-preview-wrap" class="w-14 h-14 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
-              <img id="shoe-photo-preview-img" src="" alt="Gym Shoe Preview" class="hidden w-full h-full object-cover" />
-              <span id="shoe-photo-placeholder-icon" class="text-xl"></span>
-            </div>
-            <div class="min-w-0 flex-1">
-              <span class="text-[0.625rem] font-extrabold uppercase tracking-wider text-sky-400" id="shoe-ai-status-badge"> AI Vision Shoe Scanner</span>
-              <div class="text-xs font-extrabold text-white truncate mt-0.5" id="shoe-detected-summary">Active Shoe</div>
-              <p class="text-[0.625rem] text-slate-400 leading-snug" id="shoe-detected-sub">Snap a photo to auto-detect Brand/Model &amp; set Date Bought to Today.</p>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-2">
-            <label for="shoe-camera-input" class="flex-1 py-2 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 font-extrabold text-xs text-center cursor-pointer transition whitespace-nowrap">
-               Take Shoe Photo
-            </label>
-            <input id="shoe-camera-input" type="file" accept="image/*" capture="environment" class="hidden" />
-            <label for="shoe-gallery-input" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs text-center cursor-pointer transition whitespace-nowrap">
-               Upload Photo
-            </label>
-            <input id="shoe-gallery-input" type="file" accept="image/*" class="hidden" />
-          </div>
-
-          <div class="space-y-1 pt-1 border-t border-slate-800/80">
-            <span class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-400">1-Tap Gym Shoe Presets:</span>
-            <div class="flex flex-wrap gap-1">
-              <button type="button" data-shoe-preset-brand="Nike" data-shoe-preset-model="Metcon 9" data-shoe-preset-cat="cross_trainer" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[0.625rem] font-bold text-slate-200 transition">Nike Metcon 9</button>
-              <button type="button" data-shoe-preset-brand="Reebok" data-shoe-preset-model="Nano X4" data-shoe-preset-cat="cross_trainer" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[0.625rem] font-bold text-slate-200 transition">Reebok Nano X4</button>
-              <button type="button" data-shoe-preset-brand="Adidas" data-shoe-preset-model="Dropset 3" data-shoe-preset-cat="cross_trainer" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[0.625rem] font-bold text-slate-200 transition">Adidas Dropset 3</button>
-              <button type="button" data-shoe-preset-brand="Converse" data-shoe-preset-model="Chuck Taylor Flat" data-shoe-preset-cat="flat_lifter" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[0.625rem] font-bold text-slate-200 transition">Converse Flat</button>
-              <button type="button" data-shoe-preset-brand="Nike" data-shoe-preset-model="Pegasus / Runner" data-shoe-preset-cat="running_cushioned" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[0.625rem] font-bold text-slate-200 transition">Running Shoe</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
-            <div class="flex items-center justify-between mb-1">
-              <label for="shoe-purchase-date-input" class="text-[0.625rem] font-bold uppercase tracking-wider text-slate-300"> Date Bought</label>
-              <button type="button" id="shoe-date-today-btn" class="text-[0.625rem] font-bold text-sky-400 hover:text-sky-300">Today</button>
-            </div>
-            <input id="shoe-purchase-date-input" type="date" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-extrabold text-white focus:outline-none focus:border-sky-400" />
-          </div>
-
-          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
-            <label for="shoe-category-select" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-1"> Sole Type</label>
-            <select id="shoe-category-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-sky-400">
-              <option value="cross_trainer">Cross-Trainer (150 sess)</option>
-              <option value="flat_lifter">Flat Lifter (180 sess)</option>
-              <option value="running_cushioned">Running Shoe (110 sess)</option>
-              <option value="weightlifting_heel">Lifting Heel (300 sess)</option>
-            </select>
-          </div>
-
-          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
-            <label for="shoe-brand-input" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-1"> Brand</label>
-            <input id="shoe-brand-input" type="text" placeholder="e.g., Nike" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400" />
-          </div>
-
-          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
-            <label for="shoe-model-input" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-1"> Model</label>
-            <input id="shoe-model-input" type="text" placeholder="e.g., Metcon 9" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400" />
-          </div>
-        </div>
-
-        <div id="shoe-lifespan-dashboard" class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
-          <!-- Populated dynamically by JS -->
-        </div>
-
-        <!-- Hidden legacy header IDs preserved for clean JS compatibility -->
-        <span id="shoe-header-title" class="hidden"></span>
-        <span id="shoe-header-subtitle" class="hidden"></span>
-        <span id="toggle-shoe-tracker-btn" class="hidden"></span>
-        <span id="shoe-tracker-panel" class="hidden"></span>
-        <span id="shoe-tracker-chevron" class="hidden"></span>
       </div>
     </div>
   </div>
@@ -31123,7 +31263,7 @@
         if (btn) {
           btn.setAttribute('aria-checked', clean ? 'true' : 'false');
           btn.className = clean
-            ? 'w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-emerald-400 bg-emerald-600 text-white text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2'
+            ? 'btn-auto-sync-active w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-green-500 bg-green-700 hover:bg-green-800 text-white text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2'
             : 'w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-slate-600 bg-slate-900 hover:bg-slate-800 text-slate-100 text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2';
         }
         if (statusEl) {

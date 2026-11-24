@@ -88,29 +88,66 @@ export function validatePasswordlessEmail(rawEmail: unknown): {
 }
 
 /**
+ * Task 2: Dynamically resolves the active environment origin (window.location.origin)
+ * so Magic Links work reliably on mobile devices, LAN/preview domains, and production
+ * without ever falling back to a hardcoded localhost or stale static Vercel URL.
+ */
+export function resolveDynamicAuthRedirectUrl(
+  explicitOrigin?: string | null
+): string | undefined {
+  const runtimeOrigin =
+    explicitOrigin ??
+    (typeof window !== 'undefined' && window.location && window.location.origin
+      ? window.location.origin
+      : '');
+  const cleanOrigin = String(runtimeOrigin || '').trim();
+  if (!cleanOrigin) return undefined;
+
+  try {
+    const parsedOrigin = new URL(cleanOrigin);
+    if (parsedOrigin.protocol !== 'https:' && parsedOrigin.protocol !== 'http:') {
+      return undefined;
+    }
+    return parsedOrigin.origin;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Validates and builds a safe same-origin redirect URL for Supabase Magic Links.
- * Rejects javascript:, data:, and external origins to prevent open-redirect phishing.
+ * Always prefers the live `window.location.origin` over any hardcoded localhost or
+ * mismatched static deployment URL, and rejects javascript:/data: protocols.
  */
 export function buildSafeMagicLinkRedirectUrl(
   candidateUrl?: string | null,
   currentOrigin?: string | null
 ): string | undefined {
-  const fallbackOrigin =
+  const dynamicOrigin =
     currentOrigin ??
-    (typeof window !== 'undefined' && window.location ? window.location.origin : '');
-  const raw = String(candidateUrl || fallbackOrigin || '').trim();
-  if (!raw) return undefined;
+    (typeof window !== 'undefined' && window.location && window.location.origin
+      ? window.location.origin
+      : '');
+
+  const rawCandidate = String(candidateUrl || '').trim();
+  if (!rawCandidate) {
+    return resolveDynamicAuthRedirectUrl(dynamicOrigin);
+  }
 
   try {
-    const parsed = new URL(raw);
+    const parsed = new URL(rawCandidate);
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
       return undefined;
     }
-    if (fallbackOrigin) {
-      const originParsed = new URL(fallbackOrigin);
+    if (dynamicOrigin) {
+      const originParsed = new URL(dynamicOrigin);
+      // Override any hardcoded localhost or stale static Vercel URL with the active runtime origin
       if (parsed.origin !== originParsed.origin) {
         return originParsed.origin;
       }
+    }
+    if (!parsed.pathname || parsed.pathname === '/' || parsed.pathname === '/index.html') {
+      return parsed.origin;
     }
     return `${parsed.origin}${parsed.pathname}`;
   } catch {
@@ -119,14 +156,16 @@ export function buildSafeMagicLinkRedirectUrl(
 }
 
 /**
- * Task 1 (Supabase Magic Link / Email OTP):
- * Sends a one-tap sign-in link (and optional 6-digit code) with zero password needed.
+ * Task 1 & Task 2 (Supabase Magic Link / Email OTP):
+ * Sends a one-tap sign-in link (and optional 6-digit code) with zero password needed,
+ * using `window.location.origin` dynamically for `emailRedirectTo`.
  */
 export async function sendSupabaseMagicLink(options: {
   email: string;
   displayName?: string;
   shouldCreateUser?: boolean;
   redirectTo?: string;
+  currentOrigin?: string;
   supabaseClient?: SupabasePasswordlessClientLike | SupabaseClient | null;
 }): Promise<MagicLinkSendResult> {
   const emailCheck = validatePasswordlessEmail(options.email);
@@ -145,7 +184,7 @@ export async function sendSupabaseMagicLink(options: {
       ? (options.supabaseClient as SupabasePasswordlessClientLike | null)
       : (getSupabaseClient() as SupabasePasswordlessClientLike | null);
 
-  const safeRedirect = buildSafeMagicLinkRedirectUrl(options.redirectTo);
+  const safeRedirect = buildSafeMagicLinkRedirectUrl(options.redirectTo, options.currentOrigin);
 
   if (client && client.auth && typeof client.auth.signInWithOtp === 'function') {
     try {

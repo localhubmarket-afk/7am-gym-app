@@ -8,7 +8,7 @@
     "start": "tsx server.ts",
     "build": "vite build",
     "preview": "vite preview --port 3000 --host 0.0.0.0",
-    "lint": "node --check api/state.js && node --check api/gemini.js && node --check api/biometrics.js"
+    "lint": "node --check api/state.js && node --check api/gemini.js && node --check api/biometrics.js && node --check api/delete-account.js"
   },
   "dependencies": {
     "@google/genai": "^3.6.1",

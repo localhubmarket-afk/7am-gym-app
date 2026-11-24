@@ -170,6 +170,23 @@ nav,
   box-sizing: border-box;
 }
 
+/* Auth Modal Shell: keep modal header and Close button fixed while only inner form scrolls */
+[role="dialog"].fixed > .auth-modal-shell,
+.auth-modal-shell {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  max-height: 90vh !important;
+  max-height: 90dvh !important;
+}
+
+.auth-modal-scroll-body {
+  max-height: 80vh;
+  max-height: 80dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 img,
 svg,
 video,
@@ -564,7 +581,26 @@ html.light-theme .text-indigo-300 {
   color: #4C1D95 !important;
 }
 
-/* Preserve crisp high-contrast ink on solid colored buttons in Light Mode */
+/* Preserve crisp high-contrast ink on solid colored buttons in BOTH Dark and Light Modes */
+.bg-green-600,
+.bg-green-700,
+.bg-green-800,
+.btn-save-account-solid,
+.btn-auto-sync-active,
+html[data-theme="dark"] .bg-green-600,
+html.dark-theme .bg-green-600,
+html[data-theme="dark"] .bg-green-700,
+html.dark-theme .bg-green-700,
+html[data-theme="dark"] .bg-green-800,
+html.dark-theme .bg-green-800,
+html[data-theme="dark"] .btn-save-account-solid,
+html.dark-theme .btn-save-account-solid,
+html[data-theme="dark"] .btn-auto-sync-active,
+html.dark-theme .btn-auto-sync-active,
+html[data-theme="light"] .bg-green-600,
+html.light-theme .bg-green-600,
+html[data-theme="light"] .bg-green-700,
+html.light-theme .bg-green-700,
 html[data-theme="light"] .bg-emerald-600,
 html.light-theme .bg-emerald-600,
 html[data-theme="light"] .bg-emerald-700,
@@ -584,6 +620,25 @@ html.light-theme .bg-black\/90 {
   color: #FFFFFF !important;
 }
 
+.bg-green-600 *,
+.bg-green-700 *,
+.bg-green-800 *,
+.btn-save-account-solid *,
+.btn-auto-sync-active *,
+html[data-theme="dark"] .bg-green-600 *,
+html.dark-theme .bg-green-600 *,
+html[data-theme="dark"] .bg-green-700 *,
+html.dark-theme .bg-green-700 *,
+html[data-theme="dark"] .bg-green-800 *,
+html.dark-theme .bg-green-800 *,
+html[data-theme="dark"] .btn-save-account-solid *,
+html.dark-theme .btn-save-account-solid *,
+html[data-theme="dark"] .btn-auto-sync-active *,
+html.dark-theme .btn-auto-sync-active *,
+html[data-theme="light"] .bg-green-600 *,
+html.light-theme .bg-green-600 *,
+html[data-theme="light"] .bg-green-700 *,
+html.light-theme .bg-green-700 *,
 html[data-theme="light"] .bg-emerald-600 *,
 html.light-theme .bg-emerald-600 *,
 html[data-theme="light"] .bg-emerald-700 *,
@@ -601,6 +656,18 @@ html.light-theme .neuro-btn-done *,
 html[data-theme="light"] .bg-black\/90 *,
 html.light-theme .bg-black\/90 * {
   color: #FFFFFF !important;
+}
+
+/* Soft pastel green backgrounds MUST use deep charcoal/black (#111827 / text-gray-900) */
+.bg-green-100,
+.bg-green-200,
+.bg-emerald-100,
+.bg-emerald-200,
+.bg-green-100 *,
+.bg-green-200 *,
+.bg-emerald-100 *,
+.bg-emerald-200 * {
+  color: #111827 !important;
 }
 
 html[data-theme="light"] .bg-emerald-500,

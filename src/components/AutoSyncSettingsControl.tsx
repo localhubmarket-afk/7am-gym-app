@@ -72,7 +72,7 @@ export const AutoSyncSettingsControl: React.FC<AutoSyncSettingsControlProps> = (
         </span>
         <span
           data-testid="auto-sync-status-badge"
-          className="text-xs font-bold text-emerald-400"
+          className="rounded-md bg-green-100 px-2 py-0.5 text-xs font-extrabold text-gray-900"
         >
           {friendlyStatus}
         </span>
@@ -89,9 +89,9 @@ export const AutoSyncSettingsControl: React.FC<AutoSyncSettingsControlProps> = (
         aria-label={AUTO_SYNC_TOGGLE_LABEL}
         data-testid="toggle-auto-sync-devices-btn"
         onClick={onToggleAutoSync}
-        className={`w-full min-h-[48px] min-w-[48px] px-4 py-3 rounded-xl border text-sm font-extrabold flex flex-wrap items-center justify-between gap-2 transition ${
+        className={`btn-auto-sync-devices w-full min-h-[48px] min-w-[48px] px-4 py-3 rounded-xl border text-sm font-extrabold flex flex-wrap items-center justify-between gap-2 transition ${
           isAutoSyncEnabled
-            ? 'border-emerald-400 bg-emerald-600 text-white'
+            ? 'border-green-500 bg-green-700 hover:bg-green-800 text-white'
             : 'border-[var(--border-strong)] bg-[var(--bg-surface)] text-[var(--text-primary)]'
         }`}
       >

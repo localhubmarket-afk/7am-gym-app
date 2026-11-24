@@ -391,15 +391,16 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="account-login-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur-sm"
     >
-      <div className="w-full max-w-md space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-5 text-slate-100 shadow-2xl">
-        <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-3">
-          <div>
-            <h2 id="account-login-title" className="text-base font-extrabold text-white">
+      <div className="auth-modal-shell flex w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 text-slate-100 shadow-2xl">
+        {/* Fixed Header & Close Button — Always Visible */}
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-800 px-4 py-2.5">
+          <div className="min-w-0">
+            <h2 id="account-login-title" className="text-sm font-extrabold leading-tight text-white">
               {mode === 'login' ? 'Log In to Your Account' : 'Create Your Account'}
             </h2>
-            <p className="mt-0.5 text-xs text-slate-300">
+            <p className="mt-0.5 text-[0.75rem] leading-snug text-slate-300">
               Sync your workouts, weights, and progress automatically.
             </p>
           </div>
@@ -408,277 +409,280 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
               type="button"
               onClick={onClose}
               aria-label="Close login modal"
-              className="min-h-[48px] min-w-[48px] rounded-lg bg-slate-800 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-slate-700"
+              className="min-h-[48px] min-w-[48px] shrink-0 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-100 hover:bg-slate-700"
             >
               Close
             </button>
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-1 rounded-xl border border-slate-800 bg-slate-950 p-1">
-          <button
-            type="button"
-            onClick={() => setMode('login')}
-            aria-pressed={mode === 'login'}
-            className={`min-h-[48px] min-w-[48px] rounded-lg py-2 text-xs font-extrabold transition ${
-              mode === 'login' ? 'bg-emerald-500 text-slate-950' : 'text-slate-300 hover:text-white'
-            }`}
-          >
-            Log In
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('signup')}
-            aria-pressed={mode === 'signup'}
-            className={`min-h-[48px] min-w-[48px] rounded-lg py-2 text-xs font-extrabold transition ${
-              mode === 'signup' ? 'bg-emerald-500 text-slate-950' : 'text-slate-300 hover:text-white'
-            }`}
-          >
-            Sign Up
-          </button>
-        </div>
-
-        {/* Instant OAuth Login Buttons */}
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            disabled={isSubmitting}
-            onClick={() => handleProviderClick('apple')}
-            aria-label="Continue with Apple Sign-In"
-            className="flex min-h-[48px] min-w-[48px] items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-slate-100 disabled:opacity-60"
-          >
-            <span>Continue with Apple</span>
-          </button>
-          <button
-            type="button"
-            disabled={isSubmitting}
-            onClick={() => handleProviderClick('google')}
-            aria-label="Continue with Google Sign-In"
-            className="flex min-h-[48px] min-w-[48px] items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs font-extrabold text-white transition hover:bg-slate-800 disabled:opacity-60"
-          >
-            <span>Continue with Google</span>
-          </button>
-        </div>
-
-        {/* Task 1: Fast Passwordless Sign-In (Supabase Magic Link + WebAuthn Biometric Passkeys) */}
-        <section
-          aria-label="Passwordless Sign-In Options"
-          data-testid="passwordless-auth-section"
-          className="space-y-3 rounded-xl border border-emerald-400/40 bg-slate-950/95 p-3.5"
+        {/* Scrollable Inner Form Container Only (max-h-[80vh] overflow-y-auto) */}
+        <div
+          data-testid="auth-modal-scroll-body"
+          className="flex max-h-[80vh] flex-col gap-2.5 overflow-y-auto px-4 py-3"
         >
-          <div>
-            <span className="inline-block rounded-md border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-[0.6875rem] font-extrabold text-emerald-200">
-              No Password Needed
-            </span>
-            <h3 className="mt-1 text-sm font-extrabold text-white">
-              Fast Sign-In with Magic Link or FaceID / Fingerprint
-            </h3>
-            <p className="mt-0.5 text-xs leading-relaxed text-slate-300">
-              Skip memorizing passwords. Pick a one-tap email link or unlock with your phone&apos;s face or finger scan.
-            </p>
-          </div>
-
-          <div>
-            <label
-              htmlFor="react-passwordless-email"
-              className="mb-1 block text-xs font-bold text-slate-200"
-            >
-              Your Email Address (for Magic Link or Passkey)
-            </label>
-            <input
-              id="react-passwordless-email"
-              data-testid="passwordless-email-input"
-              type="email"
-              inputMode="email"
-              autoComplete="email webauthn"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="min-h-[48px] w-full rounded-xl border border-slate-600 bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white placeholder-slate-400 focus-visible:border-sky-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-2">
+          <div className="grid grid-cols-2 gap-1 rounded-xl border border-slate-800 bg-slate-950 p-1">
             <button
               type="button"
-              disabled={isSendingMagicLink || isSubmitting}
-              data-testid="send-magic-link-btn"
-              onClick={() => void handleSendMagicLink()}
-              className="min-h-[48px] min-w-[48px] w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-emerald-400 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+              onClick={() => setMode('login')}
+              aria-pressed={mode === 'login'}
+              className={`min-h-[48px] min-w-[48px] rounded-lg py-1.5 text-xs font-extrabold transition ${
+                mode === 'login' ? 'bg-green-700 text-white' : 'text-slate-300 hover:text-white'
+              }`}
             >
-              {isSendingMagicLink ? 'Sending Magic Link...' : 'Email Me a One-Tap Magic Link'}
+              Log In
             </button>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button
-                type="button"
-                disabled={isRunningPasskey || isSubmitting}
-                data-testid="signin-passkey-btn"
-                onClick={() => void handlePasskeySignIn()}
-                className="min-h-[48px] min-w-[48px] w-full rounded-xl border border-sky-400/70 bg-sky-950/60 px-3 py-2.5 text-xs font-extrabold text-sky-100 transition hover:bg-sky-900/70 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
-              >
-                {isRunningPasskey ? 'Checking...' : 'Sign In with FaceID / Fingerprint'}
-              </button>
-
-              <button
-                type="button"
-                disabled={isRunningPasskey || isSubmitting}
-                data-testid="setup-passkey-btn"
-                onClick={() => void handlePasskeySetup()}
-                className="min-h-[48px] min-w-[48px] w-full rounded-xl border border-indigo-400/70 bg-indigo-950/60 px-3 py-2.5 text-xs font-extrabold text-indigo-100 transition hover:bg-indigo-900/70 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
-              >
-                {hasSavedPasskey ? 'Add Another Passkey' : 'Set Up FaceID / Fingerprint'}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setMode('signup')}
+              aria-pressed={mode === 'signup'}
+              className={`min-h-[48px] min-w-[48px] rounded-lg py-1.5 text-xs font-extrabold transition ${
+                mode === 'signup' ? 'bg-green-700 text-white' : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              Sign Up
+            </button>
           </div>
 
-          {!passkeySupported && (
-            <p className="text-[0.6875rem] leading-relaxed text-amber-200">
-              This browser window does not support biometric Passkeys. Use the Magic Link button above instead.
-            </p>
-          )}
+          {/* Instant OAuth Login Buttons */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => handleProviderClick('apple')}
+              aria-label="Continue with Apple Sign-In"
+              className="flex min-h-[48px] min-w-[48px] items-center justify-center gap-1.5 rounded-xl bg-white px-2.5 py-2 text-xs font-extrabold text-gray-900 shadow transition hover:bg-slate-100 disabled:opacity-60"
+            >
+              <span>Continue with Apple</span>
+            </button>
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => handleProviderClick('google')}
+              aria-label="Continue with Google Sign-In"
+              className="flex min-h-[48px] min-w-[48px] items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-950 px-2.5 py-2 text-xs font-extrabold text-white transition hover:bg-slate-800 disabled:opacity-60"
+            >
+              <span>Continue with Google</span>
+            </button>
+          </div>
 
-          {magicLinkSentTo && (
-            <div className="space-y-2 rounded-xl border border-emerald-400/35 bg-slate-900 p-3">
+          {/* Task 1: Fast Passwordless Sign-In (Supabase Magic Link + WebAuthn Biometric Passkeys) */}
+          <section
+            aria-label="Passwordless Sign-In Options"
+            data-testid="passwordless-auth-section"
+            className="flex flex-col gap-2 rounded-xl border border-green-500/45 bg-slate-950/95 p-2.5"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-1.5">
+              <h3 className="text-xs font-extrabold text-white">
+                Fast Sign-In: Magic Link or Passkey
+              </h3>
+              <span className="inline-block rounded-md bg-green-100 px-2 py-0.5 text-[0.6875rem] font-extrabold text-gray-900">
+                No Password Needed
+              </span>
+            </div>
+
+            <div>
               <label
-                htmlFor="react-magic-link-otp"
-                className="block text-xs font-extrabold text-emerald-200"
+                htmlFor="react-passwordless-email"
+                className="mb-1 block text-xs font-bold text-slate-200"
               >
-                Optional: Enter 6-Digit Email Code for {magicLinkSentTo}
+                Your Email Address (for Magic Link or Passkey)
               </label>
-              <div className="flex flex-wrap gap-2">
-                <input
-                  id="react-magic-link-otp"
-                  data-testid="magic-link-otp-input"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={8}
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value)}
-                  placeholder="123456"
-                  className="min-h-[48px] flex-1 rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-sm font-extrabold tracking-widest text-white placeholder-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
-                />
+              <input
+                id="react-passwordless-email"
+                data-testid="passwordless-email-input"
+                type="email"
+                inputMode="email"
+                autoComplete="email webauthn"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="min-h-[48px] w-full rounded-xl border border-slate-600 bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white placeholder-slate-400 focus-visible:border-sky-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <button
+                type="button"
+                disabled={isSendingMagicLink || isSubmitting}
+                data-testid="send-magic-link-btn"
+                onClick={() => void handleSendMagicLink()}
+                className="min-h-[48px] min-w-[48px] w-full rounded-xl bg-green-700 px-3 py-2 text-xs font-extrabold text-white shadow transition hover:bg-green-800 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+              >
+                {isSendingMagicLink ? 'Sending Magic Link...' : 'Email Me a One-Tap Magic Link'}
+              </button>
+
+              <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                 <button
                   type="button"
-                  disabled={isVerifyingOtp}
-                  data-testid="verify-magic-link-otp-btn"
-                  onClick={() => void handleVerifyMagicLinkOtp()}
-                  className="min-h-[48px] min-w-[48px] rounded-xl bg-sky-400 px-4 py-2 text-xs font-extrabold text-slate-950 hover:bg-sky-300 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
+                  disabled={isRunningPasskey || isSubmitting}
+                  data-testid="signin-passkey-btn"
+                  onClick={() => void handlePasskeySignIn()}
+                  className="min-h-[48px] min-w-[48px] w-full rounded-xl border border-sky-400/70 bg-sky-950/60 px-2.5 py-2 text-xs font-extrabold text-sky-100 transition hover:bg-sky-900/70 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
                 >
-                  {isVerifyingOtp ? 'Checking...' : 'Verify Code'}
+                  {isRunningPasskey ? 'Checking...' : 'Sign In with FaceID / Fingerprint'}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isRunningPasskey || isSubmitting}
+                  data-testid="setup-passkey-btn"
+                  onClick={() => void handlePasskeySetup()}
+                  className="min-h-[48px] min-w-[48px] w-full rounded-xl border border-indigo-400/70 bg-indigo-950/60 px-2.5 py-2 text-xs font-extrabold text-indigo-100 transition hover:bg-indigo-900/70 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+                >
+                  {hasSavedPasskey ? 'Add Another Passkey' : 'Set Up FaceID / Fingerprint'}
                 </button>
               </div>
             </div>
-          )}
 
-          {passwordlessStatus && (
-            <p
-              role="status"
-              aria-live="polite"
-              data-testid="passwordless-status-msg"
-              className="rounded-lg border border-emerald-500/40 bg-emerald-950/60 px-3 py-2 text-xs font-semibold leading-relaxed text-emerald-200"
-            >
-              {passwordlessStatus}
-            </p>
-          )}
+            {!passkeySupported && (
+              <p className="text-[0.6875rem] leading-snug text-amber-200">
+                This browser window does not support biometric Passkeys. Use the Magic Link button above instead.
+              </p>
+            )}
 
-          {passwordlessError && (
-            <p
-              role="alert"
-              aria-live="polite"
-              data-testid="passwordless-error-msg"
-              className="rounded-lg border border-rose-500/40 bg-rose-950/60 px-3 py-2 text-xs font-semibold leading-relaxed text-rose-200"
-            >
-              {passwordlessError}
-            </p>
-          )}
-        </section>
+            {magicLinkSentTo && (
+              <div className="space-y-1.5 rounded-xl border border-green-500/35 bg-slate-900 p-2.5">
+                <label
+                  htmlFor="react-magic-link-otp"
+                  className="block text-xs font-extrabold text-emerald-200"
+                >
+                  Optional: Enter 6-Digit Email Code for {magicLinkSentTo}
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  <input
+                    id="react-magic-link-otp"
+                    data-testid="magic-link-otp-input"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={8}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    placeholder="123456"
+                    className="min-h-[48px] flex-1 rounded-xl border border-slate-600 bg-slate-950 px-3 py-1.5 text-sm font-extrabold tracking-widest text-white placeholder-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+                  />
+                  <button
+                    type="button"
+                    disabled={isVerifyingOtp}
+                    data-testid="verify-magic-link-otp-btn"
+                    onClick={() => void handleVerifyMagicLinkOtp()}
+                    className="min-h-[48px] min-w-[48px] rounded-xl bg-sky-400 px-3.5 py-1.5 text-xs font-extrabold text-slate-950 hover:bg-sky-300 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
+                  >
+                    {isVerifyingOtp ? 'Checking...' : 'Verify Code'}
+                  </button>
+                </div>
+              </div>
+            )}
 
-        <div className="flex items-center gap-2 text-[0.625rem] font-bold uppercase text-slate-400">
-          <div className="h-px flex-1 bg-slate-800" />
-          <span>Or Log In with Email &amp; Password</span>
-          <div className="h-px flex-1 bg-slate-800" />
-        </div>
+            {passwordlessStatus && (
+              <p
+                role="status"
+                aria-live="polite"
+                data-testid="passwordless-status-msg"
+                className="rounded-lg border border-green-500/40 bg-green-100 px-2.5 py-1.5 text-xs font-bold leading-snug text-gray-900"
+              >
+                {passwordlessStatus}
+              </p>
+            )}
 
-        <form onSubmit={handleSubmit} className="space-y-3" noValidate>
-          {mode === 'signup' && (
+            {passwordlessError && (
+              <p
+                role="alert"
+                aria-live="polite"
+                data-testid="passwordless-error-msg"
+                className="rounded-lg border border-rose-500/40 bg-rose-950/60 px-2.5 py-1.5 text-xs font-semibold leading-snug text-rose-200"
+              >
+                {passwordlessError}
+              </p>
+            )}
+          </section>
+
+          <div className="flex items-center gap-2 text-[0.625rem] font-bold uppercase text-slate-400">
+            <div className="h-px flex-1 bg-slate-800" />
+            <span>Or Log In with Email &amp; Password</span>
+            <div className="h-px flex-1 bg-slate-800" />
+          </div>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-2" noValidate>
+            {mode === 'signup' && (
+              <div>
+                <label htmlFor="react-login-name" className="mb-0.5 block text-xs font-bold text-slate-200">
+                  First Name
+                </label>
+                <input
+                  id="react-login-name"
+                  type="text"
+                  autoComplete="given-name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Enter your first name"
+                  className="min-h-[48px] w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white placeholder-slate-400 focus:border-sky-400 focus:outline-none"
+                />
+              </div>
+            )}
+
             <div>
-              <label htmlFor="react-login-name" className="mb-1 block text-xs font-bold text-slate-200">
-                First Name
+              <label htmlFor="react-login-email" className="mb-0.5 block text-xs font-bold text-slate-200">
+                Email Address
               </label>
               <input
-                id="react-login-name"
-                type="text"
-                autoComplete="given-name"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                placeholder="Enter your first name"
-                className="min-h-[44px] w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs font-semibold text-white placeholder-slate-400 focus:border-sky-400 focus:outline-none"
+                id="react-login-email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="min-h-[48px] w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white placeholder-slate-400 focus:border-sky-400 focus:outline-none"
               />
             </div>
-          )}
 
-          <div>
-            <label htmlFor="react-login-email" className="mb-1 block text-xs font-bold text-slate-200">
-              Email Address
-            </label>
-            <input
-              id="react-login-email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="min-h-[44px] w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs font-semibold text-white placeholder-slate-400 focus:border-sky-400 focus:outline-none"
-            />
-          </div>
-
-          {/* Password Input Directly Below Email Address */}
-          <div>
-            <div className="mb-1 flex items-center justify-between">
-              <label htmlFor="react-login-password" className="block text-xs font-bold text-slate-200">
-                Password
-              </label>
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                aria-pressed={showPassword}
-                aria-label={showPassword ? 'Hide password characters' : 'Show password characters'}
-                className="min-h-[44px] min-w-[44px] px-2 text-[0.6875rem] font-bold text-sky-400 hover:text-sky-300"
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
+            {/* Password Input Directly Below Email Address */}
+            <div>
+              <div className="mb-0.5 flex items-center justify-between">
+                <label htmlFor="react-login-password" className="block text-xs font-bold text-slate-200">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-pressed={showPassword}
+                  aria-label={showPassword ? 'Hide password characters' : 'Show password characters'}
+                  className="min-h-[48px] min-w-[48px] px-2 text-[0.6875rem] font-bold text-sky-400 hover:text-sky-300"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              <input
+                id="react-login-password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="min-h-[48px] w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white placeholder-slate-400 focus:border-sky-400 focus:outline-none"
+              />
             </div>
-            <input
-              id="react-login-password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              className="min-h-[44px] w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs font-semibold text-white placeholder-slate-400 focus:border-sky-400 focus:outline-none"
-            />
-          </div>
 
-          {errorMessage && (
-            <p role="alert" aria-live="polite" className="rounded-lg border border-rose-500/40 bg-rose-950/60 px-3 py-2 text-xs font-semibold text-rose-200">
-              {errorMessage}
-            </p>
-          )}
+            {errorMessage && (
+              <p role="alert" aria-live="polite" className="rounded-lg border border-rose-500/40 bg-rose-950/60 px-2.5 py-1.5 text-xs font-semibold text-rose-200">
+                {errorMessage}
+              </p>
+            )}
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="min-h-[44px] min-w-[44px] w-full rounded-xl bg-sky-400 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-sky-300 disabled:opacity-60"
-          >
-            {isSubmitting ? 'Checking Account...' : mode === 'signup' ? 'Create Account' : 'Log In'}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="min-h-[48px] min-w-[48px] w-full rounded-xl bg-sky-400 px-4 py-2 text-xs font-extrabold text-slate-950 shadow transition hover:bg-sky-300 disabled:opacity-60"
+            >
+              {isSubmitting ? 'Checking Account...' : mode === 'signup' ? 'Create Account' : 'Log In'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
