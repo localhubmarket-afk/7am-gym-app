@@ -58,7 +58,7 @@ export const StartFreshControl: React.FC<StartFreshControlProps> = ({
       <button
         type="button"
         onClick={() => setConfirmOpen(true)}
-        className="w-full min-h-[44px] py-2.5 px-3 rounded-xl border border-rose-400/70 bg-rose-600/20 hover:bg-rose-600/30 text-rose-100 text-xs font-extrabold transition flex items-center justify-center gap-2"
+        className="w-full min-h-[48px] min-w-[48px] py-2.5 px-3 rounded-xl border border-rose-400/70 bg-rose-600/20 hover:bg-rose-600/30 text-rose-100 text-xs font-extrabold transition flex items-center justify-center gap-2"
       >
         <span>Start Fresh (Clear Workouts, Fuel &amp; Shop List)</span>
       </button>
@@ -102,7 +102,7 @@ export const StartFreshControl: React.FC<StartFreshControlProps> = ({
                 disabled={isResetting}
                 onClick={() => setConfirmOpen(false)}
                 aria-label="Cancel starting fresh"
-                className="min-h-[44px] min-w-[44px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition disabled:opacity-60"
+                className="min-h-[48px] min-w-[48px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -111,7 +111,7 @@ export const StartFreshControl: React.FC<StartFreshControlProps> = ({
                 disabled={isResetting}
                 onClick={handleConfirm}
                 aria-label="Confirm starting fresh and clearing all workouts and meals"
-                className="min-h-[44px] min-w-[44px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition disabled:opacity-60"
+                className="min-h-[48px] min-w-[48px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition disabled:opacity-60"
               >
                 {isResetting ? 'Clearing...' : 'Yes, Start Fresh'}
               </button>

@@ -47,34 +47,34 @@
     :root {
       --app-font-family: 'Lexend', 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
       --app-line-height: 1.5;
-      --bg-canvas: #1A1A1A;
-      --bg-surface: #242424;
-      --bg-surface-alt: #141414;
-      --text-primary: #F2F2F2;
-      --text-secondary: #D4D4D8;
+      --bg-canvas: #141414;
+      --bg-surface: #1E1E1E;
+      --bg-surface-alt: #262626;
+      --text-primary: #F8F6F5;
+      --text-secondary: #D8D8DE;
       --border-subtle: #3D3D3D;
-      --border-strong: #737373;
+      --border-strong: #767676;
       --accent-primary: #10B981;
-      --accent-on-primary: #0A1128;
+      --accent-on-primary: #0E1A40;
       --touch-target-min: 48px;
       --touch-target-gap: 0.5rem;
     }
     html[data-theme="dark"],
     html.dark {
-      --bg-canvas: #1A1A1A;
-      --bg-surface: #242424;
-      --bg-surface-alt: #141414;
-      --text-primary: #F2F2F2;
-      --text-secondary: #D4D4D8;
+      --bg-canvas: #141414;
+      --bg-surface: #1E1E1E;
+      --bg-surface-alt: #262626;
+      --text-primary: #F8F6F5;
+      --text-secondary: #D8D8DE;
       --border-subtle: #3D3D3D;
-      --border-strong: #737373;
+      --border-strong: #767676;
     }
     html[data-theme="light"],
     html.light-theme {
       --bg-canvas: #F7F7F7;
       --bg-surface: #FFFFFF;
       --bg-surface-alt: #EAECEF;
-      --text-primary: #0A1128;
+      --text-primary: #0E1A40;
       --text-secondary: #1E293B;
       --border-subtle: #CBD5E1;
       --border-strong: #475569;
@@ -87,6 +87,8 @@
       font-size: 100%;
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
+      overflow-x: clip;
+      max-width: 100vw;
     }
     html, body {
       font-family: var(--app-font-family) !important;
@@ -96,10 +98,11 @@
       background-color: var(--bg-canvas) !important;
       color: var(--text-primary) !important;
       -webkit-tap-highlight-color: transparent;
-      overflow-x: hidden;
+      overflow-x: clip;
       overflow-y: auto;
       height: auto;
-      min-height: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
       touch-action: pan-y;
       -webkit-overflow-scrolling: touch;
       max-width: 100vw;
@@ -117,22 +120,28 @@
       letter-spacing: 0.02em;
       font-family: var(--app-font-family);
     }
-    /* Dyslexia-Friendly Matte Charcoal Dark Mode Tokens (#1A1A1A canvas / #F2F2F2 text) */
-    .bg-slate-950,
-    .bg-\[\#0f172a\] {
-      background-color: #1A1A1A !important;
+    /* Strictly Scoped Matte Charcoal Dark Mode Tokens (#141414 canvas / #F8F6F5 ink => 17.1:1) */
+    html[data-theme="dark"] .bg-slate-950,
+    html.dark .bg-slate-950,
+    html[data-theme="dark"] .bg-\[\#0f172a\],
+    html.dark .bg-\[\#0f172a\] {
+      background-color: #141414 !important;
     }
-    .bg-slate-900,
-    .bg-\[\#1e293b\] {
-      background-color: #242424 !important;
+    html[data-theme="dark"] .bg-slate-900,
+    html.dark .bg-slate-900,
+    html[data-theme="dark"] .bg-\[\#1e293b\],
+    html.dark .bg-\[\#1e293b\] {
+      background-color: #1E1E1E !important;
     }
-    .text-white,
-    .text-\[\#f8fafc\] {
-      color: #F2F2F2 !important;
+    html[data-theme="dark"] .text-white,
+    html.dark .text-white,
+    html[data-theme="dark"] .text-\[\#f8fafc\],
+    html.dark .text-\[\#f8fafc\] {
+      color: #F8F6F5 !important;
     }
     .neuro-card-unstarted {
-      border: 1px solid #3D3D3D;
-      background-color: #242424;
+      border: 1px solid var(--border-subtle);
+      background-color: var(--bg-surface);
     }
     .neuro-card-active {
       background: rgba(217, 119, 6, 0.15) !important;
@@ -344,141 +353,233 @@
       outline-offset: 2px;
     }
 
-    /* High-Contrast Off-White Paper Light Mode (#F7F7F7 background / #0A1128 text — >= 15.8:1 contrast) */
+    /* High-Contrast Off-White Paper Light Mode (#F7F7F7 background / #0E1A40 navy ink => strictly 15.8:1) */
     html.light-theme body,
     html[data-theme="light"] body {
       background-color: #F7F7F7 !important;
-      color: #0A1128 !important;
+      color: #0E1A40 !important;
     }
     html.light-theme #main-sticky-header,
     html[data-theme="light"] #main-sticky-header {
       background-color: rgba(247, 247, 247, 0.98) !important;
       border-color: #CBD5E1 !important;
-      color: #0A1128 !important;
-      box-shadow: 0 4px 16px rgba(10, 17, 40, 0.08) !important;
+      color: #0E1A40 !important;
+      box-shadow: 0 4px 16px rgba(14, 26, 64, 0.08) !important;
     }
     html.light-theme nav.fixed.bottom-0,
     html[data-theme="light"] nav.fixed.bottom-0 {
       background-color: rgba(247, 247, 247, 0.98) !important;
       border-color: #CBD5E1 !important;
-      color: #0A1128 !important;
-      box-shadow: 0 -4px 14px rgba(10, 17, 40, 0.06) !important;
+      color: #0E1A40 !important;
+      box-shadow: 0 -4px 14px rgba(14, 26, 64, 0.06) !important;
     }
     html.light-theme #pinned-rest-timer-row,
+    html[data-theme="light"] #pinned-rest-timer-row,
     html.light-theme .bg-slate-900,
+    html[data-theme="light"] .bg-slate-900,
     html.light-theme .bg-slate-900\/95,
+    html[data-theme="light"] .bg-slate-900\/95,
     html.light-theme .bg-slate-900\/90,
+    html[data-theme="light"] .bg-slate-900\/90,
     html.light-theme .bg-slate-900\/85,
+    html[data-theme="light"] .bg-slate-900\/85,
     html.light-theme .bg-slate-900\/80,
+    html[data-theme="light"] .bg-slate-900\/80,
     html.light-theme .bg-\[\#0f172a\]:not(body),
+    html[data-theme="light"] .bg-\[\#0f172a\]:not(body),
     html.light-theme .bg-\[\#1e293b\],
-    html.light-theme .neuro-card-unstarted {
+    html[data-theme="light"] .bg-\[\#1e293b\],
+    html.light-theme .neuro-card-unstarted,
+    html[data-theme="light"] .neuro-card-unstarted {
       background-color: #FFFFFF !important;
       background-image: none !important;
-      color: #0A1128 !important;
+      color: #0E1A40 !important;
     }
     html.light-theme #day-banner,
+    html[data-theme="light"] #day-banner,
     html.light-theme [class*="from-slate-9"],
-    html.light-theme [class*="from-slate-8"] {
+    html[data-theme="light"] [class*="from-slate-9"],
+    html.light-theme [class*="from-slate-8"],
+    html[data-theme="light"] [class*="from-slate-8"] {
       background-color: #FFFFFF !important;
       background-image: linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 100%) !important;
       border-color: #CBD5E1 !important;
-      color: #0A1128 !important;
+      color: #0E1A40 !important;
     }
     html.light-theme .bg-slate-950,
+    html[data-theme="light"] .bg-slate-950,
     html.light-theme .bg-slate-950\/95,
+    html[data-theme="light"] .bg-slate-950\/95,
     html.light-theme .bg-slate-950\/90,
+    html[data-theme="light"] .bg-slate-950\/90,
     html.light-theme .bg-slate-950\/85,
+    html[data-theme="light"] .bg-slate-950\/85,
     html.light-theme .bg-slate-950\/80,
+    html[data-theme="light"] .bg-slate-950\/80,
     html.light-theme .bg-slate-800,
+    html[data-theme="light"] .bg-slate-800,
     html.light-theme .bg-slate-800\/90,
+    html[data-theme="light"] .bg-slate-800\/90,
     html.light-theme .weight-stepper,
-    html.light-theme .reps-stepper {
+    html[data-theme="light"] .weight-stepper,
+    html.light-theme .reps-stepper,
+    html[data-theme="light"] .reps-stepper {
       background-color: #EAECEF !important;
-      color: #0A1128 !important;
+      color: #0E1A40 !important;
     }
     html.light-theme .bg-emerald-950\/40,
+    html[data-theme="light"] .bg-emerald-950\/40,
     html.light-theme .bg-emerald-950\/50,
-    html.light-theme .bg-emerald-950\/80 {
+    html[data-theme="light"] .bg-emerald-950\/50,
+    html.light-theme .bg-emerald-950\/80,
+    html[data-theme="light"] .bg-emerald-950\/80 {
       background-color: #ECFDF5 !important;
       color: #065F46 !important;
     }
     html.light-theme .bg-amber-950\/50,
-    html.light-theme .bg-amber-950\/40 {
+    html[data-theme="light"] .bg-amber-950\/50,
+    html.light-theme .bg-amber-950\/40,
+    html[data-theme="light"] .bg-amber-950\/40 {
       background-color: #FFFBEB !important;
       color: #78350F !important;
     }
     html.light-theme .bg-sky-950\/50,
-    html.light-theme .bg-sky-950\/40 {
+    html[data-theme="light"] .bg-sky-950\/50,
+    html.light-theme .bg-sky-950\/40,
+    html[data-theme="light"] .bg-sky-950\/40 {
       background-color: #F0F9FF !important;
       color: #0C4A6E !important;
     }
     html.light-theme .border-slate-800,
+    html[data-theme="light"] .border-slate-800,
     html.light-theme .border-slate-800\/90,
-    html.light-theme .border-slate-700 {
-      border-color: #CBD5E1 !important;
+    html[data-theme="light"] .border-slate-800\/90,
+    html.light-theme .border-slate-700,
+    html[data-theme="light"] .border-slate-700 {
+      border-color: #94A3B8 !important;
     }
     html.light-theme .text-white,
+    html[data-theme="light"] .text-white,
     html.light-theme .text-\[\#f8fafc\],
+    html[data-theme="light"] .text-\[\#f8fafc\],
     html.light-theme .text-slate-100,
-    html.light-theme .text-slate-200 {
-      color: #0A1128 !important;
+    html[data-theme="light"] .text-slate-100,
+    html.light-theme .text-slate-200,
+    html[data-theme="light"] .text-slate-200 {
+      color: #0E1A40 !important;
     }
     html.light-theme .text-slate-300,
-    html.light-theme .text-slate-400 {
+    html[data-theme="light"] .text-slate-300,
+    html.light-theme .text-slate-400,
+    html[data-theme="light"] .text-slate-400 {
       color: #1E293B !important;
     }
     html.light-theme .text-emerald-400,
+    html[data-theme="light"] .text-emerald-400,
     html.light-theme .text-emerald-300,
+    html[data-theme="light"] .text-emerald-300,
     html.light-theme .text-emerald-200,
-    html.light-theme .text-emerald-100 {
+    html[data-theme="light"] .text-emerald-200,
+    html.light-theme .text-emerald-100,
+    html[data-theme="light"] .text-emerald-100 {
       color: #047857 !important;
     }
     html.light-theme .text-sky-300,
+    html[data-theme="light"] .text-sky-300,
     html.light-theme .text-sky-200,
+    html[data-theme="light"] .text-sky-200,
     html.light-theme .text-sky-100,
+    html[data-theme="light"] .text-sky-100,
     html.light-theme .text-sky-400,
+    html[data-theme="light"] .text-sky-400,
     html.light-theme .text-cyan-200,
+    html[data-theme="light"] .text-cyan-200,
     html.light-theme .text-cyan-300,
-    html.light-theme .text-cyan-400 {
+    html[data-theme="light"] .text-cyan-300,
+    html.light-theme .text-cyan-400,
+    html[data-theme="light"] .text-cyan-400 {
       color: #0369A1 !important;
     }
     html.light-theme .text-amber-100,
+    html[data-theme="light"] .text-amber-100,
     html.light-theme .text-amber-200,
+    html[data-theme="light"] .text-amber-200,
     html.light-theme .text-amber-300,
-    html.light-theme .text-amber-400 {
+    html[data-theme="light"] .text-amber-300,
+    html.light-theme .text-amber-400,
+    html[data-theme="light"] .text-amber-400 {
       color: #92400E !important;
     }
     html.light-theme .text-rose-100,
+    html[data-theme="light"] .text-rose-100,
     html.light-theme .text-rose-200,
+    html[data-theme="light"] .text-rose-200,
     html.light-theme .text-rose-300,
-    html.light-theme .text-rose-400 {
+    html[data-theme="light"] .text-rose-300,
+    html.light-theme .text-rose-400,
+    html[data-theme="light"] .text-rose-400 {
       color: #9F1239 !important;
     }
     html.light-theme .text-purple-100,
+    html[data-theme="light"] .text-purple-100,
     html.light-theme .text-purple-200,
+    html[data-theme="light"] .text-purple-200,
     html.light-theme .text-purple-300,
+    html[data-theme="light"] .text-purple-300,
     html.light-theme .text-indigo-200,
-    html.light-theme .text-indigo-300 {
-      color: #6B21A8 !important;
+    html[data-theme="light"] .text-indigo-200,
+    html.light-theme .text-indigo-300,
+    html[data-theme="light"] .text-indigo-300 {
+      color: #4C1D95 !important;
     }
     html.light-theme .bg-emerald-600,
+    html[data-theme="light"] .bg-emerald-600,
     html.light-theme .bg-sky-600,
-    html.light-theme .bg-emerald-500,
-    html.light-theme .neuro-btn-done {
+    html[data-theme="light"] .bg-sky-600,
+    html.light-theme .bg-indigo-600,
+    html[data-theme="light"] .bg-indigo-600,
+    html.light-theme .bg-rose-600,
+    html[data-theme="light"] .bg-rose-600,
+    html.light-theme .neuro-btn-done,
+    html[data-theme="light"] .neuro-btn-done {
       color: #FFFFFF !important;
     }
     html.light-theme .bg-emerald-600 *,
+    html[data-theme="light"] .bg-emerald-600 *,
     html.light-theme .bg-sky-600 *,
-    html.light-theme .bg-emerald-500 *,
-    html.light-theme .neuro-btn-done * {
+    html[data-theme="light"] .bg-sky-600 *,
+    html.light-theme .bg-indigo-600 *,
+    html[data-theme="light"] .bg-indigo-600 *,
+    html.light-theme .bg-rose-600 *,
+    html[data-theme="light"] .bg-rose-600 *,
+    html.light-theme .neuro-btn-done *,
+    html[data-theme="light"] .neuro-btn-done * {
       color: #FFFFFF !important;
     }
+    html.light-theme .bg-emerald-500,
+    html[data-theme="light"] .bg-emerald-500,
+    html.light-theme .bg-amber-400,
+    html[data-theme="light"] .bg-amber-400,
+    html.light-theme .bg-amber-500,
+    html[data-theme="light"] .bg-amber-500 {
+      color: #0E1A40 !important;
+    }
+    html.light-theme .bg-emerald-500 *,
+    html[data-theme="light"] .bg-emerald-500 *,
+    html.light-theme .bg-amber-400 *,
+    html[data-theme="light"] .bg-amber-400 *,
+    html.light-theme .bg-amber-500 *,
+    html[data-theme="light"] .bg-amber-500 * {
+      color: #0E1A40 !important;
+    }
     html.light-theme input,
+    html[data-theme="light"] input,
     html.light-theme select,
-    html.light-theme textarea {
+    html[data-theme="light"] select,
+    html.light-theme textarea,
+    html[data-theme="light"] textarea {
       background-color: #FFFFFF !important;
-      color: #0A1128 !important;
+      color: #0E1A40 !important;
       border-color: #64748B !important;
     }
 
@@ -1542,6 +1643,9 @@
       "currentWeightLbs": 168.5,
       "targetWeightLbs": 162.0,
       "unitPreference": "lbs",
+      "isHsaFsaEligible": false,
+      "isCorporateWellnessSponsored": false,
+      "billingRouteStub": "free_beta_direct",
       "signedInAt": "2026-11-01T07:00:00.000Z"
     };
     const FRANCOIS_SEED_WEIGHT_LOGS = [
@@ -26735,6 +26839,11 @@
           activeLowSpoonsPreset: state.activeLowSpoonsPreset || null,
           biometricsSnapshot: state.biometricsSnapshot || null,
           plannedTotalSets: plannedSets,
+          institutionalEligibility:
+            typeof window.normalizeInstitutionalEligibility === 'function'
+              ? window.normalizeInstitutionalEligibility(state.userProfile)
+              : null,
+          gymState: state,
           onVoiceLogParsed: async (parsed) => {
             if (typeof window.applyVoiceLogToGymState !== 'function') return;
             const effectiveTarget = Object.assign({}, target, {
@@ -26799,8 +26908,15 @@
             renderPhase2AccessibilityHub();
           },
           onSyncBiometrics: async (snapshot) => {
-            state.biometricsSnapshot = snapshot;
+            if (typeof window.attachBiometricsToGymState === 'function') {
+              const attached = window.attachBiometricsToGymState(state, snapshot);
+              state.biometricsSnapshot = attached.biometricsSnapshot;
+              state.biometricsHistory = attached.biometricsHistory;
+            } else {
+              state.biometricsSnapshot = snapshot;
+            }
             saveState(false, 'biometrics_sync');
+            pushStateToCloud('biometrics_sync');
             renderWorkoutView();
             const acctEmail = state && state.userProfile && state.userProfile.email ? String(state.userProfile.email).trim().toLowerCase() : '';
             if (acctEmail && typeof window.syncDailyBiometricsToSupabase === 'function') {
@@ -26811,6 +26927,28 @@
             }
             showToast(`Recovery biometrics synced (${snapshot.sleepHours.toFixed(1)}h sleep, ${snapshot.dailySteps.toLocaleString()} steps).`);
             renderPhase2AccessibilityHub();
+          },
+          onUpdateInstitutionalEligibility: async (nextFlags) => {
+            if (typeof window.applyInstitutionalFlagsToUserProfile === 'function') {
+              const updated = window.applyInstitutionalFlagsToUserProfile(state, nextFlags);
+              state.userProfile = updated.userProfile;
+            } else {
+              state.userProfile = Object.assign({}, state.userProfile || {}, {
+                isHsaFsaEligible: Boolean(nextFlags && nextFlags.isHsaFsaEligible),
+                isCorporateWellnessSponsored: Boolean(nextFlags && nextFlags.isCorporateWellnessSponsored),
+                billingRouteStub: nextFlags && nextFlags.billingRouteStub ? nextFlags.billingRouteStub : 'free_beta_direct'
+              });
+            }
+            saveState(false, 'institutional_eligibility');
+            pushStateToCloud('institutional_eligibility');
+            showToast('Updated wellness eligibility flags (100% free beta active).');
+            renderPhase2AccessibilityHub();
+          },
+          onExportClinicalCsv: () => {
+            if (typeof window.triggerClinicalTrialCsvDownload === 'function') {
+              const exported = window.triggerClinicalTrialCsvDownload(state);
+              showToast(`Exported 12-week anonymized CSV (${exported.participantAnonId}).`);
+            }
           }
         });
       }
@@ -29563,9 +29701,9 @@
       </div>
 
       <!-- Task 5: Returning User Login Bypass Directly on Onboarding Quiz -->
-      <div class="rounded-xl border border-sky-400/50 bg-sky-500/10 p-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <span class="text-[0.6875rem] font-bold text-slate-200">Returning user? Load your saved cloud profile.</span>
-        <button type="button" id="wizard-returning-login-btn" class="py-1.5 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold whitespace-nowrap shadow transition">
+      <div class="rounded-xl border border-sky-400/50 bg-sky-500/10 p-2.5 flex flex-wrap items-center justify-between gap-2">
+        <span class="text-[0.6875rem] font-bold text-slate-200 flex-1 min-w-[10rem]">Returning user? Load your saved cloud profile.</span>
+        <button type="button" id="wizard-returning-login-btn" class="min-h-[48px] py-2 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold whitespace-normal text-center shrink-0 max-w-full shadow transition">
           Already have an account? Log In
         </button>
       </div>

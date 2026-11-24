@@ -367,7 +367,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
               disabled={isSubmitting}
               onClick={handleConfirmVerification}
               aria-label={`Continue as ${pendingVerification.displayName}`}
-              className="min-h-[44px] min-w-[44px] w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-emerald-400 disabled:opacity-60"
+              className="min-h-[48px] min-w-[48px] w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-emerald-400 disabled:opacity-60"
             >
               {isSubmitting ? 'Signing In...' : `Yes, Continue as ${pendingVerification.displayName}`}
             </button>
@@ -376,7 +376,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
               disabled={isSubmitting}
               onClick={handleSwitchAccount}
               aria-label="Switch to a different account"
-              className="min-h-[44px] min-w-[44px] w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-2.5 text-xs font-extrabold text-slate-100 transition hover:bg-slate-700 disabled:opacity-60"
+              className="min-h-[48px] min-w-[48px] w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-2.5 text-xs font-extrabold text-slate-100 transition hover:bg-slate-700 disabled:opacity-60"
             >
               Switch Account
             </button>
@@ -408,7 +408,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
               type="button"
               onClick={onClose}
               aria-label="Close login modal"
-              className="min-h-[44px] min-w-[44px] rounded-lg bg-slate-800 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-slate-700"
+              className="min-h-[48px] min-w-[48px] rounded-lg bg-slate-800 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-slate-700"
             >
               Close
             </button>
@@ -420,7 +420,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
             type="button"
             onClick={() => setMode('login')}
             aria-pressed={mode === 'login'}
-            className={`min-h-[44px] min-w-[44px] rounded-lg py-2 text-xs font-extrabold transition ${
+            className={`min-h-[48px] min-w-[48px] rounded-lg py-2 text-xs font-extrabold transition ${
               mode === 'login' ? 'bg-emerald-500 text-slate-950' : 'text-slate-300 hover:text-white'
             }`}
           >
@@ -430,7 +430,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
             type="button"
             onClick={() => setMode('signup')}
             aria-pressed={mode === 'signup'}
-            className={`min-h-[44px] min-w-[44px] rounded-lg py-2 text-xs font-extrabold transition ${
+            className={`min-h-[48px] min-w-[48px] rounded-lg py-2 text-xs font-extrabold transition ${
               mode === 'signup' ? 'bg-emerald-500 text-slate-950' : 'text-slate-300 hover:text-white'
             }`}
           >
@@ -445,7 +445,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
             disabled={isSubmitting}
             onClick={() => handleProviderClick('apple')}
             aria-label="Continue with Apple Sign-In"
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-slate-100 disabled:opacity-60"
+            className="flex min-h-[48px] min-w-[48px] items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2.5 text-xs font-extrabold text-slate-950 shadow transition hover:bg-slate-100 disabled:opacity-60"
           >
             <span>Continue with Apple</span>
           </button>
@@ -454,7 +454,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
             disabled={isSubmitting}
             onClick={() => handleProviderClick('google')}
             aria-label="Continue with Google Sign-In"
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs font-extrabold text-white transition hover:bg-slate-800 disabled:opacity-60"
+            className="flex min-h-[48px] min-w-[48px] items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs font-extrabold text-white transition hover:bg-slate-800 disabled:opacity-60"
           >
             <span>Continue with Google</span>
           </button>

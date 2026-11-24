@@ -127,6 +127,7 @@ import {
   DYSLEXIA_VIEW_STORAGE_KEY,
   OPENDYSLEXIC_FONT_STACK,
   SENSORY_CALM_STORAGE_KEY,
+  WCAG_STRICT_CONTRAST_TARGETS,
   applyAdhdFriendlyViewToDocument,
   applyDyslexiaFontToDocument,
   applyDyslexiaFriendlyViewToDocument,
@@ -147,7 +148,8 @@ import {
   saveDyslexiaViewPreference,
   saveFontPreference,
   saveSensoryCalmPreference,
-  saveThemePreference
+  saveThemePreference,
+  verifyThemeContrastCompliance
 } from './utils/themeProvider';
 import {
   DEFAULT_VALIDATION_LIMITS,
@@ -210,12 +212,25 @@ import {
 } from './utils/visionOcrStub';
 import {
   applyBiometricVolumeToExercises,
+  attachBiometricsToGymState,
   calculateBiometricVolumeAdjustment,
   fetchAppleHealthKitBiometricsStub,
   fetchGoogleHealthConnectBiometricsStub,
   fetchLatestBiometricsFromSupabase,
   syncDailyBiometricsToSupabase
 } from './utils/biometricSync';
+import {
+  CLINICAL_TRIAL_EXPORT_WEEKS,
+  anonymizeParticipantId,
+  applyInstitutionalFlagsToUserProfile,
+  buildAnonymized12WeekClinicalTrialRows,
+  escapeCsvCellSafe,
+  exportAnonymized12WeekClinicalTrialCsv,
+  normalizeInstitutionalEligibility,
+  resolveInstitutionalBillingRoute,
+  serializeClinicalTrialCsv,
+  triggerClinicalTrialCsvDownload
+} from './utils/institutionalClinicalExport';
 import { createSmartwatchBridge } from './smartwatch/watchBridge';
 import {
   clearAllGymIndexedDbStores,
@@ -1251,6 +1266,19 @@ declare global {
     classifyLowSpoonsWithGemini?: typeof classifyLowSpoonsWithGemini;
     syncDailyBiometricsToSupabase?: typeof syncDailyBiometricsToSupabase;
     fetchLatestBiometricsFromSupabase?: typeof fetchLatestBiometricsFromSupabase;
+    attachBiometricsToGymState?: typeof attachBiometricsToGymState;
+    WCAG_STRICT_CONTRAST_TARGETS?: typeof WCAG_STRICT_CONTRAST_TARGETS;
+    verifyThemeContrastCompliance?: typeof verifyThemeContrastCompliance;
+    CLINICAL_TRIAL_EXPORT_WEEKS?: number;
+    anonymizeParticipantId?: typeof anonymizeParticipantId;
+    applyInstitutionalFlagsToUserProfile?: typeof applyInstitutionalFlagsToUserProfile;
+    buildAnonymized12WeekClinicalTrialRows?: typeof buildAnonymized12WeekClinicalTrialRows;
+    escapeCsvCellSafe?: typeof escapeCsvCellSafe;
+    exportAnonymized12WeekClinicalTrialCsv?: typeof exportAnonymized12WeekClinicalTrialCsv;
+    normalizeInstitutionalEligibility?: typeof normalizeInstitutionalEligibility;
+    resolveInstitutionalBillingRoute?: typeof resolveInstitutionalBillingRoute;
+    serializeClinicalTrialCsv?: typeof serializeClinicalTrialCsv;
+    triggerClinicalTrialCsvDownload?: typeof triggerClinicalTrialCsvDownload;
   }
 }
 
@@ -1501,5 +1529,18 @@ if (typeof window !== 'undefined') {
   window.classifyLowSpoonsWithGemini = classifyLowSpoonsWithGemini;
   window.syncDailyBiometricsToSupabase = syncDailyBiometricsToSupabase;
   window.fetchLatestBiometricsFromSupabase = fetchLatestBiometricsFromSupabase;
+  window.attachBiometricsToGymState = attachBiometricsToGymState;
+  window.WCAG_STRICT_CONTRAST_TARGETS = WCAG_STRICT_CONTRAST_TARGETS;
+  window.verifyThemeContrastCompliance = verifyThemeContrastCompliance;
+  window.CLINICAL_TRIAL_EXPORT_WEEKS = CLINICAL_TRIAL_EXPORT_WEEKS;
+  window.anonymizeParticipantId = anonymizeParticipantId;
+  window.applyInstitutionalFlagsToUserProfile = applyInstitutionalFlagsToUserProfile;
+  window.buildAnonymized12WeekClinicalTrialRows = buildAnonymized12WeekClinicalTrialRows;
+  window.escapeCsvCellSafe = escapeCsvCellSafe;
+  window.exportAnonymized12WeekClinicalTrialCsv = exportAnonymized12WeekClinicalTrialCsv;
+  window.normalizeInstitutionalEligibility = normalizeInstitutionalEligibility;
+  window.resolveInstitutionalBillingRoute = resolveInstitutionalBillingRoute;
+  window.serializeClinicalTrialCsv = serializeClinicalTrialCsv;
+  window.triggerClinicalTrialCsvDownload = triggerClinicalTrialCsvDownload;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

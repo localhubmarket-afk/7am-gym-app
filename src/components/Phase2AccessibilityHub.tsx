@@ -3,10 +3,12 @@ import { VoiceToLogPanel } from './VoiceToLogPanel';
 import { LowSpoonsTriagePanel } from './LowSpoonsTriagePanel';
 import { PlainLanguageCoachModal } from './PlainLanguageCoachModal';
 import { BiometricReadinessPanel } from './BiometricReadinessPanel';
+import { InstitutionalWellnessPanel } from './InstitutionalWellnessPanel';
 import type { ParsedVoiceSetLog, VoiceLogUndoRecord, VoiceWeightUnit } from '../utils/voiceToLog';
 import type { BoundedProgressionMathSnapshot } from '../utils/plainLanguageCoach';
 import type { LowSpoonsScalingPreset } from '../utils/lowSpoonsTriage';
 import type { DailyBiometricsSnapshot } from '../utils/biometricSync';
+import type { InstitutionalEligibilityFlags } from '../utils/institutionalClinicalExport';
 
 export interface Phase2AccessibilityHubProps {
   activeExerciseName: string;
@@ -17,11 +19,15 @@ export interface Phase2AccessibilityHubProps {
   activeLowSpoonsPreset: LowSpoonsScalingPreset | null;
   biometricsSnapshot: DailyBiometricsSnapshot | null;
   plannedTotalSets: number;
+  institutionalEligibility?: Partial<InstitutionalEligibilityFlags> | null;
+  gymState?: Record<string, unknown> | null;
   onVoiceLogParsed: (parsed: ParsedVoiceSetLog) => void | Promise<void>;
   onVoiceUndo: (record: VoiceLogUndoRecord) => void | Promise<void>;
   onApplyLowSpoonsPreset: (preset: LowSpoonsScalingPreset) => void;
   onResetLowSpoonsPreset: () => void;
   onSyncBiometrics: (snapshot: DailyBiometricsSnapshot) => void | Promise<void>;
+  onUpdateInstitutionalEligibility?: (next: InstitutionalEligibilityFlags) => void | Promise<void>;
+  onExportClinicalCsv?: () => void | Promise<void>;
 }
 
 /**
@@ -30,6 +36,7 @@ export interface Phase2AccessibilityHubProps {
  * 2. Plain-Language Coach (Bounded LLM Explainer Modal)
  * 3. Low-Spoons Triage System (Pre-Validated Deterministic Scaling Presets)
  * 4. Smartwatch Biometric Recovery Sync (Apple HealthKit & Google Health Connect)
+ * 5. Institutional Wellness Eligibility (HSA/FSA, Corporate Wellness) & 12-Week Clinical Trial CSV Export
  */
 export const Phase2AccessibilityHub: React.FC<Phase2AccessibilityHubProps> = ({
   activeExerciseName,
@@ -40,11 +47,15 @@ export const Phase2AccessibilityHub: React.FC<Phase2AccessibilityHubProps> = ({
   activeLowSpoonsPreset,
   biometricsSnapshot,
   plannedTotalSets,
+  institutionalEligibility,
+  gymState,
   onVoiceLogParsed,
   onVoiceUndo,
   onApplyLowSpoonsPreset,
   onResetLowSpoonsPreset,
-  onSyncBiometrics
+  onSyncBiometrics,
+  onUpdateInstitutionalEligibility,
+  onExportClinicalCsv
 }) => {
   const [coachOpen, setCoachOpen] = useState(false);
 
@@ -64,16 +75,16 @@ export const Phase2AccessibilityHub: React.FC<Phase2AccessibilityHubProps> = ({
         aria-label="Plain-Language Coach workout math explainer"
         className="rounded-xl border border-sky-400/45 bg-slate-900 p-4 text-left text-slate-100"
       >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h3 className="text-sm font-extrabold text-white">Plain-Language Coach</h3>
-            <p className="mt-0.5 text-xs leading-relaxed text-slate-300">
-              Explains why <strong className="text-sky-200">{coachMathSnapshot.exerciseName}</strong> has today&apos;s weight and reps in simple words. Never changes your math.
-            </p>
+        <div className="flex flex-col items-start gap-2">
+          <div className="flex w-full flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-extrabold text-[var(--text-primary)]">Plain-Language Coach</h3>
+            <span className="rounded-md border border-[var(--border-strong)] bg-[var(--bg-surface-alt)] px-2.5 py-1 text-[0.75rem] font-extrabold text-[var(--text-primary)]">
+              Grade 6–8 AI
+            </span>
           </div>
-          <span className="rounded-md border border-sky-400/40 bg-sky-500/15 px-2.5 py-1 text-[0.6875rem] font-extrabold text-sky-200">
-            Grade 6–8 AI
-          </span>
+          <p className="w-full text-xs leading-relaxed text-[var(--text-secondary)]">
+            Explains why <strong className="font-extrabold text-[var(--text-primary)]">{coachMathSnapshot.exerciseName}</strong> has today&apos;s weight and reps in simple words. Never changes your math.
+          </p>
         </div>
 
         <button
@@ -96,6 +107,13 @@ export const Phase2AccessibilityHub: React.FC<Phase2AccessibilityHubProps> = ({
         snapshot={biometricsSnapshot}
         plannedTotalSets={plannedTotalSets}
         onSyncSnapshot={onSyncBiometrics}
+      />
+
+      <InstitutionalWellnessPanel
+        eligibility={institutionalEligibility}
+        gymState={gymState}
+        onUpdateEligibility={onUpdateInstitutionalEligibility}
+        onExportClinicalCsv={onExportClinicalCsv}
       />
 
       <PlainLanguageCoachModal

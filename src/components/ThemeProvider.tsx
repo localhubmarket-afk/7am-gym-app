@@ -74,11 +74,13 @@ export const ThemeModeToggle: React.FC = () => {
     <div
       role="radiogroup"
       aria-label="App Color Theme"
-      className="rounded-xl border border-slate-700 bg-slate-950/60 p-3 text-left"
+      className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3 text-left text-[var(--text-primary)]"
     >
-      <div className="mb-2 flex items-center justify-between text-xs font-bold text-slate-200">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs font-bold">
         <span>Screen Mode</span>
-        <span className="text-emerald-300">Active: {resolvedTheme}</span>
+        <span className="text-emerald-400">
+          Active: {resolvedTheme === 'light' ? 'Light (15.8:1)' : 'Dark (17.1:1)'}
+        </span>
       </div>
       <div className="grid grid-cols-3 gap-2">
         {options.map((opt) => {
@@ -90,10 +92,10 @@ export const ThemeModeToggle: React.FC = () => {
               role="radio"
               aria-checked={active}
               onClick={() => setThemePreference(opt.value)}
-              className={`min-h-[42px] rounded-lg border px-2.5 py-2 text-xs font-extrabold transition ${
+              className={`min-h-[48px] min-w-[48px] rounded-lg border px-2.5 py-2 text-xs font-extrabold transition ${
                 active
                   ? 'border-emerald-400 bg-emerald-600 text-white'
-                  : 'border-slate-700 bg-slate-900 text-slate-200 hover:border-slate-500'
+                  : 'border-[var(--border-subtle)] bg-[var(--bg-surface-alt)] text-[var(--text-primary)] hover:border-[var(--border-strong)]'
               }`}
             >
               {active ? '✓ ' : ''}

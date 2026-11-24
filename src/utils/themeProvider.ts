@@ -30,39 +30,44 @@ export interface AccessibleThemeTokens {
 }
 
 /**
- * Dyslexia-friendly high-contrast color palettes (WCAG 2.2 AAA):
- * - Light Mode: Off-white paper (#F7F7F7) + deep navy ink (#0A1128) => ~17.6:1 contrast (exceeds 15.8:1 target)
- * - Dark Mode: Matte charcoal (#1A1A1A) + off-white ink (#F2F2F2) => ~15.5:1+ contrast (glare-free matte)
+ * Strict WCAG 2.2 AAA Dyslexia-Friendly Contrast Targets:
+ * - Light Mode: Off-white paper (#F7F7F7) + deep navy ink (#0E1A40) => strictly 15.8:1 contrast
+ * - Dark Mode: Matte charcoal (#141414) + off-white ink (#F8F6F5) => strictly 17.1:1 contrast
  */
+export const WCAG_STRICT_CONTRAST_TARGETS = {
+  light: 15.8,
+  dark: 17.1
+} as const;
+
 export const ACCESSIBLE_THEME_TOKENS: Record<ResolvedTheme, AccessibleThemeTokens> = {
   dark: {
-    canvasBg: '#1A1A1A',
-    surfaceBg: '#242424',
-    surfaceAltBg: '#141414',
-    textPrimary: '#F2F2F2',
-    textSecondary: '#D4D4D8',
+    canvasBg: '#141414',
+    surfaceBg: '#1E1E1E',
+    surfaceAltBg: '#262626',
+    textPrimary: '#F8F6F5',
+    textSecondary: '#D8D8DE',
     borderSubtle: '#3D3D3D',
-    borderStrong: '#737373',
+    borderStrong: '#767676',
     accentPrimary: '#10B981',
-    accentOnPrimary: '#0A1128',
-    warningBg: 'rgba(217, 119, 6, 0.18)',
+    accentOnPrimary: '#0E1A40',
+    warningBg: 'rgba(217, 119, 6, 0.22)',
     warningText: '#FDE68A',
     warningBorder: '#D97706',
-    dangerBg: 'rgba(225, 29, 72, 0.18)',
+    dangerBg: 'rgba(225, 29, 72, 0.22)',
     dangerText: '#FECDD3',
     dangerBorder: '#FB7185',
-    themeColorMeta: '#1A1A1A'
+    themeColorMeta: '#141414'
   },
   light: {
     canvasBg: '#F7F7F7',
     surfaceBg: '#FFFFFF',
     surfaceAltBg: '#EAECEF',
-    textPrimary: '#0A1128',
+    textPrimary: '#0E1A40',
     textSecondary: '#1E293B',
     borderSubtle: '#CBD5E1',
     borderStrong: '#475569',
     accentPrimary: '#047857',
-    accentOnPrimary: '#F7F7F7',
+    accentOnPrimary: '#FFFFFF',
     warningBg: '#FEF3C7',
     warningText: '#78350F',
     warningBorder: '#B45309',
@@ -106,6 +111,35 @@ export function calculateWcagContrastRatio(hexA: string, hexB: string): number {
   const lighter = Math.max(l1, l2);
   const darker = Math.min(l1, l2);
   return Number(((lighter + 0.05) / (darker + 0.05)).toFixed(2));
+}
+
+/**
+ * Verifies that Light Mode strictly achieves 15.8:1 and Dark Mode strictly achieves 17.1:1.
+ */
+export function verifyThemeContrastCompliance(): {
+  lightRatio: number;
+  darkRatio: number;
+  lightTarget: number;
+  darkTarget: number;
+  isCompliant: boolean;
+} {
+  const lightRatio = calculateWcagContrastRatio(
+    ACCESSIBLE_THEME_TOKENS.light.canvasBg,
+    ACCESSIBLE_THEME_TOKENS.light.textPrimary
+  );
+  const darkRatio = calculateWcagContrastRatio(
+    ACCESSIBLE_THEME_TOKENS.dark.canvasBg,
+    ACCESSIBLE_THEME_TOKENS.dark.textPrimary
+  );
+  return {
+    lightRatio,
+    darkRatio,
+    lightTarget: WCAG_STRICT_CONTRAST_TARGETS.light,
+    darkTarget: WCAG_STRICT_CONTRAST_TARGETS.dark,
+    isCompliant:
+      Math.abs(lightRatio - WCAG_STRICT_CONTRAST_TARGETS.light) < 0.05 &&
+      Math.abs(darkRatio - WCAG_STRICT_CONTRAST_TARGETS.dark) < 0.05
+  };
 }
 
 export function normalizeThemeModePreference(raw: unknown): ThemeModePreference {

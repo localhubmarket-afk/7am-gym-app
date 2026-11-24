@@ -61,18 +61,18 @@ export const BiometricReadinessPanel: React.FC<BiometricReadinessPanelProps> = (
         </div>
       )}
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <button
           type="button"
-          onClick={() => handleSync(awaitSnapshot(fetchAppleHealthKitBiometricsStub()))}
-          className="min-h-[48px] rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-xs font-bold text-slate-100 hover:border-sky-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+          onClick={async () => handleSync(await fetchAppleHealthKitBiometricsStub())}
+          className="min-h-[48px] min-w-[48px] rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-xs font-bold text-slate-100 hover:border-sky-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
         >
           Sync Apple HealthKit
         </button>
         <button
           type="button"
-          onClick={() => handleSync(awaitSnapshot(fetchGoogleHealthConnectBiometricsStub()))}
-          className="min-h-[48px] rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-xs font-bold text-slate-100 hover:border-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+          onClick={async () => handleSync(await fetchGoogleHealthConnectBiometricsStub())}
+          className="min-h-[48px] min-w-[48px] rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-xs font-bold text-slate-100 hover:border-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
         >
           Sync Health Connect
         </button>
@@ -97,7 +97,3 @@ export const BiometricReadinessPanel: React.FC<BiometricReadinessPanelProps> = (
     </section>
   );
 };
-
-async function awaitSnapshot(promise: Promise<DailyBiometricsSnapshot>): Promise<DailyBiometricsSnapshot> {
-  return promise;
-}

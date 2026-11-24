@@ -74,7 +74,7 @@ export const DeleteAllWeeksConfirmModal: React.FC<DeleteAllWeeksConfirmModalProp
             type="button"
             disabled={isResetting}
             onClick={onConfirmDeleteAllWeeks}
-            className="w-full min-h-[46px] py-3 px-4 rounded-xl bg-rose-400 hover:bg-rose-300 disabled:opacity-60 text-slate-950 text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
+            className="w-full min-h-[48px] min-w-[48px] py-3 px-4 rounded-xl bg-rose-400 hover:bg-rose-300 disabled:opacity-60 text-slate-950 text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
           >
             <span aria-hidden="true">🗑</span>
             <span>{isResetting ? 'Clearing All Weeks...' : 'Yes, Delete All Weeks'}</span>
@@ -83,7 +83,7 @@ export const DeleteAllWeeksConfirmModal: React.FC<DeleteAllWeeksConfirmModalProp
             type="button"
             disabled={isResetting}
             onClick={onCancel}
-            className="w-full min-h-[46px] py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border-2 border-slate-400 text-white text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
+            className="w-full min-h-[48px] min-w-[48px] py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border-2 border-slate-400 text-white text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
           >
             <span aria-hidden="true">✕</span>
             <span>Cancel</span>
@@ -173,7 +173,7 @@ export const ResetWorkoutFuelModal: React.FC<ResetWorkoutFuelModalProps> = ({
           <button
             type="button"
             onClick={onDeleteWorkoutOnly}
-            className="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-amber-300 hover:bg-amber-200 text-slate-950 text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
+            className="w-full min-h-[48px] min-w-[48px] py-2.5 px-4 rounded-xl bg-amber-300 hover:bg-amber-200 text-slate-950 text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
           >
             <span aria-hidden="true">↺</span>
             <span>Delete Workout Only ({dayLabel})</span>
@@ -181,7 +181,7 @@ export const ResetWorkoutFuelModal: React.FC<ResetWorkoutFuelModalProps> = ({
           <button
             type="button"
             onClick={onDeleteWorkoutAndFuel}
-            className="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-rose-300 hover:bg-rose-200 text-slate-950 text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
+            className="w-full min-h-[48px] min-w-[48px] py-2.5 px-4 rounded-xl bg-rose-300 hover:bg-rose-200 text-slate-950 text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
           >
             <span aria-hidden="true">🍽</span>
             <span>Delete Workout and Fuel</span>
@@ -194,7 +194,7 @@ export const ResetWorkoutFuelModal: React.FC<ResetWorkoutFuelModalProps> = ({
                   setConfirmingAllWeeks(true);
                 }
               }}
-              className="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-rose-950 hover:bg-rose-900 border-2 border-rose-300 text-white text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
+              className="w-full min-h-[48px] min-w-[48px] py-2.5 px-4 rounded-xl bg-rose-950 hover:bg-rose-900 border-2 border-rose-300 text-white text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
             >
               <span aria-hidden="true">⚠</span>
               <span>{DELETE_ALL_WEEKS_BUTTON_LABEL}</span>
@@ -203,7 +203,7 @@ export const ResetWorkoutFuelModal: React.FC<ResetWorkoutFuelModalProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border-2 border-slate-400 text-white text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
+            className="w-full min-h-[48px] min-w-[48px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border-2 border-slate-400 text-white text-sm font-extrabold leading-relaxed transition inline-flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
           >
             <span aria-hidden="true">✕</span>
             <span>Cancel</span>
@@ -226,7 +226,7 @@ export const ResetFuelButton: React.FC<ResetFuelButtonProps> = ({ onClick }) => 
     type="button"
     onClick={onClick}
     aria-label="Reset fuel logs for today"
-    className="min-h-[44px] min-w-[44px] text-xs font-extrabold px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/60 text-rose-200 transition whitespace-nowrap"
+    className="min-h-[48px] min-w-[48px] text-xs font-extrabold px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/60 text-rose-200 transition whitespace-nowrap"
   >
     <span aria-hidden="true">↺ </span>
     <span>Reset Fuel</span>
@@ -273,14 +273,14 @@ export const ResetFuelConfirmModal: React.FC<ResetFuelConfirmModalProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="min-h-[44px] min-w-[44px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition"
+            className="min-h-[48px] min-w-[48px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="min-h-[44px] min-w-[44px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition"
+            className="min-h-[48px] min-w-[48px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition"
           >
             Reset Fuel
           </button>
@@ -303,7 +303,7 @@ export const DeleteAccountButton: React.FC<DeleteAccountButtonProps> = ({ onClic
     onClick={onClick}
     title="Permanently delete your account"
     aria-label="Permanently delete your account"
-    className="min-h-[44px] min-w-[44px] w-full py-2.5 px-3 rounded-xl bg-rose-600/20 hover:bg-rose-600/35 border border-rose-400/70 text-rose-100 text-xs font-extrabold transition"
+    className="min-h-[48px] min-w-[48px] w-full py-2.5 px-3 rounded-xl bg-rose-600/20 hover:bg-rose-600/35 border border-rose-400/70 text-rose-100 text-xs font-extrabold transition"
   >
     Delete Account
   </button>

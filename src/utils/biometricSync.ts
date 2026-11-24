@@ -317,3 +317,29 @@ export async function fetchLatestBiometricsFromSupabase(options: {
     return null;
   }
 }
+
+/**
+ * Pure helper that persists a synced Apple HealthKit / Google Health Connect snapshot
+ * directly into `gym_state` (`biometricsSnapshot` + deduplicated `biometricsHistory` by dateIso)
+ * so Supabase `gym_state` sync and 12-week clinical exports always have objective recovery data.
+ */
+export function attachBiometricsToGymState<T extends Record<string, unknown>>(
+  gymState: T,
+  snapshot: DailyBiometricsSnapshot
+): T & {
+  biometricsSnapshot: DailyBiometricsSnapshot;
+  biometricsHistory: DailyBiometricsSnapshot[];
+} {
+  const safeState = gymState && typeof gymState === 'object' ? gymState : ({} as T);
+  const existingHistory = Array.isArray((safeState as Record<string, unknown>).biometricsHistory)
+    ? ((safeState as Record<string, unknown>).biometricsHistory as DailyBiometricsSnapshot[])
+    : [];
+  const filtered = existingHistory.filter((item) => item && item.dateIso !== snapshot.dateIso);
+  const nextHistory = [...filtered, snapshot].sort((a, b) => a.dateIso.localeCompare(b.dateIso)).slice(-90);
+  return {
+    ...safeState,
+    biometricsSnapshot: snapshot,
+    biometricsHistory: nextHistory
+  };
+}
+

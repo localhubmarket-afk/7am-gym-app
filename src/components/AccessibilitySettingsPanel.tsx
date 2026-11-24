@@ -3,7 +3,9 @@ import { useAccessibilityTheme } from '../context/AccessibilityThemeProvider';
 import type { ThemeModePreference } from '../utils/themeProvider';
 import { AutoSyncSettingsControl } from './AutoSyncSettingsControl';
 import { DataMigrationPanel } from './DataMigrationPanel';
+import { InstitutionalWellnessPanel } from './InstitutionalWellnessPanel';
 import type { RealtimeSyncConnectionStatus } from '../utils/realtimeAutoSync';
+import type { InstitutionalEligibilityFlags } from '../utils/institutionalClinicalExport';
 
 export interface AccessibilitySettingsPanelProps {
   className?: string;
@@ -18,6 +20,10 @@ export interface AccessibilitySettingsPanelProps {
   isImportingBackup?: boolean;
   migrationStatusMessage?: string | null;
   migrationStatusKind?: 'idle' | 'success' | 'error';
+  institutionalEligibility?: Partial<InstitutionalEligibilityFlags> | null;
+  gymState?: Record<string, unknown> | null;
+  onUpdateInstitutionalEligibility?: (next: InstitutionalEligibilityFlags) => void | Promise<void>;
+  onExportClinicalCsv?: () => void | Promise<void>;
 }
 
 const THEME_OPTIONS: Array<{ value: ThemeModePreference; label: string }> = [
@@ -28,11 +34,12 @@ const THEME_OPTIONS: Array<{ value: ThemeModePreference; label: string }> = [
 
 /**
  * Dyslexia-Friendly Display, Sync & Reading Settings Panel
- * - Real-time Auto-Sync Devices switch + Force Sync Now manual fallback
- * - High-contrast Light (#F7F7F7 / #0A1128) and Dark (#1A1A1A / #F2F2F2) toggles
+ * - Real-time Auto-Sync Devices switch + Force Sync Now / Force Pull from Cloud
+ * - Strict High-Contrast Light (#F7F7F7 / #0E1A40 => 15.8:1) and Dark (#141414 / #F8F6F5 => 17.1:1)
  * - Prominent one-tap OpenDyslexic font toggle button
+ * - Institutional HSA/FSA & Corporate Wellness eligibility + 12-week Clinical Trial CSV Export
  * - Minimum 48x48px touch targets with >= 8px (gap-2 / 0.5rem) separation
- * - 100% relative rem typography with flex-wrap reflow at 200% zoom
+ * - 100% relative rem typography with flex-wrap reflow at >= 200% zoom
  */
 export const AccessibilitySettingsPanel: React.FC<AccessibilitySettingsPanelProps> = ({
   className = '',
@@ -46,7 +53,11 @@ export const AccessibilitySettingsPanel: React.FC<AccessibilitySettingsPanelProp
   onImportJsonFile,
   isImportingBackup = false,
   migrationStatusMessage = null,
-  migrationStatusKind = 'idle'
+  migrationStatusKind = 'idle',
+  institutionalEligibility,
+  gymState,
+  onUpdateInstitutionalEligibility,
+  onExportClinicalCsv
 }) => {
   const {
     themePreference,
@@ -88,13 +99,21 @@ export const AccessibilitySettingsPanel: React.FC<AccessibilitySettingsPanelProp
         statusMessage={migrationStatusMessage}
         statusKind={migrationStatusKind}
       />
+      <InstitutionalWellnessPanel
+        eligibility={institutionalEligibility}
+        gymState={gymState}
+        onUpdateEligibility={onUpdateInstitutionalEligibility}
+        onExportClinicalCsv={onExportClinicalCsv}
+      />
       <div className="space-y-2" role="radiogroup" aria-label="Color Theme Mode">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-extrabold leading-relaxed">
             Screen Mode (High Contrast)
           </h3>
           <span className="text-xs font-bold text-emerald-500">
-            {resolvedTheme === 'light' ? 'Light (#F7F7F7)' : 'Dark (#1A1A1A)'}
+            {resolvedTheme === 'light'
+              ? 'Light (#F7F7F7 / #0E1A40 · 15.8:1)'
+              : 'Dark (#141414 / #F8F6F5 · 17.1:1)'}
           </span>
         </div>
 

@@ -1,26 +1,29 @@
 /* ============================================================================
  * Visual & Motor Accessibility Constitution (WCAG 2.2 AA / AAA + COGA)
- * - Relative rem typography scaling up to 200% with zero clipping/overlap
- * - Dyslexia-friendly high-contrast Light (#F7F7F7 / #0A1128) & Dark (#1A1A1A / #F2F2F2)
+ * - Strict Contrast:
+ *     Light Mode: Off-white paper (#F7F7F7) + Deep Navy ink (#0E1A40) => strictly 15.8:1
+ *     Dark Mode:  Matte charcoal (#141414) + Off-white ink (#F8F6F5)  => strictly 17.1:1
+ * - Responsive Flexbox/Grid + vw/vh/dvh fluid viewport fitting (portrait & landscape)
+ * - Relative rem typography scaling up to >= 200% with zero clipping or horizontal scroll
  * - Lexend / Atkinson Hyperlegible default + One-Tap OpenDyslexic font override
- * - Global line-height: 1.5 and strict global italics removal
- * - Motor ergonomics: 48x48px minimum touch targets & >= 8px (0.5rem) separation
- * - Fluid portrait & landscape orientation reflow (zero hardcoded height/width locks)
+ * - Global line-height >= 1.5 and strict global italics removal
+ * - Motor ergonomics: >= 48x48px minimum touch targets & >= 8px (0.5rem) separation
  * ============================================================================ */
 
 :root {
   --app-font-family: 'Lexend', 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
   --app-line-height: 1.5;
-  --bg-canvas: #1A1A1A;
-  --bg-surface: #242424;
-  --bg-surface-alt: #141414;
-  --text-primary: #F2F2F2;
-  --text-secondary: #D4D4D8;
+  /* Dark Mode Default: Matte Charcoal (#141414) + Off-White Ink (#F8F6F5) = 17.1:1 */
+  --bg-canvas: #141414;
+  --bg-surface: #1E1E1E;
+  --bg-surface-alt: #262626;
+  --text-primary: #F8F6F5;
+  --text-secondary: #D8D8DE;
   --border-subtle: #3D3D3D;
-  --border-strong: #737373;
+  --border-strong: #767676;
   --accent-primary: #10B981;
-  --accent-on-primary: #0A1128;
-  --danger-bg: rgba(225, 29, 72, 0.18);
+  --accent-on-primary: #0E1A40;
+  --danger-bg: rgba(225, 29, 72, 0.22);
   --danger-text: #FECDD3;
   --danger-border: #FB7185;
   --touch-target-min: 48px;
@@ -29,21 +32,22 @@
 
 html[data-theme="dark"],
 html.dark {
-  --bg-canvas: #1A1A1A;
-  --bg-surface: #242424;
-  --bg-surface-alt: #141414;
-  --text-primary: #F2F2F2;
-  --text-secondary: #D4D4D8;
+  --bg-canvas: #141414;
+  --bg-surface: #1E1E1E;
+  --bg-surface-alt: #262626;
+  --text-primary: #F8F6F5;
+  --text-secondary: #D8D8DE;
   --border-subtle: #3D3D3D;
-  --border-strong: #737373;
+  --border-strong: #767676;
 }
 
+/* Light Mode: Off-White Paper (#F7F7F7) + Deep Navy Ink (#0E1A40) = 15.8:1 */
 html[data-theme="light"],
 html.light-theme {
   --bg-canvas: #F7F7F7;
   --bg-surface: #FFFFFF;
   --bg-surface-alt: #EAECEF;
-  --text-primary: #0A1128;
+  --text-primary: #0E1A40;
   --text-secondary: #1E293B;
   --border-subtle: #CBD5E1;
   --border-strong: #475569;
@@ -54,11 +58,20 @@ html.font-opendyslexic {
   --app-font-family: 'OpenDyslexic', 'OpenDyslexic3', 'Lexend', 'Atkinson Hyperlegible', sans-serif;
 }
 
-/* 1. Global Typography, Relative Scaling & Strict Line-Height (1.5) */
+/* 1. Global Typography, Relative rem Scaling (>=200% Safe) & Strict Line-Height (>=1.5) */
 html {
   font-size: 100%;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  box-sizing: border-box;
+  overflow-x: clip;
+  max-width: 100vw;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html,
@@ -69,10 +82,11 @@ body {
   color: var(--text-primary) !important;
   letter-spacing: 0.015em;
   text-align: left;
-  overflow-x: hidden;
+  overflow-x: clip;
   overflow-y: auto;
   height: auto;
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   max-width: 100vw;
 }
@@ -114,7 +128,7 @@ address,
   font-style: normal !important;
 }
 
-/* 3. 200% Text Scaling Reflow Protection (No clipping or overlap) */
+/* 3. Responsive Viewport Containers (Flexbox/Grid + vw/vh/dvh — Zero Horizontal Scroll & 200% Reflow) */
 main,
 section,
 article,
@@ -122,12 +136,46 @@ header,
 footer,
 nav,
 .neuro-card-unstarted,
-.neuro-card-active {
+.neuro-card-active,
+.responsive-viewport-container {
   min-width: 0;
   max-width: 100%;
   height: auto;
   overflow-wrap: break-word;
   word-break: break-word;
+}
+
+/* Modal / Dialog Viewport Safety: keep fullscreen backdrop 100vw x 100dvh and constrain inner card cleanly */
+[role="dialog"].fixed,
+[role="alertdialog"].fixed {
+  width: 100vw;
+  max-width: 100vw;
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+[role="dialog"].fixed > div,
+[role="alertdialog"].fixed > div,
+[role="dialog"]:not(.fixed),
+[role="alertdialog"]:not(.fixed) {
+  max-width: min(94vw, 42rem);
+  max-height: 90vh;
+  max-height: 90dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
 }
 
 button,
@@ -143,13 +191,13 @@ span {
   word-wrap: break-word;
 }
 
-/* Allow wrapping inside buttons & nav items so 200% zoom never clips labels */
+/* Allow wrapping inside buttons & nav items so landscape and 200% zoom never clip or spill labels */
 button,
 [role="button"],
 [role="tab"],
 [role="radio"],
 [role="switch"] {
-  white-space: normal;
+  white-space: normal !important;
   height: auto;
   line-height: 1.4;
 }
@@ -180,7 +228,6 @@ input[type="radio"] {
 /* Ensure >= 8px (0.5rem) separation between interactive controls in action bars and button groups */
 header nav,
 #pinned-rest-timer-row .flex,
-nav.fixed.bottom-0 > div,
 .week-tabs-scroll-strip,
 .accessible-action-group,
 .set-row-actions-group,
@@ -194,6 +241,8 @@ nav.fixed.bottom-0 > div {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.5rem !important;
+  width: 100%;
+  max-width: min(100vw, 44rem);
 }
 
 /* 5. Accessible Fluid Set Row Layout (48x48px Steppers + Visible Trash Delete Button + 200% Reflow) */
@@ -204,6 +253,7 @@ nav.fixed.bottom-0 > div {
   justify-content: space-between;
   gap: 0.5rem;
   width: 100%;
+  min-width: 0;
   overflow: visible;
   box-sizing: border-box;
 }
@@ -288,48 +338,312 @@ nav.fixed.bottom-0 > div {
   flex-shrink: 0;
 }
 
-/* 6. Matte Charcoal Dark Theme Surface Alignment (#1A1A1A canvas / #F2F2F2 ink) */
+/* 6. Strictly Scoped Matte Charcoal Dark Theme (#141414 canvas / #F8F6F5 ink => 17.1:1) */
 html[data-theme="dark"] .bg-slate-950,
-html.dark .bg-slate-950 {
-  background-color: #1A1A1A !important;
+html.dark .bg-slate-950,
+html[data-theme="dark"] .bg-\[\#0f172a\],
+html.dark .bg-\[\#0f172a\] {
+  background-color: #141414 !important;
 }
 
 html[data-theme="dark"] .bg-slate-900,
 html.dark .bg-slate-900,
+html[data-theme="dark"] .bg-slate-900\/95,
+html.dark .bg-slate-900\/95,
+html[data-theme="dark"] .bg-slate-900\/90,
+html.dark .bg-slate-900\/90,
+html[data-theme="dark"] .bg-\[\#1e293b\],
+html.dark .bg-\[\#1e293b\],
 html[data-theme="dark"] .neuro-card-unstarted,
 html.dark .neuro-card-unstarted {
-  background-color: #242424 !important;
-  color: #F2F2F2 !important;
+  background-color: #1E1E1E !important;
+  color: #F8F6F5 !important;
 }
 
 html[data-theme="dark"] .text-white,
-html.dark .text-white {
-  color: #F2F2F2 !important;
+html.dark .text-white,
+html[data-theme="dark"] .text-\[\#f8fafc\],
+html.dark .text-\[\#f8fafc\] {
+  color: #F8F6F5 !important;
 }
 
-/* 7. Off-White Paper Light Theme Surface Alignment (#F7F7F7 canvas / #0A1128 ink) */
+/* 7. Strictly Scoped Off-White Paper Light Theme (#F7F7F7 canvas / #0E1A40 ink => 15.8:1) */
 html[data-theme="light"],
 html[data-theme="light"] body,
 html.light-theme,
 html.light-theme body,
+html[data-theme="light"] body.bg-\[\#0f172a\],
 html.light-theme body.bg-\[\#0f172a\] {
   background-color: #F7F7F7 !important;
-  color: #0A1128 !important;
+  color: #0E1A40 !important;
+}
+
+html[data-theme="light"] #main-sticky-header,
+html.light-theme #main-sticky-header,
+html[data-theme="light"] nav.fixed.bottom-0,
+html.light-theme nav.fixed.bottom-0 {
+  background-color: rgba(247, 247, 247, 0.98) !important;
+  border-color: #CBD5E1 !important;
+  color: #0E1A40 !important;
+}
+
+html[data-theme="light"] .bg-slate-900,
+html.light-theme .bg-slate-900,
+html[data-theme="light"] .bg-slate-900\/95,
+html.light-theme .bg-slate-900\/95,
+html[data-theme="light"] .bg-slate-900\/90,
+html.light-theme .bg-slate-900\/90,
+html[data-theme="light"] .bg-slate-900\/85,
+html.light-theme .bg-slate-900\/85,
+html[data-theme="light"] .bg-slate-900\/80,
+html.light-theme .bg-slate-900\/80,
+html[data-theme="light"] .bg-\[\#0f172a\]:not(body),
+html.light-theme .bg-\[\#0f172a\]:not(body),
+html[data-theme="light"] .bg-\[\#1e293b\],
+html.light-theme .bg-\[\#1e293b\],
+html[data-theme="light"] .neuro-card-unstarted,
+html.light-theme .neuro-card-unstarted {
+  background-color: #FFFFFF !important;
+  background-image: none !important;
+  color: #0E1A40 !important;
+}
+
+html[data-theme="light"] .bg-slate-950,
+html.light-theme .bg-slate-950,
+html[data-theme="light"] .bg-slate-950\/95,
+html.light-theme .bg-slate-950\/95,
+html[data-theme="light"] .bg-slate-950\/90,
+html.light-theme .bg-slate-950\/90,
+html[data-theme="light"] .bg-slate-950\/85,
+html.light-theme .bg-slate-950\/85,
+html[data-theme="light"] .bg-slate-950\/80,
+html.light-theme .bg-slate-950\/80,
+html[data-theme="light"] .bg-slate-950\/60,
+html.light-theme .bg-slate-950\/60,
+html[data-theme="light"] .bg-slate-800,
+html.light-theme .bg-slate-800,
+html[data-theme="light"] .bg-slate-800\/90,
+html.light-theme .bg-slate-800\/90,
+html[data-theme="light"] .weight-stepper,
+html.light-theme .weight-stepper,
+html[data-theme="light"] .reps-stepper,
+html.light-theme .reps-stepper {
+  background-color: #EAECEF !important;
+  color: #0E1A40 !important;
+}
+
+html[data-theme="light"] .bg-indigo-950\/70,
+html.light-theme .bg-indigo-950\/70,
+html[data-theme="light"] .bg-sky-950\/70,
+html.light-theme .bg-sky-950\/70,
+html[data-theme="light"] .bg-sky-950\/50,
+html.light-theme .bg-sky-950\/50,
+html[data-theme="light"] .bg-sky-950\/40,
+html.light-theme .bg-sky-950\/40 {
+  background-color: #E0F2FE !important;
+  color: #0C4A6E !important;
+}
+
+html[data-theme="light"] .bg-emerald-950\/80,
+html.light-theme .bg-emerald-950\/80,
+html[data-theme="light"] .bg-emerald-950\/50,
+html.light-theme .bg-emerald-950\/50,
+html[data-theme="light"] .bg-emerald-950\/40,
+html.light-theme .bg-emerald-950\/40 {
+  background-color: #ECFDF5 !important;
+  color: #065F46 !important;
+}
+
+html[data-theme="light"] .bg-amber-950\/50,
+html.light-theme .bg-amber-950\/50,
+html[data-theme="light"] .bg-amber-950\/40,
+html.light-theme .bg-amber-950\/40 {
+  background-color: #FFFBEB !important;
+  color: #78350F !important;
+}
+
+html[data-theme="light"] .bg-rose-950,
+html.light-theme .bg-rose-950,
+html[data-theme="light"] .bg-rose-950\/50,
+html.light-theme .bg-rose-950\/50 {
+  background-color: #FFE4E6 !important;
+  color: #881337 !important;
+}
+
+html[data-theme="light"] .border-slate-800,
+html.light-theme .border-slate-800,
+html[data-theme="light"] .border-slate-800\/90,
+html.light-theme .border-slate-800\/90,
+html[data-theme="light"] .border-slate-700,
+html.light-theme .border-slate-700,
+html[data-theme="light"] .border-slate-600,
+html.light-theme .border-slate-600 {
+  border-color: #94A3B8 !important;
 }
 
 html[data-theme="light"] .text-white,
 html.light-theme .text-white,
+html[data-theme="light"] .text-\[\#f8fafc\],
+html.light-theme .text-\[\#f8fafc\],
 html[data-theme="light"] .text-slate-100,
 html.light-theme .text-slate-100,
 html[data-theme="light"] .text-slate-200,
 html.light-theme .text-slate-200 {
-  color: #0A1128 !important;
+  color: #0E1A40 !important;
 }
 
-/* 8. Fluid Portrait & Landscape Orientation Support */
+html[data-theme="light"] .text-slate-300,
+html.light-theme .text-slate-300,
+html[data-theme="light"] .text-slate-400,
+html.light-theme .text-slate-400 {
+  color: #1E293B !important;
+}
+
+html[data-theme="light"] .text-emerald-400,
+html.light-theme .text-emerald-400,
+html[data-theme="light"] .text-emerald-300,
+html.light-theme .text-emerald-300,
+html[data-theme="light"] .text-emerald-200,
+html.light-theme .text-emerald-200,
+html[data-theme="light"] .text-emerald-100,
+html.light-theme .text-emerald-100 {
+  color: #047857 !important;
+}
+
+html[data-theme="light"] .text-sky-300,
+html.light-theme .text-sky-300,
+html[data-theme="light"] .text-sky-200,
+html.light-theme .text-sky-200,
+html[data-theme="light"] .text-sky-100,
+html.light-theme .text-sky-100,
+html[data-theme="light"] .text-sky-400,
+html.light-theme .text-sky-400,
+html[data-theme="light"] .text-cyan-200,
+html.light-theme .text-cyan-200,
+html[data-theme="light"] .text-cyan-300,
+html.light-theme .text-cyan-300,
+html[data-theme="light"] .text-cyan-400,
+html.light-theme .text-cyan-400 {
+  color: #0369A1 !important;
+}
+
+html[data-theme="light"] .text-amber-100,
+html.light-theme .text-amber-100,
+html[data-theme="light"] .text-amber-200,
+html.light-theme .text-amber-200,
+html[data-theme="light"] .text-amber-300,
+html.light-theme .text-amber-300,
+html[data-theme="light"] .text-amber-400,
+html.light-theme .text-amber-400 {
+  color: #92400E !important;
+}
+
+html[data-theme="light"] .text-rose-100,
+html.light-theme .text-rose-100,
+html[data-theme="light"] .text-rose-200,
+html.light-theme .text-rose-200,
+html[data-theme="light"] .text-rose-300,
+html.light-theme .text-rose-300,
+html[data-theme="light"] .text-rose-400,
+html.light-theme .text-rose-400 {
+  color: #9F1239 !important;
+}
+
+html[data-theme="light"] .text-purple-100,
+html.light-theme .text-purple-100,
+html[data-theme="light"] .text-purple-200,
+html.light-theme .text-purple-200,
+html[data-theme="light"] .text-purple-300,
+html.light-theme .text-purple-300,
+html[data-theme="light"] .text-indigo-100,
+html.light-theme .text-indigo-100,
+html[data-theme="light"] .text-indigo-200,
+html.light-theme .text-indigo-200,
+html[data-theme="light"] .text-indigo-300,
+html.light-theme .text-indigo-300 {
+  color: #4C1D95 !important;
+}
+
+/* Preserve crisp high-contrast ink on solid colored buttons in Light Mode */
+html[data-theme="light"] .bg-emerald-600,
+html.light-theme .bg-emerald-600,
+html[data-theme="light"] .bg-emerald-700,
+html.light-theme .bg-emerald-700,
+html[data-theme="light"] .bg-sky-600,
+html.light-theme .bg-sky-600,
+html[data-theme="light"] .bg-sky-700,
+html.light-theme .bg-sky-700,
+html[data-theme="light"] .bg-indigo-600,
+html.light-theme .bg-indigo-600,
+html[data-theme="light"] .bg-rose-600,
+html.light-theme .bg-rose-600,
+html[data-theme="light"] .neuro-btn-done,
+html.light-theme .neuro-btn-done,
+html[data-theme="light"] .bg-black\/90,
+html.light-theme .bg-black\/90 {
+  color: #FFFFFF !important;
+}
+
+html[data-theme="light"] .bg-emerald-600 *,
+html.light-theme .bg-emerald-600 *,
+html[data-theme="light"] .bg-emerald-700 *,
+html.light-theme .bg-emerald-700 *,
+html[data-theme="light"] .bg-sky-600 *,
+html.light-theme .bg-sky-600 *,
+html[data-theme="light"] .bg-sky-700 *,
+html.light-theme .bg-sky-700 *,
+html[data-theme="light"] .bg-indigo-600 *,
+html.light-theme .bg-indigo-600 *,
+html[data-theme="light"] .bg-rose-600 *,
+html.light-theme .bg-rose-600 *,
+html[data-theme="light"] .neuro-btn-done *,
+html.light-theme .neuro-btn-done *,
+html[data-theme="light"] .bg-black\/90 *,
+html.light-theme .bg-black\/90 * {
+  color: #FFFFFF !important;
+}
+
+html[data-theme="light"] .bg-emerald-500,
+html.light-theme .bg-emerald-500,
+html[data-theme="light"] .bg-amber-400,
+html.light-theme .bg-amber-400,
+html[data-theme="light"] .bg-amber-500,
+html.light-theme .bg-amber-500,
+html[data-theme="light"] .bg-rose-400,
+html.light-theme .bg-rose-400,
+html[data-theme="light"] .bg-rose-500,
+html.light-theme .bg-rose-500 {
+  color: #0E1A40 !important;
+}
+
+html[data-theme="light"] .bg-emerald-500 *,
+html.light-theme .bg-emerald-500 *,
+html[data-theme="light"] .bg-amber-400 *,
+html.light-theme .bg-amber-400 *,
+html[data-theme="light"] .bg-amber-500 *,
+html.light-theme .bg-amber-500 *,
+html[data-theme="light"] .bg-rose-400 *,
+html.light-theme .bg-rose-400 *,
+html[data-theme="light"] .bg-rose-500 *,
+html.light-theme .bg-rose-500 * {
+  color: #0E1A40 !important;
+}
+
+html[data-theme="light"] input,
+html.light-theme input,
+html[data-theme="light"] select,
+html.light-theme select,
+html[data-theme="light"] textarea,
+html.light-theme textarea {
+  background-color: #FFFFFF !important;
+  color: #0E1A40 !important;
+  border-color: #64748B !important;
+}
+
+/* 8. Fluid Portrait & Landscape Orientation Support (Responsive vw/vh/dvh + Flexbox/Grid) */
 .fluid-app-shell {
   width: 100%;
-  max-width: min(100%, 44rem);
+  max-width: min(100vw, 44rem);
   margin-left: auto;
   margin-right: auto;
 }
@@ -339,7 +653,7 @@ html.light-theme .text-slate-200 {
   #main-sticky-header > div,
   main,
   nav.fixed.bottom-0 > div {
-    max-width: min(100%, 64rem) !important;
+    max-width: min(96vw, 64rem) !important;
   }
 
   /* Compact vertical chrome in short landscape mobile viewports (e.g. 844x390) */
@@ -399,7 +713,6 @@ html[data-sensory-calm="true"] *::after {
   scroll-behavior: auto !important;
 }
 
-/* Strict layout stability: prevent scale/translate micro-shifts and pulse jitter */
 html.sensory-calm .animate-pulse,
 html.sensory-calm .animate-bounce,
 html.sensory-calm .animate-spin,
@@ -423,19 +736,16 @@ html[data-sensory-calm="true"] .animate-spin {
 }
 
 /* ============================================================================
- * 10. Onboarding Special Screen Layouts (Task 2: ADHD & Dyslexia Views)
- *     + Exercise Logging Viewport Stability (Task 3)
+ * 10. Onboarding Special Screen Layouts (ADHD & Dyslexia Views)
+ *     + Exercise Logging Viewport Stability
  * - ZERO deletion: all buttons and features stay 100% visible and interactive.
  * - Strictly rem/em units (zero px font sizes).
  * ============================================================================ */
-
-/* Task 3: Prevent browser scroll-anchoring jitter during exercise set re-renders */
 #workout-list,
 .exercise-card-item {
   overflow-anchor: none;
 }
 
-/* Task 2A: ADHD-Friendly View (High Focus, Single-Task Framing) */
 html.adhd-friendly-view,
 html[data-adhd-view="true"] {
   --adhd-focus-ring: #38BDF8;
@@ -466,7 +776,6 @@ html[data-adhd-view="true"] .set-check-btn {
   font-weight: 800 !important;
 }
 
-/* Task 2B: Dyslexia-Friendly View (OpenDyslexic Font + Wide Distinct Spacing) */
 html.dyslexia-friendly-view,
 html[data-dyslexia-view="true"] {
   --app-font-family: 'OpenDyslexic', 'OpenDyslexic3', 'Lexend', 'Atkinson Hyperlegible', sans-serif;
@@ -496,5 +805,3 @@ html.dyslexia-friendly-view li + li,
 html[data-dyslexia-view="true"] li + li {
   margin-top: 0.5rem;
 }
-
-

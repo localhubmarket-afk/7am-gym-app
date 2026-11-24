@@ -55,11 +55,11 @@ test('Task 1: Zero absolute px font-size values exist across HTML, CSS, componen
   }
 });
 
-test('Task 2: High-contrast dyslexia-friendly Light (#F7F7F7/#0A1128) and Dark (#1A1A1A/#F2F2F2) palettes exceed WCAG AAA contrast', () => {
+test('Task 2: High-contrast dyslexia-friendly Light (#F7F7F7/#0E1A40 = 15.8:1) and Dark (#141414/#F8F6F5 = 17.1:1) palettes meet exact WCAG AAA targets', () => {
   assert.equal(ACCESSIBLE_THEME_TOKENS.light.canvasBg, '#F7F7F7');
-  assert.equal(ACCESSIBLE_THEME_TOKENS.light.textPrimary, '#0A1128');
-  assert.equal(ACCESSIBLE_THEME_TOKENS.dark.canvasBg, '#1A1A1A');
-  assert.equal(ACCESSIBLE_THEME_TOKENS.dark.textPrimary, '#F2F2F2');
+  assert.equal(ACCESSIBLE_THEME_TOKENS.light.textPrimary, '#0E1A40');
+  assert.equal(ACCESSIBLE_THEME_TOKENS.dark.canvasBg, '#141414');
+  assert.equal(ACCESSIBLE_THEME_TOKENS.dark.textPrimary, '#F8F6F5');
 
   const lightContrast = calculateWcagContrastRatio(
     ACCESSIBLE_THEME_TOKENS.light.canvasBg,
@@ -70,8 +70,8 @@ test('Task 2: High-contrast dyslexia-friendly Light (#F7F7F7/#0A1128) and Dark (
     ACCESSIBLE_THEME_TOKENS.dark.textPrimary
   );
 
-  assert.ok(lightContrast >= 15.8, `Expected light contrast >= 15.8:1, got ${lightContrast}:1`);
-  assert.ok(darkContrast >= 15.0, `Expected dark contrast >= 15.0:1, got ${darkContrast}:1`);
+  assert.equal(lightContrast, 15.8, `Expected Light Mode contrast strictly 15.8:1, got ${lightContrast}:1`);
+  assert.equal(darkContrast, 17.1, `Expected Dark Mode contrast strictly 17.1:1, got ${darkContrast}:1`);
 
   // Verify applyThemeToDocument updates CSS custom properties and data-theme
   const cssVars = new Map<string, string>();
@@ -97,13 +97,13 @@ test('Task 2: High-contrast dyslexia-friendly Light (#F7F7F7/#0A1128) and Dark (
   assert.equal(lightApplied.resolved, 'light');
   assert.equal(attrs.get('data-theme'), 'light');
   assert.equal(cssVars.get('--bg-canvas'), '#F7F7F7');
-  assert.equal(cssVars.get('--text-primary'), '#0A1128');
+  assert.equal(cssVars.get('--text-primary'), '#0E1A40');
 
   const darkApplied = applyThemeToDocument('dark', mockDoc, false);
   assert.equal(darkApplied.resolved, 'dark');
   assert.equal(attrs.get('data-theme'), 'dark');
-  assert.equal(cssVars.get('--bg-canvas'), '#1A1A1A');
-  assert.equal(cssVars.get('--text-primary'), '#F2F2F2');
+  assert.equal(cssVars.get('--bg-canvas'), '#141414');
+  assert.equal(cssVars.get('--text-primary'), '#F8F6F5');
 });
 
 test('Task 2: Default Lexend/Atkinson font stack, global line-height 1.5, global italic strip, and One-Tap OpenDyslexic toggle', () => {
