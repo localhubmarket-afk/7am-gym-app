@@ -721,8 +721,9 @@
             <span id="watch-header-live-dot" aria-hidden="true" class="hidden w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
             <span id="watch-header-btn-label" class="hidden sm:inline">Watch</span>
           </button>
-          <button id="open-smart-login-btn" type="button" aria-label="Open account login and profile" class="flex items-center justify-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 px-2 py-1.5 rounded-xl text-[0.75rem] font-extrabold transition" title="Smart Login &amp; User Profile">
-            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <button id="open-smart-login-btn" type="button" data-auth-status="signed-out" aria-label="Open account login and profile" class="flex items-center justify-center gap-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 px-2 py-1.5 rounded-xl text-[0.75rem] font-extrabold transition" title="Smart Login &amp; User Profile">
+            <span id="header-user-avatar" data-testid="header-user-avatar" aria-hidden="true" class="hidden w-5 h-5 rounded-full bg-emerald-500 text-slate-950 text-[0.6875rem] font-black items-center justify-center shrink-0"></span>
+            <svg id="header-user-icon-svg" class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             <span id="header-login-label">Profile</span>
           </button>
           <button id="open-share-store-btn" type="button" aria-label="Share app and open settings" class="flex items-center justify-center gap-1 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 px-2 py-1.5 rounded-xl text-[0.75rem] font-bold transition" title="Share App &amp; Fresh Start Reset">
@@ -15421,25 +15422,21 @@
         }
         const savedDollars = (activeDaysCount * 10.70).toFixed(2);
         const prof = state.userProfile || {};
-        const resolvedName = resolveHeaderDisplayNameInline(prof);
-        const hasProfile = !!(prof.email && resolvedName && resolvedName !== 'Sign In');
+        const headerAuthSnap = typeof syncHeaderAuthButtonUI === 'function'
+          ? syncHeaderAuthButtonUI()
+          : {
+              isAuthenticated: Boolean(
+                (window.__liveSupabaseSession && window.__liveSupabaseSession.user) ||
+                (!prof.isGuest && (prof.email || prof.supabaseUserId || (prof.name && resolveHeaderDisplayNameInline(prof) !== 'Sign In')))
+              ),
+              displayName: resolveHeaderDisplayNameInline(prof)
+            };
+        const hasProfile = Boolean(headerAuthSnap && headerAuthSnap.isAuthenticated);
+        const resolvedName = (headerAuthSnap && headerAuthSnap.displayName) || resolveHeaderDisplayNameInline(prof);
         if (hasProfile && prof.name !== resolvedName && /^(google|apple)(\s+athlete|\s+user)?$/i.test(String(prof.name || '').trim())) {
           prof.name = resolvedName;
         }
         const firstName = hasProfile ? resolvedName : '';
-
-        const hdrLoginLbl = document.getElementById('header-login-label');
-        if (hdrLoginLbl) {
-          hdrLoginLbl.textContent = hasProfile ? firstName : 'Sign In';
-        }
-        const closeLoginBtnEl = document.getElementById('close-smart-login-btn');
-        if (closeLoginBtnEl) {
-          if (hasProfile) {
-            closeLoginBtnEl.classList.remove('hidden');
-          } else {
-            closeLoginBtnEl.classList.add('hidden');
-          }
-        }
 
         neuroHud.className = 'hidden';
         neuroHud.innerHTML = `
@@ -24259,6 +24256,7 @@
 
       const shouldSkipInitialPush = Boolean(profileData && profileData.skipInitialPush);
       saveState(shouldSkipInitialPush);
+      if (typeof syncHeaderAuthButtonUI === 'function') syncHeaderAuthButtonUI();
       renderWorkoutView();
       renderPullupView();
       renderVeganView();
@@ -27059,27 +27057,145 @@
         });
       }
 
-      // Hydrate Supabase Magic Link callback sessions automatically on active origin
-      if (!window.__magicLinkAuthListenerBound && typeof window.getSupabaseClient === 'function') {
+      // Centralized Header Auth State Sync (resolves Supabase session + hydrated local profile with zero stale "Sign In" flash)
+      function syncHeaderAuthButtonUI(overrideSession) {
+        const liveSession = overrideSession !== undefined
+          ? overrideSession
+          : (window.__liveSupabaseSession || null);
+        const localProf = (state && state.userProfile && typeof state.userProfile === 'object')
+          ? state.userProfile
+          : null;
+
+        let authState;
+        if (typeof window.resolveHeaderAuthState === 'function') {
+          authState = window.resolveHeaderAuthState({
+            session: liveSession,
+            localProfile: localProf,
+            isAuthLoading: false
+          });
+        } else {
+          const sUser = liveSession && liveSession.user ? liveSession.user : null;
+          const sMeta = (sUser && sUser.user_metadata) || {};
+          const mergedProf = {
+            name: sMeta.full_name || sMeta.name || (localProf && !localProf.isGuest ? localProf.name : '') || '',
+            email: (sUser && sUser.email) || (localProf && !localProf.isGuest ? localProf.email : '') || '',
+            authProvider: (sUser && sUser.app_metadata && sUser.app_metadata.provider) || (localProf && localProf.authProvider) || ''
+          };
+          const resolved = resolveHeaderDisplayNameInline(mergedProf);
+          const isAuthed = Boolean(
+            (sUser && (sUser.id || sUser.email)) ||
+            (localProf && !localProf.isGuest && (localProf.email || localProf.supabaseUserId || (resolved && resolved !== 'Sign In')))
+          );
+          const displayName = isAuthed ? (resolved && resolved !== 'Sign In' ? resolved : 'Account') : 'Sign In';
+          authState = {
+            isAuthenticated: isAuthed,
+            isAuthLoading: false,
+            displayName,
+            avatarInitial: (displayName.charAt(0) || 'U').toUpperCase(),
+            avatarUrl: sMeta.avatar_url || sMeta.picture || (localProf && localProf.avatarUrl) || null,
+            email: mergedProf.email || null,
+            userId: (sUser && sUser.id) || (localProf && localProf.supabaseUserId) || null,
+            authSource: sUser ? 'supabase_session' : (isAuthed ? 'local_profile' : 'signed_out'),
+            ariaLabel: isAuthed ? `Open account profile for ${displayName}` : 'Sign in to your account'
+          };
+        }
+
+        if (typeof window.syncDomHeaderAuthButton === 'function') {
+          window.syncDomHeaderAuthButton(authState, document);
+        } else {
+          const btnEl = document.getElementById('open-smart-login-btn');
+          const lblEl = document.getElementById('header-login-label');
+          const avatarEl = document.getElementById('header-user-avatar');
+          const iconEl = document.getElementById('header-user-icon-svg');
+          const closeEl = document.getElementById('close-smart-login-btn');
+          if (lblEl) lblEl.textContent = authState.displayName;
+          if (btnEl) {
+            btnEl.setAttribute('data-auth-status', authState.isAuthenticated ? 'authenticated' : 'signed-out');
+            btnEl.setAttribute('aria-label', authState.ariaLabel);
+          }
+          if (avatarEl) {
+            if (authState.isAuthenticated) {
+              avatarEl.classList.remove('hidden');
+              avatarEl.classList.add('inline-flex');
+              avatarEl.textContent = authState.avatarInitial;
+            } else {
+              avatarEl.classList.add('hidden');
+              avatarEl.classList.remove('inline-flex');
+              avatarEl.textContent = '';
+            }
+          }
+          if (iconEl) {
+            iconEl.classList.toggle('hidden', Boolean(authState.isAuthenticated && avatarEl));
+          }
+          if (closeEl) {
+            closeEl.classList.toggle('hidden', !authState.isAuthenticated);
+          }
+        }
+        return authState;
+      }
+      window.syncHeaderAuthButtonUI = syncHeaderAuthButtonUI;
+
+      // Hydrate Supabase Auth sessions (`getSession()` + `onAuthStateChange`) reliably regardless of ES module load order
+      function bindGlobalSupabaseAuthHeaderListener() {
+        syncHeaderAuthButtonUI();
+        if (window.__magicLinkAuthListenerBound || typeof window.getSupabaseClient !== 'function') {
+          return;
+        }
         try {
           const sbClient = window.getSupabaseClient();
-          if (sbClient && sbClient.auth && typeof sbClient.auth.onAuthStateChange === 'function') {
-            window.__magicLinkAuthListenerBound = true;
-            sbClient.auth.onAuthStateChange((event, session) => {
-              if (event === 'SIGNED_IN' && session && session.user && session.user.email) {
-                const signedEmail = String(session.user.email).trim().toLowerCase();
-                const currentEmail = String((state && state.userProfile && state.userProfile.email) || '').trim().toLowerCase();
-                if (signedEmail && signedEmail !== currentEmail) {
-                  const metaName = session.user.user_metadata && session.user.user_metadata.full_name
-                    ? String(session.user.user_metadata.full_name)
-                    : '';
-                  completePasswordlessSessionLocal(signedEmail, metaName, 'magic_link');
-                }
+          if (!sbClient || !sbClient.auth) return;
+          window.__magicLinkAuthListenerBound = true;
+
+          const handleAuthTransition = (authState, event, session) => {
+            window.__liveSupabaseSession = event === 'SIGNED_OUT' ? null : (session || null);
+            if (session && session.user) {
+              const signedEmail = String(session.user.email || '').trim().toLowerCase();
+              const currentEmail = String((state && state.userProfile && state.userProfile.email) || '').trim().toLowerCase();
+              const meta = session.user.user_metadata || {};
+              const metaName = String(meta.full_name || meta.name || meta.given_name || '').trim();
+              const metaAvatar = String(meta.avatar_url || meta.picture || '').trim();
+
+              if (signedEmail && signedEmail !== currentEmail) {
+                completePasswordlessSessionLocal(signedEmail, metaName, 'magic_link');
               }
+              if (state && typeof state === 'object') {
+                if (!state.userProfile || typeof state.userProfile !== 'object') {
+                  state.userProfile = {};
+                }
+                if (signedEmail && !state.userProfile.email) state.userProfile.email = signedEmail;
+                if (session.user.id && !state.userProfile.supabaseUserId) state.userProfile.supabaseUserId = session.user.id;
+                if (metaAvatar && !state.userProfile.avatarUrl) state.userProfile.avatarUrl = metaAvatar;
+                if (metaName && (!state.userProfile.name || /^(google|apple|sign in|profile)$/i.test(String(state.userProfile.name).trim()))) {
+                  state.userProfile.name = metaName;
+                }
+                state.userProfile.isGuest = false;
+              }
+            }
+            syncHeaderAuthButtonUI(window.__liveSupabaseSession);
+          };
+
+          if (typeof window.subscribeGlobalHeaderAuthState === 'function') {
+            window.__headerAuthSubscriptionHandle = window.subscribeGlobalHeaderAuthState({
+              supabaseClient: sbClient,
+              getLocalProfile: () => (state && state.userProfile ? state.userProfile : null),
+              onAuthStateChange: handleAuthTransition
+            });
+          } else if (typeof sbClient.auth.onAuthStateChange === 'function') {
+            if (typeof sbClient.auth.getSession === 'function') {
+              sbClient.auth.getSession().then((res) => {
+                const sess = res && res.data ? res.data.session : null;
+                handleAuthTransition(null, 'SESSION_HYDRATED', sess);
+              }).catch(() => {});
+            }
+            sbClient.auth.onAuthStateChange((event, session) => {
+              handleAuthTransition(null, event, session);
             });
           }
         } catch (_err) {}
       }
+
+      bindGlobalSupabaseAuthHeaderListener();
+      window.addEventListener('d3-onerm-bridge-ready', bindGlobalSupabaseAuthHeaderListener);
 
       // Phase 1 Blueprint Task 2: Collapsible Accessible Form Guide (mounts React <AccessibleVideoPlayer>)
       const toggleAccessibleVideoBtn = document.getElementById('toggle-accessible-video-guide-btn');
@@ -33101,6 +33217,7 @@
         // Run once now & once when module bridge finishes loading
         function bootMobileUxWorkflows() {
           syncAuthModalIsolationLocal();
+          if (typeof syncHeaderAuthButtonUI === 'function') syncHeaderAuthButtonUI();
           mountSettingsCustomProgramUploader();
           updateLiveClockScheduleBannerUI();
           const savedSnap = typeof window.loadActiveWorkoutSession === 'function' ? window.loadActiveWorkoutSession() : null;

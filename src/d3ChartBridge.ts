@@ -369,6 +369,13 @@ import {
   CustomProgramUploadPanel,
   type CustomProgramUploadPanelProps
 } from './components/CustomProgramUploadPanel';
+import {
+  extractAvatarInitial,
+  resolveHeaderAuthState,
+  sanitizeAvatarUrl,
+  subscribeGlobalHeaderAuthState,
+  syncDomHeaderAuthButton
+} from './utils/headerAuthSync';
 
 const mountedVideoPlayerRoots = new WeakMap<HTMLElement, Root>();
 const mountedPhase2HubRoots = new WeakMap<HTMLElement, Root>();
@@ -1374,6 +1381,11 @@ declare global {
     validateTimerDurationSeconds?: typeof validateTimerDurationSeconds;
     validateExerciseSetEntry?: typeof validateExerciseSetEntry;
     mountCustomProgramUploadPanel?: typeof mountCustomProgramUploadPanel;
+    extractAvatarInitial?: typeof extractAvatarInitial;
+    sanitizeAvatarUrl?: typeof sanitizeAvatarUrl;
+    resolveHeaderAuthState?: typeof resolveHeaderAuthState;
+    subscribeGlobalHeaderAuthState?: typeof subscribeGlobalHeaderAuthState;
+    syncDomHeaderAuthButton?: typeof syncDomHeaderAuthButton;
   }
 }
 
@@ -1667,5 +1679,10 @@ if (typeof window !== 'undefined') {
   window.validateTimerDurationSeconds = validateTimerDurationSeconds;
   window.validateExerciseSetEntry = validateExerciseSetEntry;
   window.mountCustomProgramUploadPanel = mountCustomProgramUploadPanel;
+  window.extractAvatarInitial = extractAvatarInitial;
+  window.sanitizeAvatarUrl = sanitizeAvatarUrl;
+  window.resolveHeaderAuthState = resolveHeaderAuthState;
+  window.subscribeGlobalHeaderAuthState = subscribeGlobalHeaderAuthState;
+  window.syncDomHeaderAuthButton = syncDomHeaderAuthButton;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

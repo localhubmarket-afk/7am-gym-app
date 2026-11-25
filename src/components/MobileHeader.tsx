@@ -1,17 +1,28 @@
-import React from 'react';
-import { resolveDisplayUsername } from '../utils/wizardValidation';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useOptionalAuth } from '../context/AuthContext';
+import { getSupabaseClient } from '../lib/supabaseClient';
+import {
+  resolveHeaderAuthState,
+  subscribeGlobalHeaderAuthState,
+  type SupabaseAuthClientLike,
+  type SupabaseSessionLike
+} from '../utils/headerAuthSync';
 import { PWAInstallButton } from './PWAInstallButton';
 
 export interface MobileHeaderProfile {
   name?: string | null;
   email?: string | null;
+  avatarUrl?: string | null;
   authProvider?: string | null;
+  supabaseUserId?: string | null;
+  isGuest?: boolean | null;
 }
 
 export interface MobileHeaderProps {
   profile: MobileHeaderProfile | null | undefined;
   subtitle?: string;
   showInstallButton?: boolean;
+  supabaseClient?: SupabaseAuthClientLike | null;
   onOpenAiCoach?: () => void;
   onOpenWatchModal?: () => void;
   onOpenProfileModal: () => void;
@@ -20,19 +31,58 @@ export interface MobileHeaderProps {
 
 /**
  * Mobile Application Header (WCAG 2.2 Level AA)
- * Extracts the user's real first name (e.g. "François") from profile data,
- * uses relative rem typography, 44x44px touch targets, and explicit ARIA labels.
+ * Listens to centralized AuthContext / Supabase `onAuthStateChange` + `getSession()`
+ * so active sessions always display the user's name and avatar rather than "Sign In".
  */
 export const MobileHeader: React.FC<MobileHeaderProps> = ({
   profile,
   subtitle = 'Full-Body • $6.35/d',
   showInstallButton = false,
+  supabaseClient,
   onOpenAiCoach,
   onOpenWatchModal,
   onOpenProfileModal,
   onOpenShareModal
 }) => {
-  const displayFirstName = resolveDisplayUsername(profile);
+  const authContext = useOptionalAuth();
+  const profileRef = useRef<MobileHeaderProfile | null | undefined>(profile);
+  profileRef.current = profile;
+
+  const [standaloneSession, setStandaloneSession] = useState<SupabaseSessionLike | null>(null);
+  const [standaloneLoading, setStandaloneLoading] = useState<boolean>(false);
+
+  // When rendered outside <AuthProvider>, bind directly to Supabase Auth so header state never desyncs
+  useEffect(() => {
+    if (authContext) return;
+    const client = supabaseClient !== undefined ? supabaseClient : getSupabaseClient();
+    if (!client?.auth) {
+      setStandaloneLoading(false);
+      return;
+    }
+
+    const handle = subscribeGlobalHeaderAuthState({
+      supabaseClient: client,
+      getLocalProfile: () => profileRef.current,
+      onAuthStateChange: (resolved, _event, nextSession) => {
+        setStandaloneSession(nextSession);
+        setStandaloneLoading(resolved.isAuthLoading);
+      }
+    });
+
+    return () => {
+      handle.unsubscribe();
+    };
+  }, [authContext, supabaseClient]);
+
+  const headerAuth = useMemo(
+    () =>
+      resolveHeaderAuthState({
+        session: authContext ? authContext.session : standaloneSession,
+        localProfile: profile ?? null,
+        isAuthLoading: authContext ? authContext.isAuthLoading : standaloneLoading
+      }),
+    [authContext, standaloneSession, standaloneLoading, profile]
+  );
 
   return (
     <header
@@ -86,24 +136,49 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
           <button
             type="button"
             onClick={onOpenProfileModal}
-            title="Account & Profile"
-            aria-label={`Open account profile for ${displayFirstName}`}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-2.5 py-2 text-[0.6875rem] font-extrabold text-emerald-300 transition hover:bg-emerald-500/25 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+            data-auth-state={headerAuth.isAuthenticated ? 'authenticated' : 'signed-out'}
+            title={
+              headerAuth.isAuthenticated
+                ? `${headerAuth.displayName} • Account & Profile`
+                : 'Sign In & User Profile'
+            }
+            aria-label={headerAuth.ariaLabel}
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-2.5 py-2 text-[0.6875rem] font-extrabold text-emerald-300 transition hover:bg-emerald-500/25 focus:outline-none focus:ring-2 focus:ring-emerald-300"
           >
-            <svg
-              className="h-3.5 w-3.5 shrink-0"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            <span data-testid="mobile-header-username">{displayFirstName}</span>
+            {headerAuth.isAuthenticated ? (
+              headerAuth.avatarUrl ? (
+                <img
+                  src={headerAuth.avatarUrl}
+                  alt=""
+                  aria-hidden="true"
+                  data-testid="mobile-header-avatar"
+                  className="h-5 w-5 shrink-0 rounded-full object-cover ring-1 ring-emerald-400/60"
+                />
+              ) : (
+                <span
+                  aria-hidden="true"
+                  data-testid="mobile-header-avatar"
+                  className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[0.6875rem] font-black text-slate-950"
+                >
+                  {headerAuth.avatarInitial}
+                </span>
+              )
+            ) : (
+              <svg
+                className="h-3.5 w-3.5 shrink-0"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            )}
+            <span data-testid="mobile-header-username">{headerAuth.displayName}</span>
           </button>
 
           {onOpenShareModal && (
