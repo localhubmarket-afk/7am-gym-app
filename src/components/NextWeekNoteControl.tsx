@@ -1,4 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import {
+  buildNonAuthNoteInputProps,
+  guardNonAuthNoteFocusEvent
+} from '../utils/authSessionGuard';
 import {
   NEXT_WEEK_NOTE_QUICK_CHIPS,
   buildNextWeekProgressionNote
@@ -12,10 +16,11 @@ export interface NextWeekNoteControlProps {
 }
 
 /**
- * Task 4 & Task 1: Dedicated Next-Week Progression Note Control
+ * Task 3 & Task 4: Dedicated Next-Week Progression Note Control
  * - Lets users leave a quick cue for next week (+5 lbs, +1 rep, cleaner form, or custom text).
- * - Uses strict non-auth attributes (autoComplete="off", data-lpignore="true") so mobile OS
- *   keyboards never mistake a workout note for a login or password field.
+ * - Uses strict non-auth attributes (`autoComplete="off"`, `data-lpignore="true"`, non-auth `name`)
+ *   and safe `onFocus`/`onChange` isolation so mobile OS keyboards never mistake a workout note
+ *   for a login or password field.
  */
 export const NextWeekNoteControl: React.FC<NextWeekNoteControlProps> = ({
   exerciseId,
@@ -26,6 +31,11 @@ export const NextWeekNoteControl: React.FC<NextWeekNoteControlProps> = ({
   const [noteText, setNoteText] = useState(initialNote);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [savedFeedback, setSavedFeedback] = useState(false);
+
+  const nonAuthProps = useMemo(
+    () => buildNonAuthNoteInputProps(`next_week_${exerciseId}`),
+    [exerciseId]
+  );
 
   const commitNote = (nextText: string, quickTag: string | null) => {
     const validated = buildNextWeekProgressionNote({
@@ -82,16 +92,15 @@ export const NextWeekNoteControl: React.FC<NextWeekNoteControlProps> = ({
 
       <input
         id={`next-week-note-input-${exerciseId}`}
-        name={`gym_nonauth_next_week_${exerciseId}`}
         type="text"
-        autoComplete="off"
-        data-lpignore="true"
-        data-1p-ignore="true"
-        data-bwignore="true"
-        data-form-type="other"
-        data-non-auth-input="true"
+        {...nonAuthProps}
         value={noteText}
+        onFocus={(e) => {
+          e.stopPropagation();
+          guardNonAuthNoteFocusEvent(e.currentTarget);
+        }}
         onChange={(e) => {
+          e.stopPropagation();
           const val = e.target.value;
           setNoteText(val);
           commitNote(val, null);

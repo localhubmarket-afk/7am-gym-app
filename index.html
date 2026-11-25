@@ -721,10 +721,11 @@
             <span id="watch-header-live-dot" aria-hidden="true" class="hidden w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
             <span id="watch-header-btn-label" class="hidden sm:inline">Watch</span>
           </button>
-          <button id="open-smart-login-btn" type="button" data-auth-status="signed-out" aria-label="Open account login and profile" class="flex items-center justify-center gap-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 px-2 py-1.5 rounded-xl text-[0.75rem] font-extrabold transition" title="Smart Login &amp; User Profile">
-            <span id="header-user-avatar" data-testid="header-user-avatar" aria-hidden="true" class="hidden w-5 h-5 rounded-full bg-emerald-500 text-slate-950 text-[0.6875rem] font-black items-center justify-center shrink-0"></span>
+          <button id="open-smart-login-btn" type="button" data-auth-status="loading" aria-busy="true" aria-label="Checking account sign-in status" class="flex items-center justify-center gap-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 px-2 py-1.5 rounded-xl text-[0.75rem] font-extrabold transition" title="Smart Login &amp; User Profile">
+            <span id="header-auth-loading-spinner" data-testid="header-auth-loading-spinner" aria-hidden="true" class="hidden w-3.5 h-3.5 rounded-full border-2 border-emerald-300/35 border-t-emerald-300 animate-spin shrink-0"></span>
+            <span id="header-user-avatar" data-testid="header-user-avatar" aria-hidden="true" class="hidden w-5 h-5 rounded-full items-center justify-center text-xs leading-none shrink-0"></span>
             <svg id="header-user-icon-svg" class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span id="header-login-label">Profile</span>
+            <span id="header-login-label">Checking...</span>
           </button>
           <button id="open-share-store-btn" type="button" aria-label="Share app and open settings" class="flex items-center justify-center gap-1 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 px-2 py-1.5 rounded-xl text-[0.75rem] font-bold transition" title="Share App &amp; Fresh Start Reset">
             <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
@@ -18466,7 +18467,11 @@
         if (typeof window.applyNonAuthInputAttributes === 'function') {
           window.applyNonAuthInputAttributes(inp);
         }
-        inp.addEventListener('focus', () => {
+        inp.addEventListener('focus', (ev) => {
+          ev.stopPropagation();
+          if (typeof window.guardNonAuthNoteFocusEvent === 'function') {
+            window.guardNonAuthNoteFocusEvent(inp, document);
+          }
           const exId = inp.getAttribute('data-note-input-ex');
           if (typeof window.saveActiveWorkoutSessionSnapshotLocal === 'function') {
             window.saveActiveWorkoutSessionSnapshotLocal(exId, 'note_focus');
@@ -18615,7 +18620,14 @@
         if (typeof window.applyNonAuthInputAttributes === 'function') {
           window.applyNonAuthInputAttributes(inp);
         }
-        inp.addEventListener('input', () => {
+        inp.addEventListener('focus', (ev) => {
+          ev.stopPropagation();
+          if (typeof window.guardNonAuthNoteFocusEvent === 'function') {
+            window.guardNonAuthNoteFocusEvent(inp, document);
+          }
+        });
+        inp.addEventListener('input', (ev) => {
+          ev.stopPropagation();
           const exId = inp.getAttribute('data-next-week-input-ex');
           persistNextWeekNoteLocal(exId, inp.value, null);
         });
@@ -19581,7 +19593,16 @@
             }
           });
           const isFirstSetToday = state.workoutLogs[key].done && doneSetsCountNow === 1;
-          if (isFirstSetToday && (!state.userProfile || !state.userProfile.email) && !state.smartLoginPromptShown) {
+          const allowFirstSetLoginPrompt = typeof window.shouldPromptForLogin === 'function'
+            ? window.shouldPromptForLogin({
+                action: 'set_log',
+                hasActiveUser: Boolean(
+                  (window.__liveSupabaseSession && window.__liveSupabaseSession.user) ||
+                  (state.userProfile && state.userProfile.email && !state.userProfile.isGuest)
+                )
+              }).shouldPromptLogin
+            : false;
+          if (allowFirstSetLoginPrompt && isFirstSetToday && (!state.userProfile || !state.userProfile.email) && !state.smartLoginPromptShown) {
             state.smartLoginPromptShown = true;
             setTimeout(() => {
               const loginModal = document.getElementById('smart-login-modal');
@@ -21268,7 +21289,16 @@
               </label>
               <textarea
                 id="prep-note-input-${cardId}"
+                name="gym_nonauth_prep_note_${cardId}"
                 data-prep-note-input="${cardId}"
+                autocomplete="off"
+                autocorrect="on"
+                spellcheck="true"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                data-form-type="other"
+                data-non-auth-input="true"
                 rows="2"
                 placeholder="e.g., Empty glass jar tare = 215g, stove dial #2..."
                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
@@ -22270,7 +22300,16 @@
                   </label>
                   <textarea
                     id="prep-note-input-${slot.slotId}"
+                    name="gym_nonauth_prep_note_${slot.slotId}"
                     data-prep-note-input="${slot.slotId}"
+                    autocomplete="off"
+                    autocorrect="on"
+                    spellcheck="true"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                    data-bwignore="true"
+                    data-form-type="other"
+                    data-non-auth-input="true"
                     rows="2"
                     placeholder="e.g., Empty glass jar tare = 215g, stove dial #2..."
                     class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
@@ -27057,11 +27096,14 @@
         });
       }
 
-      // Centralized Header Auth State Sync (resolves Supabase session + hydrated local profile with zero stale "Sign In" flash)
-      function syncHeaderAuthButtonUI(overrideSession) {
+      // Centralized Header Auth State Sync (3-state hydration: loading spinner -> 👤 Name -> Sign In only when confirmed logged out)
+      function syncHeaderAuthButtonUI(overrideSession, overrideLoading) {
         const liveSession = overrideSession !== undefined
           ? overrideSession
           : (window.__liveSupabaseSession || null);
+        const isLoading = overrideLoading !== undefined
+          ? Boolean(overrideLoading)
+          : Boolean(window.__isAuthLoading);
         const localProf = (state && state.userProfile && typeof state.userProfile === 'object')
           ? state.userProfile
           : null;
@@ -27071,13 +27113,13 @@
           authState = window.resolveHeaderAuthState({
             session: liveSession,
             localProfile: localProf,
-            isAuthLoading: false
+            isAuthLoading: isLoading
           });
         } else {
           const sUser = liveSession && liveSession.user ? liveSession.user : null;
           const sMeta = (sUser && sUser.user_metadata) || {};
           const mergedProf = {
-            name: sMeta.full_name || sMeta.name || (localProf && !localProf.isGuest ? localProf.name : '') || '',
+            name: sMeta.name || sMeta.full_name || (localProf && !localProf.isGuest ? localProf.name : '') || '',
             email: (sUser && sUser.email) || (localProf && !localProf.isGuest ? localProf.email : '') || '',
             authProvider: (sUser && sUser.app_metadata && sUser.app_metadata.provider) || (localProf && localProf.authProvider) || ''
           };
@@ -27086,17 +27128,24 @@
             (sUser && (sUser.id || sUser.email)) ||
             (localProf && !localProf.isGuest && (localProf.email || localProf.supabaseUserId || (resolved && resolved !== 'Sign In')))
           );
-          const displayName = isAuthed ? (resolved && resolved !== 'Sign In' ? resolved : 'Account') : 'Sign In';
+          const status = isAuthed ? 'authenticated' : (isLoading ? 'loading' : 'signed-out');
+          const displayName = isAuthed
+            ? (resolved && resolved !== 'Sign In' ? resolved : 'Account')
+            : (isLoading ? 'Checking...' : 'Sign In');
           authState = {
+            status,
             isAuthenticated: isAuthed,
-            isAuthLoading: false,
+            isAuthLoading: status === 'loading',
             displayName,
+            buttonDisplayLabel: isAuthed ? `👤 ${displayName}` : displayName,
             avatarInitial: (displayName.charAt(0) || 'U').toUpperCase(),
             avatarUrl: sMeta.avatar_url || sMeta.picture || (localProf && localProf.avatarUrl) || null,
             email: mergedProf.email || null,
             userId: (sUser && sUser.id) || (localProf && localProf.supabaseUserId) || null,
             authSource: sUser ? 'supabase_session' : (isAuthed ? 'local_profile' : 'signed_out'),
-            ariaLabel: isAuthed ? `Open account profile for ${displayName}` : 'Sign in to your account'
+            ariaLabel: isAuthed
+              ? `Logged in as ${displayName}. Open account profile`
+              : (isLoading ? 'Checking your account sign-in status' : 'Sign in to your account')
           };
         }
 
@@ -27106,18 +27155,26 @@
           const btnEl = document.getElementById('open-smart-login-btn');
           const lblEl = document.getElementById('header-login-label');
           const avatarEl = document.getElementById('header-user-avatar');
+          const spinnerEl = document.getElementById('header-auth-loading-spinner');
           const iconEl = document.getElementById('header-user-icon-svg');
           const closeEl = document.getElementById('close-smart-login-btn');
+          const isLoadingStatus = authState.status === 'loading';
+          const isAuthedStatus = authState.status === 'authenticated';
           if (lblEl) lblEl.textContent = authState.displayName;
           if (btnEl) {
-            btnEl.setAttribute('data-auth-status', authState.isAuthenticated ? 'authenticated' : 'signed-out');
+            btnEl.setAttribute('data-auth-status', authState.status);
+            btnEl.setAttribute('aria-busy', isLoadingStatus ? 'true' : 'false');
             btnEl.setAttribute('aria-label', authState.ariaLabel);
           }
+          if (spinnerEl) {
+            spinnerEl.classList.toggle('hidden', !isLoadingStatus);
+            spinnerEl.classList.toggle('inline-block', isLoadingStatus);
+          }
           if (avatarEl) {
-            if (authState.isAuthenticated) {
+            if (isAuthedStatus) {
               avatarEl.classList.remove('hidden');
               avatarEl.classList.add('inline-flex');
-              avatarEl.textContent = authState.avatarInitial;
+              avatarEl.textContent = '👤';
             } else {
               avatarEl.classList.add('hidden');
               avatarEl.classList.remove('inline-flex');
@@ -27125,15 +27182,29 @@
             }
           }
           if (iconEl) {
-            iconEl.classList.toggle('hidden', Boolean(authState.isAuthenticated && avatarEl));
+            iconEl.classList.toggle('hidden', Boolean((isAuthedStatus && avatarEl) || (isLoadingStatus && spinnerEl)));
           }
           if (closeEl) {
-            closeEl.classList.toggle('hidden', !authState.isAuthenticated);
+            closeEl.classList.toggle('hidden', !isAuthedStatus);
           }
         }
         return authState;
       }
       window.syncHeaderAuthButtonUI = syncHeaderAuthButtonUI;
+
+      // Global capture focus guard so tapping ANY workout/prep note input never triggers password managers or login modals
+      if (!window.__noteFocusGuardBound) {
+        window.__noteFocusGuardBound = true;
+        document.addEventListener('focusin', (ev) => {
+          const target = ev.target;
+          if (!target || !target.matches) return;
+          if (target.matches('.ex-note-text-input, .next-week-note-input, .optional-subjective-note-input, [data-prep-note-input], #shop-brand-custom-name-input')) {
+            if (typeof window.guardNonAuthNoteFocusEvent === 'function') {
+              window.guardNonAuthNoteFocusEvent(target, document);
+            }
+          }
+        }, true);
+      }
 
       // Hydrate Supabase Auth sessions (`getSession()` + `onAuthStateChange`) reliably regardless of ES module load order
       function bindGlobalSupabaseAuthHeaderListener() {
@@ -27143,16 +27214,23 @@
         }
         try {
           const sbClient = window.getSupabaseClient();
-          if (!sbClient || !sbClient.auth) return;
+          if (!sbClient || !sbClient.auth) {
+            window.__isAuthLoading = false;
+            syncHeaderAuthButtonUI(null, false);
+            return;
+          }
           window.__magicLinkAuthListenerBound = true;
+          window.__isAuthLoading = Boolean(typeof sbClient.auth.getSession === 'function');
+          syncHeaderAuthButtonUI(window.__liveSupabaseSession || null, window.__isAuthLoading);
 
           const handleAuthTransition = (authState, event, session) => {
+            window.__isAuthLoading = Boolean(authState && authState.isAuthLoading);
             window.__liveSupabaseSession = event === 'SIGNED_OUT' ? null : (session || null);
             if (session && session.user) {
               const signedEmail = String(session.user.email || '').trim().toLowerCase();
               const currentEmail = String((state && state.userProfile && state.userProfile.email) || '').trim().toLowerCase();
               const meta = session.user.user_metadata || {};
-              const metaName = String(meta.full_name || meta.name || meta.given_name || '').trim();
+              const metaName = String(meta.name || meta.full_name || meta.given_name || '').trim();
               const metaAvatar = String(meta.avatar_url || meta.picture || '').trim();
 
               if (signedEmail && signedEmail !== currentEmail) {
@@ -27171,7 +27249,7 @@
                 state.userProfile.isGuest = false;
               }
             }
-            syncHeaderAuthButtonUI(window.__liveSupabaseSession);
+            syncHeaderAuthButtonUI(window.__liveSupabaseSession, window.__isAuthLoading);
           };
 
           if (typeof window.subscribeGlobalHeaderAuthState === 'function') {
@@ -27184,14 +27262,19 @@
             if (typeof sbClient.auth.getSession === 'function') {
               sbClient.auth.getSession().then((res) => {
                 const sess = res && res.data ? res.data.session : null;
-                handleAuthTransition(null, 'SESSION_HYDRATED', sess);
-              }).catch(() => {});
+                handleAuthTransition({ isAuthLoading: false }, 'SESSION_HYDRATED', sess);
+              }).catch(() => {
+                handleAuthTransition({ isAuthLoading: false }, 'LOCAL_PROFILE_SYNC', null);
+              });
             }
             sbClient.auth.onAuthStateChange((event, session) => {
-              handleAuthTransition(null, event, session);
+              handleAuthTransition({ isAuthLoading: false }, event, session);
             });
           }
-        } catch (_err) {}
+        } catch (_err) {
+          window.__isAuthLoading = false;
+          syncHeaderAuthButtonUI(null, false);
+        }
       }
 
       bindGlobalSupabaseAuthHeaderListener();
@@ -30697,7 +30780,7 @@
         <div class="text-xs font-extrabold text-slate-100">Or Enter Your Own Brand &amp; Price</div>
         <div class="space-y-1">
           <label for="shop-brand-custom-name-input" class="block text-[0.6875rem] font-bold text-slate-300">Brand / Quality Name</label>
-          <input id="shop-brand-custom-name-input" type="text" placeholder="e.g., Organic Sprouted Tofu" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-400" />
+          <input id="shop-brand-custom-name-input" name="gym_nonauth_shop_brand_name" type="text" autocomplete="off" autocorrect="on" spellcheck="true" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" data-non-auth-input="true" placeholder="e.g., Organic Sprouted Tofu" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-400" />
         </div>
         <div class="space-y-1">
           <label for="shop-brand-custom-price-input" class="block text-[0.6875rem] font-bold text-slate-300">Weekly Price ($/wk)</label>

@@ -220,3 +220,61 @@ export function syncHiddenAuthModalInputIsolation(modalEl: Element | null | unde
 
   return { isHidden, affectedInputs };
 }
+
+export interface NonAuthNoteInputProps {
+  name: string;
+  autoComplete: 'off';
+  autoCorrect: 'on';
+  spellCheck: boolean;
+  inputMode: 'text';
+  'data-lpignore': 'true';
+  'data-1p-ignore': 'true';
+  'data-bwignore': 'true';
+  'data-form-type': 'other';
+  'data-non-auth-input': 'true';
+}
+
+/**
+ * Generates safe React attributes for workout note and journal inputs so mobile OS
+ * keyboards (iOS Keychain, Android Autofill) and password managers never mistake a
+ * workout note field for a username or password field.
+ */
+export function buildNonAuthNoteInputProps(fieldKey: string): NonAuthNoteInputProps {
+  const sanitizedKey = String(fieldKey || 'workout_note')
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .replace(/(user|email|pass|login|pin|code|auth)/gi, 'note');
+  return {
+    name: `gym_nonauth_${sanitizedKey}`,
+    autoComplete: 'off',
+    autoCorrect: 'on',
+    spellCheck: true,
+    inputMode: 'text',
+    'data-lpignore': 'true',
+    'data-1p-ignore': 'true',
+    'data-bwignore': 'true',
+    'data-form-type': 'other',
+    'data-non-auth-input': 'true'
+  };
+}
+
+/**
+ * Safe focus handler helper for workout note fields:
+ * - Hardens the focused element with non-auth attributes
+ * - Keeps hidden auth modal inputs disabled so mobile OS Autofill ignores them
+ * - Confirms via `shouldPromptForLogin` that note focus NEVER opens a login prompt
+ */
+export function guardNonAuthNoteFocusEvent(
+  target: Element | null | undefined,
+  doc: Document | null = typeof document !== 'undefined' ? document : null
+): LoginPromptDecision {
+  if (target) {
+    applyNonAuthInputAttributes(target);
+  }
+  if (doc) {
+    const loginModal = doc.getElementById('smart-login-modal');
+    if (loginModal) {
+      syncHiddenAuthModalInputIsolation(loginModal);
+    }
+  }
+  return shouldPromptForLogin({ action: 'note_focus' });
+}

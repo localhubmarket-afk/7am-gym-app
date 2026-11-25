@@ -13,6 +13,7 @@ import {
   subscribeGlobalHeaderAuthState,
   type HeaderAuthChangeEvent,
   type HeaderAuthState,
+  type HeaderAuthStatus,
   type LocalUserProfileLike,
   type SupabaseAuthClientLike,
   type SupabaseAuthUserLike,
@@ -23,6 +24,7 @@ export interface AuthContextValue {
   session: SupabaseSessionLike | null;
   user: SupabaseAuthUserLike | null;
   headerAuth: HeaderAuthState;
+  status: HeaderAuthStatus;
   isAuthenticated: boolean;
   isAuthLoading: boolean;
   lastAuthEvent: HeaderAuthChangeEvent | null;
@@ -115,6 +117,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       session,
       user: session?.user ?? null,
       headerAuth,
+      status: headerAuth.status,
       isAuthenticated: headerAuth.isAuthenticated,
       isAuthLoading: headerAuth.isAuthLoading,
       lastAuthEvent,

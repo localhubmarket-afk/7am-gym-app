@@ -338,7 +338,9 @@ import {
   AUTH_INPUT_IDS,
   NON_AUTH_INPUT_ATTRIBUTES,
   applyNonAuthInputAttributes,
+  buildNonAuthNoteInputProps,
   enforceNonAuthInputsAcrossRoot,
+  guardNonAuthNoteFocusEvent,
   isAuthFieldElement,
   shouldPromptForLogin,
   syncHiddenAuthModalInputIsolation
@@ -1359,7 +1361,9 @@ declare global {
     shouldPromptForLogin?: typeof shouldPromptForLogin;
     isAuthFieldElement?: typeof isAuthFieldElement;
     applyNonAuthInputAttributes?: typeof applyNonAuthInputAttributes;
+    buildNonAuthNoteInputProps?: typeof buildNonAuthNoteInputProps;
     enforceNonAuthInputsAcrossRoot?: typeof enforceNonAuthInputsAcrossRoot;
+    guardNonAuthNoteFocusEvent?: typeof guardNonAuthNoteFocusEvent;
     syncHiddenAuthModalInputIsolation?: typeof syncHiddenAuthModalInputIsolation;
     ACTIVE_WORKOUT_SESSION_KEY?: string;
     MAX_RESUME_SESSION_AGE_MS?: number;
@@ -1657,7 +1661,9 @@ if (typeof window !== 'undefined') {
   window.shouldPromptForLogin = shouldPromptForLogin;
   window.isAuthFieldElement = isAuthFieldElement;
   window.applyNonAuthInputAttributes = applyNonAuthInputAttributes;
+  window.buildNonAuthNoteInputProps = buildNonAuthNoteInputProps;
   window.enforceNonAuthInputsAcrossRoot = enforceNonAuthInputsAcrossRoot;
+  window.guardNonAuthNoteFocusEvent = guardNonAuthNoteFocusEvent;
   window.syncHiddenAuthModalInputIsolation = syncHiddenAuthModalInputIsolation;
   window.ACTIVE_WORKOUT_SESSION_KEY = ACTIVE_WORKOUT_SESSION_KEY;
   window.MAX_RESUME_SESSION_AGE_MS = MAX_RESUME_SESSION_AGE_MS;

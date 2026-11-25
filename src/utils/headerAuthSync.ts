@@ -43,10 +43,14 @@ export type HeaderAuthChangeEvent =
   | 'LOCAL_PROFILE_SYNC'
   | string;
 
+export type HeaderAuthStatus = 'loading' | 'authenticated' | 'signed-out';
+
 export interface HeaderAuthState {
+  status: HeaderAuthStatus;
   isAuthenticated: boolean;
   isAuthLoading: boolean;
   displayName: string;
+  buttonDisplayLabel: string;
   avatarInitial: string;
   avatarUrl: string | null;
   email: string | null;
@@ -123,8 +127,12 @@ export interface ResolveHeaderAuthOptions {
 
 /**
  * Single source of truth for top header authentication display state.
- * Prevents the header from falling back to "Sign In" whenever a valid Supabase
- * session OR hydrated non-guest user profile is already active.
+ * - While `isAuthLoading` is true and no active session/profile is resolved yet, returns
+ *   `status: 'loading'` so the UI renders a neutral loading indicator instead of "Sign In".
+ * - Only returns `status: 'signed-out'` ("Sign In") when `isAuthLoading` is false AND no
+ *   active Supabase session or hydrated non-guest profile exists.
+ * - When active, dynamically formats `buttonDisplayLabel` as `👤 <Name>` from
+ *   `gym_state.userProfile.name` or Supabase `user.user_metadata.name` / `full_name`.
  */
 export function resolveHeaderAuthState(options: ResolveHeaderAuthOptions = {}): HeaderAuthState {
   const sessionUser = options.session?.user ?? null;
@@ -135,7 +143,7 @@ export function resolveHeaderAuthState(options: ResolveHeaderAuthOptions = {}): 
   const sessionEmail = String(sessionUser?.email || '').trim().toLowerCase();
   const sessionId = String(sessionUser?.id || '').trim();
   const sessionMetaName = String(
-    meta?.full_name || meta?.name || meta?.given_name || meta?.display_name || ''
+    meta?.name || meta?.full_name || meta?.given_name || meta?.display_name || ''
   ).trim();
   const sessionAvatarUrl = sanitizeAvatarUrl(meta?.avatar_url || meta?.picture);
   const sessionProvider = String(sessionUser?.app_metadata?.provider || '').trim() || null;
@@ -148,6 +156,9 @@ export function resolveHeaderAuthState(options: ResolveHeaderAuthOptions = {}): 
   const localProvider = isLocalGuest ? null : String(localProfile?.authProvider || '').trim() || null;
 
   const hasLiveSupabaseSession = Boolean(sessionUser && (sessionId || sessionEmail));
+  const hasRealSessionMetaName = Boolean(
+    sessionMetaName && !GENERIC_PLACEHOLDER_NAMES.has(sessionMetaName.toLowerCase())
+  );
   const hasRealLocalName = Boolean(
     localName && !GENERIC_PLACEHOLDER_NAMES.has(localName.toLowerCase())
   );
@@ -156,31 +167,51 @@ export function resolveHeaderAuthState(options: ResolveHeaderAuthOptions = {}): 
   );
 
   const isAuthenticated = hasLiveSupabaseSession || hasHydratedLocalProfile;
-  const mergedEmail = sessionEmail || localEmail || null;
-  const mergedUserId = sessionId || localUserId || null;
-  const mergedName =
-    (sessionMetaName && !GENERIC_PLACEHOLDER_NAMES.has(sessionMetaName.toLowerCase())
-      ? sessionMetaName
-      : '') ||
-    (hasRealLocalName ? localName : '') ||
-    sessionMetaName ||
-    localName;
-  const mergedAvatarUrl = sessionAvatarUrl || localAvatarUrl || null;
-  const mergedProvider = sessionProvider || localProvider;
+  const isSameAccountAsSession = Boolean(
+    !sessionEmail || !localEmail || sessionEmail === localEmail
+  );
 
   if (!isAuthenticated) {
+    if (isAuthLoading) {
+      return {
+        status: 'loading',
+        isAuthenticated: false,
+        isAuthLoading: true,
+        displayName: 'Checking...',
+        buttonDisplayLabel: 'Checking...',
+        avatarInitial: 'U',
+        avatarUrl: null,
+        email: null,
+        userId: null,
+        authSource: 'signed_out',
+        ariaLabel: 'Checking your account sign-in status'
+      };
+    }
+
     return {
+      status: 'signed-out',
       isAuthenticated: false,
-      isAuthLoading,
-      displayName: isAuthLoading ? 'Profile' : 'Sign In',
+      isAuthLoading: false,
+      displayName: 'Sign In',
+      buttonDisplayLabel: 'Sign In',
       avatarInitial: 'U',
       avatarUrl: null,
       email: null,
       userId: null,
       authSource: 'signed_out',
-      ariaLabel: isAuthLoading ? 'Checking account status' : 'Sign in to your account'
+      ariaLabel: 'Sign in to your account'
     };
   }
+
+  const mergedEmail = sessionEmail || localEmail || null;
+  const mergedUserId = sessionId || localUserId || null;
+  const mergedName =
+    (hasRealSessionMetaName ? sessionMetaName : '') ||
+    (isSameAccountAsSession && hasRealLocalName ? localName : '') ||
+    sessionMetaName ||
+    (isSameAccountAsSession ? localName : '');
+  const mergedAvatarUrl = sessionAvatarUrl || (isSameAccountAsSession ? localAvatarUrl : null) || null;
+  const mergedProvider = sessionProvider || localProvider;
 
   let resolvedName = resolveDisplayUsername({
     name: mergedName,
@@ -198,17 +229,19 @@ export function resolveHeaderAuthState(options: ResolveHeaderAuthOptions = {}): 
     : 'local_profile';
 
   return {
+    status: 'authenticated',
     isAuthenticated: true,
     isAuthLoading: false,
     displayName: resolvedName,
+    buttonDisplayLabel: `👤 ${resolvedName}`,
     avatarInitial,
     avatarUrl: mergedAvatarUrl,
     email: mergedEmail,
     userId: mergedUserId,
     authSource,
     ariaLabel: mergedEmail
-      ? `Open account profile for ${resolvedName} (${mergedEmail})`
-      : `Open account profile for ${resolvedName}`
+      ? `Logged in as ${resolvedName} (${mergedEmail}). Open account profile`
+      : `Logged in as ${resolvedName}. Open account profile`
   };
 }
 
@@ -225,7 +258,8 @@ export interface SubscribeGlobalHeaderAuthOptions {
 /**
  * Hydrates the active Supabase session immediately via `getSession()` AND
  * listens to all `onAuthStateChange` lifecycle events (INITIAL_SESSION, SIGNED_IN,
- * TOKEN_REFRESHED, USER_UPDATED, SIGNED_OUT) so the header never gets stuck on "Sign In".
+ * TOKEN_REFRESHED, USER_UPDATED, SIGNED_OUT) so the header never defaults to "Sign In"
+ * while the async session check is still resolving.
  */
 export function subscribeGlobalHeaderAuthState(
   options: SubscribeGlobalHeaderAuthOptions
@@ -256,7 +290,7 @@ export function subscribeGlobalHeaderAuthState(
     return resolved;
   };
 
-  // Emit immediately using any hydrated local profile without flashing "Sign In" while loading
+  // Emit immediately using neutral loading state (or hydrated local profile if present)
   emitState('LOCAL_PROFILE_SYNC', latestSession);
 
   let subscriptionUnsubscribe: (() => void) | null = null;
@@ -309,7 +343,10 @@ export function subscribeGlobalHeaderAuthState(
 
 /**
  * Updates the live DOM header button (`#open-smart-login-btn`) in place without
- * deleting or hiding any existing header controls.
+ * deleting or hiding any existing header controls:
+ * - loading: displays neutral spinner + "Checking..." (never "Sign In")
+ * - authenticated: displays "👤 <Name>" (or user avatar photo + name)
+ * - signed-out: displays icon + "Sign In" ONLY when isAuthLoading is false and session is null
  */
 export function syncDomHeaderAuthButton(
   authState: HeaderAuthState,
@@ -320,26 +357,43 @@ export function syncDomHeaderAuthButton(
   const btnEl = doc.getElementById('open-smart-login-btn');
   const labelEl = doc.getElementById('header-login-label');
   const avatarEl = doc.getElementById('header-user-avatar');
+  const spinnerEl = doc.getElementById('header-auth-loading-spinner');
   const iconEl = doc.getElementById('header-user-icon-svg');
   const closeLoginBtnEl = doc.getElementById('close-smart-login-btn');
+
+  const isLoading = authState.status === 'loading';
+  const isAuthed = authState.status === 'authenticated';
 
   if (labelEl) {
     labelEl.textContent = authState.displayName;
   }
 
   if (btnEl) {
-    btnEl.setAttribute('data-auth-status', authState.isAuthenticated ? 'authenticated' : 'signed-out');
+    btnEl.setAttribute('data-auth-status', authState.status);
+    btnEl.setAttribute('aria-busy', isLoading ? 'true' : 'false');
     btnEl.setAttribute('aria-label', authState.ariaLabel);
     btnEl.setAttribute(
       'title',
-      authState.isAuthenticated
-        ? `${authState.displayName} • Account & Profile`
-        : 'Sign In & User Profile'
+      isAuthed
+        ? `${authState.buttonDisplayLabel} • Account & Profile`
+        : isLoading
+          ? 'Checking account session...'
+          : 'Sign In & User Profile'
     );
   }
 
+  if (spinnerEl) {
+    if (isLoading) {
+      spinnerEl.classList.remove('hidden');
+      spinnerEl.classList.add('inline-block');
+    } else {
+      spinnerEl.classList.add('hidden');
+      spinnerEl.classList.remove('inline-block');
+    }
+  }
+
   if (avatarEl) {
-    if (authState.isAuthenticated) {
+    if (isAuthed) {
       avatarEl.classList.remove('hidden');
       avatarEl.classList.add('inline-flex');
       if (authState.avatarUrl) {
@@ -354,7 +408,7 @@ export function syncDomHeaderAuthButton(
         img.src = authState.avatarUrl;
       } else {
         avatarEl.innerHTML = '';
-        avatarEl.textContent = authState.avatarInitial;
+        avatarEl.textContent = '👤';
       }
     } else {
       avatarEl.classList.add('hidden');
@@ -364,7 +418,7 @@ export function syncDomHeaderAuthButton(
   }
 
   if (iconEl) {
-    if (authState.isAuthenticated && avatarEl) {
+    if ((isAuthed && avatarEl) || (isLoading && spinnerEl)) {
       iconEl.classList.add('hidden');
     } else {
       iconEl.classList.remove('hidden');
@@ -372,7 +426,7 @@ export function syncDomHeaderAuthButton(
   }
 
   if (closeLoginBtnEl) {
-    if (authState.isAuthenticated) {
+    if (isAuthed) {
       closeLoginBtnEl.classList.remove('hidden');
     } else {
       closeLoginBtnEl.classList.add('hidden');
