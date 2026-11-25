@@ -162,8 +162,14 @@ export const VoiceToLogPanel: React.FC<VoiceToLogPanelProps> = ({
           </label>
           <input
             id="voice-phrase-fallback-input"
+            name="voice_set_phrase_note"
             data-testid="voice-phrase-input"
             type="text"
+            autoComplete="off"
+            data-lpignore="true"
+            data-1p-ignore="true"
+            data-bwignore="true"
+            data-form-type="other"
             value={manualPhrase}
             onChange={(e) => setManualPhrase(e.target.value)}
             placeholder='Try: "Did 10 reps at 45 pounds"'

@@ -100,9 +100,15 @@ export const LowSpoonsTriagePanel: React.FC<LowSpoonsTriagePanelProps> = ({
         </label>
         <textarea
           id="low-spoons-input"
+          name="daily_energy_checkin_note"
           data-testid="low-spoons-input"
           rows={2}
           maxLength={600}
+          autoComplete="off"
+          data-lpignore="true"
+          data-1p-ignore="true"
+          data-bwignore="true"
+          data-form-type="other"
           value={checkInText}
           onChange={(e) => setCheckInText(e.target.value)}
           placeholder="Example: Slept 4 hours, gym lights feel too bright, hard to focus."

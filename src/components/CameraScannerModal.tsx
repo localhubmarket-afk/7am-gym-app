@@ -109,11 +109,17 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
 
         <input
           type="text"
+          name="camera_ocr_label_note"
+          autoComplete="off"
+          data-lpignore="true"
+          data-1p-ignore="true"
+          data-bwignore="true"
+          data-form-type="other"
           value={labelHint}
           onChange={(e) => setLabelHint(e.target.value)}
           placeholder={
             mode === 'weight_machine'
-              ? 'Optional OCR text test (e.g. PIN 125 LBS)'
+              ? 'Optional OCR text test (e.g. Stack 125 LBS)'
               : 'Optional label text test (e.g. Calories: 220, Protein: 26g)'
           }
           className="mt-3 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs text-white"

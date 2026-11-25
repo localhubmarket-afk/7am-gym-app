@@ -1020,20 +1020,98 @@
         </div>
       </div>
 
+      <!-- Task 2: Workout Resume Banner (Auto-Restores Active/Next Exercise After Refresh or Background — Zero Login Required) -->
+      <section
+        id="workout-resume-banner"
+        data-testid="workout-resume-banner"
+        role="region"
+        aria-label="Resume Active Workout"
+        class="hidden workout-resume-banner-card rounded-2xl px-3.5 py-3 shadow-sm"
+      >
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+          <div class="min-w-0 space-y-0.5">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="inline-block rounded-md bg-green-100 px-2 py-0.5 text-[0.6875rem] font-extrabold text-gray-900">Active Workout Saved</span>
+              <span id="workout-resume-progress-pill" class="text-[0.6875rem] font-bold opacity-95"></span>
+            </div>
+            <h2 id="workout-resume-headline" class="text-xs sm:text-sm font-extrabold leading-snug">Welcome back! Pick up right where you left off.</h2>
+            <p id="workout-resume-detail" class="text-xs leading-relaxed opacity-95">No login needed.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              id="workout-resume-jump-btn"
+              data-testid="workout-resume-jump-btn"
+              class="resume-cta-solid min-h-[48px] min-w-[120px] px-4 py-2 rounded-xl border text-xs font-extrabold transition"
+            >
+              Resume Exercise
+            </button>
+            <button
+              type="button"
+              id="workout-resume-dismiss-btn"
+              aria-label="Dismiss resume banner"
+              class="min-h-[48px] min-w-[48px] px-3 py-2 rounded-xl border border-white/30 bg-black/25 hover:bg-black/40 text-xs font-extrabold transition"
+            >
+              Hide
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Task 3: Real-Time Clock Schedule Sync Strip (Stays Synced to Live Time of Day After Backgrounding) -->
+      <section
+        id="live-clock-schedule-banner"
+        data-testid="live-clock-schedule-banner"
+        role="region"
+        aria-label="Live Clock Workout and Meal Sync"
+        class="live-clock-sync-strip rounded-2xl px-3.5 py-2.5"
+      >
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div class="min-w-0 space-y-0.5">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span id="live-clock-phase-badge" class="inline-block rounded-md bg-sky-500/25 border border-sky-400/50 px-2 py-0.5 text-[0.6875rem] font-extrabold text-sky-200">Live Clock Synced</span>
+              <span id="live-clock-now-time" class="text-xs font-extrabold tabular-nums"></span>
+            </div>
+            <p id="live-clock-headline" class="text-xs font-bold leading-snug">Syncing today&apos;s Gym Time and 4 meals with your live clock...</p>
+            <p id="live-clock-next-action" class="text-[0.75rem] leading-snug opacity-90"></p>
+          </div>
+          <button
+            type="button"
+            id="live-clock-shift-now-btn"
+            data-testid="live-clock-shift-now-btn"
+            class="hidden shrink-0 min-h-[48px] px-3.5 py-2 rounded-xl bg-green-700 hover:bg-green-800 border border-green-500 text-white text-xs font-extrabold transition"
+          >
+            Sync Gym to Now
+          </button>
+        </div>
+      </section>
+
       <!-- Collapsible Warm-Up Routine Card (Sits Directly Above Exercise #1/9, Hidden on Rest Days) -->
-      <div id="warmup-card-container" class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-        <button type="button" id="toggle-warmup-btn" class="w-full px-3 py-2.5 flex items-center justify-between text-left hover:bg-slate-800/50 transition">
-          <div class="flex items-center gap-2">
-            <span class="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+      <div id="warmup-card-container" class="bg-slate-900 border-2 border-amber-400/60 rounded-2xl overflow-hidden shadow-sm">
+        <button type="button" id="toggle-warmup-btn" class="w-full min-h-[52px] px-3.5 py-3 flex items-center justify-between text-left hover:bg-slate-800/50 transition">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="w-8 h-8 rounded-xl bg-amber-500/25 border border-amber-400/60 flex items-center justify-center text-amber-300 shrink-0">
               <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
             </span>
-            <div>
-              <h2 class="text-xs sm:text-sm font-bold text-white" id="warmup-title">Dynamic Warm-Up (~10 Min)</h2>
-              <p class="hidden sm:block text-[0.6875rem] text-slate-400" id="warmup-subtitle">Tap to view mobility drills &amp; warm-up sets</p>
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <h2 class="text-xs sm:text-sm font-extrabold text-white" id="warmup-title">Dynamic Warm-Up (~10 Min)</h2>
+                <span class="rounded-md bg-amber-400 px-1.5 py-0.5 text-[0.625rem] font-extrabold text-slate-950 uppercase">Do First</span>
+              </div>
+              <p class="block text-[0.75rem] text-amber-200 font-semibold mt-0.5" id="warmup-subtitle">Tap to open full mobility drills &amp; warm-up sets</p>
             </div>
           </div>
-          <span id="warmup-chevron" class="text-slate-400 text-xs font-bold transition-transform">▼</span>
+          <span id="warmup-chevron" class="text-amber-300 text-xs font-extrabold transition-transform shrink-0 ml-2">▼</span>
         </button>
+        <!-- Task 3: Permanently Visible Warm-Up Quick Tips Strip (High Visibility Above Exercise #1) -->
+        <div id="warmup-quick-tips-strip" data-testid="warmup-quick-tips-strip" class="warmup-prominent-tips-strip px-3.5 py-2.5 space-y-1">
+          <div class="text-[0.6875rem] font-extrabold uppercase tracking-wider">Quick Warm-Up Tips (Before Exercise #1)</div>
+          <ul id="warmup-quick-tips-list" class="list-disc pl-4 space-y-0.5 text-xs font-semibold leading-snug">
+            <li>Loosen joints first: 10 arm circles + 12 band pull-aparts.</li>
+            <li>Wake up your muscles before loading heavy plates.</li>
+            <li>Ramp your first lift: 50% × 8 reps → 70% × 4 reps → 90% × 2 reps.</li>
+          </ul>
+        </div>
         <div id="warmup-panel" class="hidden px-4 pb-4 pt-1 border-t border-slate-800/80 space-y-3">
           <!-- Populated by JS -->
         </div>
@@ -1597,7 +1675,7 @@
 
       <!-- Add Custom Weekly Item -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex items-center gap-2">
-        <input id="custom-shop-input" type="text" placeholder="Add custom item (e.g., Cinnamon, Berries)..." class="flex-1 min-w-0 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+        <input id="custom-shop-input" name="gym_nonauth_custom_shop_item" type="text" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Add custom item (e.g., Cinnamon, Berries)..." class="flex-1 min-w-0 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
         <button type="button" id="add-custom-shop-btn" class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold shrink-0 transition">
           + Add
         </button>
@@ -1697,7 +1775,7 @@
       <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3.5 space-y-2">
         <span class="text-xs font-extrabold text-amber-400">3. Instant Backup Code (Copy / Paste)</span>
         <div class="flex gap-1.5">
-          <input id="backup-code-input" type="text" placeholder="Paste backup code here to restore..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+          <input id="backup-code-input" name="gym_nonauth_backup_restore" type="text" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Paste backup text here to restore..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500" />
           <button id="restore-code-btn" type="button" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition">
             Restore
           </button>
@@ -13804,7 +13882,27 @@
         titleEl.textContent = `${curStart12} ${dayObj.warmupType === 'upper' ? 'Upper Body' : 'Lower Body'} Warm-Up (~10 Min)`;
       }
       if (subEl) {
-        subEl.textContent = `${doneWarmupChecks}/${totalWarmupChecks} checked • Tap to open Part 1 & Part 2`;
+        subEl.textContent = `${doneWarmupChecks}/${totalWarmupChecks} checked • Tap to open full Part 1 & Part 2 checklist`;
+      }
+      const quickTipsListEl = document.getElementById('warmup-quick-tips-list');
+      if (quickTipsListEl) {
+        const tips = (typeof window.buildProminentWarmupQuickTips === 'function')
+          ? window.buildProminentWarmupQuickTips(dayObj.warmupType === 'lower' ? 'lower' : 'upper')
+          : (dayObj.warmupType === 'lower'
+              ? [
+                  'Move joints first: 10 leg swings + 10 slow bodyweight squats.',
+                  'Wake up hips & glutes: 10 glute bridges before heavy weight.',
+                  'Ramp your first lift: 50% × 8 reps → 70% × 4 reps → 90% × 2 reps.'
+                ]
+              : [
+                  'Loosen shoulders first: 10 arm circles + 12 band pull-aparts.',
+                  'Open your upper back: 8 slow scapular pull-ups or wall slides.',
+                  'Ramp your first lift: 50% × 8 reps → 70% × 4 reps → 90% × 2 reps.'
+                ]);
+        quickTipsListEl.innerHTML = tips.map(t => `<li>${t}</li>`).join('');
+      }
+      if (typeof window.updateLiveClockScheduleBannerUI === 'function') {
+        window.updateLiveClockScheduleBannerUI();
       }
 
       const keepPart1Open = Boolean(state.openWarmupPart1ByDay && state.openWarmupPart1ByDay[dayKey]);
@@ -16609,7 +16707,13 @@
                         <label for="opt-subj-${ex.id}" class="text-[0.6875rem] font-bold text-slate-300">Optional Effort Note (RPE/RIR/Soreness — does not alter math):</label>
                         <input
                           id="opt-subj-${ex.id}"
+                          name="gym_nonauth_opt_subj_${ex.id}"
                           type="text"
+                          autocomplete="off"
+                          data-lpignore="true"
+                          data-1p-ignore="true"
+                          data-bwignore="true"
+                          data-form-type="other"
                           value="${String(savedSubj).replace(/"/g, '&quot;')}"
                           data-opt-subj-key="${subjKey}"
                           placeholder="e.g. RPE 8, RIR 2, mild soreness"
@@ -17294,19 +17398,27 @@
                   <span class="text-[0.625rem] font-bold shrink-0 ${hasAnyNote ? 'text-amber-300' : 'text-slate-400'}">${isNotePanelOpen ? '▲ Hide' : '▼ Open'}</span>
                 </button>
 
-                <div id="ex-note-panel-${ex.id}" class="${isNotePanelOpen ? 'bg-slate-950/90 border border-slate-800 rounded-xl p-3 space-y-2.5' : 'hidden'}">
+                <div id="ex-note-panel-${ex.id}" class="${isNotePanelOpen ? 'bg-slate-950/90 border border-slate-800 rounded-xl p-3 space-y-3' : 'hidden'}">
                   <div>
-                    <label for="ex-note-input-${ex.id}" class="block text-[0.625rem] font-extrabold uppercase tracking-wider text-amber-300 mb-1">
-                      Machine Pin / Seat Setting Note (Auto-Saves &amp; Auto-Activates Machine Video When "Machine" Is Typed)
+                    <label for="ex-note-input-${ex.id}" class="block text-[0.6875rem] font-extrabold uppercase tracking-wider text-amber-300 mb-1">
+                      Machine Setting / Seat Note (Auto-Saves • No Login Needed)
                     </label>
                     <div class="flex items-center gap-1.5">
                       <input
                         id="ex-note-input-${ex.id}"
+                        name="gym_nonauth_ex_note_${ex.id}"
                         type="text"
+                        autocomplete="off"
+                        autocorrect="on"
+                        spellcheck="true"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
+                        data-bwignore="true"
+                        data-form-type="other"
                         data-note-input-ex="${ex.id}"
-                        placeholder="e.g., Machine pin #6, seat height 4"
+                        placeholder="e.g., Machine slot #6, seat height 4"
                         value="${safeNoteValueAttr}"
-                        class="ex-note-text-input flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                        class="ex-note-text-input flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-400 focus:outline-none focus:border-amber-400"
                       />
                       <button
                         type="button"
@@ -17318,7 +17430,71 @@
                         Delete Note
                       </button>
                     </div>
+                    <p id="ex-note-error-${ex.id}" role="alert" class="hidden mt-1 rounded-lg border border-rose-500/50 bg-rose-950/70 px-2.5 py-1.5 text-xs font-bold text-rose-200"></p>
                   </div>
+
+                  <!-- Task 4: Dedicated Next-Week Progression Note (1-Tap Chips + Custom Reminder) -->
+                  ${(() => {
+                    const savedNextWeekObj = (state.nextWeekNotes && state.nextWeekNotes[ex.id]) || null;
+                    const savedNextWeekText = typeof savedNextWeekObj === 'string'
+                      ? savedNextWeekObj
+                      : (savedNextWeekObj && savedNextWeekObj.text ? String(savedNextWeekObj.text) : '');
+                    const safeNextWeekAttr = savedNextWeekText.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const chips = (typeof window.NEXT_WEEK_NOTE_QUICK_CHIPS !== 'undefined' && Array.isArray(window.NEXT_WEEK_NOTE_QUICK_CHIPS))
+                      ? window.NEXT_WEEK_NOTE_QUICK_CHIPS
+                      : [
+                          { id: 'add_5_lbs', label: '+5 lbs next week', noteText: 'Add +5 lbs next week' },
+                          { id: 'add_2_5_lbs', label: '+2.5 lbs next week', noteText: 'Add +2.5 lbs next week' },
+                          { id: 'add_1_rep', label: '+1–2 reps next week', noteText: 'Push for +1 to 2 more reps next week' },
+                          { id: 'keep_form', label: 'Same weight · cleaner form', noteText: 'Keep same weight and slow down form next week' }
+                        ];
+                    return `
+                      <div class="next-week-note-card rounded-xl p-2.5 space-y-2" data-next-week-note-box="${ex.id}">
+                        <div class="flex flex-wrap items-center justify-between gap-1.5">
+                          <label for="next-week-note-input-${ex.id}" class="text-[0.6875rem] font-extrabold uppercase tracking-wider text-emerald-300">
+                            Next Week Plan Note
+                          </label>
+                          <span id="next-week-note-status-${ex.id}" class="text-[0.6875rem] font-bold text-emerald-200">
+                            ${savedNextWeekText ? '✓ Saved for next week' : 'Tap a chip or type'}
+                          </span>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5" role="group" aria-label="Next week quick note chips">
+                          ${chips.map(ch => `
+                            <button
+                              type="button"
+                              data-nw-chip-ex="${ex.id}"
+                              data-nw-chip-tag="${ch.id}"
+                              data-nw-chip-text="${String(ch.noteText).replace(/"/g, '&quot;')}"
+                              class="next-week-quick-chip-btn min-h-[44px] px-2.5 py-1.5 rounded-lg border text-xs font-extrabold transition ${
+                                savedNextWeekText === ch.noteText
+                                  ? 'bg-green-700 border-green-400 text-white'
+                                  : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-100'
+                              }"
+                            >
+                              ${ch.label}
+                            </button>
+                          `).join('')}
+                        </div>
+                        <input
+                          id="next-week-note-input-${ex.id}"
+                          name="gym_nonauth_next_week_${ex.id}"
+                          type="text"
+                          autocomplete="off"
+                          autocorrect="on"
+                          spellcheck="true"
+                          data-lpignore="true"
+                          data-1p-ignore="true"
+                          data-bwignore="true"
+                          data-form-type="other"
+                          data-next-week-input-ex="${ex.id}"
+                          placeholder="Example: Add +5 lbs next week or pause at bottom"
+                          value="${safeNextWeekAttr}"
+                          class="next-week-note-input w-full min-h-[48px] bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-400 focus:outline-none focus:border-emerald-400"
+                        />
+                        <p id="next-week-note-error-${ex.id}" role="alert" class="hidden rounded-lg border border-rose-500/50 bg-rose-950/70 px-2.5 py-1.5 text-xs font-bold text-rose-200"></p>
+                      </div>
+                    `;
+                  })()}
 
                   <div class="flex flex-wrap items-center justify-between gap-2">
                     <div class="flex flex-wrap items-center gap-1.5">
@@ -18289,12 +18465,36 @@
       });
 
       listEl.querySelectorAll('.ex-note-text-input').forEach(inp => {
+        // Task 1: Explicitly mark workout note inputs as non-auth so mobile password managers stay silent
+        if (typeof window.applyNonAuthInputAttributes === 'function') {
+          window.applyNonAuthInputAttributes(inp);
+        }
+        inp.addEventListener('focus', () => {
+          const exId = inp.getAttribute('data-note-input-ex');
+          if (typeof window.saveActiveWorkoutSessionSnapshotLocal === 'function') {
+            window.saveActiveWorkoutSessionSnapshotLocal(exId, 'note_focus');
+          }
+        });
         inp.addEventListener('input', () => {
           const exId = inp.getAttribute('data-note-input-ex');
+          const errEl = document.getElementById(`ex-note-error-${exId}`);
+          let textVal = inp.value;
+          // Task 5: Validate workout note text before saving
+          if (typeof window.validateWorkoutNoteText === 'function') {
+            const check = window.validateWorkoutNoteText(textVal, 280);
+            if (!check.valid) {
+              if (errEl) {
+                errEl.textContent = check.errorMessage || 'Keep your note under 280 characters.';
+                errEl.classList.remove('hidden');
+              }
+              return;
+            }
+            if (errEl) errEl.classList.add('hidden');
+            textVal = check.sanitizedValue;
+          }
           if (!state.exerciseNotes) state.exerciseNotes = {};
           const prev = state.exerciseNotes[exId] || { text: '', photo: '', photoDataUrl: '' };
           const existingPhoto = prev.photo || prev.photoDataUrl || '';
-          const textVal = inp.value;
           state.exerciseNotes[exId] = {
             text: textVal,
             photo: existingPhoto,
@@ -18303,6 +18503,9 @@
             updatedAt: new Date().toISOString()
           };
           saveState();
+          if (typeof window.saveActiveWorkoutSessionSnapshotLocal === 'function') {
+            window.saveActiveWorkoutSessionSnapshotLocal(exId, 'note_change');
+          }
 
           const clean = String(textVal || '').trim();
           const hasPhoto = Boolean(existingPhoto);
@@ -18347,6 +18550,77 @@
               showToast('Machine note detected — Card updated to Machine Form & Video');
             }
           }
+        });
+      });
+
+      // Task 4: Wire Next-Week Progression Note Quick Chips & Text Input (Zero Login Prompt)
+      function persistNextWeekNoteLocal(exId, rawText, quickTag) {
+        const errEl = document.getElementById(`next-week-note-error-${exId}`);
+        const statusEl = document.getElementById(`next-week-note-status-${exId}`);
+        if (typeof window.buildNextWeekProgressionNote === 'function') {
+          const built = window.buildNextWeekProgressionNote({
+            exerciseId: exId,
+            text: rawText,
+            quickTag: quickTag || null
+          });
+          if (!built.valid || !built.note) {
+            if (errEl) {
+              errEl.textContent = built.errorMessage || 'Keep your next-week note under 280 characters.';
+              errEl.classList.remove('hidden');
+            }
+            return false;
+          }
+          if (errEl) errEl.classList.add('hidden');
+          if (!state.nextWeekNotes || typeof state.nextWeekNotes !== 'object') state.nextWeekNotes = {};
+          state.nextWeekNotes[exId] = built.note;
+        } else {
+          if (!state.nextWeekNotes || typeof state.nextWeekNotes !== 'object') state.nextWeekNotes = {};
+          state.nextWeekNotes[exId] = {
+            exerciseId: exId,
+            text: String(rawText || '').slice(0, 280),
+            quickTag: quickTag || null,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        saveState();
+        if (statusEl) {
+          statusEl.textContent = String(rawText || '').trim() ? '✓ Saved for next week' : 'Tap a chip or type';
+        }
+        if (typeof window.saveActiveWorkoutSessionSnapshotLocal === 'function') {
+          window.saveActiveWorkoutSessionSnapshotLocal(exId, 'next_week_note_change');
+        }
+        return true;
+      }
+
+      listEl.querySelectorAll('.next-week-quick-chip-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-nw-chip-ex');
+          const chipTag = btn.getAttribute('data-nw-chip-tag');
+          const chipText = btn.getAttribute('data-nw-chip-text') || '';
+          const inp = document.getElementById(`next-week-note-input-${exId}`);
+          if (inp) inp.value = chipText;
+          if (persistNextWeekNoteLocal(exId, chipText, chipTag)) {
+            listEl.querySelectorAll(`.next-week-quick-chip-btn[data-nw-chip-ex="${exId}"]`).forEach(other => {
+              const isSelected = other.getAttribute('data-nw-chip-tag') === chipTag;
+              other.classList.toggle('bg-green-700', isSelected);
+              other.classList.toggle('border-green-400', isSelected);
+              other.classList.toggle('text-white', isSelected);
+              other.classList.toggle('bg-slate-900', !isSelected);
+              other.classList.toggle('border-slate-700', !isSelected);
+              other.classList.toggle('text-slate-100', !isSelected);
+            });
+            showToast(`Saved for next week: "${chipText}"`);
+          }
+        });
+      });
+
+      listEl.querySelectorAll('.next-week-note-input').forEach(inp => {
+        if (typeof window.applyNonAuthInputAttributes === 'function') {
+          window.applyNonAuthInputAttributes(inp);
+        }
+        inp.addEventListener('input', () => {
+          const exId = inp.getAttribute('data-next-week-input-ex');
+          persistNextWeekNoteLocal(exId, inp.value, null);
         });
       });
 
@@ -19549,6 +19823,18 @@
           showToast(`Started ${sec}s rest timer for ${name}`);
         });
       });
+
+      // Task 1: Harden all dynamically rendered workout inputs against mobile password-manager autofill
+      if (typeof window.enforceNonAuthInputsAcrossRoot === 'function') {
+        window.enforceNonAuthInputsAcrossRoot(listEl);
+      }
+      // Task 2 & Task 3: Keep background resume snapshot and live clock schedule synced
+      if (typeof window.saveActiveWorkoutSessionSnapshotLocal === 'function') {
+        window.saveActiveWorkoutSessionSnapshotLocal(null, 'render_workout');
+      }
+      if (typeof window.updateLiveClockScheduleBannerUI === 'function') {
+        window.updateLiveClockScheduleBannerUI();
+      }
 
       if (typeof ensureVerticalScrollUnlocked === 'function') {
         ensureVerticalScrollUnlocked();
@@ -29611,6 +29897,9 @@
         </p>
       </section>
 
+      <!-- Task 4: Custom Workout Program Upload & Importer (CSV, JSON, TXT, PDF, or Paste Plan) -->
+      <div id="custom-program-upload-react-mount" data-testid="custom-program-upload-mount"></div>
+
       <!-- Module 2: Accessible Light / Dark / System Theme Mode Toggle & One-Tap OpenDyslexic Font -->
       <div id="theme-mode-selector-group" role="radiogroup" aria-label="Color Theme Mode" class="rounded-xl border border-slate-700 bg-slate-950/90 p-3 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-extrabold text-white">
@@ -30537,7 +30826,7 @@
           </div>
 
           <!-- VIEW 2: Compact General App Store Log In / Sign Up Screen -->
-          <div id="new-account-form-wrap" class="hidden space-y-2">
+          <div id="new-account-form-wrap" data-auth-form="true" class="hidden space-y-2">
             <div class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800">
               <button type="button" id="auth-tab-login-btn" class="min-h-[44px] py-1.5 rounded-lg text-xs font-extrabold bg-green-700 text-white transition">
                 Log In
@@ -30696,12 +30985,12 @@
 
             <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
               <label for="shoe-brand-input" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-1"> Brand</label>
-              <input id="shoe-brand-input" type="text" placeholder="e.g., Nike" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400" />
+              <input id="shoe-brand-input" name="gym_nonauth_shoe_brand" type="text" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="e.g., Nike" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400" />
             </div>
 
             <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
               <label for="shoe-model-input" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-1"> Model</label>
-              <input id="shoe-model-input" type="text" placeholder="e.g., Metcon 9" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400" />
+              <input id="shoe-model-input" name="gym_nonauth_shoe_model" type="text" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="e.g., Metcon 9" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400" />
             </div>
           </div>
 
@@ -30756,7 +31045,7 @@
 
       <!-- Input Row -->
       <div class="flex items-center gap-2 shrink-0">
-        <input id="gemini-user-input" type="text" placeholder="Ask Coach AI about weights, form, or budget meals..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400" />
+        <input id="gemini-user-input" name="gym_nonauth_coach_prompt" type="text" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Ask Coach AI about weights, form, or budget meals..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400" />
         <button type="button" id="gemini-send-btn" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white text-xs font-extrabold shrink-0 transition">
           Send
         </button>
@@ -31010,7 +31299,7 @@
         <video id="camera-ocr-video" autoplay playsinline muted class="hidden w-full h-44 object-cover rounded-lg"></video>
         <p id="camera-ocr-fallback-box" class="text-xs text-slate-300 leading-relaxed">Point your camera at a pin-loaded weight stack or nutrition facts label, or upload a photo below.</p>
       </div>
-      <input type="text" id="camera-ocr-hint-input" placeholder="Optional OCR test text (e.g. PIN 125 LBS or Calories: 210, Protein: 26g)" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white" />
+      <input type="text" id="camera-ocr-hint-input" name="gym_nonauth_ocr_hint" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Optional OCR test text (e.g. Stack 125 LBS or Calories: 210, Protein: 26g)" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white" />
       <div class="grid grid-cols-2 gap-2">
         <button type="button" id="camera-ocr-capture-btn" class="min-h-[42px] py-2 px-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-extrabold transition">
           📷 Scan Now
@@ -32457,6 +32746,371 @@
       }
 
       updateOfflineConnectivityBannerUI();
+
+      // =========================================================================
+      // TASKS 1-5: MOBILE UX WORKFLOW CONTROLLER
+      // - Task 1: Hidden Auth Modal Input Isolation & Non-Auth Input Hardening
+      // - Task 2: Workout Resume & Background State Persistence (Zero Login Needed)
+      // - Task 3: Live Clock Schedule Sync + Prominent Warm-Up Tips
+      // - Task 4: Custom Program Uploader React Mount
+      // - Task 5: Strict Pre-Save Input Validation Guards
+      // =========================================================================
+      if (!window.__mobileUxWorkflowsInitialized) {
+        window.__mobileUxWorkflowsInitialized = true;
+        let lastTouchedWorkoutExerciseId = null;
+        let resumeBannerDismissedThisLoad = false;
+
+        function syncAuthModalIsolationLocal() {
+          const modal = document.getElementById('smart-login-modal');
+          if (!modal) return;
+          if (typeof window.syncHiddenAuthModalInputIsolation === 'function') {
+            window.syncHiddenAuthModalInputIsolation(modal);
+          } else {
+            const isHidden = modal.classList.contains('hidden');
+            modal.querySelectorAll('#passwordless-email-input, #magic-link-otp-input, #lead-name-input, #lead-email-input, #lead-password-input').forEach(el => {
+              el.disabled = isHidden;
+              if (isHidden) el.setAttribute('tabindex', '-1');
+              else el.removeAttribute('tabindex');
+            });
+          }
+          if (typeof window.enforceNonAuthInputsAcrossRoot === 'function') {
+            window.enforceNonAuthInputsAcrossRoot(document);
+          }
+        }
+
+        const smartLoginModalForObs = document.getElementById('smart-login-modal');
+        if (smartLoginModalForObs && typeof MutationObserver !== 'undefined') {
+          const authIsoObs = new MutationObserver(() => {
+            syncAuthModalIsolationLocal();
+          });
+          authIsoObs.observe(smartLoginModalForObs, { attributes: true, attributeFilter: ['class', 'aria-hidden'] });
+        }
+        syncAuthModalIsolationLocal();
+
+        function saveActiveWorkoutSessionSnapshotLocal(touchedExId, lastAction) {
+          if (touchedExId) lastTouchedWorkoutExerciseId = touchedExId;
+          if (typeof state !== 'object' || !state) return null;
+          const wk = state.selectedWeek || state.currentWeek || 1;
+          const dIdx = Number(state.selectedDayIndex) || 0;
+          let dayObj = null;
+          try {
+            if (typeof getScheduledDayObject === 'function') {
+              dayObj = getScheduledDayObject(wk, dIdx);
+            }
+          } catch (_e) {
+            dayObj = null;
+          }
+          const exercises = (dayObj && Array.isArray(dayObj.exercises)) ? dayObj.exercises.map(ex => ({
+            id: ex.id,
+            name: ex.name,
+            sets: Math.max(1, Number(ex.sets) || 3)
+          })) : [];
+          if (exercises.length === 0) return null;
+
+          // Normalize workoutLogs keys to w{week}_d{dayIndex}_{exId}_s{s} view for snapshot counter
+          const normalizedLogs = {};
+          exercises.forEach(ex => {
+            for (let s = 1; s <= ex.sets; s++) {
+              let entry = null;
+              try {
+                if (typeof getLogEntry === 'function') entry = getLogEntry(wk, dIdx, ex.id, s);
+              } catch (_e) {}
+              if (entry && entry.done) {
+                normalizedLogs[`w${wk}_d${dIdx}_${ex.id}_s${s}`] = { done: true };
+              }
+            }
+          });
+
+          const timerRun = typeof timerRunning !== 'undefined' ? Boolean(timerRunning) : false;
+          const timerRem = typeof timerSecondsLeft !== 'undefined' ? Math.max(0, Number(timerSecondsLeft) || 0) : 0;
+          const timerEnd = (timerRun && timerRem > 0) ? (Date.now() + timerRem * 1000) : null;
+          const dayLabel = `Week ${wk} • Day ${dIdx + 1}${dayObj && dayObj.title ? ` (${dayObj.title})` : ''}`;
+
+          if (typeof window.buildActiveWorkoutSessionSnapshot === 'function' && typeof window.saveActiveWorkoutSession === 'function') {
+            const snap = window.buildActiveWorkoutSessionSnapshot({
+              week: wk,
+              dayIndex: dIdx,
+              dayLabel,
+              exercises,
+              workoutLogs: normalizedLogs,
+              lastTouchedExerciseId: lastTouchedWorkoutExerciseId,
+              timerRunning: timerRun,
+              timerRemainingSec: timerRem,
+              timerEndTimestampMs: timerEnd,
+              lastAction: lastAction || 'workout_activity'
+            });
+            window.saveActiveWorkoutSession(snap);
+            return snap;
+          }
+          return null;
+        }
+        window.saveActiveWorkoutSessionSnapshotLocal = saveActiveWorkoutSessionSnapshotLocal;
+
+        function renderWorkoutResumeBannerUI(snapshotOverride) {
+          const bannerEl = document.getElementById('workout-resume-banner');
+          if (!bannerEl) return;
+          if (resumeBannerDismissedThisLoad) {
+            bannerEl.classList.add('hidden');
+            return;
+          }
+          const snap = snapshotOverride || (typeof window.loadActiveWorkoutSession === 'function' ? window.loadActiveWorkoutSession() : null);
+          const copy = (typeof window.buildResumeWorkoutBannerCopy === 'function')
+            ? window.buildResumeWorkoutBannerCopy(snap)
+            : { visible: false };
+
+          if (!snap || !copy.visible) {
+            bannerEl.classList.add('hidden');
+            return;
+          }
+
+          const headEl = document.getElementById('workout-resume-headline');
+          const detEl = document.getElementById('workout-resume-detail');
+          const pillEl = document.getElementById('workout-resume-progress-pill');
+          const jumpBtn = document.getElementById('workout-resume-jump-btn');
+
+          if (headEl) headEl.textContent = copy.headline;
+          if (detEl) detEl.textContent = copy.detail;
+          if (pillEl) pillEl.textContent = `${snap.completedSets}/${snap.totalSets} sets done`;
+          if (jumpBtn) {
+            jumpBtn.textContent = copy.ctaLabel;
+            jumpBtn.setAttribute('data-resume-ex-id', copy.targetExerciseId || '');
+            jumpBtn.setAttribute('data-resume-week', String(snap.week || 1));
+            jumpBtn.setAttribute('data-resume-day', String(snap.dayIndex || 0));
+          }
+          bannerEl.classList.remove('hidden');
+        }
+        window.renderWorkoutResumeBannerUI = renderWorkoutResumeBannerUI;
+
+        const resumeJumpBtn = document.getElementById('workout-resume-jump-btn');
+        if (resumeJumpBtn) {
+          resumeJumpBtn.addEventListener('click', () => {
+            const targetExId = resumeJumpBtn.getAttribute('data-resume-ex-id');
+            const targetWeek = parseInt(resumeJumpBtn.getAttribute('data-resume-week') || '1', 10) || 1;
+            const targetDay = parseInt(resumeJumpBtn.getAttribute('data-resume-day') || '0', 10) || 0;
+            if (state) {
+              state.selectedWeek = targetWeek;
+              state.selectedDayIndex = targetDay;
+              if (!state.openExerciseCards || typeof state.openExerciseCards !== 'object') {
+                state.openExerciseCards = {};
+              }
+              if (targetExId) state.openExerciseCards[targetExId] = true;
+            }
+            if (typeof switchTab === 'function') switchTab('workout');
+            if (typeof renderWorkoutView === 'function') renderWorkoutView();
+            setTimeout(() => {
+              const cardEl = targetExId
+                ? (document.querySelector(`[data-exercise-card-id="${targetExId}"]`) || document.getElementById(`ex-card-${targetExId}`) || document.getElementById(`ex-note-input-${targetExId}`))
+                : null;
+              if (cardEl && typeof cardEl.scrollIntoView === 'function') {
+                cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }, 80);
+          });
+        }
+
+        const resumeDismissBtn = document.getElementById('workout-resume-dismiss-btn');
+        if (resumeDismissBtn) {
+          resumeDismissBtn.addEventListener('click', () => {
+            resumeBannerDismissedThisLoad = true;
+            const bannerEl = document.getElementById('workout-resume-banner');
+            if (bannerEl) bannerEl.classList.add('hidden');
+          });
+        }
+
+        function updateLiveClockScheduleBannerUI() {
+          const bannerEl = document.getElementById('live-clock-schedule-banner');
+          if (!bannerEl || typeof window.computeLiveScheduleContext !== 'function') return;
+          const wk = (state && (state.selectedWeek || state.currentWeek)) || 1;
+          const dIdx = (state && Number(state.selectedDayIndex)) || 0;
+          let gymHHMM = '07:00';
+          let warmupType = 'upper';
+          let doneSets = 0;
+          let totalSets = 0;
+          try {
+            if (typeof getDayGymSchedule === 'function') {
+              const sched = getDayGymSchedule(wk, dIdx);
+              if (sched && sched.startTime) gymHHMM = sched.startTime;
+            }
+            if (typeof getScheduledDayObject === 'function') {
+              const dayObj = getScheduledDayObject(wk, dIdx);
+              if (dayObj && dayObj.warmupType === 'lower') warmupType = 'lower';
+            }
+            if (typeof getDayCompletionStatus === 'function') {
+              const comp = getDayCompletionStatus(wk, dIdx);
+              doneSets = comp ? (Number(comp.doneSets) || 0) : 0;
+              totalSets = comp ? (Number(comp.totalSets) || 0) : 0;
+            }
+          } catch (_e) {}
+
+          const live = window.computeLiveScheduleContext({
+            nowDate: new Date(),
+            gymTimeHHMM: gymHHMM,
+            warmupType,
+            completedSetsToday: doneSets,
+            isWorkoutComplete: totalSets > 0 && doneSets >= totalSets
+          });
+
+          const badgeEl = document.getElementById('live-clock-phase-badge');
+          const nowEl = document.getElementById('live-clock-now-time');
+          const headEl = document.getElementById('live-clock-headline');
+          const nextEl = document.getElementById('live-clock-next-action');
+          const shiftBtn = document.getElementById('live-clock-shift-now-btn');
+
+          if (badgeEl) badgeEl.textContent = live.phaseBadge;
+          if (nowEl) nowEl.textContent = `Now: ${live.currentTime12}`;
+          if (headEl) headEl.textContent = live.headline;
+          if (nextEl) nextEl.textContent = live.nextActionText;
+
+          if (shiftBtn) {
+            if (live.suggestShiftToNow) {
+              shiftBtn.textContent = `Sync Gym to ${live.suggestedNow12}`;
+              shiftBtn.setAttribute('data-shift-hhmm', live.suggestedNowHHMM);
+              shiftBtn.classList.remove('hidden');
+            } else {
+              shiftBtn.classList.add('hidden');
+            }
+          }
+        }
+        window.updateLiveClockScheduleBannerUI = updateLiveClockScheduleBannerUI;
+
+        const shiftNowBtn = document.getElementById('live-clock-shift-now-btn');
+        if (shiftNowBtn) {
+          shiftNowBtn.addEventListener('click', () => {
+            const hhmm = shiftNowBtn.getAttribute('data-shift-hhmm');
+            if (!hhmm) return;
+            const wk = (state && (state.selectedWeek || state.currentWeek)) || 1;
+            const dIdx = (state && Number(state.selectedDayIndex)) || 0;
+            if (typeof setDayGymSchedule === 'function') {
+              setDayGymSchedule(wk, dIdx, hhmm, true);
+            } else {
+              if (!state.customGymTimesByDay) state.customGymTimesByDay = {};
+              state.customGymTimesByDay[`w${wk}_d${dIdx}`] = hhmm;
+              saveState();
+            }
+            updateLiveClockScheduleBannerUI();
+            if (typeof renderWorkoutView === 'function') renderWorkoutView();
+            if (typeof renderVeganView === 'function') renderVeganView();
+            if (typeof showToast === 'function') {
+              showToast(`Synced Gym Time & all 4 meals to ${shiftNowBtn.textContent.replace('Sync Gym to ', '')}!`);
+            }
+          });
+        }
+
+        function mountSettingsCustomProgramUploader() {
+          const mountEl = document.getElementById('custom-program-upload-react-mount');
+          if (!mountEl || typeof window.mountCustomProgramUploadPanel !== 'function') return;
+          window.mountCustomProgramUploadPanel(mountEl, {
+            onApplyProgram: (parsed) => {
+              if (!parsed || !parsed.valid || !Array.isArray(parsed.days) || parsed.days.length === 0) return;
+              const wk = (state && (state.selectedWeek || state.currentWeek)) || 1;
+              const wKey = String(wk);
+              if (!state.customDayScheduleByWeek || typeof state.customDayScheduleByWeek !== 'object') {
+                state.customDayScheduleByWeek = {};
+              }
+              if (!Array.isArray(state.customUploadedPrograms)) {
+                state.customUploadedPrograms = [];
+              }
+              const weekArr = [5, 6, 5, 6, 5, 6, 5];
+              parsed.days.slice(0, 7).forEach((d, idx) => {
+                weekArr[idx] = {
+                  title: d.dayName || `Day ${idx + 1}`,
+                  daySub: d.dayName || `Custom Day ${idx + 1}`,
+                  target: parsed.programName || 'Custom Program',
+                  warmupType: d.warmupType === 'lower' ? 'lower' : 'upper',
+                  exercises: d.exercises.map(ex => ({
+                    id: ex.id,
+                    name: ex.name,
+                    sets: ex.sets,
+                    reps: ex.reps,
+                    restSec: ex.rest || 90,
+                    target: ex.target || 'Custom Plan',
+                    notes: ex.notes || ''
+                  }))
+                };
+              });
+              state.customDayScheduleByWeek[wKey] = weekArr;
+              state.manualScheduleOverrideByWeek = Object.assign({}, state.manualScheduleOverrideByWeek || {}, { [wKey]: true });
+              state.customUploadedPrograms.unshift({
+                name: parsed.programName,
+                sourceFormat: parsed.sourceFormat,
+                daysCount: parsed.days.length,
+                totalExercises: parsed.totalExercises,
+                importedAt: new Date().toISOString()
+              });
+              state.customUploadedPrograms = state.customUploadedPrograms.slice(0, 10);
+              state.selectedDayIndex = 0;
+              saveState();
+              if (typeof renderWorkoutView === 'function') renderWorkoutView();
+              const syncModal = document.getElementById('sync-settings-modal');
+              if (syncModal) syncModal.classList.add('hidden');
+              if (typeof showToast === 'function') {
+                showToast(`Imported "${parsed.programName}" (${parsed.days.length} days, ${parsed.totalExercises} exercises) to Week ${wk}!`);
+              }
+            }
+          });
+        }
+
+        // Capture background/visibility/refresh transitions to save active workout & refresh live clock WITHOUT triggering login
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden') {
+            saveActiveWorkoutSessionSnapshotLocal(null, 'background_pause');
+          } else {
+            syncAuthModalIsolationLocal();
+            updateLiveClockScheduleBannerUI();
+            const restored = typeof window.loadActiveWorkoutSession === 'function' ? window.loadActiveWorkoutSession() : null;
+            if (restored) {
+              resumeBannerDismissedThisLoad = false;
+              renderWorkoutResumeBannerUI(restored);
+            }
+          }
+        });
+
+        window.addEventListener('pagehide', () => {
+          saveActiveWorkoutSessionSnapshotLocal(null, 'pagehide');
+        });
+
+        window.addEventListener('focus', () => {
+          syncAuthModalIsolationLocal();
+          updateLiveClockScheduleBannerUI();
+        });
+
+        // Strict Task 5 input validation guard on workout set inputs (never blocks valid numbers; shows ELI12 alert on bad values)
+        document.addEventListener('change', (ev) => {
+          const target = ev.target;
+          if (!target || !target.classList || !target.classList.contains('workout-input')) return;
+          const field = target.getAttribute('data-field');
+          if (field === 'weight' && typeof window.validateLoggedWeight === 'function') {
+            const unit = target.getAttribute('data-unit') === 'kg' ? 'kg' : 'lbs';
+            const check = window.validateLoggedWeight(target.value, unit);
+            if (!check.valid && String(target.value || '').trim() !== '') {
+              if (typeof showToast === 'function') showToast(check.errorMessage);
+            }
+          } else if (field === 'reps' && typeof window.validateLoggedReps === 'function') {
+            const check = window.validateLoggedReps(target.value);
+            if (!check.valid && String(target.value || '').trim() !== '') {
+              if (typeof showToast === 'function') showToast(check.errorMessage);
+            }
+          }
+        }, true);
+
+        // Refresh live clock banner every 60 seconds
+        setInterval(() => {
+          updateLiveClockScheduleBannerUI();
+        }, 60000);
+
+        // Run once now & once when module bridge finishes loading
+        function bootMobileUxWorkflows() {
+          syncAuthModalIsolationLocal();
+          mountSettingsCustomProgramUploader();
+          updateLiveClockScheduleBannerUI();
+          const savedSnap = typeof window.loadActiveWorkoutSession === 'function' ? window.loadActiveWorkoutSession() : null;
+          if (savedSnap) {
+            renderWorkoutResumeBannerUI(savedSnap);
+          }
+        }
+        bootMobileUxWorkflows();
+        window.addEventListener('d3-onerm-bridge-ready', bootMobileUxWorkflows, { once: true });
+      }
     }
   </script>
 

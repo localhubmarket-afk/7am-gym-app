@@ -872,3 +872,78 @@ html.dyslexia-friendly-view li + li,
 html[data-dyslexia-view="true"] li + li {
   margin-top: 0.5rem;
 }
+
+/* ============================================================================
+ * 11. Mobile UX Workflow Surfaces (Resume Banner, Live Clock Sync, Prominent
+ *     Warm-Up Quick Tips, and Next-Week Progression Note Cards)
+ * - Strictly enforces WCAG 2.2 AA contrast in BOTH Dark Mode & Light Mode
+ * - Minimum 48x48px touch targets & fluid mobile wrapping (zero horizontal scroll)
+ * ============================================================================ */
+.workout-resume-banner-card {
+  border: 2px solid #15803D;
+  background-color: #14532D;
+  color: #FFFFFF;
+}
+
+.workout-resume-banner-card * {
+  color: #FFFFFF;
+}
+
+html[data-theme="light"] .workout-resume-banner-card,
+html.light-theme .workout-resume-banner-card {
+  border-color: #15803D !important;
+  background-color: #DCFCE7 !important;
+  color: #111827 !important;
+}
+
+html[data-theme="light"] .workout-resume-banner-card *,
+html.light-theme .workout-resume-banner-card * {
+  color: #111827 !important;
+}
+
+html[data-theme="light"] .workout-resume-banner-card .resume-cta-solid,
+html.light-theme .workout-resume-banner-card .resume-cta-solid,
+.workout-resume-banner-card .resume-cta-solid {
+  background-color: #15803D !important;
+  color: #FFFFFF !important;
+  border-color: #166534 !important;
+}
+
+.live-clock-sync-strip {
+  border: 1px solid rgba(56, 189, 248, 0.55);
+  background-color: #0F172A;
+  color: #F8FAFC;
+}
+
+html[data-theme="light"] .live-clock-sync-strip,
+html.light-theme .live-clock-sync-strip {
+  border-color: #0284C7 !important;
+  background-color: #E0F2FE !important;
+  color: #0E1A40 !important;
+}
+
+.warmup-prominent-tips-strip {
+  border-top: 1px solid rgba(251, 191, 36, 0.45);
+  background-color: rgba(120, 53, 15, 0.28);
+  color: #FEF3C7;
+}
+
+html[data-theme="light"] .warmup-prominent-tips-strip,
+html.light-theme .warmup-prominent-tips-strip {
+  border-top-color: #D97706 !important;
+  background-color: #FEF3C7 !important;
+  color: #0E1A40 !important;
+}
+
+.next-week-note-card {
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  background-color: rgba(6, 78, 59, 0.22);
+}
+
+html[data-theme="light"] .next-week-note-card,
+html.light-theme .next-week-note-card {
+  border-color: #15803D !important;
+  background-color: #DCFCE7 !important;
+  color: #111827 !important;
+}
+

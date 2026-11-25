@@ -416,3 +416,126 @@ export function validateGymTimeInput(rawTime: unknown): {
     errorMessage: null
   };
 }
+
+/**
+ * Task 5: Strictly validates workout note text (machine notes & next-week progression notes).
+ * Strips unsafe HTML/control characters and enforces a clear 280-character ELI12 limit.
+ */
+export function validateWorkoutNoteText(
+  rawText: unknown,
+  maxLength: number = 280
+): {
+  valid: boolean;
+  sanitizedValue: string;
+  errorMessage: string | null;
+} {
+  const raw = String(rawText ?? '');
+  const stripped = raw
+    .replace(/[<>]/g, '')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+    .trim();
+
+  if (stripped.length > maxLength) {
+    return {
+      valid: false,
+      sanitizedValue: stripped.slice(0, maxLength),
+      errorMessage: `Please keep your note under ${maxLength} characters.`
+    };
+  }
+
+  return {
+    valid: true,
+    sanitizedValue: stripped,
+    errorMessage: null
+  };
+}
+
+/**
+ * Task 5: Strictly validates rest timer duration in seconds (10s to 900s / 15 min).
+ */
+export function validateTimerDurationSeconds(rawSeconds: unknown): {
+  valid: boolean;
+  numericValue: number;
+  errorMessage: string | null;
+} {
+  const trimmed = String(rawSeconds ?? '').trim();
+  if (!/^-?\d+(?:\.\d+)?$/.test(trimmed)) {
+    return {
+      valid: false,
+      numericValue: 90,
+      errorMessage: 'Use whole seconds for the rest timer (for example: 60 or 90).'
+    };
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
+    return {
+      valid: false,
+      numericValue: 90,
+      errorMessage: 'Rest timer seconds must be a whole number.'
+    };
+  }
+
+  if (parsed < 10 || parsed > 900) {
+    return {
+      valid: false,
+      numericValue: Math.max(10, Math.min(900, parsed)),
+      errorMessage: 'Pick a rest time between 10 seconds and 15 minutes (900 seconds).'
+    };
+  }
+
+  return {
+    valid: true,
+    numericValue: parsed,
+    errorMessage: null
+  };
+}
+
+/**
+ * Task 5: Unified pre-save validation gate for an exercise set (weight + reps + optional rest time).
+ * Blocks invalid data before saving and returns clear, short ELI12 error messages.
+ */
+export function validateExerciseSetEntry(input: {
+  weight: unknown;
+  reps: unknown;
+  unit?: 'lbs' | 'kg';
+  restSeconds?: unknown;
+  allowBodyweightZero?: boolean;
+}): {
+  valid: boolean;
+  sanitized: {
+    weight: number;
+    reps: number;
+    restSeconds: number | null;
+  };
+  errors: string[];
+} {
+  const unit = input.unit === 'kg' ? 'kg' : 'lbs';
+  const weightInput =
+    input.allowBodyweightZero && (input.weight === '' || input.weight === null || input.weight === undefined)
+      ? 0
+      : input.weight;
+
+  const weightRes = validateLoggedWeight(weightInput, unit);
+  const repsRes = validateLoggedReps(input.reps);
+  const restRes =
+    input.restSeconds !== undefined && input.restSeconds !== null && input.restSeconds !== ''
+      ? validateTimerDurationSeconds(input.restSeconds)
+      : null;
+
+  const errors: string[] = [];
+  if (!weightRes.valid && weightRes.errorMessage) errors.push(weightRes.errorMessage);
+  if (!repsRes.valid && repsRes.errorMessage) errors.push(repsRes.errorMessage);
+  if (restRes && !restRes.valid && restRes.errorMessage) errors.push(restRes.errorMessage);
+
+  return {
+    valid: errors.length === 0,
+    sanitized: {
+      weight: weightRes.numericValue ?? 0,
+      reps: repsRes.numericValue ?? 1,
+      restSeconds: restRes ? restRes.numericValue : null
+    },
+    errors
+  };
+}
+

@@ -154,10 +154,13 @@ import {
 import {
   DEFAULT_VALIDATION_LIMITS,
   validateAccountProfileInput,
+  validateExerciseSetEntry,
   validateGymTimeInput,
   validateLoggedReps,
   validateLoggedWeight,
-  validateQuickAddFuelInput
+  validateQuickAddFuelInput,
+  validateTimerDurationSeconds,
+  validateWorkoutNoteText
 } from './utils/inputValidation';
 import {
   captureViewportScrollAnchor,
@@ -331,10 +334,67 @@ import {
   findStableMachineVariation,
   mapClassificationToValidatedPreset
 } from './utils/lowSpoonsTriage';
+import {
+  AUTH_INPUT_IDS,
+  NON_AUTH_INPUT_ATTRIBUTES,
+  applyNonAuthInputAttributes,
+  enforceNonAuthInputsAcrossRoot,
+  isAuthFieldElement,
+  shouldPromptForLogin,
+  syncHiddenAuthModalInputIsolation
+} from './utils/authSessionGuard';
+import {
+  ACTIVE_WORKOUT_SESSION_KEY,
+  MAX_RESUME_SESSION_AGE_MS,
+  buildActiveWorkoutSessionSnapshot,
+  buildResumeWorkoutBannerCopy,
+  clearActiveWorkoutSession,
+  loadActiveWorkoutSession,
+  saveActiveWorkoutSession
+} from './utils/workoutResumeSession';
+import {
+  buildProminentWarmupQuickTips,
+  computeLiveScheduleContext,
+  formatMinutes12Hour,
+  formatMinutesHHMM,
+  parseHHMMMinutesSafe
+} from './utils/realtimeScheduleSync';
+import {
+  NEXT_WEEK_NOTE_QUICK_CHIPS,
+  buildNextWeekProgressionNote,
+  extractReadableTextFromPdfBytes,
+  parseCustomWorkoutProgram
+} from './utils/customProgramImporter';
+import {
+  CustomProgramUploadPanel,
+  type CustomProgramUploadPanelProps
+} from './components/CustomProgramUploadPanel';
 
 const mountedVideoPlayerRoots = new WeakMap<HTMLElement, Root>();
 const mountedPhase2HubRoots = new WeakMap<HTMLElement, Root>();
 const mountedCoachModalRoots = new WeakMap<HTMLElement, Root>();
+const mountedCustomProgramRoots = new WeakMap<HTMLElement, Root>();
+
+export function mountCustomProgramUploadPanel(
+  container: HTMLElement,
+  props: CustomProgramUploadPanelProps
+): { unmount: () => void } {
+  let root = mountedCustomProgramRoots.get(container);
+  if (!root) {
+    root = createRoot(container);
+    mountedCustomProgramRoots.set(container, root);
+  }
+  root.render(React.createElement(CustomProgramUploadPanel, props));
+  return {
+    unmount: () => {
+      const existing = mountedCustomProgramRoots.get(container);
+      if (existing) {
+        existing.unmount();
+        mountedCustomProgramRoots.delete(container);
+      }
+    }
+  };
+}
 
 export function mountAccessibleVideoPlayer(
   container: HTMLElement,
@@ -1287,6 +1347,33 @@ declare global {
     resolveInstitutionalBillingRoute?: typeof resolveInstitutionalBillingRoute;
     serializeClinicalTrialCsv?: typeof serializeClinicalTrialCsv;
     triggerClinicalTrialCsvDownload?: typeof triggerClinicalTrialCsvDownload;
+    AUTH_INPUT_IDS?: typeof AUTH_INPUT_IDS;
+    NON_AUTH_INPUT_ATTRIBUTES?: typeof NON_AUTH_INPUT_ATTRIBUTES;
+    shouldPromptForLogin?: typeof shouldPromptForLogin;
+    isAuthFieldElement?: typeof isAuthFieldElement;
+    applyNonAuthInputAttributes?: typeof applyNonAuthInputAttributes;
+    enforceNonAuthInputsAcrossRoot?: typeof enforceNonAuthInputsAcrossRoot;
+    syncHiddenAuthModalInputIsolation?: typeof syncHiddenAuthModalInputIsolation;
+    ACTIVE_WORKOUT_SESSION_KEY?: string;
+    MAX_RESUME_SESSION_AGE_MS?: number;
+    buildActiveWorkoutSessionSnapshot?: typeof buildActiveWorkoutSessionSnapshot;
+    saveActiveWorkoutSession?: typeof saveActiveWorkoutSession;
+    loadActiveWorkoutSession?: typeof loadActiveWorkoutSession;
+    clearActiveWorkoutSession?: typeof clearActiveWorkoutSession;
+    buildResumeWorkoutBannerCopy?: typeof buildResumeWorkoutBannerCopy;
+    parseHHMMMinutesSafe?: typeof parseHHMMMinutesSafe;
+    formatMinutes12Hour?: typeof formatMinutes12Hour;
+    formatMinutesHHMM?: typeof formatMinutesHHMM;
+    buildProminentWarmupQuickTips?: typeof buildProminentWarmupQuickTips;
+    computeLiveScheduleContext?: typeof computeLiveScheduleContext;
+    NEXT_WEEK_NOTE_QUICK_CHIPS?: typeof NEXT_WEEK_NOTE_QUICK_CHIPS;
+    extractReadableTextFromPdfBytes?: typeof extractReadableTextFromPdfBytes;
+    parseCustomWorkoutProgram?: typeof parseCustomWorkoutProgram;
+    buildNextWeekProgressionNote?: typeof buildNextWeekProgressionNote;
+    validateWorkoutNoteText?: typeof validateWorkoutNoteText;
+    validateTimerDurationSeconds?: typeof validateTimerDurationSeconds;
+    validateExerciseSetEntry?: typeof validateExerciseSetEntry;
+    mountCustomProgramUploadPanel?: typeof mountCustomProgramUploadPanel;
   }
 }
 
@@ -1553,5 +1640,32 @@ if (typeof window !== 'undefined') {
   window.resolveInstitutionalBillingRoute = resolveInstitutionalBillingRoute;
   window.serializeClinicalTrialCsv = serializeClinicalTrialCsv;
   window.triggerClinicalTrialCsvDownload = triggerClinicalTrialCsvDownload;
+  window.AUTH_INPUT_IDS = AUTH_INPUT_IDS;
+  window.NON_AUTH_INPUT_ATTRIBUTES = NON_AUTH_INPUT_ATTRIBUTES;
+  window.shouldPromptForLogin = shouldPromptForLogin;
+  window.isAuthFieldElement = isAuthFieldElement;
+  window.applyNonAuthInputAttributes = applyNonAuthInputAttributes;
+  window.enforceNonAuthInputsAcrossRoot = enforceNonAuthInputsAcrossRoot;
+  window.syncHiddenAuthModalInputIsolation = syncHiddenAuthModalInputIsolation;
+  window.ACTIVE_WORKOUT_SESSION_KEY = ACTIVE_WORKOUT_SESSION_KEY;
+  window.MAX_RESUME_SESSION_AGE_MS = MAX_RESUME_SESSION_AGE_MS;
+  window.buildActiveWorkoutSessionSnapshot = buildActiveWorkoutSessionSnapshot;
+  window.saveActiveWorkoutSession = saveActiveWorkoutSession;
+  window.loadActiveWorkoutSession = loadActiveWorkoutSession;
+  window.clearActiveWorkoutSession = clearActiveWorkoutSession;
+  window.buildResumeWorkoutBannerCopy = buildResumeWorkoutBannerCopy;
+  window.parseHHMMMinutesSafe = parseHHMMMinutesSafe;
+  window.formatMinutes12Hour = formatMinutes12Hour;
+  window.formatMinutesHHMM = formatMinutesHHMM;
+  window.buildProminentWarmupQuickTips = buildProminentWarmupQuickTips;
+  window.computeLiveScheduleContext = computeLiveScheduleContext;
+  window.NEXT_WEEK_NOTE_QUICK_CHIPS = NEXT_WEEK_NOTE_QUICK_CHIPS;
+  window.extractReadableTextFromPdfBytes = extractReadableTextFromPdfBytes;
+  window.parseCustomWorkoutProgram = parseCustomWorkoutProgram;
+  window.buildNextWeekProgressionNote = buildNextWeekProgressionNote;
+  window.validateWorkoutNoteText = validateWorkoutNoteText;
+  window.validateTimerDurationSeconds = validateTimerDurationSeconds;
+  window.validateExerciseSetEntry = validateExerciseSetEntry;
+  window.mountCustomProgramUploadPanel = mountCustomProgramUploadPanel;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

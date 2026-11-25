@@ -108,6 +108,12 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
           <input
             type="text"
             inputMode="decimal"
+            name={`workout_weight_${cardId}_s${setNumber}`}
+            autoComplete="off"
+            data-lpignore="true"
+            data-1p-ignore="true"
+            data-bwignore="true"
+            data-form-type="other"
             value={weightText}
             onChange={(e) => {
               setWeightText(e.target.value);
@@ -123,6 +129,12 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
           <input
             type="text"
             inputMode="numeric"
+            name={`workout_reps_${cardId}_s${setNumber}`}
+            autoComplete="off"
+            data-lpignore="true"
+            data-1p-ignore="true"
+            data-bwignore="true"
+            data-form-type="other"
             value={repsText}
             onChange={(e) => {
               setRepsText(e.target.value);
