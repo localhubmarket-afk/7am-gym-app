@@ -378,11 +378,53 @@ import {
   subscribeGlobalHeaderAuthState,
   syncDomHeaderAuthButton
 } from './utils/headerAuthSync';
+import {
+  DEFAULT_MEAL_SLOT_BASE_COSTS,
+  INGREDIENT_SWAP_CATALOG,
+  PRODUCT_THUMBNAILS,
+  SWAP_MODAL_TITLE,
+  applyIngredientSwapToGymState,
+  applyIngredientSwapsToDayPlan,
+  buildProductThumbnailDataUri,
+  computeSwapMacroDeltas,
+  estimateIngredientServingCost,
+  getSwapOptionsForIngredient,
+  inferIngredientCategory,
+  recalculateMealTotals,
+  resetIngredientSwapInGymState,
+  resolveIngredientImageUrl
+} from './utils/ingredientSwapEngine';
+import {
+  SwapIngredientModal,
+  type SwapIngredientModalProps
+} from './components/SwapIngredientModal';
 
 const mountedVideoPlayerRoots = new WeakMap<HTMLElement, Root>();
 const mountedPhase2HubRoots = new WeakMap<HTMLElement, Root>();
 const mountedCoachModalRoots = new WeakMap<HTMLElement, Root>();
 const mountedCustomProgramRoots = new WeakMap<HTMLElement, Root>();
+const mountedSwapModalRoots = new WeakMap<HTMLElement, Root>();
+
+export function mountSwapIngredientModal(
+  container: HTMLElement,
+  props: SwapIngredientModalProps
+): { unmount: () => void } {
+  let root = mountedSwapModalRoots.get(container);
+  if (!root) {
+    root = createRoot(container);
+    mountedSwapModalRoots.set(container, root);
+  }
+  root.render(React.createElement(SwapIngredientModal, props));
+  return {
+    unmount: () => {
+      const existing = mountedSwapModalRoots.get(container);
+      if (existing) {
+        existing.unmount();
+        mountedSwapModalRoots.delete(container);
+      }
+    }
+  };
+}
 
 export function mountCustomProgramUploadPanel(
   container: HTMLElement,
@@ -1390,6 +1432,21 @@ declare global {
     resolveHeaderAuthState?: typeof resolveHeaderAuthState;
     subscribeGlobalHeaderAuthState?: typeof subscribeGlobalHeaderAuthState;
     syncDomHeaderAuthButton?: typeof syncDomHeaderAuthButton;
+    SWAP_MODAL_TITLE?: string;
+    DEFAULT_MEAL_SLOT_BASE_COSTS?: typeof DEFAULT_MEAL_SLOT_BASE_COSTS;
+    PRODUCT_THUMBNAILS?: typeof PRODUCT_THUMBNAILS;
+    INGREDIENT_SWAP_CATALOG?: typeof INGREDIENT_SWAP_CATALOG;
+    buildProductThumbnailDataUri?: typeof buildProductThumbnailDataUri;
+    resolveIngredientImageUrl?: typeof resolveIngredientImageUrl;
+    inferIngredientCategory?: typeof inferIngredientCategory;
+    estimateIngredientServingCost?: typeof estimateIngredientServingCost;
+    getSwapOptionsForIngredient?: typeof getSwapOptionsForIngredient;
+    computeSwapMacroDeltas?: typeof computeSwapMacroDeltas;
+    recalculateMealTotals?: typeof recalculateMealTotals;
+    applyIngredientSwapsToDayPlan?: typeof applyIngredientSwapsToDayPlan;
+    applyIngredientSwapToGymState?: typeof applyIngredientSwapToGymState;
+    resetIngredientSwapInGymState?: typeof resetIngredientSwapInGymState;
+    mountSwapIngredientModal?: typeof mountSwapIngredientModal;
   }
 }
 
@@ -1690,5 +1747,20 @@ if (typeof window !== 'undefined') {
   window.resolveHeaderAuthState = resolveHeaderAuthState;
   window.subscribeGlobalHeaderAuthState = subscribeGlobalHeaderAuthState;
   window.syncDomHeaderAuthButton = syncDomHeaderAuthButton;
+  window.SWAP_MODAL_TITLE = SWAP_MODAL_TITLE;
+  window.DEFAULT_MEAL_SLOT_BASE_COSTS = DEFAULT_MEAL_SLOT_BASE_COSTS;
+  window.PRODUCT_THUMBNAILS = PRODUCT_THUMBNAILS;
+  window.INGREDIENT_SWAP_CATALOG = INGREDIENT_SWAP_CATALOG;
+  window.buildProductThumbnailDataUri = buildProductThumbnailDataUri;
+  window.resolveIngredientImageUrl = resolveIngredientImageUrl;
+  window.inferIngredientCategory = inferIngredientCategory;
+  window.estimateIngredientServingCost = estimateIngredientServingCost;
+  window.getSwapOptionsForIngredient = getSwapOptionsForIngredient;
+  window.computeSwapMacroDeltas = computeSwapMacroDeltas;
+  window.recalculateMealTotals = recalculateMealTotals;
+  window.applyIngredientSwapsToDayPlan = applyIngredientSwapsToDayPlan;
+  window.applyIngredientSwapToGymState = applyIngredientSwapToGymState;
+  window.resetIngredientSwapInGymState = resetIngredientSwapInGymState;
+  window.mountSwapIngredientModal = mountSwapIngredientModal;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

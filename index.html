@@ -4270,6 +4270,84 @@
         plan.dailyKcal = totalKcal;
       }
       plan.dailyProtein = totalProtein;
+
+      // Tap-to-Swap Ingredient Overrides + Visual Grocery Recognition (imageUrl) + Automatic Macro/Cost Recalculation
+      const isCostcoCreatineSlot = Boolean(s && s.subscriptionChecklist && s.subscriptionChecklist.cancelCreatineAutoship);
+      const baseSlotCosts = {
+        pre_shake: isCostcoCreatineSlot ? 1.34 : 1.35,
+        post_oats: 1.37,
+        lunch: 2.01,
+        dinner: 1.62
+      };
+      if (typeof window.applyIngredientSwapsToDayPlan === 'function') {
+        const recalculated = window.applyIngredientSwapsToDayPlan(
+          plan,
+          (s && s.ingredientSwaps) || {},
+          baseSlotCosts
+        );
+        slots.forEach(slotId => {
+          if (recalculated && recalculated.meals && recalculated.meals[slotId]) {
+            const m = recalculated.meals[slotId];
+            m.scaleGText = `Scale: ${m.scaleGrams}g`;
+            m.scaleLbText = formatGramsToLbOzBadge(m.scaleGrams);
+          }
+        });
+        return recalculated;
+      }
+      // Inline fallback before module bridge finishes loading
+      const fallbackSwaps = (s && s.ingredientSwaps && typeof s.ingredientSwaps === 'object') ? s.ingredientSwaps : {};
+      let fallbackDayCost = 0;
+      let fallbackHasSwap = false;
+      let fallbackKcal = 0;
+      let fallbackProt = 0;
+      slots.forEach(slotId => {
+        const m = plan.meals[slotId];
+        if (!m || !Array.isArray(m.items)) return;
+        let slotHasSwap = false;
+        let slotCostDelta = 0;
+        m.items = m.items.map(it => {
+          const sw = fallbackSwaps[`${slotId}::${it.id}`];
+          if (sw) {
+            slotHasSwap = true;
+            fallbackHasSwap = true;
+            const prevCost = Number(sw.swappedFromCost) || 0;
+            const nextCost = Number(sw.costPerServing) || 0;
+            slotCostDelta += (nextCost - prevCost);
+            return Object.assign({}, it, {
+              name: sw.name,
+              label: sw.name,
+              weight: sw.weight,
+              grams: Number(sw.grams) || 0,
+              protein: Number(sw.protein) || 0,
+              kcal: Number(sw.kcal) || 0,
+              costPerServing: nextCost,
+              imageUrl: sw.imageUrl || it.imageUrl || '',
+              swappedFromName: sw.swappedFromName || it.name,
+              swapOptionId: sw.swapOptionId,
+              isSwapped: true
+            });
+          }
+          return it;
+        });
+        const gSum = Math.round(m.items.reduce((acc, it) => acc + (Number(it.grams) || 0), 0));
+        m.scaleGrams = gSum;
+        m.scaleGText = `Scale: ${gSum}g`;
+        m.scaleLbText = formatGramsToLbOzBadge(gSum);
+        if (slotHasSwap) {
+          m.kcal = Math.round(m.items.reduce((acc, it) => acc + (Number(it.kcal) || 0), 0));
+          m.protein = Math.round(m.items.reduce((acc, it) => acc + (Number(it.protein) || 0), 0));
+        }
+        m.mealCost = Math.max(0, +((baseSlotCosts[slotId] || 1.50) + slotCostDelta).toFixed(2));
+        fallbackKcal += Number(m.kcal) || 0;
+        fallbackProt += Number(m.protein) || 0;
+        fallbackDayCost += m.mealCost;
+      });
+      if (fallbackHasSwap) {
+        plan.dailyKcal = Math.round(fallbackKcal);
+        plan.dailyProtein = Math.round(fallbackProt);
+      }
+      plan.dailyCost = +fallbackDayCost.toFixed(2);
+      plan.weeklyCost = +(fallbackDayCost * 7).toFixed(2);
       return plan;
     }
 
@@ -5922,17 +6000,27 @@
           it.baseQuarterlyCost = it.quarterlyCost;
 
           const ov = brandOverrides[it.id];
+          const visualSwap = (s && s.shopIngredientVisuals && s.shopIngredientVisuals[it.id]) || null;
           if (ov && Number.isFinite(Number(ov.weeklyPrice))) {
             const wPrice = +Number(ov.weeklyPrice).toFixed(2);
             const qPrice = +(wPrice * (90 / 7)).toFixed(2);
             it.isBrandSwapped = true;
-            it.swappedBrandName = String(ov.brandName || '').trim();
+            it.swappedBrandName = String(ov.brandName || (visualSwap && visualSwap.name) || '').trim();
             it.weeklyCost = `$${wPrice.toFixed(2)}/wk`;
             it.quarterlyCost = `$${qPrice.toFixed(2)} / 3 mos`;
           } else {
             it.isBrandSwapped = false;
             it.swappedBrandName = '';
           }
+
+          if (visualSwap && visualSwap.name) {
+            it.shortName = visualSwap.name;
+            it.isTapSwapped = true;
+          }
+          const explicitImgUrl = (visualSwap && visualSwap.imageUrl) || (ov && ov.imageUrl) || it.imageUrl || '';
+          it.imageUrl = typeof window.resolveIngredientImageUrl === 'function'
+            ? window.resolveIngredientImageUrl(Object.assign({}, it, { imageUrl: explicitImgUrl }))
+            : explicitImgUrl;
 
           it.qty = period === 'quarterly' ? (it.quarterlyQty || it.qty) : (it.weeklyQty || it.qty);
         });
@@ -22113,13 +22201,72 @@
             eli12IngredientLines.push(eli12ShortItems.slice(i, i + 3).join(' '));
           }
 
+          const resolveThumbUrl = (itemObj) => {
+            if (typeof window.resolveIngredientImageUrl === 'function') {
+              return window.resolveIngredientImageUrl(itemObj);
+            }
+            if (itemObj && itemObj.imageUrl) return itemObj.imageUrl;
+            const label = encodeURIComponent(String((itemObj && (itemObj.label || itemObj.name)) || 'FOOD').slice(0, 6).toUpperCase());
+            return `data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%231e293b%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%2218%22%20width%3D%2240%22%20height%3D%2228%22%20rx%3D%226%22%20fill%3D%22%2334d399%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2236%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%22%20font-size%3D%229%22%20font-weight%3D%22900%22%20fill%3D%22%230f172a%22%3E${label}%3C%2Ftext%3E%3C%2Fsvg%3E`;
+          };
+
+          // Tap-to-Swap clickable ingredient buttons (WCAG 2.2 >=48x48px touch target + COGA visual grocery recognition)
+          const clickableSwapIngredientRowsHtml = itemsList.map(it => {
+            const unitWeight = formatIngredientWeightForUnit(it.weight, state.fuelWeightUnit);
+            const displayIngName = it.isSwapped
+              ? escFlexHtml(it.label || it.name)
+              : escFlexHtml(getEli12ShortIngredientName(it.label || it.name));
+            const fullIngNameEsc = escFlexHtml(it.label || it.name);
+            const thumbUrl = resolveThumbUrl(it);
+            const ingKcal = Math.round(Number(it.kcal) || 0);
+            const ingProt = Math.round(Number(it.protein) || 0);
+            const swappedBadge = it.isSwapped
+              ? `<span class="inline-block ml-1 text-[0.625rem] font-extrabold px-1.5 py-0.5 rounded bg-sky-500/20 border border-sky-400/50 text-sky-200 align-middle">Swapped</span>`
+              : '';
+            return `
+              <button
+                type="button"
+                data-swap-meal-slot="${slot.slotId}"
+                data-swap-item-id="${it.id}"
+                aria-label="Swap ${fullIngNameEsc}, ${unitWeight}, ${ingKcal} calories, ${ingProt} grams protein"
+                class="tap-to-swap-ingredient-btn w-full min-h-[48px] text-left rounded-xl border px-2.5 py-2 flex items-center justify-between gap-2.5 transition focus:outline-none focus:ring-2 focus:ring-emerald-400 ${
+                  it.isSwapped
+                    ? 'bg-sky-950/45 border-sky-400/60 hover:bg-sky-950/70'
+                    : 'bg-slate-950/85 border-slate-800 hover:border-emerald-400/60 hover:bg-slate-800/80'
+                }"
+              >
+                <span class="flex items-center gap-2.5 min-w-0 flex-1">
+                  <img
+                    src="${thumbUrl}"
+                    alt=""
+                    aria-hidden="true"
+                    width="40"
+                    height="40"
+                    class="w-10 h-10 rounded-lg border border-slate-700 object-cover shrink-0 bg-slate-900"
+                  />
+                  <span class="min-w-0 flex-1 block">
+                    <span class="block text-xs font-extrabold text-slate-100 leading-snug break-words">${displayIngName}${swappedBadge}</span>
+                    <span class="block text-[0.6875rem] font-semibold text-slate-300 mt-0.5">${unitWeight} • ${ingKcal} kcal • ${ingProt}g P</span>
+                  </span>
+                </span>
+                <span class="shrink-0 px-2.5 py-1.5 rounded-lg border border-emerald-500/45 bg-emerald-500/15 text-emerald-200 text-[0.6875rem] font-extrabold whitespace-nowrap">
+                  Swap ⇄
+                </span>
+              </button>
+            `;
+          }).join('');
+
           // Full interactive scale checklist (kept inside Read the Math drawer so zero features are lost)
           const scannableRowsHtml = itemsList.map(it => {
             const ingDone = isIngredientChecked(week, dayIdx, slot.slotId, it.id);
             const convertedIngWeight = formatIngredientWeightForUnit(it.weight, state.fuelWeightUnit);
+            const thumbUrl = resolveThumbUrl(it);
             return `
-              <button type="button" data-meal-slot="${slot.slotId}" data-ing-id="${it.id}" class="meal-ing-check-btn w-full text-left py-1.5 border-b border-slate-800/60 last:border-b-0 text-xs transition flex items-center justify-between gap-2.5 hover:bg-slate-950/60 px-1">
-                <span class="font-semibold leading-snug break-words min-w-0 flex-1 ${ingDone ? 'line-through text-emerald-300/80' : 'text-slate-100'}">${it.label || it.name}</span>
+              <button type="button" data-meal-slot="${slot.slotId}" data-ing-id="${it.id}" class="meal-ing-check-btn w-full min-h-[48px] text-left py-1.5 border-b border-slate-800/60 last:border-b-0 text-xs transition flex items-center justify-between gap-2.5 hover:bg-slate-950/60 px-1">
+                <span class="flex items-center gap-2 min-w-0 flex-1">
+                  <img src="${thumbUrl}" alt="" aria-hidden="true" width="32" height="32" class="w-8 h-8 rounded-md border border-slate-700 object-cover shrink-0 bg-slate-900" />
+                  <span class="font-semibold leading-snug break-words min-w-0 flex-1 ${ingDone ? 'line-through text-emerald-300/80' : 'text-slate-100'}">${it.label || it.name}</span>
+                </span>
                 <span class="meal-ing-weight-badge shrink-0 text-[0.6875rem] font-mono font-extrabold px-2 py-0.5 rounded-md ${
                   ingDone
                     ? 'bg-emerald-500/25 border border-emerald-400/50 text-emerald-200'
@@ -22131,7 +22278,9 @@
             `;
           }).join('');
 
-          const scaleWeightBadgeText = getFuelCardScaleBadgeText(slot.slotId, state.fuelWeightUnit);
+          const scaleWeightBadgeText = (mealObj && Number.isFinite(Number(mealObj.scaleGrams)) && Number(mealObj.scaleGrams) > 0)
+            ? (state.fuelWeightUnit === 'imperial' ? formatGramsToLbOzBadge(mealObj.scaleGrams) : `Scale: ${Math.round(mealObj.scaleGrams)}g`)
+            : getFuelCardScaleBadgeText(slot.slotId, state.fuelWeightUnit);
           const mealTotalWeightPillText = scaleWeightBadgeText
             ? scaleWeightBadgeText.replace(/^Scale:\s*/i, 'Total: ')
             : 'Total: 390g';
@@ -22142,7 +22291,9 @@
             lunch: '$2.01 / meal',
             dinner: '$1.62 / meal'
           };
-          const mealCostPillText = mealCostBySlot[slot.slotId] || '$1.50 / meal';
+          const mealCostPillText = (mealObj && typeof mealObj.mealCost === 'number' && Number.isFinite(mealObj.mealCost))
+            ? `$${mealObj.mealCost.toFixed(2)} / meal`
+            : (mealCostBySlot[slot.slotId] || '$1.50 / meal');
           const fuelPrepNotePillHtml = getPrepNoteReminderPillHtml(slot.slotId);
 
           const noteObj = (state.prepNotes && state.prepNotes[slot.slotId]) || { text: '', photoDataUrl: '', updatedAt: '' };
@@ -22233,8 +22384,9 @@
                     <span data-fuel-cost-pill="${slot.slotId}" class="text-[0.6875rem] font-extrabold px-2.5 py-0.5 rounded-md bg-amber-950/70 border border-amber-500/40 text-amber-300 whitespace-nowrap">${mealCostPillText}</span>
                   </div>
 
-                  <div class="text-xs text-slate-200 space-y-0.5 leading-relaxed">
-                    ${eli12IngredientLines.map(line => `<p>${line}</p>`).join('')}
+                  <div class="space-y-1.5 pt-1" role="group" aria-label="${eli12Title} tap-to-swap ingredients">
+                    <p class="text-[0.6875rem] font-bold text-slate-400">Tap any food below to swap it:</p>
+                    ${clickableSwapIngredientRowsHtml}
                   </div>
                 `}
               </div>
@@ -22528,6 +22680,95 @@
             showToast('Restored standard plan meal.');
           });
         });
+
+        // Wire Tap-to-Swap Ingredient Row Buttons -> Opens React <SwapIngredientModal />
+        const openTapToSwapIngredientModal = (slotId, itemId) => {
+          const modalHost = document.getElementById('swap-ingredient-modal-root');
+          if (!modalHost || typeof window.mountSwapIngredientModal !== 'function') {
+            showToast('Loading ingredient swap menu...');
+            return;
+          }
+          const latestPlan = getEffectiveDayFuelPlan(state, week, dayIdx);
+          const slotMeal = latestPlan && latestPlan.meals && latestPlan.meals[slotId];
+          const targetItem = slotMeal && Array.isArray(slotMeal.items)
+            ? slotMeal.items.find(it => it.id === itemId)
+            : null;
+          if (!slotMeal || !targetItem) return;
+
+          const mealLabel = eli12MealTitles[slotId] || slotMeal.title || slotId;
+          const closeSwapModal = () => {
+            window.mountSwapIngredientModal(modalHost, {
+              isOpen: false,
+              mealTitle: mealLabel,
+              slotId,
+              ingredient: null,
+              onSelectReplacement: () => {},
+              onClose: () => {}
+            });
+          };
+
+          window.mountSwapIngredientModal(modalHost, {
+            isOpen: true,
+            mealTitle: mealLabel,
+            slotId,
+            ingredient: targetItem,
+            onClose: closeSwapModal,
+            onSelectReplacement: (replacementOption) => {
+              if (typeof window.applyIngredientSwapToGymState === 'function') {
+                const swapResult = window.applyIngredientSwapToGymState({
+                  gymState: state,
+                  slotId,
+                  itemId,
+                  originalItem: targetItem,
+                  replacement: replacementOption,
+                  isAutoSyncEnabled: false,
+                  storage: null
+                });
+                state.ingredientSwaps = swapResult.nextState.ingredientSwaps;
+                state.shopIngredientVisuals = swapResult.nextState.shopIngredientVisuals;
+                state.shopBrandOverrides = swapResult.nextState.shopBrandOverrides;
+              }
+              closeSwapModal();
+              // Persist to localStorage, IndexedDB, and push to Supabase automatically if isAutoSyncEnabled is true
+              saveState(false, 'ingredient_swap');
+              renderVeganView();
+              renderShoppingView();
+              renderWorkoutView();
+              const updatedPlan = getEffectiveDayFuelPlan(state, week, dayIdx);
+              showToast(`Swapped to ${replacementOption.shortName}! Day total: ${updatedPlan.dailyKcal} kcal • ${updatedPlan.dailyProtein}g P`);
+            },
+            onResetToOriginal: targetItem.isSwapped ? () => {
+              if (typeof window.resetIngredientSwapInGymState === 'function') {
+                const resetRes = window.resetIngredientSwapInGymState({
+                  gymState: state,
+                  slotId,
+                  itemId,
+                  isAutoSyncEnabled: false,
+                  storage: null
+                });
+                state.ingredientSwaps = resetRes.nextState.ingredientSwaps;
+                state.shopIngredientVisuals = resetRes.nextState.shopIngredientVisuals;
+                state.shopBrandOverrides = resetRes.nextState.shopBrandOverrides;
+              }
+              closeSwapModal();
+              saveState(false, 'ingredient_swap_reset');
+              renderVeganView();
+              renderShoppingView();
+              renderWorkoutView();
+              showToast('Switched back to your original ingredient.');
+            } : undefined
+          });
+        };
+
+        mealsEl.querySelectorAll('.tap-to-swap-ingredient-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const slotId = btn.getAttribute('data-swap-meal-slot');
+            const itemId = btn.getAttribute('data-swap-item-id');
+            if (!slotId || !itemId) return;
+            openTapToSwapIngredientModal(slotId, itemId);
+          });
+        });
       }
 
       // UPGRADE 16: Wire Quick Add Drinks or Treats Accordion (Zero-Friction Calorie Accountability)
@@ -22691,7 +22932,10 @@
 
       const eyebrowEl = document.getElementById('shopping-eyebrow-summary');
       if (eyebrowEl) {
-        eyebrowEl.textContent = `1,325 kcal • 139g Protein • $${shopTotals.dailyTotal.toFixed(2)}/day`;
+        const shopDayPlan = getEffectiveDayFuelPlan(state, state.currentWeek || 1, state.selectedDayIndex || 0);
+        const liveDailyKcal = (shopDayPlan && shopDayPlan.dailyKcal) || 1325;
+        const liveDailyProt = (shopDayPlan && shopDayPlan.dailyProtein) || 139;
+        eyebrowEl.textContent = `${liveDailyKcal.toLocaleString()} kcal • ${liveDailyProt}g Protein • $${shopTotals.dailyTotal.toFixed(2)}/day`;
       }
       const openShopDietBtn = document.getElementById('open-shop-diet-modal-btn');
       if (openShopDietBtn) {
@@ -22858,12 +23102,21 @@
                   ? 'bg-indigo-950/35 border-indigo-400/60'
                   : (isBulkCard ? `bg-slate-950/90 ${accentBorderClass || 'border-indigo-500/40'}` : 'bg-slate-900/95 border-slate-800 hover:border-emerald-500/40'))
           }">
-            <!-- Row 1 (Full Width): 22x22 Checkbox + Clear Item Name + High-Visibility Colored Total Weight Badge -->
-            <button type="button" data-shop-id="${it.id}" class="shop-item-btn w-full text-left flex items-center justify-between gap-2">
-              <div class="flex items-start gap-2.5 min-w-0 flex-1">
-                <span style="width: 22px; height: 22px;" class="mt-0.5 shrink-0 rounded-md flex items-center justify-center text-xs font-extrabold transition ${
+            <!-- Row 1 (Full Width): 22x22 Checkbox + Visual Product Thumbnail (COGA) + Clear Item Name + Total Weight Badge -->
+            <button type="button" data-shop-id="${it.id}" class="shop-item-btn w-full min-h-[48px] text-left flex items-center justify-between gap-2.5">
+              <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                <span style="width: 22px; height: 22px;" class="shrink-0 rounded-md flex items-center justify-center text-xs font-extrabold transition ${
                   done ? 'bg-emerald-500 text-slate-950' : (isBulkCard ? 'border-2 border-indigo-400 bg-slate-950' : 'border-2 border-slate-500 bg-slate-950')
                 }">${done ? '✓' : ''}</span>
+                <img
+                  src="${typeof window.resolveIngredientImageUrl === 'function' ? window.resolveIngredientImageUrl(it) : (it.imageUrl || '')}"
+                  alt=""
+                  aria-hidden="true"
+                  width="44"
+                  height="44"
+                  data-shop-item-thumb="${it.id}"
+                  class="w-11 h-11 rounded-lg border border-slate-700 object-cover shrink-0 bg-slate-900"
+                />
                 <span class="flex-1 min-w-0 break-words ${done ? 'line-through text-slate-400' : 'text-[#f8fafc]'}" style="font-size: 0.9375rem; font-weight: 700; line-height: 1.35;">${shortTitle}</span>
               </div>
               <span
@@ -33303,6 +33556,8 @@
           if (typeof syncHeaderAuthButtonUI === 'function') syncHeaderAuthButtonUI();
           mountSettingsCustomProgramUploader();
           updateLiveClockScheduleBannerUI();
+          if (typeof renderVeganView === 'function') renderVeganView();
+          if (typeof renderShoppingView === 'function') renderShoppingView();
           const savedSnap = typeof window.loadActiveWorkoutSession === 'function' ? window.loadActiveWorkoutSession() : null;
           if (savedSnap) {
             renderWorkoutResumeBannerUI(savedSnap);
@@ -33314,6 +33569,7 @@
     }
   </script>
 
+  <div id="swap-ingredient-modal-root"></div>
   <script type="module" src="/src/d3ChartBridge.ts"></script>
 </body>
 </html>

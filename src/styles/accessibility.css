@@ -947,3 +947,29 @@ html.light-theme .next-week-note-card {
   color: #111827 !important;
 }
 
+/* Tap-to-Swap Ingredient Buttons & Modal (WCAG 2.2 AA >=48x48px + COGA Visual Thumbnails) */
+.tap-to-swap-ingredient-btn {
+  min-height: 48px !important;
+  min-width: 48px !important;
+  touch-action: manipulation;
+}
+
+html[data-theme="light"] .tap-to-swap-ingredient-btn,
+html.light-theme .tap-to-swap-ingredient-btn {
+  background-color: #FFFFFF !important;
+  border-color: #94A3B8 !important;
+  color: #0E1A40 !important;
+}
+
+html[data-theme="light"] .tap-to-swap-ingredient-btn:hover,
+html.light-theme .tap-to-swap-ingredient-btn:hover {
+  background-color: #F0FDF4 !important;
+  border-color: #15803D !important;
+}
+
+html[data-theme="light"] #swap-ingredient-modal-overlay > div,
+html.light-theme #swap-ingredient-modal-overlay > div {
+  background-color: #FFFFFF !important;
+  color: #0E1A40 !important;
+  border-color: #15803D !important;
+}
