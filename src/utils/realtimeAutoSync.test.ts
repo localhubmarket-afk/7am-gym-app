@@ -120,11 +120,11 @@ function createFakeSupabaseClient(options?: {
   };
 }
 
-test('Task 1: Auto-Sync Devices exact labels, localStorage persistence, and WCAG/no-paywall markup', () => {
-  assert.equal(AUTO_SYNC_TOGGLE_LABEL, 'Auto-Sync Devices');
+test('Task 1: Always-on automatic background sync migration, removed manual toggle, and WCAG/no-paywall markup', () => {
+  assert.equal(AUTO_SYNC_TOGGLE_LABEL, 'Cloud Sync & Backup');
   assert.equal(
     AUTO_SYNC_TOGGLE_SUBLABEL,
-    'Automatically saves your progress to the cloud and updates your other screens instantly.'
+    'Saves on this device first and syncs automatically to the cloud whenever you are online.'
   );
   assert.equal(FORCE_SYNC_NOW_LABEL, 'Force Sync Now');
   assert.equal(AUTO_SYNC_DEBOUNCE_MS, 2000);
@@ -132,37 +132,37 @@ test('Task 1: Auto-Sync Devices exact labels, localStorage persistence, and WCAG
   const storage = createMemoryStorage();
   assert.equal(loadAutoSyncPreference(storage), true);
 
-  saveAutoSyncPreference(false, storage);
-  assert.equal(storage.getItem(AUTO_SYNC_STORAGE_KEY), 'false');
-  assert.equal(loadAutoSyncPreference(storage), false);
+  // Legacy 'false' value auto-migrates to 'true' so local workout data is never trapped
+  storage.setItem(AUTO_SYNC_STORAGE_KEY, 'false');
+  assert.equal(loadAutoSyncPreference(storage), true);
+  assert.equal(storage.getItem(AUTO_SYNC_STORAGE_KEY), 'true');
 
-  saveAutoSyncPreference(true, storage);
+  // saveAutoSyncPreference always keeps background sync active
+  assert.equal(saveAutoSyncPreference(false, storage), true);
   assert.equal(storage.getItem(AUTO_SYNC_STORAGE_KEY), 'true');
   assert.equal(loadAutoSyncPreference(storage), true);
 
-  // Verify index.html and AutoSyncSettingsControl.tsx contain exact labels & zero forbidden ids / px font sizes
+  // Verify index.html and AutoSyncSettingsControl.tsx remove manual toggle & keep Force Sync Now + Force Pull from Cloud
   const indexHtml = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf8');
-  assert.equal(indexHtml.includes('id="toggle-auto-sync-devices-btn"'), true);
-  assert.equal(indexHtml.includes('Auto-Sync Devices'), true);
-  assert.equal(
-    indexHtml.includes(
-      'Automatically saves your progress to the cloud and updates your other screens instantly.'
-    ),
-    true
-  );
+  assert.equal(indexHtml.includes('id="toggle-auto-sync-devices-btn"'), false);
+  assert.equal(indexHtml.includes('Cloud Sync &amp; Backup'), true);
   assert.equal(indexHtml.includes('id="force-sync-now-btn"'), true);
   assert.equal(indexHtml.includes('Force Sync Now'), true);
+  assert.equal(indexHtml.includes('id="force-pull-cloud-btn"'), true);
   assert.equal(indexHtml.includes('id="sync-now-cloud-btn"'), false);
 
   const controlTsx = fs.readFileSync(
     path.resolve(process.cwd(), 'src/components/AutoSyncSettingsControl.tsx'),
     'utf8'
   );
+  assert.equal(controlTsx.includes('data-testid="toggle-auto-sync-devices-btn"'), false);
+  assert.equal(controlTsx.includes('data-testid="force-sync-now-btn"'), true);
+  assert.equal(controlTsx.includes('data-testid="force-pull-cloud-btn"'), true);
   assert.equal(/text-\[\d+px\]|font-size\s*:\s*\d+px/i.test(controlTsx), false);
   assert.equal(/paywall|subscribe to unlock|pro tier|upgrade to pro/i.test(controlTsx), false);
 });
 
-test('Task 2: createDebounce collapses rapid calls within 2000ms and skips cloud push when Auto-Sync is disabled', async () => {
+test('Task 2: createDebounce collapses rapid calls within 2000ms and always-on sync pushes once after debounce', async () => {
   const scheduled: Array<{ id: number; delay: number; cb: () => void; cleared: boolean }> = [];
   let nextId = 1;
   const setTimer = (cb: () => void, ms: number) => {
@@ -196,7 +196,7 @@ test('Task 2: createDebounce collapses rapid calls within 2000ms and skips cloud
   scheduled[2].cb();
   assert.deepEqual(calls, ['set_3']);
 
-  // Verify manager skips cloud push when disabled, and pushes once after 2000ms when enabled
+  // Verify manager stays always-on (even if legacy setEnabled(false) is called) and collapses rapid taps into one 2000ms push
   const storage = createMemoryStorage();
   const fake = createFakeSupabaseClient();
   let localState: any = {
@@ -231,16 +231,11 @@ test('Task 2: createDebounce collapses rapid calls within 2000ms and skips cloud
     }
   });
 
-  // Disabled -> saves locally, ZERO Supabase upserts
+  // Always-on sync: even calling setEnabled(false) keeps automatic background sync enabled
   manager.setEnabled(false);
-  manager.scheduleDebouncedPush({ ...localState, selectedWeek: 2 }, 'set_logged');
-  assert.equal(timers.length, 0);
-  assert.equal(fake.upserts.length, 0);
-  const persistedDisabled = JSON.parse(storage.getItem('test_gym_state_key') || '{}');
-  assert.equal(persistedDisabled.selectedWeek, 2);
+  assert.equal(manager.isEnabled(), true);
 
-  // Enabled -> rapid taps collapse into a single 2000ms debounced upsert with last_updated
-  manager.setEnabled(true);
+  // Rapid taps collapse into a single 2000ms debounced upsert with last_updated
   manager.scheduleDebouncedPush({ ...localState, selectedWeek: 3 }, 'set_logged');
   manager.scheduleDebouncedPush({ ...localState, selectedWeek: 4 }, 'fuel_modified');
   assert.equal(timers.length, 2);

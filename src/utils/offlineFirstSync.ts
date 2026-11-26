@@ -5,6 +5,7 @@ import {
   loadGymStateFromIndexedDB,
   removeIndexedDbSyncItem,
   saveGymStateToIndexedDB,
+  updateIndexedDbSyncItem,
   type SyncOutboxRecord
 } from './gymIndexedDb';
 import {
@@ -18,6 +19,9 @@ export interface PersistLocalFirstOptions {
   stateObj: Record<string, any>;
   endpoint?: string | null;
   reason?: string;
+  actionType?: string;
+  setKey?: string | null;
+  exerciseId?: string | null;
   localStateStorageKey?: string;
   recordKey?: string;
   skipCloudPush?: boolean;
@@ -38,7 +42,10 @@ export interface FlushIndexedDbSyncResult {
   flushed: number;
   remaining: number;
   syncedAtIso: string | null;
+  stoppedOnError: boolean;
 }
+
+let activeIdbFlushPromise: Promise<FlushIndexedDbSyncResult> | null = null;
 
 export function notifyServiceWorkerToSync(message: {
   type: 'QUEUE_GYM_STATE_SYNC' | 'FLUSH_GYM_STATE_SYNC';
@@ -101,9 +108,10 @@ export async function hydrateGymStateLocalFirst(options: {
   return { state: idbRecord?.gymState || null, source: 'indexeddb' };
 }
 
-export async function flushIndexedDbSyncOutbox(options?: {
+async function runFlushIndexedDbSyncOutbox(options?: {
   fetchImpl?: typeof fetch;
   onlineOverride?: boolean;
+  resolveEndpoint?: () => string;
 }): Promise<FlushIndexedDbSyncResult> {
   const onlineNow =
     typeof options?.onlineOverride === 'boolean' ? options.onlineOverride : isNetworkOnline();
@@ -114,7 +122,8 @@ export async function flushIndexedDbSyncOutbox(options?: {
       attempted: 0,
       flushed: 0,
       remaining: pending.length,
-      syncedAtIso: null
+      syncedAtIso: null,
+      stoppedOnError: false
     };
   }
 
@@ -124,38 +133,80 @@ export async function flushIndexedDbSyncOutbox(options?: {
       attempted: 0,
       flushed: 0,
       remaining: pending.length,
-      syncedAtIso: null
+      syncedAtIso: null,
+      stoppedOnError: false
     };
   }
 
+  const dynamicEndpoint = String(options?.resolveEndpoint?.() || '').trim();
+  let attempted = 0;
   let flushed = 0;
+  let stoppedOnError = false;
+
+  // Strict FIFO processing: upload items one by one in creation order.
+  // If any upload fails, keep it pending and STOP immediately so newer writes never leapfrog it.
   for (const item of pending) {
-    if (!item.endpoint) {
-      await removeIndexedDbSyncItem(item.id);
-      continue;
+    const itemEndpoint =
+      item.endpoint && item.endpoint !== 'pending_endpoint' ? item.endpoint : '';
+    const targetEndpoint = dynamicEndpoint || itemEndpoint;
+    if (!targetEndpoint) {
+      stoppedOnError = true;
+      break;
     }
+
+    attempted += 1;
     try {
-      const isApi = item.endpoint.includes('/api/state');
-      const res = await fetcher(item.endpoint, {
-        method: 'POST',
+      const isApi = targetEndpoint.includes('/api/state');
+      const isFirebase =
+        targetEndpoint.includes('firebaseio.com') || targetEndpoint.endsWith('.json');
+      const res = await fetcher(targetEndpoint, {
+        method: isFirebase ? 'PUT' : 'POST',
         cache: 'no-store',
         headers: {
           'Content-Type': isApi ? 'application/json' : 'text/plain;charset=utf-8'
         },
         body: item.payloadJson
       });
-      if (res && res.ok) {
-        flushed += 1;
-        await removeIndexedDbSyncItem(item.id);
+
+      if (!res || !res.ok) {
+        await updateIndexedDbSyncItem({
+          ...item,
+          status: 'pending',
+          attempts: (item.attempts || 0) + 1
+        });
+        stoppedOnError = true;
+        break;
       }
+
+      const json =
+        typeof (res as any).json === 'function'
+          ? await (res as any).json().catch(() => ({}))
+          : {};
+      if (json && (json.configured === false || json.saved === false)) {
+        await updateIndexedDbSyncItem({
+          ...item,
+          status: 'pending',
+          attempts: (item.attempts || 0) + 1
+        });
+        stoppedOnError = true;
+        break;
+      }
+
+      flushed += 1;
+      await removeIndexedDbSyncItem(item.id);
     } catch {
-      // Keep item in IndexedDB outbox for next reconnection retry
+      await updateIndexedDbSyncItem({
+        ...item,
+        status: 'pending',
+        attempts: (item.attempts || 0) + 1
+      });
+      stoppedOnError = true;
+      break;
     }
   }
 
   const after = await getPendingIndexedDbSyncItems();
-  if (after.length === 0) {
-    // Also drain legacy localStorage queue for backwards compatibility
+  if (after.length === 0 && !stoppedOnError) {
     try {
       await flushOfflineGymStateQueue({ fetchImpl: fetcher });
     } catch {
@@ -164,11 +215,31 @@ export async function flushIndexedDbSyncOutbox(options?: {
   }
 
   return {
-    attempted: pending.length,
+    attempted,
     flushed,
     remaining: after.length,
-    syncedAtIso: flushed > 0 ? new Date().toISOString() : null
+    syncedAtIso: flushed > 0 ? new Date().toISOString() : null,
+    stoppedOnError
   };
+}
+
+export async function flushIndexedDbSyncOutbox(options?: {
+  fetchImpl?: typeof fetch;
+  onlineOverride?: boolean;
+  resolveEndpoint?: () => string;
+}): Promise<FlushIndexedDbSyncResult> {
+  // Use lock only for standard runtime calls (not custom fetchImpl tests running sequentially)
+  if (!options?.fetchImpl && activeIdbFlushPromise) {
+    return activeIdbFlushPromise;
+  }
+  const promise = runFlushIndexedDbSyncOutbox(options);
+  if (!options?.fetchImpl) {
+    activeIdbFlushPromise = promise.finally(() => {
+      activeIdbFlushPromise = null;
+    });
+    return activeIdbFlushPromise;
+  }
+  return promise;
 }
 
 export async function persistGymStateLocalFirst(
@@ -178,6 +249,9 @@ export async function persistGymStateLocalFirst(
     stateObj,
     endpoint,
     reason = 'local_update',
+    actionType,
+    setKey = null,
+    exerciseId = null,
     localStateStorageKey = 'bws_5day_gym_state_v1',
     recordKey = DEFAULT_GYM_STATE_RECORD_KEY,
     skipCloudPush = false,
@@ -185,11 +259,11 @@ export async function persistGymStateLocalFirst(
     onlineOverride
   } = options;
 
-  // 1. Always write to IndexedDB immediately (local-first truth)
+  // 1. Always write to local gym_state immediately (local-first truth)
   const savedRecord = await saveGymStateToIndexedDB(stateObj, recordKey);
   const payloadJson = JSON.stringify(savedRecord.gymState);
 
-  if (skipCloudPush || !endpoint || !String(endpoint).trim()) {
+  if (skipCloudPush) {
     const pending = await getPendingIndexedDbSyncItems();
     return {
       savedToIndexedDb: true,
@@ -200,25 +274,30 @@ export async function persistGymStateLocalFirst(
     };
   }
 
-  const trimmedEndpoint = String(endpoint).trim();
+  const trimmedEndpoint = String(endpoint || '').trim();
+  // 2. Simultaneously append a pending FIFO record into sync_outbox
   const outboxItem = await enqueueIndexedDbSyncItem({
-    endpoint: trimmedEndpoint,
+    endpoint: trimmedEndpoint || 'pending_endpoint',
     payloadJson,
     reason,
+    actionType: actionType || reason,
+    setKey,
+    exerciseId,
     lastUpdated: savedRecord.lastUpdated
   });
 
   const onlineNow =
     typeof onlineOverride === 'boolean' ? onlineOverride : isNetworkOnline();
 
-  if (!onlineNow) {
-    // Mirror into legacy localStorage queue + notify SW for Background Sync
-    enqueueOfflineGymStateSync({
-      stateObj: savedRecord.gymState,
-      endpoint: trimmedEndpoint,
-      reason,
-      localStateStorageKey
-    });
+  if (!onlineNow || !trimmedEndpoint) {
+    if (trimmedEndpoint) {
+      enqueueOfflineGymStateSync({
+        stateObj: savedRecord.gymState,
+        endpoint: trimmedEndpoint,
+        reason,
+        localStateStorageKey
+      });
+    }
     notifyServiceWorkerToSync({ type: 'QUEUE_GYM_STATE_SYNC', item: outboxItem });
     const pending = await getPendingIndexedDbSyncItems();
     return {
@@ -230,7 +309,7 @@ export async function persistGymStateLocalFirst(
     };
   }
 
-  // Online: push immediately in background to Supabase backend
+  // Online: process pending FIFO outbox immediately in the background
   const flushRes = await flushIndexedDbSyncOutbox({
     fetchImpl,
     onlineOverride: onlineNow
@@ -250,6 +329,7 @@ export async function persistGymStateLocalFirst(
 }
 
 export function startOfflineFirstBackgroundSync(callbacks?: {
+  resolveEndpoint?: () => string;
   onSynced?: (detail: { flushedCount: number; remainingCount: number }) => void;
   onStatusChange?: (status: { online: boolean; pendingCount: number }) => void;
 }): () => void {
@@ -259,7 +339,7 @@ export function startOfflineFirstBackgroundSync(callbacks?: {
 
   const handleOnline = () => {
     notifyServiceWorkerToSync({ type: 'FLUSH_GYM_STATE_SYNC' });
-    flushIndexedDbSyncOutbox()
+    flushIndexedDbSyncOutbox({ resolveEndpoint: callbacks?.resolveEndpoint })
       .then((res) => {
         if (res.flushed > 0) {
           callbacks?.onSynced?.({

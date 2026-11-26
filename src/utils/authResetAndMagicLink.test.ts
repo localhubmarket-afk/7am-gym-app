@@ -354,15 +354,13 @@ test('Task 3 & Task 4: Auth modal fixed-header inner scroll + WCAG 2.2 AA green 
   assert.equal(loginModalTsx.includes('max-h-[80vh]'), true);
   assert.equal(loginModalTsx.includes('overflow-y-auto'), true);
 
-  // Task 4: Save Account and Auto-Sync Devices use dark green (#15803D / bg-green-700) + pure white text
+  // Task 4: Save Account uses dark green (#15803D / bg-green-700) + pure white text; manual Auto-Sync toggle removed
   assert.equal(indexHtml.includes('id="settings-save-account-btn" class="btn-save-account-solid'), true);
   assert.equal(indexHtml.includes('bg-green-700 hover:bg-green-800 text-white'), true);
-  assert.equal(indexHtml.includes('id="active-auto-sync-readout"'), true);
-  assert.equal(indexHtml.includes('bg-green-100 px-2 py-0.5 text-[0.75rem] font-extrabold text-gray-900'), true);
-  assert.equal(autoSyncTsx.includes('bg-green-700 hover:bg-green-800 text-white'), true);
-  assert.equal(autoSyncTsx.includes('bg-green-100 px-2 py-0.5 text-xs font-extrabold text-gray-900'), true);
+  assert.equal(indexHtml.includes('id="toggle-auto-sync-devices-btn"'), false);
+  assert.equal(autoSyncTsx.includes('data-testid="toggle-auto-sync-devices-btn"'), false);
 
-  // Zero-deletion check: all existing login methods & buttons preserved
+  // Zero-deletion check: all existing login methods & manual sync backup buttons preserved
   for (const id of [
     'apple-oauth-btn',
     'google-oauth-btn',
@@ -372,7 +370,6 @@ test('Task 3 & Task 4: Auth modal fixed-header inner scroll + WCAG 2.2 AA green 
     'submit-smart-login-btn',
     'delete-account-data-btn',
     'settings-save-account-btn',
-    'toggle-auto-sync-devices-btn',
     'force-sync-now-btn',
     'force-pull-cloud-btn'
   ]) {

@@ -429,8 +429,8 @@ test('Zero-Deletion Audit: Force Pull from Cloud and Data Backup & Migration coe
   assert.ok(settingsComp.includes('DataMigrationPanel'));
   assert.equal(DATA_BACKUP_MIGRATION_TITLE, 'Data Backup & Migration');
 
-  // Zero-deletion check: existing Settings controls remain intact
-  assert.ok(indexHtml.includes('id="toggle-auto-sync-devices-btn"'));
+  // Manual Auto-Sync toggle removed (always-on sync); existing Settings controls remain intact
+  assert.equal(indexHtml.includes('id="toggle-auto-sync-devices-btn"'), false);
   assert.ok(indexHtml.includes('id="toggle-adhd-view-btn"'));
   assert.ok(indexHtml.includes('id="toggle-dyslexia-view-btn"'));
   assert.ok(indexHtml.includes('id="toggle-sensory-calm-btn"'));

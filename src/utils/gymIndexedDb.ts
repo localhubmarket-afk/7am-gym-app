@@ -6,6 +6,8 @@ export const GYM_STATE_STORE = 'gym_state';
 export const SYNC_OUTBOX_STORE = 'sync_outbox';
 export const DEFAULT_GYM_STATE_RECORD_KEY = 'active_gym_state';
 
+export type SyncOutboxStatus = 'pending';
+
 export interface GymStateIndexedDbRecord {
   key: string;
   gymState: Record<string, any>;
@@ -15,11 +17,18 @@ export interface GymStateIndexedDbRecord {
 
 export interface SyncOutboxRecord {
   id: string;
+  seq: number;
+  createdAtMs: number;
+  status: SyncOutboxStatus;
+  actionType: string;
+  setKey?: string | null;
+  exerciseId?: string | null;
   endpoint: string;
   payloadJson: string;
   reason: string;
   queuedAt: string;
   lastUpdated: string;
+  attempts: number;
 }
 
 interface BudgetGymDbSchema extends DBSchema {
@@ -44,6 +53,59 @@ const memoryFallback: IndexedDbMemoryFallback = {
 };
 
 let dbPromise: Promise<IDBPDatabase<BudgetGymDbSchema>> | null = null;
+let monotonicOutboxSeq = 0;
+
+function allocateNextOutboxSeq(): number {
+  monotonicOutboxSeq += 1;
+  return monotonicOutboxSeq;
+}
+
+function normalizeOutboxRecord(raw: Partial<SyncOutboxRecord> & { id?: string }): SyncOutboxRecord {
+  const createdAtMs =
+    typeof raw.createdAtMs === 'number' && Number.isFinite(raw.createdAtMs)
+      ? raw.createdAtMs
+      : Date.parse(String(raw.queuedAt || raw.lastUpdated || '')) || Date.now();
+  const seq =
+    typeof raw.seq === 'number' && Number.isFinite(raw.seq) ? raw.seq : 0;
+  const nowIso = new Date(createdAtMs).toISOString();
+  return {
+    id: String(raw.id || `fifo_${createdAtMs}_${allocateNextOutboxSeq()}`),
+    seq,
+    createdAtMs,
+    status: 'pending',
+    actionType: String(raw.actionType || raw.reason || 'set_logged'),
+    setKey: raw.setKey ?? null,
+    exerciseId: raw.exerciseId ?? null,
+    endpoint: String(raw.endpoint || '').trim(),
+    payloadJson: String(raw.payloadJson || '{}'),
+    reason: String(raw.reason || raw.actionType || 'local_write'),
+    queuedAt: String(raw.queuedAt || nowIso),
+    lastUpdated: String(raw.lastUpdated || raw.queuedAt || nowIso),
+    attempts: typeof raw.attempts === 'number' && Number.isFinite(raw.attempts) ? raw.attempts : 0
+  };
+}
+
+export function sortSyncOutboxRecordsFifo<
+  T extends { createdAtMs?: number; seq?: number; queuedAt?: string; id?: string }
+>(records: T[]): T[] {
+  return [...records].sort((a, b) => {
+    const aMs =
+      typeof a.createdAtMs === 'number' && Number.isFinite(a.createdAtMs)
+        ? a.createdAtMs
+        : Date.parse(String(a.queuedAt || '')) || 0;
+    const bMs =
+      typeof b.createdAtMs === 'number' && Number.isFinite(b.createdAtMs)
+        ? b.createdAtMs
+        : Date.parse(String(b.queuedAt || '')) || 0;
+    if (aMs !== bMs) return aMs - bMs;
+
+    const aSeq = typeof a.seq === 'number' && Number.isFinite(a.seq) ? a.seq : 0;
+    const bSeq = typeof b.seq === 'number' && Number.isFinite(b.seq) ? b.seq : 0;
+    if (aSeq !== bSeq) return aSeq - bSeq;
+
+    return String(a.id || '').localeCompare(String(b.id || ''));
+  });
+}
 
 function canUseBrowserIndexedDB(): boolean {
   return typeof indexedDB !== 'undefined' && typeof indexedDB.open === 'function';
@@ -136,21 +198,53 @@ export async function loadGymStateFromIndexedDB(
   return memoryFallback.gymStateRecords.get(recordKey) || null;
 }
 
+/**
+ * Appends a unique pending FIFO record into the IndexedDB `sync_outbox` object store.
+ */
 export async function enqueueIndexedDbSyncItem(item: {
+  id?: string;
   endpoint: string;
   payloadJson: string;
   reason?: string;
+  actionType?: string;
+  setKey?: string | null;
+  exerciseId?: string | null;
   lastUpdated?: string;
+  queuedAt?: string;
+  createdAtMs?: number;
+  seq?: number;
+  status?: SyncOutboxStatus;
+  attempts?: number;
 }): Promise<SyncOutboxRecord> {
   const endpoint = String(item.endpoint || '').trim();
-  const nowIso = new Date().toISOString();
+  const createdAtMs =
+    typeof item.createdAtMs === 'number' && Number.isFinite(item.createdAtMs)
+      ? item.createdAtMs
+      : Date.now();
+  const seq =
+    typeof item.seq === 'number' && Number.isFinite(item.seq)
+      ? item.seq
+      : allocateNextOutboxSeq();
+  const nowIso = item.queuedAt || new Date(createdAtMs).toISOString();
+  const id =
+    item.id && String(item.id).trim()
+      ? String(item.id).trim()
+      : `fifo_${createdAtMs}_${seq}_${Math.random().toString(36).slice(2, 7)}`;
+
   const record: SyncOutboxRecord = {
-    id: `outbox:${endpoint || 'default'}`,
+    id,
+    seq,
+    createdAtMs,
+    status: 'pending',
+    actionType: String(item.actionType || item.reason || 'set_logged'),
+    setKey: item.setKey ?? null,
+    exerciseId: item.exerciseId ?? null,
     endpoint,
     payloadJson: String(item.payloadJson || '{}'),
-    reason: String(item.reason || 'local_write'),
+    reason: String(item.reason || item.actionType || 'local_write'),
     queuedAt: nowIso,
-    lastUpdated: String(item.lastUpdated || nowIso)
+    lastUpdated: String(item.lastUpdated || nowIso),
+    attempts: typeof item.attempts === 'number' && Number.isFinite(item.attempts) ? item.attempts : 0
   };
 
   memoryFallback.syncOutboxRecords.set(record.id, record);
@@ -166,17 +260,45 @@ export async function enqueueIndexedDbSyncItem(item: {
   return record;
 }
 
+export async function updateIndexedDbSyncItem(
+  record: SyncOutboxRecord
+): Promise<SyncOutboxRecord> {
+  const normalized = normalizeOutboxRecord(record);
+  memoryFallback.syncOutboxRecords.set(normalized.id, normalized);
+
+  const db = await getGymIndexedDb();
+  if (db) {
+    try {
+      await db.put(SYNC_OUTBOX_STORE, normalized);
+    } catch {
+      // Memory fallback already updated
+    }
+  }
+  return normalized;
+}
+
+/**
+ * Reads all pending records from IndexedDB `sync_outbox` in strict FIFO order.
+ */
 export async function getPendingIndexedDbSyncItems(): Promise<SyncOutboxRecord[]> {
+  let rawItems: SyncOutboxRecord[] = [];
   const db = await getGymIndexedDb();
   if (db) {
     try {
       const items = await db.getAll(SYNC_OUTBOX_STORE);
-      return Array.isArray(items) ? items : [];
+      rawItems = Array.isArray(items) ? items : [];
     } catch {
-      // Fall through to memory fallback
+      rawItems = Array.from(memoryFallback.syncOutboxRecords.values());
     }
+  } else {
+    rawItems = Array.from(memoryFallback.syncOutboxRecords.values());
   }
-  return Array.from(memoryFallback.syncOutboxRecords.values());
+
+  const pendingOnly = rawItems
+    .filter((entry) => entry && (!entry.status || entry.status === 'pending'))
+    .map((entry) => normalizeOutboxRecord(entry));
+
+  return sortSyncOutboxRecordsFifo(pendingOnly);
 }
 
 export async function removeIndexedDbSyncItem(id: string): Promise<void> {

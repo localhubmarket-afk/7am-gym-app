@@ -333,7 +333,6 @@ test('Zero Deletion Policy: index.html preserves all core buttons, modals, and n
     'smart-login-modal',
     'sync-settings-modal',
     'data-backup-migration-card',
-    'toggle-auto-sync-devices-btn',
     'force-sync-now-btn',
     'force-pull-cloud-btn',
     'toggle-warmup-btn',

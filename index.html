@@ -2778,6 +2778,8 @@
 
     let isLoginMergeInProgress = false;
 
+    let inlineFallbackOutboxSeq = 0;
+
     function queueStateToSyncOutboxLocal(actionType, meta) {
       const endpoint = getActiveCloudEndpoint();
       const setKey = meta && meta.setKey ? String(meta.setKey) : null;
@@ -2785,16 +2787,18 @@
       if (typeof window.enqueueSyncOutboxAction === 'function') {
         return window.enqueueSyncOutboxAction({
           stateObj: state,
-          actionType: actionType || 'set_done',
+          actionType: actionType || 'set_logged',
           endpoint,
           setKey,
           exerciseId,
           localStateStorageKey: STORAGE_KEY
         }).catch(() => null);
       }
-      // Inline fallback into localStorage['sync_outbox'] if ES module bridge has not hydrated yet
+      // Inline FIFO fallback into localStorage['sync_outbox'] if ES module bridge has not hydrated yet
       try {
-        const nowIso = new Date().toISOString();
+        const createdAtMs = Date.now();
+        inlineFallbackOutboxSeq += 1;
+        const nowIso = new Date(createdAtMs).toISOString();
         stampStateTimestampLocal(nowIso);
         const payloadJson = serializeStateWithoutUndoBackupLocal(state);
         localStorage.setItem(STORAGE_KEY, payloadJson);
@@ -2802,8 +2806,11 @@
         const existing = existingRaw ? JSON.parse(existingRaw) : [];
         const list = Array.isArray(existing) ? existing : [];
         list.push({
-          id: 'outbox_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-          actionType: actionType || 'set_done',
+          id: 'fifo_' + createdAtMs + '_' + inlineFallbackOutboxSeq + '_' + Math.random().toString(36).slice(2, 7),
+          seq: inlineFallbackOutboxSeq,
+          createdAtMs,
+          status: 'pending',
+          actionType: actionType || 'set_logged',
           setKey,
           exerciseId,
           endpoint: endpoint || '',
@@ -2812,32 +2819,30 @@
           queuedAt: nowIso,
           attempts: 0
         });
-        localStorage.setItem('sync_outbox', JSON.stringify(list.slice(-50)));
+        localStorage.setItem('sync_outbox', JSON.stringify(list.slice(-200)));
       } catch (_e) {}
       return Promise.resolve(null);
     }
 
     function autoSyncWorkoutToSupabaseLocal(reason, meta) {
       const syncReason = reason || 'set_logged';
+      const isDestructiveReset =
+        syncReason === 'start_fresh_reset' ||
+        syncReason === 'delete_all_weeks' ||
+        syncReason === 'day_reset' ||
+        syncReason === 'fuel_reset';
+
       // Respect Data Protection & Undo Engine 5-second delay window before pushing passive syncs.
       // Explicit undo_restore, confirmed day_reset, and confirmed start_fresh_reset pushes execute immediately.
       if (
         isDestructiveCloudPushDelayedLocal() &&
         syncReason !== 'undo_restore' &&
-        syncReason !== 'day_reset' &&
-        syncReason !== 'fuel_reset' &&
-        syncReason !== 'delete_all_weeks' &&
-        syncReason !== 'start_fresh_reset'
+        !isDestructiveReset
       ) {
         updateCloudSyncBadgeUI('paused_undo', 'Cloud push paused (5s undo window)...');
         return Promise.resolve({ synced: false, blockedByUndoGuard: true, blockedByEmptyStateGuard: false, reason: syncReason });
       }
-      if (
-        syncReason === 'start_fresh_reset' ||
-        syncReason === 'delete_all_weeks' ||
-        syncReason === 'day_reset' ||
-        syncReason === 'fuel_reset'
-      ) {
+      if (isDestructiveReset) {
         cancelDelayedDestructiveCloudPushLocal();
       }
       clearTimeout(cloudSyncTimeout);
@@ -2848,36 +2853,70 @@
         stampStateTimestampLocal(state.last_updated || state.updatedAt);
       }
 
+      // Explicit destructive reset paths use forceOverwrite push directly
+      if (isDestructiveReset) {
+        return pushStateToCloud(syncReason).then((res) => ({
+          synced: Boolean(res && res.saved !== false),
+          blockedByUndoGuard: false,
+          blockedByEmptyStateGuard: false,
+          reason: syncReason
+        }));
+      }
+
+      // Offline-First Dual-Write Rule:
+      // Simultaneously update local gym_state AND insert a status='pending' FIFO record into sync_outbox.
+      const enqueuePromise = queueStateToSyncOutboxLocal(syncReason, meta);
       const isOnlineNow = typeof navigator === 'undefined' || navigator.onLine !== false;
-      // Offline-First Rule (Step 3): if offline, in Guest Mode without a cloud endpoint, or during login merge pause,
-      // save directly to both local gym_state and sync_outbox so changes push automatically once online/signed in.
-      if (!isOnlineNow || isLoginMergeInProgress || !getActiveCloudEndpoint()) {
-        queueStateToSyncOutboxLocal(syncReason, meta);
-        updateCloudSyncBadgeUI('local_only', isOnlineNow ? 'Saved on this device' : 'Offline · Queued in Outbox');
+      const activeEndpoint = getActiveCloudEndpoint();
+
+      if (!isOnlineNow || isLoginMergeInProgress || !activeEndpoint) {
+        if (typeof window.notifyServiceWorkerToSync === 'function') {
+          enqueuePromise.then((queued) => {
+            if (queued && queued.item) {
+              window.notifyServiceWorkerToSync({ type: 'QUEUE_GYM_STATE_SYNC', item: queued.item });
+            }
+          }).catch(() => {});
+        }
+        updateCloudSyncBadgeUI('local_only', isOnlineNow ? 'Saved on this device' : 'Offline · Queued for sync');
         if (typeof updateOfflineConnectivityBannerUI === 'function') {
           updateOfflineConnectivityBannerUI();
         }
-        return Promise.resolve({ synced: false, queuedToOutbox: true, blockedByUndoGuard: false, blockedByEmptyStateGuard: false, reason: syncReason });
+        return enqueuePromise.then(() => ({
+          synced: false,
+          queuedToOutbox: true,
+          blockedByUndoGuard: false,
+          blockedByEmptyStateGuard: false,
+          reason: syncReason
+        }));
       }
 
-      const eng = getAutoSupabaseSyncEngineLocal();
-      if (eng && typeof eng.autoSyncWorkoutToSupabase === 'function') {
-        return eng.autoSyncWorkoutToSupabase(syncReason).then((res) => {
-          if (!res || !res.synced) {
-            queueStateToSyncOutboxLocal(syncReason, meta);
+      // Online with active endpoint: drain the FIFO sync_outbox to Supabase immediately in the background.
+      // Successful items are deleted from sync_outbox; failed items stay pending and pause FIFO until next online retry.
+      return enqueuePromise
+        .then(() => flushSyncOutboxAndNotifyLocal({ silent: true }))
+        .then((flushedCount) => {
+          const remaining = getPendingSyncOutboxCountLocal();
+          const didSync = flushedCount > 0 && remaining === 0;
+          if (didSync) {
+            updateCloudSyncBadgeUI('saved', '✓ Synced to cloud');
+          } else if (remaining > 0) {
+            updateCloudSyncBadgeUI('local_only', 'Queued · Will retry automatically');
           }
-          return res;
-        }).catch(() => {
-          queueStateToSyncOutboxLocal(syncReason, meta);
-          return { synced: false, queuedToOutbox: true, reason: syncReason };
-        });
-      }
-      return pushStateToCloud(syncReason).then((res) => {
-        if (!res || res.saved === false) {
-          queueStateToSyncOutboxLocal(syncReason, meta);
-        }
-        return { synced: Boolean(res && res.saved !== false), blockedByUndoGuard: false, blockedByEmptyStateGuard: false, reason: syncReason };
-      });
+          return {
+            synced: didSync,
+            queuedToOutbox: remaining > 0,
+            blockedByUndoGuard: false,
+            blockedByEmptyStateGuard: false,
+            reason: syncReason
+          };
+        })
+        .catch(() => ({
+          synced: false,
+          queuedToOutbox: true,
+          blockedByUndoGuard: false,
+          blockedByEmptyStateGuard: false,
+          reason: syncReason
+        }));
     }
     window.autoSyncWorkoutToSupabase = autoSyncWorkoutToSupabaseLocal;
 
@@ -3429,16 +3468,16 @@
     }
 
     function isAutoSyncDevicesEnabledLocal() {
+      // Always-on automatic background sync migration: automatically switch legacy off devices to ON
       if (typeof window.loadAutoSyncPreference === 'function') {
         return window.loadAutoSyncPreference();
       }
       try {
-        const raw = localStorage.getItem('budget_gym_auto_sync_enabled_v1');
-        if (raw === null) return true;
-        return raw !== 'false' && raw !== '0';
-      } catch (_err) {
-        return true;
-      }
+        if (localStorage.getItem('budget_gym_auto_sync_enabled_v1') !== 'true') {
+          localStorage.setItem('budget_gym_auto_sync_enabled_v1', 'true');
+        }
+      } catch (_err) {}
+      return true;
     }
 
     let isBootstrappingApp = true;
@@ -3474,36 +3513,15 @@
       if (typeof window.saveGymStateToIndexedDB === 'function') {
         window.saveGymStateToIndexedDB(state).catch(() => {});
       }
-      const autoSyncEnabledNow = isAutoSyncDevicesEnabledLocal();
-      if (!effectiveSkipCloud && !isPullingCloudTruth && !isLoginMergeInProgress && !isDestructiveCloudPushDelayedLocal() && autoSyncEnabledNow) {
+      if (!effectiveSkipCloud && !isPullingCloudTruth && !isLoginMergeInProgress && !isDestructiveCloudPushDelayedLocal()) {
         const isOnlineNow = typeof navigator === 'undefined' || navigator.onLine !== false;
+        const resolvedReason = syncReason || 'state_mutation';
         if (!isOnlineNow) {
-          queueStateToSyncOutboxLocal(syncReason || 'offline_local_save', null);
-          if (activeEndpoint && typeof window.persistGymStateLocalFirst === 'function') {
-            window.persistGymStateLocalFirst({
-              stateObj: state,
-              endpoint: activeEndpoint,
-              reason: syncReason || 'offline_local_save',
-              localStateStorageKey: STORAGE_KEY,
-              onlineOverride: false
-            }).then(() => {
-              if (typeof updateOfflineConnectivityBannerUI === 'function') {
-                updateOfflineConnectivityBannerUI();
-              }
-            }).catch(() => {});
-          } else if (activeEndpoint && typeof window.enqueueOfflineGymStateSync === 'function') {
-            window.enqueueOfflineGymStateSync({
-              stateObj: state,
-              endpoint: activeEndpoint,
-              reason: syncReason || 'offline_local_save',
-              localStateStorageKey: STORAGE_KEY
-            });
-            if (typeof updateOfflineConnectivityBannerUI === 'function') {
-              updateOfflineConnectivityBannerUI();
-            }
+          queueStateToSyncOutboxLocal(resolvedReason, null);
+          if (typeof updateOfflineConnectivityBannerUI === 'function') {
+            updateOfflineConnectivityBannerUI();
           }
         } else {
-          const resolvedReason = syncReason || 'state_mutation';
           if (window.__gymRealtimeSyncManager && typeof window.__gymRealtimeSyncManager.scheduleDebouncedPush === 'function') {
             clearTimeout(cloudSyncTimeout);
             cloudSyncTimeout = null;
@@ -3515,9 +3533,7 @@
               : 2000;
             cloudSyncTimeout = setTimeout(() => {
               cloudSyncTimeout = null;
-              if (isAutoSyncDevicesEnabledLocal()) {
-                autoSyncWorkoutToSupabaseLocal(resolvedReason);
-              }
+              autoSyncWorkoutToSupabaseLocal(resolvedReason);
             }, debounceDelay);
           }
         }
@@ -20601,7 +20617,13 @@
         };
 
         inp.value = '';
-        saveState();
+        saveState(true);
+        const firstAppliedIdx = applied.appliedSetIndices && applied.appliedSetIndices.length > 0 ? applied.appliedSetIndices[0] : 1;
+        const fastLogKeyIdx = exId === 'cable_ab_crunch' ? dayIdx : slotIdx;
+        autoSyncWorkoutToSupabaseLocal('set_logged', {
+          setKey: `w${week}_${fastLogKeyIdx}_${exId}_${firstAppliedIdx}`,
+          exerciseId: exId
+        });
         const cardAnchor = document.getElementById(`ex-card-${exId}`);
         if (typeof window.withStableViewportScroll === 'function') {
           window.withStableViewportScroll(cardAnchor, () => {
@@ -31422,27 +31444,14 @@
         </button>
       </div>
 
-      <!-- Real-Time Cloud Auto-Sync Control (Supabase Realtime Push/Pull + Offline Fallback + Force Sync Now) -->
-      <section id="auto-sync-devices-card" aria-label="Auto-Sync Devices" class="rounded-xl border border-sky-400/50 bg-slate-950/95 p-3 space-y-2.5">
-        <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-extrabold text-white">
-          <span>Auto-Sync Devices</span>
-          <span id="active-auto-sync-readout" role="status" aria-live="polite" class="rounded-md bg-green-100 px-2 py-0.5 text-[0.75rem] font-extrabold text-gray-900">Auto-Sync ON</span>
+      <!-- Always-On Offline-First Cloud Sync & Manual Backup Controls -->
+      <section id="auto-sync-devices-card" aria-label="Cloud Sync &amp; Backup" class="rounded-xl border border-sky-400/50 bg-slate-950/95 p-3 space-y-2.5">
+        <div class="space-y-1">
+          <h3 class="text-xs font-extrabold text-white">Cloud Sync &amp; Backup</h3>
+          <p id="auto-sync-devices-sublabel" class="text-[0.8125rem] text-slate-300 leading-relaxed">
+            Saves on this device first and syncs automatically to the cloud whenever you are online.
+          </p>
         </div>
-        <p id="auto-sync-devices-sublabel" class="text-[0.8125rem] text-slate-300 leading-relaxed">
-          Automatically saves your progress to the cloud and updates your other screens instantly.
-        </p>
-        <button
-          type="button"
-          id="toggle-auto-sync-devices-btn"
-          data-testid="toggle-auto-sync-devices-btn"
-          role="switch"
-          aria-checked="true"
-          aria-describedby="auto-sync-devices-sublabel"
-          class="btn-auto-sync-active w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-green-500 bg-green-700 hover:bg-green-800 text-white text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2"
-        >
-          <span>Auto-Sync Devices</span>
-          <span id="toggle-auto-sync-devices-status">ON — Tap to Turn Off</span>
-        </button>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <button
             type="button"
@@ -31463,7 +31472,7 @@
           </button>
         </div>
         <p id="auto-sync-status-message" role="status" aria-live="polite" class="text-[0.75rem] font-semibold text-slate-300 leading-relaxed">
-          Changes save automatically on this device and sync across your screens.
+          Automatic background sync is active. Offline sets upload in order when you reconnect.
         </p>
       </section>
 
@@ -32997,13 +33006,14 @@
         }
       }).catch(() => {});
 
-      // Start background sync listener so IndexedDB outbox flushes automatically when online
+      // Start background sync listener so IndexedDB FIFO outbox flushes automatically when online
       if (typeof window.startOfflineFirstBackgroundSync === 'function') {
         window.startOfflineFirstBackgroundSync({
+          resolveEndpoint: () => getActiveCloudEndpoint(),
           onSynced: ({ flushedCount }) => {
             updateOfflineConnectivityBannerUI();
             if (flushedCount > 0 && typeof showToast === 'function') {
-              showToast(`Synced ${flushedCount} offline workout update(s) in the background.`);
+              showToast(`Synced ${flushedCount} offline workout ${flushedCount === 1 ? 'update' : 'updates'} in the background.`);
             }
           },
           onStatusChange: () => {
@@ -33147,55 +33157,30 @@
       }
 
       function updateAutoSyncStatusReadoutUI(statusKey, statusMessage) {
-        const readout = document.getElementById('active-auto-sync-readout');
         const msgEl = document.getElementById('auto-sync-status-message');
-        const labelMap = {
-          connected: 'Live Sync Connected',
-          connecting: 'Connecting Live Sync...',
-          disconnected: 'Device-Only Fallback',
-          offline: 'Offline (Device Saved)',
-          disabled: 'Auto-Sync OFF',
-          local_only: 'Auto-Sync Ready'
-        };
-        if (readout) {
-          readout.textContent = labelMap[statusKey] || (isAutoSyncDevicesEnabledLocal() ? 'Auto-Sync ON' : 'Auto-Sync OFF');
-        }
         if (msgEl && statusMessage) {
           msgEl.textContent = statusMessage;
         }
       }
 
-      function applyAutoSyncDevicesUI(enabled) {
-        const clean = typeof window.saveAutoSyncPreference === 'function'
-          ? window.saveAutoSyncPreference(Boolean(enabled))
-          : (() => {
-              try {
-                localStorage.setItem('budget_gym_auto_sync_enabled_v1', enabled ? 'true' : 'false');
-              } catch (_err) {}
-              return Boolean(enabled);
-            })();
+      function applyAutoSyncDevicesUI() {
+        // Always-on background sync migration for all users (no manual toggle)
+        if (typeof window.saveAutoSyncPreference === 'function') {
+          window.saveAutoSyncPreference(true);
+        } else {
+          try {
+            localStorage.setItem('budget_gym_auto_sync_enabled_v1', 'true');
+          } catch (_err) {}
+        }
         if (typeof state === 'object' && state) {
-          state.isAutoSyncEnabled = clean;
-        }
-        const btn = document.getElementById('toggle-auto-sync-devices-btn');
-        const statusEl = document.getElementById('toggle-auto-sync-devices-status');
-        if (btn) {
-          btn.setAttribute('aria-checked', clean ? 'true' : 'false');
-          btn.className = clean
-            ? 'btn-auto-sync-active w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-green-500 bg-green-700 hover:bg-green-800 text-white text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2'
-            : 'w-full min-h-[48px] min-w-[48px] px-3 py-2.5 rounded-xl border border-slate-600 bg-slate-900 hover:bg-slate-800 text-slate-100 text-xs font-extrabold transition flex flex-wrap items-center justify-between gap-2';
-        }
-        if (statusEl) {
-          statusEl.textContent = clean ? 'ON — Tap to Turn Off' : 'OFF — Tap to Turn On';
+          state.isAutoSyncEnabled = true;
         }
         if (window.__gymRealtimeSyncManager && typeof window.__gymRealtimeSyncManager.setEnabled === 'function') {
-          window.__gymRealtimeSyncManager.setEnabled(clean);
+          window.__gymRealtimeSyncManager.setEnabled(true);
         } else {
           updateAutoSyncStatusReadoutUI(
-            clean ? 'local_only' : 'disabled',
-            clean
-              ? 'Changes save automatically on this device and sync across your screens.'
-              : 'Auto-Sync is off. Your progress stays saved on this device only.'
+            'local_only',
+            'Automatic background sync is active. Offline sets upload in order when you reconnect.'
           );
         }
       }
@@ -33250,11 +33235,7 @@
           }
         });
         window.__gymRealtimeSyncManager = manager;
-        if (manager.isEnabled()) {
-          manager.subscribe();
-        } else {
-          updateAutoSyncStatusReadoutUI('disabled', 'Auto-Sync is off. Your progress stays saved on this device only.');
-        }
+        manager.subscribe();
       }
 
       function syncSpecialLayoutReadoutUI() {
@@ -33476,21 +33457,6 @@
       }
       window.__strategicUpgradesListenersWired = true;
 
-      const autoSyncToggleBtn = document.getElementById('toggle-auto-sync-devices-btn');
-      if (autoSyncToggleBtn) {
-        autoSyncToggleBtn.addEventListener('click', () => {
-          const nextEnabled = !isAutoSyncDevicesEnabledLocal();
-          applyAutoSyncDevicesUI(nextEnabled);
-          if (typeof showToast === 'function') {
-            showToast(
-              nextEnabled
-                ? 'Auto-Sync Devices turned ON. Progress syncs across your screens.'
-                : 'Auto-Sync Devices turned OFF. Progress saves on this device only.'
-            );
-          }
-        });
-      }
-
       const forceSyncNowBtn = document.getElementById('force-sync-now-btn');
       if (forceSyncNowBtn) {
         forceSyncNowBtn.addEventListener('click', async () => {
@@ -33498,6 +33464,8 @@
           forceSyncNowBtn.disabled = true;
           forceSyncNowBtn.textContent = 'Syncing now...';
           try {
+            // Drain any pending FIFO sync_outbox items first before reconciling cloud state
+            await flushSyncOutboxAndNotifyLocal({ silent: true }).catch(() => 0);
             if (window.__gymRealtimeSyncManager && typeof window.__gymRealtimeSyncManager.forceSyncNow === 'function') {
               const res = await window.__gymRealtimeSyncManager.forceSyncNow();
               updateAutoSyncStatusReadoutUI(
@@ -33702,17 +33670,17 @@
       }
 
       window.addEventListener('online', () => {
-        if (window.__gymRealtimeSyncManager && isAutoSyncDevicesEnabledLocal()) {
+        if (window.__gymRealtimeSyncManager) {
           window.__gymRealtimeSyncManager.subscribe();
-          window.__gymRealtimeSyncManager.scheduleDebouncedPush(state, 'reconnect_sync');
         }
+        updateAutoSyncStatusReadoutUI('connected', 'Back online — syncing pending workout updates automatically.');
       });
 
       window.addEventListener('offline', () => {
         if (window.__gymRealtimeSyncManager) {
           window.__gymRealtimeSyncManager.unsubscribe();
         }
-        updateAutoSyncStatusReadoutUI('offline', 'Offline — saved safely on this device.');
+        updateAutoSyncStatusReadoutUI('offline', 'Offline — workouts save on this device and sync automatically when online.');
       });
 
       document.querySelectorAll('.theme-mode-choice-btn').forEach(btn => {

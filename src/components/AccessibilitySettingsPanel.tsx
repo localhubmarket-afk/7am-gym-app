@@ -67,14 +67,12 @@ export const AccessibilitySettingsPanel: React.FC<AccessibilitySettingsPanelProp
     isAdhdFriendlyView,
     isDyslexiaFriendlyView,
     isAdvancedSubjectiveEnabled,
-    isAutoSyncEnabled,
     setThemePreference,
     toggleOpenDyslexicFont,
     toggleSensoryCalm,
     toggleAdhdFriendlyView,
     toggleDyslexiaFriendlyView,
-    toggleAdvancedSubjective,
-    toggleAutoSyncEnabled
+    toggleAdvancedSubjective
   } = useAccessibilityTheme();
 
   return (
@@ -83,8 +81,6 @@ export const AccessibilitySettingsPanel: React.FC<AccessibilitySettingsPanelProp
       className={`rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 space-y-4 text-[var(--text-primary)] ${className}`.trim()}
     >
       <AutoSyncSettingsControl
-        isAutoSyncEnabled={isAutoSyncEnabled}
-        onToggleAutoSync={toggleAutoSyncEnabled}
         onForceSyncNow={onForceSyncNow}
         onForcePullFromCloud={onForcePullFromCloud}
         connectionStatus={realtimeStatus}

@@ -18,9 +18,10 @@ export const AUTO_SYNC_STORAGE_KEY = 'budget_gym_auto_sync_enabled_v1';
 export const AUTO_SYNC_DEBOUNCE_MS = 2000;
 export const DEFAULT_AUTO_SYNC_ENABLED = true;
 
-export const AUTO_SYNC_TOGGLE_LABEL = 'Auto-Sync Devices';
+export const CLOUD_SYNC_SECTION_LABEL = 'Cloud Sync & Backup';
+export const AUTO_SYNC_TOGGLE_LABEL = 'Cloud Sync & Backup';
 export const AUTO_SYNC_TOGGLE_SUBLABEL =
-  'Automatically saves your progress to the cloud and updates your other screens instantly.';
+  'Saves on this device first and syncs automatically to the cloud whenever you are online.';
 export const FORCE_SYNC_NOW_LABEL = 'Force Sync Now';
 export { FORCE_PULL_CLOUD_LABEL };
 
@@ -113,41 +114,44 @@ export function createDebounce<TArgs extends any[]>(
   };
 }
 
-export function normalizeAutoSyncPreference(raw: unknown): boolean {
-  if (typeof raw === 'boolean') return raw;
-  if (raw === null || raw === undefined || raw === '') return DEFAULT_AUTO_SYNC_ENABLED;
-  const s = String(raw).trim().toLowerCase();
-  if (s === 'false' || s === '0' || s === 'off' || s === 'disabled') return false;
-  if (s === 'true' || s === '1' || s === 'on' || s === 'enabled') return true;
-  return DEFAULT_AUTO_SYNC_ENABLED;
+/**
+ * Always-on background sync migration: automatic sync is permanently enabled
+ * for all devices so workout logs are never trapped in local storage.
+ */
+export function normalizeAutoSyncPreference(_raw: unknown): boolean {
+  return true;
 }
 
-export function loadAutoSyncPreference(storage?: Pick<Storage, 'getItem'> | null): boolean {
-  try {
-    const store = storage ?? (typeof localStorage !== 'undefined' ? localStorage : null);
-    if (!store) return DEFAULT_AUTO_SYNC_ENABLED;
-    const raw = store.getItem(AUTO_SYNC_STORAGE_KEY);
-    if (raw === null) return DEFAULT_AUTO_SYNC_ENABLED;
-    return normalizeAutoSyncPreference(raw);
-  } catch {
-    return DEFAULT_AUTO_SYNC_ENABLED;
-  }
-}
-
-export function saveAutoSyncPreference(
-  enabled: boolean,
-  storage?: Pick<Storage, 'setItem'> | null
+export function loadAutoSyncPreference(
+  storage?: Pick<Storage, 'getItem'> & Partial<Pick<Storage, 'setItem'>> | null
 ): boolean {
-  const clean = Boolean(enabled);
   try {
     const store = storage ?? (typeof localStorage !== 'undefined' ? localStorage : null);
     if (store) {
-      store.setItem(AUTO_SYNC_STORAGE_KEY, clean ? 'true' : 'false');
+      const raw = store.getItem(AUTO_SYNC_STORAGE_KEY);
+      if (raw !== 'true' && typeof store.setItem === 'function') {
+        store.setItem(AUTO_SYNC_STORAGE_KEY, 'true');
+      }
     }
   } catch {
     // Ignore storage restrictions
   }
-  return clean;
+  return true;
+}
+
+export function saveAutoSyncPreference(
+  _enabled: boolean,
+  storage?: Pick<Storage, 'setItem'> | null
+): boolean {
+  try {
+    const store = storage ?? (typeof localStorage !== 'undefined' ? localStorage : null);
+    if (store) {
+      store.setItem(AUTO_SYNC_STORAGE_KEY, 'true');
+    }
+  } catch {
+    // Ignore storage restrictions
+  }
+  return true;
 }
 
 export interface GymStateRowPayload<T extends GymStateTimestamped = GymStateTimestamped> {

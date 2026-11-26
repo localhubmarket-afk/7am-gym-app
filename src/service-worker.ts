@@ -4,8 +4,8 @@ declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST?: Array<{ url: string; revision?: string | null } | string>;
 };
 
-export const APP_SHELL_CACHE = 'budget-gym-shell-v9';
-export const STATIC_ASSET_CACHE = 'budget-gym-assets-v9';
+export const APP_SHELL_CACHE = 'budget-gym-shell-v11';
+export const STATIC_ASSET_CACHE = 'budget-gym-assets-v11';
 export const GYM_SYNC_TAG = 'sync-gym-state';
 export const GYM_IDB_NAME = 'budget_gym_offline_db';
 export const GYM_IDB_VERSION = 1;
@@ -24,11 +24,18 @@ export const APP_SHELL_ASSETS: string[] = [
 
 interface OutboxItem {
   id: string;
+  seq?: number;
+  createdAtMs?: number;
+  status?: 'pending';
+  actionType?: string;
+  setKey?: string | null;
+  exerciseId?: string | null;
   endpoint: string;
   payloadJson: string;
   reason?: string;
   queuedAt?: string;
   lastUpdated?: string;
+  attempts?: number;
 }
 
 const INJECTED_WB_MANIFEST = self.__WB_MANIFEST;
@@ -44,6 +51,26 @@ function getPrecacheUrls(): string[] {
     }
   }
   return Array.from(urls);
+}
+
+function sortOutboxFifo(items: OutboxItem[]): OutboxItem[] {
+  return [...items].sort((a, b) => {
+    const aMs =
+      typeof a.createdAtMs === 'number' && Number.isFinite(a.createdAtMs)
+        ? a.createdAtMs
+        : Date.parse(String(a.queuedAt || '')) || 0;
+    const bMs =
+      typeof b.createdAtMs === 'number' && Number.isFinite(b.createdAtMs)
+        ? b.createdAtMs
+        : Date.parse(String(b.queuedAt || '')) || 0;
+    if (aMs !== bMs) return aMs - bMs;
+
+    const aSeq = typeof a.seq === 'number' && Number.isFinite(a.seq) ? a.seq : 0;
+    const bSeq = typeof b.seq === 'number' && Number.isFinite(b.seq) ? b.seq : 0;
+    if (aSeq !== bSeq) return aSeq - bSeq;
+
+    return String(a.id || '').localeCompare(String(b.id || ''));
+  });
 }
 
 function openOutboxDatabase(): Promise<IDBDatabase> {
@@ -66,12 +93,14 @@ function openOutboxDatabase(): Promise<IDBDatabase> {
 async function readIndexedDbOutbox(): Promise<OutboxItem[]> {
   try {
     const db = await openOutboxDatabase();
-    return await new Promise<OutboxItem[]>((resolve) => {
+    const all = await new Promise<OutboxItem[]>((resolve) => {
       const tx = db.transaction(SYNC_OUTBOX_STORE, 'readonly');
       const req = tx.objectStore(SYNC_OUTBOX_STORE).getAll();
       req.onsuccess = () => resolve(Array.isArray(req.result) ? req.result : []);
       req.onerror = () => resolve([]);
     });
+    const pending = all.filter((entry) => entry && (!entry.status || entry.status === 'pending'));
+    return sortOutboxFifo(pending);
   } catch {
     return [];
   }
@@ -115,33 +144,55 @@ async function pushPendingGymStateToSupabase(): Promise<{
   }
 
   let flushedCount = 0;
-  let remainingCount = 0;
 
+  // Strict FIFO processing: stop immediately on any failure to preserve exact order.
   for (const item of pending) {
-    if (!item || !item.endpoint) {
-      if (item?.id) await deleteIndexedDbOutboxItem(item.id);
-      continue;
+    const endpoint = String(item?.endpoint || '').trim();
+    if (!endpoint || endpoint === 'pending_endpoint') {
+      break;
     }
     try {
-      const isApi = String(item.endpoint).includes('/api/state');
-      const response = await fetch(item.endpoint, {
-        method: 'POST',
+      const isApi = endpoint.includes('/api/state');
+      const isFirebase = endpoint.includes('firebaseio.com') || endpoint.endsWith('.json');
+      const response = await fetch(endpoint, {
+        method: isFirebase ? 'PUT' : 'POST',
         cache: 'no-store',
         headers: {
           'Content-Type': isApi ? 'application/json' : 'text/plain;charset=utf-8'
         },
         body: item.payloadJson
       });
-      if (response && response.ok) {
-        flushedCount += 1;
-        await deleteIndexedDbOutboxItem(item.id);
-      } else {
-        remainingCount += 1;
+      if (!response || !response.ok) {
+        await putIndexedDbOutboxItem({
+          ...item,
+          status: 'pending',
+          attempts: Number(item.attempts || 0) + 1
+        });
+        break;
       }
+      const json = await response.json().catch(() => ({}));
+      if (json && (json.configured === false || json.saved === false)) {
+        await putIndexedDbOutboxItem({
+          ...item,
+          status: 'pending',
+          attempts: Number(item.attempts || 0) + 1
+        });
+        break;
+      }
+      flushedCount += 1;
+      await deleteIndexedDbOutboxItem(item.id);
     } catch {
-      remainingCount += 1;
+      await putIndexedDbOutboxItem({
+        ...item,
+        status: 'pending',
+        attempts: Number(item.attempts || 0) + 1
+      });
+      break;
     }
   }
+
+  const afterPending = await readIndexedDbOutbox();
+  const remainingCount = afterPending.length;
 
   if (flushedCount > 0) {
     const clients = await self.clients.matchAll({
@@ -204,14 +255,26 @@ self.addEventListener('message', (event) => {
     return;
   }
 
-  if (data.type === 'QUEUE_GYM_STATE_SYNC' && data.item && data.item.endpoint) {
+  if (data.type === 'QUEUE_GYM_STATE_SYNC' && data.item) {
+    const nowMs =
+      typeof data.item.createdAtMs === 'number' && Number.isFinite(data.item.createdAtMs)
+        ? data.item.createdAtMs
+        : Date.now();
+    const nowIso = String(data.item.queuedAt || new Date(nowMs).toISOString());
     const item: OutboxItem = {
-      id: String(data.item.id || `outbox:${data.item.endpoint}`),
-      endpoint: String(data.item.endpoint),
+      id: String(data.item.id || `fifo_${nowMs}_${Math.random().toString(36).slice(2, 7)}`),
+      seq: typeof data.item.seq === 'number' ? data.item.seq : 0,
+      createdAtMs: nowMs,
+      status: 'pending',
+      actionType: String(data.item.actionType || data.item.reason || 'set_logged'),
+      setKey: data.item.setKey || null,
+      exerciseId: data.item.exerciseId || null,
+      endpoint: String(data.item.endpoint || 'pending_endpoint'),
       payloadJson: String(data.item.payloadJson || '{}'),
       reason: String(data.item.reason || 'sw_message'),
-      queuedAt: String(data.item.queuedAt || new Date().toISOString()),
-      lastUpdated: String(data.item.lastUpdated || new Date().toISOString())
+      queuedAt: nowIso,
+      lastUpdated: String(data.item.lastUpdated || nowIso),
+      attempts: Number(data.item.attempts || 0)
     };
     event.waitUntil(putIndexedDbOutboxItem(item));
     return;

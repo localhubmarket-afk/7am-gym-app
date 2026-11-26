@@ -1,5 +1,5 @@
-const APP_SHELL_CACHE = 'budget-gym-shell-v10';
-const STATIC_ASSET_CACHE = 'budget-gym-assets-v10';
+const APP_SHELL_CACHE = 'budget-gym-shell-v11';
+const STATIC_ASSET_CACHE = 'budget-gym-assets-v11';
 const GYM_SYNC_TAG = 'sync-gym-state';
 const GYM_IDB_NAME = 'budget_gym_offline_db';
 const GYM_IDB_VERSION = 1;
@@ -38,15 +38,37 @@ function openOutboxDatabase() {
   });
 }
 
+function sortOutboxFifo(items) {
+  return [...items].sort((a, b) => {
+    const aMs =
+      typeof a.createdAtMs === 'number' && Number.isFinite(a.createdAtMs)
+        ? a.createdAtMs
+        : Date.parse(String(a.queuedAt || '')) || 0;
+    const bMs =
+      typeof b.createdAtMs === 'number' && Number.isFinite(b.createdAtMs)
+        ? b.createdAtMs
+        : Date.parse(String(b.queuedAt || '')) || 0;
+    if (aMs !== bMs) return aMs - bMs;
+
+    const aSeq = typeof a.seq === 'number' && Number.isFinite(a.seq) ? a.seq : 0;
+    const bSeq = typeof b.seq === 'number' && Number.isFinite(b.seq) ? b.seq : 0;
+    if (aSeq !== bSeq) return aSeq - bSeq;
+
+    return String(a.id || '').localeCompare(String(b.id || ''));
+  });
+}
+
 async function readIndexedDbOutbox() {
   try {
     const db = await openOutboxDatabase();
-    return await new Promise((resolve) => {
+    const all = await new Promise((resolve) => {
       const tx = db.transaction(SYNC_OUTBOX_STORE, 'readonly');
       const req = tx.objectStore(SYNC_OUTBOX_STORE).getAll();
       req.onsuccess = () => resolve(Array.isArray(req.result) ? req.result : []);
       req.onerror = () => resolve([]);
     });
+    const pending = all.filter((entry) => entry && (!entry.status || entry.status === 'pending'));
+    return sortOutboxFifo(pending);
   } catch {
     return [];
   }
@@ -76,37 +98,62 @@ async function deleteIndexedDbOutboxItem(id) {
   } catch {}
 }
 
-async function flushSwSyncQueue() {
+let activeSwFlushPromise = null;
+
+async function runSwFifoFlush() {
   const pending = await readIndexedDbOutbox();
   if (!pending.length) return;
   let flushedCount = 0;
-  let remainingCount = 0;
 
+  // Strict FIFO processing: upload oldest pending record first.
+  // Delete on verified Supabase upload; on any failure keep pending and STOP immediately.
   for (const item of pending) {
-    if (!item || !item.endpoint) {
-      if (item && item.id) await deleteIndexedDbOutboxItem(item.id);
-      continue;
+    const endpoint = String((item && item.endpoint) || '').trim();
+    if (!endpoint || endpoint === 'pending_endpoint') {
+      break;
     }
     try {
-      const isApi = String(item.endpoint || '').includes('/api/state');
-      const res = await fetch(item.endpoint, {
-        method: 'POST',
+      const isApi = endpoint.includes('/api/state');
+      const isFirebase = endpoint.includes('firebaseio.com') || endpoint.endsWith('.json');
+      const res = await fetch(endpoint, {
+        method: isFirebase ? 'PUT' : 'POST',
         cache: 'no-store',
         headers: {
           'Content-Type': isApi ? 'application/json' : 'text/plain;charset=utf-8'
         },
         body: item.payloadJson
       });
-      if (res && res.ok) {
-        flushedCount += 1;
-        await deleteIndexedDbOutboxItem(item.id);
-      } else {
-        remainingCount += 1;
+      if (!res || !res.ok) {
+        await putIndexedDbOutboxItem({
+          ...item,
+          status: 'pending',
+          attempts: Number(item.attempts || 0) + 1
+        });
+        break;
       }
+      const json = await res.json().catch(() => ({}));
+      if (json && (json.configured === false || json.saved === false)) {
+        await putIndexedDbOutboxItem({
+          ...item,
+          status: 'pending',
+          attempts: Number(item.attempts || 0) + 1
+        });
+        break;
+      }
+      flushedCount += 1;
+      await deleteIndexedDbOutboxItem(item.id);
     } catch {
-      remainingCount += 1;
+      await putIndexedDbOutboxItem({
+        ...item,
+        status: 'pending',
+        attempts: Number(item.attempts || 0) + 1
+      });
+      break;
     }
   }
+
+  const afterPending = await readIndexedDbOutbox();
+  const remainingCount = afterPending.length;
 
   if (flushedCount > 0) {
     const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
@@ -118,6 +165,15 @@ async function flushSwSyncQueue() {
       });
     });
   }
+}
+
+function flushSwSyncQueue() {
+  if (!activeSwFlushPromise) {
+    activeSwFlushPromise = runSwFifoFlush().finally(() => {
+      activeSwFlushPromise = null;
+    });
+  }
+  return activeSwFlushPromise;
 }
 
 self.addEventListener('install', (event) => {
@@ -152,15 +208,27 @@ self.addEventListener('message', (event) => {
   if (!data || typeof data !== 'object') return;
   if (data.type === 'SKIP_WAITING') {
     self.skipWaiting();
-  } else if (data.type === 'QUEUE_GYM_STATE_SYNC' && data.item && data.item.endpoint) {
+  } else if (data.type === 'QUEUE_GYM_STATE_SYNC' && data.item) {
+    const nowMs =
+      typeof data.item.createdAtMs === 'number' && Number.isFinite(data.item.createdAtMs)
+        ? data.item.createdAtMs
+        : Date.now();
+    const nowIso = String(data.item.queuedAt || new Date(nowMs).toISOString());
     event.waitUntil(
       putIndexedDbOutboxItem({
-        id: String(data.item.id || `outbox:${data.item.endpoint}`),
-        endpoint: String(data.item.endpoint),
+        id: String(data.item.id || `fifo_${nowMs}_${Math.random().toString(36).slice(2, 7)}`),
+        seq: typeof data.item.seq === 'number' ? data.item.seq : 0,
+        createdAtMs: nowMs,
+        status: 'pending',
+        actionType: String(data.item.actionType || data.item.reason || 'set_logged'),
+        setKey: data.item.setKey || null,
+        exerciseId: data.item.exerciseId || null,
+        endpoint: String(data.item.endpoint || 'pending_endpoint'),
         payloadJson: String(data.item.payloadJson || '{}'),
         reason: String(data.item.reason || 'sw_message'),
-        queuedAt: String(data.item.queuedAt || new Date().toISOString()),
-        lastUpdated: String(data.item.lastUpdated || new Date().toISOString())
+        queuedAt: nowIso,
+        lastUpdated: String(data.item.lastUpdated || nowIso),
+        attempts: Number(data.item.attempts || 0)
       })
     );
   } else if (data.type === 'FLUSH_GYM_STATE_SYNC') {

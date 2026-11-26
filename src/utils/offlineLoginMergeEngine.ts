@@ -3,8 +3,13 @@ import {
   enqueueIndexedDbSyncItem,
   getPendingIndexedDbSyncItems,
   removeIndexedDbSyncItem,
-  saveGymStateToIndexedDB
+  saveGymStateToIndexedDB,
+  sortSyncOutboxRecordsFifo,
+  updateIndexedDbSyncItem,
+  type SyncOutboxRecord,
+  type SyncOutboxStatus
 } from './gymIndexedDb';
+import { notifyServiceWorkerToSync } from './offlineFirstSync';
 import { isNetworkOnline, type StorageAdapter } from './offlineSyncQueue';
 import { serializeStateForPersistence } from './workoutLogic';
 import {
@@ -20,6 +25,9 @@ export const SYNC_CONFLICT_MODAL_QUESTION =
 
 export interface SyncOutboxActionItem {
   id: string;
+  seq: number;
+  createdAtMs: number;
+  status: SyncOutboxStatus;
   actionType: string;
   setKey?: string | null;
   exerciseId?: string | null;
@@ -79,6 +87,15 @@ export interface FlushSyncOutboxResult {
   remainingCount: number;
   syncedAtIso: string | null;
   lastError: string | null;
+  stoppedOnError: boolean;
+}
+
+let activeOutboxFlushLock: Promise<FlushSyncOutboxResult> | null = null;
+let outboxActionSeq = 0;
+
+function allocateActionSeq(): number {
+  outboxActionSeq += 1;
+  return outboxActionSeq;
 }
 
 function getDefaultStorage(): StorageAdapter | null {
@@ -228,7 +245,6 @@ export function evaluatePreLoginSyncStrategy(options: {
     cloudUpdatedAtMs
   };
 
-  // No cloud profile exists at all
   if (!options.cloudState || typeof options.cloudState !== 'object') {
     if (localInv.totalCount > 0 || options.hasPendingOutboxItems || localUpdatedAtMs > 0) {
       return {
@@ -246,7 +262,6 @@ export function evaluatePreLoginSyncStrategy(options: {
     };
   }
 
-  // Local has completed workouts while cloud profile is blank -> Local ALWAYS wins (never wipe local!)
   if (localInv.totalCount > 0 && cloudInv.totalCount === 0) {
     return {
       ...baseMeta,
@@ -256,7 +271,6 @@ export function evaluatePreLoginSyncStrategy(options: {
     };
   }
 
-  // Local has zero completed workouts while cloud has saved workouts -> Safe cloud download
   if (localInv.totalCount === 0 && cloudInv.totalCount > 0) {
     return {
       ...baseMeta,
@@ -266,7 +280,6 @@ export function evaluatePreLoginSyncStrategy(options: {
     };
   }
 
-  // Major conflict: BOTH phone and cloud contain different completed sets
   if (uniqueLocalSetKeys.length > 0 && uniqueCloudSetKeys.length > 0) {
     return {
       ...baseMeta,
@@ -276,7 +289,6 @@ export function evaluatePreLoginSyncStrategy(options: {
     };
   }
 
-  // Local contains strictly additional completed sets beyond cloud -> Local Wins
   if (uniqueLocalSetKeys.length > 0 && uniqueCloudSetKeys.length === 0) {
     return {
       ...baseMeta,
@@ -286,7 +298,6 @@ export function evaluatePreLoginSyncStrategy(options: {
     };
   }
 
-  // Cloud contains strictly additional completed sets beyond local -> Cloud Wins
   if (uniqueCloudSetKeys.length > 0 && uniqueLocalSetKeys.length === 0) {
     return {
       ...baseMeta,
@@ -296,8 +307,10 @@ export function evaluatePreLoginSyncStrategy(options: {
     };
   }
 
-  // Identical completed sets: break tie with updatedAt timestamp (local wins ties when outbox pending)
-  if (localUpdatedAtMs > cloudUpdatedAtMs || (options.hasPendingOutboxItems && localUpdatedAtMs >= cloudUpdatedAtMs)) {
+  if (
+    localUpdatedAtMs > cloudUpdatedAtMs ||
+    (options.hasPendingOutboxItems && localUpdatedAtMs >= cloudUpdatedAtMs)
+  ) {
     return {
       ...baseMeta,
       decision: 'local_wins',
@@ -430,8 +443,31 @@ export function loadConflictBackupSnapshot(
   return null;
 }
 
+function normalizeActionItem(raw: Partial<SyncOutboxActionItem>): SyncOutboxActionItem {
+  const createdAtMs =
+    typeof raw.createdAtMs === 'number' && Number.isFinite(raw.createdAtMs)
+      ? raw.createdAtMs
+      : Date.parse(String(raw.queuedAt || raw.updatedAt || '')) || Date.now();
+  const seq = typeof raw.seq === 'number' && Number.isFinite(raw.seq) ? raw.seq : 0;
+  const fallbackIso = new Date(createdAtMs).toISOString();
+  return {
+    id: String(raw.id || `fifo_${createdAtMs}_${allocateActionSeq()}`),
+    seq,
+    createdAtMs,
+    status: 'pending',
+    actionType: String(raw.actionType || 'set_logged'),
+    setKey: raw.setKey ?? null,
+    exerciseId: raw.exerciseId ?? null,
+    endpoint: String(raw.endpoint || '').trim(),
+    payloadJson: String(raw.payloadJson || '{}'),
+    updatedAt: String(raw.updatedAt || fallbackIso),
+    queuedAt: String(raw.queuedAt || fallbackIso),
+    attempts: typeof raw.attempts === 'number' && Number.isFinite(raw.attempts) ? raw.attempts : 0
+  };
+}
+
 /**
- * Step 3: `sync_outbox` Queue Helpers (localStorage `sync_outbox` + IndexedDB `sync_outbox`)
+ * Step 3: `sync_outbox` Queue Helpers (IndexedDB `sync_outbox` + localStorage `sync_outbox` mirror)
  */
 export function readSyncOutbox(storage?: StorageAdapter | null): SyncOutboxActionItem[] {
   const store = storage ?? getDefaultStorage();
@@ -440,7 +476,11 @@ export function readSyncOutbox(storage?: StorageAdapter | null): SyncOutboxActio
     const raw = store.getItem(SYNC_OUTBOX_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    const pending = parsed
+      .filter((entry) => entry && (!entry.status || entry.status === 'pending'))
+      .map((entry) => normalizeActionItem(entry));
+    return sortSyncOutboxRecordsFifo(pending);
   } catch {
     return [];
   }
@@ -461,7 +501,8 @@ export function writeSyncOutbox(
       }
       return;
     }
-    store.setItem(SYNC_OUTBOX_STORAGE_KEY, JSON.stringify(items.slice(-50)));
+    const ordered = sortSyncOutboxRecordsFifo(items).slice(-200);
+    store.setItem(SYNC_OUTBOX_STORAGE_KEY, JSON.stringify(ordered));
   } catch {
     // Ignore storage quota errors
   }
@@ -476,6 +517,11 @@ export async function clearSyncOutbox(storage?: StorageAdapter | null): Promise<
   }
 }
 
+/**
+ * Dual-Write Logging Action:
+ * Simultaneously updates the local `gym_state` database (localStorage + IndexedDB)
+ * AND inserts a distinct pending FIFO record (`status: 'pending'`) into `sync_outbox`.
+ */
 export async function enqueueSyncOutboxAction(options: {
   stateObj: Record<string, any>;
   actionType: string;
@@ -485,16 +531,24 @@ export async function enqueueSyncOutboxAction(options: {
   localStateStorageKey?: string | null;
   storage?: StorageAdapter | null;
   nowIso?: string;
+  createdAtMs?: number;
 }): Promise<{
   item: SyncOutboxActionItem;
   queueLength: number;
   savedLocally: boolean;
 }> {
   const store = options.storage ?? getDefaultStorage();
-  const nowIso = options.nowIso || new Date().toISOString();
+  const createdAtMs =
+    typeof options.createdAtMs === 'number' && Number.isFinite(options.createdAtMs)
+      ? options.createdAtMs
+      : options.nowIso
+        ? Date.parse(options.nowIso) || Date.now()
+        : Date.now();
+  const nowIso = options.nowIso || new Date(createdAtMs).toISOString();
   const stamped = stampGymStateLastUpdated({ ...(options.stateObj || {}) }, nowIso);
   const payloadJson = serializeStateForPersistence(stamped);
 
+  // Action 1: Immediately persist local gym_state to localStorage + IndexedDB
   let savedLocally = false;
   if (store && options.localStateStorageKey) {
     try {
@@ -505,17 +559,16 @@ export async function enqueueSyncOutboxAction(options: {
     }
   }
 
-  try {
-    await saveGymStateToIndexedDB(stamped);
-    savedLocally = true;
-  } catch {
-    // localStorage mirror remains authoritative
-  }
-
   const endpoint = String(options.endpoint || '').trim();
+  const seq = allocateActionSeq();
+  const sharedId = `fifo_${createdAtMs}_${seq}_${Math.random().toString(36).slice(2, 7)}`;
+
   const item: SyncOutboxActionItem = {
-    id: `outbox_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    actionType: String(options.actionType || 'set_done'),
+    id: sharedId,
+    seq,
+    createdAtMs,
+    status: 'pending',
+    actionType: String(options.actionType || 'set_logged'),
     setKey: options.setKey || null,
     exerciseId: options.exerciseId || null,
     endpoint,
@@ -525,23 +578,41 @@ export async function enqueueSyncOutboxAction(options: {
     attempts: 0
   };
 
+  // Action 2: Append FIFO pending record to localStorage sync_outbox mirror & IndexedDB sync_outbox simultaneously
   const currentQueue = readSyncOutbox(store);
-  // Keep full action audit trail (capped at 50) while replacing older duplicate entries for the same setKey
-  const nextQueue = currentQueue.filter(
-    (entry) => !(item.setKey && entry.setKey === item.setKey && entry.actionType === item.actionType)
-  );
-  nextQueue.push(item);
+  const nextQueue = sortSyncOutboxRecordsFifo([...currentQueue, item]);
   writeSyncOutbox(nextQueue, store);
 
-  try {
-    await enqueueIndexedDbSyncItem({
+  let idbRecord: SyncOutboxRecord | null = null;
+  const [gymStateRes, idbOutboxRes] = await Promise.allSettled([
+    saveGymStateToIndexedDB(stamped),
+    enqueueIndexedDbSyncItem({
+      id: sharedId,
+      seq,
+      createdAtMs,
+      status: 'pending',
+      actionType: item.actionType,
+      setKey: item.setKey,
+      exerciseId: item.exerciseId,
       endpoint: endpoint || 'pending_endpoint',
       payloadJson,
       reason: item.actionType,
-      lastUpdated: nowIso
-    });
-  } catch {
-    // localStorage sync_outbox holds the authoritative queue
+      queuedAt: nowIso,
+      lastUpdated: nowIso,
+      attempts: 0
+    })
+  ]);
+
+  if (gymStateRes.status === 'fulfilled') {
+    savedLocally = true;
+  }
+  if (idbOutboxRes.status === 'fulfilled') {
+    idbRecord = idbOutboxRes.value;
+  }
+
+  // Register Service Worker Background Sync when offline so browser wakes up on reconnect
+  if (!isNetworkOnline() && idbRecord) {
+    notifyServiceWorkerToSync({ type: 'QUEUE_GYM_STATE_SYNC', item: idbRecord });
   }
 
   return {
@@ -551,12 +622,44 @@ export async function enqueueSyncOutboxAction(options: {
   };
 }
 
-/**
- * Flushes all queued changes in `sync_outbox` (and IndexedDB outbox) to Supabase
- * when the device reconnects. Consolidates to the freshest state snapshot so no
- * out-of-order stale write can regress a newer offline set.
- */
-export async function flushSyncOutboxToSupabase(options?: {
+function buildMergedFifoQueue(
+  lsQueue: SyncOutboxActionItem[],
+  idbQueue: SyncOutboxRecord[]
+): SyncOutboxActionItem[] {
+  const byId = new Map<string, SyncOutboxActionItem>();
+
+  for (const idbItem of idbQueue) {
+    if (!idbItem || (idbItem.status && idbItem.status !== 'pending')) continue;
+    byId.set(
+      idbItem.id,
+      normalizeActionItem({
+        id: idbItem.id,
+        seq: idbItem.seq,
+        createdAtMs: idbItem.createdAtMs,
+        status: 'pending',
+        actionType: idbItem.actionType || idbItem.reason,
+        setKey: idbItem.setKey ?? null,
+        exerciseId: idbItem.exerciseId ?? null,
+        endpoint: idbItem.endpoint === 'pending_endpoint' ? '' : idbItem.endpoint,
+        payloadJson: idbItem.payloadJson,
+        updatedAt: idbItem.lastUpdated,
+        queuedAt: idbItem.queuedAt,
+        attempts: idbItem.attempts
+      })
+    );
+  }
+
+  for (const lsItem of lsQueue) {
+    if (!lsItem || (lsItem.status && lsItem.status !== 'pending')) continue;
+    if (!byId.has(lsItem.id)) {
+      byId.set(lsItem.id, normalizeActionItem(lsItem));
+    }
+  }
+
+  return sortSyncOutboxRecordsFifo(Array.from(byId.values()));
+}
+
+async function executeFifoFlushToSupabase(options?: {
   resolveEndpoint?: () => string;
   getLatestLocalState?: () => Record<string, any> | null;
   storage?: StorageAdapter | null;
@@ -566,33 +669,35 @@ export async function flushSyncOutboxToSupabase(options?: {
   const store = options?.storage ?? getDefaultStorage();
   const online = isNetworkOnline(options?.navigatorLike);
   const lsQueue = readSyncOutbox(store);
-  let idbQueue: Array<{ id: string; endpoint: string; payloadJson: string; lastUpdated: string }> = [];
+  let idbQueue: SyncOutboxRecord[] = [];
   try {
     idbQueue = await getPendingIndexedDbSyncItems();
   } catch {
     idbQueue = [];
   }
 
-  const totalPending = Math.max(lsQueue.length, idbQueue.length);
+  const mergedQueue = buildMergedFifoQueue(lsQueue, idbQueue);
   if (!online) {
     return {
       online: false,
       attempted: 0,
       flushedCount: 0,
-      remainingCount: totalPending,
+      remainingCount: mergedQueue.length,
       syncedAtIso: null,
-      lastError: 'Device is offline.'
+      lastError: 'Device is offline.',
+      stoppedOnError: false
     };
   }
 
-  if (lsQueue.length === 0 && idbQueue.length === 0) {
+  if (mergedQueue.length === 0) {
     return {
       online: true,
       attempted: 0,
       flushedCount: 0,
       remainingCount: 0,
       syncedAtIso: null,
-      lastError: null
+      lastError: null,
+      stoppedOnError: false
     };
   }
 
@@ -603,131 +708,192 @@ export async function flushSyncOutboxToSupabase(options?: {
       online: true,
       attempted: 0,
       flushedCount: 0,
-      remainingCount: totalPending,
+      remainingCount: mergedQueue.length,
       syncedAtIso: null,
-      lastError: 'Fetch unavailable.'
+      lastError: 'Fetch unavailable.',
+      stoppedOnError: false
     };
   }
 
   const dynamicEndpoint = String(options?.resolveEndpoint?.() || '').trim();
-  const latestItem = lsQueue[lsQueue.length - 1] || null;
-  const fallbackEndpoint =
-    (latestItem && latestItem.endpoint && latestItem.endpoint !== 'pending_endpoint'
-      ? latestItem.endpoint
-      : '') ||
-    (idbQueue[idbQueue.length - 1]?.endpoint &&
-    idbQueue[idbQueue.length - 1]?.endpoint !== 'pending_endpoint'
-      ? idbQueue[idbQueue.length - 1].endpoint
-      : '');
-  const targetEndpoint = dynamicEndpoint || fallbackEndpoint;
+  const remainingQueue = [...mergedQueue];
+  let attempted = 0;
+  let flushedCount = 0;
+  let syncedAtIso: string | null = null;
+  let lastError: string | null = null;
+  let stoppedOnError = false;
 
-  if (!targetEndpoint) {
-    return {
-      online: true,
-      attempted: 0,
-      flushedCount: 0,
-      remainingCount: totalPending,
-      syncedAtIso: null,
-      lastError: 'Waiting for cloud endpoint.'
-    };
+  // Strict FIFO processing: send pending items in First-In, First-Out order.
+  // - On Supabase upload success: delete that exact item from IndexedDB & localStorage sync_outbox.
+  // - On upload failure: keep the item in sync_outbox with status='pending' and STOP immediately
+  //   so subsequent items never overtake an earlier failed write.
+  while (remainingQueue.length > 0) {
+    const item = remainingQueue[0];
+    const itemEndpoint =
+      item.endpoint && item.endpoint !== 'pending_endpoint' ? item.endpoint : '';
+    const targetEndpoint = dynamicEndpoint || itemEndpoint;
+
+    if (!targetEndpoint) {
+      lastError = 'Waiting for cloud endpoint.';
+      stoppedOnError = true;
+      break;
+    }
+
+    const payloadToSend = item.payloadJson;
+    if (!payloadToSend) {
+      remainingQueue.shift();
+      writeSyncOutbox(remainingQueue, store);
+      await removeIndexedDbSyncItem(item.id).catch(() => {});
+      continue;
+    }
+
+    attempted += 1;
+    try {
+      const isApi = targetEndpoint.includes('/api/state');
+      const isFirebase =
+        targetEndpoint.includes('firebaseio.com') || targetEndpoint.endsWith('.json');
+      const res = await fetchFn(targetEndpoint, {
+        method: isFirebase ? 'PUT' : 'POST',
+        cache: 'no-store',
+        headers: {
+          'Content-Type': isApi ? 'application/json' : 'text/plain;charset=utf-8'
+        },
+        body: payloadToSend
+      });
+
+      if (!res || !res.ok) {
+        const failedItem: SyncOutboxActionItem = {
+          ...item,
+          status: 'pending',
+          attempts: (item.attempts || 0) + 1
+        };
+        remainingQueue[0] = failedItem;
+        writeSyncOutbox(remainingQueue, store);
+        await updateIndexedDbSyncItem({
+          id: failedItem.id,
+          seq: failedItem.seq,
+          createdAtMs: failedItem.createdAtMs,
+          status: 'pending',
+          actionType: failedItem.actionType,
+          setKey: failedItem.setKey,
+          exerciseId: failedItem.exerciseId,
+          endpoint: failedItem.endpoint || 'pending_endpoint',
+          payloadJson: failedItem.payloadJson,
+          reason: failedItem.actionType,
+          queuedAt: failedItem.queuedAt,
+          lastUpdated: failedItem.updatedAt,
+          attempts: failedItem.attempts
+        }).catch(() => {});
+        lastError = `HTTP ${res ? res.status : 'error'}`;
+        stoppedOnError = true;
+        break;
+      }
+
+      const json =
+        typeof (res as any).json === 'function'
+          ? await (res as any).json().catch(() => ({}))
+          : {};
+      if (json && (json.configured === false || json.saved === false)) {
+        const failedItem: SyncOutboxActionItem = {
+          ...item,
+          status: 'pending',
+          attempts: (item.attempts || 0) + 1
+        };
+        remainingQueue[0] = failedItem;
+        writeSyncOutbox(remainingQueue, store);
+        await updateIndexedDbSyncItem({
+          id: failedItem.id,
+          seq: failedItem.seq,
+          createdAtMs: failedItem.createdAtMs,
+          status: 'pending',
+          actionType: failedItem.actionType,
+          setKey: failedItem.setKey,
+          exerciseId: failedItem.exerciseId,
+          endpoint: failedItem.endpoint || 'pending_endpoint',
+          payloadJson: failedItem.payloadJson,
+          reason: failedItem.actionType,
+          queuedAt: failedItem.queuedAt,
+          lastUpdated: failedItem.updatedAt,
+          attempts: failedItem.attempts
+        }).catch(() => {});
+        lastError = 'Cloud storage not configured.';
+        stoppedOnError = true;
+        break;
+      }
+
+      // Upload succeeded: delete item from sync_outbox (both IndexedDB & localStorage)
+      remainingQueue.shift();
+      writeSyncOutbox(remainingQueue, store);
+      await removeIndexedDbSyncItem(item.id).catch(() => {});
+
+      flushedCount += 1;
+      syncedAtIso =
+        (json && typeof json.last_updated === 'string' && json.last_updated) ||
+        (json && typeof json.updatedAt === 'string' && json.updatedAt) ||
+        new Date().toISOString();
+    } catch (err) {
+      const failedItem: SyncOutboxActionItem = {
+        ...item,
+        status: 'pending',
+        attempts: (item.attempts || 0) + 1
+      };
+      remainingQueue[0] = failedItem;
+      writeSyncOutbox(remainingQueue, store);
+      await updateIndexedDbSyncItem({
+        id: failedItem.id,
+        seq: failedItem.seq,
+        createdAtMs: failedItem.createdAtMs,
+        status: 'pending',
+        actionType: failedItem.actionType,
+        setKey: failedItem.setKey,
+        exerciseId: failedItem.exerciseId,
+        endpoint: failedItem.endpoint || 'pending_endpoint',
+        payloadJson: failedItem.payloadJson,
+        reason: failedItem.actionType,
+        queuedAt: failedItem.queuedAt,
+        lastUpdated: failedItem.updatedAt,
+        attempts: failedItem.attempts
+      }).catch(() => {});
+      lastError = err instanceof Error ? err.message : 'Network error';
+      stoppedOnError = true;
+      break;
+    }
   }
 
-  // Prefer the live local state snapshot if available (ensures all queued sets are included),
-  // otherwise use the latest queued payloadJson from sync_outbox.
-  const latestStateObj = options?.getLatestLocalState?.() || null;
-  let payloadToSend = '';
-  if (latestStateObj && typeof latestStateObj === 'object') {
-    const stamped = stampGymStateLastUpdated(
-      { ...latestStateObj },
-      getStateLastUpdatedIso(latestStateObj) || new Date().toISOString()
-    );
-    payloadToSend = serializeStateForPersistence(stamped);
-  } else if (latestItem && latestItem.payloadJson) {
-    payloadToSend = latestItem.payloadJson;
-  } else if (idbQueue[idbQueue.length - 1]?.payloadJson) {
-    payloadToSend = idbQueue[idbQueue.length - 1].payloadJson;
-  }
+  return {
+    online: true,
+    attempted,
+    flushedCount,
+    remainingCount: remainingQueue.length,
+    syncedAtIso,
+    lastError,
+    stoppedOnError
+  };
+}
 
-  if (!payloadToSend) {
-    await clearSyncOutbox(store);
-    return {
-      online: true,
-      attempted: totalPending,
-      flushedCount: totalPending,
-      remainingCount: 0,
-      syncedAtIso: new Date().toISOString(),
-      lastError: null
-    };
+/**
+ * Flushes all queued changes in `sync_outbox` (IndexedDB + localStorage) to Supabase
+ * in strict First-In, First-Out (FIFO) order. Stops immediately on upload failure so
+ * remaining items retry in exact order on the next online event.
+ */
+export async function flushSyncOutboxToSupabase(options?: {
+  resolveEndpoint?: () => string;
+  getLatestLocalState?: () => Record<string, any> | null;
+  storage?: StorageAdapter | null;
+  fetchImpl?: typeof fetch;
+  navigatorLike?: { onLine?: boolean } | null;
+}): Promise<FlushSyncOutboxResult> {
+  if (!options?.fetchImpl && activeOutboxFlushLock) {
+    return activeOutboxFlushLock;
   }
-
-  try {
-    const isApi = targetEndpoint.includes('/api/state');
-    const isFirebase = targetEndpoint.includes('firebaseio.com') || targetEndpoint.endsWith('.json');
-    const res = await fetchFn(targetEndpoint, {
-      method: isFirebase ? 'PUT' : 'POST',
-      cache: 'no-store',
-      headers: {
-        'Content-Type': isApi ? 'application/json' : 'text/plain;charset=utf-8'
-      },
-      body: payloadToSend
+  const promise = executeFifoFlushToSupabase(options);
+  if (!options?.fetchImpl) {
+    activeOutboxFlushLock = promise.finally(() => {
+      activeOutboxFlushLock = null;
     });
-
-    if (!res || !res.ok) {
-      const bumped = lsQueue.map((item) => ({ ...item, attempts: item.attempts + 1 }));
-      writeSyncOutbox(bumped, store);
-      return {
-        online: true,
-        attempted: totalPending,
-        flushedCount: 0,
-        remainingCount: totalPending,
-        syncedAtIso: null,
-        lastError: `HTTP ${res ? res.status : 'error'}`
-      };
-    }
-
-    const json = await res.json().catch(() => ({}));
-    if (json && json.configured === false) {
-      return {
-        online: true,
-        attempted: totalPending,
-        flushedCount: 0,
-        remainingCount: totalPending,
-        syncedAtIso: null,
-        lastError: 'Cloud storage not configured.'
-      };
-    }
-
-    // Confirmed by Supabase: drain both localStorage sync_outbox and IndexedDB sync_outbox
-    writeSyncOutbox([], store);
-    for (const idbItem of idbQueue) {
-      await removeIndexedDbSyncItem(idbItem.id).catch(() => {});
-    }
-
-    const syncedAtIso =
-      (json && typeof json.last_updated === 'string' && json.last_updated) ||
-      (json && typeof json.updatedAt === 'string' && json.updatedAt) ||
-      new Date().toISOString();
-
-    return {
-      online: true,
-      attempted: totalPending,
-      flushedCount: totalPending,
-      remainingCount: 0,
-      syncedAtIso,
-      lastError: null
-    };
-  } catch (err) {
-    const bumped = lsQueue.map((item) => ({ ...item, attempts: item.attempts + 1 }));
-    writeSyncOutbox(bumped, store);
-    return {
-      online: true,
-      attempted: totalPending,
-      flushedCount: 0,
-      remainingCount: totalPending,
-      syncedAtIso: null,
-      lastError: err instanceof Error ? err.message : 'Network error'
-    };
+    return activeOutboxFlushLock;
   }
+  return promise;
 }
 
 export function formatSyncComparisonTimestamp(

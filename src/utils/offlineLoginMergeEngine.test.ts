@@ -255,6 +255,162 @@ describe('Offline-First Pre-Login Merge & Conflict Engine', () => {
     assert.equal(inv.totalCount, 3);
   });
 
+  it('Strict FIFO Outbox: processes pending items First-In First-Out, deletes on success, and STOPS on mid-queue failure to preserve order until retry', async () => {
+    const storage = createMemoryStorage();
+    const { clearAllGymIndexedDbStores, getPendingIndexedDbSyncItems } = await import('./gymIndexedDb');
+    await clearAllGymIndexedDbStores();
+
+    // Enqueue 3 sequential workout set completions while offline
+    await enqueueSyncOutboxAction({
+      stateObj: { workoutLogs: { w1_0_bench_1: { weight: '135', reps: '10', done: true } } },
+      actionType: 'set_logged',
+      setKey: 'w1_0_bench_1',
+      exerciseId: 'bench',
+      endpoint: 'https://example.test/api/state?email=fifo@example.com',
+      localStateStorageKey: 'bws_vegan_7am_app_v1',
+      storage,
+      createdAtMs: 1700000001000,
+      nowIso: '2026-11-26T15:00:01.000Z'
+    });
+    await enqueueSyncOutboxAction({
+      stateObj: {
+        workoutLogs: {
+          w1_0_bench_1: { weight: '135', reps: '10', done: true },
+          w1_0_bench_2: { weight: '140', reps: '9', done: true }
+        }
+      },
+      actionType: 'set_logged',
+      setKey: 'w1_0_bench_2',
+      exerciseId: 'bench',
+      endpoint: 'https://example.test/api/state?email=fifo@example.com',
+      localStateStorageKey: 'bws_vegan_7am_app_v1',
+      storage,
+      createdAtMs: 1700000002000,
+      nowIso: '2026-11-26T15:00:02.000Z'
+    });
+    await enqueueSyncOutboxAction({
+      stateObj: {
+        workoutLogs: {
+          w1_0_bench_1: { weight: '135', reps: '10', done: true },
+          w1_0_bench_2: { weight: '140', reps: '9', done: true },
+          w1_0_bench_3: { weight: '145', reps: '8', done: true }
+        }
+      },
+      actionType: 'set_logged',
+      setKey: 'w1_0_bench_3',
+      exerciseId: 'bench',
+      endpoint: 'https://example.test/api/state?email=fifo@example.com',
+      localStateStorageKey: 'bws_vegan_7am_app_v1',
+      storage,
+      createdAtMs: 1700000003000,
+      nowIso: '2026-11-26T15:00:03.000Z'
+    });
+
+    const queuedIdb = await getPendingIndexedDbSyncItems();
+    assert.equal(queuedIdb.length, 3);
+    assert.deepEqual(
+      queuedIdb.map((i) => i.status),
+      ['pending', 'pending', 'pending']
+    );
+    assert.deepEqual(
+      queuedIdb.map((i) => i.setKey),
+      ['w1_0_bench_1', 'w1_0_bench_2', 'w1_0_bench_3']
+    );
+
+    // First online attempt: Item 1 succeeds, Item 2 fails (HTTP 503) -> MUST STOP without sending Item 3!
+    const attempt1SentKeys: string[] = [];
+    let callNum = 0;
+    const partialFlush = await flushSyncOutboxToSupabase({
+      storage,
+      navigatorLike: { onLine: true },
+      resolveEndpoint: () => 'https://example.test/api/state?email=fifo@example.com',
+      fetchImpl: (async (_url: string | URL | Request, init?: RequestInit) => {
+        callNum += 1;
+        const parsed = JSON.parse(String(init?.body || '{}'));
+        const keys = Object.keys(parsed.workoutLogs || {});
+        attempt1SentKeys.push(keys[keys.length - 1]);
+        if (callNum === 2) {
+          return { ok: false, status: 503, json: async () => ({}) } as unknown as Response;
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ configured: true, saved: true, last_updated: '2026-11-26T15:01:00.000Z' })
+        } as unknown as Response;
+      }) as typeof fetch
+    });
+
+    assert.equal(partialFlush.flushedCount, 1);
+    assert.equal(partialFlush.remainingCount, 2);
+    assert.equal(partialFlush.stoppedOnError, true);
+    // Strict FIFO halt: only Item 1 and Item 2 were attempted; Item 3 did NOT leapfrog Item 2!
+    assert.deepEqual(attempt1SentKeys, ['w1_0_bench_1', 'w1_0_bench_2']);
+
+    const remainingAfterFailure = await getPendingIndexedDbSyncItems();
+    assert.equal(remainingAfterFailure.length, 2);
+    assert.deepEqual(
+      remainingAfterFailure.map((i) => i.setKey),
+      ['w1_0_bench_2', 'w1_0_bench_3']
+    );
+    assert.equal(remainingAfterFailure[0].status, 'pending');
+    assert.equal(remainingAfterFailure[0].attempts, 1);
+
+    // Retry on next online event: drains Item 2 then Item 3 in strict FIFO order and deletes both
+    const attempt2SentKeys: string[] = [];
+    const retryFlush = await flushSyncOutboxToSupabase({
+      storage,
+      navigatorLike: { onLine: true },
+      resolveEndpoint: () => 'https://example.test/api/state?email=fifo@example.com',
+      fetchImpl: (async (_url: string | URL | Request, init?: RequestInit) => {
+        const parsed = JSON.parse(String(init?.body || '{}'));
+        const keys = Object.keys(parsed.workoutLogs || {});
+        attempt2SentKeys.push(keys[keys.length - 1]);
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ configured: true, saved: true, last_updated: '2026-11-26T15:02:00.000Z' })
+        } as unknown as Response;
+      }) as typeof fetch
+    });
+
+    assert.equal(retryFlush.flushedCount, 2);
+    assert.equal(retryFlush.remainingCount, 0);
+    assert.equal(retryFlush.stoppedOnError, false);
+    assert.deepEqual(attempt2SentKeys, ['w1_0_bench_2', 'w1_0_bench_3']);
+    assert.equal((await getPendingIndexedDbSyncItems()).length, 0);
+    assert.equal(readSyncOutbox(storage).length, 0);
+  });
+
+  it('Always-On Sync Migration & Manual Toggle Removal audit across index.html, AutoSyncSettingsControl, and sw.js', async () => {
+    const { AUTO_SYNC_STORAGE_KEY, loadAutoSyncPreference } = await import('./realtimeAutoSync');
+    const storage = createMemoryStorage();
+    // Simulate legacy device that previously turned Auto-Sync OFF
+    storage.setItem(AUTO_SYNC_STORAGE_KEY, 'false');
+    assert.equal(loadAutoSyncPreference(storage), true);
+    assert.equal(storage.getItem(AUTO_SYNC_STORAGE_KEY), 'true');
+
+    const html = fs.readFileSync(path.resolve('index.html'), 'utf8');
+    const autoSyncComp = fs.readFileSync(
+      path.resolve('src/components/AutoSyncSettingsControl.tsx'),
+      'utf8'
+    );
+    const swJs = fs.readFileSync(path.resolve('public/sw.js'), 'utf8');
+
+    // Manual Auto-Sync toggle MUST be removed from Settings UI
+    assert.equal(html.includes('id="toggle-auto-sync-devices-btn"'), false);
+    assert.equal(autoSyncComp.includes('data-testid="toggle-auto-sync-devices-btn"'), false);
+
+    // Confirmed Settings controls MUST remain visible: Force Sync Now & Force Pull from Cloud
+    assert.ok(html.includes('id="force-sync-now-btn"'), 'Force Sync Now preserved');
+    assert.ok(html.includes('id="force-pull-cloud-btn"'), 'Force Pull from Cloud preserved');
+    assert.ok(autoSyncComp.includes('data-testid="force-sync-now-btn"'));
+    assert.ok(autoSyncComp.includes('data-testid="force-pull-cloud-btn"'));
+
+    // Service worker enforces FIFO sort + status='pending'
+    assert.ok(swJs.includes('sortOutboxFifo'), 'SW sorts sync_outbox strictly FIFO');
+    assert.ok(swJs.includes("status: 'pending'"), 'SW preserves pending status on retry');
+  });
+
   it('Zero Deletion Policy & index.html Offline-First wiring check', () => {
     const html = fs.readFileSync(path.resolve('index.html'), 'utf8');
     // Required Step 1-4 elements and exact safety modal prompt
@@ -270,6 +426,7 @@ describe('Offline-First Pre-Login Merge & Conflict Engine', () => {
     assert.ok(html.includes('saveConflictBackupSnapshot'), 'Cloud backup snapshot safeguard must be wired');
     // Zero Deletion Policy: existing UI controls remain intact
     assert.ok(html.includes('open-smart-login-btn'), 'Header sign-in button preserved');
+    assert.ok(html.includes('force-sync-now-btn'), 'Manual Force Sync Now button preserved');
     assert.ok(html.includes('force-pull-cloud-btn'), 'Manual Force Pull from Cloud button preserved');
     assert.ok(html.includes('missed-set-one-modal'), 'Missed Set 1 modal preserved');
   });
