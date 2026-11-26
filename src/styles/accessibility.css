@@ -256,8 +256,8 @@ header nav,
 
 nav.fixed.bottom-0 > div {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.5rem !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.625rem !important;
   width: 100%;
   max-width: min(100vw, 44rem);
 }
@@ -973,3 +973,65 @@ html.light-theme #swap-ingredient-modal-overlay > div {
   color: #0E1A40 !important;
   border-color: #15803D !important;
 }
+
+/* ============================================================================
+ * 12. Workout-First Navigation, Header Nutrition Menu, Pinned Pull-Ups & Fast Log
+ * - Minimum 48px touch targets on primary navigation & inline fast-log actions
+ * - High-contrast styling in both Dark Mode & Light Mode (WCAG 2.2 AA >= 4.5:1)
+ * ============================================================================ */
+#header-nutrition-dropdown {
+  min-width: 14.5rem;
+  z-index: 60;
+}
+
+html[data-theme="light"] #header-nutrition-dropdown,
+html.light-theme #header-nutrition-dropdown {
+  background-color: #FFFFFF !important;
+  border-color: #15803D !important;
+  color: #0E1A40 !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18) !important;
+}
+
+html[data-theme="light"] #header-nutrition-dropdown button,
+html.light-theme #header-nutrition-dropdown button {
+  background-color: #F8FAFC !important;
+  color: #0E1A40 !important;
+  border-color: #CBD5E1 !important;
+}
+
+html[data-theme="light"] #header-nutrition-dropdown button:hover,
+html.light-theme #header-nutrition-dropdown button:hover {
+  background-color: #DCFCE7 !important;
+  border-color: #15803D !important;
+}
+
+.fast-set-log-bar {
+  touch-action: manipulation;
+}
+
+html[data-theme="light"] .fast-set-log-bar,
+html.light-theme .fast-set-log-bar {
+  background-color: #F0FDF4 !important;
+  border-color: #15803D !important;
+  color: #0E1A40 !important;
+}
+
+html[data-theme="light"] #pinned-pullups-gym-hub,
+html.light-theme #pinned-pullups-gym-hub {
+  background-color: #FFFFFF !important;
+  border-color: #0284C7 !important;
+  color: #0E1A40 !important;
+}
+
+html[data-theme="light"] .nutrition-return-banner,
+html.light-theme .nutrition-return-banner {
+  background-color: #F0FDF4 !important;
+  border-color: #15803D !important;
+  color: #0E1A40 !important;
+}
+
+nav[aria-label="Bottom app navigation"] .nav-tab-btn {
+  min-height: 54px;
+  touch-action: manipulation;
+}
+

@@ -398,6 +398,15 @@ import {
   SwapIngredientModal,
   type SwapIngredientModalProps
 } from './components/SwapIngredientModal';
+import {
+  applyParsedSetsToExerciseLogs,
+  buildSkipOnboardingDefaultPatch,
+  extractRecentLiftWeights,
+  formatParsedSetsSummary,
+  parseInlineSetText,
+  resolveNavigationTarget,
+  revertFastLogUndoSnapshot
+} from './utils/workoutUxImprovements';
 
 const mountedVideoPlayerRoots = new WeakMap<HTMLElement, Root>();
 const mountedPhase2HubRoots = new WeakMap<HTMLElement, Root>();
@@ -1447,6 +1456,13 @@ declare global {
     applyIngredientSwapToGymState?: typeof applyIngredientSwapToGymState;
     resetIngredientSwapInGymState?: typeof resetIngredientSwapInGymState;
     mountSwapIngredientModal?: typeof mountSwapIngredientModal;
+    parseInlineSetText?: typeof parseInlineSetText;
+    formatParsedSetsSummary?: typeof formatParsedSetsSummary;
+    applyParsedSetsToExerciseLogs?: typeof applyParsedSetsToExerciseLogs;
+    revertFastLogUndoSnapshot?: typeof revertFastLogUndoSnapshot;
+    resolveNavigationTarget?: typeof resolveNavigationTarget;
+    buildSkipOnboardingDefaultPatch?: typeof buildSkipOnboardingDefaultPatch;
+    extractRecentLiftWeights?: typeof extractRecentLiftWeights;
   }
 }
 
@@ -1762,5 +1778,12 @@ if (typeof window !== 'undefined') {
   window.applyIngredientSwapToGymState = applyIngredientSwapToGymState;
   window.resetIngredientSwapInGymState = resetIngredientSwapInGymState;
   window.mountSwapIngredientModal = mountSwapIngredientModal;
+  window.parseInlineSetText = parseInlineSetText;
+  window.formatParsedSetsSummary = formatParsedSetsSummary;
+  window.applyParsedSetsToExerciseLogs = applyParsedSetsToExerciseLogs;
+  window.revertFastLogUndoSnapshot = revertFastLogUndoSnapshot;
+  window.resolveNavigationTarget = resolveNavigationTarget;
+  window.buildSkipOnboardingDefaultPatch = buildSkipOnboardingDefaultPatch;
+  window.extractRecentLiftWeights = extractRecentLiftWeights;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }
