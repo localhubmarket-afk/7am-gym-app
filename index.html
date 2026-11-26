@@ -267,6 +267,7 @@
       flex: 0 1 auto;
     }
     .weight-stepper,
+    .weight-plain-box,
     .reps-stepper {
       display: flex;
       align-items: center;
@@ -295,6 +296,7 @@
       line-height: 1.2;
     }
     .weight-stepper .workout-input,
+    .weight-plain-box .workout-input,
     .reps-stepper .workout-input {
       flex: 1 1 3.25rem;
       min-width: 3rem;
@@ -312,6 +314,7 @@
       border: 0;
     }
     .weight-stepper .workout-input::placeholder,
+    .weight-plain-box .workout-input::placeholder,
     .reps-stepper .workout-input::placeholder {
       font-size: 0.8125rem;
       font-weight: 600;
@@ -905,142 +908,7 @@
         <span class="shrink-0 rounded-md bg-amber-500/25 px-2 py-0.5 text-[0.625rem] font-extrabold uppercase">Local-First</span>
       </div>
 
-      <!-- PINNED PULL-UPS HUB (Merged from Pull-Ups tab & pinned at the very top of Gym above exercises) -->
-      <section
-        id="pinned-pullups-gym-hub"
-        data-testid="pinned-pullups-gym-hub"
-        aria-label="Pinned Overhand Pull-Up Program"
-        class="bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/35 border-2 border-sky-400/45 rounded-2xl p-3 space-y-2.5 shadow-sm"
-      >
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="text-[0.625rem] font-extrabold uppercase tracking-wider text-sky-300">Pinned Pull-Ups</span>
-              <span id="pullups-active-week-badge" class="text-[0.625rem] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-emerald-300 whitespace-nowrap">Week 1 • Day 1</span>
-            </div>
-            <h2 id="pullups-tab-main-heading" class="text-sm sm:text-base font-extrabold text-white leading-snug mt-0.5">Overhand Pull-Up Program</h2>
-            <p id="pullups-selected-day-summary" class="text-[0.75rem] font-semibold text-slate-300 leading-snug">Selected: Day 1 (Pull-Up Session 1)</p>
-          </div>
-          <button
-            type="button"
-            id="toggle-pinned-pullups-btn"
-            data-testid="toggle-pinned-pullups-btn"
-            aria-expanded="true"
-            aria-controls="pinned-pullups-gym-body"
-            class="min-h-[48px] min-w-[48px] px-3 py-2 rounded-xl border border-sky-400/50 bg-slate-950 hover:bg-slate-800 text-sky-200 text-xs font-extrabold whitespace-nowrap transition shrink-0"
-          >
-            Hide ▲
-          </button>
-        </div>
-
-        <div id="pinned-pullups-gym-body" class="space-y-2.5 pt-1 border-t border-slate-800/80">
-          <!-- Synced View Mode + Rules Row -->
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <div class="inline-flex items-center bg-slate-950 border border-slate-800 rounded-xl p-0.5" role="group" aria-label="Pull-Ups View Mode">
-              <button type="button" id="pullups-view-mode-selected-btn" class="min-h-[40px] px-2.5 py-1 rounded-lg text-xs font-extrabold bg-sky-400 text-slate-950 transition whitespace-nowrap">
-                Today&apos;s Pull-Ups
-              </button>
-              <button type="button" id="pullups-view-mode-all-btn" class="min-h-[40px] px-2.5 py-1 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition whitespace-nowrap">
-                All 5 Days
-              </button>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <a href="https://youtu.be/w_yuTRQd6HA" target="_blank" rel="noopener noreferrer" class="min-h-[40px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-extrabold px-2.5 py-1.5 rounded-xl transition inline-flex items-center justify-center whitespace-nowrap">
-                Form Video
-              </a>
-            </div>
-          </div>
-
-          <!-- Hidden legacy week/day sync nodes preserved for 100% Zero-Deletion JS compatibility -->
-          <div id="pullups-top-week-selector-card" class="hidden" aria-hidden="true">
-            <div id="pullups-progressive-week-pills"></div>
-            <button type="button" id="pullups-open-rest-scheduler-btn">Change Rest Days (6 &amp; 7)</button>
-            <div id="pullups-cross-week-continuity-banner" class="hidden"></div>
-            <div id="pullups-rest-day-scheduler-drawer" class="hidden"></div>
-            <div id="pullups-day-selector-grid"></div>
-          </div>
-
-          <details id="pullup-program-rules-drawer" class="rounded-xl border border-slate-800 bg-slate-950/80 px-3 py-2">
-            <summary class="cursor-pointer text-xs font-extrabold text-sky-300 list-none flex items-center justify-between gap-2">
-              <span>5-Session Pull-Up Rules</span>
-              <span class="text-[0.6875rem] text-slate-400">Tap to read ▼</span>
-            </summary>
-            <p class="text-xs text-slate-300 mt-2 pt-2 border-t border-slate-800/80 leading-relaxed">
-              Do 5 pull-up sessions across your 5 weekly lifting days. Take 2 rest days so your back and arms recover cleanly. Use a full dead hang on every rep.
-            </p>
-          </details>
-
-          <!-- Training Set Rep Gauge Control -->
-          <div id="pullup-training-set-stepper-card" class="bg-slate-950/80 border border-emerald-500/35 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2.5">
-            <div class="min-w-0 flex-1">
-              <div class="text-xs font-extrabold text-white">Your Training Set Reps</div>
-              <div class="text-[0.6875rem] text-slate-300 leading-snug">Used on Day 3 and Day 4. Add +1 rep next week after 9 clean sets.</div>
-            </div>
-            <div class="flex items-center gap-2 shrink-0">
-              <button type="button" id="pullup-ts-minus" class="min-w-[44px] min-h-[44px] rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm" aria-label="Decrease Training Set Reps">-</button>
-              <span id="pullup-ts-value" class="font-mono text-base font-extrabold text-emerald-400 w-16 text-center whitespace-nowrap">3 reps</span>
-              <button type="button" id="pullup-ts-plus" class="min-w-[44px] min-h-[44px] rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm" aria-label="Increase Training Set Reps">+</button>
-            </div>
-          </div>
-
-          <!-- Pull-Up Routine Cards (Single Selected Day Focus or All 5 Days) -->
-          <div id="pullup-days-container" class="space-y-2.5">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-      </section>
-
-      <!-- Module 3 / Task 2: Adherence-Neutral Rolling 30-Day Consistency & Flexible Weekly Goal Card -->
-      <section id="weekly-adherence-neutral-card" aria-label="Rolling 30-day consistency and flexible weekly workout goal" data-adherence-source="workoutLogs" class="rounded-2xl border border-emerald-500/40 bg-slate-900/90 p-3 space-y-2 shadow-sm">
-        <div class="flex items-center justify-between gap-2">
-          <div class="min-w-0">
-            <div class="text-[0.6875rem] font-extrabold tracking-wide text-emerald-300">Rolling 30-Day Consistency · Zero Streak Resets</div>
-            <div id="rolling-30day-consistency-text" aria-live="polite" aria-atomic="true" data-rolling-30day-percent="0" class="text-xs sm:text-sm font-extrabold text-white mt-0.5 tabular-nums"></div>
-            <div id="adherence-neutral-status-text" aria-live="polite" aria-atomic="true" data-completed-workouts="0" class="text-xs font-bold text-slate-200 mt-0.5 tabular-nums"></div>
-          </div>
-          <button type="button" id="open-micro-wins-preview-btn" aria-label="View your session micro-wins" class="shrink-0 min-h-[48px] min-w-[48px] px-2.5 py-1.5 rounded-xl border border-amber-400/60 bg-amber-600/20 hover:bg-amber-600/30 text-amber-100 text-[0.6875rem] font-extrabold transition whitespace-nowrap">
-            <span aria-hidden="true">★ </span><span>View Session Wins</span>
-          </button>
-        </div>
-        <div role="progressbar" aria-label="Rolling 30-day workout consistency progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="adherence-neutral-progress-bar" class="h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
-          <div id="adherence-neutral-progress-fill" class="h-full rounded-full bg-emerald-500 transition-all duration-300" style="width: 0%;"></div>
-        </div>
-        <p id="adherence-neutral-encouragement" aria-live="polite" class="text-[0.75rem] text-slate-300 leading-relaxed"></p>
-      </section>
-
-      <!-- Module 4: Biometric Readiness Banner (Sleep < 5h -> -10% Prescribed Sets) -->
-      <div id="biometric-readiness-banner" role="status" class="hidden rounded-2xl border border-sky-400/50 bg-sky-500/15 px-3.5 py-2.5 flex items-center justify-between gap-2">
-        <div class="min-w-0">
-          <div class="text-[0.625rem] font-extrabold uppercase tracking-wider text-sky-300">Biometric Recovery Guard</div>
-          <p id="biometric-readiness-text" class="text-xs font-bold text-slate-100 leading-relaxed mt-0.5"></p>
-        </div>
-        <span id="biometric-readiness-badge" class="shrink-0 rounded-lg bg-sky-500/25 border border-sky-400/50 px-2.5 py-1 text-[0.6875rem] font-extrabold text-sky-100 whitespace-nowrap">100% Volume</span>
-      </div>
-
-      <!-- Phase 2 Task 3: Low-Spoons Active Scaling Banner -->
-      <div id="low-spoons-active-banner" data-testid="low-spoons-active-banner" role="status" class="hidden rounded-2xl border border-amber-400/60 bg-amber-500/15 px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2">
-        <div class="min-w-0 flex-1">
-          <div class="text-[0.625rem] font-extrabold uppercase tracking-wider text-amber-200">Low-Spoons Safe Preset Active</div>
-          <p id="low-spoons-active-text" class="text-xs font-bold text-slate-100 leading-relaxed mt-0.5"></p>
-        </div>
-        <button type="button" id="low-spoons-banner-reset-btn" class="min-h-[44px] px-3 py-1.5 rounded-xl bg-slate-900 border border-amber-300/60 text-xs font-extrabold text-amber-100 hover:bg-slate-800 shrink-0">
-          Reset 100%
-        </button>
-      </div>
-
-      <!-- UPGRADE 6: First-Open & Daily Gym Time Prompt + Live Workout Time Auto-Sync Banner -->
-      <div id="gym-time-top-banner-workout" class="space-y-2"></div>
-      <div id="live-gym-time-autosync-banner" class="hidden"></div>
-
-      <!-- Pre-Workout Fuel Check-In Prompt Banner (Days 1–5 when Fuel 1 is unlogged) -->
-      <div id="pre-workout-fuel-checkin-banner" class="hidden bg-amber-500/15 border border-amber-400/50 rounded-2xl p-3 space-y-2 shadow-lg shadow-amber-950/30">
-        <!-- Populated dynamically by JS -->
-      </div>
-
-      <!-- UPGRADE 20: Over-Training Safety Alert (6-7 Lifting Days in a Row — Dismissible ELI12 Warning) -->
-      <div id="overtraining-safety-alert-banner" class="hidden"></div>
-
-      <!-- Streamlined 7-Day Cycle, Progressive Week Selector & Zone A Admin Row -->
+      <!-- 1. Compact Week & Day Picker (Confirmed Top Position) -->
       <div id="gym-week-day-selector-card" class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 space-y-2.5">
         <!-- Row 1: Pure Horizontal-Scroll Week Selector Tabs (Week 1 to Week 6+) -->
         <div class="flex items-center justify-between gap-2 min-w-0">
@@ -1095,80 +963,181 @@
         </div>
       </div>
 
-      <!-- Neuromarketing Dopamine Strip: Smart Profile Status, Live Volume, 1RM PRs & Grocery Money Saved -->
-      <div id="neuromarketing-hud-strip" class="hidden">
-        <!-- Populated dynamically by JS -->
-      </div>
-
-      <!-- Day Summary Banner (Active Day Header Row holds Interactive Cyan Gym Time Pill Button) -->
-      <div id="day-banner" class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
-        <!-- Populated by JS -->
-      </div>
-
-      <!-- ZONE B: Today's Workout Setup Row (Symmetrical 2-Column Grid right below Active Day Header) -->
-      <div id="gym-zone-b-setup-slot" class="space-y-2">
-        <!-- Populated dynamically by JS -->
-      </div>
-
-      <!-- ZONE C: Live Tracker Bar (3-Pill Horizontal Row right above Warm-Up) -->
-      <div id="gym-zone-c-tracker-slot">
-        <!-- Populated dynamically by JS -->
-      </div>
-
-      <!-- Task 3: 2-Minute Micro-Start Trigger & Single Warm-Up Set Focus View -->
-      <div id="micro-start-slot" class="space-y-2">
-        <!-- Populated dynamically by JS -->
-      </div>
-
-      <!-- Phase 1 Blueprint Task 2: Accessible Form Guide (0.5x Slow-Mo Looping Muted Video Player + WebVTT Captions) -->
-      <div id="accessible-video-guide-card" class="bg-slate-900 border border-sky-400/40 rounded-2xl overflow-hidden">
-        <button
-          type="button"
-          id="toggle-accessible-video-guide-btn"
-          data-testid="toggle-accessible-video-guide-btn"
-          aria-expanded="false"
-          aria-controls="accessible-video-guide-panel"
-          class="w-full min-h-[48px] px-3.5 py-2.5 flex items-center justify-between gap-2 text-left hover:bg-slate-800/60 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
-        >
-          <div class="min-w-0">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="text-xs sm:text-sm font-extrabold text-white">Accessible Form Guide · Barbell Squat</span>
-              <span class="text-[0.625rem] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-400/40">0.5x Slow-Mo · CC ON</span>
+      <!-- 2. Warm-Up Routine Card (Absolute Top of Workout Sequence, Synced to Device Clock + Next Exercise Preview) -->
+      <div id="warmup-card-container" data-testid="warmup-card-container" class="bg-slate-900 border-2 border-amber-400/60 rounded-2xl overflow-hidden shadow-sm">
+        <button type="button" id="toggle-warmup-btn" class="w-full min-h-[52px] px-3.5 py-3 flex items-center justify-between text-left hover:bg-slate-800/50 transition">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="w-8 h-8 rounded-xl bg-amber-500/25 border border-amber-400/60 flex items-center justify-center text-amber-300 shrink-0">
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+            </span>
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <h2 class="text-xs sm:text-sm font-extrabold text-white" id="warmup-title">Dynamic Warm-Up (~10 Min)</h2>
+                <span class="rounded-md bg-amber-400 px-1.5 py-0.5 text-[0.625rem] font-extrabold text-slate-950 uppercase">Step 1 · Warm-Up</span>
+              </div>
+              <p class="block text-[0.75rem] text-amber-200 font-semibold mt-0.5" id="warmup-subtitle">Tap to open full mobility drills &amp; warm-up sets</p>
             </div>
-            <p class="text-[0.6875rem] text-slate-300 mt-0.5">Muted looping demo with synchronized captions &amp; plain Grade 6–8 steps</p>
           </div>
-          <span id="accessible-video-guide-chevron" class="text-sky-300 text-xs font-extrabold shrink-0">Show ▼</span>
+          <span id="warmup-chevron" class="text-amber-300 text-xs font-extrabold transition-transform shrink-0 ml-2">▼</span>
         </button>
-        <div id="accessible-video-guide-panel" class="hidden border-t border-slate-800 p-3">
-          <div id="accessible-video-player-react-mount"></div>
+
+        <!-- Device-Clock-Synced Warm-Up Timer + Next Exercise Preview Directly Below Timer -->
+        <div id="warmup-clock-timer-panel" data-testid="warmup-clock-timer-panel" class="px-3.5 py-3 bg-slate-950/90 border-t border-slate-800 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 text-[0.6875rem] font-bold text-slate-300">
+                <span>Warm-Up Timer</span>
+                <span aria-hidden="true">·</span>
+                <span id="warmup-device-clock-time" data-testid="warmup-device-clock-time" class="font-mono tabular-nums text-amber-300 font-extrabold">Clock Synced</span>
+              </div>
+              <div id="warmup-timer-display" data-testid="warmup-timer-display" class="text-2xl font-mono font-extrabold tabular-nums text-white leading-tight mt-0.5">10:00</div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button type="button" id="warmup-timer-toggle-btn" data-testid="warmup-timer-toggle-btn" class="min-h-[48px] min-w-[84px] px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold transition whitespace-nowrap">
+                Start
+              </button>
+              <button type="button" id="warmup-timer-plus-btn" class="min-h-[48px] min-w-[48px] px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-xs font-extrabold transition whitespace-nowrap" aria-label="Add 1 minute to warm-up timer">
+                +1m
+              </button>
+              <button type="button" id="warmup-timer-reset-btn" class="min-h-[48px] min-w-[60px] px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition whitespace-nowrap">
+                Reset
+              </button>
+            </div>
+          </div>
+          <!-- Text element directly below the timer showing the next exercise name -->
+          <div id="warmup-next-exercise-preview" data-testid="warmup-next-exercise-preview" aria-live="polite" class="pt-2 border-t border-slate-800/80 text-xs font-extrabold text-cyan-200 flex items-center justify-between gap-2">
+            <span id="warmup-next-exercise-text">Next Exercise: Overhand Pull-Up Program</span>
+          </div>
+        </div>
+
+        <!-- Task 3: Permanently Visible Warm-Up Quick Tips Strip (High Visibility Above Exercise #1) -->
+        <div id="warmup-quick-tips-strip" data-testid="warmup-quick-tips-strip" class="warmup-prominent-tips-strip px-3.5 py-2.5 space-y-1">
+          <div class="text-[0.6875rem] font-extrabold uppercase tracking-wider">Quick Warm-Up Tips (Do First)</div>
+          <ul id="warmup-quick-tips-list" class="list-disc pl-4 space-y-0.5 text-xs font-semibold leading-snug">
+            <li>Loosen joints first: 10 arm circles + 12 band pull-aparts.</li>
+            <li>Wake up your muscles before loading heavy plates.</li>
+            <li>Ramp your first lift: 50% × 8 reps → 70% × 4 reps → 90% × 2 reps.</li>
+          </ul>
+        </div>
+        <div id="warmup-panel" class="hidden px-4 pb-4 pt-1 border-t border-slate-800/80 space-y-3">
+          <!-- Populated by JS -->
         </div>
       </div>
 
-      <!-- Phase 2 Blueprint Hub: Voice-to-Log + 1-Tap Undo, Plain-Language Coach (Bounded Gemini), Low-Spoons Triage & Biometrics -->
-      <div id="phase2-accessibility-hub-card" class="bg-slate-900 border border-emerald-400/45 rounded-2xl overflow-hidden">
-        <button
-          type="button"
-          id="toggle-phase2-hub-btn"
-          data-testid="toggle-phase2-hub-btn"
-          aria-expanded="false"
-          aria-controls="phase2-accessibility-hub-panel"
-          class="w-full min-h-[48px] px-3.5 py-2.5 flex items-center justify-between gap-2 text-left hover:bg-slate-800/60 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
-        >
-          <div class="min-w-0">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="text-xs sm:text-sm font-extrabold text-white">Voice Log, Plain Coach &amp; Low-Spoons Hub</span>
-              <span class="text-[0.625rem] font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-100 border border-amber-400/40">Phase 2 · Accessible AI</span>
+      <!-- 3. SINGLE MERGED PULL-UPS GROUP (Immediately After Warm-Up Routine — All Pull-Up Exercises Unified Here) -->
+      <section
+        id="pinned-pullups-gym-hub"
+        data-testid="pinned-pullups-gym-hub"
+        aria-label="Unified Overhand Pull-Up Group"
+        class="bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/35 border-2 border-sky-400/45 rounded-2xl p-3 space-y-2.5 shadow-sm"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-1.5 text-[0.6875rem] font-bold text-sky-300">
+              <span>Step 2 · Pull-Ups Group</span>
+              <span aria-hidden="true">·</span>
+              <span id="pullups-active-week-badge" class="text-emerald-300 whitespace-nowrap">Week 1 • Day 1</span>
             </div>
-            <p class="text-[0.6875rem] text-slate-300 mt-0.5">Hands-free voice sets with 1-tap Undo, Grade 6–8 math coach &amp; energy scaling</p>
+            <h2 id="pullups-tab-main-heading" class="text-sm sm:text-base font-extrabold text-white leading-snug mt-0.5">Overhand Pull-Up Program</h2>
+            <p id="pullups-selected-day-summary" class="text-[0.75rem] font-semibold text-slate-300 leading-snug">All pull-up exercises combined here right after warm-up.</p>
           </div>
-          <span id="phase2-hub-chevron" class="text-emerald-300 text-xs font-extrabold shrink-0">Show ▼</span>
-        </button>
-        <div id="phase2-accessibility-hub-panel" class="hidden border-t border-slate-800 p-3">
-          <div id="phase2-hub-react-mount"></div>
+          <button
+            type="button"
+            id="toggle-pinned-pullups-btn"
+            data-testid="toggle-pinned-pullups-btn"
+            aria-expanded="true"
+            aria-controls="pinned-pullups-gym-body"
+            class="min-h-[48px] min-w-[48px] px-3 py-2 rounded-xl border border-sky-400/50 bg-slate-950 hover:bg-slate-800 text-sky-200 text-xs font-extrabold whitespace-nowrap transition shrink-0"
+          >
+            Hide ▲
+          </button>
         </div>
+
+        <div id="pinned-pullups-gym-body" class="space-y-2.5 pt-1 border-t border-slate-800/80">
+          <!-- Synced View Mode + Rules Row -->
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="inline-flex items-center bg-slate-950 border border-slate-800 rounded-xl p-0.5" role="group" aria-label="Pull-Ups View Mode">
+              <button type="button" id="pullups-view-mode-selected-btn" class="min-h-[48px] px-2.5 py-1 rounded-lg text-xs font-extrabold bg-sky-400 text-slate-950 transition whitespace-nowrap">
+                Today&apos;s Pull-Ups
+              </button>
+              <button type="button" id="pullups-view-mode-all-btn" class="min-h-[48px] px-2.5 py-1 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition whitespace-nowrap">
+                All 5 Days
+              </button>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <a href="https://youtu.be/w_yuTRQd6HA" target="_blank" rel="noopener noreferrer" class="min-h-[48px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-extrabold px-2.5 py-1.5 rounded-xl transition inline-flex items-center justify-center whitespace-nowrap">
+                Form Video
+              </a>
+            </div>
+          </div>
+
+          <!-- Hidden legacy week/day sync nodes preserved for 100% Zero-Deletion JS compatibility -->
+          <div id="pullups-top-week-selector-card" class="hidden" aria-hidden="true">
+            <div id="pullups-progressive-week-pills"></div>
+            <button type="button" id="pullups-open-rest-scheduler-btn">Change Rest Days (6 &amp; 7)</button>
+            <div id="pullups-cross-week-continuity-banner" class="hidden"></div>
+            <div id="pullups-rest-day-scheduler-drawer" class="hidden"></div>
+            <div id="pullups-day-selector-grid"></div>
+          </div>
+
+          <details id="pullup-program-rules-drawer" class="rounded-xl border border-slate-800 bg-slate-950/80 px-3 py-2">
+            <summary class="cursor-pointer text-xs font-extrabold text-sky-300 list-none flex items-center justify-between gap-2">
+              <span>5-Session Pull-Up Rules</span>
+              <span class="text-[0.6875rem] text-slate-400">Tap to read ▼</span>
+            </summary>
+            <p class="text-xs text-slate-300 mt-2 pt-2 border-t border-slate-800/80 leading-relaxed">
+              Do 5 pull-up sessions across your 5 weekly lifting days. Take 2 rest days so your back and arms recover cleanly. Use a full dead hang on every rep.
+            </p>
+          </details>
+
+          <!-- Training Set Rep Gauge Control -->
+          <div id="pullup-training-set-stepper-card" class="bg-slate-950/80 border border-emerald-500/35 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2.5">
+            <div class="min-w-0 flex-1">
+              <div class="text-xs font-extrabold text-white">Your Training Set Reps</div>
+              <div class="text-[0.6875rem] text-slate-300 leading-snug">Used on Day 3 and Day 4. Add +1 rep next week after 9 clean sets.</div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button type="button" id="pullup-ts-minus" class="min-w-[48px] min-h-[48px] rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm" aria-label="Decrease Training Set Reps">-</button>
+              <span id="pullup-ts-value" class="font-mono text-base font-extrabold text-emerald-400 w-16 text-center whitespace-nowrap">3 reps</span>
+              <button type="button" id="pullup-ts-plus" class="min-w-[48px] min-h-[48px] rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm" aria-label="Increase Training Set Reps">+</button>
+            </div>
+          </div>
+
+          <!-- Pull-Up Routine Cards (Single Selected Day Focus or All 5 Days) -->
+          <div id="pullup-days-container" class="space-y-2.5">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Conditional Safety & Session Resume Banners (Hidden unless triggered) -->
+      <div id="biometric-readiness-banner" role="status" class="hidden rounded-2xl border border-sky-400/50 bg-sky-500/15 px-3.5 py-2.5 flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <div class="text-[0.625rem] font-extrabold uppercase tracking-wider text-sky-300">Biometric Recovery Guard</div>
+          <p id="biometric-readiness-text" class="text-xs font-bold text-slate-100 leading-relaxed mt-0.5"></p>
+        </div>
+        <span id="biometric-readiness-badge" class="shrink-0 rounded-lg bg-sky-500/25 border border-sky-400/50 px-2.5 py-1 text-[0.6875rem] font-extrabold text-sky-100 whitespace-nowrap">100% Volume</span>
       </div>
 
-      <!-- Task 2: Workout Resume Banner (Auto-Restores Active/Next Exercise After Refresh or Background — Zero Login Required) -->
+      <div id="low-spoons-active-banner" data-testid="low-spoons-active-banner" role="status" class="hidden rounded-2xl border border-amber-400/60 bg-amber-500/15 px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2">
+        <div class="min-w-0 flex-1">
+          <div class="text-[0.625rem] font-extrabold uppercase tracking-wider text-amber-200">Low-Spoons Safe Preset Active</div>
+          <p id="low-spoons-active-text" class="text-xs font-bold text-slate-100 leading-relaxed mt-0.5"></p>
+        </div>
+        <button type="button" id="low-spoons-banner-reset-btn" class="min-h-[48px] px-3 py-1.5 rounded-xl bg-slate-900 border border-amber-300/60 text-xs font-extrabold text-amber-100 hover:bg-slate-800 shrink-0">
+          Reset 100%
+        </button>
+      </div>
+
+      <div id="gym-time-top-banner-workout" class="space-y-2"></div>
+      <div id="live-gym-time-autosync-banner" class="hidden"></div>
+
+      <div id="pre-workout-fuel-checkin-banner" class="hidden bg-amber-500/15 border border-amber-400/50 rounded-2xl p-3 space-y-2 shadow-lg shadow-amber-950/30">
+        <!-- Populated dynamically by JS -->
+      </div>
+
+      <div id="overtraining-safety-alert-banner" class="hidden"></div>
+
       <section
         id="workout-resume-banner"
         data-testid="workout-resume-banner"
@@ -1206,7 +1175,49 @@
         </div>
       </section>
 
-      <!-- Task 3: Real-Time Clock Schedule Sync Strip (Stays Synced to Live Time of Day After Backgrounding) -->
+      <div id="shoe-critical-wear-banner" class="hidden bg-amber-500/15 border border-amber-500/40 rounded-2xl px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs">
+        <div class="min-w-0">
+          <span class="font-extrabold text-amber-300" id="shoe-critical-wear-title">Gym Shoe Midsole Alert</span>
+          <p class="text-[0.625rem] text-slate-300 truncate" id="shoe-critical-wear-sub">Sole health is low — tap to inspect or snap a new pair.</p>
+        </div>
+        <button type="button" id="shoe-critical-open-btn" class="shrink-0 px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-extrabold text-[0.625rem]">Inspect Gear</button>
+      </div>
+
+      <!-- Neuromarketing Dopamine Strip (Preserved) -->
+      <div id="neuromarketing-hud-strip" class="hidden"></div>
+
+      <!-- 4. Day Summary Banner & Exercise Setup Slots -->
+      <div id="day-banner" class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
+        <!-- Populated by JS -->
+      </div>
+
+      <div id="gym-zone-b-setup-slot" class="space-y-2"></div>
+      <div id="gym-zone-c-tracker-slot"></div>
+      <div id="micro-start-slot" class="space-y-2"></div>
+
+      <!-- 5. Main Exercise Cards List -->
+      <div id="exercise-list" class="space-y-3.5">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- 6. Preserved Secondary Coaching, Consistency & Live Clock Cards (Zero Deletion Policy) -->
+      <section id="weekly-adherence-neutral-card" aria-label="Rolling 30-day consistency and flexible weekly workout goal" data-adherence-source="workoutLogs" class="rounded-2xl border border-emerald-500/40 bg-slate-900/90 p-3 space-y-2 shadow-sm">
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <div class="text-[0.6875rem] font-extrabold tracking-wide text-emerald-300">Rolling 30-Day Consistency · Zero Streak Resets</div>
+            <div id="rolling-30day-consistency-text" aria-live="polite" aria-atomic="true" data-rolling-30day-percent="0" class="text-xs sm:text-sm font-extrabold text-white mt-0.5 tabular-nums"></div>
+            <div id="adherence-neutral-status-text" aria-live="polite" aria-atomic="true" data-completed-workouts="0" class="text-xs font-bold text-slate-200 mt-0.5 tabular-nums"></div>
+          </div>
+          <button type="button" id="open-micro-wins-preview-btn" aria-label="View your session micro-wins" class="shrink-0 min-h-[48px] min-w-[48px] px-2.5 py-1.5 rounded-xl border border-amber-400/60 bg-amber-600/20 hover:bg-amber-600/30 text-amber-100 text-[0.6875rem] font-extrabold transition whitespace-nowrap">
+            <span aria-hidden="true">★ </span><span>View Session Wins</span>
+          </button>
+        </div>
+        <div role="progressbar" aria-label="Rolling 30-day workout consistency progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="adherence-neutral-progress-bar" class="h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
+          <div id="adherence-neutral-progress-fill" class="h-full rounded-full bg-emerald-500 transition-all duration-300" style="width: 0%;"></div>
+        </div>
+        <p id="adherence-neutral-encouragement" aria-live="polite" class="text-[0.75rem] text-slate-300 leading-relaxed"></p>
+      </section>
+
       <section
         id="live-clock-schedule-banner"
         data-testid="live-clock-schedule-banner"
@@ -1234,49 +1245,50 @@
         </div>
       </section>
 
-      <!-- Collapsible Warm-Up Routine Card (Sits Directly Above Exercise #1/9, Hidden on Rest Days) -->
-      <div id="warmup-card-container" class="bg-slate-900 border-2 border-amber-400/60 rounded-2xl overflow-hidden shadow-sm">
-        <button type="button" id="toggle-warmup-btn" class="w-full min-h-[52px] px-3.5 py-3 flex items-center justify-between text-left hover:bg-slate-800/50 transition">
-          <div class="flex items-center gap-2.5 min-w-0">
-            <span class="w-8 h-8 rounded-xl bg-amber-500/25 border border-amber-400/60 flex items-center justify-center text-amber-300 shrink-0">
-              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
-            </span>
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-1.5">
-                <h2 class="text-xs sm:text-sm font-extrabold text-white" id="warmup-title">Dynamic Warm-Up (~10 Min)</h2>
-                <span class="rounded-md bg-amber-400 px-1.5 py-0.5 text-[0.625rem] font-extrabold text-slate-950 uppercase">Do First</span>
-              </div>
-              <p class="block text-[0.75rem] text-amber-200 font-semibold mt-0.5" id="warmup-subtitle">Tap to open full mobility drills &amp; warm-up sets</p>
+      <div id="accessible-video-guide-card" class="bg-slate-900 border border-sky-400/40 rounded-2xl overflow-hidden">
+        <button
+          type="button"
+          id="toggle-accessible-video-guide-btn"
+          data-testid="toggle-accessible-video-guide-btn"
+          aria-expanded="false"
+          aria-controls="accessible-video-guide-panel"
+          class="w-full min-h-[48px] px-3.5 py-2.5 flex items-center justify-between gap-2 text-left hover:bg-slate-800/60 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+        >
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-xs sm:text-sm font-extrabold text-white">Accessible Form Guide · Barbell Squat</span>
+              <span class="text-[0.625rem] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-400/40">0.5x Slow-Mo · CC ON</span>
             </div>
+            <p class="text-[0.6875rem] text-slate-300 mt-0.5">Muted looping demo with synchronized captions &amp; plain Grade 6–8 steps</p>
           </div>
-          <span id="warmup-chevron" class="text-amber-300 text-xs font-extrabold transition-transform shrink-0 ml-2">▼</span>
+          <span id="accessible-video-guide-chevron" class="text-sky-300 text-xs font-extrabold shrink-0">Show ▼</span>
         </button>
-        <!-- Task 3: Permanently Visible Warm-Up Quick Tips Strip (High Visibility Above Exercise #1) -->
-        <div id="warmup-quick-tips-strip" data-testid="warmup-quick-tips-strip" class="warmup-prominent-tips-strip px-3.5 py-2.5 space-y-1">
-          <div class="text-[0.6875rem] font-extrabold uppercase tracking-wider">Quick Warm-Up Tips (Before Exercise #1)</div>
-          <ul id="warmup-quick-tips-list" class="list-disc pl-4 space-y-0.5 text-xs font-semibold leading-snug">
-            <li>Loosen joints first: 10 arm circles + 12 band pull-aparts.</li>
-            <li>Wake up your muscles before loading heavy plates.</li>
-            <li>Ramp your first lift: 50% × 8 reps → 70% × 4 reps → 90% × 2 reps.</li>
-          </ul>
-        </div>
-        <div id="warmup-panel" class="hidden px-4 pb-4 pt-1 border-t border-slate-800/80 space-y-3">
-          <!-- Populated by JS -->
+        <div id="accessible-video-guide-panel" class="hidden border-t border-slate-800 p-3">
+          <div id="accessible-video-player-react-mount"></div>
         </div>
       </div>
 
-      <!-- Proactive Low-Sole-Health Alert Banner (Hidden when shoes are healthy — only appears at <=25% sole life like TreadLeft/Garmin!) -->
-      <div id="shoe-critical-wear-banner" class="hidden bg-amber-500/15 border border-amber-500/40 rounded-2xl px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs">
-        <div class="min-w-0">
-          <span class="font-extrabold text-amber-300" id="shoe-critical-wear-title">Gym Shoe Midsole Alert</span>
-          <p class="text-[0.625rem] text-slate-300 truncate" id="shoe-critical-wear-sub">Sole health is low — tap to inspect or snap a new pair.</p>
+      <div id="phase2-accessibility-hub-card" class="bg-slate-900 border border-emerald-400/45 rounded-2xl overflow-hidden">
+        <button
+          type="button"
+          id="toggle-phase2-hub-btn"
+          data-testid="toggle-phase2-hub-btn"
+          aria-expanded="false"
+          aria-controls="phase2-accessibility-hub-panel"
+          class="w-full min-h-[48px] px-3.5 py-2.5 flex items-center justify-between gap-2 text-left hover:bg-slate-800/60 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+        >
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-xs sm:text-sm font-extrabold text-white">Voice Log, Plain Coach &amp; Low-Spoons Hub</span>
+              <span class="text-[0.625rem] font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-100 border border-amber-400/40">Phase 2 · Accessible AI</span>
+            </div>
+            <p class="text-[0.6875rem] text-slate-300 mt-0.5">Hands-free voice sets with 1-tap Undo, Grade 6–8 math coach &amp; energy scaling</p>
+          </div>
+          <span id="phase2-hub-chevron" class="text-emerald-300 text-xs font-extrabold shrink-0">Show ▼</span>
+        </button>
+        <div id="phase2-accessibility-hub-panel" class="hidden border-t border-slate-800 p-3">
+          <div id="phase2-hub-react-mount"></div>
         </div>
-        <button type="button" id="shoe-critical-open-btn" class="shrink-0 px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-extrabold text-[0.625rem]">Inspect Gear</button>
-      </div>
-
-      <!-- Exercise Cards List -->
-      <div id="exercise-list" class="space-y-3.5">
-        <!-- Populated by JS -->
       </div>
     </section>
 
@@ -9063,17 +9075,50 @@
       const searchUrl = (ex && ex.youtubeSearchUrl) || `https://www.youtube.com/results?search_query=${encodeURIComponent(((ex && ex.name) || 'gym machine') + ' proper form tutorial')}`;
       const formSetupText = (ex && (ex.formSetup || ex.notes)) || '';
       const targetMuscleLabel = (ex && (ex.targetMuscles || ex.targetMuscle)) || '';
+      const resolvedPhoto = typeof window.resolveMachinePhotoAsset === 'function'
+        ? window.resolveMachinePhotoAsset({
+            exerciseId: ex && ex.id,
+            exerciseName: ex && ex.name,
+            equipType: meta && meta.equipType,
+            equipLabel: isMachineActive ? (ex && ex.name) : (meta && meta.equipLabel),
+            isSwappedMachine: isMachineActive
+          })
+        : {
+            photoUrl: '/assets/machines/chest-shoulder-press.jpg',
+            offlineSvgFallback: '',
+            alt: `${(ex && ex.name) || 'Gym Machine'} setup photo`,
+            caption: (meta && meta.equipLabel) || (ex && ex.name) || 'Gym Equipment'
+          };
+      const safeAltAttr = String(resolvedPhoto.alt || 'Machine reference photo').replace(/"/g, '&quot;');
+      const safeFallbackAttr = String(resolvedPhoto.offlineSvgFallback || '').replace(/"/g, '&quot;');
 
       return `
         <div class="bg-slate-950 border border-emerald-500/30 rounded-xl p-3 space-y-2.5">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-            <div class="flex items-center gap-2">
-              <span class="text-[0.625rem] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">${isMachineActive ? 'How to Use This Machine' : 'Visual Setup &amp; Execution'}</span>
-              <span class="text-xs font-bold text-white">${isMachineActive ? ex.name : (meta && meta.equipLabel ? meta.equipLabel : 'Equipment')}</span>
+          <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="text-[0.625rem] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 shrink-0">${isMachineActive ? 'Machine Photo &amp; Setup' : 'Machine Photo &amp; Form'}</span>
+              <span class="text-xs font-bold text-white truncate">${isMachineActive ? ex.name : (meta && meta.equipLabel ? meta.equipLabel : 'Equipment')}</span>
             </div>
-            <button type="button" data-hide-img="${ex.id}" data-day-idx="${dayIdx}" data-panel-key="${panelKey}" class="hide-img-btn px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-[0.6875rem] font-extrabold transition">
-              ✕ Hide Setup &amp; Image
+            <button type="button" data-hide-img="${ex.id}" data-day-idx="${dayIdx}" data-panel-key="${panelKey}" class="hide-img-btn min-h-[48px] px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-[0.6875rem] font-extrabold transition shrink-0">
+              ✕ Hide Photo
             </button>
+          </div>
+          <!-- Verified Local Machine Reference Photo with Automatic Offline Built-In Diagram Fallback -->
+          <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-900/90">
+            <img
+              src="${resolvedPhoto.photoUrl}"
+              alt="${safeAltAttr}"
+              referrerpolicy="no-referrer"
+              loading="lazy"
+              data-machine-photo-img="${ex.id}"
+              data-fallback-svg="${safeFallbackAttr}"
+              onerror="if (this.dataset.fallbackSvg && this.src !== this.dataset.fallbackSvg) { this.onerror = null; this.src = this.dataset.fallbackSvg; }"
+              class="w-full max-h-56 object-cover block bg-slate-950"
+            />
+            <div class="px-2.5 py-1.5 flex items-center justify-between gap-2 text-[0.6875rem] text-slate-300 border-t border-slate-800/80">
+              <span class="font-bold text-white truncate">${resolvedPhoto.caption}</span>
+              <span class="text-emerald-300 font-semibold shrink-0">Offline-Ready Visual</span>
+            </div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <!-- Step 1 Visual Panel -->
@@ -10745,15 +10790,16 @@
         weight: dataObj.weight !== undefined ? dataObj.weight : (prevW.weight !== undefined && prevW.weight !== '' ? prevW.weight : '0'),
         reps: dataObj.reps !== undefined ? dataObj.reps : (prevW.reps !== undefined && prevW.reps !== '' ? prevW.reps : (prevU.reps || '')),
         done: dataObj.done !== undefined ? !!dataObj.done : !!(prevW.done || prevU.done),
+        skipped: dataObj.skipped !== undefined ? !!dataObj.skipped : !!(prevW.skipped || prevU.skipped),
         unit: dataObj.unit || prevW.unit || getExerciseUnit(mapInfo.exId)
       };
 
       state.workoutLogs[wKey] = Object.assign({}, prevW, merged);
       if (w === 1) {
         state.workoutLogs[`${mapInfo.dayIdx}_${mapInfo.exId}_${setIdx}`] = Object.assign({}, state.workoutLogs[wKey]);
-        state.pullupLogs[uLegacyKey] = { reps: merged.reps, done: merged.done, weight: merged.weight };
+        state.pullupLogs[uLegacyKey] = { reps: merged.reps, done: merged.done, skipped: merged.skipped, weight: merged.weight };
       }
-      state.pullupLogs[uWeekKey] = { reps: merged.reps, done: merged.done, weight: merged.weight };
+      state.pullupLogs[uWeekKey] = { reps: merged.reps, done: merged.done, skipped: merged.skipped, weight: merged.weight };
       state.pullUpLogs = state.pullupLogs;
     }
 
@@ -14126,6 +14172,9 @@
       if (typeof window.updateLiveClockScheduleBannerUI === 'function') {
         window.updateLiveClockScheduleBannerUI();
       }
+      if (typeof window.syncWarmupClockTimerUI === 'function') {
+        window.syncWarmupClockTimerUI();
+      }
 
       const keepPart1Open = Boolean(state.openWarmupPart1ByDay && state.openWarmupPart1ByDay[dayKey]);
       const keepPart2Open = Boolean(state.openWarmupPart2ByDay && state.openWarmupPart2ByDay[dayKey]);
@@ -16209,17 +16258,31 @@
       if (!listEl) return;
       if (!state.expandedDoneCards) state.expandedDoneCards = {};
 
-      let upNextExId = null;
-      for (const candidateEx of exercisesToday) {
-        let allDone = true;
-        for (let s = 1; s <= candidateEx.sets; s++) {
-          const e = getLogEntry(week, dayIdx, candidateEx.id, s);
-          if (!e || !e.done) { allDone = false; break; }
+      function isOverhandPullUpsExerciseInline(exObj) {
+        if (typeof window.isOverhandPullUpsExercise === 'function') {
+          return window.isOverhandPullUpsExercise(exObj);
         }
-        if (!allDone) { upNextExId = candidateEx.id; break; }
+        if (!exObj || typeof exObj !== 'object') return false;
+        const nm = String(exObj.name || '').toLowerCase();
+        const id = String(exObj.id || '').toLowerCase();
+        return Boolean(PULLUP_EX_ID_TO_DAY[exObj.id]) || id.includes('pullup') || /\b(overhand\s+pull[- ]?ups?|pull[- ]?ups?|chin[- ]?ups?)\b/i.test(nm);
       }
 
-      const totalExercisesToday = exercisesToday.length;
+      let upNextExId = null;
+      for (const candidateEx of exercisesToday) {
+        if (isOverhandPullUpsExerciseInline(candidateEx)) continue;
+        let resolvedAll = true;
+        let doneAny = false;
+        for (let s = 1; s <= candidateEx.sets; s++) {
+          const e = getLogEntry(week, dayIdx, candidateEx.id, s);
+          if (!e || (!e.done && !e.skipped)) { resolvedAll = false; break; }
+          if (e.done) doneAny = true;
+        }
+        if (!(resolvedAll && doneAny)) { upNextExId = candidateEx.id; break; }
+      }
+
+      const nonPullupExercisesToday = exercisesToday.filter(ex => !isOverhandPullUpsExerciseInline(ex));
+      const totalExercisesToday = nonPullupExercisesToday.length;
 
       function classifyExerciseCategoryInline(exObj) {
         if (typeof window.classifyExerciseCategory === 'function') {
@@ -16234,19 +16297,8 @@
         return 'weightlifting';
       }
 
-      function isOverhandPullUpsExerciseInline(exObj) {
-        if (typeof window.isOverhandPullUpsExercise === 'function') {
-          return window.isOverhandPullUpsExercise(exObj);
-        }
-        if (!exObj || typeof exObj !== 'object') return false;
-        const nm = String(exObj.name || '').toLowerCase();
-        const id = String(exObj.id || '').toLowerCase();
-        return Boolean(PULLUP_EX_ID_TO_DAY[exObj.id]) || id.includes('pullup') || /\b(overhand\s+pull[- ]?ups?|pull[- ]?ups?|chin[- ]?ups?)\b/i.test(nm);
-      }
-
-      const orderedExercisesToday = typeof window.orderExercisesWithPullUpsFirst === 'function'
-        ? window.orderExercisesWithPullUpsFirst(exercisesToday)
-        : exercisesToday.slice().sort((a, b) => (isOverhandPullUpsExerciseInline(b) ? 1 : 0) - (isOverhandPullUpsExerciseInline(a) ? 1 : 0));
+      // All pull-up exercises are merged into the single unified Pull-Ups group immediately below Warm-Up (#pinned-pullups-gym-hub)
+      const orderedExercisesToday = nonPullupExercisesToday.slice();
 
       const categorizedExerciseCards = {
         pullUpsLead: [],
@@ -16257,7 +16309,7 @@
 
       const exerciseCardsHtml = orderedExercisesToday.map((ex, exOrder) => {
         const exDisplayCategory = classifyExerciseCategoryInline(ex);
-        const isPullUpsLeadEx = exDisplayCategory === 'bodyweight' && isOverhandPullUpsExerciseInline(ex);
+        const isPullUpsLeadEx = false;
         const meta = EXERCISE_META[ex.id] || {
           equipType: 'dumbbells',
           equipLabel: 'Gym Equipment',
@@ -16335,14 +16387,31 @@
         }
 
         let exDoneSets = 0;
+        let exResolvedSets = 0;
         let firstUnloggedSetFound = false;
         let setsHtml = '';
         const baseDefaultLbs = isMachineEx && BARBELL_EX_IDS.includes(ex.id) && meta.defaultWeightLbs > 45
           ? Math.max(20, meta.defaultWeightLbs - 45)
           : meta.defaultWeightLbs;
-        let set1EffectiveTotal = exUnit === 'kg'
-          ? (baseDefaultLbs > 0 ? Math.max(1.25, Math.round((baseDefaultLbs / 2.20462) / 1.25) * 1.25) : 0)
-          : (baseDefaultLbs > 0 ? Math.max(2.5, baseDefaultLbs) : 0);
+
+        // Query synced workout history (Supabase + local state) for the user's most recent successful set weight
+        const mostRecentHistoricalWeight = (typeof window.resolveMostRecentSuccessfulWeight === 'function' && !isBodyweightRepsOnly && !isTimedHold)
+          ? window.resolveMostRecentSuccessfulWeight({
+              exerciseId: ex.id,
+              canonicalExerciseId: ex.exerciseID || resolveCanonicalExerciseIdInline(ex.id, ex.name),
+              targetUnit: exUnit,
+              currentWeek: week,
+              currentDayIdx: dayIdx,
+              workoutLogs: state.workoutLogs,
+              exerciseHistory: state.exerciseHistory
+            })
+          : null;
+
+        let set1EffectiveTotal = mostRecentHistoricalWeight && mostRecentHistoricalWeight.weight > 0
+          ? mostRecentHistoricalWeight.weight
+          : (exUnit === 'kg'
+              ? (baseDefaultLbs > 0 ? Math.max(1.25, Math.round((baseDefaultLbs / 2.20462) / 1.25) * 1.25) : 0)
+              : (baseDefaultLbs > 0 ? Math.max(2.5, baseDefaultLbs) : 0));
         const setEffectiveTotals = {};
         const setBarMaths = {};
         const set1TodayEntry = getLogEntry(week, dayIdx, ex.id, 1);
@@ -16354,6 +16423,7 @@
           const existing = getLogEntry(week, dayIdx, ex.id, s);
           const prevSuggestion = getPreviousWeekSuggestion(week, dayIdx, ex.id, s, ex.name);
           const isDone = !!(existing && existing.done);
+          const isSkippedSet = !!(existing && existing.skipped && !existing.done);
 
           // Find most recent completed set prior to s today (for Rule B intra-workout cascading suggestion)
           let priorLoggedTodayEntry = null;
@@ -16365,13 +16435,17 @@
             }
           }
 
-          const defaultTotalPlaceholder = exUnit === 'kg'
-            ? (baseDefaultLbs > 0 ? Math.max(1.25, Math.round((baseDefaultLbs / 2.20462) / 1.25) * 1.25) : 0)
-            : (baseDefaultLbs > 0 ? Math.max(2.5, baseDefaultLbs) : 0);
+          const defaultTotalPlaceholder = mostRecentHistoricalWeight && mostRecentHistoricalWeight.weight > 0
+            ? mostRecentHistoricalWeight.weight
+            : (exUnit === 'kg'
+                ? (baseDefaultLbs > 0 ? Math.max(1.25, Math.round((baseDefaultLbs / 2.20462) / 1.25) * 1.25) : 0)
+                : (baseDefaultLbs > 0 ? Math.max(2.5, baseDefaultLbs) : 0));
 
           const rawLoggedWeight = (existing && existing.weight !== undefined && existing.weight !== '') ? String(existing.weight) : '';
           let prevWeekCarryWeight = '';
-          if (prevSuggestion && prevSuggestion.weight !== undefined && prevSuggestion.weight !== '') {
+          if (mostRecentHistoricalWeight && mostRecentHistoricalWeight.weight > 0) {
+            prevWeekCarryWeight = String(mostRecentHistoricalWeight.formattedWeight || mostRecentHistoricalWeight.weight);
+          } else if (prevSuggestion && prevSuggestion.weight !== undefined && prevSuggestion.weight !== '') {
             if (prevSuggestion.unit && prevSuggestion.unit !== exUnit) {
               const conv = convertAndRoundWeight(prevSuggestion.weight, prevSuggestion.unit);
               prevWeekCarryWeight = conv ? String(conv.rounded) : String(prevSuggestion.weight);
@@ -16386,14 +16460,15 @@
           const baseRepPlaceholder = pullupDayNum ? getPullupDefaultReps(pullupDayNum, s, week) : ex.reps;
           const defaultNumericReps = parseTargetRepsNumber(ex.reps, pullupDayNum, s, week);
 
-          // Rule A & Rule B Set Suggestion State Machine:
-          // Rule B: If an earlier set is logged today and this set is unlogged, suggest that logged set's exact weight & reps (or N+1 on Pyramid Pull-Up days).
-          // Rule A: Before Set 1 is logged today, if previous week data exists, pre-fill/suggest last week's weight & reps; else use default weight & target reps.
           let suggestedWeightVal = '';
           let suggestedRepsVal = '';
           let prevWeekHintHtml = '';
 
-          if (isDone) {
+          if (isSkippedSet) {
+            // Skipped sets stay strictly blank (never auto-filled)
+            suggestedWeightVal = '';
+            suggestedRepsVal = '';
+          } else if (isDone) {
             suggestedWeightVal = rawLoggedWeight !== '' ? rawLoggedWeight : String(defaultTotalPlaceholder);
             suggestedRepsVal = (existing && existing.reps !== undefined && existing.reps !== '') ? String(existing.reps) : String(defaultNumericReps);
           } else if (s > 1 && priorLoggedTodayEntry) {
@@ -16409,19 +16484,19 @@
             } else {
               suggestedRepsVal = (priorLoggedTodayEntry.reps !== undefined && priorLoggedTodayEntry.reps !== '') ? String(priorLoggedTodayEntry.reps) : String(defaultNumericReps);
             }
-          } else if (!isSet1LoggedToday && prevSuggestion && (prevWeekCarryWeight !== '' || (prevSuggestion.reps !== undefined && prevSuggestion.reps !== ''))) {
+          } else if (!isSet1LoggedToday && (mostRecentHistoricalWeight || (prevSuggestion && (prevWeekCarryWeight !== '' || (prevSuggestion.reps !== undefined && prevSuggestion.reps !== ''))))) {
             suggestedWeightVal = rawLoggedWeight !== '' ? rawLoggedWeight : (prevWeekCarryWeight !== '' ? prevWeekCarryWeight : String(defaultTotalPlaceholder));
             suggestedRepsVal = (existing && existing.reps !== undefined && existing.reps !== '')
               ? String(existing.reps)
-              : (isPyramidPullupEx ? String(s) : ((prevSuggestion.reps !== undefined && prevSuggestion.reps !== '') ? String(prevSuggestion.reps) : ''));
-            const prevSrc = prevSuggestion.sourceLabel || 'Prev Wk';
+              : (isPyramidPullupEx ? String(s) : ((prevSuggestion && prevSuggestion.reps !== undefined && prevSuggestion.reps !== '') ? String(prevSuggestion.reps) : ''));
+            const prevSrc = (mostRecentHistoricalWeight && mostRecentHistoricalWeight.sourceLabel) || (prevSuggestion && prevSuggestion.sourceLabel) || 'Last Session';
             const prevWPart = (!isBodyweightRepsOnly && !isTimedHold && prevWeekCarryWeight && prevWeekCarryWeight !== '0')
               ? `${prevWeekCarryWeight} ${exUnit} × `
               : '';
-            const prevRPart = prevSuggestion.reps || defaultNumericReps;
+            const prevRPart = (mostRecentHistoricalWeight && mostRecentHistoricalWeight.reps) || (prevSuggestion && prevSuggestion.reps) || defaultNumericReps;
             prevWeekHintHtml = `<div data-prev-week-hint="${logKey}" class="text-[0.625rem] font-semibold text-sky-400/95 leading-tight pb-1 border-b border-slate-800/70" style="grid-column: 1 / -1;">Last (${prevSrc}): ${prevWPart}${prevRPart}</div>`;
           } else {
-            suggestedWeightVal = rawLoggedWeight;
+            suggestedWeightVal = rawLoggedWeight !== '' ? rawLoggedWeight : (prevWeekCarryWeight !== '' ? prevWeekCarryWeight : '');
             suggestedRepsVal = (existing && existing.reps !== undefined && existing.reps !== '')
               ? String(existing.reps)
               : (isPyramidPullupEx ? String(s) : '');
@@ -16457,7 +16532,8 @@
           const isSelectedInCalc = isBarbellEx && calcTargetSet === s;
 
           if (isDone) exDoneSets++;
-          const isCurrentTargetSet = !isDone && !firstUnloggedSetFound;
+          if (isDone || isSkippedSet) exResolvedSets++;
+          const isCurrentTargetSet = !isDone && !isSkippedSet && !firstUnloggedSetFound;
           if (isCurrentTargetSet) firstUnloggedSetFound = true;
 
           // Insert Visual Grip Block Header & Separator before Set 1, Set 4, and Set 7 on Day 3 Pull-Ups (or Day 5 when Option C is chosen)
@@ -16634,31 +16710,33 @@
               <div class="py-2.5 px-2 sm:px-3 rounded-xl transition-all ${
                 isDone
                   ? 'bg-emerald-950/20 border border-emerald-500/35'
-                  : (isSelectedInCalc
-                      ? 'bg-slate-950/90 border border-sky-400/50'
-                      : 'bg-slate-950/75 border border-slate-800/80')
+                  : (isSkippedSet
+                      ? 'bg-neutral-800/80 border border-neutral-600/70'
+                      : (isSelectedInCalc
+                          ? 'bg-slate-950/90 border border-sky-400/50'
+                          : 'bg-slate-950/75 border border-slate-800/80'))
               }">
                 <div class="set-row-uncrushable-grid">
                   ${prevWeekHintHtml}
                   <div class="set-row-meta-cell">
-                    <span class="text-xs font-extrabold ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
+                    <span class="text-xs font-extrabold ${isDone ? 'text-emerald-400' : (isSkippedSet ? 'text-neutral-300' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300'))}">${setLabelText}${isSkippedSet ? ' · Skipped' : ''}</span>
                     ${isBarbellEx ? `
                       <button type="button" data-select-calc-ex="${ex.id}" data-set-idx="${s}" class="select-calc-set-btn min-h-[48px] min-w-[48px] px-2 py-1 rounded-lg border border-slate-700/80 text-xs font-bold ${isSelectedInCalc ? 'text-amber-300 border-amber-400/60' : 'text-slate-300 hover:text-sky-300'} transition" title="Select Set ${s} in Calculator">
                         ${isSelectedInCalc ? 'Active' : (isMachineEx && machineLoadMode === 'pin_stack' ? 'Pin' : 'Plates')}
                       </button>
                     ` : ''}
                   </div>
+                  <!-- Weight Input: Plain Text Box (Plus and Minus Buttons Removed) -->
                   <div class="set-row-stepper-cell">
-                    <div class="weight-stepper ring-1 ring-inset ${isBarbellEx ? 'ring-amber-500/40' : 'ring-slate-700/90'}">
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-${weightStep}" class="step-adj-btn text-base font-extrabold text-slate-200 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Weight">−</button>
-                      <input type="number" step="${weightStep}" min="0" max="999" inputmode="decimal" placeholder="${weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" aria-label="${ex.name} Set ${s} Weight" class="workout-input text-white placeholder-slate-400 focus:outline-none" />
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="${weightStep}" class="step-adj-btn text-base font-extrabold text-slate-200 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Weight">+</button>
+                    <div class="weight-plain-box ring-1 ring-inset ${isBarbellEx ? 'ring-amber-500/40' : 'ring-slate-700/90'}">
+                      <input type="text" inputmode="decimal" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" placeholder="${isSkippedSet ? 'Skipped' : weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-unit="${exUnit}" aria-label="${ex.name} Set ${s} Weight (${exUnit})" class="workout-input weight-plain-input text-white placeholder-slate-400 focus:outline-none" />
                     </div>
                   </div>
+                  <!-- Reps Input: Keeps Minus and Plus Stepper Buttons Only -->
                   <div class="set-row-stepper-cell">
                     <div class="reps-stepper ring-1 ring-inset ring-slate-700/90">
                       <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn text-base font-extrabold text-slate-200 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
-                      <input type="number" min="0" max="100" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input text-white placeholder-slate-400 focus:outline-none" />
+                      <input type="number" min="0" max="100" inputmode="numeric" autocomplete="off" data-lpignore="true" placeholder="${isSkippedSet ? '—' : repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input text-white placeholder-slate-400 focus:outline-none" />
                       <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn text-base font-extrabold text-slate-200 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
                     </div>
                   </div>
@@ -16666,11 +16744,13 @@
                     <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${setRestSeconds}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn min-h-[48px] min-w-[72px] px-3 py-2 rounded-lg text-xs font-extrabold transition ${
                       isDone
                         ? 'neuro-btn-done shadow-sm'
-                        : (isCurrentTargetSet
-                            ? 'bg-amber-600/20 hover:bg-amber-600/30 text-amber-100 border border-amber-500/70 shadow-sm'
-                            : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700')
+                        : (isSkippedSet
+                            ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-100 border border-neutral-500'
+                            : (isCurrentTargetSet
+                                ? 'bg-amber-600/20 hover:bg-amber-600/30 text-amber-100 border border-amber-500/70 shadow-sm'
+                                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'))
                     }">
-                      ${isDone ? '✓ Done' : '✓ Log'}
+                      ${isDone ? '✓ Done' : (isSkippedSet ? 'Skipped' : '✓ Log')}
                     </button>
                     <button type="button" data-delete-set-key="${logKey}" data-ex-name="${ex.name}" data-set-idx="${s}" aria-label="Delete logged data for ${ex.name} Set ${s}" title="Clear Set ${s}" class="delete-set-btn min-h-[48px] min-w-[48px] px-2.5 py-2 rounded-lg border border-rose-500/50 bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 text-xs font-extrabold transition inline-flex items-center justify-center">
                       <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
@@ -16719,12 +16799,12 @@
           }
         }
 
-        const isExComplete = exDoneSets === ex.sets;
-        const isExInProgress = exDoneSets > 0 && exDoneSets < ex.sets;
-        const remainingSetsCount = Math.max(0, ex.sets - exDoneSets);
+        const isExComplete = exResolvedSets === ex.sets && exDoneSets > 0;
+        const isExInProgress = exResolvedSets > 0 && !isExComplete;
+        const remainingSetsCount = Math.max(0, ex.sets - exResolvedSets);
         const isUpNext = ex.id === upNextExId;
         const isCollapsedDone = isExerciseSetsCollapsed(dayIdx, ex.id, isExComplete);
-        const isActiveCard = (!isCollapsedDone) || (state.activeFocusedExId ? ex.id === state.activeFocusedExId : (isUpNext && !isExComplete));
+        const isActiveCard = !isExComplete && (state.activeFocusedExId ? ex.id === state.activeFocusedExId : isUpNext);
         const activeCalcEffectiveTotal = setEffectiveTotals[calcTargetSet] !== undefined ? setEffectiveTotals[calcTargetSet] : set1EffectiveTotal;
         const activeCalcBarMath = isBarbellEx ? (setBarMaths[calcTargetSet] || computeBarbellMath(activeCalcEffectiveTotal, ex.id, exUnit, ex)) : null;
         const s1BarMath = isBarbellEx ? (setBarMaths[1] || computeBarbellMath(set1EffectiveTotal, ex.id, exUnit, ex)) : null;
@@ -16748,16 +16828,15 @@
           ? formatCardioDurationClockInline(activeCardioLiveState.elapsedSec)
           : '00:00';
         const effectiveExComplete = isCardioEx ? cardioDoneNow : isExComplete;
+        const isHighlightedActive = !effectiveExComplete && (isActiveCard || isExInProgress);
 
         const cardHtml = `
-          <article id="ex-card-${ex.id}" data-exercise-index="${exOrder}" data-exercise-category="${exDisplayCategory}" data-canonical-ex-id="${canonicalExId}" data-ex-progress-state="${effectiveExComplete ? 'completed' : (isExInProgress ? 'in_progress' : 'not_started')}" style="${isExInProgress ? 'border: 2px solid #d97706; background: rgba(217, 119, 6, 0.15);' : (!isActiveCard && !effectiveExComplete ? 'border: 1px solid #334155;' : '')}" class="${
-            isExInProgress
-              ? 'shadow-lg shadow-amber-950/25'
-              : (isActiveCard
-                  ? 'border-2 border-sky-400 bg-[#1e293b] shadow-lg shadow-sky-950/40'
-                  : (effectiveExComplete
-                      ? 'border border-[#059669]/55 bg-[#1e293b]/80 opacity-90 hover:opacity-100'
-                      : 'bg-[#1e293b] hover:border-slate-500'))
+          <article id="ex-card-${ex.id}" data-exercise-index="${exOrder}" data-exercise-category="${exDisplayCategory}" data-canonical-ex-id="${canonicalExId}" data-ex-progress-state="${effectiveExComplete ? 'completed' : (isHighlightedActive ? 'active' : 'not_started')}" class="${
+            effectiveExComplete
+              ? 'exercise-card-completed bg-neutral-800 border border-neutral-600'
+              : (isHighlightedActive
+                  ? 'exercise-card-active border-2 border-cyan-400 bg-[#1e293b]'
+                  : 'border border-slate-700 bg-[#1e293b] hover:border-slate-500')
           } rounded-2xl px-1.5 py-3 sm:p-4 space-y-2.5 scroll-mt-28 transition-all">
             ${ex.isHistorySwapped ? `
               <div class="flex flex-wrap items-center justify-between gap-2 bg-sky-950/50 border border-sky-400/45 rounded-xl px-3 py-2">
@@ -16805,11 +16884,12 @@
                     ${!isCardioEx ? `<span class="text-[0.6875rem] font-semibold text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded-md whitespace-nowrap">${isTimedHold ? `${ex.sets} Sets × ${targetHoldSec}s / side` : `${ex.sets} Sets × ${ex.reps}`}</span>` : ''}
                     ${!isCardioEx ? `<button type="button" data-explain-ex="${ex.id}" data-explain-name="${String(displayExName || ex.name).replace(/"/g, '&quot;')}" data-explain-sets="${ex.sets}" data-explain-reps="${String(ex.reps || '8-12').replace(/"/g, '&quot;')}" data-explain-weight="${meta.defaultWeightLbs || 0}" data-explain-bw="${isBodyweightRepsOnly ? '1' : '0'}" class="explain-math-btn px-2 py-0.5 rounded-md border border-sky-400/55 bg-sky-500/15 hover:bg-sky-500/25 text-[0.625rem] font-extrabold text-sky-200 whitespace-nowrap transition" title="See the exact math behind this weight and rep target">ⓘ Why?</button>` : ''}
                     ${!isCardioEx && !isBodyweightRepsOnly ? `<button type="button" data-scan-pin-ex="${ex.id}" data-scan-pin-name="${String(displayExName || ex.name).replace(/"/g, '&quot;')}" data-scan-pin-slot="${slotIdx}" class="scan-pin-ocr-btn px-2 py-0.5 rounded-md border border-emerald-400/50 bg-emerald-500/15 hover:bg-emerald-500/25 text-[0.625rem] font-extrabold text-emerald-200 whitespace-nowrap transition" title="Scan pin-loaded weight machine stack with camera">📷 Scan Pin</button>` : ''}
+                    ${isHighlightedActive ? `<span class="text-[0.625rem] font-extrabold px-2 py-0.5 rounded-md bg-cyan-400/20 text-cyan-200 border border-cyan-400/60 whitespace-nowrap">Active</span>` : ''}
                     ${isExInProgress ? `<span data-ex-inprogress-badge="${ex.id}" class="text-[0.625rem] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b;">IN PROGRESS • ${exDoneSets}/${ex.sets}</span>` : ''}
                     ${effectiveExComplete ? `<span class="text-[0.625rem] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">✓ Done</span>` : ''}
                   </div>
 
-                  <!-- Exercise Title Row with Directly Exposed [ℹ️ Form Notes] and [🎥 Video] Buttons on the Right -->
+                  <!-- Exercise Title Row with Visible Machine Photo & Video Buttons on the Right -->
                   <div class="flex items-start justify-between gap-1.5 mt-1">
                     <h3 data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${effectiveExComplete ? '1' : '0'}" class="expand-done-btn cursor-pointer flex-1 min-w-0 ${
                       isActiveCard || isExInProgress
@@ -16823,14 +16903,14 @@
                         data-day-idx="${dayIdx}"
                         data-panel-key="${panelKey}"
                         aria-expanded="${isImgOpen ? 'true' : 'false'}"
-                        class="toggle-img-btn px-2 py-1 rounded-lg border text-[0.625rem] font-extrabold whitespace-nowrap transition ${
+                        class="toggle-img-btn min-h-[48px] px-2.5 py-1 rounded-lg border text-[0.6875rem] font-extrabold whitespace-nowrap transition ${
                           isImgOpen
                             ? 'bg-sky-500/25 border-sky-400 text-sky-100'
-                            : 'bg-[#0f172a] hover:bg-slate-800 border-slate-700 text-slate-200'
+                            : 'bg-[#0f172a] hover:bg-slate-800 border-slate-600 text-slate-100'
                         }"
-                        title="Open form cues and setup notes"
+                        title="Open verified machine photo and setup cues"
                       >
-                        ℹ️ Form
+                        📷 Machine Photo
                       </button>
                       <a
                         href="${verifiedExVideoUrl}"
@@ -16838,7 +16918,7 @@
                         data-canonical-ex-id="${canonicalExId}"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="px-2 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/40 text-[0.625rem] font-extrabold whitespace-nowrap transition"
+                        class="min-h-[48px] px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/40 text-[0.6875rem] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center"
                         title="Watch verified form video for ${ex.name}"
                       >
                         🎥 Video
@@ -17983,7 +18063,7 @@
             </div>
           `;
         }
-        listEl.innerHTML = bonusHabitsBarHtml + categoryTabsHtml + pullUpsLeadSectionHtml + weightliftingSectionHtml + bodyweightSectionHtml + cardioSectionHtml;
+        listEl.innerHTML = bonusHabitsBarHtml + categoryTabsHtml + weightliftingSectionHtml + bodyweightSectionHtml + cardioSectionHtml;
 
         const day6AbsBtn = document.getElementById('day6-toggle-daily-abs-btn');
         if (day6AbsBtn) {
@@ -17997,6 +18077,10 @@
             toggleDay6BonusHabit('pullups', dayIdx);
           });
         }
+      }
+
+      if (typeof window.refreshWarmupNextExercisePreview === 'function') {
+        window.refreshWarmupNextExercisePreview(exercisesToday, orderedExercisesToday, week, dayIdx, dayAssignment);
       }
 
       listEl.querySelectorAll('.ex-category-tab-btn').forEach(tabBtn => {
@@ -19599,6 +19683,46 @@
           const isTimedHoldSet = Boolean((exObjForSet && exObjForSet.isTimedHold) || exId === 'tue_side_plank');
           const wasAlreadyDone = Boolean(state.workoutLogs[key] && state.workoutLogs[key].done);
 
+          // SMART PROMPT FOR MISSED SET 1: Detect logging Set 2+ while Set 1 remains blank (never auto-fills Set 1!)
+          const bypassMissedSetPrompt = btn.getAttribute('data-bypass-missed-set-one') === 'true';
+          if (bypassMissedSetPrompt) {
+            btn.removeAttribute('data-bypass-missed-set-one');
+          } else if (!wasAlreadyDone && setIdx >= 2) {
+            const set1EntryCheck = getLogEntry(week, dayIdx, exId, 1);
+            const missedCheck = typeof window.detectMissedSetOneCondition === 'function'
+              ? window.detectMissedSetOneCondition({
+                  setIdx,
+                  setOneEntry: set1EntryCheck,
+                  isTargetSetAlreadyDone: wasAlreadyDone
+                })
+              : {
+                  shouldPrompt: !set1EntryCheck || (!set1EntryCheck.done && !set1EntryCheck.skipped),
+                  question: 'Did you skip set one, or did you forget to log it?'
+                };
+            if (missedCheck && missedCheck.shouldPrompt && typeof window.openMissedSetOneModal === 'function') {
+              const kIdxModal = exId === 'cable_ab_crunch' ? dayIdx : slotIdx;
+              const set1KeyModal = `w${week}_${kIdxModal}_${exId}_1`;
+              const isBwModal = Boolean(
+                exObjForSet &&
+                (exObjForSet.isBodyweightRepsOnly || PULLUP_EX_ID_TO_DAY[exId] || isTimedHoldSet)
+              );
+              window.openMissedSetOneModal({
+                triggerBtn: btn,
+                week,
+                dayIdx,
+                slotIdx: kIdxModal,
+                exId,
+                exName: (exObjForSet && exObjForSet.name) || exName || 'Exercise',
+                exUnit,
+                set1Key: set1KeyModal,
+                targetSetIdx: setIdx,
+                isBodyweightOnly: isBwModal,
+                question: missedCheck.question
+              });
+              return;
+            }
+          }
+
           // Task 4: Strict ELI12 Content Validation for Weight and Reps before saving
           if (!wasAlreadyDone && !isTimedHoldSet) {
             if (weightInput && weightInput.value.trim() !== '') {
@@ -20806,6 +20930,46 @@
           const cur = mapInfo ? (getLogEntry(week, assignedCalIdx, mapInfo.exId, setIdx) || { reps: '', done: false }) : { reps: '', done: false };
           const defaultReps = getPullupDefaultReps(dayNum, setIdx, week);
           const nextDone = !cur.done;
+
+          // SMART PROMPT FOR MISSED SET 1 on Merged Pull-Up Group
+          const bypassPullupMissedPrompt = btn.getAttribute('data-bypass-missed-set-one') === 'true';
+          if (bypassPullupMissedPrompt) {
+            btn.removeAttribute('data-bypass-missed-set-one');
+          } else if (nextDone && setIdx >= 2 && mapInfo) {
+            const set1PullupEntry = getLogEntry(week, assignedCalIdx, mapInfo.exId, 1);
+            const missedCheck = typeof window.detectMissedSetOneCondition === 'function'
+              ? window.detectMissedSetOneCondition({
+                  setIdx,
+                  setOneEntry: set1PullupEntry,
+                  isTargetSetAlreadyDone: Boolean(cur.done)
+                })
+              : {
+                  shouldPrompt: !set1PullupEntry || (!set1PullupEntry.done && !set1PullupEntry.skipped),
+                  question: 'Did you skip set one, or did you forget to log it?'
+                };
+            if (missedCheck && missedCheck.shouldPrompt && typeof window.openMissedSetOneModal === 'function') {
+              const slotIdxForPullup = typeof getSlotIndexForCalendarDay === 'function'
+                ? getSlotIndexForCalendarDay(week, assignedCalIdx)
+                : assignedCalIdx;
+              const set1KeyModal = `w${week}_${slotIdxForPullup}_${mapInfo.exId}_1`;
+              window.openMissedSetOneModal({
+                triggerBtn: btn,
+                week,
+                dayIdx: assignedCalIdx,
+                slotIdx: slotIdxForPullup,
+                exId: mapInfo.exId,
+                exName: `Overhand Pull-Up Program (Day ${dayNum})`,
+                exUnit: 'lbs',
+                set1Key: set1KeyModal,
+                targetSetIdx: setIdx,
+                isBodyweightOnly: true,
+                pullupDayNum: dayNum,
+                question: missedCheck.question
+              });
+              return;
+            }
+          }
+
           const isPyramidSession = isPullupSessionPyramidMode(dayNum, week);
           const dSpec = dayNum === 5 ? getEffectiveDay5PullupSpec(week) : PULLUP_DAYS_DATA.find(item => item.dayNum === dayNum);
           const totalSetsForDay = getEffectivePullupSetsCount(week, dayNum, dSpec ? dSpec.setsCount : 5);
@@ -34156,6 +34320,7 @@
           if (typeof syncHeaderAuthButtonUI === 'function') syncHeaderAuthButtonUI();
           mountSettingsCustomProgramUploader();
           updateLiveClockScheduleBannerUI();
+          if (typeof window.syncWarmupClockTimerUI === 'function') window.syncWarmupClockTimerUI();
           if (typeof renderVeganView === 'function') renderVeganView();
           if (typeof renderShoppingView === 'function') renderShoppingView();
           const savedSnap = typeof window.loadActiveWorkoutSession === 'function' ? window.loadActiveWorkoutSession() : null;
@@ -34167,7 +34332,394 @@
         window.addEventListener('d3-onerm-bridge-ready', bootMobileUxWorkflows, { once: true });
       }
     }
+
+    // =========================================================================
+    // NEON MAX UPGRADES: DEVICE-CLOCK WARM-UP TIMER, NEXT EXERCISE PREVIEW,
+    // AND MISSED SET 1 SMART PROMPT MODAL (ZERO AUTO-FILL)
+    // =========================================================================
+    (function initNeonMaxWorkoutControllers() {
+      const warmupTimerState = {
+        running: false,
+        startedAtMs: null,
+        accumulatedMs: 0,
+        targetDurationSec: 600,
+        intervalId: null
+      };
+
+      function syncWarmupClockTimerUI() {
+        const nowMs = Date.now();
+        const snap = typeof window.computeDeviceClockWarmupTimer === 'function'
+          ? window.computeDeviceClockWarmupTimer({
+              nowMs,
+              startedAtMs: warmupTimerState.startedAtMs,
+              accumulatedMs: warmupTimerState.accumulatedMs,
+              targetDurationSec: warmupTimerState.targetDurationSec,
+              running: warmupTimerState.running
+            })
+          : (() => {
+              const delta = warmupTimerState.running && warmupTimerState.startedAtMs ? Math.max(0, nowMs - warmupTimerState.startedAtMs) : 0;
+              const elapsedSec = Math.floor((warmupTimerState.accumulatedMs + delta) / 1000);
+              const rem = Math.max(0, warmupTimerState.targetDurationSec - elapsedSec);
+              const mm = String(Math.floor(rem / 60)).padStart(2, '0');
+              const ss = String(rem % 60).padStart(2, '0');
+              const d = new Date(nowMs);
+              const h12 = d.getHours() % 12 || 12;
+              const m2 = String(d.getMinutes()).padStart(2, '0');
+              const s2 = String(d.getSeconds()).padStart(2, '0');
+              return {
+                formattedRemaining: `${mm}:${ss}`,
+                deviceClockText: `${h12}:${m2}:${s2} ${d.getHours() >= 12 ? 'PM' : 'AM'}`,
+                isComplete: rem <= 0
+              };
+            })();
+
+        const clockEl = document.getElementById('warmup-device-clock-time');
+        const dispEl = document.getElementById('warmup-timer-display');
+        const toggleBtn = document.getElementById('warmup-timer-toggle-btn');
+        if (clockEl) clockEl.textContent = snap.deviceClockText;
+        if (dispEl) dispEl.textContent = snap.formattedRemaining;
+        if (toggleBtn) toggleBtn.textContent = warmupTimerState.running ? 'Pause' : 'Start';
+
+        if (warmupTimerState.running && snap.isComplete) {
+          warmupTimerState.running = false;
+          warmupTimerState.startedAtMs = null;
+          warmupTimerState.accumulatedMs = warmupTimerState.targetDurationSec * 1000;
+          if (toggleBtn) toggleBtn.textContent = 'Done';
+          if (typeof showToast === 'function') showToast('Warm-up timer complete! Ready for your first exercise.');
+        }
+      }
+      window.syncWarmupClockTimerUI = syncWarmupClockTimerUI;
+
+      function refreshWarmupNextExercisePreview(allExercisesToday, nonPullupExercisesToday, week, dayIdx, dayAssignment) {
+        const textEl = document.getElementById('warmup-next-exercise-text');
+        if (!textEl) return;
+        const isRest = Boolean(dayAssignment && dayAssignment.isRestDay);
+        const pullupExercises = (allExercisesToday || []).filter(ex => {
+          const id = String((ex && ex.id) || '').toLowerCase();
+          const nm = String((ex && ex.name) || '').toLowerCase();
+          return id.includes('pullup') || /\bpull[- ]?ups?\b/i.test(nm);
+        });
+        const hasPullupsToday = !isRest && pullupExercises.length > 0;
+        let pullupsDone = !hasPullupsToday;
+        if (hasPullupsToday) {
+          pullupsDone = pullupExercises.every(pex => {
+            let doneCount = 0;
+            for (let s = 1; s <= (pex.sets || 1); s++) {
+              const e = typeof getLogEntry === 'function' ? getLogEntry(week, dayIdx, pex.id, s) : null;
+              if (!e || (!e.done && !e.skipped)) return false;
+              if (e.done) doneCount++;
+            }
+            return doneCount > 0;
+          });
+        }
+        const candidates = (nonPullupExercisesToday || []).map(ex => {
+          let resolved = true;
+          let doneAny = false;
+          for (let s = 1; s <= (ex.sets || 1); s++) {
+            const e = typeof getLogEntry === 'function' ? getLogEntry(week, dayIdx, ex.id, s) : null;
+            if (!e || (!e.done && !e.skipped)) { resolved = false; break; }
+            if (e.done) doneAny = true;
+          }
+          return { id: ex.id, name: ex.name, sets: ex.sets || 1, isPullup: false, isDone: resolved && doneAny };
+        });
+
+        const preview = typeof window.resolveNextExercisePreviewName === 'function'
+          ? window.resolveNextExercisePreviewName({
+              isRestDay: isRest,
+              hasPullupGroupToday: hasPullupsToday,
+              isPullupGroupDone: pullupsDone,
+              pullupGroupName: pullupExercises[0] ? pullupExercises[0].name : 'Overhand Pull-Up Program',
+              remainingExercises: candidates
+            })
+          : {
+              displayText: `Next Exercise: ${hasPullupsToday && !pullupsDone ? 'Overhand Pull-Up Program' : ((candidates.find(c => !c.isDone) || {}).name || 'All Exercises Complete')}`
+            };
+        textEl.textContent = preview.displayText;
+      }
+      window.refreshWarmupNextExercisePreview = refreshWarmupNextExercisePreview;
+
+      const wToggleBtn = document.getElementById('warmup-timer-toggle-btn');
+      const wPlusBtn = document.getElementById('warmup-timer-plus-btn');
+      const wResetBtn = document.getElementById('warmup-timer-reset-btn');
+      if (wToggleBtn) {
+        wToggleBtn.addEventListener('click', () => {
+          if (warmupTimerState.running) {
+            const delta = warmupTimerState.startedAtMs ? Math.max(0, Date.now() - warmupTimerState.startedAtMs) : 0;
+            warmupTimerState.accumulatedMs += delta;
+            warmupTimerState.startedAtMs = null;
+            warmupTimerState.running = false;
+          } else {
+            warmupTimerState.startedAtMs = Date.now();
+            warmupTimerState.running = true;
+          }
+          syncWarmupClockTimerUI();
+        });
+      }
+      if (wPlusBtn) {
+        wPlusBtn.addEventListener('click', () => {
+          warmupTimerState.targetDurationSec += 60;
+          syncWarmupClockTimerUI();
+        });
+      }
+      if (wResetBtn) {
+        wResetBtn.addEventListener('click', () => {
+          warmupTimerState.running = false;
+          warmupTimerState.startedAtMs = null;
+          warmupTimerState.accumulatedMs = 0;
+          warmupTimerState.targetDurationSec = 600;
+          syncWarmupClockTimerUI();
+        });
+      }
+      syncWarmupClockTimerUI();
+      setInterval(syncWarmupClockTimerUI, 1000);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') syncWarmupClockTimerUI();
+      });
+
+      // Missed Set 1 Modal Controller (Exact Question + Two Choice Buttons + Zero Auto-Fill)
+      // Bound after DOM parsing so #missed-set-one-modal (declared below this script) is always present.
+      let pendingMissedSetCtx = null;
+      let missedSetModalBound = false;
+      let modalEl = null;
+      let titleEl = null;
+      let subtitleEl = null;
+      let skipBtn = null;
+      let forgotBtn = null;
+      let inlineFormEl = null;
+      let weightWrapEl = null;
+      let weightInputEl = null;
+      let weightUnitEl = null;
+      let repsInputEl = null;
+      let repsMinusBtn = null;
+      let repsPlusBtn = null;
+      let saveBothBtn = null;
+      let cancelBtn = null;
+
+      function closeMissedSetModal() {
+        if (modalEl) modalEl.classList.add('hidden');
+        if (inlineFormEl) inlineFormEl.classList.add('hidden');
+        const trigger = pendingMissedSetCtx && pendingMissedSetCtx.triggerBtn;
+        pendingMissedSetCtx = null;
+        if (trigger && typeof trigger.focus === 'function') {
+          try { trigger.focus(); } catch (e) {}
+        }
+      }
+
+      function bindMissedSetOneModal() {
+        if (missedSetModalBound) return;
+        modalEl = document.getElementById('missed-set-one-modal');
+        if (!modalEl) return;
+        missedSetModalBound = true;
+        titleEl = document.getElementById('missed-set-one-modal-title');
+        subtitleEl = document.getElementById('missed-set-one-modal-subtitle');
+        skipBtn = document.getElementById('missed-set-skip-btn');
+        forgotBtn = document.getElementById('missed-set-forgot-btn');
+        inlineFormEl = document.getElementById('missed-set-inline-form');
+        weightWrapEl = document.getElementById('missed-set-weight-wrap');
+        weightInputEl = document.getElementById('missed-set-s1-weight');
+        weightUnitEl = document.getElementById('missed-set-s1-unit-label');
+        repsInputEl = document.getElementById('missed-set-s1-reps');
+        repsMinusBtn = document.getElementById('missed-set-s1-reps-minus');
+        repsPlusBtn = document.getElementById('missed-set-s1-reps-plus');
+        saveBothBtn = document.getElementById('missed-set-save-both-btn');
+        cancelBtn = document.getElementById('missed-set-cancel-btn');
+
+        if (skipBtn) {
+          skipBtn.addEventListener('click', () => {
+            if (!pendingMissedSetCtx) return;
+            const ctx = pendingMissedSetCtx;
+            const skippedEntry = typeof window.buildSkippedSetOneLog === 'function'
+              ? window.buildSkippedSetOneLog(state.workoutLogs[ctx.set1Key], ctx.exUnit)
+              : { weight: '', reps: '', done: false, skipped: true, unit: ctx.exUnit || 'lbs', updatedAt: Date.now() };
+            state.workoutLogs[ctx.set1Key] = skippedEntry;
+            if (ctx.week === 1) {
+              state.workoutLogs[`${ctx.slotIdx}_${ctx.exId}_1`] = Object.assign({}, skippedEntry);
+            }
+            if (ctx.pullupDayNum && typeof syncPullupStateBothWays === 'function') {
+              syncPullupStateBothWays(ctx.week, ctx.pullupDayNum, 1, { reps: '', done: false, skipped: true });
+            }
+            const trigger = ctx.triggerBtn;
+            closeMissedSetModal();
+            if (trigger) {
+              trigger.setAttribute('data-bypass-missed-set-one', 'true');
+              trigger.click();
+            }
+            if (typeof showToast === 'function') {
+              showToast('Set 1 marked skipped (left blank). Set 2 logged.');
+            }
+          });
+        }
+
+        if (forgotBtn) {
+          forgotBtn.addEventListener('click', () => {
+            if (!inlineFormEl) return;
+            inlineFormEl.classList.remove('hidden');
+            if (pendingMissedSetCtx && !pendingMissedSetCtx.isBodyweightOnly && weightInputEl) {
+              weightInputEl.focus();
+            } else if (repsInputEl) {
+              repsInputEl.focus();
+            }
+          });
+        }
+
+        if (repsMinusBtn && repsInputEl) {
+          repsMinusBtn.addEventListener('click', () => {
+            const cur = parseInt(repsInputEl.value || '0', 10) || 0;
+            repsInputEl.value = String(Math.max(1, cur - 1));
+          });
+        }
+        if (repsPlusBtn && repsInputEl) {
+          repsPlusBtn.addEventListener('click', () => {
+            const cur = parseInt(repsInputEl.value || '0', 10) || 0;
+            repsInputEl.value = String(Math.min(100, cur + 1));
+          });
+        }
+
+        if (saveBothBtn) {
+          saveBothBtn.addEventListener('click', () => {
+            if (!pendingMissedSetCtx) return;
+            const ctx = pendingMissedSetCtx;
+            const rawW = ctx.isBodyweightOnly ? '0' : String((weightInputEl && weightInputEl.value) || '').trim();
+            const rawR = String((repsInputEl && repsInputEl.value) || '').trim();
+
+            if (!ctx.isBodyweightOnly && rawW === '') {
+              if (typeof showToast === 'function') showToast('Please type your Set 1 weight first.');
+              if (weightInputEl) weightInputEl.focus();
+              return;
+            }
+            if (rawR === '' || !Number.isInteger(Number(rawR)) || Number(rawR) < 1 || Number(rawR) > 100) {
+              if (typeof showToast === 'function') showToast('Please enter Set 1 reps from 1 to 100.');
+              if (repsInputEl) repsInputEl.focus();
+              return;
+            }
+            if (!ctx.isBodyweightOnly && typeof window.validateLoggedWeight === 'function') {
+              const wCheck = window.validateLoggedWeight(rawW, ctx.exUnit);
+              if (!wCheck.valid) {
+                if (typeof showToast === 'function') showToast(wCheck.errorMessage);
+                if (weightInputEl) weightInputEl.focus();
+                return;
+              }
+            }
+
+            state.workoutLogs[ctx.set1Key] = {
+              weight: rawW,
+              reps: rawR,
+              done: true,
+              skipped: false,
+              unit: ctx.exUnit || 'lbs',
+              updatedAt: Date.now()
+            };
+            if (ctx.week === 1) {
+              state.workoutLogs[`${ctx.slotIdx}_${ctx.exId}_1`] = Object.assign({}, state.workoutLogs[ctx.set1Key]);
+            }
+            if (ctx.pullupDayNum && typeof syncPullupStateBothWays === 'function') {
+              syncPullupStateBothWays(ctx.week, ctx.pullupDayNum, 1, { reps: rawR, done: true, skipped: false });
+            }
+            if (typeof recordExerciseHistorySetInline === 'function') {
+              recordExerciseHistorySetInline(ctx.week, ctx.dayIdx, ctx.exId, ctx.exName, 1, rawW, rawR, ctx.exUnit || 'lbs');
+            }
+            const trigger = ctx.triggerBtn;
+            closeMissedSetModal();
+            if (trigger) {
+              trigger.setAttribute('data-bypass-missed-set-one', 'true');
+              trigger.click();
+            }
+            if (typeof showToast === 'function') {
+              showToast('Set 1 and Set 2 both logged.');
+            }
+          });
+        }
+
+        if (cancelBtn) {
+          cancelBtn.addEventListener('click', closeMissedSetModal);
+        }
+        document.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Escape' && modalEl && !modalEl.classList.contains('hidden')) {
+            closeMissedSetModal();
+          }
+        });
+      }
+
+      window.openMissedSetOneModal = function openMissedSetOneModal(ctx) {
+        bindMissedSetOneModal();
+        pendingMissedSetCtx = ctx;
+        if (titleEl) {
+          titleEl.textContent = ctx.question || 'Did you skip set one, or did you forget to log it?';
+        }
+        if (subtitleEl) {
+          subtitleEl.textContent = `${ctx.exName} · You tapped Set ${ctx.targetSetIdx} while Set 1 is still blank. Set 1 will not be filled automatically.`;
+        }
+        if (inlineFormEl) inlineFormEl.classList.add('hidden');
+        if (weightInputEl) weightInputEl.value = '';
+        if (repsInputEl) repsInputEl.value = '';
+        if (weightUnitEl) weightUnitEl.textContent = String(ctx.exUnit || 'lbs').toUpperCase();
+        if (weightWrapEl) {
+          if (ctx.isBodyweightOnly) weightWrapEl.classList.add('hidden');
+          else weightWrapEl.classList.remove('hidden');
+        }
+        if (modalEl) {
+          modalEl.classList.remove('hidden');
+          if (skipBtn) skipBtn.focus();
+        }
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindMissedSetOneModal, { once: true });
+      } else {
+        bindMissedSetOneModal();
+      }
+    })();
   </script>
+
+  <!-- Smart Prompt Modal for Missed Set 1 (Never Auto-Fills Set 1) -->
+  <div id="missed-set-one-modal" data-testid="missed-set-one-modal" role="dialog" aria-modal="true" aria-labelledby="missed-set-one-modal-title" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm">
+    <div class="w-full max-w-md rounded-2xl border-2 border-cyan-400/70 bg-slate-900 p-5 shadow-2xl space-y-4">
+      <div class="space-y-1.5">
+        <div class="text-[0.6875rem] font-extrabold uppercase tracking-wider text-cyan-300">Missed Set Check</div>
+        <h2 id="missed-set-one-modal-title" class="text-base sm:text-lg font-extrabold text-white leading-snug">Did you skip set one, or did you forget to log it?</h2>
+        <p id="missed-set-one-modal-subtitle" class="text-xs text-slate-300 leading-relaxed">Set 1 is still blank. Choose an option below. We will not fill Set 1 automatically.</p>
+      </div>
+
+      <div class="grid grid-cols-1 gap-2.5">
+        <button type="button" id="missed-set-skip-btn" data-testid="missed-set-skip-btn" class="w-full min-h-[48px] px-4 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 border border-neutral-500 text-white text-sm font-extrabold transition text-left">
+          1. I skipped Set 1 (leave Set 1 blank)
+        </button>
+        <button type="button" id="missed-set-forgot-btn" data-testid="missed-set-forgot-btn" class="w-full min-h-[48px] px-4 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-sm font-extrabold transition text-left">
+          2. I forgot to log Set 1 (type Set 1 now)
+        </button>
+      </div>
+
+      <!-- Inline Set 1 Quick Entry Form (Shown ONLY if user picks "I forgot to log Set 1"; always starts blank) -->
+      <div id="missed-set-inline-form" data-testid="missed-set-inline-form" class="hidden rounded-xl border border-slate-700 bg-slate-950 p-3.5 space-y-3">
+        <div class="text-xs font-extrabold text-cyan-200">Enter Set 1 Numbers</div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div id="missed-set-weight-wrap" class="space-y-1">
+            <label for="missed-set-s1-weight" class="block text-[0.6875rem] font-bold text-slate-300">Weight (<span id="missed-set-s1-unit-label">LBS</span>)</label>
+            <div class="weight-plain-box ring-1 ring-inset ring-slate-700">
+              <input type="text" id="missed-set-s1-weight" inputmode="decimal" autocomplete="off" data-lpignore="true" placeholder="Type weight" class="workout-input text-white placeholder-slate-400 focus:outline-none" />
+            </div>
+          </div>
+          <div class="space-y-1">
+            <label for="missed-set-s1-reps" class="block text-[0.6875rem] font-bold text-slate-300">Reps</label>
+            <div class="reps-stepper ring-1 ring-inset ring-slate-700">
+              <button type="button" id="missed-set-s1-reps-minus" class="step-adj-btn text-base font-extrabold text-slate-200 hover:text-white" aria-label="Decrease Set 1 Reps">−</button>
+              <input type="number" id="missed-set-s1-reps" min="1" max="100" inputmode="numeric" autocomplete="off" data-lpignore="true" placeholder="Reps" class="workout-input text-white placeholder-slate-400 focus:outline-none" />
+              <button type="button" id="missed-set-s1-reps-plus" class="step-adj-btn text-base font-extrabold text-slate-200 hover:text-white" aria-label="Increase Set 1 Reps">+</button>
+            </div>
+          </div>
+        </div>
+        <button type="button" id="missed-set-save-both-btn" data-testid="missed-set-save-both-btn" class="w-full min-h-[48px] px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-sm font-extrabold transition">
+          Save Set 1 &amp; Log Set 2
+        </button>
+      </div>
+
+      <div class="flex justify-end pt-1">
+        <button type="button" id="missed-set-cancel-btn" class="min-h-[48px] px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
 
   <div id="swap-ingredient-modal-root"></div>
   <script type="module" src="/src/d3ChartBridge.ts"></script>

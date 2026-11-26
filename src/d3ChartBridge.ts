@@ -407,6 +407,22 @@ import {
   resolveNavigationTarget,
   revertFastLogUndoSnapshot
 } from './utils/workoutUxImprovements';
+import {
+  MISSED_SET_ONE_MODAL_QUESTION,
+  MACHINE_PHOTO_PATHS,
+  buildOfflineMachineDiagramDataUri,
+  buildSkippedSetOneLog,
+  computeDeviceClockWarmupTimer,
+  detectMissedSetOneCondition,
+  formatDeviceClock12Hr,
+  formatMmSs,
+  inferMachineEquipmentFamily,
+  isExerciseResolvedDone,
+  resolveMachinePhotoAsset,
+  resolveMostRecentSuccessfulWeight,
+  resolveNextExercisePreviewName,
+  validateMachinePhotoRegistry
+} from './utils/workoutInterfaceUpgrades';
 
 const mountedVideoPlayerRoots = new WeakMap<HTMLElement, Root>();
 const mountedPhase2HubRoots = new WeakMap<HTMLElement, Root>();
@@ -1551,6 +1567,20 @@ declare global {
     resolveNavigationTarget?: typeof resolveNavigationTarget;
     buildSkipOnboardingDefaultPatch?: typeof buildSkipOnboardingDefaultPatch;
     extractRecentLiftWeights?: typeof extractRecentLiftWeights;
+    MISSED_SET_ONE_MODAL_QUESTION?: typeof MISSED_SET_ONE_MODAL_QUESTION;
+    MACHINE_PHOTO_PATHS?: typeof MACHINE_PHOTO_PATHS;
+    buildOfflineMachineDiagramDataUri?: typeof buildOfflineMachineDiagramDataUri;
+    buildSkippedSetOneLog?: typeof buildSkippedSetOneLog;
+    computeDeviceClockWarmupTimer?: typeof computeDeviceClockWarmupTimer;
+    detectMissedSetOneCondition?: typeof detectMissedSetOneCondition;
+    formatDeviceClock12Hr?: typeof formatDeviceClock12Hr;
+    formatMmSs?: typeof formatMmSs;
+    inferMachineEquipmentFamily?: typeof inferMachineEquipmentFamily;
+    isExerciseResolvedDone?: typeof isExerciseResolvedDone;
+    resolveMachinePhotoAsset?: typeof resolveMachinePhotoAsset;
+    resolveMostRecentSuccessfulWeight?: typeof resolveMostRecentSuccessfulWeight;
+    resolveNextExercisePreviewName?: typeof resolveNextExercisePreviewName;
+    validateMachinePhotoRegistry?: typeof validateMachinePhotoRegistry;
   }
 }
 
@@ -1873,5 +1903,19 @@ if (typeof window !== 'undefined') {
   window.resolveNavigationTarget = resolveNavigationTarget;
   window.buildSkipOnboardingDefaultPatch = buildSkipOnboardingDefaultPatch;
   window.extractRecentLiftWeights = extractRecentLiftWeights;
+  window.MISSED_SET_ONE_MODAL_QUESTION = MISSED_SET_ONE_MODAL_QUESTION;
+  window.MACHINE_PHOTO_PATHS = MACHINE_PHOTO_PATHS;
+  window.buildOfflineMachineDiagramDataUri = buildOfflineMachineDiagramDataUri;
+  window.buildSkippedSetOneLog = buildSkippedSetOneLog;
+  window.computeDeviceClockWarmupTimer = computeDeviceClockWarmupTimer;
+  window.detectMissedSetOneCondition = detectMissedSetOneCondition;
+  window.formatDeviceClock12Hr = formatDeviceClock12Hr;
+  window.formatMmSs = formatMmSs;
+  window.inferMachineEquipmentFamily = inferMachineEquipmentFamily;
+  window.isExerciseResolvedDone = isExerciseResolvedDone;
+  window.resolveMachinePhotoAsset = resolveMachinePhotoAsset;
+  window.resolveMostRecentSuccessfulWeight = resolveMostRecentSuccessfulWeight;
+  window.resolveNextExercisePreviewName = resolveNextExercisePreviewName;
+  window.validateMachinePhotoRegistry = validateMachinePhotoRegistry;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

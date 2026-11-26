@@ -1,5 +1,5 @@
-const APP_SHELL_CACHE = 'budget-gym-shell-v9';
-const STATIC_ASSET_CACHE = 'budget-gym-assets-v9';
+const APP_SHELL_CACHE = 'budget-gym-shell-v10';
+const STATIC_ASSET_CACHE = 'budget-gym-assets-v10';
 const GYM_SYNC_TAG = 'sync-gym-state';
 const GYM_IDB_NAME = 'budget_gym_offline_db';
 const GYM_IDB_VERSION = 1;
@@ -13,7 +13,12 @@ const APP_SHELL_ASSETS = [
   '/icon-192.png',
   '/icon-512.png',
   '/apple-touch-icon.png',
-  '/pwa-maskable-512x512.png'
+  '/pwa-maskable-512x512.png',
+  '/assets/machines/barbell-bench-rack.jpg',
+  '/assets/machines/cable-lat-pulldown.jpg',
+  '/assets/machines/seated-leg-press-curl.jpg',
+  '/assets/machines/chest-shoulder-press.jpg',
+  '/assets/machines/pullup-bar-station.jpg'
 ];
 
 function openOutboxDatabase() {
