@@ -423,6 +423,22 @@ import {
   resolveNextExercisePreviewName,
   validateMachinePhotoRegistry
 } from './utils/workoutInterfaceUpgrades';
+import {
+  CONFLICT_BACKUP_SNAPSHOT_KEY,
+  SYNC_CONFLICT_MODAL_QUESTION,
+  SYNC_OUTBOX_STORAGE_KEY,
+  buildLocalWinsMergedState,
+  clearSyncOutbox,
+  enqueueSyncOutboxAction,
+  evaluatePreLoginSyncStrategy,
+  extractCompletedSetFingerprints,
+  flushSyncOutboxToSupabase,
+  formatSyncComparisonTimestamp,
+  loadConflictBackupSnapshot,
+  readSyncOutbox,
+  saveConflictBackupSnapshot,
+  writeSyncOutbox
+} from './utils/offlineLoginMergeEngine';
 
 const mountedVideoPlayerRoots = new WeakMap<HTMLElement, Root>();
 const mountedPhase2HubRoots = new WeakMap<HTMLElement, Root>();
@@ -1581,6 +1597,20 @@ declare global {
     resolveMostRecentSuccessfulWeight?: typeof resolveMostRecentSuccessfulWeight;
     resolveNextExercisePreviewName?: typeof resolveNextExercisePreviewName;
     validateMachinePhotoRegistry?: typeof validateMachinePhotoRegistry;
+    CONFLICT_BACKUP_SNAPSHOT_KEY?: string;
+    SYNC_CONFLICT_MODAL_QUESTION?: string;
+    SYNC_OUTBOX_STORAGE_KEY?: string;
+    buildLocalWinsMergedState?: typeof buildLocalWinsMergedState;
+    clearSyncOutbox?: typeof clearSyncOutbox;
+    enqueueSyncOutboxAction?: typeof enqueueSyncOutboxAction;
+    evaluatePreLoginSyncStrategy?: typeof evaluatePreLoginSyncStrategy;
+    extractCompletedSetFingerprints?: typeof extractCompletedSetFingerprints;
+    flushSyncOutboxToSupabase?: typeof flushSyncOutboxToSupabase;
+    formatSyncComparisonTimestamp?: typeof formatSyncComparisonTimestamp;
+    loadConflictBackupSnapshot?: typeof loadConflictBackupSnapshot;
+    readSyncOutbox?: typeof readSyncOutbox;
+    saveConflictBackupSnapshot?: typeof saveConflictBackupSnapshot;
+    writeSyncOutbox?: typeof writeSyncOutbox;
   }
 }
 
@@ -1917,5 +1947,19 @@ if (typeof window !== 'undefined') {
   window.resolveMostRecentSuccessfulWeight = resolveMostRecentSuccessfulWeight;
   window.resolveNextExercisePreviewName = resolveNextExercisePreviewName;
   window.validateMachinePhotoRegistry = validateMachinePhotoRegistry;
+  window.CONFLICT_BACKUP_SNAPSHOT_KEY = CONFLICT_BACKUP_SNAPSHOT_KEY;
+  window.SYNC_CONFLICT_MODAL_QUESTION = SYNC_CONFLICT_MODAL_QUESTION;
+  window.SYNC_OUTBOX_STORAGE_KEY = SYNC_OUTBOX_STORAGE_KEY;
+  window.buildLocalWinsMergedState = buildLocalWinsMergedState;
+  window.clearSyncOutbox = clearSyncOutbox;
+  window.enqueueSyncOutboxAction = enqueueSyncOutboxAction;
+  window.evaluatePreLoginSyncStrategy = evaluatePreLoginSyncStrategy;
+  window.extractCompletedSetFingerprints = extractCompletedSetFingerprints;
+  window.flushSyncOutboxToSupabase = flushSyncOutboxToSupabase;
+  window.formatSyncComparisonTimestamp = formatSyncComparisonTimestamp;
+  window.loadConflictBackupSnapshot = loadConflictBackupSnapshot;
+  window.readSyncOutbox = readSyncOutbox;
+  window.saveConflictBackupSnapshot = saveConflictBackupSnapshot;
+  window.writeSyncOutbox = writeSyncOutbox;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

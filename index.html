@@ -2776,7 +2776,48 @@
       return iso;
     }
 
-    function autoSyncWorkoutToSupabaseLocal(reason) {
+    let isLoginMergeInProgress = false;
+
+    function queueStateToSyncOutboxLocal(actionType, meta) {
+      const endpoint = getActiveCloudEndpoint();
+      const setKey = meta && meta.setKey ? String(meta.setKey) : null;
+      const exerciseId = meta && meta.exerciseId ? String(meta.exerciseId) : null;
+      if (typeof window.enqueueSyncOutboxAction === 'function') {
+        return window.enqueueSyncOutboxAction({
+          stateObj: state,
+          actionType: actionType || 'set_done',
+          endpoint,
+          setKey,
+          exerciseId,
+          localStateStorageKey: STORAGE_KEY
+        }).catch(() => null);
+      }
+      // Inline fallback into localStorage['sync_outbox'] if ES module bridge has not hydrated yet
+      try {
+        const nowIso = new Date().toISOString();
+        stampStateTimestampLocal(nowIso);
+        const payloadJson = serializeStateWithoutUndoBackupLocal(state);
+        localStorage.setItem(STORAGE_KEY, payloadJson);
+        const existingRaw = localStorage.getItem('sync_outbox');
+        const existing = existingRaw ? JSON.parse(existingRaw) : [];
+        const list = Array.isArray(existing) ? existing : [];
+        list.push({
+          id: 'outbox_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+          actionType: actionType || 'set_done',
+          setKey,
+          exerciseId,
+          endpoint: endpoint || '',
+          payloadJson,
+          updatedAt: nowIso,
+          queuedAt: nowIso,
+          attempts: 0
+        });
+        localStorage.setItem('sync_outbox', JSON.stringify(list.slice(-50)));
+      } catch (_e) {}
+      return Promise.resolve(null);
+    }
+
+    function autoSyncWorkoutToSupabaseLocal(reason, meta) {
       const syncReason = reason || 'set_logged';
       // Respect Data Protection & Undo Engine 5-second delay window before pushing passive syncs.
       // Explicit undo_restore, confirmed day_reset, and confirmed start_fresh_reset pushes execute immediately.
@@ -2806,12 +2847,37 @@
       } else {
         stampStateTimestampLocal(state.last_updated || state.updatedAt);
       }
+
+      const isOnlineNow = typeof navigator === 'undefined' || navigator.onLine !== false;
+      // Offline-First Rule (Step 3): if offline, in Guest Mode without a cloud endpoint, or during login merge pause,
+      // save directly to both local gym_state and sync_outbox so changes push automatically once online/signed in.
+      if (!isOnlineNow || isLoginMergeInProgress || !getActiveCloudEndpoint()) {
+        queueStateToSyncOutboxLocal(syncReason, meta);
+        updateCloudSyncBadgeUI('local_only', isOnlineNow ? 'Saved on this device' : 'Offline · Queued in Outbox');
+        if (typeof updateOfflineConnectivityBannerUI === 'function') {
+          updateOfflineConnectivityBannerUI();
+        }
+        return Promise.resolve({ synced: false, queuedToOutbox: true, blockedByUndoGuard: false, blockedByEmptyStateGuard: false, reason: syncReason });
+      }
+
       const eng = getAutoSupabaseSyncEngineLocal();
       if (eng && typeof eng.autoSyncWorkoutToSupabase === 'function') {
-        return eng.autoSyncWorkoutToSupabase(syncReason);
+        return eng.autoSyncWorkoutToSupabase(syncReason).then((res) => {
+          if (!res || !res.synced) {
+            queueStateToSyncOutboxLocal(syncReason, meta);
+          }
+          return res;
+        }).catch(() => {
+          queueStateToSyncOutboxLocal(syncReason, meta);
+          return { synced: false, queuedToOutbox: true, reason: syncReason };
+        });
       }
-      pushStateToCloud(syncReason);
-      return Promise.resolve({ synced: true, blockedByUndoGuard: false, blockedByEmptyStateGuard: false, reason: syncReason });
+      return pushStateToCloud(syncReason).then((res) => {
+        if (!res || res.saved === false) {
+          queueStateToSyncOutboxLocal(syncReason, meta);
+        }
+        return { synced: Boolean(res && res.saved !== false), blockedByUndoGuard: false, blockedByEmptyStateGuard: false, reason: syncReason };
+      });
     }
     window.autoSyncWorkoutToSupabase = autoSyncWorkoutToSupabaseLocal;
 
@@ -2903,16 +2969,276 @@
 
     let isPullingCloudTruth = false;
 
+    function getPendingSyncOutboxCountLocal() {
+      if (typeof window.readSyncOutbox === 'function') {
+        return window.readSyncOutbox().length;
+      }
+      try {
+        const raw = localStorage.getItem('sync_outbox');
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed.length : 0;
+      } catch (_e) {
+        return 0;
+      }
+    }
+
+    function clearAllSyncOutboxesLocal() {
+      if (typeof window.clearSyncOutbox === 'function') {
+        return window.clearSyncOutbox().catch(() => {});
+      }
+      try { localStorage.removeItem('sync_outbox'); } catch (_e) {}
+      return Promise.resolve();
+    }
+
+    function evaluateSyncConflictOrMergeLocal(localObj, cloudObj, cloudTsIso) {
+      const hasOutbox = getPendingSyncOutboxCountLocal() > 0;
+      if (typeof window.evaluatePreLoginSyncStrategy === 'function') {
+        return window.evaluatePreLoginSyncStrategy({
+          localState: localObj,
+          cloudState: cloudObj,
+          cloudUpdatedAt: cloudTsIso,
+          hasPendingOutboxItems: hasOutbox
+        });
+      }
+      // Inline fallback matching identical Offline-First Local-Wins & Conflict rules
+      const countDone = (obj) => {
+        if (!obj || typeof obj !== 'object') return 0;
+        let c = 0;
+        const wl = obj.workoutLogs || {};
+        Object.keys(wl).forEach(k => { if (wl[k] && (wl[k].done === true || wl[k].isLogged === true)) c++; });
+        const pl = obj.pullupLogs || {};
+        Object.keys(pl).forEach(k => { if (pl[k] && (pl[k].done === true || pl[k].isLogged === true)) c++; });
+        return c;
+      };
+      const localCount = countDone(localObj);
+      const cloudCount = countDone(cloudObj);
+      const localMs = Date.parse((localObj && (localObj.last_updated || localObj.updatedAt)) || '') || 0;
+      const cloudMs = Date.parse(cloudTsIso || (cloudObj && (cloudObj.last_updated || cloudObj.updatedAt)) || '') || 0;
+      if (!cloudObj || (localCount > 0 && cloudCount === 0)) {
+        return { decision: 'local_wins', reason: 'cloud_empty_local_has_workouts', localCompletedCount: localCount, cloudCompletedCount: cloudCount, localUpdatedAt: localObj && (localObj.last_updated || localObj.updatedAt), cloudUpdatedAt: cloudTsIso };
+      }
+      if (localCount === 0 && cloudCount > 0) {
+        return { decision: 'cloud_wins', reason: 'local_empty_cloud_has_workouts', localCompletedCount: localCount, cloudCompletedCount: cloudCount, localUpdatedAt: localObj && (localObj.last_updated || localObj.updatedAt), cloudUpdatedAt: cloudTsIso };
+      }
+      if (localCount > 0 && cloudCount > 0 && localCount !== cloudCount) {
+        return {
+          decision: 'conflict_prompt',
+          reason: 'both_sides_have_different_completed_sets',
+          question: "We found unsynced workouts on this device. Do you want to keep your phone's data or download your cloud backup?",
+          localCompletedCount: localCount,
+          cloudCompletedCount: cloudCount,
+          localUpdatedAt: localObj && (localObj.last_updated || localObj.updatedAt),
+          cloudUpdatedAt: cloudTsIso
+        };
+      }
+      if (localMs > cloudMs || hasOutbox) {
+        return { decision: 'local_wins', reason: 'local_timestamp_newer', localCompletedCount: localCount, cloudCompletedCount: cloudCount, localUpdatedAt: localObj && (localObj.last_updated || localObj.updatedAt), cloudUpdatedAt: cloudTsIso };
+      }
+      if (cloudMs > localMs) {
+        return { decision: 'cloud_wins', reason: 'cloud_timestamp_newer', localCompletedCount: localCount, cloudCompletedCount: cloudCount, localUpdatedAt: localObj && (localObj.last_updated || localObj.updatedAt), cloudUpdatedAt: cloudTsIso };
+      }
+      return { decision: 'equal', reason: 'already_in_sync', localCompletedCount: localCount, cloudCompletedCount: cloudCount, localUpdatedAt: localObj && (localObj.last_updated || localObj.updatedAt), cloudUpdatedAt: cloudTsIso };
+    }
+
+    async function flushSyncOutboxAndNotifyLocal(options) {
+      const silent = Boolean(options && options.silent);
+      let totalFlushed = 0;
+      if (typeof window.flushSyncOutboxToSupabase === 'function') {
+        const res = await window.flushSyncOutboxToSupabase({
+          resolveEndpoint: () => getActiveCloudEndpoint(),
+          getLatestLocalState: () => state
+        }).catch(() => null);
+        if (res && res.flushedCount > 0) {
+          totalFlushed += res.flushedCount;
+          if (res.syncedAtIso) {
+            stampStateTimestampLocal(res.syncedAtIso);
+            const prevPullFlag = isPullingCloudTruth;
+            isPullingCloudTruth = true;
+            try { saveState(true); } finally { isPullingCloudTruth = prevPullFlag; }
+          }
+        }
+      }
+      if (typeof window.flushOfflineGymStateQueue === 'function') {
+        const legacyRes = await window.flushOfflineGymStateQueue().catch(() => null);
+        if (legacyRes && legacyRes.flushedCount > 0) {
+          totalFlushed += legacyRes.flushedCount;
+        }
+      }
+      if (totalFlushed > 0) {
+        updateCloudSyncBadgeUI('saved', '✓ Offline sets synced');
+        if (!silent && typeof showToast === 'function') {
+          showToast(`Back online — synced ${totalFlushed} offline workout ${totalFlushed === 1 ? 'update' : 'updates'} to Supabase.`);
+        }
+      }
+      if (typeof updateOfflineConnectivityBannerUI === 'function') {
+        updateOfflineConnectivityBannerUI();
+      }
+      return totalFlushed;
+    }
+    window.flushSyncOutboxAndNotify = flushSyncOutboxAndNotifyLocal;
+
+    function executeLocalWinsPushLocal(identity, toastMessage) {
+      if (identity && typeof window.buildLocalWinsMergedState === 'function') {
+        const merged = window.buildLocalWinsMergedState(state, identity);
+        state = normalizeLoadedStateShape(merged, { runSeedCheck: false });
+      } else if (identity) {
+        if (!state.userProfile || typeof state.userProfile !== 'object') state.userProfile = {};
+        if (identity.email) state.userProfile.email = String(identity.email).trim().toLowerCase();
+        if (identity.name) state.userProfile.name = String(identity.name).trim();
+        if (identity.supabaseUserId) state.userProfile.supabaseUserId = identity.supabaseUserId;
+        if (identity.avatarUrl) state.userProfile.avatarUrl = identity.avatarUrl;
+        if (identity.authProvider) state.userProfile.authProvider = identity.authProvider;
+        state.userProfile.isGuest = false;
+        state.userProfile.oauthVerified = true;
+        state.isGuestMode = false;
+        state.onboardingComplete = true;
+        state.userHasCompletedOnboarding = true;
+        state.hasCompletedFirstSetup = true;
+        stampStateTimestampLocal();
+      }
+      const prevPullFlag = isPullingCloudTruth;
+      isPullingCloudTruth = true;
+      try {
+        saveState(true);
+      } finally {
+        isPullingCloudTruth = prevPullFlag;
+      }
+      if (typeof syncHeaderAuthButtonUI === 'function') syncHeaderAuthButtonUI();
+      if (typeof syncSmartLoginFormUI === 'function') syncSmartLoginFormUI(false);
+      renderWorkoutView();
+      renderPullupView();
+      renderVeganView();
+      renderShoppingView();
+
+      const prevMergeFlag = isLoginMergeInProgress;
+      isLoginMergeInProgress = false;
+      return pushStateToCloud('local_newer_sync').then((res) => {
+        if (res && res.saved !== false && res.configured !== false) {
+          clearAllSyncOutboxesLocal();
+        }
+        if (toastMessage && typeof showToast === 'function') {
+          showToast(toastMessage);
+        }
+        return true;
+      }).finally(() => {
+        isLoginMergeInProgress = prevMergeFlag;
+      });
+    }
+
+    /**
+     * Step 1 & Step 2: Intercept Login Process & Pre-Login Merge Guard.
+     * Pauses automatic cloud pull on sign-in, inspects local gym_state vs cloud READ-ONLY,
+     * runs Local Wins when cloud is blank or local is newer without divergent cloud sets,
+     * and opens the User Safety Conflict Modal whenever both sides hold different completed sets.
+     */
+    async function runPreLoginMergeGuard(identity) {
+      const cleanEmail = String((identity && identity.email) || (state && state.userProfile && state.userProfile.email) || '').trim().toLowerCase();
+      const targetIdentity = Object.assign({}, identity || {}, { email: cleanEmail });
+
+      // Pause any automatic cloud pull or passive background pushes during login inspection
+      clearTimeout(cloudSyncTimeout);
+      cloudSyncTimeout = null;
+      isLoginMergeInProgress = true;
+      isPullingCloudTruth = true;
+
+      try {
+        const url = getActiveCloudEndpoint();
+        const isOnlineNow = typeof navigator === 'undefined' || navigator.onLine !== false;
+        if (!url || !isOnlineNow) {
+          // Offline during login transition: keep local device as single source of truth & queue to sync_outbox
+          if (cleanEmail && typeof window.buildLocalWinsMergedState === 'function') {
+            state = normalizeLoadedStateShape(window.buildLocalWinsMergedState(state, targetIdentity), { runSeedCheck: false });
+          }
+          queueStateToSyncOutboxLocal('pre_login_seed', null);
+          return { decision: 'local_wins', offline: true };
+        }
+
+        const sep = url.includes('?') ? '&' : '?';
+        const cacheBustedUrl = url + sep + 't=' + Date.now();
+        const resp = await fetch(cacheBustedUrl, {
+          method: 'GET',
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
+        }).catch(() => null);
+
+        const res = resp && resp.ok ? await resp.json().catch(() => null) : null;
+        const remote = res && res.configured && res.data ? res.data : (res && res.data ? res.data : null);
+        const remoteLastUpdated = (res && typeof res.last_updated === 'string' && res.last_updated)
+          || (res && typeof res.updatedAt === 'string' && res.updatedAt)
+          || (remote && typeof remote.last_updated === 'string' && remote.last_updated)
+          || (remote && typeof remote.updatedAt === 'string' && remote.updatedAt)
+          || null;
+        const hasValidRemoteObj = Boolean(remote && typeof remote === 'object' && (remote.workoutLogs || remote.selectedDayIndex !== undefined));
+
+        const evaluation = evaluateSyncConflictOrMergeLocal(state, hasValidRemoteObj ? remote : null, remoteLastUpdated);
+
+        if (evaluation.decision === 'conflict_prompt' && hasValidRemoteObj) {
+          // Step 4: Major conflict — DO NOT overwrite automatically. Open User Safety Prompt Modal.
+          if (typeof window.openSyncConflictSafetyModal === 'function') {
+            window.openSyncConflictSafetyModal({
+              evaluation,
+              cloudState: remote,
+              cloudUpdatedAt: remoteLastUpdated,
+              identity: targetIdentity
+            });
+          }
+          return evaluation;
+        }
+
+        if (evaluation.decision === 'local_wins') {
+          // Step 2: Local Wins custom merge — push local Guest workouts UP to Supabase to seed the account
+          isPullingCloudTruth = false;
+          isLoginMergeInProgress = false;
+          await executeLocalWinsPushLocal(
+            targetIdentity,
+            evaluation.localCompletedCount > 0 && evaluation.cloudCompletedCount === 0
+              ? `Signed in — uploaded ${evaluation.localCompletedCount} local completed ${evaluation.localCompletedCount === 1 ? 'set' : 'sets'} to your cloud account.`
+              : null
+          );
+          return evaluation;
+        }
+
+        if (evaluation.decision === 'cloud_wins' && hasValidRemoteObj) {
+          applyAuthoritativeRemoteStateLocal(remote, remoteLastUpdated, 'cloud_pull');
+          await clearAllSyncOutboxesLocal();
+          return evaluation;
+        }
+
+        // Equal: ensure authenticated identity is attached cleanly without altering workouts
+        if (cleanEmail && (!state.userProfile || state.userProfile.isGuest || state.userProfile.email !== cleanEmail)) {
+          if (typeof window.buildLocalWinsMergedState === 'function') {
+            state = normalizeLoadedStateShape(window.buildLocalWinsMergedState(state, targetIdentity), { runSeedCheck: false });
+          }
+          saveState(true);
+          if (typeof syncHeaderAuthButtonUI === 'function') syncHeaderAuthButtonUI();
+        }
+        await clearAllSyncOutboxesLocal();
+        updateCloudSyncBadgeUI('saved', '✓ Synced with Supabase');
+        return evaluation;
+      } catch (err) {
+        if (typeof console !== 'undefined' && console.warn) {
+          console.warn('[runPreLoginMergeGuard]', err);
+        }
+        return { decision: 'local_wins', error: true };
+      } finally {
+        isPullingCloudTruth = false;
+        isLoginMergeInProgress = false;
+      }
+    }
+    window.runPreLoginMergeGuard = runPreLoginMergeGuard;
+
     function pullStateFromCloud(pullOptions) {
       const url = getActiveCloudEndpoint();
       if (!url) return Promise.resolve(false);
+      if (isLoginMergeInProgress && !(pullOptions && pullOptions.manualForcePull === true)) {
+        return Promise.resolve(false);
+      }
       // Cancel any queued local push so stale local state can never overwrite Supabase during hydration
       clearTimeout(cloudSyncTimeout);
       cloudSyncTimeout = null;
       isPullingCloudTruth = true;
-      // Task 1 Truth Engine: compare cloud vs local `last_updated` by default;
-      // only force remote unconditionally when explicitly requested (e.g., fresh returning-user login)
-      const forceRemoteTruth = Boolean(pullOptions && pullOptions.forceRemoteTruth === true);
+      // Only explicit manual "Force Pull from Cloud" bypasses Offline-First conflict protection.
+      const isManualForcePull = Boolean(pullOptions && pullOptions.manualForcePull === true);
       const sep = url.includes('?') ? '&' : '?';
       const cacheBustedUrl = url + sep + 't=' + Date.now();
       return fetch(cacheBustedUrl, {
@@ -2931,39 +3257,59 @@
             || null;
 
           if (remote && typeof remote === 'object' && (remote.workoutLogs || remote.selectedDayIndex !== undefined)) {
-            let resolved;
-            if (typeof window.resolveSingleSourceOfTruthState === 'function') {
-              resolved = window.resolveSingleSourceOfTruthState(state, remote, {
-                forceRemoteOnInit: forceRemoteTruth,
-                remoteLastUpdated: remoteLastUpdated,
-                remoteUpdatedAt: remoteLastUpdated
-              });
-            } else {
-              const localMs = Date.parse(state.last_updated || state.updatedAt || '') || 0;
-              const remoteMs = Date.parse(remoteLastUpdated || '') || 0;
-              if (forceRemoteTruth || localMs === 0 || remoteMs > localMs) {
-                resolved = { winner: 'cloud', appliedRemote: true, shouldPushLocalToCloud: false, state: remote, remoteLastUpdated };
-              } else if (localMs > remoteMs) {
-                resolved = { winner: 'local', appliedRemote: false, shouldPushLocalToCloud: true, state: state, remoteLastUpdated };
-              } else {
-                resolved = { winner: 'equal', appliedRemote: false, shouldPushLocalToCloud: false, state: state, remoteLastUpdated };
+            if (isManualForcePull) {
+              if (typeof window.saveConflictBackupSnapshot === 'function') {
+                window.saveConflictBackupSnapshot({
+                  source: 'local_before_cloud_download',
+                  gymState: state,
+                  accountEmail: state && state.userProfile ? state.userProfile.email : null
+                });
               }
+              const appliedManual = applyAuthoritativeRemoteStateLocal(remote, remoteLastUpdated, 'cloud_pull');
+              clearAllSyncOutboxesLocal();
+              return appliedManual;
             }
 
-            if (!resolved || !resolved.appliedRemote || !resolved.state) {
-              // Local device holds a strictly newer `last_updated` timestamp: keep local as Single Source of Truth and push it up to Supabase!
-              if (resolved && resolved.shouldPushLocalToCloud && !isDestructiveCloudPushDelayedLocal()) {
-                isPullingCloudTruth = false;
-                autoSyncWorkoutToSupabaseLocal('local_newer_sync');
-              } else if (resolved && resolved.winner === 'equal') {
-                updateCloudSyncBadgeUI('saved', '✓ Synced with Supabase');
+            const evaluation = evaluateSyncConflictOrMergeLocal(state, remote, remoteLastUpdated);
+
+            if (evaluation.decision === 'conflict_prompt') {
+              // Major conflict: pause and ask user instead of overwriting silently
+              if (typeof window.openSyncConflictSafetyModal === 'function') {
+                window.openSyncConflictSafetyModal({
+                  evaluation,
+                  cloudState: remote,
+                  cloudUpdatedAt: remoteLastUpdated,
+                  identity: state && state.userProfile ? state.userProfile : null
+                });
               }
               return false;
             }
 
-            const authoritativeRemote = resolved.state;
-            const authoritativeTs = resolved.remoteLastUpdated || resolved.remoteUpdatedAt || authoritativeRemote.last_updated || authoritativeRemote.updatedAt || new Date().toISOString();
-            return applyAuthoritativeRemoteStateLocal(authoritativeRemote, authoritativeTs, 'cloud_pull');
+            if (evaluation.decision === 'local_wins') {
+              if (!isDestructiveCloudPushDelayedLocal()) {
+                isPullingCloudTruth = false;
+                autoSyncWorkoutToSupabaseLocal('local_newer_sync');
+              }
+              return false;
+            }
+
+            if (evaluation.decision === 'cloud_wins') {
+              const authoritativeTs = evaluation.cloudUpdatedAt || remoteLastUpdated || remote.last_updated || remote.updatedAt || new Date().toISOString();
+              const applied = applyAuthoritativeRemoteStateLocal(remote, authoritativeTs, 'cloud_pull');
+              clearAllSyncOutboxesLocal();
+              return applied;
+            }
+
+            updateCloudSyncBadgeUI('saved', '✓ Synced with Supabase');
+            return false;
+          }
+          // Cloud returned blank/null while local has workouts -> seed cloud without wiping local
+          if (!isManualForcePull) {
+            const evalBlank = evaluateSyncConflictOrMergeLocal(state, null, null);
+            if (evalBlank.decision === 'local_wins' && !isDestructiveCloudPushDelayedLocal()) {
+              isPullingCloudTruth = false;
+              autoSyncWorkoutToSupabaseLocal('local_newer_sync');
+            }
           }
           return false;
         })
@@ -3129,9 +3475,10 @@
         window.saveGymStateToIndexedDB(state).catch(() => {});
       }
       const autoSyncEnabledNow = isAutoSyncDevicesEnabledLocal();
-      if (!effectiveSkipCloud && !isPullingCloudTruth && !isDestructiveCloudPushDelayedLocal() && autoSyncEnabledNow) {
+      if (!effectiveSkipCloud && !isPullingCloudTruth && !isLoginMergeInProgress && !isDestructiveCloudPushDelayedLocal() && autoSyncEnabledNow) {
         const isOnlineNow = typeof navigator === 'undefined' || navigator.onLine !== false;
         if (!isOnlineNow) {
+          queueStateToSyncOutboxLocal(syncReason || 'offline_local_save', null);
           if (activeEndpoint && typeof window.persistGymStateLocalFirst === 'function') {
             window.persistGymStateLocalFirst({
               stateObj: state,
@@ -20035,7 +20382,7 @@
           }
 
           saveState(true);
-          autoSyncWorkoutToSupabaseLocal('set_logged');
+          autoSyncWorkoutToSupabaseLocal('set_logged', { setKey: key, exerciseId: exId });
           checkAndRenderForgottenSetReminder(false);
 
           // Task 3: Exercise Logging UI Stability — keep viewport anchored with ZERO automatic scroll jumps
@@ -21007,7 +21354,10 @@
             state.notifiedForgottenSetActivityAt = null;
           }
           saveState(true);
-          autoSyncWorkoutToSupabaseLocal('pullup_logged');
+          autoSyncWorkoutToSupabaseLocal('pullup_logged', {
+            setKey: mapInfo ? `w${week}_${assignedCalIdx}_${mapInfo.exId}_${setIdx}` : `pullup_d${dayNum}_s${setIdx}`,
+            exerciseId: mapInfo ? mapInfo.exId : `pullup_day_${dayNum}`
+          });
           checkAndRenderForgottenSetReminder(false);
           renderPullupView();
           renderWorkoutView();
@@ -25039,8 +25389,14 @@
         };
       }
 
-      // 2. If switching from a placeholder email ('member@gmail.com' / 'athlete@gmail.com') OR if this is the owner's primary profile, KEEP & MERGE all existing workout logs into their profile!
-      const isPlaceholderPrev = (!prevEmail || prevEmail === 'member@gmail.com' || prevEmail === 'athlete@gmail.com');
+      // 2. If transitioning from Guest Mode or a placeholder email ('member@gmail.com' / 'athlete@gmail.com'), KEEP all local Guest workouts intact for the Offline-First Pre-Login Merge!
+      const isPlaceholderPrev = (
+        !prevEmail ||
+        prevEmail === 'member@gmail.com' ||
+        prevEmail === 'athlete@gmail.com' ||
+        Boolean(state.isGuestMode) ||
+        Boolean(state.userProfile && state.userProfile.isGuest)
+      );
       if (!isPlaceholderPrev && nextEmail && prevEmail !== nextEmail) {
         if (state.accountsByEmail[nextEmail] && state.accountsByEmail[nextEmail].snapshot) {
           applyAccountSnapshotToCurrentState(state.accountsByEmail[nextEmail].snapshot);
@@ -27790,11 +28146,16 @@
               phone: leadPhoneInp ? leadPhoneInp.value.trim() : '',
               authProvider: `${providerKey}_oauth`,
               oauthVerified: true,
+              isGuest: false,
               startFreshNewAccount: false,
               skipInitialPush: true
             });
-            if (typeof pullStateFromCloud === 'function') {
-              pullStateFromCloud({ forceRemoteTruth: true });
+            if (typeof runPreLoginMergeGuard === 'function') {
+              runPreLoginMergeGuard({
+                name: verifiedName,
+                email: oauthEmail,
+                authProvider: `${providerKey}_oauth`
+              });
             }
             if (smartLoginModal) smartLoginModal.classList.add('hidden');
             openedLoginFromWizardBypass = false;
@@ -27870,11 +28231,16 @@
           phone: leadPhoneInp ? leadPhoneInp.value.trim() : '',
           authProvider: providerKey,
           oauthVerified: true,
+          isGuest: false,
           startFreshNewAccount: false,
           skipInitialPush: true
         });
-        if (typeof pullStateFromCloud === 'function') {
-          pullStateFromCloud({ forceRemoteTruth: true });
+        if (typeof runPreLoginMergeGuard === 'function') {
+          runPreLoginMergeGuard({
+            name: finalName,
+            email: cleanEmail,
+            authProvider: providerKey
+          });
         }
         if (smartLoginModal) smartLoginModal.classList.add('hidden');
         openedLoginFromWizardBypass = false;
@@ -28152,20 +28518,63 @@
           window.__isAuthLoading = Boolean(typeof sbClient.auth.getSession === 'function');
           syncHeaderAuthButtonUI(window.__liveSupabaseSession || null, window.__isAuthLoading);
 
+          let lastInterceptedAuthEmail = '';
           const handleAuthTransition = (authState, event, session) => {
             window.__isAuthLoading = Boolean(authState && authState.isAuthLoading);
             window.__liveSupabaseSession = event === 'SIGNED_OUT' ? null : (session || null);
+            if (event === 'SIGNED_OUT') {
+              lastInterceptedAuthEmail = '';
+            }
             if (session && session.user) {
               const signedEmail = String(session.user.email || '').trim().toLowerCase();
               const currentEmail = String((state && state.userProfile && state.userProfile.email) || '').trim().toLowerCase();
+              const wasGuestBeforeLogin = Boolean(
+                !currentEmail ||
+                (state && state.isGuestMode) ||
+                (state && state.userProfile && state.userProfile.isGuest)
+              );
               const meta = session.user.user_metadata || {};
               const metaName = String(meta.name || meta.full_name || meta.given_name || '').trim();
               const metaAvatar = String(meta.avatar_url || meta.picture || '').trim();
+              const isSignInTransitionEvent =
+                event === 'SIGNED_IN' ||
+                event === 'INITIAL_SESSION' ||
+                event === 'SESSION_HYDRATED';
 
-              if (signedEmail && signedEmail !== currentEmail) {
-                completePasswordlessSessionLocal(signedEmail, metaName, 'magic_link');
-              }
-              if (state && typeof state === 'object') {
+              // Step 1: Intercept onAuthStateChange — pause automatic cloud pull & run Pre-Login Merge Guard
+              if (signedEmail && (signedEmail !== currentEmail || (wasGuestBeforeLogin && isSignInTransitionEvent && lastInterceptedAuthEmail !== signedEmail))) {
+                lastInterceptedAuthEmail = signedEmail;
+                isLoginMergeInProgress = true;
+                if (state && typeof state === 'object') {
+                  if (!state.userProfile || typeof state.userProfile !== 'object') {
+                    state.userProfile = {};
+                  }
+                  state.userProfile.email = signedEmail;
+                  if (session.user.id) state.userProfile.supabaseUserId = session.user.id;
+                  if (metaAvatar) state.userProfile.avatarUrl = metaAvatar;
+                  if (metaName && (!state.userProfile.name || /^(google|apple|sign in|profile)$/i.test(String(state.userProfile.name).trim()))) {
+                    state.userProfile.name = metaName;
+                  }
+                  state.userProfile.authProvider = (session.user.app_metadata && session.user.app_metadata.provider) || 'magic_link';
+                  state.userProfile.oauthVerified = true;
+                  state.userProfile.isGuest = false;
+                  state.isGuestMode = false;
+                  state.onboardingComplete = true;
+                  state.userHasCompletedOnboarding = true;
+                  state.hasCompletedFirstSetup = true;
+                  if (programWizardModal) programWizardModal.classList.add('hidden');
+                  if (smartLoginModal) smartLoginModal.classList.add('hidden');
+                }
+                if (typeof runPreLoginMergeGuard === 'function') {
+                  runPreLoginMergeGuard({
+                    email: signedEmail,
+                    name: metaName || (state && state.userProfile && state.userProfile.name) || '',
+                    supabaseUserId: session.user.id || null,
+                    avatarUrl: metaAvatar || null,
+                    authProvider: (session.user.app_metadata && session.user.app_metadata.provider) || 'magic_link'
+                  });
+                }
+              } else if (state && typeof state === 'object') {
                 if (!state.userProfile || typeof state.userProfile !== 'object') {
                   state.userProfile = {};
                 }
@@ -28176,6 +28585,7 @@
                   state.userProfile.name = metaName;
                 }
                 state.userProfile.isGuest = false;
+                state.isGuestMode = false;
               }
             }
             syncHeaderAuthButtonUI(window.__liveSupabaseSession, window.__isAuthLoading);
@@ -30222,15 +30632,21 @@
                 phone: phoneVal,
                 passwordHash: enteredHash,
                 authProvider: 'email_password',
+                isGuest: false,
                 startFreshNewAccount: currentAuthTabMode === 'signup' && !isFrancoisLogin && !existingSavedAcct,
-                skipInitialPush: isReturningUserLogin
+                skipInitialPush: true
               });
-              if (typeof pullStateFromCloud === 'function') {
-                pullStateFromCloud({ forceRemoteTruth: true });
+              if (typeof runPreLoginMergeGuard === 'function') {
+                runPreLoginMergeGuard({
+                  name: verifiedName,
+                  email: emailVal,
+                  phone: phoneVal,
+                  authProvider: 'email_password'
+                });
               }
               if (smartLoginModal) smartLoginModal.classList.add('hidden');
               openedLoginFromWizardBypass = false;
-              showToast(`Welcome, ${verifiedName}! Signed in and synced.`);
+              showToast(`Welcome, ${verifiedName}! Checking your workouts for safe sync...`);
             }
           );
         });
@@ -30819,16 +31235,14 @@
         if (typeof updateOfflineConnectivityBannerUI === 'function') {
           updateOfflineConnectivityBannerUI();
         }
-        if (typeof window.flushOfflineGymStateQueue === 'function') {
-          window.flushOfflineGymStateQueue().then((res) => {
-            if (res && res.flushedCount > 0) {
-              showToast('Back online! Your offline workout logs synced.');
+        // Step 3: Push all queued changes in sync_outbox to Supabase in the background FIRST, then inspect cloud non-destructively
+        flushSyncOutboxAndNotifyLocal({ silent: false })
+          .catch(() => 0)
+          .finally(() => {
+            if (getActiveCloudEndpoint() && !isDestructiveCloudPushDelayedLocal() && !isLoginMergeInProgress) {
+              pullStateFromCloud({ forceRemoteTruth: false });
             }
-          }).catch(() => {});
-        }
-        if (getActiveCloudEndpoint() && !isDestructiveCloudPushDelayedLocal()) {
-          pullStateFromCloud({ forceRemoteTruth: false });
-        }
+          });
       });
       window.addEventListener('offline', () => {
         if (typeof updateOfflineConnectivityBannerUI === 'function') {
@@ -32805,9 +33219,30 @@
           storageKey: STORAGE_KEY,
           debounceMs: typeof window.AUTO_SYNC_DEBOUNCE_MS === 'number' ? window.AUTO_SYNC_DEBOUNCE_MS : 2000,
           onRemoteStateApplied: (incomingState, incomingTs) => {
-            applyAuthoritativeRemoteStateLocal(incomingState, incomingTs, 'realtime');
-            if (typeof showToast === 'function') {
-              showToast('Updated automatically from your other screen.');
+            if (isLoginMergeInProgress) return;
+            const rtEval = evaluateSyncConflictOrMergeLocal(state, incomingState, incomingTs);
+            if (rtEval.decision === 'conflict_prompt') {
+              if (typeof window.openSyncConflictSafetyModal === 'function') {
+                window.openSyncConflictSafetyModal({
+                  evaluation: rtEval,
+                  cloudState: incomingState,
+                  cloudUpdatedAt: incomingTs,
+                  identity: state && state.userProfile ? state.userProfile : null
+                });
+              }
+              return;
+            }
+            if (rtEval.decision === 'local_wins') {
+              if (!isDestructiveCloudPushDelayedLocal()) {
+                autoSyncWorkoutToSupabaseLocal('local_newer_sync');
+              }
+              return;
+            }
+            if (rtEval.decision === 'cloud_wins') {
+              applyAuthoritativeRemoteStateLocal(incomingState, incomingTs, 'realtime');
+              if (typeof showToast === 'function') {
+                showToast('Updated automatically from your other screen.');
+              }
             }
           },
           onStatusChange: (nextStatus, nextMsg) => {
@@ -33125,7 +33560,7 @@
               );
               if (typeof showToast === 'function') showToast(pullRes.toastMessage);
             } else if (typeof pullStateFromCloud === 'function') {
-              const applied = await pullStateFromCloud({ forceRemoteTruth: true });
+              const applied = await pullStateFromCloud({ forceRemoteTruth: true, manualForcePull: true });
               const msg = applied
                 ? 'Cloud data downloaded successfully. This device now matches your cloud account.'
                 : 'No saved cloud backup was found for this account yet.';
@@ -34669,6 +35104,126 @@
         bindMissedSetOneModal();
       }
     })();
+
+    // =========================================================================
+    // OFFLINE-FIRST USER SAFETY CONFLICT MODAL CONTROLLER (ZERO AUTO-OVERWRITE)
+    // =========================================================================
+    (function initSyncConflictSafetyModalController() {
+      let pendingConflictCtx = null;
+      let conflictModalBound = false;
+      let modalEl = null;
+      let titleEl = null;
+      let phoneSummaryEl = null;
+      let cloudSummaryEl = null;
+      let keepPhoneBtn = null;
+      let downloadCloudBtn = null;
+
+      function closeConflictModal() {
+        if (modalEl) modalEl.classList.add('hidden');
+        pendingConflictCtx = null;
+      }
+
+      function bindConflictModal() {
+        if (conflictModalBound) return;
+        modalEl = document.getElementById('sync-conflict-safety-modal');
+        if (!modalEl) return;
+        conflictModalBound = true;
+        titleEl = document.getElementById('sync-conflict-modal-title');
+        phoneSummaryEl = document.getElementById('sync-conflict-phone-summary');
+        cloudSummaryEl = document.getElementById('sync-conflict-cloud-summary');
+        keepPhoneBtn = document.getElementById('sync-conflict-keep-phone-btn');
+        downloadCloudBtn = document.getElementById('sync-conflict-download-cloud-btn');
+
+        if (keepPhoneBtn) {
+          keepPhoneBtn.addEventListener('click', async () => {
+            if (!pendingConflictCtx) return;
+            const ctx = pendingConflictCtx;
+            keepPhoneBtn.disabled = true;
+            if (downloadCloudBtn) downloadCloudBtn.disabled = true;
+            try {
+              // Confirmed Safety Rule: Save a local backup snapshot of the cloud data BEFORE overwriting cloud
+              if (typeof window.saveConflictBackupSnapshot === 'function') {
+                window.saveConflictBackupSnapshot({
+                  source: 'cloud_before_local_overwrite',
+                  gymState: ctx.cloudState,
+                  accountEmail: (ctx.identity && ctx.identity.email) || (state && state.userProfile && state.userProfile.email) || null
+                });
+              }
+              closeConflictModal();
+              await executeLocalWinsPushLocal(
+                ctx.identity,
+                'Cloud backup saved locally on this device. Your phone workouts are now synced to Supabase.'
+              );
+            } finally {
+              keepPhoneBtn.disabled = false;
+              if (downloadCloudBtn) downloadCloudBtn.disabled = false;
+            }
+          });
+        }
+
+        if (downloadCloudBtn) {
+          downloadCloudBtn.addEventListener('click', async () => {
+            if (!pendingConflictCtx) return;
+            const ctx = pendingConflictCtx;
+            downloadCloudBtn.disabled = true;
+            if (keepPhoneBtn) keepPhoneBtn.disabled = true;
+            try {
+              // Extra safety net: save a local backup snapshot of the phone's unsynced sets before replacing
+              if (typeof window.saveConflictBackupSnapshot === 'function') {
+                window.saveConflictBackupSnapshot({
+                  source: 'local_before_cloud_download',
+                  gymState: state,
+                  accountEmail: (ctx.identity && ctx.identity.email) || (state && state.userProfile && state.userProfile.email) || null
+                });
+              }
+              const cloudState = ctx.cloudState;
+              const cloudTs = ctx.cloudUpdatedAt || (ctx.evaluation && ctx.evaluation.cloudUpdatedAt) || new Date().toISOString();
+              closeConflictModal();
+              applyAuthoritativeRemoteStateLocal(cloudState, cloudTs, 'cloud_pull');
+              await clearAllSyncOutboxesLocal();
+              if (typeof showToast === 'function') {
+                showToast('Phone snapshot saved locally. Cloud backup downloaded.');
+              }
+            } finally {
+              downloadCloudBtn.disabled = false;
+              if (keepPhoneBtn) keepPhoneBtn.disabled = false;
+            }
+          });
+        }
+      }
+
+      window.openSyncConflictSafetyModal = function openSyncConflictSafetyModal(ctx) {
+        bindConflictModal();
+        pendingConflictCtx = ctx;
+        const evalData = (ctx && ctx.evaluation) || {};
+        const formatTs = typeof window.formatSyncComparisonTimestamp === 'function'
+          ? window.formatSyncComparisonTimestamp
+          : (iso) => (iso ? String(iso) : 'No timestamp saved');
+        if (titleEl) {
+          titleEl.textContent =
+            evalData.question ||
+            "We found unsynced workouts on this device. Do you want to keep your phone's data or download your cloud backup?";
+        }
+        if (phoneSummaryEl) {
+          const localCount = Number(evalData.localCompletedCount || 0);
+          phoneSummaryEl.textContent = `${localCount} completed ${localCount === 1 ? 'set' : 'sets'} · Last updated ${formatTs(evalData.localUpdatedAt)}`;
+        }
+        if (cloudSummaryEl) {
+          const cloudCount = Number(evalData.cloudCompletedCount || 0);
+          cloudSummaryEl.textContent = `${cloudCount} completed ${cloudCount === 1 ? 'set' : 'sets'} · Last updated ${formatTs(evalData.cloudUpdatedAt)}`;
+        }
+        if (modalEl) {
+          modalEl.classList.remove('hidden');
+          if (keepPhoneBtn) keepPhoneBtn.focus();
+        }
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindConflictModal, { once: true });
+      } else {
+        bindConflictModal();
+      }
+    })();
   </script>
 
   <!-- Smart Prompt Modal for Missed Set 1 (Never Auto-Fills Set 1) -->
@@ -34716,6 +35271,36 @@
       <div class="flex justify-end pt-1">
         <button type="button" id="missed-set-cancel-btn" class="min-h-[48px] px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition">
           Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4: User Safety Conflict Modal (Offline-First Protection — Zero Automatic Overwrite) -->
+  <div id="sync-conflict-safety-modal" data-testid="sync-conflict-safety-modal" role="dialog" aria-modal="true" aria-labelledby="sync-conflict-modal-title" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm">
+    <div class="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl space-y-4">
+      <div class="space-y-2">
+        <h2 id="sync-conflict-modal-title" class="text-base sm:text-lg font-extrabold text-white leading-snug">We found unsynced workouts on this device. Do you want to keep your phone's data or download your cloud backup?</h2>
+        <p class="text-xs text-slate-300 leading-relaxed">Both your phone and your cloud account have different completed sets. Nothing has been overwritten yet.</p>
+      </div>
+
+      <div class="divide-y divide-slate-800 border-y border-slate-800 py-2 text-xs tabular-nums">
+        <div class="py-2 flex flex-col gap-0.5">
+          <span class="font-bold text-slate-200">This Phone (Local Data)</span>
+          <span id="sync-conflict-phone-summary" class="text-slate-300">0 completed sets</span>
+        </div>
+        <div class="py-2 flex flex-col gap-0.5">
+          <span class="font-bold text-slate-200">Cloud Backup (Supabase)</span>
+          <span id="sync-conflict-cloud-summary" class="text-slate-300">0 completed sets</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-2.5 pt-1">
+        <button type="button" id="sync-conflict-keep-phone-btn" data-testid="sync-conflict-keep-phone-btn" class="w-full min-h-[48px] px-4 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-sm font-extrabold transition text-left">
+          Keep Phone Data (Save Cloud Snapshot &amp; Upload)
+        </button>
+        <button type="button" id="sync-conflict-download-cloud-btn" data-testid="sync-conflict-download-cloud-btn" class="w-full min-h-[48px] px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-sm font-extrabold transition text-left">
+          Download Cloud Backup
         </button>
       </div>
     </div>
