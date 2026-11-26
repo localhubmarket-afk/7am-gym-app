@@ -1,5 +1,5 @@
-const APP_SHELL_CACHE = 'budget-gym-shell-v8';
-const STATIC_ASSET_CACHE = 'budget-gym-assets-v8';
+const APP_SHELL_CACHE = 'budget-gym-shell-v9';
+const STATIC_ASSET_CACHE = 'budget-gym-assets-v9';
 const GYM_SYNC_TAG = 'sync-gym-state';
 const GYM_IDB_NAME = 'budget_gym_offline_db';
 const GYM_IDB_VERSION = 1;
@@ -182,6 +182,8 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/api/') ||
     url.pathname.startsWith('/@') ||
     url.pathname.startsWith('/node_modules/') ||
+    url.pathname.startsWith('/src/') ||
+    /\.(?:tsx?|jsx)$/.test(url.pathname) ||
     url.pathname === '/sw.js' ||
     url.pathname === '/service-worker.js'
   ) {

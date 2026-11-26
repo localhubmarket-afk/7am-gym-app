@@ -414,6 +414,64 @@ const mountedCoachModalRoots = new WeakMap<HTMLElement, Root>();
 const mountedCustomProgramRoots = new WeakMap<HTMLElement, Root>();
 const mountedSwapModalRoots = new WeakMap<HTMLElement, Root>();
 
+interface WidgetErrorBoundaryProps {
+  widgetName: string;
+  children: React.ReactNode;
+}
+
+interface WidgetErrorBoundaryState {
+  hasError: boolean;
+}
+
+class WidgetErrorBoundary extends React.Component<
+  WidgetErrorBoundaryProps,
+  WidgetErrorBoundaryState
+> {
+  constructor(props: WidgetErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(): WidgetErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error): void {
+    if (typeof console !== 'undefined' && console.error) {
+      console.error(`[${this.props.widgetName}] Render error:`, error);
+    }
+  }
+
+  render(): React.ReactNode {
+    if (this.state.hasError) {
+      return React.createElement(
+        'div',
+        {
+          role: 'alert',
+          className:
+            'rounded-xl border border-amber-400/50 bg-slate-900 p-3 text-xs text-slate-100 space-y-2'
+        },
+        React.createElement(
+          'p',
+          { className: 'font-bold text-amber-300' },
+          `${this.props.widgetName} had a quick hiccup loading.`
+        ),
+        React.createElement(
+          'button',
+          {
+            type: 'button',
+            onClick: () => this.setState({ hasError: false }),
+            className:
+              'min-h-[44px] rounded-lg border border-emerald-400/60 bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-xs font-extrabold text-white transition'
+          },
+          'Retry Panel'
+        )
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export function mountSwapIngredientModal(
   container: HTMLElement,
   props: SwapIngredientModalProps
@@ -423,7 +481,13 @@ export function mountSwapIngredientModal(
     root = createRoot(container);
     mountedSwapModalRoots.set(container, root);
   }
-  root.render(React.createElement(SwapIngredientModal, props));
+  root.render(
+    React.createElement(
+      WidgetErrorBoundary,
+      { widgetName: 'Swap Ingredient' },
+      React.createElement(SwapIngredientModal, props)
+    )
+  );
   return {
     unmount: () => {
       const existing = mountedSwapModalRoots.get(container);
@@ -444,7 +508,13 @@ export function mountCustomProgramUploadPanel(
     root = createRoot(container);
     mountedCustomProgramRoots.set(container, root);
   }
-  root.render(React.createElement(CustomProgramUploadPanel, props));
+  root.render(
+    React.createElement(
+      WidgetErrorBoundary,
+      { widgetName: 'Custom Program Upload' },
+      React.createElement(CustomProgramUploadPanel, props)
+    )
+  );
   return {
     unmount: () => {
       const existing = mountedCustomProgramRoots.get(container);
@@ -465,7 +535,13 @@ export function mountAccessibleVideoPlayer(
     root = createRoot(container);
     mountedVideoPlayerRoots.set(container, root);
   }
-  root.render(React.createElement(AccessibleVideoPlayer, props));
+  root.render(
+    React.createElement(
+      WidgetErrorBoundary,
+      { widgetName: 'Accessible Form Guide' },
+      React.createElement(AccessibleVideoPlayer, props)
+    )
+  );
   return {
     unmount: () => {
       const existing = mountedVideoPlayerRoots.get(container);
@@ -486,7 +562,13 @@ export function mountPhase2AccessibilityHub(
     root = createRoot(container);
     mountedPhase2HubRoots.set(container, root);
   }
-  root.render(React.createElement(Phase2AccessibilityHub, props));
+  root.render(
+    React.createElement(
+      WidgetErrorBoundary,
+      { widgetName: 'Accessibility Hub' },
+      React.createElement(Phase2AccessibilityHub, props)
+    )
+  );
   return {
     unmount: () => {
       const existing = mountedPhase2HubRoots.get(container);
@@ -507,7 +589,13 @@ export function mountPlainLanguageCoachModal(
     root = createRoot(container);
     mountedCoachModalRoots.set(container, root);
   }
-  root.render(React.createElement(PlainLanguageCoachModal, props));
+  root.render(
+    React.createElement(
+      WidgetErrorBoundary,
+      { widgetName: 'Plain-Language Coach' },
+      React.createElement(PlainLanguageCoachModal, props)
+    )
+  );
   return {
     unmount: () => {
       const existing = mountedCoachModalRoots.get(container);

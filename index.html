@@ -696,14 +696,14 @@
   <!-- Sticky Top App Header & Always-Visible Pinned Rest Timer HUD -->
   <header id="main-sticky-header" role="banner" aria-label="Budget Gym application header and pinned rest timer" class="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/90 shadow-xl shadow-slate-950/80" style="position: fixed; top: 0; left: 0; right: 0; z-index: 50;">
     <div class="max-w-xl mx-auto px-2 sm:px-3.5 pt-2 pb-1.5 space-y-2">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <div class="flex items-center gap-2 min-w-0 flex-1">
+      <div id="header-brand-row" class="flex flex-wrap items-center justify-between gap-2">
+        <div id="header-brand-group" class="flex items-center gap-2 min-w-[132px] flex-1 overflow-hidden">
           <div aria-hidden="true" class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-extrabold text-[0.6875rem] shrink-0 shadow-md shadow-emerald-500/20">
             GYM
           </div>
-          <div class="min-w-0 flex-1">
-            <h1 class="text-xs sm:text-sm font-extrabold tracking-tight text-white leading-snug">Budget Gym</h1>
-            <p class="text-[0.6875rem] text-emerald-400 font-semibold leading-snug" id="header-subtitle" title="Full-Body • $6.35/d ($6.34/d once switched to Costco Creatine)">Full-Body • $6.35/d</p>
+          <div id="header-brand-text" class="min-w-0 flex-1 overflow-hidden">
+            <h1 id="header-brand-title" class="text-sm font-extrabold tracking-tight text-white leading-snug whitespace-nowrap overflow-hidden text-ellipsis">Budget Gym</h1>
+            <p class="hidden sm:block text-[0.6875rem] text-emerald-400 font-semibold leading-snug whitespace-nowrap overflow-hidden text-ellipsis" id="header-subtitle" title="Full-Body • $6.35/d ($6.34/d once switched to Costco Creatine)">Full-Body • $6.35/d</p>
           </div>
         </div>
 
@@ -782,11 +782,11 @@
             <span id="watch-header-live-dot" aria-hidden="true" class="hidden w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
             <span id="watch-header-btn-label" class="hidden sm:inline">Watch</span>
           </button>
-          <button id="open-smart-login-btn" type="button" data-auth-status="loading" aria-busy="true" aria-label="Checking account sign-in status" class="flex items-center justify-center gap-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 px-2 py-1.5 rounded-xl text-[0.75rem] font-extrabold transition" title="Smart Login &amp; User Profile">
+          <button id="open-smart-login-btn" type="button" data-auth-status="loading" aria-busy="true" aria-label="Checking account sign-in status" class="flex items-center justify-center gap-1.5 whitespace-nowrap bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 px-2.5 py-1.5 rounded-xl text-[0.75rem] font-extrabold transition" title="Smart Login &amp; User Profile">
             <span id="header-auth-loading-spinner" data-testid="header-auth-loading-spinner" aria-hidden="true" class="hidden w-3.5 h-3.5 rounded-full border-2 border-emerald-300/35 border-t-emerald-300 animate-spin shrink-0"></span>
             <span id="header-user-avatar" data-testid="header-user-avatar" aria-hidden="true" class="hidden w-5 h-5 rounded-full items-center justify-center text-xs leading-none shrink-0"></span>
             <svg id="header-user-icon-svg" class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span id="header-login-label">Checking...</span>
+            <span id="header-login-label" class="whitespace-nowrap">Checking...</span>
           </button>
           <button id="open-share-store-btn" type="button" aria-label="Share app and open settings" class="flex items-center justify-center gap-1 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 px-2 py-1.5 rounded-xl text-[0.75rem] font-bold transition" title="Share App &amp; Fresh Start Reset">
             <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
@@ -3002,8 +3002,13 @@
       if (localProfile && (!nextState.userProfile || !nextState.userProfile.email)) {
         nextState.userProfile = localProfile;
       }
-      if (nextState.userProfile && nextState.userProfile.email) {
-        nextState.userProfile.name = resolveHeaderDisplayNameInline(nextState.userProfile);
+      if (nextState.userProfile && nextState.userProfile.email && String(nextState.userProfile.email).trim() && nextState.userProfile.authProvider !== 'guest_local') {
+        const cleanedRemoteName = resolveHeaderDisplayNameInline(nextState.userProfile);
+        if (cleanedRemoteName && cleanedRemoteName !== 'Sign In' && cleanedRemoteName.toLowerCase() !== 'guest') {
+          nextState.userProfile.name = cleanedRemoteName;
+          nextState.userProfile.isGuest = false;
+          nextState.isGuestMode = false;
+        }
       }
       if (localLeads) {
         nextState.capturedLeads = Array.isArray(nextState.capturedLeads) && nextState.capturedLeads.length > 0
@@ -3051,6 +3056,12 @@
       }
       if (typeof window.__syncAccessibilityControlsFromState === 'function') {
         window.__syncAccessibilityControlsFromState();
+      }
+      if (typeof syncHeaderAuthButtonUI === 'function') {
+        syncHeaderAuthButtonUI();
+      }
+      if (typeof syncSmartLoginFormUI === 'function') {
+        syncSmartLoginFormUI(false);
       }
       updateCloudSyncBadgeUI(
         'saved',
@@ -27855,15 +27866,28 @@
         } else {
           const sUser = liveSession && liveSession.user ? liveSession.user : null;
           const sMeta = (sUser && sUser.user_metadata) || {};
+          const rawLocalName = String((localProf && localProf.name) || '').trim();
+          const rawLocalEmail = String((localProf && localProf.email) || '').trim();
+          const isRealNamedLocalProf = Boolean(
+            localProf &&
+            rawLocalEmail &&
+            rawLocalName &&
+            !/^(guest|sign in|profile|anonymous)$/i.test(rawLocalName) &&
+            localProf.authProvider !== 'guest_local'
+          );
+          const effectiveIsLocalGuest = Boolean(localProf && localProf.isGuest && !isRealNamedLocalProf);
           const mergedProf = {
-            name: sMeta.name || sMeta.full_name || (localProf && !localProf.isGuest ? localProf.name : '') || '',
-            email: (sUser && sUser.email) || (localProf && !localProf.isGuest ? localProf.email : '') || '',
+            name: sMeta.given_name || sMeta.name || sMeta.full_name || (!effectiveIsLocalGuest ? rawLocalName : '') || '',
+            email: (sUser && sUser.email) || (!effectiveIsLocalGuest ? rawLocalEmail : '') || '',
             authProvider: (sUser && sUser.app_metadata && sUser.app_metadata.provider) || (localProf && localProf.authProvider) || ''
           };
-          const resolved = resolveHeaderDisplayNameInline(mergedProf);
+          const resolvedFull = resolveHeaderDisplayNameInline(mergedProf);
+          const resolved = resolvedFull && resolvedFull !== 'Sign In'
+            ? (String(resolvedFull).trim().split(/\s+/)[0] || resolvedFull)
+            : resolvedFull;
           const isAuthed = Boolean(
             (sUser && (sUser.id || sUser.email)) ||
-            (localProf && !localProf.isGuest && (localProf.email || localProf.supabaseUserId || (resolved && resolved !== 'Sign In')))
+            (localProf && !effectiveIsLocalGuest && (rawLocalEmail || localProf.supabaseUserId || (resolved && resolved !== 'Sign In')))
           );
           const status = isAuthed ? 'authenticated' : (isLoading ? 'loading' : 'signed-out');
           const displayName = isAuthed
@@ -27928,6 +27952,10 @@
         return authState;
       }
       window.syncHeaderAuthButtonUI = syncHeaderAuthButtonUI;
+      function updateHeaderProfileUI() {
+        return syncHeaderAuthButtonUI();
+      }
+      window.updateHeaderProfileUI = updateHeaderProfileUI;
 
       // Global capture focus guard so tapping ANY workout/prep note input never triggers password managers or login modals
       if (!window.__noteFocusGuardBound) {
@@ -28736,6 +28764,11 @@
         if (savedAcctsListEl) savedAcctsListEl.innerHTML = savedHtml;
         if (googleChooserSavedList) googleChooserSavedList.innerHTML = savedHtml;
         attachSwitchAccountListeners();
+        if (hasRealProfile && prof.authProvider !== 'guest_local' && !/^(guest|sign in)$/i.test(String(prof.name || '').trim())) {
+          state.isGuestMode = false;
+          state.userProfile.isGuest = false;
+        }
+        if (typeof syncHeaderAuthButtonUI === 'function') syncHeaderAuthButtonUI();
       }
       syncSmartLoginFormUI();
 
@@ -28857,6 +28890,11 @@
 
       if (continueActiveAcctBtn && smartLoginModal) {
         continueActiveAcctBtn.addEventListener('click', () => {
+          if (state.userProfile && state.userProfile.email) {
+            state.isGuestMode = false;
+            state.userProfile.isGuest = false;
+            if (typeof syncHeaderAuthButtonUI === 'function') syncHeaderAuthButtonUI();
+          }
           smartLoginModal.classList.add('hidden');
         });
       }
@@ -30546,18 +30584,23 @@
       const closeLoginBtnInit = document.getElementById('close-smart-login-btn');
       if (closeLoginBtnInit) closeLoginBtnInit.classList.remove('hidden');
 
-      const hasSavedCloudAccount = Boolean(
+      const hasRealEmailProfile = Boolean(
         state.userProfile &&
         state.userProfile.email &&
-        !state.userProfile.isGuest &&
-        state.userProfile.authProvider &&
+        String(state.userProfile.email).trim() &&
         state.userProfile.authProvider !== 'guest_local' &&
-        hasCompletedOnboarding
+        !(state.userProfile.isGuest && /^(|guest)$/i.test(String(state.userProfile.name || '').trim()))
       );
+      const hasSavedCloudAccount = Boolean(hasRealEmailProfile && hasCompletedOnboarding);
+
+      if (hasRealEmailProfile) {
+        state.isGuestMode = false;
+        state.userProfile.isGuest = false;
+      }
 
       if (!hasCompletedOnboarding && !isAutostart) {
-        // Fresh user -> enter Guest Sandbox silently and open 5-step IKEA Effect Quiz immediately
-        if (!hasSavedCloudAccount) {
+        // Fresh user -> enter Guest Sandbox silently and open onboarding quiz immediately
+        if (!hasRealEmailProfile) {
           state.isGuestMode = true;
           state.userProfile = {
             name: 'Guest',
@@ -30567,7 +30610,7 @@
           };
         }
         window.openProgramSetupWizardModal(false, 1);
-      } else if (!hasSavedCloudAccount) {
+      } else if (!hasSavedCloudAccount && !hasRealEmailProfile) {
         state.isGuestMode = true;
         state.userProfile = {
           name: 'Guest',
@@ -30581,6 +30624,8 @@
       }
       if (typeof updateHeaderProfileUI === 'function') {
         updateHeaderProfileUI();
+      } else if (typeof syncHeaderAuthButtonUI === 'function') {
+        syncHeaderAuthButtonUI();
       }
       // Initial passive bootstrap is complete; active user inputs may now stamp `last_updated` and background-sync
       isBootstrappingApp = false;

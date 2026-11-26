@@ -96,19 +96,19 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
       aria-label="Budget Gym application header"
       className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/95 px-3 py-2 backdrop-blur-md"
     >
-      <div className="mx-auto flex max-w-xl items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="mx-auto flex max-w-xl flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-[124px] flex-1 items-center gap-2 overflow-hidden">
           <div
             aria-hidden="true"
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-[0.6875rem] font-black text-slate-950"
           >
             GYM
           </div>
-          <div className="min-w-0">
-            <h1 className="truncate whitespace-nowrap text-xs font-extrabold leading-relaxed tracking-tight text-white sm:text-sm">
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <h1 className="overflow-hidden text-ellipsis whitespace-nowrap break-normal text-sm font-extrabold leading-relaxed tracking-tight text-white">
               Budget Gym
             </h1>
-            <p className="truncate whitespace-nowrap text-[0.625rem] font-semibold leading-relaxed text-emerald-400 sm:text-[0.6875rem]">
+            <p className="hidden overflow-hidden text-ellipsis whitespace-nowrap break-normal text-[0.6875rem] font-semibold leading-relaxed text-emerald-400 sm:block">
               {subtitle}
             </p>
           </div>

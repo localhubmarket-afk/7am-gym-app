@@ -314,4 +314,60 @@ test('Zero Deletion Policy & Task 1-3 wiring in index.html', () => {
     assert.match(tag, /autocomplete="off"/);
     assert.match(tag, /data-lpignore="true"/);
   });
+
+  // Header brand title anti-stacking & mobile subtitle hiding
+  assert.match(html, /id="header-brand-group"[^>]*min-w-\[132px\]/);
+  assert.match(html, /id="header-brand-title"[^>]*whitespace-nowrap[^>]*overflow-hidden[^>]*text-ellipsis/);
+  assert.match(html, /class="hidden sm:block[^"]*whitespace-nowrap[^"]*overflow-hidden[^"]*text-ellipsis"[^>]*id="header-subtitle"/);
+
+  const cssPath = path.resolve(process.cwd(), 'src/styles/accessibility.css');
+  const css = fs.readFileSync(cssPath, 'utf8');
+  assert.match(css, /#header-brand-title[\s\S]*white-space:\s*nowrap/);
+  assert.match(css, /#header-brand-title[\s\S]*text-overflow:\s*ellipsis/);
+  assert.match(css, /#header-brand-title[\s\S]*word-break:\s*normal/);
 });
+
+test('Header first-name rule & stale isGuest recovery on hydrated real account', () => {
+  // Multi-word full name resolves cleanly to first name only
+  const multiWord = resolveHeaderAuthState({
+    session: null,
+    localProfile: {
+      name: 'François Bergeret',
+      email: 'bergeretforestier.francois@gmail.com',
+      isGuest: false
+    },
+    isAuthLoading: false
+  });
+  assert.equal(multiWord.status, 'authenticated');
+  assert.equal(multiWord.displayName, 'François');
+  assert.equal(multiWord.buttonDisplayLabel, '👤 François');
+
+  // Stale isGuest: true on a real named cloud account must still show first name (not "Sign In")
+  const staleGuestFlagOnRealAccount = resolveHeaderAuthState({
+    session: null,
+    localProfile: {
+      name: 'François',
+      email: 'bergeretforestier.francois@gmail.com',
+      isGuest: true
+    },
+    isAuthLoading: false
+  });
+  assert.equal(staleGuestFlagOnRealAccount.status, 'authenticated');
+  assert.equal(staleGuestFlagOnRealAccount.displayName, 'François');
+  assert.equal(staleGuestFlagOnRealAccount.buttonDisplayLabel, '👤 François');
+
+  // True guest_local profile remains signed-out -> "Sign In"
+  const explicitGuestLocal = resolveHeaderAuthState({
+    session: null,
+    localProfile: {
+      name: 'Guest',
+      email: '',
+      isGuest: true,
+      authProvider: 'guest_local'
+    },
+    isAuthLoading: false
+  });
+  assert.equal(explicitGuestLocal.status, 'signed-out');
+  assert.equal(explicitGuestLocal.displayName, 'Sign In');
+});
+

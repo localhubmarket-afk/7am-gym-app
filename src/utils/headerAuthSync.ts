@@ -119,6 +119,13 @@ export function extractAvatarInitial(displayName: string, email?: string | null)
   return 'U';
 }
 
+export function extractFirstName(rawName: string): string {
+  const cleaned = String(rawName || '').trim().replace(/\s+/g, ' ');
+  if (!cleaned) return '';
+  const firstToken = cleaned.split(' ')[0]?.trim() || '';
+  return firstToken;
+}
+
 export interface ResolveHeaderAuthOptions {
   session?: SupabaseSessionLike | null;
   localProfile?: LocalUserProfileLike | null;
@@ -131,8 +138,9 @@ export interface ResolveHeaderAuthOptions {
  *   `status: 'loading'` so the UI renders a neutral loading indicator instead of "Sign In".
  * - Only returns `status: 'signed-out'` ("Sign In") when `isAuthLoading` is false AND no
  *   active Supabase session or hydrated non-guest profile exists.
- * - When active, dynamically formats `buttonDisplayLabel` as `👤 <Name>` from
- *   `gym_state.userProfile.name` or Supabase `user.user_metadata.name` / `full_name`.
+ * - When active, dynamically formats `displayName` as the user's first name and
+ *   `buttonDisplayLabel` as `👤 <FirstName>` from `gym_state.userProfile.name`
+ *   or Supabase `user.user_metadata.name` / `full_name`.
  */
 export function resolveHeaderAuthState(options: ResolveHeaderAuthOptions = {}): HeaderAuthState {
   const sessionUser = options.session?.user ?? null;
@@ -143,17 +151,28 @@ export function resolveHeaderAuthState(options: ResolveHeaderAuthOptions = {}): 
   const sessionEmail = String(sessionUser?.email || '').trim().toLowerCase();
   const sessionId = String(sessionUser?.id || '').trim();
   const sessionMetaName = String(
-    meta?.name || meta?.full_name || meta?.given_name || meta?.display_name || ''
+    meta?.given_name || meta?.name || meta?.full_name || meta?.display_name || ''
   ).trim();
   const sessionAvatarUrl = sanitizeAvatarUrl(meta?.avatar_url || meta?.picture);
   const sessionProvider = String(sessionUser?.app_metadata?.provider || '').trim() || null;
 
-  const isLocalGuest = Boolean(localProfile?.isGuest);
-  const localEmail = isLocalGuest ? '' : String(localProfile?.email || '').trim().toLowerCase();
-  const localName = isLocalGuest ? '' : String(localProfile?.name || '').trim();
+  const rawLocalName = String(localProfile?.name || '').trim();
+  const rawLocalEmail = String(localProfile?.email || '').trim().toLowerCase();
+  const rawLocalProvider = String(localProfile?.authProvider || '').trim();
+  const hasRealRawLocalName = Boolean(
+    rawLocalName && !GENERIC_PLACEHOLDER_NAMES.has(rawLocalName.toLowerCase())
+  );
+  // Treat as guest only when explicitly flagged as guest AND lacking a real named account
+  // (prevents a stale `isGuest: true` flag from hiding a real hydrated account like François).
+  const isLocalGuest = Boolean(
+    localProfile?.isGuest &&
+      (!rawLocalEmail || !hasRealRawLocalName || rawLocalProvider === 'guest_local')
+  );
+  const localEmail = isLocalGuest ? '' : rawLocalEmail;
+  const localName = isLocalGuest ? '' : rawLocalName;
   const localUserId = isLocalGuest ? '' : String(localProfile?.supabaseUserId || '').trim();
   const localAvatarUrl = isLocalGuest ? null : sanitizeAvatarUrl(localProfile?.avatarUrl);
-  const localProvider = isLocalGuest ? null : String(localProfile?.authProvider || '').trim() || null;
+  const localProvider = isLocalGuest ? null : rawLocalProvider || null;
 
   const hasLiveSupabaseSession = Boolean(sessionUser && (sessionId || sessionEmail));
   const hasRealSessionMetaName = Boolean(
@@ -221,6 +240,8 @@ export function resolveHeaderAuthState(options: ResolveHeaderAuthOptions = {}): 
 
   if (!resolvedName || resolvedName === 'Sign In') {
     resolvedName = mergedEmail ? 'Member' : 'Account';
+  } else {
+    resolvedName = extractFirstName(resolvedName) || resolvedName;
   }
 
   const avatarInitial = extractAvatarInitial(resolvedName, mergedEmail);

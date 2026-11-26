@@ -60,8 +60,18 @@ export default defineConfig({
       }
     })
   ],
+  resolve: {
+    dedupe: ['react', 'react-dom']
+  },
   optimizeDeps: {
-    entries: ['src/d3ChartBridge.ts']
+    entries: ['src/d3ChartBridge.ts'],
+    include: [
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime'
+    ]
   },
   server: {
     port: 3000,

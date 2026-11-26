@@ -1035,3 +1035,68 @@ nav[aria-label="Bottom app navigation"] .nav-tab-btn {
   touch-action: manipulation;
 }
 
+/* ============================================================================
+ * 13. Sticky Top Header Brand Anti-Stacking & Responsive Ellipsis Protection
+ * - Overrides global header word-break: break-word so "Budget Gym" never stacks
+ *   letter-by-letter on narrow mobile viewports (360px - 430px).
+ * - Hides secondary subtitle on mobile (<640px) so the brand stays single-line.
+ * - Keeps the logged-in profile icon + first name button cleanly single-line.
+ * ============================================================================ */
+#header-brand-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+#header-brand-group {
+  min-width: 132px;
+  max-width: 100%;
+  flex: 1 1 132px;
+  overflow: hidden;
+}
+
+#header-brand-text {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+#header-brand-title,
+#header-subtitle {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+@media (max-width: 639px) {
+  #header-subtitle {
+    display: none !important;
+  }
+  header nav[aria-label="Primary header actions"] {
+    gap: 0.375rem !important;
+    width: 100%;
+    justify-content: space-between;
+  }
+  header nav[aria-label="Primary header actions"] > button,
+  header nav[aria-label="Primary header actions"] #header-nutrition-menu-btn {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+}
+
+@media (min-width: 640px) {
+  #header-subtitle {
+    display: block !important;
+  }
+}
+
+#open-smart-login-btn,
+#header-login-label {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
