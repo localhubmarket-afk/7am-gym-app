@@ -439,6 +439,22 @@ import {
   saveConflictBackupSnapshot,
   writeSyncOutbox
 } from './utils/offlineLoginMergeEngine';
+import {
+  FLEXIBLE_SET_STEPPER_PALETTE,
+  MAX_FLEXIBLE_SETS,
+  MIN_FLEXIBLE_SETS,
+  adjustExerciseSetCount,
+  clampFlexibleSetCount,
+  getExerciseSetOverrideKey,
+  resolveEffectiveExerciseSetCount,
+  resolveWeightStepIncrement,
+  shouldLockExerciseOnSetDone,
+  shouldShowMicroStartPanel,
+  shouldShowResumeWorkoutBanner,
+  stepRepsValue,
+  stepWeightValue,
+  verifyStepperWcagContrastCompliance
+} from './utils/flexibleWorkoutUx';
 
 const mountedVideoPlayerRoots = new WeakMap<HTMLElement, Root>();
 const mountedPhase2HubRoots = new WeakMap<HTMLElement, Root>();
@@ -1611,6 +1627,20 @@ declare global {
     readSyncOutbox?: typeof readSyncOutbox;
     saveConflictBackupSnapshot?: typeof saveConflictBackupSnapshot;
     writeSyncOutbox?: typeof writeSyncOutbox;
+    FLEXIBLE_SET_STEPPER_PALETTE?: typeof FLEXIBLE_SET_STEPPER_PALETTE;
+    MIN_FLEXIBLE_SETS?: number;
+    MAX_FLEXIBLE_SETS?: number;
+    verifyStepperWcagContrastCompliance?: typeof verifyStepperWcagContrastCompliance;
+    shouldShowMicroStartPanel?: typeof shouldShowMicroStartPanel;
+    shouldShowResumeWorkoutBanner?: typeof shouldShowResumeWorkoutBanner;
+    getExerciseSetOverrideKey?: typeof getExerciseSetOverrideKey;
+    clampFlexibleSetCount?: typeof clampFlexibleSetCount;
+    resolveEffectiveExerciseSetCount?: typeof resolveEffectiveExerciseSetCount;
+    adjustExerciseSetCount?: typeof adjustExerciseSetCount;
+    resolveWeightStepIncrement?: typeof resolveWeightStepIncrement;
+    stepWeightValue?: typeof stepWeightValue;
+    stepRepsValue?: typeof stepRepsValue;
+    shouldLockExerciseOnSetDone?: typeof shouldLockExerciseOnSetDone;
   }
 }
 
@@ -1961,5 +1991,19 @@ if (typeof window !== 'undefined') {
   window.readSyncOutbox = readSyncOutbox;
   window.saveConflictBackupSnapshot = saveConflictBackupSnapshot;
   window.writeSyncOutbox = writeSyncOutbox;
+  window.FLEXIBLE_SET_STEPPER_PALETTE = FLEXIBLE_SET_STEPPER_PALETTE;
+  window.MIN_FLEXIBLE_SETS = MIN_FLEXIBLE_SETS;
+  window.MAX_FLEXIBLE_SETS = MAX_FLEXIBLE_SETS;
+  window.verifyStepperWcagContrastCompliance = verifyStepperWcagContrastCompliance;
+  window.shouldShowMicroStartPanel = shouldShowMicroStartPanel;
+  window.shouldShowResumeWorkoutBanner = shouldShowResumeWorkoutBanner;
+  window.getExerciseSetOverrideKey = getExerciseSetOverrideKey;
+  window.clampFlexibleSetCount = clampFlexibleSetCount;
+  window.resolveEffectiveExerciseSetCount = resolveEffectiveExerciseSetCount;
+  window.adjustExerciseSetCount = adjustExerciseSetCount;
+  window.resolveWeightStepIncrement = resolveWeightStepIncrement;
+  window.stepWeightValue = stepWeightValue;
+  window.stepRepsValue = stepRepsValue;
+  window.shouldLockExerciseOnSetDone = shouldLockExerciseOnSetDone;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

@@ -435,16 +435,18 @@ html[data-theme="light"] .bg-slate-950\/85,
 html.light-theme .bg-slate-950\/85,
 html[data-theme="light"] .bg-slate-950\/80,
 html.light-theme .bg-slate-950\/80,
+html[data-theme="light"] .bg-slate-950\/75,
+html.light-theme .bg-slate-950\/75,
 html[data-theme="light"] .bg-slate-950\/60,
 html.light-theme .bg-slate-950\/60,
 html[data-theme="light"] .bg-slate-800,
 html.light-theme .bg-slate-800,
 html[data-theme="light"] .bg-slate-800\/90,
 html.light-theme .bg-slate-800\/90,
-html[data-theme="light"] .weight-stepper,
-html.light-theme .weight-stepper,
-html[data-theme="light"] .reps-stepper,
-html.light-theme .reps-stepper {
+html[data-theme="light"] .weight-stepper:not(.weight-stepper-deep-blue),
+html.light-theme .weight-stepper:not(.weight-stepper-deep-blue),
+html[data-theme="light"] .reps-stepper:not(.reps-stepper-light-gray),
+html.light-theme .reps-stepper:not(.reps-stepper-light-gray) {
   background-color: #EAECEF !important;
   color: #0E1A40 !important;
 }
@@ -466,7 +468,11 @@ html.light-theme .bg-emerald-950\/80,
 html[data-theme="light"] .bg-emerald-950\/50,
 html.light-theme .bg-emerald-950\/50,
 html[data-theme="light"] .bg-emerald-950\/40,
-html.light-theme .bg-emerald-950\/40 {
+html.light-theme .bg-emerald-950\/40,
+html[data-theme="light"] .bg-emerald-950\/25,
+html.light-theme .bg-emerald-950\/25,
+html[data-theme="light"] .bg-emerald-950\/20,
+html.light-theme .bg-emerald-950\/20 {
   background-color: #ECFDF5 !important;
   color: #065F46 !important;
 }
@@ -1162,4 +1168,100 @@ html.light-theme .weight-plain-box {
   background-color: #EAECEF !important;
   color: #0E1A40 !important;
 }
+
+/* Color-Grouped WCAG 2.0/2.2 AA (>= 4.5:1) Weight & Reps Steppers — Protected in Dark & Light Mode */
+.weight-stepper-deep-blue,
+html[data-theme="light"] .weight-stepper-deep-blue,
+html.light-theme .weight-stepper-deep-blue {
+  background-color: #172554 !important;
+  border: 2px solid #1E40AF !important;
+  color: #FFFFFF !important;
+}
+.weight-stepper-deep-blue input,
+.weight-stepper-deep-blue .workout-input,
+.weight-stepper-deep-blue .pullup-weight-input,
+html[data-theme="light"] .weight-stepper-deep-blue input,
+html.light-theme .weight-stepper-deep-blue input,
+html[data-theme="light"] .weight-stepper-deep-blue .workout-input,
+html.light-theme .weight-stepper-deep-blue .workout-input,
+html[data-theme="light"] .weight-stepper-deep-blue .pullup-weight-input,
+html.light-theme .weight-stepper-deep-blue .pullup-weight-input {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: #FFFFFF !important;
+  border-color: transparent !important;
+}
+.weight-stepper-deep-blue input::placeholder,
+html[data-theme="light"] .weight-stepper-deep-blue input::placeholder,
+html.light-theme .weight-stepper-deep-blue input::placeholder {
+  color: #BFDBFE !important;
+  opacity: 1 !important;
+}
+.weight-btn-minus-crimson,
+html[data-theme="light"] .weight-btn-minus-crimson,
+html.light-theme .weight-btn-minus-crimson {
+  background-color: #991B1B !important;
+  color: #FFFFFF !important;
+  border: 1px solid #FCA5A5 !important;
+}
+.weight-btn-minus-crimson:hover,
+html[data-theme="light"] .weight-btn-minus-crimson:hover,
+html.light-theme .weight-btn-minus-crimson:hover {
+  background-color: #B91C1C !important;
+  color: #FFFFFF !important;
+}
+.weight-btn-plus-forest,
+html[data-theme="light"] .weight-btn-plus-forest,
+html.light-theme .weight-btn-plus-forest {
+  background-color: #166534 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #86EFAC !important;
+}
+.weight-btn-plus-forest:hover,
+html[data-theme="light"] .weight-btn-plus-forest:hover,
+html.light-theme .weight-btn-plus-forest:hover {
+  background-color: #15803D !important;
+  color: #FFFFFF !important;
+}
+.reps-stepper-light-gray,
+html[data-theme="light"] .reps-stepper-light-gray,
+html.light-theme .reps-stepper-light-gray {
+  background-color: #E5E7EB !important;
+  border: 2px solid #9CA3AF !important;
+  color: #111827 !important;
+}
+.reps-stepper-light-gray input,
+.reps-stepper-light-gray .workout-input,
+.reps-stepper-light-gray .pullup-rep-input,
+html[data-theme="light"] .reps-stepper-light-gray input,
+html.light-theme .reps-stepper-light-gray input,
+html[data-theme="light"] .reps-stepper-light-gray .workout-input,
+html.light-theme .reps-stepper-light-gray .workout-input,
+html[data-theme="light"] .reps-stepper-light-gray .pullup-rep-input,
+html.light-theme .reps-stepper-light-gray .pullup-rep-input {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: #111827 !important;
+  border-color: transparent !important;
+}
+.reps-stepper-light-gray input::placeholder,
+html[data-theme="light"] .reps-stepper-light-gray input::placeholder,
+html.light-theme .reps-stepper-light-gray input::placeholder {
+  color: #374151 !important;
+  opacity: 1 !important;
+}
+.reps-btn-neutral-gray,
+html[data-theme="light"] .reps-btn-neutral-gray,
+html.light-theme .reps-btn-neutral-gray {
+  background-color: #4B5563 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #374151 !important;
+}
+.reps-btn-neutral-gray:hover,
+html[data-theme="light"] .reps-btn-neutral-gray:hover,
+html.light-theme .reps-btn-neutral-gray:hover {
+  background-color: #374151 !important;
+  color: #FFFFFF !important;
+}
+
 

@@ -246,6 +246,11 @@
       width: 100%;
       box-sizing: border-box;
     }
+    @media (max-width: 639px) {
+      .set-row-uncrushable-grid.hidden {
+        display: none !important;
+      }
+    }
     .set-row-meta-cell {
       display: flex;
       flex-wrap: wrap;
@@ -272,17 +277,102 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.5rem;
+      gap: 0.375rem;
       background: var(--bg-surface-alt);
-      border-radius: 0.625rem;
+      border-radius: 0.75rem;
       padding: 0.25rem;
       width: 100%;
       min-width: 0;
       box-sizing: border-box;
       overflow: visible;
     }
+    /* High-Contrast Color-Grouped Weight Container (Deep Blue #172554, Crimson Minus #991B1B, Forest Green Plus #166534) — WCAG AA >= 4.5:1 */
+    .weight-stepper-deep-blue,
+    html.light-theme .weight-stepper-deep-blue,
+    html[data-theme="light"] .weight-stepper-deep-blue {
+      background-color: #172554 !important;
+      border: 2px solid #1E40AF !important;
+      color: #FFFFFF !important;
+    }
+    .weight-stepper-deep-blue .workout-input,
+    .weight-stepper-deep-blue .pullup-weight-input,
+    html.light-theme .weight-stepper-deep-blue .workout-input,
+    html[data-theme="light"] .weight-stepper-deep-blue .workout-input,
+    html.light-theme .weight-stepper-deep-blue .pullup-weight-input,
+    html[data-theme="light"] .weight-stepper-deep-blue .pullup-weight-input {
+      color: #FFFFFF !important;
+      background: transparent !important;
+    }
+    .weight-stepper-deep-blue .workout-input::placeholder,
+    .weight-stepper-deep-blue .pullup-weight-input::placeholder {
+      color: #BFDBFE !important;
+      opacity: 1;
+    }
+    .weight-btn-minus-crimson,
+    html.light-theme .weight-btn-minus-crimson,
+    html[data-theme="light"] .weight-btn-minus-crimson {
+      background-color: #991B1B !important;
+      color: #FFFFFF !important;
+      border: 1px solid #FCA5A5 !important;
+    }
+    .weight-btn-minus-crimson:hover,
+    html.light-theme .weight-btn-minus-crimson:hover,
+    html[data-theme="light"] .weight-btn-minus-crimson:hover {
+      background-color: #B91C1C !important;
+      color: #FFFFFF !important;
+    }
+    .weight-btn-plus-forest,
+    html.light-theme .weight-btn-plus-forest,
+    html[data-theme="light"] .weight-btn-plus-forest {
+      background-color: #166534 !important;
+      color: #FFFFFF !important;
+      border: 1px solid #86EFAC !important;
+    }
+    .weight-btn-plus-forest:hover,
+    html.light-theme .weight-btn-plus-forest:hover,
+    html[data-theme="light"] .weight-btn-plus-forest:hover {
+      background-color: #15803D !important;
+      color: #FFFFFF !important;
+    }
+    /* High-Contrast Color-Grouped Reps Container (Light Gray #E5E7EB, Neutral Gray Buttons #4B5563) — WCAG AA >= 4.5:1 */
+    .reps-stepper-light-gray,
+    html.light-theme .reps-stepper-light-gray,
+    html[data-theme="light"] .reps-stepper-light-gray {
+      background-color: #E5E7EB !important;
+      border: 2px solid #9CA3AF !important;
+      color: #111827 !important;
+    }
+    .reps-stepper-light-gray .workout-input,
+    .reps-stepper-light-gray .pullup-rep-input,
+    html.light-theme .reps-stepper-light-gray .workout-input,
+    html[data-theme="light"] .reps-stepper-light-gray .workout-input,
+    html.light-theme .reps-stepper-light-gray .pullup-rep-input,
+    html[data-theme="light"] .reps-stepper-light-gray .pullup-rep-input {
+      color: #111827 !important;
+      background: transparent !important;
+    }
+    .reps-stepper-light-gray .workout-input::placeholder,
+    .reps-stepper-light-gray .pullup-rep-input::placeholder {
+      color: #374151 !important;
+      opacity: 1;
+    }
+    .reps-btn-neutral-gray,
+    html.light-theme .reps-btn-neutral-gray,
+    html[data-theme="light"] .reps-btn-neutral-gray {
+      background-color: #4B5563 !important;
+      color: #FFFFFF !important;
+      border: 1px solid #374151 !important;
+    }
+    .reps-btn-neutral-gray:hover,
+    html.light-theme .reps-btn-neutral-gray:hover,
+    html[data-theme="light"] .reps-btn-neutral-gray:hover {
+      background-color: #374151 !important;
+      color: #FFFFFF !important;
+    }
     .weight-stepper .step-adj-btn,
-    .reps-stepper .step-adj-btn {
+    .reps-stepper .step-adj-btn,
+    .weight-stepper .pullup-weight-step-btn,
+    .reps-stepper .pullup-rep-step-btn {
       flex-shrink: 0;
       width: 48px;
       min-width: 48px;
@@ -293,11 +383,17 @@
       justify-content: center;
       border-radius: 0.5rem;
       padding: 0.25rem;
-      line-height: 1.2;
+      font-size: 1.25rem;
+      font-weight: 800;
+      line-height: 1;
+      cursor: pointer;
+      transition: background-color 140ms ease, transform 100ms ease;
     }
     .weight-stepper .workout-input,
     .weight-plain-box .workout-input,
-    .reps-stepper .workout-input {
+    .reps-stepper .workout-input,
+    .weight-stepper .pullup-weight-input,
+    .reps-stepper .pullup-rep-input {
       flex: 1 1 3.25rem;
       min-width: 3rem;
       width: 100%;
@@ -307,7 +403,7 @@
       white-space: nowrap;
       overflow: visible;
       font-size: 1rem;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 0;
       padding: 0.25rem;
       background: transparent;
@@ -315,9 +411,11 @@
     }
     .weight-stepper .workout-input::placeholder,
     .weight-plain-box .workout-input::placeholder,
-    .reps-stepper .workout-input::placeholder {
-      font-size: 0.8125rem;
-      font-weight: 600;
+    .reps-stepper .workout-input::placeholder,
+    .weight-stepper .pullup-weight-input::placeholder,
+    .reps-stepper .pullup-rep-input::placeholder {
+      font-size: 0.875rem;
+      font-weight: 700;
       letter-spacing: 0;
     }
 
@@ -419,14 +517,16 @@
     html[data-theme="light"] .bg-slate-950\/85,
     html.light-theme .bg-slate-950\/80,
     html[data-theme="light"] .bg-slate-950\/80,
+    html.light-theme .bg-slate-950\/75,
+    html[data-theme="light"] .bg-slate-950\/75,
     html.light-theme .bg-slate-800,
     html[data-theme="light"] .bg-slate-800,
     html.light-theme .bg-slate-800\/90,
     html[data-theme="light"] .bg-slate-800\/90,
-    html.light-theme .weight-stepper,
-    html[data-theme="light"] .weight-stepper,
-    html.light-theme .reps-stepper,
-    html[data-theme="light"] .reps-stepper {
+    html.light-theme .weight-stepper:not(.weight-stepper-deep-blue),
+    html[data-theme="light"] .weight-stepper:not(.weight-stepper-deep-blue),
+    html.light-theme .reps-stepper:not(.reps-stepper-light-gray),
+    html[data-theme="light"] .reps-stepper:not(.reps-stepper-light-gray) {
       background-color: #EAECEF !important;
       color: #0E1A40 !important;
     }
@@ -435,7 +535,11 @@
     html.light-theme .bg-emerald-950\/50,
     html[data-theme="light"] .bg-emerald-950\/50,
     html.light-theme .bg-emerald-950\/80,
-    html[data-theme="light"] .bg-emerald-950\/80 {
+    html[data-theme="light"] .bg-emerald-950\/80,
+    html.light-theme .bg-emerald-950\/25,
+    html[data-theme="light"] .bg-emerald-950\/25,
+    html.light-theme .bg-emerald-950\/20,
+    html[data-theme="light"] .bg-emerald-950\/20 {
       background-color: #ECFDF5 !important;
       color: #065F46 !important;
     }
@@ -1138,43 +1242,6 @@
 
       <div id="overtraining-safety-alert-banner" class="hidden"></div>
 
-      <section
-        id="workout-resume-banner"
-        data-testid="workout-resume-banner"
-        role="region"
-        aria-label="Resume Active Workout"
-        class="hidden workout-resume-banner-card rounded-2xl px-3.5 py-3 shadow-sm"
-      >
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
-          <div class="min-w-0 space-y-0.5">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="inline-block rounded-md bg-green-100 px-2 py-0.5 text-[0.6875rem] font-extrabold text-gray-900">Active Workout Saved</span>
-              <span id="workout-resume-progress-pill" class="text-[0.6875rem] font-bold opacity-95"></span>
-            </div>
-            <h2 id="workout-resume-headline" class="text-xs sm:text-sm font-extrabold leading-snug">Welcome back! Pick up right where you left off.</h2>
-            <p id="workout-resume-detail" class="text-xs leading-relaxed opacity-95">No login needed.</p>
-          </div>
-          <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <button
-              type="button"
-              id="workout-resume-jump-btn"
-              data-testid="workout-resume-jump-btn"
-              class="resume-cta-solid min-h-[48px] min-w-[120px] px-4 py-2 rounded-xl border text-xs font-extrabold transition"
-            >
-              Resume Exercise
-            </button>
-            <button
-              type="button"
-              id="workout-resume-dismiss-btn"
-              aria-label="Dismiss resume banner"
-              class="min-h-[48px] min-w-[48px] px-3 py-2 rounded-xl border border-white/30 bg-black/25 hover:bg-black/40 text-xs font-extrabold transition"
-            >
-              Hide
-            </button>
-          </div>
-        </div>
-      </section>
-
       <div id="shoe-critical-wear-banner" class="hidden bg-amber-500/15 border border-amber-500/40 rounded-2xl px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs">
         <div class="min-w-0">
           <span class="font-extrabold text-amber-300" id="shoe-critical-wear-title">Gym Shoe Midsole Alert</span>
@@ -1186,14 +1253,55 @@
       <!-- Neuromarketing Dopamine Strip (Preserved) -->
       <div id="neuromarketing-hud-strip" class="hidden"></div>
 
-      <!-- 4. Day Summary Banner & Exercise Setup Slots -->
+      <!-- 4. Day Summary Banner -->
       <div id="day-banner" class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
         <!-- Populated by JS -->
       </div>
 
+      <!-- Contextual Behavioral Slot: Placed directly below Day Header and rendered ONLY when needed -->
+      <div id="day-contextual-behavioral-slot" class="space-y-2.5">
+        <section
+          id="workout-resume-banner"
+          data-testid="workout-resume-banner"
+          role="region"
+          aria-label="Resume Active Workout"
+          class="hidden workout-resume-banner-card rounded-2xl px-3.5 py-3 shadow-sm"
+        >
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+            <div class="min-w-0 space-y-0.5">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-extrabold tracking-wide uppercase">Active Workout Saved</span>
+                <span id="workout-resume-progress-pill" class="text-xs font-bold opacity-95 tabular-nums"></span>
+              </div>
+              <h2 id="workout-resume-headline" class="text-sm font-extrabold leading-snug">Welcome back. Pick up right where you left off.</h2>
+              <p id="workout-resume-detail" class="text-xs leading-relaxed opacity-95">No login needed.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                id="workout-resume-jump-btn"
+                data-testid="workout-resume-jump-btn"
+                class="resume-cta-solid min-h-[48px] min-w-[120px] px-4 py-2 rounded-xl border text-xs font-extrabold transition"
+              >
+                Resume Exercise
+              </button>
+              <button
+                type="button"
+                id="workout-resume-dismiss-btn"
+                aria-label="Hide saved workout banner"
+                class="min-h-[48px] min-w-[48px] px-3 py-2 rounded-xl border border-white/40 bg-black/30 hover:bg-black/45 text-xs font-extrabold transition"
+              >
+                Hide
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <div id="micro-start-slot" class="space-y-2"></div>
+      </div>
+
       <div id="gym-zone-b-setup-slot" class="space-y-2"></div>
       <div id="gym-zone-c-tracker-slot"></div>
-      <div id="micro-start-slot" class="space-y-2"></div>
 
       <!-- 5. Main Exercise Cards List -->
       <div id="exercise-list" class="space-y-3.5">
@@ -2128,7 +2236,8 @@
       barbellConfig: {
         sat_hip_thrust: { barLbs: 45, sideLbs: 55 }
       },
-      autoCollapseDone: true,
+      autoCollapseDone: false,
+      exerciseSetCountOverrides: {},
       defaultAllHidden: true,
       smartLoginPromptShown: true,
       francoisWeek1RestoredV2: true,
@@ -9400,7 +9509,8 @@
       const key = getExercisePanelKey(dayIdx, exId);
       if (state.cardCollapsedState[key] === "collapsed") return true;
       if (state.cardCollapsedState[key] === "expanded") return false;
-      if (isExComplete && state.autoCollapseDone !== false) return true;
+      // Never auto-collapse or lock an exercise just because a set (or all sets) is marked Done.
+      void isExComplete;
       return state.defaultAllHidden !== false;
     }
 
@@ -10998,23 +11108,128 @@
       return `w${safeWeek}_s${safeDay}`;
     }
 
+    function getEffectiveExerciseSetsCount(week, dayIdx, exId, baseSets) {
+      const safeWeek = Math.max(1, parseInt(week, 10) || state.currentWeek || 1);
+      const safeDayIdx = Math.max(0, parseInt(dayIdx, 10) || 0);
+      const safeBase = Math.max(1, Math.min(12, parseInt(baseSets, 10) || 3));
+      if (!state.exerciseSetCountOverrides || typeof state.exerciseSetCountOverrides !== 'object') {
+        state.exerciseSetCountOverrides = {};
+      }
+      if (typeof window.resolveEffectiveExerciseSetCount === 'function') {
+        return window.resolveEffectiveExerciseSetCount({
+          overridesMap: state.exerciseSetCountOverrides,
+          week: safeWeek,
+          dayIdx: safeDayIdx,
+          exId,
+          baseSets: safeBase
+        });
+      }
+      const key = `w${safeWeek}_d${safeDayIdx}_${exId}`;
+      const raw = Number(state.exerciseSetCountOverrides[key]);
+      if (Number.isFinite(raw) && raw >= 1 && raw <= 12) return Math.floor(raw);
+      return safeBase;
+    }
+
+    function adjustExerciseSetsCount(week, dayIdx, exId, delta, baseSets) {
+      const safeWeek = Math.max(1, parseInt(week, 10) || state.currentWeek || 1);
+      const safeDayIdx = Math.max(0, parseInt(dayIdx, 10) || 0);
+      const safeBase = Math.max(1, Math.min(12, parseInt(baseSets, 10) || 3));
+      if (!state.exerciseSetCountOverrides || typeof state.exerciseSetCountOverrides !== 'object') {
+        state.exerciseSetCountOverrides = {};
+      }
+      let nextCount = safeBase;
+      if (typeof window.adjustExerciseSetCount === 'function') {
+        const res = window.adjustExerciseSetCount({
+          overridesMap: state.exerciseSetCountOverrides,
+          week: safeWeek,
+          dayIdx: safeDayIdx,
+          exId,
+          baseSets: safeBase,
+          delta
+        });
+        state.exerciseSetCountOverrides = res.overridesMap;
+        nextCount = res.nextCount;
+      } else {
+        const cur = getEffectiveExerciseSetsCount(safeWeek, safeDayIdx, exId, safeBase);
+        nextCount = Math.max(1, Math.min(12, cur + (parseInt(delta, 10) || 0)));
+        state.exerciseSetCountOverrides[`w${safeWeek}_d${safeDayIdx}_${exId}`] = nextCount;
+      }
+      // Keep pull-up custom set counts synchronized when adjusting a pull-up exercise
+      const pDay = PULLUP_EX_ID_TO_DAY[exId] || 0;
+      if (pDay) {
+        if (!state.pullupCustomSetCounts || typeof state.pullupCustomSetCounts !== 'object') {
+          state.pullupCustomSetCounts = {};
+        }
+        state.pullupCustomSetCounts[getPullupCustomSetKey(safeWeek, pDay)] = nextCount;
+      }
+      saveState();
+      return nextCount;
+    }
+
+    function getInlineExerciseSetControlBarHtml(week, dayIdx, exId, currentSets, baseSets, exName, pullupDayNum) {
+      const safeCurrent = Math.max(1, Math.min(12, parseInt(currentSets, 10) || 3));
+      const safeBase = Math.max(1, Math.min(12, parseInt(baseSets, 10) || safeCurrent));
+      const canAdd = safeCurrent < 12;
+      const canRemove = safeCurrent > 1;
+      const safeLabel = String(exName || 'Exercise').replace(/"/g, '&quot;');
+      const targetHint = safeCurrent !== safeBase
+        ? `Showing ${safeCurrent} sets (suggested: ${safeBase})`
+        : `${safeCurrent} ${safeCurrent === 1 ? 'set' : 'sets'} ready`;
+      return `
+        <div
+          data-inline-set-controls="${exId}"
+          class="inline-set-count-controls mt-2 pt-2.5 border-t border-slate-700/80 flex flex-wrap items-center justify-between gap-2"
+        >
+          <span class="text-xs font-bold text-slate-300 tabular-nums">${targetHint}</span>
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              data-ex-set-adj="add"
+              data-ex-id="${exId}"
+              data-day-idx="${dayIdx}"
+              data-base-sets="${safeBase}"
+              data-pullup-day="${pullupDayNum || 0}"
+              aria-label="Add Set ${Math.min(12, safeCurrent + 1)} for ${safeLabel}"
+              ${canAdd ? '' : 'disabled'}
+              class="exercise-set-count-btn weight-btn-plus-forest min-h-[48px] px-3.5 py-2 rounded-xl disabled:opacity-45 text-xs font-extrabold transition"
+            >
+              + Add Set
+            </button>
+            <button
+              type="button"
+              data-ex-set-adj="remove"
+              data-ex-id="${exId}"
+              data-day-idx="${dayIdx}"
+              data-base-sets="${safeBase}"
+              data-pullup-day="${pullupDayNum || 0}"
+              aria-label="Remove Set ${safeCurrent} from ${safeLabel}"
+              ${canRemove ? '' : 'disabled'}
+              class="exercise-set-count-btn weight-btn-minus-crimson min-h-[48px] px-3.5 py-2 rounded-xl disabled:opacity-45 text-xs font-extrabold transition"
+            >
+              − Remove Set
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
     function getEffectivePullupSetsCount(week, dayNum, baseSets) {
       const safeWeek = Math.max(1, parseInt(week, 10) || state.currentWeek || 1);
       const safeDay = Math.max(1, Math.min(5, parseInt(dayNum, 10) || 1));
       let fallbackBase = parseInt(baseSets, 10);
-      if (isNaN(fallbackBase) || fallbackBase < 5) {
+      if (isNaN(fallbackBase) || fallbackBase < 1) {
         if (safeDay === 3) fallbackBase = 9;
         else if (safeDay === 5) fallbackBase = getEffectiveDay5PullupSpec(safeWeek).setsCount || 5;
         else fallbackBase = 5;
       }
-      const clampedBase = Math.max(5, Math.min(9, fallbackBase));
+      const clampedBase = Math.max(1, Math.min(12, fallbackBase));
       if (!state.pullupCustomSetCounts || typeof state.pullupCustomSetCounts !== 'object') {
         state.pullupCustomSetCounts = {};
       }
       const key = getPullupCustomSetKey(safeWeek, safeDay);
       const rawCustom = Number(state.pullupCustomSetCounts[key]);
-      if (Number.isFinite(rawCustom) && rawCustom >= 5 && rawCustom <= 9) {
-        return Math.max(clampedBase, Math.floor(rawCustom));
+      if (Number.isFinite(rawCustom) && rawCustom >= 1 && rawCustom <= 12) {
+        return Math.floor(rawCustom);
       }
       return clampedBase;
     }
@@ -11022,15 +11237,15 @@
     function adjustPullupSetsCount(week, dayNum, action, baseSets) {
       const safeWeek = Math.max(1, parseInt(week, 10) || state.currentWeek || 1);
       const safeDay = Math.max(1, Math.min(5, parseInt(dayNum, 10) || 1));
-      const clampedBase = Math.max(5, Math.min(9, parseInt(baseSets, 10) || (safeDay === 3 ? 9 : 5)));
+      const clampedBase = Math.max(1, Math.min(12, parseInt(baseSets, 10) || (safeDay === 3 ? 9 : 5)));
       const current = getEffectivePullupSetsCount(safeWeek, safeDay, clampedBase);
       let next = current;
       if (action === 'add1') {
-        next = Math.min(9, current + 1);
+        next = Math.min(12, current + 1);
       } else if (action === 'all9') {
         next = 9;
       } else if (action === 'remove1') {
-        next = Math.max(clampedBase, Math.max(5, current - 1));
+        next = Math.max(1, current - 1);
       }
       if (!state.pullupCustomSetCounts || typeof state.pullupCustomSetCounts !== 'object') {
         state.pullupCustomSetCounts = {};
@@ -11038,10 +11253,21 @@
       const key = getPullupCustomSetKey(safeWeek, safeDay);
       state.pullupCustomSetCounts[key] = next;
 
-      // Pre-populate all unlogged Pyramid sets with strict ascending target reps (Set k = k, e.g., Set 6 = 6, Set 8 = 8, Set 9 = 9)
+      // Mirror into exerciseSetCountOverrides for the mapped calendar day
+      const mapInfo = PULLUP_DAY_TO_EX_ID[safeDay];
+      if (mapInfo) {
+        if (!state.exerciseSetCountOverrides || typeof state.exerciseSetCountOverrides !== 'object') {
+          state.exerciseSetCountOverrides = {};
+        }
+        const calDayIdx = typeof getCalendarDayForTemplateSlot === 'function'
+          ? getCalendarDayForTemplateSlot(safeWeek, mapInfo.dayIdx)
+          : mapInfo.dayIdx;
+        state.exerciseSetCountOverrides[`w${safeWeek}_d${calDayIdx}_${mapInfo.exId}`] = next;
+      }
+
+      // Pre-populate all unlogged Pyramid sets with strict ascending target reps (Set k = k)
       if (next > current && isPullupSessionPyramidMode(safeDay, safeWeek)) {
         for (let s = 1; s <= next; s++) {
-          const mapInfo = PULLUP_DAY_TO_EX_ID[safeDay];
           const wKey = mapInfo ? `w${safeWeek}_${mapInfo.dayIdx}_${mapInfo.exId}_${s}` : '';
           const existingW = wKey && state.workoutLogs ? state.workoutLogs[wKey] : null;
           if (!existingW || !existingW.done) {
@@ -11055,51 +11281,52 @@
     }
 
     function getPullupExpansionControlBarHtml(week, dayNum, currentSets, baseSets, context) {
-      const safeCurrent = Math.max(5, Math.min(9, parseInt(currentSets, 10) || 5));
-      const safeBase = Math.max(5, Math.min(9, parseInt(baseSets, 10) || 5));
-      const canAddSet = safeCurrent < 9;
-      const canRemoveSet = safeCurrent > Math.max(5, safeBase);
-      const nextSetNum = Math.min(9, safeCurrent + 1);
-      if (!canAddSet && !canRemoveSet) return '';
+      const safeCurrent = Math.max(1, Math.min(12, parseInt(currentSets, 10) || 5));
+      const safeBase = Math.max(1, Math.min(12, parseInt(baseSets, 10) || 5));
+      const canAddSet = safeCurrent < 12;
+      const canRemoveSet = safeCurrent > 1;
+      const nextSetNum = Math.min(12, safeCurrent + 1);
+      const targetHint = safeCurrent !== safeBase
+        ? `Showing ${safeCurrent} sets (suggested: ${safeBase})`
+        : `${safeCurrent} ${safeCurrent === 1 ? 'set' : 'sets'} ready`;
       return `
-        <div data-pullup-expand-bar="${context || 'gym'}-${dayNum}" class="mt-2 pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
-          <div class="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
-            ${canAddSet ? `
-              <button
-                type="button"
-                data-pullup-set-adj="add1"
-                data-pullup-day="${dayNum}"
-                data-pullup-base="${safeBase}"
-                class="pullup-set-count-btn px-3 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/60 text-sky-200 text-xs font-extrabold transition"
-              >
-                + Keep Going! Add Set ${nextSetNum} (Up to 9 Pull-Up Sets)
-              </button>
-              <button
-                type="button"
-                data-pullup-set-adj="all9"
-                data-pullup-day="${dayNum}"
-                data-pullup-base="${safeBase}"
-                class="pullup-set-count-btn px-2.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-emerald-300 text-xs font-extrabold transition"
-              >
-                Show All 9 Sets
-              </button>
-            ` : `
-              <span class="text-xs font-extrabold text-emerald-300 px-2 py-1 rounded-lg bg-emerald-950/40 border border-emerald-500/40">
-                ✓ All 9 Pull-Up Sets Active (Max Pyramid Expanded)
-              </span>
-            `}
-          </div>
-          ${canRemoveSet ? `
+        <div data-pullup-expand-bar="${context || 'gym'}-${dayNum}" class="inline-set-count-controls mt-2 pt-2.5 border-t border-slate-700/80 flex flex-wrap items-center justify-between gap-2">
+          <span class="text-xs font-bold text-slate-300 tabular-nums">${targetHint}</span>
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              data-pullup-set-adj="add1"
+              data-pullup-day="${dayNum}"
+              data-pullup-base="${safeBase}"
+              aria-label="Add Pull-Up Set ${nextSetNum}"
+              ${canAddSet ? '' : 'disabled'}
+              class="pullup-set-count-btn weight-btn-plus-forest min-h-[48px] px-3.5 py-2 rounded-xl disabled:opacity-45 text-xs font-extrabold transition"
+            >
+              + Add Set
+            </button>
             <button
               type="button"
               data-pullup-set-adj="remove1"
               data-pullup-day="${dayNum}"
               data-pullup-base="${safeBase}"
-              class="pullup-set-count-btn px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 border border-slate-700 hover:border-rose-500/40 text-slate-300 hover:text-rose-200 text-[0.6875rem] font-bold transition shrink-0"
+              aria-label="Remove Pull-Up Set ${safeCurrent}"
+              ${canRemoveSet ? '' : 'disabled'}
+              class="pullup-set-count-btn weight-btn-minus-crimson min-h-[48px] px-3.5 py-2 rounded-xl disabled:opacity-45 text-xs font-extrabold transition"
             >
-              - Remove Set ${safeCurrent}
+              − Remove Set
             </button>
-          ` : ''}
+            ${safeCurrent < 9 ? `
+              <button
+                type="button"
+                data-pullup-set-adj="all9"
+                data-pullup-day="${dayNum}"
+                data-pullup-base="${safeBase}"
+                class="pullup-set-count-btn min-h-[48px] px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-xs font-extrabold transition"
+              >
+                Show 9 Sets
+              </button>
+            ` : ''}
+          </div>
         </div>
       `;
     }
@@ -11656,7 +11883,14 @@
       const mappedExercises = Array.isArray(base.exercises)
         ? base.exercises.map(ex => {
             const pDay = PULLUP_EX_ID_TO_DAY[ex.id] || 0;
-            if (!pDay) return ex;
+            if (!pDay) {
+              const baseSets = Math.max(1, parseInt(ex.sets, 10) || 3);
+              const effSets = getEffectiveExerciseSetsCount(safeWeek, calendarDayIdx, ex.id, baseSets);
+              return Object.assign({}, ex, {
+                baseSetsCount: baseSets,
+                sets: effSets
+              });
+            }
             const baseSets = pDay === 5
               ? (getEffectiveDay5PullupSpec(safeWeek).setsCount || ex.sets || 5)
               : (ex.sets || 5);
@@ -11696,7 +11930,9 @@
         const baseSets = pDay === 5
           ? (getEffectiveDay5PullupSpec(week).setsCount || ex.sets || 5)
           : (ex.sets || 3);
-        const setsCount = pDay ? getEffectivePullupSetsCount(week, pDay, baseSets) : baseSets;
+        const setsCount = pDay
+          ? getEffectivePullupSetsCount(week, pDay, baseSets)
+          : getEffectiveExerciseSetsCount(week, primaryCalDay, ex.id, baseSets);
         for (let s = 1; s <= setsCount; s++) {
           const directEntry = state.workoutLogs && (
             state.workoutLogs[`w${week}_${safeSlot}_${ex.id}_${s}`] ||
@@ -15693,7 +15929,7 @@
         if (adhEnc) adhEnc.textContent = rolling30.encouragementCopy;
       })();
 
-      // Task 3: 2-Minute Micro-Start Focus Mode (Renders ONLY Warm-Up Set 1 until completed, then reveals full workout)
+      // Task 3: 2-Minute Micro-Start Focus Mode (Shown directly below Day header ONLY when 0 sets are logged today or focus mode is active)
       (function renderMicroStartFocusControl() {
         const microSlot = document.getElementById('micro-start-slot');
         const warmupWrap = document.getElementById('warmup-card-container');
@@ -15702,14 +15938,25 @@
         const zoneCEl = document.getElementById('gym-zone-c-tracker-slot');
         if (!microSlot) return;
 
-        if (dayAssignment.isRestDay) {
+        const isMicroActive = Boolean(state.microStartActive);
+        const shouldShowMicro = typeof window.shouldShowMicroStartPanel === 'function'
+          ? window.shouldShowMicroStartPanel({
+              isRestDay: Boolean(dayAssignment.isRestDay),
+              todayDoneSets: Number(todayDoneSets) || 0,
+              microStartActive: isMicroActive
+            })
+          : (!dayAssignment.isRestDay && (isMicroActive || (Number(todayDoneSets) || 0) === 0));
+
+        if (!shouldShowMicro) {
+          if (exListEl) exListEl.classList.remove('hidden');
+          if (zoneBEl) zoneBEl.classList.remove('hidden');
+          if (zoneCEl) zoneCEl.classList.remove('hidden');
+          if (warmupWrap) warmupWrap.classList.remove('hidden');
           microSlot.innerHTML = '';
           microSlot.classList.add('hidden');
           return;
         }
         microSlot.classList.remove('hidden');
-
-        const isMicroActive = Boolean(state.microStartActive);
         const firstExercise = exercisesToday[0];
         const firstMeta = firstExercise ? (EXERCISE_META[firstExercise.id] || { defaultWeightLbs: 45 }) : { defaultWeightLbs: 45 };
         const firstUnit = firstExercise ? getExerciseUnit(firstExercise.id) : 'lbs';
@@ -17033,33 +17280,52 @@
               </div>
             `;
           } else if (isBodyweightRepsOnly) {
+            const bwWeightStep = typeof window.resolveWeightStepIncrement === 'function'
+              ? window.resolveWeightStepIncrement({ unit: exUnit, isBodyweightOrPullup: true, defaultWeightLbs: 0 })
+              : (exUnit === 'kg' ? 1.25 : 2.5);
+            const bwDisplayWeight = rawLoggedWeight !== '' ? rawLoggedWeight : '';
             setsHtml += `
-              <div class="py-2 px-1.5 sm:px-2.5 rounded-xl transition-all ${
+              <div class="py-2.5 px-2 sm:px-3 rounded-xl transition-all ${
                 isDone
                   ? 'bg-emerald-950/20 border border-emerald-500/35'
-                  : 'bg-slate-950/75 border border-slate-800/80'
+                  : (isSkippedSet
+                      ? 'bg-neutral-800/80 border border-neutral-600/70'
+                      : 'bg-slate-950/75 border border-slate-800/80')
               }">
-                <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="set-row-uncrushable-grid">
                   ${prevWeekHintHtml}
                   <div class="set-row-meta-cell">
-                    <span class="text-xs font-extrabold leading-tight block ${isDone ? 'text-emerald-400' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300')}">${setLabelText}</span>
+                    <span class="text-xs font-extrabold leading-tight block ${isDone ? 'text-emerald-400' : (isSkippedSet ? 'text-neutral-300' : (isCurrentTargetSet ? 'text-sky-300' : 'text-slate-300'))}">${setLabelText}${isSkippedSet ? ' · Skipped' : ''}</span>
                   </div>
+                  <!-- Weight Controls (Deep Blue Container, Crimson Minus, Forest Green Plus — supports BW 0 or Added/Assisted Load) -->
                   <div class="set-row-stepper-cell">
-                    <div class="reps-stepper border border-slate-700/90">
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
-                      <input type="number" min="0" max="100" inputmode="numeric" placeholder="${repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input text-white placeholder-slate-500 focus:outline-none" />
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn text-sm font-extrabold text-slate-200 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
+                    <span class="sm:hidden block text-[0.6875rem] font-extrabold uppercase tracking-wide text-slate-300 mb-1">Weight (${exUnit.toUpperCase()} · BW = 0)</span>
+                    <div class="weight-stepper weight-stepper-deep-blue" role="group" aria-label="${ex.name} Set ${s} Weight Controls">
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-${bwWeightStep}" class="step-adj-btn weight-btn-minus-crimson" aria-label="Decrease ${ex.name} Set ${s} Weight by ${bwWeightStep} ${exUnit}">−</button>
+                      <input type="text" inputmode="decimal" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" placeholder="${isSkippedSet ? 'Skipped' : 'BW (0)'}" value="${bwDisplayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-unit="${exUnit}" aria-label="${ex.name} Set ${s} Weight (${exUnit})" class="workout-input focus:outline-none" />
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="${bwWeightStep}" class="step-adj-btn weight-btn-plus-forest" aria-label="Increase ${ex.name} Set ${s} Weight by ${bwWeightStep} ${exUnit}">+</button>
+                    </div>
+                  </div>
+                  <!-- Reps Controls (Separate Light Gray Container with Neutral Gray Buttons) -->
+                  <div class="set-row-stepper-cell">
+                    <span class="sm:hidden block text-[0.6875rem] font-extrabold uppercase tracking-wide text-slate-300 mb-1">Reps</span>
+                    <div class="reps-stepper reps-stepper-light-gray" role="group" aria-label="${ex.name} Set ${s} Reps Controls">
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn reps-btn-neutral-gray" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
+                      <input type="number" min="0" max="100" inputmode="numeric" autocomplete="off" data-lpignore="true" placeholder="${isSkippedSet ? '—' : repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input focus:outline-none" />
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn reps-btn-neutral-gray" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
                     </div>
                   </div>
                   <div class="set-row-actions-cell">
-                    <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${setRestSeconds}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn min-h-[48px] min-w-[48px] px-3 py-2 rounded-lg text-xs font-extrabold transition ${
+                    <button type="button" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-rest-sec="${setRestSeconds}" data-ex-name="${ex.name} (Set ${s})" class="set-done-btn min-h-[48px] min-w-[72px] px-3 py-2 rounded-lg text-xs font-extrabold transition ${
                       isDone
                         ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                        : (isCurrentTargetSet
-                            ? 'bg-sky-400 hover:bg-sky-300 text-slate-950 shadow-sm'
-                            : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700')
+                        : (isSkippedSet
+                            ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-100 border border-neutral-500'
+                            : (isCurrentTargetSet
+                                ? 'bg-sky-400 hover:bg-sky-300 text-slate-950 shadow-sm'
+                                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'))
                     }">
-                      ${isDone ? '✓ Done' : `✓ Log (${setRestSeconds}s)`}
+                      ${isDone ? '✓ Done' : (isSkippedSet ? 'Skipped' : `✓ Log (${setRestSeconds}s)`)}
                     </button>
                     <button type="button" data-delete-set-key="${logKey}" data-ex-name="${ex.name}" data-set-idx="${s}" aria-label="Delete logged data for ${ex.name} Set ${s}" title="Clear Set ${s}" class="delete-set-btn min-h-[48px] min-w-[48px] px-2.5 py-2 rounded-lg border border-rose-500/50 bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 text-xs font-extrabold transition inline-flex items-center justify-center">
                       <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
@@ -17069,6 +17335,9 @@
               </div>
             `;
           } else {
+            const setWeightStep = typeof window.resolveWeightStepIncrement === 'function'
+              ? window.resolveWeightStepIncrement({ unit: exUnit, isBodyweightOrPullup: false, defaultWeightLbs: meta.defaultWeightLbs || 45 })
+              : (exUnit === 'kg' ? 2.5 : 5);
             setsHtml += `
               <div class="py-2.5 px-2 sm:px-3 rounded-xl transition-all ${
                 isDone
@@ -17089,18 +17358,22 @@
                       </button>
                     ` : ''}
                   </div>
-                  <!-- Weight Input: Plain Text Box (Plus and Minus Buttons Removed) -->
+                  <!-- Weight Controls: Deep Blue Container, Crimson Red Minus, Forest Green Plus (WCAG AA >= 4.5:1) -->
                   <div class="set-row-stepper-cell">
-                    <div class="weight-plain-box ring-1 ring-inset ${isBarbellEx ? 'ring-amber-500/40' : 'ring-slate-700/90'}">
-                      <input type="text" inputmode="decimal" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" placeholder="${isSkippedSet ? 'Skipped' : weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-unit="${exUnit}" aria-label="${ex.name} Set ${s} Weight (${exUnit})" class="workout-input weight-plain-input text-white placeholder-slate-400 focus:outline-none" />
+                    <span class="sm:hidden block text-[0.6875rem] font-extrabold uppercase tracking-wide text-slate-300 mb-1">Weight (${exUnit.toUpperCase()})</span>
+                    <div class="weight-stepper weight-stepper-deep-blue" role="group" aria-label="${ex.name} Set ${s} Weight Controls">
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="-${setWeightStep}" class="step-adj-btn weight-btn-minus-crimson" aria-label="Decrease ${ex.name} Set ${s} Weight by ${setWeightStep} ${exUnit}">−</button>
+                      <input type="text" inputmode="decimal" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" placeholder="${isSkippedSet ? 'Skipped' : weightPlaceholder}" value="${displayWeight}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-unit="${exUnit}" aria-label="${ex.name} Set ${s} Weight (${exUnit})" class="workout-input focus:outline-none" />
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="weight" data-delta="${setWeightStep}" class="step-adj-btn weight-btn-plus-forest" aria-label="Increase ${ex.name} Set ${s} Weight by ${setWeightStep} ${exUnit}">+</button>
                     </div>
                   </div>
-                  <!-- Reps Input: Keeps Minus and Plus Stepper Buttons Only -->
+                  <!-- Reps Controls: Separate Light Gray Container with Neutral Gray Buttons (WCAG AA >= 4.5:1) -->
                   <div class="set-row-stepper-cell">
-                    <div class="reps-stepper ring-1 ring-inset ring-slate-700/90">
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn text-base font-extrabold text-slate-200 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
-                      <input type="number" min="0" max="100" inputmode="numeric" autocomplete="off" data-lpignore="true" placeholder="${isSkippedSet ? '—' : repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input text-white placeholder-slate-400 focus:outline-none" />
-                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn text-base font-extrabold text-slate-200 hover:text-white hover:bg-slate-800 transition" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
+                    <span class="sm:hidden block text-[0.6875rem] font-extrabold uppercase tracking-wide text-slate-300 mb-1">Reps</span>
+                    <div class="reps-stepper reps-stepper-light-gray" role="group" aria-label="${ex.name} Set ${s} Reps Controls">
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="-1" class="step-adj-btn reps-btn-neutral-gray" aria-label="Decrease ${ex.name} Set ${s} Reps">−</button>
+                      <input type="number" min="0" max="100" inputmode="numeric" autocomplete="off" data-lpignore="true" placeholder="${isSkippedSet ? '—' : repPlaceholder}" value="${displayReps}" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" aria-label="${ex.name} Set ${s} Reps" class="workout-input focus:outline-none" />
+                      <button type="button" data-step-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-field="reps" data-delta="1" class="step-adj-btn reps-btn-neutral-gray" aria-label="Increase ${ex.name} Set ${s} Reps">+</button>
                     </div>
                   </div>
                   <div class="set-row-actions-cell">
@@ -17844,26 +18117,22 @@
               ` : `
               <div class="space-y-1.5">
                 ${isTimedHold ? `
-                <div class="flex items-center justify-between px-2 text-[0.625rem] font-bold uppercase tracking-wider text-slate-400">
+                <div class="flex items-center justify-between px-2 text-[0.6875rem] font-bold uppercase tracking-wider text-slate-400">
                   <span>Set &amp; Target Hold</span>
                   <span>Isometric Timer &amp; 1-Tap Log</span>
                 </div>
-                ` : (isBodyweightRepsOnly ? `
-                <div class="grid grid-cols-12 px-2 text-[0.625rem] font-bold uppercase tracking-wider text-slate-400">
-                  <div class="col-span-3">Set</div>
-                  <div class="col-span-6 text-center text-emerald-300">Reps (Bodyweight)</div>
-                  <div class="col-span-3 text-right">1-Tap Log</div>
-                </div>
                 ` : `
-                <div class="set-row-uncrushable-grid px-1 sm:px-2.5 text-[0.625rem] font-bold uppercase tracking-wider text-slate-400">
-                  <div>Set</div>
-                  <div class="text-center ${isBarbellEx ? (isMachineEx ? 'text-emerald-300' : 'text-amber-300') : ''}">Weight (${exUnit.toUpperCase()})</div>
-                  <div class="text-center">Reps</div>
-                  <div class="text-right">1-Tap Log</div>
+                <div class="hidden sm:flex set-row-uncrushable-grid px-1 sm:px-2.5 text-[0.6875rem] font-bold uppercase tracking-wider text-slate-300">
+                  <div class="set-row-meta-cell">Set</div>
+                  <div class="set-row-stepper-cell text-center">Weight (${exUnit.toUpperCase()})${isBodyweightRepsOnly ? ' · BW = 0' : ''}</div>
+                  <div class="set-row-stepper-cell text-center">Reps</div>
+                  <div class="set-row-actions-cell text-right">1-Tap Log</div>
                 </div>
-                `)}
+                `}
                 ${setsHtml}
-                ${PULLUP_EX_ID_TO_DAY[ex.id] ? getPullupExpansionControlBarHtml(week, PULLUP_EX_ID_TO_DAY[ex.id], ex.sets, ex.baseSetsCount || (PULLUP_EX_ID_TO_DAY[ex.id] === 3 ? 9 : 5), 'gym') : ''}
+                ${PULLUP_EX_ID_TO_DAY[ex.id]
+                  ? getPullupExpansionControlBarHtml(week, PULLUP_EX_ID_TO_DAY[ex.id], ex.sets, ex.baseSetsCount || (PULLUP_EX_ID_TO_DAY[ex.id] === 3 ? 9 : 5), 'gym')
+                  : getInlineExerciseSetControlBarHtml(week, dayIdx, ex.id, ex.sets, ex.baseSetsCount || ex.sets || 3, displayExName, 0)}
               </div>
               `}
 
@@ -19006,11 +19275,42 @@
           const pDay = parseInt(btn.getAttribute('data-pullup-day'), 10) || 1;
           const baseSets = parseInt(btn.getAttribute('data-pullup-base'), 10) || 5;
           const nextCount = adjustPullupSetsCount(week, pDay, action, baseSets);
-          renderWorkoutView();
-          renderPullupView();
+          const cardAnchor = document.getElementById(`ex-card-day${pDay}_pullups`);
+          if (typeof window.withStableViewportScroll === 'function') {
+            window.withStableViewportScroll(cardAnchor, () => {
+              renderWorkoutView();
+              renderPullupView();
+            });
+          } else {
+            renderWorkoutView();
+            renderPullupView();
+          }
           showToast(action === 'remove1'
-            ? `Pull-Up session now set to ${nextCount} sets (synced with Pull-Ups tab)`
-            : `Expanded to ${nextCount} Pull-Up sets! Synced on Gym & Pull-Ups tabs.`);
+            ? `Pull-Up session updated to ${nextCount} ${nextCount === 1 ? 'set' : 'sets'}.`
+            : `Pull-Up session updated to ${nextCount} sets.`);
+        });
+      });
+
+      listEl.querySelectorAll('.exercise-set-count-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const action = btn.getAttribute('data-ex-set-adj');
+          const exId = btn.getAttribute('data-ex-id');
+          const dIdx = parseInt(btn.getAttribute('data-day-idx'), 10);
+          const baseSets = parseInt(btn.getAttribute('data-base-sets'), 10) || 3;
+          const delta = action === 'remove' ? -1 : 1;
+          if (!exId) return;
+          const nextCount = adjustExerciseSetsCount(week, isNaN(dIdx) ? dayIdx : dIdx, exId, delta, baseSets);
+          const cardAnchor = document.getElementById(`ex-card-${exId}`);
+          if (typeof window.withStableViewportScroll === 'function') {
+            window.withStableViewportScroll(cardAnchor, () => {
+              renderWorkoutView();
+            });
+          } else {
+            renderWorkoutView();
+          }
+          showToast(delta < 0
+            ? `Removed set — now showing ${nextCount} ${nextCount === 1 ? 'set' : 'sets'}.`
+            : `Added Set ${nextCount}.`);
         });
       });
 
@@ -20215,9 +20515,9 @@
               const clampedW = clampWeightInputLocal(weightInput.value);
               weightInput.value = clampedW.value;
               state.workoutLogs[key].weight = clampedW.value;
-            } else if (state.workoutLogs[key].weight === '' && weightInput && weightInput.placeholder) {
+            } else if (state.workoutLogs[key].weight === '' && weightInput && weightInput.placeholder && !isNaN(parseFloat(weightInput.placeholder))) {
               state.workoutLogs[key].weight = clampWeightInputLocal(weightInput.placeholder).value;
-            } else if (PULLUP_EX_ID_TO_DAY[exId]) {
+            } else if (PULLUP_EX_ID_TO_DAY[exId] || (weightInput && weightInput.placeholder === 'BW (0)')) {
               state.workoutLogs[key].weight = '0';
             }
             const pDayForSet = PULLUP_EX_ID_TO_DAY[exId] || 0;
@@ -20319,29 +20619,16 @@
           const isThisExJustCompleted = state.workoutLogs[key].done && exSetsDoneNow === totalExSets;
           let autoOpenedNextEx = null;
 
-          if (isThisExJustCompleted && state.autoCollapseDone !== false && !isSensoryCalmModeActive()) {
+          const lockCheck = typeof window.shouldLockExerciseOnSetDone === 'function'
+            ? window.shouldLockExerciseOnSetDone({
+                setDoneCount: exSetsDoneNow,
+                totalSetsCount: totalExSets,
+                autoCollapseEnabled: false
+              })
+            : { shouldLockInputs: false, shouldAutoCollapse: false };
+          if (lockCheck.shouldAutoCollapse && isThisExJustCompleted && state.autoCollapseDone === true && !isSensoryCalmModeActive()) {
             if (!state.cardCollapsedState) state.cardCollapsedState = {};
             state.cardCollapsedState[getExercisePanelKey(dayIdx, exId)] = "collapsed";
-            setExerciseImgOpen(dayIdx, exId, false);
-
-            const curExPos = exercisesToday.findIndex(e => e.id === exId);
-            const orderedCandidates = [
-              ...exercisesToday.slice(curExPos + 1),
-              ...exercisesToday.slice(0, curExPos)
-            ];
-            for (const cand of orderedCandidates) {
-              let candAllDone = true;
-              for (let cs = 1; cs <= cand.sets; cs++) {
-                const ce = getLogEntry(week, dayIdx, cand.id, cs);
-                if (!ce || !ce.done) { candAllDone = false; break; }
-              }
-              if (!candAllDone) {
-                autoOpenedNextEx = cand;
-                state.activeFocusedExId = cand.id;
-                state.cardCollapsedState[getExercisePanelKey(dayIdx, cand.id)] = "expanded";
-                break;
-              }
-            }
           }
 
           let doneSetsCountNow = 0;
@@ -20497,29 +20784,33 @@
           const curEntry = getLogEntry(week, dayIdx, exId, setIdx) || { weight: '', reps: '', done: false, unit: exUnit };
 
           if (field === 'weight') {
-            const minPositiveStep = exUnit === 'kg' ? 1.25 : 2.5;
             const defW = exUnit === 'kg'
               ? (meta.defaultWeightLbs > 0 ? Math.max(1.25, Math.round((meta.defaultWeightLbs / 2.20462) / 1.25) * 1.25) : 0)
               : (meta.defaultWeightLbs > 0 ? Math.max(2.5, meta.defaultWeightLbs) : 0);
             const placeholderW = (inp && inp.placeholder && !isNaN(parseFloat(inp.placeholder))) ? parseFloat(inp.placeholder) : defW;
-            const baseW = (inp && inp.value !== '') ? parseFloat(inp.value) : (curEntry.weight !== '' ? parseFloat(curEntry.weight) : placeholderW);
-            let nextW = +(baseW + delta).toFixed(2);
-            if (nextW <= 0) {
-              nextW = 0;
-            } else if (nextW < minPositiveStep) {
-              nextW = delta > 0 ? minPositiveStep : 0;
-            }
-            nextW = Math.min(exUnit === 'kg' ? 455 : 999, nextW);
-            curEntry.weight = String(nextW);
-            if (inp) inp.value = String(nextW);
-            cascadeSetModificationToSubsequentUnloggedSets(exId, setIdx, curEntry.weight, null);
+            const curWeightVal = (inp && inp.value !== '') ? inp.value : (curEntry.weight !== undefined && curEntry.weight !== '' ? curEntry.weight : '');
+            const nextWeightStr = typeof window.stepWeightValue === 'function'
+              ? window.stepWeightValue({
+                  currentValue: curWeightVal,
+                  placeholderValue: placeholderW,
+                  delta,
+                  unit: exUnit
+                })
+              : String(Math.max(0, Math.min(exUnit === 'kg' ? 455 : 999, +(((curWeightVal !== '' ? parseFloat(curWeightVal) : placeholderW) || 0) + delta).toFixed(2))));
+            curEntry.weight = nextWeightStr;
+            if (inp) inp.value = nextWeightStr;
           } else {
             const defR = parseInt(parseTargetRepsNumber(exObj ? exObj.reps : '10', pullupDayNum, setIdx), 10) || 10;
-            const baseR = (inp && inp.value !== '') ? parseInt(inp.value, 10) : (parseInt(curEntry.reps, 10) || defR);
-            const nextR = Math.max(1, Math.min(100, baseR + Math.round(delta)));
-            curEntry.reps = String(nextR);
-            if (inp) inp.value = String(nextR);
-            cascadeSetModificationToSubsequentUnloggedSets(exId, setIdx, null, curEntry.reps);
+            const curRepsVal = (inp && inp.value !== '') ? inp.value : (curEntry.reps !== undefined && curEntry.reps !== '' ? curEntry.reps : '');
+            const nextRepsStr = typeof window.stepRepsValue === 'function'
+              ? window.stepRepsValue({
+                  currentValue: curRepsVal,
+                  placeholderValue: defR,
+                  delta
+                })
+              : String(Math.max(0, Math.min(100, (parseInt(curRepsVal, 10) || defR) + Math.round(delta))));
+            curEntry.reps = nextRepsStr;
+            if (inp) inp.value = nextRepsStr;
           }
 
           curEntry.unit = exUnit;
@@ -20736,9 +21027,12 @@
       if (typeof window.enforceNonAuthInputsAcrossRoot === 'function') {
         window.enforceNonAuthInputsAcrossRoot(listEl);
       }
-      // Task 2 & Task 3: Keep background resume snapshot and live clock schedule synced
+      // Task 2 & Task 3: Keep background resume snapshot, contextual resume banner, and live clock schedule synced
       if (typeof window.saveActiveWorkoutSessionSnapshotLocal === 'function') {
         window.saveActiveWorkoutSessionSnapshotLocal(null, 'render_workout');
+      }
+      if (typeof window.renderWorkoutResumeBannerUI === 'function') {
+        window.renderWorkoutResumeBannerUI();
       }
       if (typeof window.updateLiveClockScheduleBannerUI === 'function') {
         window.updateLiveClockScheduleBannerUI();
@@ -21053,25 +21347,41 @@
             ? formatDay3PullupSetRowLabel(s)
             : (isPyramidSession && s === d.setsCount ? `Set ${s} (Max)` : `Set ${s}`);
 
+          const pullupUnit = mapInfo ? getExerciseUnit(mapInfo.exId) : 'lbs';
+          const pullupWeightStep = typeof window.resolveWeightStepIncrement === 'function'
+            ? window.resolveWeightStepIncrement({ unit: pullupUnit, isBodyweightOrPullup: true, defaultWeightLbs: 0 })
+            : (pullupUnit === 'kg' ? 1.25 : 2.5);
+          const pullupDisplayWeight = (syncedEntry.weight !== undefined && syncedEntry.weight !== '' && syncedEntry.weight !== null)
+            ? String(syncedEntry.weight)
+            : '';
           setsRowHtml += `
-            <div class="py-2 px-2.5 rounded-xl border transition-all ${
+            <div class="py-2.5 px-2.5 rounded-xl border transition-all ${
               syncedEntry.done
                 ? 'bg-emerald-950/25 border-emerald-500/45'
                 : 'bg-slate-950/75 border-slate-800/85'
             }">
-              <div class="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-3">
-                <div class="min-w-[68px] max-w-[150px]">
+              <div class="set-row-uncrushable-grid">
+                <div class="set-row-meta-cell">
                   <span class="text-xs font-extrabold leading-tight block ${syncedEntry.done ? 'text-emerald-400' : (isCurrentTarget ? 'text-sky-300' : 'text-slate-200')}">${rowLabel}</span>
                 </div>
-                <div class="min-w-0 max-w-[200px] mx-auto w-full">
-                  <div class="flex items-center bg-slate-900 border border-slate-700/90 rounded-lg overflow-hidden">
-                    <button type="button" data-pullup-step-day="${d.dayNum}" data-set-idx="${s}" data-delta="-1" class="pullup-rep-step-btn w-8 h-9 sm:w-9 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Decrease Pull-Up Day ${d.dayNum} ${rowLabel} Reps">−</button>
-                    <input type="number" min="0" max="100" inputmode="numeric" placeholder="${defaultRepPlaceholder}" value="${(syncedEntry.reps !== '' && syncedEntry.reps !== undefined) ? syncedEntry.reps : (isPyramidSession ? String(s) : '')}" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" aria-label="Pull-Up Day ${d.dayNum} ${rowLabel} Reps" class="pullup-rep-input w-full bg-transparent py-1 text-white placeholder-slate-500 focus:outline-none" style="min-width: 52px; font-size: 0.9375rem; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums;" />
-                    <button type="button" data-pullup-step-day="${d.dayNum}" data-set-idx="${s}" data-delta="1" class="pullup-rep-step-btn w-8 h-9 sm:w-9 sm:h-10 flex items-center justify-center shrink-0 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" aria-label="Increase Pull-Up Day ${d.dayNum} ${rowLabel} Reps">+</button>
+                <div class="set-row-stepper-cell">
+                  <span class="sm:hidden block text-[0.6875rem] font-extrabold uppercase tracking-wide text-slate-300 mb-1">Weight (BW = 0)</span>
+                  <div class="weight-stepper weight-stepper-deep-blue" role="group" aria-label="Pull-Up Day ${d.dayNum} ${rowLabel} Weight Controls">
+                    <button type="button" data-pullup-weight-day="${d.dayNum}" data-set-idx="${s}" data-delta="-${pullupWeightStep}" data-unit="${pullupUnit}" class="pullup-weight-step-btn weight-btn-minus-crimson" aria-label="Decrease Pull-Up Day ${d.dayNum} ${rowLabel} Weight by ${pullupWeightStep} ${pullupUnit}">−</button>
+                    <input type="text" inputmode="decimal" autocomplete="off" data-lpignore="true" placeholder="BW (0)" value="${pullupDisplayWeight}" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" data-unit="${pullupUnit}" aria-label="Pull-Up Day ${d.dayNum} ${rowLabel} Weight (${pullupUnit})" class="pullup-weight-input focus:outline-none" />
+                    <button type="button" data-pullup-weight-day="${d.dayNum}" data-set-idx="${s}" data-delta="${pullupWeightStep}" data-unit="${pullupUnit}" class="pullup-weight-step-btn weight-btn-plus-forest" aria-label="Increase Pull-Up Day ${d.dayNum} ${rowLabel} Weight by ${pullupWeightStep} ${pullupUnit}">+</button>
                   </div>
                 </div>
-                <div class="flex items-center justify-end shrink-0">
-                  <button type="button" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" data-rest-sec="${dynRest}" data-label="Pull-Up Day ${d.dayNum} ${rowLabel}" class="pullup-done-btn h-9 sm:h-10 px-3 sm:px-3.5 rounded-lg text-xs font-extrabold whitespace-nowrap transition ${
+                <div class="set-row-stepper-cell">
+                  <span class="sm:hidden block text-[0.6875rem] font-extrabold uppercase tracking-wide text-slate-300 mb-1">Reps</span>
+                  <div class="reps-stepper reps-stepper-light-gray" role="group" aria-label="Pull-Up Day ${d.dayNum} ${rowLabel} Reps Controls">
+                    <button type="button" data-pullup-step-day="${d.dayNum}" data-set-idx="${s}" data-delta="-1" class="pullup-rep-step-btn reps-btn-neutral-gray" aria-label="Decrease Pull-Up Day ${d.dayNum} ${rowLabel} Reps">−</button>
+                    <input type="number" min="0" max="100" inputmode="numeric" autocomplete="off" data-lpignore="true" placeholder="${defaultRepPlaceholder}" value="${(syncedEntry.reps !== '' && syncedEntry.reps !== undefined) ? syncedEntry.reps : (isPyramidSession ? String(s) : '')}" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" aria-label="Pull-Up Day ${d.dayNum} ${rowLabel} Reps" class="pullup-rep-input focus:outline-none" />
+                    <button type="button" data-pullup-step-day="${d.dayNum}" data-set-idx="${s}" data-delta="1" class="pullup-rep-step-btn reps-btn-neutral-gray" aria-label="Increase Pull-Up Day ${d.dayNum} ${rowLabel} Reps">+</button>
+                  </div>
+                </div>
+                <div class="set-row-actions-cell">
+                  <button type="button" data-pullup-key="${key}" data-day-num="${d.dayNum}" data-set-idx="${s}" data-rest-sec="${dynRest}" data-label="Pull-Up Day ${d.dayNum} ${rowLabel}" class="pullup-done-btn min-h-[48px] min-w-[72px] px-3 sm:px-3.5 rounded-lg text-xs font-extrabold whitespace-nowrap transition ${
                     syncedEntry.done
                       ? 'bg-emerald-500 text-slate-950 shadow-sm'
                       : (isCurrentTarget
@@ -21168,10 +21478,11 @@
                 ${getStepVisualDiagramHtml({ id: exIdForDay, notes: d.setupNotes || d.desc }, metaForDay, dayIdxForPullup)}
               </div>
               <div class="space-y-1.5">
-                <div class="grid grid-cols-12 px-2 text-[0.625rem] font-bold uppercase tracking-wider text-slate-400">
-                  <div class="col-span-3">Set</div>
-                  <div class="col-span-6 text-center text-emerald-300">Reps (Bodyweight)</div>
-                  <div class="col-span-3 text-right">1-Tap Log</div>
+                <div class="hidden sm:flex set-row-uncrushable-grid px-2 text-[0.6875rem] font-bold uppercase tracking-wider text-slate-300">
+                  <div class="set-row-meta-cell">Set</div>
+                  <div class="set-row-stepper-cell text-center">Weight (BW = 0)</div>
+                  <div class="set-row-stepper-cell text-center">Reps</div>
+                  <div class="set-row-actions-cell text-right">1-Tap Log</div>
                 </div>
                 ${setsRowHtml}
                 ${getPullupExpansionControlBarHtml(week, d.dayNum, d.setsCount, d.baseSetsCount, 'pullups')}
@@ -21190,8 +21501,40 @@
           renderPullupView();
           renderWorkoutView();
           showToast(action === 'remove1'
-            ? `Pull-Up session now set to ${nextCount} sets (synced with Gym tab)`
-            : `Expanded to ${nextCount} Pull-Up sets! Synced on Pull-Ups & Gym tabs.`);
+            ? `Pull-Up session updated to ${nextCount} ${nextCount === 1 ? 'set' : 'sets'}.`
+            : `Pull-Up session updated to ${nextCount} sets.`);
+        });
+      });
+
+      container.querySelectorAll('.pullup-weight-step-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const dayNum = parseInt(btn.getAttribute('data-pullup-weight-day'), 10) || 1;
+          const setIdx = parseInt(btn.getAttribute('data-set-idx'), 10) || 1;
+          const delta = parseFloat(btn.getAttribute('data-delta')) || 0;
+          const unit = btn.getAttribute('data-unit') || 'lbs';
+          const inp = container.querySelector(`.pullup-weight-input[data-day-num="${dayNum}"][data-set-idx="${setIdx}"]`);
+          const curVal = inp ? inp.value : '';
+          const nextVal = typeof window.stepWeightValue === 'function'
+            ? window.stepWeightValue({ currentValue: curVal, placeholderValue: 0, delta, unit })
+            : String(Math.max(0, Math.min(unit === 'kg' ? 455 : 999, +((parseFloat(curVal) || 0) + delta).toFixed(2))));
+          if (inp) inp.value = nextVal;
+          syncPullupStateBothWays(week, dayNum, setIdx, { weight: nextVal, unit });
+          saveState();
+          renderPullupView();
+          renderWorkoutView();
+        });
+      });
+
+      container.querySelectorAll('.pullup-weight-input').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const dayNum = parseInt(inp.getAttribute('data-day-num'), 10) || 1;
+          const setIdx = parseInt(inp.getAttribute('data-set-idx'), 10) || 1;
+          const unit = inp.getAttribute('data-unit') || 'lbs';
+          const cleaned = String(inp.value || '').replace(/[^0-9.]/g, '');
+          if (cleaned !== inp.value) inp.value = cleaned;
+          syncPullupStateBothWays(week, dayNum, setIdx, { weight: cleaned, unit });
+          saveState();
+          renderWorkoutView();
         });
       });
 
@@ -21202,31 +21545,11 @@
           const delta = parseInt(btn.getAttribute('data-delta'), 10) || 0;
           const inp = container.querySelector(`.pullup-rep-input[data-day-num="${dayNum}"][data-set-idx="${setIdx}"]`);
           const defaultR = parseInt(getPullupDefaultReps(dayNum, setIdx, week), 10) || (state.pullupTrainingSetReps || 5);
-          const curVal = (inp && inp.value !== '') ? parseInt(inp.value, 10) : defaultR;
-          const nextVal = clampRepsInputLocal(String(Math.max(1, curVal + delta)));
+          const nextVal = typeof window.stepRepsValue === 'function'
+            ? window.stepRepsValue({ currentValue: inp ? inp.value : '', placeholderValue: defaultR, delta })
+            : clampRepsInputLocal(String(Math.max(0, ((inp && inp.value !== '') ? parseInt(inp.value, 10) : defaultR) + delta)));
           if (inp) inp.value = nextVal;
           syncPullupStateBothWays(week, dayNum, setIdx, { reps: nextVal });
-
-          const dSpec = dayNum === 5 ? getEffectiveDay5PullupSpec(week) : PULLUP_DAYS_DATA.find(item => item.dayNum === dayNum);
-          const totalSetsForDay = getEffectivePullupSetsCount(week, dayNum, dSpec ? dSpec.setsCount : 5);
-          if (isPullupSessionPyramidMode(dayNum, week)) {
-            const cascadeObj = computePyramidCascadingSetSuggestions(setIdx, nextVal, getPullupPreviousBestMax(), totalSetsForDay);
-            const cascadeMap = (cascadeObj && cascadeObj.suggestedRepsBySet) || {};
-            for (let kNext = setIdx + 1; kNext <= totalSetsForDay; kNext++) {
-              if (cascadeMap[kNext] !== undefined) {
-                syncPullupStateBothWays(week, dayNum, kNext, { reps: cascadeMap[kNext] });
-              }
-            }
-          } else {
-            const mapInfo = PULLUP_DAY_TO_EX_ID[dayNum];
-            const assignedCalIdx = sessionCalendarDayMap[dayNum] !== undefined ? sessionCalendarDayMap[dayNum] : (dayNum - 1);
-            for (let kNext = setIdx + 1; kNext <= totalSetsForDay; kNext++) {
-              const existingNext = mapInfo ? getLogEntry(week, assignedCalIdx, mapInfo.exId, kNext) : null;
-              if (!existingNext || !existingNext.done) {
-                syncPullupStateBothWays(week, dayNum, kNext, { reps: nextVal });
-              }
-            }
-          }
           saveState();
           renderPullupView();
           renderWorkoutView();
@@ -34458,6 +34781,18 @@
               timerEndTimestampMs: timerEnd,
               lastAction: lastAction || 'workout_activity'
             });
+            // Preserve an existing unfinished workout from another day when simply browsing an unstarted day
+            if (lastAction === 'render_workout' && snap && snap.completedSets === 0 && typeof window.loadActiveWorkoutSession === 'function') {
+              const existingSnap = window.loadActiveWorkoutSession();
+              if (
+                existingSnap &&
+                Number(existingSnap.completedSets) > 0 &&
+                Number(existingSnap.completedSets) < Number(existingSnap.totalSets || 999) &&
+                (Number(existingSnap.week) !== Number(wk) || Number(existingSnap.dayIndex) !== Number(dIdx))
+              ) {
+                return existingSnap;
+              }
+            }
             window.saveActiveWorkoutSession(snap);
             return snap;
           }
@@ -34476,8 +34811,22 @@
           const copy = (typeof window.buildResumeWorkoutBannerCopy === 'function')
             ? window.buildResumeWorkoutBannerCopy(snap)
             : { visible: false };
+          const curWeek = (state && (state.selectedWeek || state.currentWeek)) || 1;
+          const curDayIdx = (state && Number(state.selectedDayIndex)) || 0;
+          const isRestNow = typeof getDayAssignment === 'function'
+            ? Boolean(getDayAssignment(curWeek, curDayIdx).isRestDay)
+            : false;
+          const allowBanner = typeof window.shouldShowResumeWorkoutBanner === 'function'
+            ? window.shouldShowResumeWorkoutBanner({
+                snapshot: snap,
+                dismissedThisLoad: resumeBannerDismissedThisLoad,
+                currentWeek: curWeek,
+                currentDayIdx: curDayIdx,
+                isRestDay: isRestNow
+              })
+            : Boolean(snap && copy.visible);
 
-          if (!snap || !copy.visible) {
+          if (!snap || !copy.visible || !allowBanner) {
             bannerEl.classList.add('hidden');
             return;
           }
@@ -34920,12 +35269,33 @@
         inlineFormEl = document.getElementById('missed-set-inline-form');
         weightWrapEl = document.getElementById('missed-set-weight-wrap');
         weightInputEl = document.getElementById('missed-set-s1-weight');
+        const weightMinusBtn = document.getElementById('missed-set-s1-weight-minus');
+        const weightPlusBtn = document.getElementById('missed-set-s1-weight-plus');
         weightUnitEl = document.getElementById('missed-set-s1-unit-label');
         repsInputEl = document.getElementById('missed-set-s1-reps');
         repsMinusBtn = document.getElementById('missed-set-s1-reps-minus');
         repsPlusBtn = document.getElementById('missed-set-s1-reps-plus');
         saveBothBtn = document.getElementById('missed-set-save-both-btn');
         cancelBtn = document.getElementById('missed-set-cancel-btn');
+
+        if (weightMinusBtn && weightInputEl) {
+          weightMinusBtn.addEventListener('click', () => {
+            const unit = (pendingMissedSetCtx && pendingMissedSetCtx.exUnit) || 'lbs';
+            const step = unit === 'kg' ? 2.5 : 5;
+            weightInputEl.value = typeof window.stepWeightValue === 'function'
+              ? window.stepWeightValue({ currentValue: weightInputEl.value, placeholderValue: 0, delta: -step, unit })
+              : String(Math.max(0, (parseFloat(weightInputEl.value) || 0) - step));
+          });
+        }
+        if (weightPlusBtn && weightInputEl) {
+          weightPlusBtn.addEventListener('click', () => {
+            const unit = (pendingMissedSetCtx && pendingMissedSetCtx.exUnit) || 'lbs';
+            const step = unit === 'kg' ? 2.5 : 5;
+            weightInputEl.value = typeof window.stepWeightValue === 'function'
+              ? window.stepWeightValue({ currentValue: weightInputEl.value, placeholderValue: 0, delta: step, unit })
+              : String(Math.min(999, (parseFloat(weightInputEl.value) || 0) + step));
+          });
+        }
 
         if (skipBtn) {
           skipBtn.addEventListener('click', () => {
@@ -35215,19 +35585,21 @@
       <!-- Inline Set 1 Quick Entry Form (Shown ONLY if user picks "I forgot to log Set 1"; always starts blank) -->
       <div id="missed-set-inline-form" data-testid="missed-set-inline-form" class="hidden rounded-xl border border-slate-700 bg-slate-950 p-3.5 space-y-3">
         <div class="text-xs font-extrabold text-cyan-200">Enter Set 1 Numbers</div>
-        <div class="grid grid-cols-2 gap-2.5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div id="missed-set-weight-wrap" class="space-y-1">
-            <label for="missed-set-s1-weight" class="block text-[0.6875rem] font-bold text-slate-300">Weight (<span id="missed-set-s1-unit-label">LBS</span>)</label>
-            <div class="weight-plain-box ring-1 ring-inset ring-slate-700">
-              <input type="text" id="missed-set-s1-weight" inputmode="decimal" autocomplete="off" data-lpignore="true" placeholder="Type weight" class="workout-input text-white placeholder-slate-400 focus:outline-none" />
+            <label for="missed-set-s1-weight" class="block text-[0.75rem] font-bold text-slate-200">Weight (<span id="missed-set-s1-unit-label">LBS</span>)</label>
+            <div class="weight-stepper weight-stepper-deep-blue" role="group" aria-label="Set 1 Weight Controls">
+              <button type="button" id="missed-set-s1-weight-minus" class="step-adj-btn weight-btn-minus-crimson" aria-label="Decrease Set 1 Weight">−</button>
+              <input type="text" id="missed-set-s1-weight" inputmode="decimal" autocomplete="off" data-lpignore="true" placeholder="Weight" class="workout-input focus:outline-none" />
+              <button type="button" id="missed-set-s1-weight-plus" class="step-adj-btn weight-btn-plus-forest" aria-label="Increase Set 1 Weight">+</button>
             </div>
           </div>
           <div class="space-y-1">
-            <label for="missed-set-s1-reps" class="block text-[0.6875rem] font-bold text-slate-300">Reps</label>
-            <div class="reps-stepper ring-1 ring-inset ring-slate-700">
-              <button type="button" id="missed-set-s1-reps-minus" class="step-adj-btn text-base font-extrabold text-slate-200 hover:text-white" aria-label="Decrease Set 1 Reps">−</button>
-              <input type="number" id="missed-set-s1-reps" min="1" max="100" inputmode="numeric" autocomplete="off" data-lpignore="true" placeholder="Reps" class="workout-input text-white placeholder-slate-400 focus:outline-none" />
-              <button type="button" id="missed-set-s1-reps-plus" class="step-adj-btn text-base font-extrabold text-slate-200 hover:text-white" aria-label="Increase Set 1 Reps">+</button>
+            <label for="missed-set-s1-reps" class="block text-[0.75rem] font-bold text-slate-200">Reps</label>
+            <div class="reps-stepper reps-stepper-light-gray" role="group" aria-label="Set 1 Reps Controls">
+              <button type="button" id="missed-set-s1-reps-minus" class="step-adj-btn reps-btn-neutral-gray" aria-label="Decrease Set 1 Reps">−</button>
+              <input type="number" id="missed-set-s1-reps" min="1" max="100" inputmode="numeric" autocomplete="off" data-lpignore="true" placeholder="Reps" class="workout-input focus:outline-none" />
+              <button type="button" id="missed-set-s1-reps-plus" class="step-adj-btn reps-btn-neutral-gray" aria-label="Increase Set 1 Reps">+</button>
             </div>
           </div>
         </div>
