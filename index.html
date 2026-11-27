@@ -796,6 +796,49 @@
         padding-top: 0.75rem !important;
       }
     }
+
+    /* WCAG 2.2 AA Chronological Workout Controls & Active Day Container */
+    .wcag-rest-day-btn {
+      min-height: 48px !important;
+      min-width: 44px !important;
+      background-color: #1E1E1E !important;
+      color: #FEF08A !important;
+      border: 2px solid #FDE047 !important;
+    }
+    .wcag-reset-workout-btn {
+      min-height: 48px !important;
+      min-width: 44px !important;
+      background-color: #2A1215 !important;
+      color: #FECDD3 !important;
+      border: 2px solid #FDA4AF !important;
+    }
+    .wcag-day-progress-text {
+      color: #86EFAC !important;
+    }
+    .wcag-day-progress-text strong {
+      color: #F8FAFC !important;
+    }
+    .wcag-day-progress-pct {
+      color: #BBF7D0 !important;
+    }
+    .wcag-micro-start-adjacent-btn {
+      min-height: 48px !important;
+      min-width: 44px !important;
+      background-color: #166534 !important;
+      color: #FFFFFF !important;
+      border: 2px solid #86EFAC !important;
+    }
+    .active-day-workout-container {
+      border: 2px solid rgba(56, 189, 248, 0.35);
+      background: rgba(15, 23, 42, 0.72);
+      border-radius: 1.25rem;
+      padding: 0.75rem;
+    }
+    .exercise-gear-chip,
+    .arrival-locker-chip {
+      min-height: 44px !important;
+      min-width: 44px !important;
+    }
   </style>
 </head>
 <body class="bg-[#0f172a] text-[#f8fafc] min-h-screen pb-28 overflow-x-hidden w-full max-w-full selection:bg-emerald-600 selection:text-[#ecfdf5]">
@@ -1067,7 +1110,29 @@
         </div>
       </div>
 
-      <!-- 2. Warm-Up Routine Card (Absolute Top of Workout Sequence, Synced to Device Clock + Next Exercise Preview) -->
+      <!-- PHASE 1: DAY MANAGEMENT & INTERCEPTION PHASE (Very Top of Screen, Before Warm-Up) -->
+      <section
+        id="day-management-interception-panel"
+        data-testid="day-management-interception-panel"
+        aria-label="Day Management and Energy Check"
+        class="bg-slate-900/95 border border-slate-800 rounded-2xl p-3 space-y-2.5 shadow-sm"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[0.6875rem] font-extrabold uppercase tracking-wider text-slate-300">Day Setup &amp; Energy Check</span>
+          <span class="text-[0.6875rem] font-semibold text-slate-400">Adjust before you warm up</span>
+        </div>
+        <!-- Row 1: Swap Today to Rest Day directly adjacent to 2-Minute Micro-Start -->
+        <div id="phase1-interception-row" class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+          <div id="gym-zone-b-rest-slot" class="min-w-0"></div>
+          <div id="micro-start-slot" class="min-w-0"></div>
+        </div>
+        <!-- Expanded 2-Minute Micro-Start Focus Panel host when active -->
+        <div id="micro-start-focus-expanded-slot" class="hidden space-y-2"></div>
+        <!-- Row 2: Change Today's Workout + Reset Workout (+ Collapsible Day Picker Drawer) -->
+        <div id="gym-zone-b-setup-slot" class="space-y-2"></div>
+      </section>
+
+      <!-- PHASE 2: ARRIVAL PHASE (Middle — Warm-Up Routine Card + Embedded Locker Checklist) -->
       <div id="warmup-card-container" data-testid="warmup-card-container" class="bg-slate-900 border-2 border-amber-400/60 rounded-2xl overflow-hidden shadow-sm">
         <button type="button" id="toggle-warmup-btn" class="w-full min-h-[52px] px-3.5 py-3 flex items-center justify-between text-left hover:bg-slate-800/50 transition">
           <div class="flex items-center gap-2.5 min-w-0">
@@ -1077,13 +1142,18 @@
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-1.5">
                 <h2 class="text-xs sm:text-sm font-extrabold text-white" id="warmup-title">Dynamic Warm-Up (~10 Min)</h2>
-                <span class="rounded-md bg-amber-400 px-1.5 py-0.5 text-[0.625rem] font-extrabold text-slate-950 uppercase">Step 1 · Warm-Up</span>
+                <span class="rounded-md bg-amber-400 px-1.5 py-0.5 text-[0.625rem] font-extrabold text-slate-950 uppercase">STEP 1 · Warm-Up</span>
               </div>
               <p class="block text-[0.75rem] text-amber-200 font-semibold mt-0.5" id="warmup-subtitle">Tap to open full mobility drills &amp; warm-up sets</p>
             </div>
           </div>
           <span id="warmup-chevron" class="text-amber-300 text-xs font-extrabold transition-transform shrink-0 ml-2">▼</span>
         </button>
+
+        <!-- Embedded Arrival & Locker Checklist Directly Inside Warm-Up Block -->
+        <div id="warmup-locker-checklist-slot" data-testid="warmup-locker-checklist-slot" class="px-3.5 py-3 bg-slate-950/80 border-t border-slate-800 space-y-2">
+          <!-- Populated dynamically by JS with Locker Pin/Photo button + Arrival Checklist items -->
+        </div>
 
         <!-- Device-Clock-Synced Warm-Up Timer + Next Exercise Preview Directly Below Timer -->
         <div id="warmup-clock-timer-panel" data-testid="warmup-clock-timer-panel" class="px-3.5 py-3 bg-slate-950/90 border-t border-slate-800 space-y-2">
@@ -1114,7 +1184,7 @@
           </div>
         </div>
 
-        <!-- Task 3: Permanently Visible Warm-Up Quick Tips Strip (High Visibility Above Exercise #1) -->
+        <!-- Permanently Visible Warm-Up Quick Tips Strip -->
         <div id="warmup-quick-tips-strip" data-testid="warmup-quick-tips-strip" class="warmup-prominent-tips-strip px-3.5 py-2.5 space-y-1">
           <div class="text-[0.6875rem] font-extrabold uppercase tracking-wider">Quick Warm-Up Tips (Do First)</div>
           <ul id="warmup-quick-tips-list" class="list-disc pl-4 space-y-0.5 text-xs font-semibold leading-snug">
@@ -1127,92 +1197,6 @@
           <!-- Populated by JS -->
         </div>
       </div>
-
-      <!-- 3. SINGLE MERGED PULL-UPS GROUP (Immediately After Warm-Up Routine — All Pull-Up Exercises Unified Here) -->
-      <section
-        id="pinned-pullups-gym-hub"
-        data-testid="pinned-pullups-gym-hub"
-        aria-label="Unified Overhand Pull-Up Group"
-        class="bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/35 border-2 border-sky-400/45 rounded-2xl p-3 space-y-2.5 shadow-sm"
-      >
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-center gap-1.5 text-[0.6875rem] font-bold text-sky-300">
-              <span>Step 2 · Pull-Ups Group</span>
-              <span aria-hidden="true">·</span>
-              <span id="pullups-active-week-badge" class="text-emerald-300 whitespace-nowrap">Week 1 • Day 1</span>
-            </div>
-            <h2 id="pullups-tab-main-heading" class="text-sm sm:text-base font-extrabold text-white leading-snug mt-0.5">Overhand Pull-Up Program</h2>
-            <p id="pullups-selected-day-summary" class="text-[0.75rem] font-semibold text-slate-300 leading-snug">All pull-up exercises combined here right after warm-up.</p>
-          </div>
-          <button
-            type="button"
-            id="toggle-pinned-pullups-btn"
-            data-testid="toggle-pinned-pullups-btn"
-            aria-expanded="true"
-            aria-controls="pinned-pullups-gym-body"
-            class="min-h-[48px] min-w-[48px] px-3 py-2 rounded-xl border border-sky-400/50 bg-slate-950 hover:bg-slate-800 text-sky-200 text-xs font-extrabold whitespace-nowrap transition shrink-0"
-          >
-            Hide ▲
-          </button>
-        </div>
-
-        <div id="pinned-pullups-gym-body" class="space-y-2.5 pt-1 border-t border-slate-800/80">
-          <!-- Synced View Mode + Rules Row -->
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <div class="inline-flex items-center bg-slate-950 border border-slate-800 rounded-xl p-0.5" role="group" aria-label="Pull-Ups View Mode">
-              <button type="button" id="pullups-view-mode-selected-btn" class="min-h-[48px] px-2.5 py-1 rounded-lg text-xs font-extrabold bg-sky-400 text-slate-950 transition whitespace-nowrap">
-                Today&apos;s Pull-Ups
-              </button>
-              <button type="button" id="pullups-view-mode-all-btn" class="min-h-[48px] px-2.5 py-1 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition whitespace-nowrap">
-                All 5 Days
-              </button>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <a href="https://youtu.be/w_yuTRQd6HA" target="_blank" rel="noopener noreferrer" class="min-h-[48px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-extrabold px-2.5 py-1.5 rounded-xl transition inline-flex items-center justify-center whitespace-nowrap">
-                Form Video
-              </a>
-            </div>
-          </div>
-
-          <!-- Hidden legacy week/day sync nodes preserved for 100% Zero-Deletion JS compatibility -->
-          <div id="pullups-top-week-selector-card" class="hidden" aria-hidden="true">
-            <div id="pullups-progressive-week-pills"></div>
-            <button type="button" id="pullups-open-rest-scheduler-btn">Change Rest Days (6 &amp; 7)</button>
-            <div id="pullups-cross-week-continuity-banner" class="hidden"></div>
-            <div id="pullups-rest-day-scheduler-drawer" class="hidden"></div>
-            <div id="pullups-day-selector-grid"></div>
-          </div>
-
-          <details id="pullup-program-rules-drawer" class="rounded-xl border border-slate-800 bg-slate-950/80 px-3 py-2">
-            <summary class="cursor-pointer text-xs font-extrabold text-sky-300 list-none flex items-center justify-between gap-2">
-              <span>5-Session Pull-Up Rules</span>
-              <span class="text-[0.6875rem] text-slate-400">Tap to read ▼</span>
-            </summary>
-            <p class="text-xs text-slate-300 mt-2 pt-2 border-t border-slate-800/80 leading-relaxed">
-              Do 5 pull-up sessions across your 5 weekly lifting days. Take 2 rest days so your back and arms recover cleanly. Use a full dead hang on every rep.
-            </p>
-          </details>
-
-          <!-- Training Set Rep Gauge Control -->
-          <div id="pullup-training-set-stepper-card" class="bg-slate-950/80 border border-emerald-500/35 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2.5">
-            <div class="min-w-0 flex-1">
-              <div class="text-xs font-extrabold text-white">Your Training Set Reps</div>
-              <div class="text-[0.6875rem] text-slate-300 leading-snug">Used on Day 3 and Day 4. Add +1 rep next week after 9 clean sets.</div>
-            </div>
-            <div class="flex items-center gap-2 shrink-0">
-              <button type="button" id="pullup-ts-minus" class="min-w-[48px] min-h-[48px] rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm" aria-label="Decrease Training Set Reps">-</button>
-              <span id="pullup-ts-value" class="font-mono text-base font-extrabold text-emerald-400 w-16 text-center whitespace-nowrap">3 reps</span>
-              <button type="button" id="pullup-ts-plus" class="min-w-[48px] min-h-[48px] rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm" aria-label="Increase Training Set Reps">+</button>
-            </div>
-          </div>
-
-          <!-- Pull-Up Routine Cards (Single Selected Day Focus or All 5 Days) -->
-          <div id="pullup-days-container" class="space-y-2.5">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-      </section>
 
       <!-- Conditional Safety & Session Resume Banners (Hidden unless triggered) -->
       <div id="biometric-readiness-banner" role="status" class="hidden rounded-2xl border border-sky-400/50 bg-sky-500/15 px-3.5 py-2.5 flex items-center justify-between gap-2">
@@ -1247,66 +1231,164 @@
           <span class="font-extrabold text-amber-300" id="shoe-critical-wear-title">Gym Shoe Midsole Alert</span>
           <p class="text-[0.625rem] text-slate-300 truncate" id="shoe-critical-wear-sub">Sole health is low — tap to inspect or snap a new pair.</p>
         </div>
-        <button type="button" id="shoe-critical-open-btn" class="shrink-0 px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-extrabold text-[0.625rem]">Inspect Gear</button>
+        <button type="button" id="shoe-critical-open-btn" class="shrink-0 min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-lg bg-amber-400 text-slate-950 font-extrabold text-xs">Inspect Gear</button>
       </div>
 
       <!-- Neuromarketing Dopamine Strip (Preserved) -->
       <div id="neuromarketing-hud-strip" class="hidden"></div>
 
-      <!-- 4. Day Summary Banner -->
-      <div id="day-banner" class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
-        <!-- Populated by JS -->
-      </div>
+      <!-- PHASE 3: ACTIVE LIFTING PHASE (Cohesive Active Day Container: Day Header -> Water Tracker -> Exercise #1 Pull-Ups -> Exercises #2+) -->
+      <section
+        id="active-day-workout-container"
+        data-testid="active-day-workout-container"
+        aria-label="Active Day Lifting Session"
+        class="active-day-workout-container space-y-3"
+      >
+        <!-- Active Day Header & Light-Green High-Contrast Progress Bar -->
+        <div id="day-banner" class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
+          <!-- Populated by JS -->
+        </div>
 
-      <!-- Contextual Behavioral Slot: Placed directly below Day Header and rendered ONLY when needed -->
-      <div id="day-contextual-behavioral-slot" class="space-y-2.5">
-        <section
-          id="workout-resume-banner"
-          data-testid="workout-resume-banner"
-          role="region"
-          aria-label="Resume Active Workout"
-          class="hidden workout-resume-banner-card rounded-2xl px-3.5 py-3 shadow-sm"
-        >
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
-            <div class="min-w-0 space-y-0.5">
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="text-xs font-extrabold tracking-wide uppercase">Active Workout Saved</span>
-                <span id="workout-resume-progress-pill" class="text-xs font-bold opacity-95 tabular-nums"></span>
+        <!-- Contextual Resume Banner: Directly below Day Header and rendered ONLY when needed -->
+        <div id="day-contextual-behavioral-slot" class="space-y-2.5">
+          <section
+            id="workout-resume-banner"
+            data-testid="workout-resume-banner"
+            role="region"
+            aria-label="Resume Active Workout"
+            class="hidden workout-resume-banner-card rounded-2xl px-3.5 py-3 shadow-sm"
+          >
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+              <div class="min-w-0 space-y-0.5">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-xs font-extrabold tracking-wide uppercase">Active Workout Saved</span>
+                  <span id="workout-resume-progress-pill" class="text-xs font-bold opacity-95 tabular-nums"></span>
+                </div>
+                <h2 id="workout-resume-headline" class="text-sm font-extrabold leading-snug">Welcome back. Pick up right where you left off.</h2>
+                <p id="workout-resume-detail" class="text-xs leading-relaxed opacity-95">No login needed.</p>
               </div>
-              <h2 id="workout-resume-headline" class="text-sm font-extrabold leading-snug">Welcome back. Pick up right where you left off.</h2>
-              <p id="workout-resume-detail" class="text-xs leading-relaxed opacity-95">No login needed.</p>
+              <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  id="workout-resume-jump-btn"
+                  data-testid="workout-resume-jump-btn"
+                  class="resume-cta-solid min-h-[48px] min-w-[120px] px-4 py-2 rounded-xl border text-xs font-extrabold transition"
+                >
+                  Resume Exercise
+                </button>
+                <button
+                  type="button"
+                  id="workout-resume-dismiss-btn"
+                  aria-label="Hide saved workout banner"
+                  class="min-h-[48px] min-w-[48px] px-3 py-2 rounded-xl border border-white/40 bg-black/30 hover:bg-black/45 text-xs font-extrabold transition"
+                >
+                  Hide
+                </button>
+              </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2 shrink-0">
-              <button
-                type="button"
-                id="workout-resume-jump-btn"
-                data-testid="workout-resume-jump-btn"
-                class="resume-cta-solid min-h-[48px] min-w-[120px] px-4 py-2 rounded-xl border text-xs font-extrabold transition"
-              >
-                Resume Exercise
-              </button>
-              <button
-                type="button"
-                id="workout-resume-dismiss-btn"
-                aria-label="Hide saved workout banner"
-                class="min-h-[48px] min-w-[48px] px-3 py-2 rounded-xl border border-white/40 bg-black/30 hover:bg-black/45 text-xs font-extrabold transition"
-              >
-                Hide
-              </button>
+          </section>
+        </div>
+
+        <!-- Top-of-Container Persistent Hydration & Core Strip (Water Tracker + Abs Toggle; No Locker or Global Gear Here) -->
+        <div id="gym-zone-c-tracker-slot"></div>
+
+        <!-- EXERCISE #1 INSIDE ACTIVE DAY CONTAINER: Pull-Ups / Assisted Pull-Ups (All 5 Lifting Days) -->
+        <section
+          id="pinned-pullups-gym-hub"
+          data-testid="pinned-pullups-gym-hub"
+          aria-label="Exercise 1 Pull-Ups and Assisted Pull-Ups"
+          class="bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/35 border-2 border-sky-400/45 rounded-2xl p-3 space-y-2.5 shadow-sm"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-1.5 text-[0.6875rem] font-bold text-sky-300">
+                <span class="rounded-md bg-sky-400/20 border border-sky-400/50 px-1.5 py-0.5 text-sky-200 uppercase">Exercise #1</span>
+                <span>Pull-Ups / Assisted Pull-Ups</span>
+                <span aria-hidden="true">·</span>
+                <span id="pullups-active-week-badge" class="text-emerald-300 whitespace-nowrap">Week 1 • Day 1</span>
+              </div>
+              <h2 id="pullups-tab-main-heading" class="text-sm sm:text-base font-extrabold text-white leading-snug mt-0.5">Assisted Pull-Ups &amp; Overhand Pull-Up Program</h2>
+              <p id="pullups-selected-day-summary" class="text-[0.75rem] font-semibold text-slate-300 leading-snug">First exercise in today&apos;s lifting session.</p>
+            </div>
+            <button
+              type="button"
+              id="toggle-pinned-pullups-btn"
+              data-testid="toggle-pinned-pullups-btn"
+              aria-expanded="true"
+              aria-controls="pinned-pullups-gym-body"
+              class="min-h-[48px] min-w-[48px] px-3 py-2 rounded-xl border border-sky-400/50 bg-slate-950 hover:bg-slate-800 text-sky-200 text-xs font-extrabold whitespace-nowrap transition shrink-0"
+            >
+              Hide ▲
+            </button>
+          </div>
+
+          <div id="pinned-pullups-gym-body" class="space-y-2.5 pt-1 border-t border-slate-800/80">
+            <!-- Exercise-Specific Gear Inside Pull-Ups Container (Chalk, Dip Belt, Assist Band, Straps) -->
+            <div id="pullup-exercise-gear-slot" data-testid="pullup-exercise-gear-slot" class="rounded-xl border border-slate-800 bg-slate-950/75 p-2.5 space-y-1.5">
+              <!-- Populated by JS -->
+            </div>
+
+            <!-- Synced View Mode + Rules Row -->
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="inline-flex items-center bg-slate-950 border border-slate-800 rounded-xl p-0.5" role="group" aria-label="Pull-Ups View Mode">
+                <button type="button" id="pullups-view-mode-selected-btn" class="min-h-[48px] min-w-[44px] px-2.5 py-1 rounded-lg text-xs font-extrabold bg-sky-400 text-slate-950 transition whitespace-nowrap">
+                  Today&apos;s Pull-Ups
+                </button>
+                <button type="button" id="pullups-view-mode-all-btn" class="min-h-[48px] min-w-[44px] px-2.5 py-1 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition whitespace-nowrap">
+                  All 5 Days
+                </button>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <a href="https://youtu.be/w_yuTRQd6HA" target="_blank" rel="noopener noreferrer" class="min-h-[48px] min-w-[44px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-extrabold px-2.5 py-1.5 rounded-xl transition inline-flex items-center justify-center whitespace-nowrap">
+                  Form Video
+                </a>
+              </div>
+            </div>
+
+            <!-- Hidden legacy week/day sync nodes preserved for 100% Zero-Deletion JS compatibility -->
+            <div id="pullups-top-week-selector-card" class="hidden" aria-hidden="true">
+              <div id="pullups-progressive-week-pills"></div>
+              <button type="button" id="pullups-open-rest-scheduler-btn">Change Rest Days (6 &amp; 7)</button>
+              <div id="pullups-cross-week-continuity-banner" class="hidden"></div>
+              <div id="pullups-rest-day-scheduler-drawer" class="hidden"></div>
+              <div id="pullups-day-selector-grid"></div>
+            </div>
+
+            <details id="pullup-program-rules-drawer" class="rounded-xl border border-slate-800 bg-slate-950/80 px-3 py-2">
+              <summary class="cursor-pointer text-xs font-extrabold text-sky-300 list-none flex items-center justify-between gap-2 min-h-[44px]">
+                <span>5-Session Pull-Up Rules</span>
+                <span class="text-[0.6875rem] text-slate-400">Tap to read ▼</span>
+              </summary>
+              <p class="text-xs text-slate-300 mt-2 pt-2 border-t border-slate-800/80 leading-relaxed">
+                Do 5 pull-up sessions across your 5 weekly lifting days. Take 2 rest days so your back and arms recover cleanly. Use a full dead hang on every rep.
+              </p>
+            </details>
+
+            <!-- Training Set Rep Gauge Control -->
+            <div id="pullup-training-set-stepper-card" class="bg-slate-950/80 border border-emerald-500/35 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2.5">
+              <div class="min-w-0 flex-1">
+                <div class="text-xs font-extrabold text-white">Your Training Set Reps</div>
+                <div class="text-[0.6875rem] text-slate-300 leading-snug">Used on Day 3 and Day 4. Add +1 rep next week after 9 clean sets.</div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button type="button" id="pullup-ts-minus" class="min-w-[48px] min-h-[48px] rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm" aria-label="Decrease Training Set Reps">-</button>
+                <span id="pullup-ts-value" class="font-mono text-base font-extrabold text-emerald-400 w-16 text-center whitespace-nowrap">3 reps</span>
+                <button type="button" id="pullup-ts-plus" class="min-w-[48px] min-h-[48px] rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm" aria-label="Increase Training Set Reps">+</button>
+              </div>
+            </div>
+
+            <!-- Pull-Up Routine Cards (Single Selected Day Focus or All 5 Days) -->
+            <div id="pullup-days-container" class="space-y-2.5">
+              <!-- Populated by JS -->
             </div>
           </div>
         </section>
 
-        <div id="micro-start-slot" class="space-y-2"></div>
-      </div>
-
-      <div id="gym-zone-b-setup-slot" class="space-y-2"></div>
-      <div id="gym-zone-c-tracker-slot"></div>
-
-      <!-- 5. Main Exercise Cards List -->
-      <div id="exercise-list" class="space-y-3.5">
-        <!-- Populated by JS -->
-      </div>
+        <!-- EXERCISES #2+ & CARDIO ZONE INSIDE ACTIVE DAY CONTAINER -->
+        <div id="exercise-list" class="space-y-3.5">
+          <!-- Populated by JS -->
+        </div>
+      </section>
 
       <!-- 6. Preserved Secondary Coaching, Consistency & Live Clock Cards (Zero Deletion Policy) -->
       <section id="weekly-adherence-neutral-card" aria-label="Rolling 30-day consistency and flexible weekly workout goal" data-adherence-source="workoutLogs" class="rounded-2xl border border-emerald-500/40 bg-slate-900/90 p-3 space-y-2 shadow-sm">
@@ -1871,13 +1953,13 @@
 
         <!-- Aligned 3-Button Action Row (grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.35fr) minmax(0, 0.85fr); gap: 6px;) -->
         <div class="grid pt-0.5" style="grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.35fr) minmax(0, 0.85fr); gap: 6px;">
-          <button type="button" id="copy-shopping-list-btn" style="min-height: 40px;" class="min-w-0 py-2 px-1 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[0.6563rem] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
+          <button type="button" id="copy-shopping-list-btn" class="min-h-[48px] min-w-[44px] py-2 px-1 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[0.6563rem] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
             Copy Unchecked
           </button>
-          <button type="button" id="check-pantry-staples-btn" style="min-height: 40px;" class="min-w-0 py-2 px-1 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-[0.6563rem] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Check off long-lasting pantry bottles/bags and bulk supplements you already have at home">
+          <button type="button" id="check-pantry-staples-btn" class="min-h-[48px] min-w-[44px] py-2 px-1 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-[0.6563rem] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Check off long-lasting pantry bottles/bags and bulk supplements you already have at home">
             Check Pantry Staples
           </button>
-          <button type="button" id="reset-shopping-list-btn" style="min-height: 40px;" class="min-w-0 py-2 px-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[0.6563rem] font-bold whitespace-nowrap transition inline-flex items-center justify-center text-center">
+          <button type="button" id="reset-shopping-list-btn" class="min-h-[48px] min-w-[44px] py-2 px-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[0.6563rem] font-bold whitespace-nowrap transition inline-flex items-center justify-center text-center">
             Uncheck All
           </button>
         </div>
@@ -2238,6 +2320,8 @@
       },
       autoCollapseDone: false,
       exerciseSetCountOverrides: {},
+      arrivalChecklistByDay: {},
+      exerciseGearChecked: {},
       defaultAllHidden: true,
       smartLoginPromptShown: true,
       francoisWeek1RestoredV2: true,
@@ -2554,6 +2638,12 @@
       }
       if (!merged.gymLocker || typeof merged.gymLocker !== 'object') {
         merged.gymLocker = { pin: '', photoDataUrl: '', updatedAt: null };
+      }
+      if (!merged.arrivalChecklistByDay || typeof merged.arrivalChecklistByDay !== 'object') {
+        merged.arrivalChecklistByDay = {};
+      }
+      if (!merged.exerciseGearChecked || typeof merged.exerciseGearChecked !== 'object') {
+        merged.exerciseGearChecked = {};
       }
       if (merged.restDayCarbMode !== 'reduce_20' && merged.restDayCarbMode !== 'match') {
         merged.restDayCarbMode = 'match';
@@ -14409,8 +14499,7 @@
             <button
               type="button"
               ${cfg.isPrimaryGym ? 'id="cross-week-resync-btn"' : ''}
-              style="min-height: 40px;"
-              class="cross-week-resync-btn px-2.5 py-1.5 rounded-xl text-xs font-extrabold border transition whitespace-nowrap inline-flex items-center justify-center text-center ${
+              class="cross-week-resync-btn min-h-[48px] min-w-[44px] px-2.5 py-1.5 rounded-xl text-xs font-extrabold border transition whitespace-nowrap inline-flex items-center justify-center text-center ${
                 isSyncedMatch
                   ? 'bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-400/50 text-emerald-200'
                   : 'bg-sky-500/20 hover:bg-sky-500/30 border-sky-400/50 text-sky-200'
@@ -14421,8 +14510,7 @@
             <button
               type="button"
               ${cfg.isPrimaryGym ? 'id="cross-week-reset-standard-btn"' : ''}
-              style="min-height: 40px;"
-              class="cross-week-reset-standard-btn px-2.5 py-1.5 rounded-xl text-xs font-bold border transition whitespace-nowrap inline-flex items-center justify-center text-center ${
+              class="cross-week-reset-standard-btn min-h-[48px] min-w-[44px] px-2.5 py-1.5 rounded-xl text-xs font-bold border transition whitespace-nowrap inline-flex items-center justify-center text-center ${
                 isStandardMatch && !isSyncedMatch
                   ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
                   : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300'
@@ -15929,10 +16017,13 @@
         if (adhEnc) adhEnc.textContent = rolling30.encouragementCopy;
       })();
 
-      // Task 3: 2-Minute Micro-Start Focus Mode (Shown directly below Day header ONLY when 0 sets are logged today or focus mode is active)
+      // Phase 1 Behavioral Interception: 2-Minute Micro-Start positioned directly adjacent to Swap Today to Rest Day
       (function renderMicroStartFocusControl() {
         const microSlot = document.getElementById('micro-start-slot');
+        const microExpandedSlot = document.getElementById('micro-start-focus-expanded-slot');
+        const restSlot = document.getElementById('gym-zone-b-rest-slot');
         const warmupWrap = document.getElementById('warmup-card-container');
+        const activeDayContainer = document.getElementById('active-day-workout-container');
         const exListEl = document.getElementById('exercise-list');
         const zoneBEl = document.getElementById('gym-zone-b-setup-slot');
         const zoneCEl = document.getElementById('gym-zone-c-tracker-slot');
@@ -15948,15 +16039,24 @@
           : (!dayAssignment.isRestDay && (isMicroActive || (Number(todayDoneSets) || 0) === 0));
 
         if (!shouldShowMicro) {
+          if (activeDayContainer) activeDayContainer.classList.remove('hidden');
           if (exListEl) exListEl.classList.remove('hidden');
           if (zoneBEl) zoneBEl.classList.remove('hidden');
           if (zoneCEl) zoneCEl.classList.remove('hidden');
           if (warmupWrap) warmupWrap.classList.remove('hidden');
+          if (restSlot) restSlot.classList.add('col-span-2');
           microSlot.innerHTML = '';
           microSlot.classList.add('hidden');
+          if (microExpandedSlot) {
+            microExpandedSlot.innerHTML = '';
+            microExpandedSlot.classList.add('hidden');
+          }
           return;
         }
+
         microSlot.classList.remove('hidden');
+        if (restSlot) restSlot.classList.remove('col-span-2');
+
         const firstExercise = exercisesToday[0];
         const firstMeta = firstExercise ? (EXERCISE_META[firstExercise.id] || { defaultWeightLbs: 45 }) : { defaultWeightLbs: 45 };
         const firstUnit = firstExercise ? getExerciseUnit(firstExercise.id) : 'lbs';
@@ -15968,26 +16068,27 @@
           : 'Warm-Up Set 1 · Easy Mobility';
 
         if (!isMicroActive) {
+          if (activeDayContainer) activeDayContainer.classList.remove('hidden');
           if (exListEl) exListEl.classList.remove('hidden');
           if (zoneBEl) zoneBEl.classList.remove('hidden');
           if (zoneCEl) zoneCEl.classList.remove('hidden');
           if (warmupWrap) warmupWrap.classList.remove('hidden');
+          if (microExpandedSlot) {
+            microExpandedSlot.innerHTML = '';
+            microExpandedSlot.classList.add('hidden');
+          }
 
           microSlot.innerHTML = `
-            <div class="rounded-2xl border border-emerald-500/45 bg-slate-900/95 p-3 flex flex-wrap items-center justify-between gap-2.5">
-              <div class="min-w-0 flex-1 space-y-0.5">
-                <div class="text-xs sm:text-sm font-extrabold text-white">Low energy or stuck starting?</div>
-                <p class="text-[0.75rem] text-slate-300 leading-relaxed">Show just 1 short warm-up set for 2 minutes. The rest of the workout stays hidden until you finish it.</p>
-              </div>
-              <button
-                type="button"
-                id="micro-start-trigger-btn"
-                data-testid="micro-start-trigger-btn"
-                class="min-h-[48px] min-w-[48px] shrink-0 rounded-xl border border-emerald-400 bg-emerald-600 hover:bg-emerald-500 px-3.5 py-2 text-xs sm:text-sm font-extrabold text-white"
-              >
-                2-Minute Micro-Start
-              </button>
-            </div>
+            <button
+              type="button"
+              id="micro-start-trigger-btn"
+              data-testid="micro-start-trigger-btn"
+              class="wcag-micro-start-adjacent-btn w-full h-full min-h-[48px] min-w-[44px] rounded-xl px-2.5 py-2 text-xs font-extrabold leading-tight text-center inline-flex flex-col items-center justify-center gap-0.5 transition"
+              title="Low energy alternative to a rest day: focus on just 1 short 2-minute warm-up set"
+            >
+              <span>2-Minute Micro-Start</span>
+              <span class="text-[0.625rem] font-semibold opacity-90">Low-friction start</span>
+            </button>
           `;
           const triggerBtn = document.getElementById('micro-start-trigger-btn');
           if (triggerBtn) {
@@ -16000,13 +16101,28 @@
           return;
         }
 
-        // Micro-Start Active: Hide all other exercise cards so ONLY Warm-Up Set 1 is on screen
+        // Micro-Start Active: Hide Warm-Up & Active Lifting Container so ONLY Warm-Up Set 1 is on screen
+        if (activeDayContainer) activeDayContainer.classList.add('hidden');
         if (exListEl) exListEl.classList.add('hidden');
         if (zoneBEl) zoneBEl.classList.add('hidden');
         if (zoneCEl) zoneCEl.classList.add('hidden');
         if (warmupWrap) warmupWrap.classList.add('hidden');
 
         microSlot.innerHTML = `
+          <button
+            type="button"
+            id="micro-start-trigger-btn"
+            data-testid="micro-start-trigger-btn"
+            aria-pressed="true"
+            class="wcag-micro-start-adjacent-btn w-full h-full min-h-[48px] min-w-[44px] rounded-xl px-2.5 py-2 text-xs font-extrabold leading-tight text-center inline-flex items-center justify-center transition"
+          >
+            ✓ Micro-Start Active
+          </button>
+        `;
+        const activeTarget = microExpandedSlot || microSlot;
+        if (microExpandedSlot) microExpandedSlot.classList.remove('hidden');
+
+        activeTarget.innerHTML = `
           <section
             id="micro-start-focus-panel"
             data-testid="micro-start-focus-panel"
@@ -16403,7 +16519,7 @@
           if (dayAssignment.isBonusRepeat && !dayAssignment.isRestDay) {
             weekScheduleBonusSlot.classList.remove('hidden');
             weekScheduleBonusSlot.innerHTML = `
-              <button type="button" id="banner-bonus-advance-week-btn" style="min-height: 40px;" class="w-full text-xs font-extrabold px-3 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/45 transition whitespace-nowrap inline-flex items-center justify-center text-center">
+              <button type="button" id="banner-bonus-advance-week-btn" class="w-full min-h-[48px] min-w-[44px] text-xs font-extrabold px-3 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/45 transition whitespace-nowrap inline-flex items-center justify-center text-center">
                 Advance to Week ${week + 1} • Day 1 Instead
               </button>
             `;
@@ -16413,49 +16529,47 @@
           }
         }
 
-        // ZONE B: Symmetrical 2-Column Today's Workout Setup Row (Right below Active Day Header)
+        // PHASE 1: Day Management & Interception Controls (Rest Day adjacent to 2-Minute Micro-Start; Change Workout + Reset Workout)
+        const zoneBRestSlot = document.getElementById('gym-zone-b-rest-slot');
+        if (zoneBRestSlot) {
+          zoneBRestSlot.innerHTML = dayAssignment.isRestDay ? `
+            <button
+              type="button"
+              id="banner-rest-day-status-btn"
+              class="wcag-rest-day-btn w-full h-full min-h-[48px] min-w-[44px] px-2.5 py-2 rounded-xl text-xs font-extrabold leading-tight transition inline-flex items-center justify-center text-center"
+              title="Pick a workout to train today instead of resting"
+            >
+              Train Today Instead
+            </button>
+          ` : `
+            <button
+              type="button"
+              id="banner-swap-to-rest-btn"
+              class="wcag-rest-day-btn w-full h-full min-h-[48px] min-w-[44px] px-2.5 py-2 rounded-xl text-xs font-extrabold leading-tight transition inline-flex items-center justify-center text-center"
+              title="Make today a Rest Day and shift remaining lifting workouts forward without losing logged data"
+            >
+              Swap Today to Rest Day
+            </button>
+          `;
+        }
+
         const zoneBSlot = document.getElementById('gym-zone-b-setup-slot');
         if (zoneBSlot) {
           zoneBSlot.innerHTML = `
-            <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
-              ${dayAssignment.isRestDay ? `
-                <button
-                  type="button"
-                  id="banner-rest-day-status-btn"
-                  style="min-height: 40px;"
-                  class="px-2 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/60 text-amber-200 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center"
-                  title="Pick a workout to train today instead of resting"
-                >
-                  Train Today Instead
-                </button>
-              ` : `
-                <button
-                  type="button"
-                  id="banner-swap-to-rest-btn"
-                  style="min-height: 40px;"
-                  class="px-2 py-2 rounded-xl bg-transparent hover:bg-amber-500/15 border border-amber-400/65 text-amber-300 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center"
-                  title="Make today a Rest Day and shift remaining lifting workouts forward without losing logged data"
-                >
-                  Swap Today to Rest Day
-                </button>
-              `}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
                 type="button"
                 id="banner-change-workout-btn"
                 aria-expanded="${state.openDayWorkoutPicker ? 'true' : 'false'}"
-                style="min-height: 40px;"
-                class="px-2 py-2 rounded-xl bg-transparent hover:bg-cyan-500/15 border border-cyan-400/65 text-cyan-300 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center"
+                class="w-full min-h-[48px] min-w-[44px] px-3 py-2 rounded-xl bg-slate-950 hover:bg-cyan-500/15 border-2 border-cyan-400/75 text-cyan-200 text-xs font-extrabold leading-tight transition inline-flex items-center justify-center text-center"
                 title="Choose any of the 5 workouts, Rest Day, or AI Custom Workout for today"
               >
                 ${state.openDayWorkoutPicker ? 'Hide Workouts ▲' : 'Change Today&apos;s Workout ▼'}
               </button>
-            </div>
-            <div class="mt-2">
               <button
                 type="button"
                 id="banner-clear-day-btn"
-                style="min-height: 38px;"
-                class="w-full px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-400/55 text-rose-200 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center gap-1.5 text-center"
+                class="wcag-reset-workout-btn w-full min-h-[48px] min-w-[44px] px-3 py-2 rounded-xl text-xs font-extrabold leading-tight transition inline-flex items-center justify-center gap-1.5 text-center"
                 title="Clear Day — Reset all logged sets for this day only"
               >
                 ↺ Reset Workout (Clear Day ${dayIdx + 1})
@@ -16482,57 +16596,97 @@
           }
         }
 
-        // ZONE C: Clean 2x2 Symmetrical Live Tracker Bar (Water, Abs, Gear, Gym Locker Pin)
-        const zoneCSlot = document.getElementById('gym-zone-c-tracker-slot');
-        if (zoneCSlot) {
+        // PHASE 2: Embedded Locker Checklist Inside Warm-Up Block
+        const warmupLockerSlot = document.getElementById('warmup-locker-checklist-slot');
+        if (warmupLockerSlot) {
           const lockerPillText = formatLockerPillLabelInline(state.gymLocker);
           const hasLockerSaved = Boolean((state.gymLocker && state.gymLocker.pin) || (state.gymLocker && state.gymLocker.photoDataUrl));
+          const arrivalDayKey = `w${week}_d${dayIdx}`;
+          if (!state.arrivalChecklistByDay || typeof state.arrivalChecklistByDay !== 'object') {
+            state.arrivalChecklistByDay = {};
+          }
+          const arrivalItems = Array.isArray(window.ARRIVAL_LOCKER_CHECKLIST_ITEMS)
+            ? window.ARRIVAL_LOCKER_CHECKLIST_ITEMS
+            : [
+                { id: 'locker_locked', label: 'Locker Locked & Pin Saved', shortLabel: 'Locker Locked' },
+                { id: 'bottle_filled', label: 'Water Bottle Filled', shortLabel: 'Bottle Filled' },
+                { id: 'headphones_towel', label: 'Headphones & Towel Ready', shortLabel: 'Headphones & Towel' }
+              ];
+          warmupLockerSlot.innerHTML = `
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-[0.6875rem] font-extrabold uppercase tracking-wider text-amber-300">Arrival &amp; Locker Checklist</span>
+              <button
+                type="button"
+                id="banner-gym-locker-btn"
+                class="min-h-[48px] min-w-[44px] px-3 py-2 rounded-xl border text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center ${
+                  hasLockerSaved
+                    ? 'bg-amber-500/20 text-amber-200 border-amber-400/65 shadow-sm'
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-100 border-slate-600'
+                }"
+                title="Save your gym locker number or snap a quick photo"
+              >
+                ${lockerPillText}
+              </button>
+            </div>
+            <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Gym arrival and locker readiness checklist">
+              ${arrivalItems.map(item => {
+                const checkKey = `${arrivalDayKey}_${item.id}`;
+                const isChecked = Boolean(state.arrivalChecklistByDay[checkKey]);
+                return `
+                  <button
+                    type="button"
+                    data-arrival-check-key="${checkKey}"
+                    aria-pressed="${isChecked ? 'true' : 'false'}"
+                    class="arrival-locker-chip min-h-[44px] min-w-[44px] px-3 py-2 rounded-xl text-xs font-extrabold transition inline-flex items-center gap-1.5"
+                  >
+                    <span aria-hidden="true">${isChecked ? '✓' : '○'}</span>
+                    <span>${item.shortLabel}</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          `;
+          warmupLockerSlot.querySelectorAll('.arrival-locker-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const key = btn.getAttribute('data-arrival-check-key') || '';
+              if (!key) return;
+              if (typeof window.toggleChecklistKey === 'function') {
+                const res = window.toggleChecklistKey(state.arrivalChecklistByDay, key);
+                state.arrivalChecklistByDay = res.nextMap;
+              } else {
+                state.arrivalChecklistByDay[key] = !Boolean(state.arrivalChecklistByDay[key]);
+              }
+              saveState();
+              renderWorkoutView();
+            });
+          });
+        }
+
+        // PHASE 3 TOP STRIP: Persistent Hydration (Water Tracker) & Abs Toggle at Top of Active Day Container
+        // (Global Gear Checklist removed from top; Locker moved into Warm-Up block)
+        const zoneCSlot = document.getElementById('gym-zone-c-tracker-slot');
+        if (zoneCSlot) {
           zoneCSlot.innerHTML = `
-            <div class="grid grid-cols-2 gap-1.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;">
+            <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
               <button
                 type="button"
                 id="banner-water-add-btn"
-                style="min-height: 36px;"
-                class="px-2 py-1.5 rounded-full bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 border border-sky-400/45 text-[0.6875rem] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center"
+                class="min-h-[48px] min-w-[44px] px-3 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-100 border-2 border-sky-400/60 text-xs font-extrabold transition inline-flex items-center justify-center text-center"
                 title="Tap to log +500ml of water (1 bottle)"
               >
                 💧 Water: ${waterLitersLogged}/${waterLitersTarget}L (+500ml)
               </button>
               <button
                 type="button"
-                id="banner-gym-locker-btn"
-                style="min-height: 36px;"
-                class="px-2 py-1.5 rounded-full border text-[0.6875rem] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center ${
-                  hasLockerSaved
-                    ? 'bg-amber-500/20 text-amber-200 border-amber-400/60 shadow-sm'
-                    : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-700'
-                }"
-                title="Save your gym locker number or snap a quick photo"
-              >
-                ${lockerPillText}
-              </button>
-              <button
-                type="button"
                 id="toggle-crunch-day-btn"
-                style="min-height: 36px;"
-                class="px-2 py-1.5 rounded-full border text-[0.6875rem] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center ${
+                class="min-h-[48px] min-w-[44px] px-3 py-2 rounded-xl border-2 text-xs font-extrabold transition inline-flex items-center justify-center text-center ${
                   hasCrunchToday
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/50'
-                    : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                    ? 'bg-emerald-500/20 text-emerald-200 border-emerald-400/60'
+                    : 'bg-slate-900 text-slate-200 border-slate-600 hover:bg-slate-800'
                 }"
                 title="Toggle daily ab crunch on or off for today"
               >
                 ${hasCrunchToday ? '✓ Abs On' : 'Abs Off'}
-              </button>
-              <button
-                type="button"
-                id="banner-open-shoe-gear-btn"
-                style="min-height: 36px;"
-                class="px-2 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-[0.6875rem] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center"
-                title="Open My Gear &amp; Gym Shoe Lifespan Tracker"
-              >
-                <span>🎒 Gear Checklist</span>
-                <span id="banner-shoe-health-readout" class="hidden">${shoeWearObj.healthPct}%</span>
               </button>
             </div>
           `;
@@ -16643,14 +16797,14 @@
                 <h2 class="text-base sm:text-lg font-extrabold text-[#f8fafc] leading-snug">${dayObj.title}</h2>
               </div>
 
-              <!-- Row 3: Progress: X/Y sets bar -->
+              <!-- Row 3: Progress: X/Y sets bar (WCAG 2.2 AA Light Green >= 4.5:1 Contrast) -->
               <div class="space-y-1.5 pt-0.5">
                 <div class="flex items-center justify-between gap-2 text-xs">
-                  <span class="font-semibold text-slate-300 whitespace-nowrap">Progress: <strong class="text-[#f8fafc]">${todayDoneSets}/${todayTotalSets} sets</strong></span>
-                  <span class="font-mono font-bold text-emerald-400">${dayPct}%</span>
+                  <span id="day-banner-progress-text" data-testid="day-banner-progress-text" class="wcag-day-progress-text font-bold whitespace-nowrap">Progress: <strong>${todayDoneSets}/${todayTotalSets} sets</strong></span>
+                  <span id="day-banner-progress-pct" data-testid="day-banner-progress-pct" class="wcag-day-progress-pct font-mono font-extrabold">${dayPct}%</span>
                 </div>
-                <div class="w-full bg-[#0f172a] h-2 rounded-full overflow-hidden border border-[#334155]">
-                  <div class="bg-[#059669] h-full transition-all duration-300" style="width: ${dayPct}%"></div>
+                <div class="w-full bg-[#0f172a] h-2.5 rounded-full overflow-hidden border border-[#334155]">
+                  <div class="bg-[#4ADE80] h-full transition-all duration-300" style="width: ${dayPct}%"></div>
                 </div>
               </div>
 
@@ -17976,7 +18130,7 @@
                 </div>
                 <div data-fast-log-feedback="${ex.id}" aria-live="polite" class="${lastFastUndo ? 'flex' : 'hidden'} flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-500/35 bg-emerald-950/40 px-2.5 py-1.5 text-[0.75rem] font-bold text-emerald-200">
                   <span data-fast-log-msg="${ex.id}">${lastFastUndo ? String(lastFastUndo.summaryText || 'Sets logged') : ''}</span>
-                  ${lastFastUndo ? `<button type="button" data-fast-log-undo="${ex.id}" class="fast-set-log-undo-btn min-h-[40px] px-2.5 py-1 rounded-lg border border-amber-400/60 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-extrabold transition">Undo</button>` : ''}
+                  ${lastFastUndo ? `<button type="button" data-fast-log-undo="${ex.id}" class="fast-set-log-undo-btn min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-lg border border-amber-400/60 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-extrabold transition">Undo</button>` : ''}
                 </div>
               </div>
                 `;
@@ -17994,7 +18148,7 @@
                       data-biking-env-btn="indoor"
                       data-cardio-key="${cardioLogKey}"
                       aria-pressed="${activeBikingEnv === 'indoor' ? 'true' : 'false'}"
-                      class="biking-env-toggle-btn px-2.5 py-1 rounded-md text-[0.6875rem] font-extrabold transition ${
+                      class="biking-env-toggle-btn min-h-[44px] min-w-[44px] px-2.5 py-1 rounded-md text-xs font-extrabold transition ${
                         activeBikingEnv === 'indoor' ? 'bg-cyan-400 text-slate-950 shadow-sm' : 'text-slate-300 hover:text-white'
                       }"
                     >
@@ -18005,7 +18159,7 @@
                       data-biking-env-btn="outdoor"
                       data-cardio-key="${cardioLogKey}"
                       aria-pressed="${activeBikingEnv === 'outdoor' ? 'true' : 'false'}"
-                      class="biking-env-toggle-btn px-2.5 py-1 rounded-md text-[0.6875rem] font-extrabold transition ${
+                      class="biking-env-toggle-btn min-h-[44px] min-w-[44px] px-2.5 py-1 rounded-md text-xs font-extrabold transition ${
                         activeBikingEnv === 'outdoor' ? 'bg-cyan-400 text-slate-950 shadow-sm' : 'text-slate-300 hover:text-white'
                       }"
                     >
@@ -18020,7 +18174,7 @@
                     data-cardio-mode-btn="live"
                     data-cardio-key="${cardioLogKey}"
                     data-cardio-ex-id="${ex.id}"
-                    class="cardio-mode-switch-btn py-2.5 px-2 rounded-xl border text-xs font-extrabold transition ${
+                    class="cardio-mode-switch-btn min-h-[44px] min-w-[44px] py-2.5 px-2 rounded-xl border text-xs font-extrabold transition ${
                       activeCardioMode === 'live'
                         ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-sm'
                         : 'bg-slate-900 hover:bg-slate-800 text-cyan-200 border-cyan-500/45'
@@ -18033,7 +18187,7 @@
                     data-cardio-mode-btn="manual"
                     data-cardio-key="${cardioLogKey}"
                     data-cardio-ex-id="${ex.id}"
-                    class="cardio-mode-switch-btn py-2.5 px-2 rounded-xl border text-xs font-extrabold transition ${
+                    class="cardio-mode-switch-btn min-h-[44px] min-w-[44px] py-2.5 px-2 rounded-xl border text-xs font-extrabold transition ${
                       activeCardioMode === 'manual'
                         ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
                         : 'bg-slate-900 hover:bg-slate-800 text-amber-200 border-amber-500/45'
@@ -18052,7 +18206,7 @@
                       type="button"
                       data-cardio-live-toggle="${cardioLogKey}"
                       data-cardio-ex-id="${ex.id}"
-                      class="cardio-live-toggle-btn py-2 px-3 rounded-xl text-xs font-extrabold transition ${
+                      class="cardio-live-toggle-btn min-h-[44px] min-w-[44px] py-2 px-3 rounded-xl text-xs font-extrabold transition ${
                         isLiveCardioThisEx
                           ? 'bg-amber-400 text-slate-950'
                           : 'bg-cyan-500 text-slate-950'
@@ -18064,7 +18218,7 @@
                       type="button"
                       data-cardio-live-save="${cardioLogKey}"
                       data-cardio-ex-id="${ex.id}"
-                      class="cardio-live-save-btn py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition"
+                      class="cardio-live-save-btn min-h-[44px] min-w-[44px] py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition"
                     >
                       ✓ Finish &amp; Save
                     </button>
@@ -18078,17 +18232,17 @@
                     <div class="space-y-1">
                       <label for="cardio-dist-inp-${ex.id}" class="block text-[0.6875rem] font-extrabold text-slate-200">Distance (km)</label>
                       <div class="flex items-center justify-between bg-[#0f172a] border border-slate-700 rounded-xl p-1">
-                        <button type="button" data-cardio-step-field="dist" data-cardio-delta="-0.5" data-cardio-ex-id="${ex.id}" class="cardio-manual-step-btn w-8 h-8 shrink-0 rounded-lg bg-slate-800 text-slate-200 font-extrabold">−</button>
+                        <button type="button" data-cardio-step-field="dist" data-cardio-delta="-0.5" data-cardio-ex-id="${ex.id}" class="cardio-manual-step-btn min-w-[44px] min-h-[44px] shrink-0 rounded-lg bg-slate-800 text-slate-100 font-extrabold" aria-label="Decrease distance">−</button>
                         <input id="cardio-dist-inp-${ex.id}" type="number" step="0.5" min="0" value="${(savedCardioLog && savedCardioLog.distanceKm) || 10}" class="w-full min-w-0 bg-transparent text-center text-sm font-extrabold text-[#f8fafc] focus:outline-none" />
-                        <button type="button" data-cardio-step-field="dist" data-cardio-delta="0.5" data-cardio-ex-id="${ex.id}" class="cardio-manual-step-btn w-8 h-8 shrink-0 rounded-lg bg-slate-800 text-cyan-300 font-extrabold">+</button>
+                        <button type="button" data-cardio-step-field="dist" data-cardio-delta="0.5" data-cardio-ex-id="${ex.id}" class="cardio-manual-step-btn min-w-[44px] min-h-[44px] shrink-0 rounded-lg bg-slate-800 text-cyan-200 font-extrabold" aria-label="Increase distance">+</button>
                       </div>
                     </div>
                     <div class="space-y-1">
                       <label for="cardio-mins-inp-${ex.id}" class="block text-[0.6875rem] font-extrabold text-slate-200">Time (mins)</label>
                       <div class="flex items-center justify-between bg-[#0f172a] border border-slate-700 rounded-xl p-1">
-                        <button type="button" data-cardio-step-field="mins" data-cardio-delta="-5" data-cardio-ex-id="${ex.id}" class="cardio-manual-step-btn w-8 h-8 shrink-0 rounded-lg bg-slate-800 text-slate-200 font-extrabold">−</button>
+                        <button type="button" data-cardio-step-field="mins" data-cardio-delta="-5" data-cardio-ex-id="${ex.id}" class="cardio-manual-step-btn min-w-[44px] min-h-[44px] shrink-0 rounded-lg bg-slate-800 text-slate-100 font-extrabold" aria-label="Decrease minutes">−</button>
                         <input id="cardio-mins-inp-${ex.id}" type="number" step="1" min="1" value="${(savedCardioLog && savedCardioLog.durationMins) || 60}" class="w-full min-w-0 bg-transparent text-center text-sm font-extrabold text-[#f8fafc] focus:outline-none" />
-                        <button type="button" data-cardio-step-field="mins" data-cardio-delta="5" data-cardio-ex-id="${ex.id}" class="cardio-manual-step-btn w-8 h-8 shrink-0 rounded-lg bg-slate-800 text-cyan-300 font-extrabold">+</button>
+                        <button type="button" data-cardio-step-field="mins" data-cardio-delta="5" data-cardio-ex-id="${ex.id}" class="cardio-manual-step-btn min-w-[44px] min-h-[44px] shrink-0 rounded-lg bg-slate-800 text-cyan-200 font-extrabold" aria-label="Increase minutes">+</button>
                       </div>
                     </div>
                   </div>
@@ -18096,7 +18250,7 @@
                     type="button"
                     data-cardio-manual-save="${cardioLogKey}"
                     data-cardio-ex-id="${ex.id}"
-                    class="cardio-manual-save-btn w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition"
+                    class="cardio-manual-save-btn w-full min-h-[48px] py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition"
                   >
                     ✓ Log Past Workout
                   </button>
@@ -18106,11 +18260,11 @@
                 ${cardioDoneNow ? `
                 <div class="flex items-center justify-between gap-2 bg-emerald-950/50 border border-emerald-500/45 rounded-xl px-3 py-2 text-xs font-bold text-emerald-200">
                   <span>✓ Logged: ${savedCardioLog.summaryText}</span>
-                  <button type="button" data-cardio-remove-ex="${ex.id}" class="remove-custom-cardio-btn text-[0.6875rem] text-rose-300 underline">Remove</button>
+                  <button type="button" data-cardio-remove-ex="${ex.id}" class="remove-custom-cardio-btn min-h-[44px] px-2 text-xs text-rose-200 underline">Remove</button>
                 </div>
                 ` : (ex.isCustomCardio ? `
                 <div class="flex justify-end">
-                  <button type="button" data-cardio-remove-ex="${ex.id}" class="remove-custom-cardio-btn text-[0.6875rem] font-bold text-slate-400 hover:text-rose-300">Remove Cardio</button>
+                  <button type="button" data-cardio-remove-ex="${ex.id}" class="remove-custom-cardio-btn min-h-[44px] px-2 text-xs font-bold text-slate-300 hover:text-rose-200">Remove Cardio</button>
                 </div>
                 ` : '')}
               </div>
@@ -18136,6 +18290,51 @@
               </div>
               `}
 
+              <!-- EXERCISE-SPECIFIC GEAR CHECKLIST (Contextual Inside This Exercise Card — Replaces Top Global Gear Bar) -->
+              ${(() => {
+                const gearItems = typeof window.resolveExerciseSpecificGear === 'function'
+                  ? window.resolveExerciseSpecificGear({
+                      id: ex.id,
+                      name: displayExName,
+                      equipType: ex.equipType,
+                      isPullup: Boolean(PULLUP_EX_ID_TO_DAY[ex.id]),
+                      isCardio: Boolean(isCardioEx)
+                    })
+                  : [{ id: 'chalk', label: 'Chalk' }, { id: 'towel', label: 'Towel' }];
+                const gearMap = (state.exerciseGearChecked && typeof state.exerciseGearChecked === 'object') ? state.exerciseGearChecked : {};
+                return `
+                  <div class="exercise-specific-gear-strip rounded-xl border border-slate-800 bg-slate-950/75 p-2.5 space-y-1.5" data-exercise-gear-card="${ex.id}">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <span class="text-[0.6875rem] font-extrabold uppercase tracking-wider text-slate-300">Gear for This Exercise</span>
+                      <button
+                        type="button"
+                        class="open-full-gear-modal-btn min-h-[44px] min-w-[44px] px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-sky-200 text-xs font-extrabold transition"
+                        title="Open full Gear &amp; Gym Shoe Lifespan Tracker"
+                      >
+                        Gear &amp; Shoes
+                      </button>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Gear checklist for ${String(displayExName || ex.name || 'exercise').replace(/"/g, '&quot;')}">
+                      ${gearItems.map(gItem => {
+                        const gKey = `w${week}_d${dayIdx}_${ex.id}_${gItem.id}`;
+                        const isGearChecked = Boolean(gearMap[gKey]);
+                        return `
+                          <button
+                            type="button"
+                            data-exercise-gear-key="${gKey}"
+                            aria-pressed="${isGearChecked ? 'true' : 'false'}"
+                            class="exercise-gear-chip min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl text-xs font-extrabold transition inline-flex items-center gap-1.5"
+                          >
+                            <span aria-hidden="true">${isGearChecked ? '✓' : '○'}</span>
+                            <span>${gItem.label}</span>
+                          </button>
+                        `;
+                      }).join('')}
+                    </div>
+                  </div>
+                `;
+              })()}
+
               <!-- PERMANENT EXERCISE SWAP GRID: Green AI Machine Swap + Swap from History + AI Check & Swap (Zero Options Deleted) -->
               <div data-exposed-machine-swap-grid="${ex.id}" class="space-y-2 mt-3">
                 <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
@@ -18146,8 +18345,7 @@
                       data-orig-ex-id="${ex.originalId || ex.id}"
                       data-slot-key="${ex.slotKey || ''}"
                       data-ai-swap-mode="quick"
-                      style="min-height: 40px;"
-                      class="ai-check-swap-ex-btn w-full py-2 px-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border border-sky-400/50 text-sky-200 text-[0.6875rem] font-bold leading-tight text-center inline-flex items-center justify-center transition"
+                      class="ai-check-swap-ex-btn w-full min-h-[48px] min-w-[44px] py-2 px-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border border-sky-400/50 text-sky-200 text-xs font-bold leading-tight text-center inline-flex items-center justify-center transition"
                       title="Change machine subtype or select a different machine video"
                     >
                       Change Machine Type
@@ -18159,8 +18357,7 @@
                       data-orig-ex-id="${ex.originalId || ex.id}"
                       data-slot-key="${ex.slotKey || ''}"
                       data-ai-swap-mode="quick"
-                      style="min-height: 40px;"
-                      class="ai-check-swap-ex-btn w-full py-2 px-2 rounded-xl bg-[#059669]/20 hover:bg-[#059669]/30 border border-[#059669]/65 text-emerald-200 text-[0.6875rem] font-bold leading-tight text-center inline-flex items-center justify-center transition"
+                      class="ai-check-swap-ex-btn w-full min-h-[48px] min-w-[44px] py-2 px-2 rounded-xl bg-[#059669]/20 hover:bg-[#059669]/30 border border-[#059669]/65 text-emerald-200 text-xs font-bold leading-tight text-center inline-flex items-center justify-center transition"
                       title="Check machine match and switch to machine form &amp; video"
                     >
                       Switch to Machine Form
@@ -18171,8 +18368,7 @@
                     data-history-swap-ex="${ex.id}"
                     data-history-swap-slot="${ex.slotKey || ''}"
                     data-history-swap-name="${String(ex.name || '').replace(/"/g, '&quot;')}"
-                    style="min-height: 40px;"
-                    class="swap-from-history-btn w-full py-2 px-2 rounded-xl bg-amber-600/15 hover:bg-amber-600/25 border border-amber-500/60 text-amber-200 text-[0.6875rem] font-bold leading-tight text-center inline-flex items-center justify-center transition"
+                    class="swap-from-history-btn w-full min-h-[48px] min-w-[44px] py-2 px-2 rounded-xl bg-amber-600/15 hover:bg-amber-600/25 border border-amber-500/60 text-amber-200 text-xs font-bold leading-tight text-center inline-flex items-center justify-center transition"
                     title="Replace this exercise with any exercise from your workout history"
                   >
                     ⇄ Swap from History
@@ -18184,8 +18380,7 @@
                   data-orig-ex-id="${ex.originalId || ex.id}"
                   data-slot-key="${ex.slotKey || ''}"
                   data-ai-swap-mode="photo_check"
-                  style="min-height: 36px;"
-                  class="ai-check-swap-ex-btn w-full py-1.5 px-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/50 text-sky-200 text-[0.6875rem] font-bold leading-tight text-center inline-flex items-center justify-center transition"
+                  class="ai-check-swap-ex-btn w-full min-h-[48px] min-w-[44px] py-2 px-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/50 text-sky-200 text-xs font-bold leading-tight text-center inline-flex items-center justify-center transition"
                   title="Scan a machine photo or check exercise swap options with AI"
                 >
                   + AI Check &amp; Swap Exercise
@@ -21034,6 +21229,32 @@
       if (typeof window.renderWorkoutResumeBannerUI === 'function') {
         window.renderWorkoutResumeBannerUI();
       }
+      listEl.querySelectorAll('.exercise-gear-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const gKey = btn.getAttribute('data-exercise-gear-key') || '';
+          if (!gKey) return;
+          if (!state.exerciseGearChecked || typeof state.exerciseGearChecked !== 'object') {
+            state.exerciseGearChecked = {};
+          }
+          if (typeof window.toggleChecklistKey === 'function') {
+            const res = window.toggleChecklistKey(state.exerciseGearChecked, gKey);
+            state.exerciseGearChecked = res.nextMap;
+          } else {
+            state.exerciseGearChecked[gKey] = !Boolean(state.exerciseGearChecked[gKey]);
+          }
+          saveState();
+          renderWorkoutView();
+        });
+      });
+
+      listEl.querySelectorAll('.open-full-gear-modal-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (typeof window.openProfileModalTab === 'function') {
+            window.openProfileModalTab('gear');
+          }
+        });
+      });
+
       if (typeof window.updateLiveClockScheduleBannerUI === 'function') {
         window.updateLiveClockScheduleBannerUI();
       }
@@ -21044,7 +21265,7 @@
     }
 
     // =========================================================================
-    // 7. RENDER PULL-UP PROGRESSION VIEW (WITH SYNCED 7-DAY BAR & SINGLE-DAY FOCUS)
+    // 7. RENDER PULL-UP PROGRESSION VIEW (EXERCISE #1 INSIDE ACTIVE DAY CONTAINER)
     // =========================================================================
     function renderPullupView() {
       syncProgressiveWeekState(state);
@@ -21061,6 +21282,85 @@
       const pullupViewMode = state.pullupViewMode === 'all' ? 'all' : 'selected';
       state.pullupViewMode = pullupViewMode;
 
+      // Show Pull-Ups Exercise #1 inside the Active Day Container across all 5 lifting days; hide on Rest Days unless All 5 Days is active
+      const pullupHubSection = document.getElementById('pinned-pullups-gym-hub');
+      if (pullupHubSection) {
+        const showHub = typeof window.shouldShowPullupsInActiveDay === 'function'
+          ? window.shouldShowPullupsInActiveDay({ isRestDay: Boolean(dayAssignment.isRestDay), pullupViewMode })
+          : (pullupViewMode === 'all' || !dayAssignment.isRestDay);
+        if (showHub) {
+          pullupHubSection.classList.remove('hidden');
+        } else {
+          pullupHubSection.classList.add('hidden');
+        }
+      }
+
+      // Render Exercise-Specific Gear inside the Pull-Ups Container (Chalk, Dip Belt, Assist Band, Lifting Straps)
+      const pullupGearSlot = document.getElementById('pullup-exercise-gear-slot');
+      if (pullupGearSlot) {
+        if (!state.exerciseGearChecked || typeof state.exerciseGearChecked !== 'object') {
+          state.exerciseGearChecked = {};
+        }
+        const pullupGearItems = typeof window.resolveExerciseSpecificGear === 'function'
+          ? window.resolveExerciseSpecificGear({ id: 'pullups_hub', name: 'Assisted Pull-Ups', isPullup: true })
+          : [
+              { id: 'chalk', label: 'Chalk' },
+              { id: 'dip_belt', label: 'Dip Belt' },
+              { id: 'resistance_band', label: 'Assist Band' },
+              { id: 'lifting_straps', label: 'Lifting Straps' }
+            ];
+        pullupGearSlot.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="text-[0.6875rem] font-extrabold uppercase tracking-wider text-sky-200">Pull-Up Gear</span>
+            <button
+              type="button"
+              class="open-full-gear-modal-btn min-h-[44px] min-w-[44px] px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-sky-200 text-xs font-extrabold transition"
+              title="Open full Gear &amp; Gym Shoe Lifespan Tracker"
+            >
+              Gear &amp; Shoes
+            </button>
+          </div>
+          <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Pull-Ups specific gear checklist">
+            ${pullupGearItems.map(gItem => {
+              const gKey = `w${week}_d${dayIdx}_pullups_${gItem.id}`;
+              const isChecked = Boolean(state.exerciseGearChecked[gKey]);
+              return `
+                <button
+                  type="button"
+                  data-pullup-gear-key="${gKey}"
+                  aria-pressed="${isChecked ? 'true' : 'false'}"
+                  class="exercise-gear-chip min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl text-xs font-extrabold transition inline-flex items-center gap-1.5"
+                >
+                  <span aria-hidden="true">${isChecked ? '✓' : '○'}</span>
+                  <span>${gItem.label}</span>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        `;
+        pullupGearSlot.querySelectorAll('.exercise-gear-chip').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const gKey = btn.getAttribute('data-pullup-gear-key') || '';
+            if (!gKey) return;
+            if (typeof window.toggleChecklistKey === 'function') {
+              const res = window.toggleChecklistKey(state.exerciseGearChecked, gKey);
+              state.exerciseGearChecked = res.nextMap;
+            } else {
+              state.exerciseGearChecked[gKey] = !Boolean(state.exerciseGearChecked[gKey]);
+            }
+            saveState();
+            renderPullupView();
+          });
+        });
+        pullupGearSlot.querySelectorAll('.open-full-gear-modal-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (typeof window.openProfileModalTab === 'function') {
+              window.openProfileModalTab('gear');
+            }
+          });
+        });
+      }
+
       renderRestDaySchedulerDrawers();
 
       const activeWeekBadge = document.getElementById('pullups-active-week-badge');
@@ -21072,14 +21372,14 @@
       const viewAllBtn = document.getElementById('pullups-view-mode-all-btn');
       if (viewSelectedBtn && viewAllBtn) {
         if (pullupViewMode === 'selected') {
-          viewSelectedBtn.className = 'px-2.5 py-1 rounded-md text-[0.625rem] font-extrabold transition bg-sky-400 text-slate-950 shadow-sm';
+          viewSelectedBtn.className = 'min-h-[48px] min-w-[44px] px-2.5 py-1 rounded-lg text-xs font-extrabold transition bg-sky-400 text-slate-950 shadow-sm';
           viewSelectedBtn.setAttribute('aria-pressed', 'true');
-          viewAllBtn.className = 'px-2.5 py-1 rounded-md text-[0.625rem] font-extrabold transition text-slate-300 hover:text-white';
+          viewAllBtn.className = 'min-h-[48px] min-w-[44px] px-2.5 py-1 rounded-lg text-xs font-extrabold transition text-slate-300 hover:text-white';
           viewAllBtn.setAttribute('aria-pressed', 'false');
         } else {
-          viewAllBtn.className = 'px-2.5 py-1 rounded-md text-[0.625rem] font-extrabold transition bg-sky-400 text-slate-950 shadow-sm';
+          viewAllBtn.className = 'min-h-[48px] min-w-[44px] px-2.5 py-1 rounded-lg text-xs font-extrabold transition bg-sky-400 text-slate-950 shadow-sm';
           viewAllBtn.setAttribute('aria-pressed', 'true');
-          viewSelectedBtn.className = 'px-2.5 py-1 rounded-md text-[0.625rem] font-extrabold transition text-slate-300 hover:text-white';
+          viewSelectedBtn.className = 'min-h-[48px] min-w-[44px] px-2.5 py-1 rounded-lg text-xs font-extrabold transition text-slate-300 hover:text-white';
           viewSelectedBtn.setAttribute('aria-pressed', 'false');
         }
       }
@@ -21092,7 +21392,7 @@
           selectedDaySummaryEl.textContent = `Selected: ${dayObj.dayShort} (${dayObj.daySub}) • Tendon & Lat Supercompensation Recovery Day`;
         } else {
           const pSpec = PULLUP_DAYS_DATA.find(item => item.dayNum === dayAssignment.pullupSessionNum);
-          selectedDaySummaryEl.textContent = `Selected: ${dayObj.dayShort} (${dayObj.daySub}) • ${pSpec ? pSpec.title : `Pull-Up Session ${dayAssignment.pullupSessionNum}`}`;
+          selectedDaySummaryEl.textContent = `${dayObj.title} · Exercise #1 • ${pSpec ? pSpec.title : `Pull-Up Session ${dayAssignment.pullupSessionNum}`}`;
         }
       }
 
@@ -21252,10 +21552,10 @@
               <p class="text-slate-300 text-xs leading-snug">3. Next pull-up workout: <strong class="text-sky-300">Day ${nextPullupInfo.calendarDayIdx + 1} (${nextSessionData.title})</strong>.</p>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-              <button type="button" id="pullup-rest-jump-next-btn" data-jump-day="${nextPullupInfo.calendarDayIdx}" style="min-height: 40px;" class="py-2.5 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold transition shadow-sm text-center">
+              <button type="button" id="pullup-rest-jump-next-btn" data-jump-day="${nextPullupInfo.calendarDayIdx}" class="min-h-[48px] min-w-[44px] py-2.5 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold transition shadow-sm text-center">
                 Jump to Day ${nextPullupInfo.calendarDayIdx + 1}: ${nextSessionData.title}
               </button>
-              <button type="button" id="pullup-rest-train-today-btn" style="min-height: 40px;" class="py-2.5 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-xs font-extrabold transition text-center">
+              <button type="button" id="pullup-rest-train-today-btn" class="min-h-[48px] min-w-[44px] py-2.5 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-xs font-extrabold transition text-center">
                 Train Today Instead (Choose Workout)
               </button>
             </div>
@@ -23511,7 +23811,7 @@
 
                 ${isFlexEligibleSlot ? `
                   <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
-                    <button type="button" data-meal-slot="${slot.slotId}" style="min-height: 40px;" class="meal-check-btn w-full px-2.5 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center ${
+                    <button type="button" data-meal-slot="${slot.slotId}" class="meal-check-btn w-full min-h-[48px] min-w-[44px] px-2.5 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center ${
                       isFlexMeal
                         ? 'bg-indigo-600/35 text-indigo-100 border border-indigo-400/60'
                         : (isDone
@@ -23522,7 +23822,7 @@
                     }">
                       ${isFlexMeal ? '✓ Flex Logged' : (isDone ? '✓ Done' : (isPartial ? `✓ Finish (${doneIngCount}/${itemsList.length})` : '✓ Log Fuel'))}
                     </button>
-                    <label style="min-height: 40px;" class="flex-food-snap-btn w-full px-2.5 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center cursor-pointer bg-indigo-950/80 hover:bg-indigo-900/80 text-indigo-100 border border-indigo-400/50">
+                    <label class="flex-food-snap-btn w-full min-h-[48px] min-w-[44px] px-2.5 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center cursor-pointer bg-indigo-950/80 hover:bg-indigo-900/80 text-indigo-100 border border-indigo-400/50">
                       <span>📷 Snap Food or Menu</span>
                       <input type="file" accept="image/*" capture="environment" data-flex-snap-slot="${slot.slotId}" class="flex-food-snap-input hidden" />
                     </label>
@@ -31964,10 +32264,10 @@
         </div>
         <select id="exercise-jump-select" aria-label="Jump to exercise or machine" class="hidden"></select>
         <div class="grid grid-cols-2 gap-2 w-full pt-1 border-t border-slate-800/70" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));">
-          <button type="button" id="toggle-focus-collapse-btn" style="min-height: 40px;" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition inline-flex items-center justify-center text-center" title="Automatically collapse finished exercises to save screen space">
+          <button type="button" id="toggle-focus-collapse-btn" class="min-h-[48px] min-w-[44px] px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition inline-flex items-center justify-center text-center" title="Automatically collapse finished exercises to save screen space">
             Default Hidden: ON
           </button>
-          <button type="button" id="toggle-all-images-btn" style="min-height: 40px;" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition inline-flex items-center justify-center text-center">
+          <button type="button" id="toggle-all-images-btn" class="min-h-[48px] min-w-[44px] px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition inline-flex items-center justify-center text-center">
             Show/Hide All Diagrams
           </button>
         </div>

@@ -455,6 +455,15 @@ import {
   stepWeightValue,
   verifyStepperWcagContrastCompliance
 } from './utils/flexibleWorkoutUx';
+import {
+  ARRIVAL_LOCKER_CHECKLIST_ITEMS,
+  MIN_WCAG_TOUCH_TARGET_PX,
+  WCAG_CHRONOLOGICAL_PALETTE,
+  resolveExerciseSpecificGear,
+  shouldShowPullupsInActiveDay,
+  toggleChecklistKey,
+  verifyChronologicalWcagContrast
+} from './utils/chronologicalWorkoutUx';
 
 const mountedVideoPlayerRoots = new WeakMap<HTMLElement, Root>();
 const mountedPhase2HubRoots = new WeakMap<HTMLElement, Root>();
@@ -1641,6 +1650,13 @@ declare global {
     stepWeightValue?: typeof stepWeightValue;
     stepRepsValue?: typeof stepRepsValue;
     shouldLockExerciseOnSetDone?: typeof shouldLockExerciseOnSetDone;
+    ARRIVAL_LOCKER_CHECKLIST_ITEMS?: typeof ARRIVAL_LOCKER_CHECKLIST_ITEMS;
+    MIN_WCAG_TOUCH_TARGET_PX?: number;
+    WCAG_CHRONOLOGICAL_PALETTE?: typeof WCAG_CHRONOLOGICAL_PALETTE;
+    resolveExerciseSpecificGear?: typeof resolveExerciseSpecificGear;
+    shouldShowPullupsInActiveDay?: typeof shouldShowPullupsInActiveDay;
+    toggleChecklistKey?: typeof toggleChecklistKey;
+    verifyChronologicalWcagContrast?: typeof verifyChronologicalWcagContrast;
   }
 }
 
@@ -2005,5 +2021,12 @@ if (typeof window !== 'undefined') {
   window.stepWeightValue = stepWeightValue;
   window.stepRepsValue = stepRepsValue;
   window.shouldLockExerciseOnSetDone = shouldLockExerciseOnSetDone;
+  window.ARRIVAL_LOCKER_CHECKLIST_ITEMS = ARRIVAL_LOCKER_CHECKLIST_ITEMS;
+  window.MIN_WCAG_TOUCH_TARGET_PX = MIN_WCAG_TOUCH_TARGET_PX;
+  window.WCAG_CHRONOLOGICAL_PALETTE = WCAG_CHRONOLOGICAL_PALETTE;
+  window.resolveExerciseSpecificGear = resolveExerciseSpecificGear;
+  window.shouldShowPullupsInActiveDay = shouldShowPullupsInActiveDay;
+  window.toggleChecklistKey = toggleChecklistKey;
+  window.verifyChronologicalWcagContrast = verifyChronologicalWcagContrast;
   window.dispatchEvent(new CustomEvent('d3-onerm-bridge-ready'));
 }

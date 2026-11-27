@@ -1264,4 +1264,139 @@ html.light-theme .reps-btn-neutral-gray:hover {
   color: #FFFFFF !important;
 }
 
+/* ============================================================================
+ * 14. Chronological Workout Architecture & WCAG 2.2 AA Contrast + 44x44px Targets
+ * - Rest Day Button: light warm yellow (#FEF08A) on dark surface (#1E1E1E) >= 14:1
+ * - Reset Workout Button: light rose-red (#FECDD3) on dark burgundy (#2A1215) >= 11:1
+ * - Progress Text: light green (#86EFAC / #BBF7D0) on dark navy (#0F172A) >= 12:1
+ * - All buttons >= 44x44px minimum touch target in both Dark & Light Mode
+ * ============================================================================ */
+.wcag-rest-day-btn {
+  min-height: 48px !important;
+  min-width: 44px !important;
+  background-color: #1E1E1E !important;
+  color: #FEF08A !important;
+  border: 2px solid #FDE047 !important;
+}
+.wcag-rest-day-btn:hover {
+  background-color: #292524 !important;
+  color: #FEF9C3 !important;
+}
+html[data-theme="light"] .wcag-rest-day-btn,
+html.light-theme .wcag-rest-day-btn {
+  background-color: #FEF9C3 !important;
+  color: #713F12 !important;
+  border: 2px solid #CA8A04 !important;
+}
+html[data-theme="light"] .wcag-rest-day-btn:hover,
+html.light-theme .wcag-rest-day-btn:hover {
+  background-color: #FEF08A !important;
+  color: #422006 !important;
+}
+
+.wcag-reset-workout-btn {
+  min-height: 48px !important;
+  min-width: 44px !important;
+  background-color: #2A1215 !important;
+  color: #FECDD3 !important;
+  border: 2px solid #FDA4AF !important;
+}
+.wcag-reset-workout-btn:hover {
+  background-color: #3F151B !important;
+  color: #FFE4E6 !important;
+}
+html[data-theme="light"] .wcag-reset-workout-btn,
+html.light-theme .wcag-reset-workout-btn {
+  background-color: #FFF1F2 !important;
+  color: #9F1239 !important;
+  border: 2px solid #E11D48 !important;
+}
+html[data-theme="light"] .wcag-reset-workout-btn:hover,
+html.light-theme .wcag-reset-workout-btn:hover {
+  background-color: #FFE4E6 !important;
+  color: #881337 !important;
+}
+
+.wcag-day-progress-text {
+  color: #86EFAC !important;
+}
+.wcag-day-progress-text strong {
+  color: #F8FAFC !important;
+}
+.wcag-day-progress-pct {
+  color: #BBF7D0 !important;
+}
+html[data-theme="light"] .wcag-day-progress-text,
+html.light-theme .wcag-day-progress-text {
+  color: #065F46 !important;
+}
+html[data-theme="light"] .wcag-day-progress-text strong,
+html.light-theme .wcag-day-progress-text strong {
+  color: #0E1A40 !important;
+}
+html[data-theme="light"] .wcag-day-progress-pct,
+html.light-theme .wcag-day-progress-pct {
+  color: #047857 !important;
+}
+
+.wcag-micro-start-adjacent-btn,
+html[data-theme="light"] .wcag-micro-start-adjacent-btn,
+html.light-theme .wcag-micro-start-adjacent-btn {
+  min-height: 48px !important;
+  min-width: 44px !important;
+  background-color: #166534 !important;
+  color: #FFFFFF !important;
+  border: 2px solid #86EFAC !important;
+}
+.wcag-micro-start-adjacent-btn:hover,
+html[data-theme="light"] .wcag-micro-start-adjacent-btn:hover,
+html.light-theme .wcag-micro-start-adjacent-btn:hover {
+  background-color: #15803D !important;
+  color: #FFFFFF !important;
+}
+
+.active-day-workout-container {
+  border: 2px solid rgba(56, 189, 248, 0.35);
+  background: rgba(15, 23, 42, 0.72);
+  border-radius: 1.25rem;
+  padding: 0.75rem;
+}
+html[data-theme="light"] .active-day-workout-container,
+html.light-theme .active-day-workout-container {
+  border: 2px solid #0284C7 !important;
+  background: #F1F5F9 !important;
+}
+
+.exercise-gear-chip,
+.arrival-locker-chip {
+  min-height: 44px !important;
+  min-width: 44px !important;
+  background-color: #1E293B !important;
+  color: #F8FAFC !important;
+  border: 1.5px solid #64748B !important;
+}
+.exercise-gear-chip[aria-pressed="true"],
+.arrival-locker-chip[aria-pressed="true"] {
+  background-color: #86EFAC !important;
+  color: #052E16 !important;
+  border: 1.5px solid #4ADE80 !important;
+}
+html[data-theme="light"] .exercise-gear-chip,
+html.light-theme .exercise-gear-chip,
+html[data-theme="light"] .arrival-locker-chip,
+html.light-theme .arrival-locker-chip {
+  background-color: #F8FAFC !important;
+  color: #0E1A40 !important;
+  border: 1.5px solid #64748B !important;
+}
+html[data-theme="light"] .exercise-gear-chip[aria-pressed="true"],
+html.light-theme .exercise-gear-chip[aria-pressed="true"],
+html[data-theme="light"] .arrival-locker-chip[aria-pressed="true"],
+html.light-theme .arrival-locker-chip[aria-pressed="true"] {
+  background-color: #BBF7D0 !important;
+  color: #052E16 !important;
+  border: 1.5px solid #15803D !important;
+}
+
+
 

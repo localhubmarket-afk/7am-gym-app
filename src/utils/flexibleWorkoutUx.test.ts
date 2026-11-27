@@ -183,18 +183,20 @@ describe('Global Per-Set Overrides & Non-Locking Behavior (Standard Lifts & Pull
 });
 
 describe('DOM Placement & Inline Control Structure Verification in index.html', () => {
-  it('places workout-resume-banner and micro-start-slot directly below day-banner and embeds inline Add/Remove Set controls', () => {
+  it('places micro-start-slot in Phase 1 adjacent to Rest Day before Warm-Up, keeps workout-resume-banner below day-banner, and embeds inline Add/Remove Set controls', () => {
     const html = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf8');
+    const phase1Pos = html.indexOf('id="day-management-interception-panel"');
+    const restSlotPos = html.indexOf('id="gym-zone-b-rest-slot"');
+    const microStartPos = html.indexOf('id="micro-start-slot"');
+    const warmupPos = html.indexOf('id="warmup-card-container"');
     const dayBannerPos = html.indexOf('id="day-banner"');
     const resumeBannerPos = html.indexOf('id="workout-resume-banner"');
-    const microStartPos = html.indexOf('id="micro-start-slot"');
-    const zoneBPos = html.indexOf('id="gym-zone-b-setup-slot"');
 
-    assert.ok(dayBannerPos > 0, 'day-banner must exist');
-    assert.ok(resumeBannerPos > dayBannerPos, 'workout-resume-banner must be placed below day-banner');
-    assert.ok(microStartPos > dayBannerPos, 'micro-start-slot must be placed below day-banner');
-    assert.ok(resumeBannerPos < zoneBPos, 'workout-resume-banner must be directly below day-banner before setup cards');
-    assert.ok(microStartPos < zoneBPos, 'micro-start-slot must be directly below day-banner before setup cards');
+    assert.ok(phase1Pos > 0, 'day-management-interception-panel must exist');
+    assert.ok(restSlotPos > phase1Pos && microStartPos > restSlotPos, 'micro-start-slot must sit adjacent to Rest Day in Phase 1');
+    assert.ok(microStartPos < warmupPos, 'Phase 1 micro-start-slot must appear before Warm-Up');
+    assert.ok(dayBannerPos > warmupPos, 'day-banner must appear after Warm-Up');
+    assert.ok(resumeBannerPos > dayBannerPos, 'workout-resume-banner must stay directly below day-banner');
 
     // Verify high-contrast color-grouped stepper classes and inline set override controls exist
     assert.equal(html.includes('weight-stepper-deep-blue'), true);
