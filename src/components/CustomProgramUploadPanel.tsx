@@ -164,7 +164,7 @@ export const CustomProgramUploadPanel: React.FC<CustomProgramUploadPanelProps> =
           value={pastedText}
           onChange={(e) => setPastedText(e.target.value)}
           placeholder={SAMPLE_PASTE_PLACEHOLDER}
-          className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-medium text-white placeholder-slate-400 focus:outline-none focus:border-emerald-400"
+          className="w-full rounded-xl border border-slate-600 bg-slate-900 px-3 py-2 text-base font-medium text-white placeholder-slate-300 focus:outline-none focus:border-emerald-400"
         />
       </div>
 

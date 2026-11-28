@@ -45,19 +45,20 @@
   </script>
   <style>
     :root {
-      --app-font-family: 'Lexend', 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
+      --app-font-family: 'Atkinson Hyperlegible', 'Lexend', system-ui, -apple-system, sans-serif;
       --app-line-height: 1.5;
       --bg-canvas: #141414;
       --bg-surface: #1E1E1E;
       --bg-surface-alt: #262626;
       --text-primary: #F8F6F5;
-      --text-secondary: #D8D8DE;
-      --border-subtle: #3D3D3D;
-      --border-strong: #767676;
+      --text-secondary: #E2E8F0;
+      --border-subtle: #7C8798;
+      --border-strong: #94A3B8;
       --accent-primary: #10B981;
       --accent-on-primary: #0E1A40;
       --touch-target-min: 48px;
       --touch-target-gap: 0.5rem;
+      --sticky-header-height: 8.25rem;
     }
     html[data-theme="dark"],
     html.dark {
@@ -65,9 +66,9 @@
       --bg-surface: #1E1E1E;
       --bg-surface-alt: #262626;
       --text-primary: #F8F6F5;
-      --text-secondary: #D8D8DE;
-      --border-subtle: #3D3D3D;
-      --border-strong: #767676;
+      --text-secondary: #E2E8F0;
+      --border-subtle: #7C8798;
+      --border-strong: #94A3B8;
     }
     html[data-theme="light"],
     html.light-theme {
@@ -76,12 +77,12 @@
       --bg-surface-alt: #EAECEF;
       --text-primary: #0E1A40;
       --text-secondary: #1E293B;
-      --border-subtle: #CBD5E1;
-      --border-strong: #475569;
+      --border-subtle: #64748B;
+      --border-strong: #334155;
     }
     html[data-font-mode="opendyslexic"],
     html.font-opendyslexic {
-      --app-font-family: 'OpenDyslexic', 'OpenDyslexic3', 'Lexend', 'Atkinson Hyperlegible', sans-serif;
+      --app-font-family: 'OpenDyslexic', 'OpenDyslexic3', 'Atkinson Hyperlegible', 'Lexend', sans-serif;
     }
     html {
       font-size: 100%;
@@ -89,6 +90,8 @@
       text-size-adjust: 100%;
       overflow-x: clip;
       max-width: 100vw;
+      scroll-padding-top: calc(var(--sticky-header-height, 8.25rem) + 4.25rem);
+      scroll-padding-bottom: 7.25rem;
     }
     html, body {
       font-family: var(--app-font-family) !important;
@@ -277,7 +280,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.375rem;
+      gap: 0.5rem;
       background: var(--bg-surface-alt);
       border-radius: 0.75rem;
       padding: 0.25rem;
@@ -450,8 +453,15 @@
       accent-color: #10b981;
     }
     :focus-visible {
-      outline: 3px solid #38bdf8;
-      outline-offset: 2px;
+      outline: 3px solid #FACC15 !important;
+      outline-offset: 2px !important;
+      box-shadow: 0 0 0 2px #0A0A0A, 0 0 0 5px #FACC15 !important;
+    }
+    html[data-theme="light"] :focus-visible,
+    html.light-theme :focus-visible {
+      outline: 3px solid #0E1A40 !important;
+      outline-offset: 2px !important;
+      box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 5px #0E1A40 !important;
     }
 
     /* High-Contrast Off-White Paper Light Mode (#F7F7F7 background / #0E1A40 navy ink => strictly 15.8:1) */
@@ -562,8 +572,10 @@
     html.light-theme .border-slate-800\/90,
     html[data-theme="light"] .border-slate-800\/90,
     html.light-theme .border-slate-700,
-    html[data-theme="light"] .border-slate-700 {
-      border-color: #94A3B8 !important;
+    html[data-theme="light"] .border-slate-700,
+    html.light-theme .border-slate-600,
+    html[data-theme="light"] .border-slate-600 {
+      border-color: #64748B !important;
     }
     html.light-theme .text-white,
     html[data-theme="light"] .text-white,
@@ -829,19 +841,83 @@
       border: 2px solid #86EFAC !important;
     }
     .active-day-workout-container {
-      border: 2px solid rgba(56, 189, 248, 0.35);
-      background: rgba(15, 23, 42, 0.72);
+      border: 2px solid #38BDF8;
+      background: rgba(15, 23, 42, 0.82);
       border-radius: 1.25rem;
       padding: 0.75rem;
     }
     .exercise-gear-chip,
     .arrival-locker-chip {
-      min-height: 44px !important;
-      min-width: 44px !important;
+      min-height: 48px !important;
+      min-width: 48px !important;
+    }
+    body,
+    p:not(#header-subtitle),
+    li,
+    input,
+    select,
+    textarea {
+      font-size: 1rem;
+      line-height: 1.5 !important;
+    }
+    html[data-theme="dark"] .border-slate-800,
+    html.dark .border-slate-800,
+    html[data-theme="dark"] .border-slate-800\/90,
+    html.dark .border-slate-800\/90,
+    html[data-theme="dark"] .border-slate-700,
+    html.dark .border-slate-700 {
+      border-color: #7C8798 !important;
+    }
+    #day-selector-grid,
+    #vegan-day-selector-grid,
+    #pullups-day-selector-grid {
+      display: grid !important;
+      grid-template-columns: repeat(4, minmax(44px, 1fr)) !important;
+      gap: 0.5rem !important;
+    }
+    @media (min-width: 640px) {
+      #day-selector-grid,
+      #vegan-day-selector-grid,
+      #pullups-day-selector-grid {
+        grid-template-columns: repeat(7, minmax(44px, 1fr)) !important;
+        gap: 0.5rem !important;
+      }
+    }
+    .sticky-active-day-hud {
+      position: sticky;
+      top: var(--sticky-header-height, 8.25rem);
+      z-index: 35;
+      background-color: rgba(20, 20, 20, 0.96);
+      backdrop-filter: blur(8px);
+      border: 2px solid #38BDF8;
+      border-radius: 1rem;
+      padding: 0.5rem 0.75rem;
+    }
+    .skip-to-workout-link {
+      position: fixed;
+      top: -12rem;
+      left: 0.75rem;
+      z-index: 120;
+      min-height: 48px;
+      min-width: 48px;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.75rem;
+      background-color: #FACC15 !important;
+      color: #0E1A40 !important;
+      border: 2px solid #0E1A40 !important;
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.5;
+      text-decoration: none;
+    }
+    .skip-to-workout-link:focus,
+    .skip-to-workout-link:focus-visible {
+      top: 0.75rem;
     }
   </style>
 </head>
 <body class="bg-[#0f172a] text-[#f8fafc] min-h-screen pb-28 overflow-x-hidden w-full max-w-full selection:bg-emerald-600 selection:text-[#ecfdf5]">
+  <a href="#active-day-workout-container" class="skip-to-workout-link">Skip to Today&apos;s Workout</a>
 
   <!-- Sticky Top App Header & Always-Visible Pinned Rest Timer HUD -->
   <header id="main-sticky-header" role="banner" aria-label="Budget Gym application header and pinned rest timer" class="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/90 shadow-xl shadow-slate-950/80" style="position: fixed; top: 0; left: 0; right: 0; z-index: 50;">
@@ -857,7 +933,7 @@
           </div>
         </div>
 
-        <nav aria-label="Primary header actions" class="flex flex-wrap items-center gap-1.5">
+        <nav aria-label="Primary header actions" class="flex flex-wrap items-center gap-2">
           <!-- Secondary Nutrition Menu (Fuel & Shop separated from primary workout bar) -->
           <div id="header-nutrition-menu-wrap" class="relative">
             <button
@@ -868,7 +944,7 @@
               aria-expanded="false"
               aria-controls="header-nutrition-dropdown"
               aria-label="Open Nutrition menu for Fuel meal plan and Shop grocery list"
-              class="flex items-center justify-center gap-1 min-h-[44px] bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/50 text-emerald-200 px-2 py-1.5 rounded-xl text-[0.75rem] font-extrabold transition whitespace-nowrap"
+              class="flex items-center justify-center gap-1.5 min-h-[48px] min-w-[48px] bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/60 text-emerald-200 px-2.5 py-1.5 rounded-xl text-[0.75rem] font-extrabold transition whitespace-nowrap"
               title="Nutrition: Fuel (Meals) &amp; Shop (Groceries)"
             >
               <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
@@ -1014,8 +1090,9 @@
       <button
         type="button"
         id="sync-undo-toast-btn"
-        class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition hover:opacity-90"
-        style="background-color: #0ea5e9; color: #0f172a; min-height: 36px;"
+        aria-label="Undo week overwrite"
+        class="px-3.5 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap transition hover:opacity-90"
+        style="background-color: #0ea5e9; color: #0f172a; min-height: 48px; min-width: 48px;"
       >
         ↩️ UNDO
       </button>
@@ -1034,14 +1111,14 @@
           <p id="forgotten-set-reminder-subtitle" class="text-[0.6875rem] font-semibold text-amber-200 mt-0.5 leading-snug">You have 1 unlogged set(s) left today.</p>
         </div>
       </div>
-      <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
-        <button type="button" id="forgotten-set-log-finish-btn" class="flex-1 min-w-[140px] py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-md transition">
+      <div class="flex flex-wrap items-center gap-2 pt-0.5">
+        <button type="button" id="forgotten-set-log-finish-btn" class="flex-1 min-w-[140px] min-h-[48px] py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-md transition">
           Yes, Log Set &amp; Finish
         </button>
-        <button type="button" id="forgotten-set-snooze-btn" class="py-2 px-2.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 text-xs font-extrabold transition">
+        <button type="button" id="forgotten-set-snooze-btn" class="min-h-[48px] py-2 px-2.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 text-xs font-extrabold transition">
           Still Lifting (+5m Snooze)
         </button>
-        <button type="button" id="forgotten-set-dismiss-btn" class="py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold transition">
+        <button type="button" id="forgotten-set-dismiss-btn" class="min-h-[48px] py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold transition">
           Dismiss
         </button>
       </div>
@@ -1074,12 +1151,12 @@
         </div>
 
         <!-- ZONE A: Symmetrical 3-Column Admin & Settings Row (Directly under Week Tabs) -->
-        <div id="gym-zone-a-admin-row" class="grid grid-cols-3 gap-1.5" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;">
+        <div id="gym-zone-a-admin-row" class="grid grid-cols-3 gap-2" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
           <button
             type="button"
             id="zone-a-week-schedule-btn"
-            style="min-height: 38px; border-color: #334155; letter-spacing: 0;"
-            class="px-1 py-1.5 rounded-xl bg-[#0f172a] hover:bg-slate-800 border text-amber-200 text-[0.625rem] sm:text-[0.6875rem] font-bold whitespace-nowrap transition inline-flex items-center justify-center text-center overflow-hidden"
+            style="min-height: 48px; min-width: 44px; border-color: #7C8798; letter-spacing: 0;"
+            class="px-2 py-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border text-amber-200 text-[0.75rem] font-bold transition inline-flex items-center justify-center text-center"
             title="Change Rest Days or Finish Week"
           >
             📅 Week Schedule
@@ -1087,8 +1164,8 @@
           <button
             type="button"
             id="zone-a-sync-settings-btn"
-            style="min-height: 38px; border-color: #334155; letter-spacing: 0;"
-            class="px-1 py-1.5 rounded-xl bg-[#0f172a] hover:bg-slate-800 border text-sky-200 text-[0.625rem] sm:text-[0.6875rem] font-bold whitespace-nowrap transition inline-flex items-center justify-center text-center overflow-hidden"
+            style="min-height: 48px; min-width: 44px; border-color: #7C8798; letter-spacing: 0;"
+            class="px-2 py-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border text-sky-200 text-[0.75rem] font-bold transition inline-flex items-center justify-center text-center"
             title="Program Setup Wizard, Week Plan and Display Settings"
           >
             ⚙️ Settings &amp; Plan
@@ -1096,16 +1173,16 @@
           <button
             type="button"
             id="gym-open-dashboard-pill-btn"
-            style="min-height: 38px; border-color: #334155; letter-spacing: 0;"
-            class="px-1 py-1.5 rounded-xl bg-[#0f172a] hover:bg-slate-800 border text-emerald-200 text-[0.625rem] sm:text-[0.6875rem] font-bold whitespace-nowrap transition inline-flex items-center justify-center text-center overflow-hidden"
+            style="min-height: 48px; min-width: 44px; border-color: #7C8798; letter-spacing: 0;"
+            class="px-2 py-2 rounded-xl bg-[#0f172a] hover:bg-slate-800 border text-emerald-200 text-[0.75rem] font-bold transition inline-flex items-center justify-center text-center"
             title="Open Progress &amp; Analytics Dashboard"
           >
             📊 Stats &amp; Dashboard
           </button>
         </div>
 
-        <!-- Row 3: The 7 aligned day buttons (DAY 1 to DAY 7) -->
-        <div class="grid grid-cols-7 gap-1.5" id="day-selector-grid">
+        <!-- Row 3: Responsive Day Buttons (4 cols on mobile 390px, 7 cols on >=640px, >=8px gap) -->
+        <div class="grid grid-cols-4 sm:grid-cols-7 gap-2" id="day-selector-grid">
           <!-- Populated dynamically by JS -->
         </div>
       </div>
@@ -1166,7 +1243,7 @@
               </div>
               <div id="warmup-timer-display" data-testid="warmup-timer-display" class="text-2xl font-mono font-extrabold tabular-nums text-white leading-tight mt-0.5">10:00</div>
             </div>
-            <div class="flex items-center gap-1.5 shrink-0">
+            <div class="flex items-center gap-2 shrink-0">
               <button type="button" id="warmup-timer-toggle-btn" data-testid="warmup-timer-toggle-btn" class="min-h-[48px] min-w-[84px] px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold transition whitespace-nowrap">
                 Start
               </button>
@@ -1247,6 +1324,11 @@
         <!-- Active Day Header & Light-Green High-Contrast Progress Bar -->
         <div id="day-banner" class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
           <!-- Populated by JS -->
+        </div>
+
+        <!-- Sticky Active-Day & One-Tap Day-Management Bar (Stays Accessible While Scrolling Through Phase 3) -->
+        <div id="sticky-active-day-hud" data-testid="sticky-active-day-hud" role="region" aria-label="Active workout progress and quick controls" class="sticky-active-day-hud">
+          <!-- Populated dynamically by JS -->
         </div>
 
         <!-- Contextual Resume Banner: Directly below Day Header and rendered ONLY when needed -->
@@ -1330,15 +1412,15 @@
 
             <!-- Synced View Mode + Rules Row -->
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <div class="inline-flex items-center bg-slate-950 border border-slate-800 rounded-xl p-0.5" role="group" aria-label="Pull-Ups View Mode">
-                <button type="button" id="pullups-view-mode-selected-btn" class="min-h-[48px] min-w-[44px] px-2.5 py-1 rounded-lg text-xs font-extrabold bg-sky-400 text-slate-950 transition whitespace-nowrap">
+              <div class="inline-flex items-center gap-2 bg-slate-950 border border-slate-700 rounded-xl p-1" role="group" aria-label="Pull-Ups View Mode">
+                <button type="button" id="pullups-view-mode-selected-btn" class="min-h-[48px] min-w-[44px] px-3 py-1.5 rounded-lg text-xs font-extrabold bg-sky-400 text-slate-950 transition whitespace-nowrap">
                   Today&apos;s Pull-Ups
                 </button>
-                <button type="button" id="pullups-view-mode-all-btn" class="min-h-[48px] min-w-[44px] px-2.5 py-1 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition whitespace-nowrap">
+                <button type="button" id="pullups-view-mode-all-btn" class="min-h-[48px] min-w-[44px] px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition whitespace-nowrap">
                   All 5 Days
                 </button>
               </div>
-              <div class="flex items-center gap-1.5">
+              <div class="flex items-center gap-2">
                 <a href="https://youtu.be/w_yuTRQd6HA" target="_blank" rel="noopener noreferrer" class="min-h-[48px] min-w-[44px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-extrabold px-2.5 py-1.5 rounded-xl transition inline-flex items-center justify-center whitespace-nowrap">
                   Form Video
                 </a>
@@ -1612,7 +1694,7 @@
                 aria-label="Rest Timer Chime Volume Percentage"
                 class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-400"
               />
-              <span id="timer-volume-readout" class="text-xs font-mono font-extrabold text-emerald-300 min-w-[38px] text-right shrink-0">
+              <span id="timer-volume-readout" class="text-xs font-mono font-extrabold text-emerald-300 min-w-[3rem] text-right shrink-0">
                 55%
               </span>
             </div>
@@ -1624,7 +1706,7 @@
           <summary class="cursor-pointer flex items-center justify-between text-sm font-bold text-emerald-400 hover:text-emerald-300 select-none">
             <span class="whitespace-nowrap">Pull-Up Pyramid Rest Helper (10s × Reps) ▼</span>
           </summary>
-          <div class="grid grid-cols-4 gap-1.5 pt-2.5">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2.5">
             <button type="button" data-timer-sec="10" class="timer-preset-btn px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700 whitespace-nowrap">1 Rep (10s)</button>
             <button type="button" data-timer-sec="20" class="timer-preset-btn px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700 whitespace-nowrap">2 Reps (20s)</button>
             <button type="button" data-timer-sec="30" class="timer-preset-btn px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-xs font-semibold text-slate-200 border border-slate-700 whitespace-nowrap">3 Reps (30s)</button>
@@ -1682,7 +1764,7 @@
             <span id="vegan-day-status-pill" class="text-[0.625rem] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 whitespace-nowrap">0/4 Fuel Today</span>
           </div>
         </div>
-        <div class="grid grid-cols-7 gap-1.5" id="vegan-day-selector-grid">
+        <div class="grid grid-cols-4 sm:grid-cols-7 gap-2" id="vegan-day-selector-grid">
           <!-- Populated dynamically by JS -->
         </div>
       </div>
@@ -1691,18 +1773,18 @@
       <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-3">
         <!-- Row 1: Title "Daily Food & Water" on left + "Log All 4 Meals" & "Reset Fuel" buttons on right -->
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="min-w-0 flex items-center gap-1.5">
+          <div class="min-w-0 flex items-center gap-2">
             <h2 id="vegan-main-plan-heading" class="text-base sm:text-lg font-extrabold text-white tracking-tight leading-snug whitespace-nowrap">Daily Food &amp; Water</h2>
             <span id="vegan-logged-with-plan-badge" class="hidden text-[0.625rem] font-extrabold px-2 py-0.5 rounded-full bg-purple-950/85 text-purple-200 border border-purple-400/50"></span>
           </div>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <button type="button" id="open-nutrition-ocr-btn" class="text-xs font-extrabold px-2.5 py-1.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/60 text-sky-200 transition whitespace-nowrap" title="Scan a food nutrition facts label with your camera">
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <button type="button" id="open-nutrition-ocr-btn" class="min-h-[48px] text-xs font-extrabold px-2.5 py-1.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/60 text-sky-200 transition whitespace-nowrap" title="Scan a food nutrition facts label with your camera">
               📷 Scan Label
             </button>
-            <button type="button" id="reset-fuel-day-btn" class="text-xs font-extrabold px-2.5 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/60 text-rose-200 transition whitespace-nowrap" title="Reset meal prep and fuel logs for today only">
+            <button type="button" id="reset-fuel-day-btn" class="min-h-[48px] text-xs font-extrabold px-2.5 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/60 text-rose-200 transition whitespace-nowrap" title="Reset meal prep and fuel logs for today only">
               ↺ Reset Fuel
             </button>
-            <button type="button" id="log-all-vegan-day-btn" class="text-xs font-extrabold px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition whitespace-nowrap shadow-sm">
+            <button type="button" id="log-all-vegan-day-btn" class="min-h-[48px] text-xs font-extrabold px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition whitespace-nowrap shadow-sm">
               ✓ Log All 4 Meals
             </button>
           </div>
@@ -1710,13 +1792,13 @@
 
         <!-- Row 2: Subtitle "1,325 kcal • 139g Protein (173cm • 69kg)" on left + G | LB unit switch & Recipes & Prep button on right -->
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <p id="vegan-main-plan-subtitle" class="text-xs font-semibold text-slate-300 whitespace-nowrap">1,325 kcal • 139g Protein (173cm • 69kg)</p>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <div class="inline-flex items-center rounded-lg bg-slate-950 border border-sky-500/40 p-0.5" role="group" aria-label="Kitchen Scale Weight Unit Toggle">
-              <button type="button" id="fuel-unit-g-btn" data-fuel-unit="g" class="px-2.5 py-1 rounded-md text-[0.625rem] font-extrabold bg-sky-400 text-slate-950 transition">G</button>
-              <button type="button" id="fuel-unit-lb-btn" data-fuel-unit="lb" class="px-2.5 py-1 rounded-md text-[0.625rem] font-extrabold text-sky-300 hover:text-white transition">LB</button>
+          <p id="vegan-main-plan-subtitle" class="text-xs font-semibold text-slate-300">1,325 kcal • 139g Protein (173cm • 69kg)</p>
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <div class="inline-flex items-center gap-2 rounded-lg bg-slate-950 border border-sky-500/40 p-1" role="group" aria-label="Kitchen Scale Weight Unit Toggle">
+              <button type="button" id="fuel-unit-g-btn" data-fuel-unit="g" aria-label="Show food weights in grams" class="min-h-[44px] min-w-[44px] px-2.5 py-1 rounded-md text-xs font-extrabold bg-sky-400 text-slate-950 transition">G</button>
+              <button type="button" id="fuel-unit-lb-btn" data-fuel-unit="lb" aria-label="Show food weights in pounds" class="min-h-[44px] min-w-[44px] px-2.5 py-1 rounded-md text-xs font-extrabold text-sky-300 hover:text-white transition">LB</button>
             </div>
-            <button type="button" id="toggle-all-fuel-recipes-btn" class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 transition whitespace-nowrap">
+            <button type="button" id="toggle-all-fuel-recipes-btn" class="min-h-[48px] text-xs font-extrabold px-2.5 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 transition whitespace-nowrap">
               Recipes &amp; Prep
             </button>
           </div>
@@ -1951,15 +2033,15 @@
           <div id="shopping-progress-bar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 0%"></div>
         </div>
 
-        <!-- Aligned 3-Button Action Row (grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.35fr) minmax(0, 0.85fr); gap: 6px;) -->
-        <div class="grid pt-0.5" style="grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.35fr) minmax(0, 0.85fr); gap: 6px;">
-          <button type="button" id="copy-shopping-list-btn" class="min-h-[48px] min-w-[44px] py-2 px-1 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[0.6563rem] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center">
+        <!-- Aligned 3-Button Action Row (gap: 8px; >=48px targets) -->
+        <div class="grid pt-0.5" style="grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+          <button type="button" id="copy-shopping-list-btn" class="min-h-[48px] min-w-[44px] py-2 px-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold transition inline-flex items-center justify-center text-center">
             Copy Unchecked
           </button>
-          <button type="button" id="check-pantry-staples-btn" class="min-h-[48px] min-w-[44px] py-2 px-1 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-[0.6563rem] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Check off long-lasting pantry bottles/bags and bulk supplements you already have at home">
+          <button type="button" id="check-pantry-staples-btn" class="min-h-[48px] min-w-[44px] py-2 px-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-extrabold transition inline-flex items-center justify-center text-center" title="Check off long-lasting pantry bottles/bags and bulk supplements you already have at home">
             Check Pantry Staples
           </button>
-          <button type="button" id="reset-shopping-list-btn" class="min-h-[48px] min-w-[44px] py-2 px-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[0.6563rem] font-bold whitespace-nowrap transition inline-flex items-center justify-center text-center">
+          <button type="button" id="reset-shopping-list-btn" class="min-h-[48px] min-w-[44px] py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold transition inline-flex items-center justify-center text-center">
             Uncheck All
           </button>
         </div>
@@ -1967,7 +2049,7 @@
 
       <!-- Add Custom Weekly Item -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex items-center gap-2">
-        <input id="custom-shop-input" name="gym_nonauth_custom_shop_item" type="text" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Add custom item (e.g., Cinnamon, Berries)..." class="flex-1 min-w-0 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+        <input id="custom-shop-input" name="gym_nonauth_custom_shop_item" type="text" aria-label="Add custom grocery item" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Add custom item (e.g., Cinnamon, Berries)..." class="flex-1 min-w-0 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-300 focus:outline-none focus:border-emerald-500" />
         <button type="button" id="add-custom-shop-btn" class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold shrink-0 transition">
           + Add
         </button>
@@ -2041,14 +2123,14 @@
   </nav>
 
   <!-- Database & Permanent Save Modal -->
-  <div id="db-sync-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+  <div id="db-sync-modal" role="dialog" aria-modal="true" aria-labelledby="db-sync-modal-title" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl my-8">
       <div class="flex items-start justify-between gap-2">
         <div>
           <span class="text-[0.625rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Why Canvas Resets &amp; How to Save Permanently</span>
-          <h3 class="text-base font-extrabold text-white mt-1">Database &amp; Permanent Storage</h3>
+          <h3 id="db-sync-modal-title" class="text-base font-extrabold text-white mt-1">Database &amp; Permanent Storage</h3>
         </div>
-        <button id="close-db-modal-btn" type="button" class="text-slate-400 hover:text-white text-sm font-bold px-2 py-1">✕</button>
+        <button id="close-db-modal-btn" type="button" aria-label="Close storage settings modal" class="min-h-[48px] min-w-[48px] rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-sm font-bold px-2.5 py-1">✕</button>
       </div>
 
       <p class="text-xs text-slate-300 leading-relaxed">
@@ -2080,14 +2162,14 @@
         <button id="copy-supabase-sql-btn" type="button" class="w-full py-2 px-3 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-xs font-extrabold transition">
            Copy 1-Line Supabase SQL Table Setup
         </button>
-        <div class="flex gap-1.5 pt-1">
-          <input id="cloud-db-url-input" type="url" placeholder="Optional custom DB URL (or leave blank on Vercel)" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500" />
+        <div class="flex gap-2 pt-1">
+          <input id="cloud-db-url-input" type="url" aria-label="Optional custom cloud sync URL" placeholder="Optional custom DB URL (or leave blank on Vercel)" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-300 focus:outline-none focus:border-sky-500" />
           <button id="save-cloud-db-btn" type="button" class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-extrabold transition">
             Connect
           </button>
         </div>
         <div class="flex items-center justify-between pt-1">
-          <button id="copy-gas-script-btn" type="button" class="text-[0.6875rem] text-slate-400 hover:text-slate-200 underline font-semibold">
+          <button id="copy-gas-script-btn" type="button" class="text-[0.6875rem] text-slate-300 hover:text-slate-100 underline font-semibold">
              Copy Free 12-Line Google Sheet DB Script
           </button>
           <span id="auto-sync-status-label" class="text-[0.6875rem] text-emerald-400 font-bold">
@@ -2099,8 +2181,8 @@
       <!-- Option 3: Quick Backup / Restore Code -->
       <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3.5 space-y-2">
         <span class="text-xs font-extrabold text-amber-400">3. Instant Backup Code (Copy / Paste)</span>
-        <div class="flex gap-1.5">
-          <input id="backup-code-input" name="gym_nonauth_backup_restore" type="text" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Paste backup text here to restore..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+        <div class="flex gap-2">
+          <input id="backup-code-input" name="gym_nonauth_backup_restore" type="text" aria-label="Paste backup code to restore" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Paste backup text here to restore..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-300 focus:outline-none focus:border-amber-500" />
           <button id="restore-code-btn" type="button" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition">
             Restore
           </button>
@@ -7127,11 +7209,52 @@
       const h = headerEl.offsetHeight;
       if (h > 0) {
         mainContainer.style.paddingTop = (h + 10) + 'px';
+        document.documentElement.style.setProperty('--sticky-header-height', (h + 6) + 'px');
+      }
+    }
+
+    // WCAG 2.4.11 Focus Not Obscured (Minimum): Ensure keyboard-focused controls are never hidden behind sticky headers or bottom navigation
+    function ensureFocusedElementNotObscured(targetEl) {
+      if (!targetEl || typeof targetEl.getBoundingClientRect !== 'function') return;
+      if (targetEl.closest('#main-sticky-header') || targetEl.closest('nav[aria-label="Bottom app navigation"]') || targetEl.closest('[role="dialog"]') || targetEl.closest('[role="alertdialog"]')) {
+        return;
+      }
+      const rect = targetEl.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) return;
+      const headerEl = document.getElementById('main-sticky-header');
+      const stickyHudEl = document.getElementById('sticky-active-day-hud');
+      const bottomNavEl = document.querySelector('nav[aria-label="Bottom app navigation"]');
+      let topSafeBoundary = (headerEl ? headerEl.offsetHeight : 120) + 12;
+      if (stickyHudEl && !stickyHudEl.contains(targetEl) && stickyHudEl.offsetParent !== null) {
+        const hudRect = stickyHudEl.getBoundingClientRect();
+        if (hudRect.bottom > topSafeBoundary && hudRect.top <= topSafeBoundary + 8) {
+          topSafeBoundary = hudRect.bottom + 10;
+        }
+      }
+      const bottomSafeBoundary = window.innerHeight - ((bottomNavEl ? bottomNavEl.offsetHeight : 76) + 12);
+      if (rect.top < topSafeBoundary) {
+        window.scrollBy({ top: rect.top - topSafeBoundary, behavior: 'auto' });
+      } else if (rect.bottom > bottomSafeBoundary) {
+        window.scrollBy({ top: rect.bottom - bottomSafeBoundary, behavior: 'auto' });
       }
     }
 
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', syncFixedHeaderSpacer);
+      let lastInteractionWasKeyboard = false;
+      window.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Tab' || ev.key.startsWith('Arrow')) {
+          lastInteractionWasKeyboard = true;
+        }
+      }, true);
+      window.addEventListener('pointerdown', () => {
+        lastInteractionWasKeyboard = false;
+      }, true);
+      document.addEventListener('focusin', (ev) => {
+        if (lastInteractionWasKeyboard && ev.target instanceof HTMLElement) {
+          ensureFocusedElementNotObscured(ev.target);
+        }
+      });
       if (typeof ResizeObserver !== 'undefined') {
         window.addEventListener('DOMContentLoaded', () => {
           const headerEl = document.getElementById('main-sticky-header');
@@ -16477,7 +16600,7 @@
 
         const wakeUp12 = adaptiveMealPreview.wake12 || formatMinutesTo12Hr(parseHHMMToMinutes(getDayWakeUpTime(week, dayIdx)));
         const interactiveDualTimeRowHtml = `
-          <div class="grid grid-cols-2 gap-1.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;">
+          <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
             <button
               type="button"
               id="banner-wakeup-time-pill-btn"
@@ -16628,7 +16751,7 @@
                 ${lockerPillText}
               </button>
             </div>
-            <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Gym arrival and locker readiness checklist">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" role="group" aria-label="Gym arrival and locker readiness checklist">
               ${arrivalItems.map(item => {
                 const checkKey = `${arrivalDayKey}_${item.id}`;
                 const isChecked = Boolean(state.arrivalChecklistByDay[checkKey]);
@@ -16637,7 +16760,7 @@
                     type="button"
                     data-arrival-check-key="${checkKey}"
                     aria-pressed="${isChecked ? 'true' : 'false'}"
-                    class="arrival-locker-chip min-h-[44px] min-w-[44px] px-3 py-2 rounded-xl text-xs font-extrabold transition inline-flex items-center gap-1.5"
+                    class="arrival-locker-chip w-full min-h-[48px] min-w-[48px] px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition inline-flex items-center justify-start gap-2"
                   >
                     <span aria-hidden="true">${isChecked ? '✓' : '○'}</span>
                     <span>${item.shortLabel}</span>
@@ -16690,6 +16813,65 @@
               </button>
             </div>
           `;
+        }
+
+        // Sticky Active-Day & Quick Day-Setup Bar inside Phase 3 so users never lose context while scrolling
+        const stickyActiveHud = document.getElementById('sticky-active-day-hud');
+        if (stickyActiveHud) {
+          const stickyDayPct = todayTotalSets > 0 ? Math.min(100, Math.round((todayDoneSets / todayTotalSets) * 100)) : 0;
+          stickyActiveHud.innerHTML = `
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="min-w-0 flex-1">
+                <div class="text-xs font-extrabold leading-snug">
+                  ${dayAssignment.isRestDay
+                    ? `Week ${week} · ${dayObj.dayShort} · Rest Day`
+                    : `Day ${dayIdx + 1} · <span class="wcag-day-progress-text">${todayDoneSets}/${todayTotalSets} sets (${stickyDayPct}%)</span>`}
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  id="sticky-hud-water-btn"
+                  aria-label="Log 500 milliliters of water (${waterLitersLogged} of ${waterLitersTarget} liters logged)"
+                  class="min-h-[48px] min-w-[48px] px-2.5 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/70 text-sky-100 text-xs font-extrabold transition whitespace-nowrap"
+                >
+                  💧 +500ml
+                </button>
+                <button
+                  type="button"
+                  id="sticky-hud-day-setup-btn"
+                  aria-label="Jump to Day Setup and Energy Check at top of page"
+                  class="min-h-[48px] min-w-[48px] px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-xs font-extrabold transition whitespace-nowrap"
+                >
+                  Day Setup ↑
+                </button>
+              </div>
+            </div>
+          `;
+          const stickyWaterBtn = document.getElementById('sticky-hud-water-btn');
+          if (stickyWaterBtn) {
+            stickyWaterBtn.addEventListener('click', () => {
+              const curMl = getDailyWaterLoggedMl(week, dayIdx);
+              const targetMl = getDailyWaterTargetMl(dayIdx, week);
+              const nextMl = curMl >= targetMl ? 0 : curMl + 500;
+              setDailyWaterLoggedMl(week, dayIdx, nextMl);
+              saveState();
+              renderWorkoutView();
+              renderVeganView();
+              showToast(nextMl === 0 ? 'Reset today\'s water log to 0 ml' : `+500 ml logged (${nextMl.toLocaleString()} / ${targetMl.toLocaleString()} ml today)`);
+            });
+          }
+          const stickySetupBtn = document.getElementById('sticky-hud-day-setup-btn');
+          if (stickySetupBtn) {
+            stickySetupBtn.addEventListener('click', () => {
+              const panel = document.getElementById('day-management-interception-panel');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              if (panel) {
+                const firstBtn = panel.querySelector('button');
+                if (firstBtn) firstBtn.focus({ preventScroll: true });
+              }
+            });
+          }
         }
 
         banner.className = 'bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-3.5 space-y-2';
@@ -16771,10 +16953,10 @@
               </div>
 
               <!-- Hidden quick preset buttons preserved for DOM/handler compatibility -->
-              <div class="hidden">
-                <button type="button" id="banner-train-today-instead-btn"></button>
-                <button type="button" id="banner-pullup-timer-btn" data-pullup-sec="90"></button>
-                <button type="button" data-gym-preset="07:00" class="banner-gym-preset-btn"></button>
+              <div class="hidden" aria-hidden="true">
+                <button type="button" id="banner-train-today-instead-btn" aria-label="Train today instead of resting"></button>
+                <button type="button" id="banner-pullup-timer-btn" data-pullup-sec="90" aria-label="Start 90 second pull-up rest timer"></button>
+                <button type="button" data-gym-preset="07:00" class="banner-gym-preset-btn" aria-label="Set gym start time to 7:00 AM"></button>
               </div>
             </div>
           `;
@@ -16809,14 +16991,14 @@
               </div>
 
               <!-- Hidden legacy time controls preserved for programmatic compatibility -->
-              <div class="hidden">
-                <button type="button" data-banner-step-mins="-15" class="banner-gym-step-btn">-15m</button>
+              <div class="hidden" aria-hidden="true">
+                <button type="button" data-banner-step-mins="-15" class="banner-gym-step-btn" aria-label="Shift gym start time 15 minutes earlier">-15m</button>
                 <select id="banner-gym-time-input" aria-label="Select gym time in 15-minute increments">
                   ${build15MinGymTimeOptionsHtml(dayGymSched.startTime)}
                 </select>
-                <button type="button" data-banner-step-mins="15" class="banner-gym-step-btn">+15m</button>
-                <button type="button" id="banner-pullup-timer-btn" data-pullup-sec="90"></button>
-                <button type="button" data-gym-preset="07:00" class="banner-gym-preset-btn"></button>
+                <button type="button" data-banner-step-mins="15" class="banner-gym-step-btn" aria-label="Shift gym start time 15 minutes later">+15m</button>
+                <button type="button" id="banner-pullup-timer-btn" data-pullup-sec="90" aria-label="Start 90 second pull-up rest timer"></button>
+                <button type="button" data-gym-preset="07:00" class="banner-gym-preset-btn" aria-label="Set gym start time to 7:00 AM"></button>
               </div>
             </div>
           `;
@@ -17391,7 +17573,7 @@
                       data-set-idx="${s}"
                       data-hold-sec="${perSetHoldSec}"
                       data-hold-key="${logKey}"
-                      class="timed-hold-start-btn flex-1 min-w-[200px] h-10 px-4 rounded-xl text-xs sm:text-sm font-extrabold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md whitespace-nowrap transition"
+                      class="timed-hold-start-btn flex-1 min-w-[200px] min-h-[48px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md whitespace-nowrap transition"
                     >
                       ${isSetHoldPaused ? `Paused: ${remHoldMMSS} Left (Resume)` : `Holding: ${remHoldMMSS} Left (Pause)`}
                     </button>
@@ -17402,7 +17584,7 @@
                       data-set-idx="${s}"
                       data-rest-sec="${setRestSeconds}"
                       data-ex-name="${ex.name} (Set ${s})"
-                      class="set-done-btn text-[0.6875rem] font-bold text-slate-300 hover:text-white underline px-2 py-1 transition"
+                      class="set-done-btn min-h-[48px] text-xs font-bold text-slate-200 hover:text-white underline px-3 py-2 transition"
                     >
                       Finish &amp; Log Now
                     </button>
@@ -17414,7 +17596,7 @@
                       data-hold-sec="${perSetHoldSec}"
                       data-hold-key="${logKey}"
                       style="background: #0284c7; color: #f8fafc;"
-                      class="timed-hold-start-btn flex-1 min-w-[185px] h-10 px-4 rounded-xl text-xs sm:text-sm font-extrabold hover:opacity-95 shadow-sm whitespace-nowrap transition"
+                      class="timed-hold-start-btn flex-1 min-w-[185px] min-h-[48px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold hover:opacity-95 shadow-sm whitespace-nowrap transition"
                     >
                       Start ${holdActionShortLabel} Timer
                     </button>
@@ -17425,7 +17607,7 @@
                       data-set-idx="${s}"
                       data-rest-sec="${setRestSeconds}"
                       data-ex-name="${ex.name} (Set ${s})"
-                      class="set-done-btn text-[0.6875rem] font-semibold text-slate-400 hover:text-slate-200 underline px-2 py-1 whitespace-nowrap transition"
+                      class="set-done-btn min-h-[48px] text-xs font-semibold text-slate-300 hover:text-white underline px-3 py-2 whitespace-nowrap transition"
                     >
                       Skip timer &amp; log
                     </button>
@@ -17568,18 +17750,18 @@
                 <div class="grid grid-cols-2 gap-2 pt-1.5 mt-1.5 border-t border-slate-800/80">
                   <div class="bg-slate-900 border border-slate-700 rounded-lg p-1.5 space-y-1">
                     <span class="block text-[0.625rem] font-bold uppercase text-slate-300">Set ${s} • 1 Side (${exUnit})</span>
-                    <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden w-full">
-                      <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${topSideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-300 hover:text-white">−</button>
-                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.perSide}" data-bar3-inp="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-white focus:outline-none" />
-                      <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${topSideStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-sky-400">+</button>
+                    <div class="flex items-center gap-2 bg-slate-950 border border-slate-700 rounded-md p-0.5 w-full">
+                      <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${topSideStep}" aria-label="Decrease Set ${s} one-side plate weight by ${topSideStep} ${exUnit}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-300 hover:text-white">−</button>
+                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.perSide}" data-bar3-inp="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" aria-label="Set ${s} one-side plate weight in ${exUnit}" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-white focus:outline-none" />
+                      <button type="button" data-bar3-step="perSide" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${topSideStep}" aria-label="Increase Set ${s} one-side plate weight by ${topSideStep} ${exUnit}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-sky-400">+</button>
                     </div>
                   </div>
                   <div class="bg-slate-900 border border-slate-700 rounded-lg p-1.5 space-y-1">
                     <span class="block text-[0.625rem] font-bold uppercase text-slate-300">Set ${s} • Both Sides (${exUnit})</span>
-                    <div class="flex items-center bg-slate-950 border border-slate-700 rounded-md overflow-hidden w-full">
-                      <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${topBothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-300 hover:text-white">−</button>
-                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-white focus:outline-none" />
-                      <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${topBothStep}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-sky-400">+</button>
+                    <div class="flex items-center gap-2 bg-slate-950 border border-slate-700 rounded-md p-0.5 w-full">
+                      <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="-${topBothStep}" aria-label="Decrease Set ${s} both-sides plate weight by ${topBothStep} ${exUnit}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-slate-300 hover:text-white">−</button>
+                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${barMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" aria-label="Set ${s} both-sides plate weight in ${exUnit}" class="bar3-input w-full min-w-0 bg-transparent py-1 text-center text-xs font-extrabold text-white focus:outline-none" />
+                      <button type="button" data-bar3-step="bothSides" data-log-key="${logKey}" data-ex-id="${ex.id}" data-set-idx="${s}" data-delta="${topBothStep}" aria-label="Increase Set ${s} both-sides plate weight by ${topBothStep} ${exUnit}" class="bar3-step-btn px-2 py-1 text-xs font-extrabold text-sky-400">+</button>
                     </div>
                   </div>
                 </div>
@@ -17663,37 +17845,39 @@
                   ${getEquipmentSvg(meta.equipType)}
                 </div>
                 <div class="flex-1 min-w-0">
-                  <div class="flex flex-wrap items-center gap-1.5">
-                    <span data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${effectiveExComplete ? '1' : '0'}" class="expand-done-btn cursor-pointer exercise-progress-badge whitespace-nowrap px-2 py-0.5 text-xs font-bold font-mono rounded-md transition-colors ${
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${effectiveExComplete ? '1' : '0'}" aria-expanded="${isCollapsedDone ? 'false' : 'true'}" aria-label="Toggle ${String(displayExName || ex.name).replace(/"/g, '&quot;')} sets (#${exOrder + 1} of ${totalExercisesToday})" class="expand-done-btn exercise-progress-badge min-h-[44px] min-w-[44px] inline-flex items-center justify-center whitespace-nowrap px-2.5 py-1 text-xs font-bold font-mono rounded-lg transition-colors ${
                       isExInProgress
                         ? 'bg-amber-400 text-slate-950'
                         : (isActiveCard ? 'bg-sky-400 text-slate-950' : (effectiveExComplete ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300 hover:text-sky-300'))
-                    }">#${exOrder + 1}/${totalExercisesToday}</span>
+                    }">#${exOrder + 1}/${totalExercisesToday}</button>
                     ${isCardioEx ? `<span class="text-[0.625rem] font-extrabold bg-cyan-500/20 text-cyan-200 border border-cyan-400/45 px-2 py-0.5 rounded-md whitespace-nowrap">CARDIO</span>` : ''}
                     ${ex.isSwappedMachine ? `<span class="text-[0.625rem] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-md whitespace-nowrap">Machine</span>` : ''}
                     ${!isCardioEx ? `<span class="text-[0.6875rem] font-semibold text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded-md whitespace-nowrap">${isTimedHold ? `${ex.sets} Sets × ${targetHoldSec}s / side` : `${ex.sets} Sets × ${ex.reps}`}</span>` : ''}
-                    ${!isCardioEx ? `<button type="button" data-explain-ex="${ex.id}" data-explain-name="${String(displayExName || ex.name).replace(/"/g, '&quot;')}" data-explain-sets="${ex.sets}" data-explain-reps="${String(ex.reps || '8-12').replace(/"/g, '&quot;')}" data-explain-weight="${meta.defaultWeightLbs || 0}" data-explain-bw="${isBodyweightRepsOnly ? '1' : '0'}" class="explain-math-btn px-2 py-0.5 rounded-md border border-sky-400/55 bg-sky-500/15 hover:bg-sky-500/25 text-[0.625rem] font-extrabold text-sky-200 whitespace-nowrap transition" title="See the exact math behind this weight and rep target">ⓘ Why?</button>` : ''}
-                    ${!isCardioEx && !isBodyweightRepsOnly ? `<button type="button" data-scan-pin-ex="${ex.id}" data-scan-pin-name="${String(displayExName || ex.name).replace(/"/g, '&quot;')}" data-scan-pin-slot="${slotIdx}" class="scan-pin-ocr-btn px-2 py-0.5 rounded-md border border-emerald-400/50 bg-emerald-500/15 hover:bg-emerald-500/25 text-[0.625rem] font-extrabold text-emerald-200 whitespace-nowrap transition" title="Scan pin-loaded weight machine stack with camera">📷 Scan Pin</button>` : ''}
+                    ${!isCardioEx ? `<button type="button" data-explain-ex="${ex.id}" data-explain-name="${String(displayExName || ex.name).replace(/"/g, '&quot;')}" data-explain-sets="${ex.sets}" data-explain-reps="${String(ex.reps || '8-12').replace(/"/g, '&quot;')}" data-explain-weight="${meta.defaultWeightLbs || 0}" data-explain-bw="${isBodyweightRepsOnly ? '1' : '0'}" class="explain-math-btn min-h-[44px] px-2.5 py-1 rounded-lg border border-sky-400/55 bg-sky-500/15 hover:bg-sky-500/25 text-xs font-extrabold text-sky-200 whitespace-nowrap transition" title="See the exact math behind this weight and rep target">ⓘ Why?</button>` : ''}
+                    ${!isCardioEx && !isBodyweightRepsOnly ? `<button type="button" data-scan-pin-ex="${ex.id}" data-scan-pin-name="${String(displayExName || ex.name).replace(/"/g, '&quot;')}" data-scan-pin-slot="${slotIdx}" class="scan-pin-ocr-btn min-h-[44px] px-2.5 py-1 rounded-lg border border-emerald-400/50 bg-emerald-500/15 hover:bg-emerald-500/25 text-xs font-extrabold text-emerald-200 whitespace-nowrap transition" title="Scan pin-loaded weight machine stack with camera">📷 Scan Pin</button>` : ''}
                     ${isHighlightedActive ? `<span class="text-[0.625rem] font-extrabold px-2 py-0.5 rounded-md bg-cyan-400/20 text-cyan-200 border border-cyan-400/60 whitespace-nowrap">Active</span>` : ''}
                     ${isExInProgress ? `<span data-ex-inprogress-badge="${ex.id}" class="text-[0.625rem] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b;">IN PROGRESS • ${exDoneSets}/${ex.sets}</span>` : ''}
                     ${effectiveExComplete ? `<span class="text-[0.625rem] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">✓ Done</span>` : ''}
                   </div>
 
                   <!-- Exercise Title Row with Visible Machine Photo & Video Buttons on the Right -->
-                  <div class="flex items-start justify-between gap-1.5 mt-1">
-                    <h3 data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${effectiveExComplete ? '1' : '0'}" class="expand-done-btn cursor-pointer flex-1 min-w-0 ${
-                      isActiveCard || isExInProgress
-                        ? 'text-base sm:text-lg font-extrabold text-[#f8fafc] leading-snug tracking-tight break-words'
-                        : 'text-sm font-bold text-[#f8fafc] hover:text-white leading-snug break-words'
-                    } transition-colors">${displayExName}</h3>
-                    <div class="flex items-center gap-1 shrink-0">
+                  <div class="flex flex-wrap items-start justify-between gap-2 mt-1">
+                    <h3 class="flex-1 min-w-[10rem] m-0">
+                      <button type="button" data-expand-done="${ex.id}" data-day-idx="${dayIdx}" data-is-complete="${effectiveExComplete ? '1' : '0'}" aria-expanded="${isCollapsedDone ? 'false' : 'true'}" class="expand-done-btn w-full min-h-[48px] text-left bg-transparent border-0 p-0 cursor-pointer flex items-center ${
+                        isActiveCard || isExInProgress
+                          ? 'text-base sm:text-lg font-extrabold text-[#f8fafc] leading-snug tracking-tight break-words'
+                          : 'text-base font-bold text-[#f8fafc] hover:text-white leading-snug break-words'
+                      } transition-colors">${displayExName}</button>
+                    </h3>
+                    <div class="flex items-center gap-2 shrink-0">
                       <button
                         type="button"
                         data-toggle-img="${ex.id}"
                         data-day-idx="${dayIdx}"
                         data-panel-key="${panelKey}"
                         aria-expanded="${isImgOpen ? 'true' : 'false'}"
-                        class="toggle-img-btn min-h-[48px] px-2.5 py-1 rounded-lg border text-[0.6875rem] font-extrabold whitespace-nowrap transition ${
+                        class="toggle-img-btn min-h-[48px] px-2.5 py-1.5 rounded-lg border text-xs font-extrabold whitespace-nowrap transition ${
                           isImgOpen
                             ? 'bg-sky-500/25 border-sky-400 text-sky-100'
                             : 'bg-[#0f172a] hover:bg-slate-800 border-slate-600 text-slate-100'
@@ -17708,7 +17892,7 @@
                         data-canonical-ex-id="${canonicalExId}"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="min-h-[48px] px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/40 text-[0.6875rem] font-extrabold whitespace-nowrap transition inline-flex items-center justify-center"
+                        class="min-h-[48px] px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/40 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center"
                         title="Watch verified form video for ${ex.name}"
                       >
                         🎥 Video
@@ -17718,10 +17902,10 @@
 
                   <!-- UPGRADE 4: Prominent Amber Reminder Badge on Header (Visible Even When Collapsed, with 1-Tap × Delete Button!) -->
                   <div data-ex-header-note-wrap="${ex.id}" class="${hasAnyNote ? 'mt-1.5' : 'hidden'}">
-                    <span data-ex-header-note-badge="${ex.id}" class="inline-flex flex-wrap items-center gap-1.5 text-[0.6875rem] font-extrabold text-amber-200 bg-amber-500/20 border border-amber-400/50 px-2.5 py-1 rounded-lg shadow-sm">
+                    <span data-ex-header-note-badge="${ex.id}" class="inline-flex flex-wrap items-center gap-2 text-xs font-extrabold text-amber-200 bg-amber-500/20 border border-amber-400/50 px-2.5 py-1 rounded-lg shadow-sm">
                       <span> Note: ${hasNoteText ? safeNoteValueAttr : 'Machine photo saved'}</span>
                       ${hasNotePhoto ? '<span class="text-[0.625rem] bg-amber-400/25 text-amber-100 px-1.5 py-0.5 rounded"> Photo</span>' : ''}
-                      <button type="button" data-delete-note-pill="${ex.id}" class="delete-ex-note-pill-btn ml-1 px-1.5 py-0.5 rounded bg-rose-500/25 hover:bg-rose-500/40 border border-rose-400/50 text-rose-200 font-black text-xs leading-none transition" title="Delete note">×</button>
+                      <button type="button" data-delete-note-pill="${ex.id}" aria-label="Delete saved note for ${String(displayExName || ex.name).replace(/"/g, '&quot;')}" class="delete-ex-note-pill-btn ml-1 min-h-[44px] min-w-[44px] px-2 py-1 rounded-lg bg-rose-500/25 hover:bg-rose-500/40 border border-rose-400/50 text-rose-200 font-black text-xs leading-none inline-flex items-center justify-center transition" title="Delete note">×</button>
                     </span>
                   </div>
 
@@ -17814,15 +17998,15 @@
               })() : ''}
               <!-- Compact Unit + Rest Bar (Zero Options Deleted) -->
               ${!isCardioEx ? `
-              <div class="flex flex-wrap items-center justify-between gap-1.5 pt-1">
+              <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
                 ${!isTimedHold && !isBodyweightRepsOnly ? `
-                <div class="inline-flex items-center gap-1.5">
-                  <div class="inline-flex rounded-xl bg-slate-950 border border-slate-800 p-0.5">
-                    <button type="button" data-ex-unit-btn="${ex.id}" data-unit-val="lbs" class="ex-unit-toggle px-2 py-1 rounded-lg text-[0.625rem] font-extrabold transition ${
-                      exUnit === 'lbs' ? 'bg-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
+                <div class="inline-flex flex-wrap items-center gap-2">
+                  <div class="inline-flex items-center gap-2 rounded-xl bg-slate-950 border border-slate-700 p-1" role="group" aria-label="Weight unit for ${String(displayExName || ex.name).replace(/"/g, '&quot;')}">
+                    <button type="button" data-ex-unit-btn="${ex.id}" data-unit-val="lbs" aria-pressed="${exUnit === 'lbs' ? 'true' : 'false'}" aria-label="Use pounds (LBS) for ${String(displayExName || ex.name).replace(/"/g, '&quot;')}" class="ex-unit-toggle px-2.5 py-1 rounded-lg text-xs font-extrabold transition ${
+                      exUnit === 'lbs' ? 'bg-slate-200 text-slate-950' : 'text-slate-300 hover:text-white'
                     }">LBS</button>
-                    <button type="button" data-ex-unit-btn="${ex.id}" data-unit-val="kg" class="ex-unit-toggle px-2 py-1 rounded-lg text-[0.625rem] font-extrabold transition ${
-                      exUnit === 'kg' ? 'bg-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
+                    <button type="button" data-ex-unit-btn="${ex.id}" data-unit-val="kg" aria-pressed="${exUnit === 'kg' ? 'true' : 'false'}" aria-label="Use kilograms (KG) for ${String(displayExName || ex.name).replace(/"/g, '&quot;')}" class="ex-unit-toggle px-2.5 py-1 rounded-lg text-xs font-extrabold transition ${
+                      exUnit === 'kg' ? 'bg-slate-200 text-slate-950' : 'text-slate-300 hover:text-white'
                     }">KG</button>
                   </div>
                   <button type="button" data-overload-ex="${ex.id}" class="overload-bump-btn inline-flex text-[0.625rem] font-bold text-sky-300 bg-slate-950 hover:bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg transition">
@@ -17949,14 +18133,14 @@
                 ` : `
                   <!-- Free-Weight Barbell Selector Row -->
                   <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-800/80">
-                    <div class="flex flex-wrap items-center gap-1.5">
+                    <div class="flex flex-wrap items-center gap-2">
                       <span class="text-[0.6875rem] font-extrabold text-amber-300"> Barbell:</span>
-                      <div class="inline-flex items-center bg-slate-900 border border-amber-500/40 rounded-lg overflow-hidden">
-                        <button type="button" data-bar3-step="barWeight" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-delta="-${exUnit === 'kg' ? 2.5 : 5}" class="bar3-step-btn px-2 py-0.5 text-xs font-extrabold text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Decrease barbell weight">−</button>
-                        <input type="number" step="0.5" min="0" inputmode="decimal" value="${activeCalcBarMath.bar}" data-bar3-inp="barWeight" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" aria-label="${ex.name} Barbell Weight" class="bar3-input w-12 bg-transparent py-0.5 text-center text-xs font-extrabold text-amber-300 focus:outline-none" />
-                        <button type="button" data-bar3-step="barWeight" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-delta="${exUnit === 'kg' ? 2.5 : 5}" class="bar3-step-btn px-2 py-0.5 text-xs font-extrabold text-amber-400 hover:bg-slate-800 transition" title="Increase barbell weight">+</button>
+                      <div class="inline-flex items-center gap-2 bg-slate-900 border border-amber-500/40 rounded-lg p-0.5">
+                        <button type="button" data-bar3-step="barWeight" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-delta="-${exUnit === 'kg' ? 2.5 : 5}" aria-label="Decrease ${String(displayExName || ex.name).replace(/"/g, '&quot;')} barbell weight" class="bar3-step-btn px-2 py-0.5 text-xs font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Decrease barbell weight">−</button>
+                        <input type="number" step="0.5" min="0" inputmode="decimal" value="${activeCalcBarMath.bar}" data-bar3-inp="barWeight" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" aria-label="${ex.name} Barbell Weight" class="bar3-input w-14 bg-transparent py-0.5 text-center text-xs font-extrabold text-amber-300 focus:outline-none" />
+                        <button type="button" data-bar3-step="barWeight" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-delta="${exUnit === 'kg' ? 2.5 : 5}" aria-label="Increase ${String(displayExName || ex.name).replace(/"/g, '&quot;')} barbell weight" class="bar3-step-btn px-2 py-0.5 text-xs font-extrabold text-amber-400 hover:bg-slate-800 transition" title="Increase barbell weight">+</button>
                       </div>
-                      <div class="flex flex-wrap items-center gap-1">
+                      <div class="flex flex-wrap items-center gap-2">
                         ${barPresets.map(p => `
                           <button type="button" data-bar-preset-ex="${ex.id}" data-bar-val="${p.weight}" class="bar-preset-btn px-1.5 py-0.5 rounded text-[0.625rem] font-extrabold border transition ${
                             Math.abs(barWeight - p.weight) < 0.1
@@ -17973,8 +18157,8 @@
                 `}
 
                 <!-- Target Set Selector & Optional Apply to Remaining Unlogged Sets Action -->
-                <div class="flex flex-wrap items-center justify-between gap-1.5 pb-1 border-b border-slate-800/70">
-                  <div class="flex flex-wrap items-center gap-1">
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-slate-800/70">
+                  <div class="flex flex-wrap items-center gap-2">
                     <span class="text-[0.625rem] font-bold uppercase tracking-wider text-slate-400 mr-0.5">${activeCalcBarMath.isMachine && activeCalcBarMath.loadMode === 'pin_stack' ? 'Pin Calc Target:' : 'Plate Calc Target:'}</span>
                     ${Array.from({ length: ex.sets }, (_, i) => i + 1).map(sNum => {
                       const sEntry = getLogEntry(week, dayIdx, ex.id, sNum);
@@ -18017,36 +18201,36 @@
                     <span class="text-[0.625rem] font-extrabold uppercase tracking-wider text-emerald-300">Set ${calcTargetSet} • Machine Pin / Stack Weight (${exUnit})</span>
                     <span class="text-[0.625rem] text-slate-400 font-semibold">Total Stack Weight (No Bar)</span>
                   </div>
-                  <div class="flex items-center bg-slate-950 border border-slate-700 rounded-lg overflow-hidden w-full">
-                    <button type="button" data-bar3-step="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="-${topBothStep}" class="bar3-step-btn px-3 py-1.5 text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Decrease Set ${calcTargetSet} pin weight by ${topBothStep}">−</button>
+                  <div class="flex items-center gap-2 bg-slate-950 border border-slate-700 rounded-lg p-0.5 w-full">
+                    <button type="button" data-bar3-step="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="-${topBothStep}" aria-label="Decrease Set ${calcTargetSet} pin stack weight by ${topBothStep} ${exUnit}" class="bar3-step-btn px-3 py-1.5 text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Decrease Set ${calcTargetSet} pin weight by ${topBothStep}">−</button>
                     <input type="number" step="0.5" min="0" inputmode="decimal" value="${activeCalcBarMath.total}" data-bar3-inp="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" aria-label="${ex.name} Set ${calcTargetSet} Pin Stack Weight" class="bar3-input w-full min-w-0 bg-transparent py-1.5 text-center text-sm font-extrabold text-emerald-300 focus:outline-none" />
-                    <button type="button" data-bar3-step="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="${topBothStep}" class="bar3-step-btn px-3 py-1.5 text-sm font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Increase Set ${calcTargetSet} pin weight by ${topBothStep}">+</button>
+                    <button type="button" data-bar3-step="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="${topBothStep}" aria-label="Increase Set ${calcTargetSet} pin stack weight by ${topBothStep} ${exUnit}" class="bar3-step-btn px-3 py-1.5 text-sm font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Increase Set ${calcTargetSet} pin weight by ${topBothStep}">+</button>
                   </div>
                 </div>
                 ` : `
                 <!-- 2 Linked Plate Boxes for Selected Set Only -->
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div class="bg-slate-900/95 border border-emerald-500/35 rounded-xl p-2 space-y-1">
                     <div class="flex items-center justify-between">
                       <span class="text-[0.625rem] font-extrabold uppercase tracking-wider text-emerald-300">Set ${calcTargetSet} • 1 Side (${exUnit})</span>
-                      <span class="text-[0.625rem] text-slate-400 font-semibold">→ 2× Sides</span>
+                      <span class="text-[0.625rem] text-slate-300 font-semibold">→ 2× Sides</span>
                     </div>
-                    <div class="flex items-center bg-slate-950 border border-slate-700 rounded-lg overflow-hidden w-full">
-                      <button type="button" data-bar3-step="perSide" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="-${topSideStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Decrease Set ${calcTargetSet} 1 side by ${topSideStep}">−</button>
+                    <div class="flex items-center gap-2 bg-slate-950 border border-slate-700 rounded-lg p-0.5 w-full">
+                      <button type="button" data-bar3-step="perSide" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="-${topSideStep}" aria-label="Decrease Set ${calcTargetSet} one-side plate weight by ${topSideStep} ${exUnit}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Decrease Set ${calcTargetSet} 1 side by ${topSideStep}">−</button>
                       <input type="number" step="0.5" min="0" inputmode="decimal" value="${activeCalcBarMath.perSide}" data-bar3-inp="perSide" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" aria-label="${ex.name} Set ${calcTargetSet} Weight on 1 Side" class="bar3-input w-full min-w-0 bg-transparent py-1.5 text-center text-sm font-extrabold text-emerald-300 focus:outline-none" />
-                      <button type="button" data-bar3-step="perSide" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="${topSideStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Increase Set ${calcTargetSet} 1 side by ${topSideStep}">+</button>
+                      <button type="button" data-bar3-step="perSide" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="${topSideStep}" aria-label="Increase Set ${calcTargetSet} one-side plate weight by ${topSideStep} ${exUnit}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-emerald-400 hover:bg-slate-800 transition" title="Increase Set ${calcTargetSet} 1 side by ${topSideStep}">+</button>
                     </div>
                   </div>
 
                   <div class="bg-slate-900/95 border border-sky-500/35 rounded-xl p-2 space-y-1">
                     <div class="flex items-center justify-between">
                       <span class="text-[0.625rem] font-extrabold uppercase tracking-wider text-sky-300">Set ${calcTargetSet} • Both Sides (${exUnit})</span>
-                      <span class="text-[0.625rem] text-slate-400 font-semibold">→ ÷2 Side</span>
+                      <span class="text-[0.625rem] text-slate-300 font-semibold">→ ÷2 Side</span>
                     </div>
-                    <div class="flex items-center bg-slate-950 border border-slate-700 rounded-lg overflow-hidden w-full">
-                      <button type="button" data-bar3-step="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="-${topBothStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Decrease Set ${calcTargetSet} both sides by ${topBothStep}">−</button>
-                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${activeCalcBarMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" aria-label="${ex.name} Set ${calcTargetSet} Total of Both Sides" class="bar3-input w-full min-w-0 bg-transparent py-1.5 text-center text-sm font-extrabold text-sky-300 focus:outline-none" />
-                      <button type="button" data-bar3-step="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="${topBothStep}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-sky-400 hover:bg-slate-800 transition" title="Increase Set ${calcTargetSet} both sides by ${topBothStep}">+</button>
+                    <div class="flex items-center gap-2 bg-slate-950 border border-slate-700 rounded-lg p-0.5 w-full">
+                      <button type="button" data-bar3-step="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="-${topBothStep}" aria-label="Decrease Set ${calcTargetSet} both-sides plate weight by ${topBothStep} ${exUnit}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Decrease Set ${calcTargetSet} both sides by ${topBothStep}">−</button>
+                      <input type="number" step="0.5" min="0" inputmode="decimal" value="${activeCalcBarMath.bothSides}" data-bar3-inp="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" aria-label="${ex.name} Set ${calcTargetSet} Total of Both Sides" class="bar3-step-btn-inp bar3-input w-full min-w-0 bg-transparent py-1.5 text-center text-sm font-extrabold text-sky-300 focus:outline-none" />
+                      <button type="button" data-bar3-step="bothSides" data-log-key="${calcTargetLogKey}" data-ex-id="${ex.id}" data-set-idx="${calcTargetSet}" data-sync-all="0" data-delta="${topBothStep}" aria-label="Increase Set ${calcTargetSet} both-sides plate weight by ${topBothStep} ${exUnit}" class="bar3-step-btn px-2.5 py-1.5 text-sm font-extrabold text-sky-400 hover:bg-slate-800 transition" title="Increase Set ${calcTargetSet} both sides by ${topBothStep}">+</button>
                     </div>
                   </div>
                 </div>
@@ -18538,7 +18722,8 @@
                           data-custom-video-url-ex="${ex.id}"
                           value="${pendingSwapPreview.customVideoUrl || ''}"
                           placeholder="Or paste exact YouTube machine tutorial URL..."
-                          class="custom-machine-video-input flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-[0.6875rem] font-bold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400"
+                          aria-label="Custom YouTube machine tutorial URL"
+                          class="custom-machine-video-input flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-bold text-white placeholder-slate-300 focus:outline-none focus:border-sky-400"
                         />
                       </div>
                     </div>
@@ -19738,7 +19923,7 @@
               wrapEl.classList.remove('hidden');
               wrapEl.classList.add('mt-1.5');
               const safeTxt = clean.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-              badgeEl.innerHTML = `<span>Note: ${clean ? safeTxt : 'Machine photo saved'}</span>${hasPhoto ? '<span class="text-[0.625rem] bg-amber-400/25 text-amber-100 px-1.5 py-0.5 rounded">Photo</span>' : ''}<button type="button" data-delete-note-pill="${exId}" class="delete-ex-note-pill-btn ml-1 px-1.5 py-0.5 rounded bg-rose-500/25 hover:bg-rose-500/40 text-rose-200 border border-rose-400/40 text-[0.625rem] font-black leading-none transition" title="Delete note">×</button>`;
+              badgeEl.innerHTML = `<span>Note: ${clean ? safeTxt : 'Machine photo saved'}</span>${hasPhoto ? '<span class="text-[0.625rem] bg-amber-400/25 text-amber-100 px-1.5 py-0.5 rounded">Photo</span>' : ''}<button type="button" data-delete-note-pill="${exId}" aria-label="Delete saved exercise note" class="delete-ex-note-pill-btn ml-1 min-h-[44px] min-w-[44px] px-2 py-1 rounded-lg bg-rose-500/25 hover:bg-rose-500/40 text-rose-200 border border-rose-400/40 text-xs font-black leading-none inline-flex items-center justify-center transition" title="Delete note">×</button>`;
               const pillBtn = badgeEl.querySelector('.delete-ex-note-pill-btn');
               if (pillBtn) {
                 pillBtn.addEventListener('click', (ev) => {
@@ -21745,15 +21930,15 @@
         return `
           <div id="pullup-session-card-${d.dayNum}" class="${isPullupActive ? 'border-2 border-sky-400 bg-slate-900 shadow-lg shadow-sky-950/50' : (isCardDone ? 'bg-slate-900/70 border border-emerald-500/40 opacity-90' : 'bg-slate-900/80 border border-slate-800 opacity-90')} rounded-2xl p-3.5 space-y-2.5 transition-all">
             <div class="flex items-start justify-between gap-2">
-              <div data-pullup-collapse-day="${dayIdxForPullup}" data-pullup-session-num="${d.dayNum}" data-pullup-ex-id="${exIdForDay}" data-pullup-complete="${isCardDone ? '1' : '0'}" class="pullup-collapse-btn cursor-pointer flex-1 min-w-0">
-                <div class="flex flex-wrap items-center gap-1.5">
+              <button type="button" data-pullup-collapse-day="${dayIdxForPullup}" data-pullup-session-num="${d.dayNum}" data-pullup-ex-id="${exIdForDay}" data-pullup-complete="${isCardDone ? '1' : '0'}" aria-expanded="${isCardCollapsed ? 'false' : 'true'}" class="pullup-collapse-btn text-left bg-transparent border-0 p-0 cursor-pointer flex-1 min-w-0 block">
+                <span class="flex flex-wrap items-center gap-1.5">
                   <span class="text-[0.625rem] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${isPullupActive ? 'bg-sky-400 text-slate-950' : 'bg-slate-800 text-emerald-400'}">Wk ${week} • ${assignedDayObj.dayShort} (${assignedDayObj.daySub})</span>
                   <span class="pullup-sets-status-badge text-[0.625rem] font-bold px-2 py-0.5 rounded-full border ${isCardDone ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300' : 'bg-slate-800 border-slate-700 text-slate-300'}">${doneSetsCount}/${d.setsCount} Sets</span>
                   ${isRecommendedHardestBadge ? `<span class="text-[0.625rem] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-200">Recommended Hardest Day</span>` : ''}
-                </div>
-                <h3 class="${isPullupActive ? 'text-base font-extrabold text-white mt-1' : 'text-sm font-bold text-slate-100 mt-0.5'} transition-colors">${d.title}</h3>
-                ${isPullupActive ? `<p class="text-[0.6875rem] text-slate-300 mt-0.5 leading-snug">${d.desc}</p>` : ''}
-              </div>
+                </span>
+                <span role="heading" aria-level="3" class="block ${isPullupActive ? 'text-base font-extrabold text-white mt-1' : 'text-sm font-bold text-slate-100 mt-0.5'} transition-colors">${d.title}</span>
+                ${isPullupActive ? `<span class="block text-xs text-slate-300 mt-0.5 leading-relaxed">${d.desc}</span>` : ''}
+              </button>
               <button type="button" data-pullup-day-num="${d.dayNum}" data-rest-sec="${d.restSec}" data-ex-name="${d.title}" class="pullup-quick-timer shrink-0 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/35 text-xs font-extrabold px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition">
                 <span class="live-pullup-timer-dot w-2 h-2 rounded-full ${timerRunning ? 'bg-emerald-400 animate-ping' : 'bg-sky-400'} inline-block"></span>
                 <span class="live-pullup-timer-readout font-mono">${timerRunning ? `${formatTime(state.timerSeconds)} (${d.restSec}s)` : getPullupIdleTimerBadgeText(d.dayNum, d.restSec, week)}</span>
@@ -22857,7 +23042,7 @@
                 data-non-auth-input="true"
                 rows="2"
                 placeholder="e.g., Empty glass jar tare = 215g, stove dial #2..."
-                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-300 focus:outline-none focus:border-amber-400"
               >${escapedText}</textarea>
 
               ${hasPhoto ? `
@@ -23200,8 +23385,8 @@
                     : 'border border-slate-800 bg-slate-900/85')
             } rounded-2xl p-3 sm:p-3.5 space-y-2 transition-all">
               <!-- Row 1: Full-Width Batch Badge + Title + Dynamic Portions Stepper -->
-              <div data-toggle-recipe-card="${recipe.id}" class="recipe-card-toggle-btn cursor-pointer select-none space-y-1.5">
-                <div class="flex flex-wrap items-center justify-between gap-2">
+              <button type="button" data-toggle-recipe-card="${recipe.id}" aria-expanded="${isCollapsed ? 'false' : 'true'}" class="recipe-card-toggle-btn w-full text-left bg-transparent border-0 p-0 cursor-pointer select-none block space-y-1.5">
+                <span class="flex flex-wrap items-center justify-between gap-2">
                   <span class="recipe-prep-badge whitespace-nowrap px-2 py-0.5 text-[0.625rem] font-bold font-mono rounded-md shrink-0 ${
                     !isCollapsed ? 'bg-sky-400 text-slate-950' : (isRecipeDone ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300')
                   }">${recipe.badge}</span>
@@ -23210,19 +23395,19 @@
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                       : 'bg-sky-500/15 text-sky-200 border-sky-500/30'
                   }">${recipe.yieldPill}</span>
-                </div>
-                <h3 class="w-full font-bold text-slate-50 leading-snug" style="font-size: 0.9375rem; line-height: 1.35;">${recipe.title}</h3>
-              </div>
+                </span>
+                <span role="heading" aria-level="3" class="block w-full font-bold text-slate-50 leading-normal" style="font-size: 1rem; line-height: 1.5;">${recipe.title}</span>
+              </button>
 
               <!-- UPGRADE 19: Dynamic Portions Stepper ([ - ] X Portions [ + ]) -->
-              <div class="flex items-center justify-between gap-2 bg-slate-950/65 border border-slate-800 rounded-xl px-2.5 py-1.5">
-                <span class="text-[0.6875rem] font-bold text-slate-300">Dynamic Portions</span>
-                <div class="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-700 rounded-xl p-0.5" role="group" aria-label="${recipe.portionKey === 'oats' ? 'Oats batch portions' : 'Rice batch portions'}">
+              <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-950/65 border border-slate-800 rounded-xl px-2.5 py-2">
+                <span class="text-xs font-bold text-slate-200">Dynamic Portions</span>
+                <div class="inline-flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-xl p-1" role="group" aria-label="${recipe.portionKey === 'oats' ? 'Oats batch portions' : 'Rice batch portions'}">
                   <button
                     type="button"
                     data-batch-portion-key="${recipe.portionKey}"
                     data-batch-portion-delta="-1"
-                    class="batch-portion-step-btn w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-extrabold text-sm flex items-center justify-center shrink-0 transition"
+                    class="batch-portion-step-btn min-w-[48px] min-h-[48px] px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-extrabold text-sm flex items-center justify-center shrink-0 transition"
                     aria-label="Decrease ${recipe.portionKey} portions"
                   >-</button>
                   <span data-batch-portion-value="${recipe.portionKey}" class="px-2 text-xs font-extrabold text-cyan-200 whitespace-nowrap">${recipe.portions} ${recipe.portionKey === 'rice' ? (recipe.portions === 1 ? 'Bowl' : 'Bowls') : (recipe.portions === 1 ? 'Jar' : 'Jars')}</span>
@@ -23230,7 +23415,7 @@
                     type="button"
                     data-batch-portion-key="${recipe.portionKey}"
                     data-batch-portion-delta="1"
-                    class="batch-portion-step-btn w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-extrabold text-sm flex items-center justify-center shrink-0 transition"
+                    class="batch-portion-step-btn min-w-[48px] min-h-[48px] px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-extrabold text-sm flex items-center justify-center shrink-0 transition"
                     aria-label="Increase ${recipe.portionKey} portions"
                   >+</button>
                 </div>
@@ -23932,7 +24117,7 @@
                     data-non-auth-input="true"
                     rows="2"
                     placeholder="e.g., Empty glass jar tare = 215g, stove dial #2..."
-                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-300 focus:outline-none focus:border-amber-400"
                   >${escapedNoteText}</textarea>
 
                   ${hasNotePhoto ? `
@@ -31901,14 +32086,14 @@
   </script>
 
   <!-- Share App, Fresh Start Reset & Apple / Google Play Store Modal -->
-  <div id="share-store-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+  <div id="share-store-modal" role="dialog" aria-modal="true" aria-labelledby="share-store-modal-title" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 space-y-3.5 shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
         <div>
           <span class="text-[0.625rem] font-extrabold uppercase tracking-wider text-sky-400">Share • Install • App Stores</span>
-          <h3 class="text-sm font-extrabold text-white">Share Budget Fuel &amp; Full-Body Gym</h3>
+          <h3 id="share-store-modal-title" class="text-sm font-extrabold text-white">Share Budget Fuel &amp; Full-Body Gym</h3>
         </div>
-        <button type="button" id="close-share-store-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold">✕ Close</button>
+        <button type="button" id="close-share-store-btn" aria-label="Close share modal" class="min-h-[48px] min-w-[48px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold">✕ Close</button>
       </div>
 
       <!-- 1-Tap Share Link with Friends (Destructive Reset Removed for Error Prevention) -->
@@ -31946,7 +32131,7 @@
           <h3 id="gym-time-modal-title" class="text-base font-extrabold text-slate-100 mt-1">Wake-Up &amp; Gym Time</h3>
           <p class="text-xs text-slate-300 mt-0.5">Set when you wake up and when you lift. Your meals adjust automatically.</p>
         </div>
-        <button type="button" id="close-gym-time-modal-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
+        <button type="button" id="close-gym-time-modal-btn" aria-label="Close wake-up and gym time modal" class="min-h-[48px] min-w-[48px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
       </div>
 
       <!-- Wake-Up Time Picker -->
@@ -32021,14 +32206,14 @@
           <h3 id="week-schedule-modal-title" class="text-base font-extrabold text-white">📅 Week Schedule</h3>
           <p class="text-xs text-slate-300 mt-0.5">Pick your 2 rest days or finish this week and move to the next one.</p>
         </div>
-        <button type="button" id="close-week-schedule-modal-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
+        <button type="button" id="close-week-schedule-modal-btn" aria-label="Close week schedule modal" class="min-h-[48px] min-w-[48px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
       </div>
 
-      <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));">
-        <button type="button" id="gym-open-rest-scheduler-btn" style="min-height: 42px;" class="px-2.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Customize weekly Rest Days without losing logged sets">
+      <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+        <button type="button" id="gym-open-rest-scheduler-btn" style="min-height: 48px;" class="px-2.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 text-xs font-extrabold transition inline-flex items-center justify-center text-center" title="Customize weekly Rest Days without losing logged sets">
           Change Rest Days (6 &amp; 7)
         </button>
-        <button type="button" id="quick-next-week-btn" style="min-height: 42px;" class="px-2.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 text-xs font-extrabold whitespace-nowrap transition inline-flex items-center justify-center text-center" title="Finish current week, unlock next week &amp; carry forward weights as placeholders">
+        <button type="button" id="quick-next-week-btn" style="min-height: 48px;" class="px-2.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 text-xs font-extrabold transition inline-flex items-center justify-center text-center" title="Finish current week, unlock next week &amp; carry forward weights as placeholders">
           Finish Week -&gt; Next
         </button>
       </div>
@@ -32226,7 +32411,7 @@
         <div class="px-3 pb-3 pt-2 border-t border-slate-800 space-y-2 text-xs">
           <p class="text-[0.6875rem] text-slate-300 leading-relaxed">Upload a CSV export from Strong, Hevy, or Fitbod. Your logged sets are never overwritten.</p>
           <input type="file" id="csv-history-import-input" accept=".csv,text/csv" aria-label="Import Strong, Hevy, or Fitbod CSV file" class="block w-full rounded-lg border border-slate-700 bg-slate-900 p-1.5 text-[0.6875rem] text-slate-200" />
-          <button type="button" id="csv-import-sample-btn" class="w-full min-h-[38px] px-3 py-1.5 rounded-lg border border-sky-400/50 bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 text-[0.6875rem] font-extrabold transition">
+          <button type="button" id="csv-import-sample-btn" class="w-full min-h-[48px] px-3 py-2 rounded-lg border border-sky-400/50 bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 text-xs font-extrabold transition">
             Try Sample Strong CSV Import
           </button>
           <div id="csv-import-status" role="status" class="hidden rounded-lg border border-emerald-500/50 bg-emerald-950/50 px-2.5 py-2 text-[0.6875rem] font-bold text-emerald-200"></div>
@@ -32453,23 +32638,23 @@
         </div>
       </div>
 
-      <!-- STEP 5: Diet & Intolerances -->
+        <!-- STEP 5: Diet & Intolerances -->
       <div class="ikea-quiz-step hidden space-y-3" data-step="4">
         <div class="space-y-1.5">
           <div class="text-sm font-extrabold text-white">5. What is your base diet?</div>
-          <div class="grid grid-cols-2 gap-1.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;" role="group" aria-label="Base Diet Selection">
-            <button type="button" data-wizard-diet="Omnivore (Cheapest)" class="wizard-diet-pill min-h-[42px] py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Omnivore (Cheapest)</button>
-            <button type="button" data-wizard-diet="Vegan" class="wizard-diet-pill min-h-[42px] py-2 px-2.5 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500">Vegan</button>
-            <button type="button" data-wizard-diet="Vegetarian" class="wizard-diet-pill min-h-[42px] py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Vegetarian</button>
-            <button type="button" data-wizard-diet="Keto" class="wizard-diet-pill min-h-[42px] py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Keto</button>
+          <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;" role="group" aria-label="Base Diet Selection">
+            <button type="button" data-wizard-diet="Omnivore (Cheapest)" class="wizard-diet-pill min-h-[48px] py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Omnivore (Cheapest)</button>
+            <button type="button" data-wizard-diet="Vegan" class="wizard-diet-pill min-h-[48px] py-2 px-2.5 rounded-xl border text-xs font-extrabold bg-amber-600/25 text-amber-100 border-amber-500">Vegan</button>
+            <button type="button" data-wizard-diet="Vegetarian" class="wizard-diet-pill min-h-[48px] py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Vegetarian</button>
+            <button type="button" data-wizard-diet="Keto" class="wizard-diet-pill min-h-[48px] py-2 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Keto</button>
           </div>
         </div>
         <div class="space-y-1.5">
           <div class="text-xs font-extrabold text-slate-200">Any intolerances to block?</div>
-          <div class="grid grid-cols-3 gap-1.5" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;" role="group" aria-label="Dietary Intolerances Selection">
-            <button type="button" data-wizard-intol="Gluten-Free" aria-pressed="false" class="wizard-intol-pill min-h-[40px] py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1"><span class="intol-check-box" aria-hidden="true">☐</span><span>Gluten-Free</span></button>
-            <button type="button" data-wizard-intol="Nut-Free" aria-pressed="false" class="wizard-intol-pill min-h-[40px] py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1"><span class="intol-check-box" aria-hidden="true">☐</span><span>Nut-Free</span></button>
-            <button type="button" data-wizard-intol="Soy-Free" aria-pressed="false" class="wizard-intol-pill min-h-[40px] py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1"><span class="intol-check-box" aria-hidden="true">☐</span><span>Soy-Free</span></button>
+          <div class="grid grid-cols-3 gap-2" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;" role="group" aria-label="Dietary Intolerances Selection">
+            <button type="button" data-wizard-intol="Gluten-Free" aria-pressed="false" class="wizard-intol-pill min-h-[48px] py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1"><span class="intol-check-box" aria-hidden="true">☐</span><span>Gluten-Free</span></button>
+            <button type="button" data-wizard-intol="Nut-Free" aria-pressed="false" class="wizard-intol-pill min-h-[48px] py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1"><span class="intol-check-box" aria-hidden="true">☐</span><span>Nut-Free</span></button>
+            <button type="button" data-wizard-intol="Soy-Free" aria-pressed="false" class="wizard-intol-pill min-h-[48px] py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1"><span class="intol-check-box" aria-hidden="true">☐</span><span>Soy-Free</span></button>
           </div>
         </div>
         <div class="rounded-xl border border-slate-700 bg-slate-950 px-2.5 py-2 text-[0.6875rem] text-slate-300 leading-snug">
@@ -32738,10 +32923,10 @@
         </ul>
       </div>
       <div class="grid grid-cols-2 gap-2">
-        <button type="button" id="cancel-start-fresh-btn" class="min-h-[42px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition">
+        <button type="button" id="cancel-start-fresh-btn" class="min-h-[48px] py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition">
           Cancel
         </button>
-        <button type="button" id="confirm-start-fresh-btn" class="min-h-[42px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition">
+        <button type="button" id="confirm-start-fresh-btn" class="min-h-[48px] py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-extrabold transition">
           Yes, Start Fresh
         </button>
       </div>
@@ -32793,7 +32978,7 @@
           <h3 id="swap-history-modal-title" class="text-base font-extrabold text-slate-100">⇄ Swap from History</h3>
           <p id="swap-history-current-ex-label" class="text-xs text-slate-300 mt-0.5">Pick any exercise from your saved plan.</p>
         </div>
-        <button type="button" id="close-swap-history-modal-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
+        <button type="button" id="close-swap-history-modal-btn" aria-label="Close swap from history modal" class="min-h-[48px] min-w-[48px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
       </div>
 
       <input
@@ -32843,12 +33028,12 @@
         <div class="text-xs font-extrabold text-slate-100">Or Enter Your Own Brand &amp; Price</div>
         <div class="space-y-1">
           <label for="shop-brand-custom-name-input" class="block text-[0.6875rem] font-bold text-slate-300">Brand / Quality Name</label>
-          <input id="shop-brand-custom-name-input" name="gym_nonauth_shop_brand_name" type="text" autocomplete="off" autocorrect="on" spellcheck="true" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" data-non-auth-input="true" placeholder="e.g., Organic Sprouted Tofu" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-400" />
+          <input id="shop-brand-custom-name-input" name="gym_nonauth_shop_brand_name" type="text" autocomplete="off" autocorrect="on" spellcheck="true" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" data-non-auth-input="true" placeholder="e.g., Organic Sprouted Tofu" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-100 placeholder-slate-300 focus:outline-none focus:border-indigo-400" />
         </div>
         <div class="space-y-1">
           <label for="shop-brand-custom-price-input" class="block text-[0.6875rem] font-bold text-slate-300">Weekly Price ($/wk)</label>
           <div class="flex items-center gap-2">
-            <input id="shop-brand-custom-price-input" type="number" step="0.05" min="0" placeholder="12.47" class="flex-1 rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-xs font-bold text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-400" />
+            <input id="shop-brand-custom-price-input" type="number" step="0.05" min="0" placeholder="12.47" class="flex-1 rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-xs font-bold text-slate-100 placeholder-slate-300 focus:outline-none focus:border-indigo-400" />
             <span id="shop-brand-delta-preview" class="text-[0.6875rem] font-extrabold px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-amber-200 whitespace-nowrap">+$0.00/wk</span>
           </div>
         </div>
@@ -32879,7 +33064,7 @@
       <!-- Base Diet (Single Select) -->
       <div class="space-y-1.5">
         <div class="text-xs font-extrabold text-slate-50">What is your base diet?</div>
-        <div class="grid grid-cols-2 gap-1.5" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;" role="group" aria-label="Base Diet Selector">
+        <div class="grid grid-cols-2 gap-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;" role="group" aria-label="Base Diet Selector">
           <button type="button" data-modal-base-diet="Omnivore (Cheapest)" class="diet-modal-base-pill py-2.5 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Omnivore (Cheapest)</button>
           <button type="button" data-modal-base-diet="Vegan" class="diet-modal-base-pill py-2.5 px-2.5 rounded-xl border text-xs font-extrabold bg-cyan-500/20 text-cyan-100 border-cyan-400">Vegan</button>
           <button type="button" data-modal-base-diet="Vegetarian" class="diet-modal-base-pill py-2.5 px-2.5 rounded-xl border text-xs font-bold bg-slate-950 text-slate-200 border-slate-700">Vegetarian</button>
@@ -32890,7 +33075,7 @@
       <!-- Dietary Intolerances (Multi-Select Checkbox Pills) -->
       <div class="space-y-1.5">
         <div class="text-xs font-extrabold text-slate-50">Any intolerances?</div>
-        <div class="grid grid-cols-3 gap-1.5" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;" role="group" aria-label="Dietary Intolerances">
+        <div class="grid grid-cols-3 gap-2" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;" role="group" aria-label="Dietary Intolerances">
           <button type="button" data-modal-intol="Gluten-Free" aria-pressed="false" class="diet-modal-intol-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1.5"><span class="intol-check-box" aria-hidden="true">☐</span><span>Gluten-Free</span></button>
           <button type="button" data-modal-intol="Nut-Free" aria-pressed="false" class="diet-modal-intol-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1.5"><span class="intol-check-box" aria-hidden="true">☐</span><span>Nut-Free</span></button>
           <button type="button" data-modal-intol="Soy-Free" aria-pressed="false" class="diet-modal-intol-pill py-2 px-2 rounded-xl border text-xs font-bold bg-slate-950 text-slate-300 border-slate-700 inline-flex items-center justify-center gap-1.5"><span class="intol-check-box" aria-hidden="true">☐</span><span>Soy-Free</span></button>
@@ -32927,8 +33112,7 @@
         <button
           type="button"
           id="diet-change-proceed-btn"
-          class="w-full py-2.5 px-3 rounded-xl text-xs font-bold transition hover:bg-amber-950/40"
-          style="border: 1px solid #d97706; color: #d97706; background: transparent;"
+          class="w-full min-h-[48px] py-2.5 px-3 rounded-xl text-xs font-extrabold transition"
         >
           Yes, Change Diet
         </button>
@@ -32953,7 +33137,7 @@
             inputmode="text"
             maxlength="16"
             placeholder="e.g., 159"
-            class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm font-bold text-slate-50 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+            class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-sm font-bold text-slate-50 placeholder-slate-300 focus:outline-none focus:border-cyan-400"
           />
         </div>
 
@@ -32995,7 +33179,7 @@
   </div>
 
   <!-- App Store-Grade 4-Tab Athlete Hub Modal (Dashboard • Body & Photos • Gear & Shoes • Account & Sync) -->
-  <div id="smart-login-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+  <div id="smart-login-modal" role="dialog" aria-modal="true" aria-labelledby="smart-login-modal-title" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
     <div id="smart-login-modal-card" class="auth-modal-shell bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full shadow-2xl flex flex-col overflow-hidden">
       <!-- Fixed Modal Header (Always Visible Above Inner Scroll Area) -->
       <div class="shrink-0 flex items-start justify-between gap-2 border-b border-slate-800 px-4 py-2.5">
@@ -33004,12 +33188,12 @@
           <h3 class="text-sm sm:text-base font-extrabold text-white mt-0.5 truncate" id="smart-login-modal-title">François — Progress, Body &amp; Gear Hub</h3>
           <p class="text-[0.6875rem] text-slate-300 mt-0.5 truncate" id="smart-login-modal-sub">Analytics Dashboard, 7-Day Trend Weight, Progress Photos &amp; Gear.</p>
         </div>
-        <button type="button" id="close-smart-login-btn" aria-label="Close Account Modal" class="min-h-[44px] min-w-[44px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold shrink-0">✕</button>
+        <button type="button" id="close-smart-login-btn" aria-label="Close Account Modal" class="min-h-[48px] min-w-[48px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold shrink-0">✕</button>
       </div>
 
       <!-- Fixed 4-Tab Athlete Hub Navigation: [1. Dashboard] | [2. Body & Photos] | [3. Gear & Shoes] | [4. Account & Sync] -->
       <div class="shrink-0 px-4 pt-2 pb-1.5 border-b border-slate-800/70">
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1 rounded-xl bg-slate-950 border border-slate-800">
           <button type="button" id="profile-section-dashboard-btn" class="py-1.5 px-1.5 rounded-lg text-[0.6875rem] font-extrabold bg-sky-400 text-slate-950 flex items-center justify-center gap-1 transition">
              1. Dashboard
           </button>
@@ -33215,8 +33399,8 @@
             </div>
 
             <div class="space-y-1 pt-1 border-t border-slate-800/80">
-              <span class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-400">1-Tap Gym Shoe Presets:</span>
-              <div class="flex flex-wrap gap-1">
+              <span class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300">1-Tap Gym Shoe Presets:</span>
+              <div class="flex flex-wrap gap-2">
                 <button type="button" data-shoe-preset-brand="Nike" data-shoe-preset-model="Metcon 9" data-shoe-preset-cat="cross_trainer" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[0.625rem] font-bold text-slate-200 transition">Nike Metcon 9</button>
                 <button type="button" data-shoe-preset-brand="Reebok" data-shoe-preset-model="Nano X4" data-shoe-preset-cat="cross_trainer" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[0.625rem] font-bold text-slate-200 transition">Reebok Nano X4</button>
                 <button type="button" data-shoe-preset-brand="Adidas" data-shoe-preset-model="Dropset 3" data-shoe-preset-cat="cross_trainer" class="shoe-preset-chip px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[0.625rem] font-bold text-slate-200 transition">Adidas Dropset 3</button>
@@ -33247,12 +33431,12 @@
 
             <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
               <label for="shoe-brand-input" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-1"> Brand</label>
-              <input id="shoe-brand-input" name="gym_nonauth_shoe_brand" type="text" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="e.g., Nike" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400" />
+              <input id="shoe-brand-input" name="gym_nonauth_shoe_brand" type="text" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="e.g., Nike" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white placeholder-slate-300 focus:outline-none focus:border-sky-400" />
             </div>
 
             <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
               <label for="shoe-model-input" class="block text-[0.625rem] font-bold uppercase tracking-wider text-slate-300 mb-1"> Model</label>
-              <input id="shoe-model-input" name="gym_nonauth_shoe_model" type="text" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="e.g., Metcon 9" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white placeholder-slate-500 focus:outline-none focus:border-sky-400" />
+              <input id="shoe-model-input" name="gym_nonauth_shoe_model" type="text" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="e.g., Metcon 9" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-white placeholder-slate-300 focus:outline-none focus:border-sky-400" />
             </div>
           </div>
 
@@ -33272,7 +33456,7 @@
   </div>
 
   <!-- Google Gemini 3.8 Flash AI Coach & Budget Nutrition Agent Modal -->
-  <div id="gemini-ai-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+  <div id="gemini-ai-modal" role="dialog" aria-modal="true" aria-labelledby="gemini-ai-modal-title" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-purple-500/40 rounded-2xl max-w-md w-full p-4 space-y-3 shadow-2xl max-h-[92vh] flex flex-col">
       <div class="flex items-start justify-between border-b border-slate-800 pb-2.5 shrink-0">
         <div>
@@ -33282,16 +33466,16 @@
               <option value="gemini-3.8-flash" selected>Coach AI</option>
             </select>
           </div>
-          <h3 class="text-sm font-extrabold text-white mt-1">Coach AI — Personal Gym &amp; Budget Nutritionist</h3>
-          <p class="text-[0.625rem] text-slate-400" id="gemini-context-status">Synced with your live Week, Barbell Plates, Gym Time &amp; 138g P Meals</p>
+          <h3 id="gemini-ai-modal-title" class="text-sm font-extrabold text-white mt-1">Coach AI — Personal Gym &amp; Budget Nutritionist</h3>
+          <p class="text-[0.625rem] text-slate-300" id="gemini-context-status">Synced with your live Week, Barbell Plates, Gym Time &amp; 138g P Meals</p>
         </div>
-        <button type="button" id="close-gemini-ai-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold shrink-0">✕</button>
+        <button type="button" id="close-gemini-ai-btn" aria-label="Close Coach AI modal" class="min-h-[48px] min-w-[48px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0">✕</button>
       </div>
 
       <!-- 1-Tap Smart Coaching Chips (Zero Typing Required in the Gym!) -->
       <div class="space-y-1 shrink-0">
-        <span class="text-[0.625rem] font-bold uppercase tracking-wider text-slate-400">1-Tap Gym, Fuel Plan &amp; Swap Prompts:</span>
-        <div class="flex flex-wrap gap-1.5">
+        <span class="text-[0.625rem] font-bold uppercase tracking-wider text-slate-300">1-Tap Gym, Fuel Plan &amp; Swap Prompts:</span>
+        <div class="flex flex-wrap gap-2">
           <button type="button" data-ai-prompt="Switch Back to Original Silk Protein" class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-emerald-500/40 hover:border-emerald-400 text-[0.625rem] font-bold text-emerald-300 transition"> Switch Back to Original Silk Protein</button>
           <button type="button" data-ai-prompt="Ingredient Sold Out / Swap Meal" class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-amber-500/40 hover:border-amber-400 text-[0.625rem] font-bold text-amber-300 transition"> Ingredient Sold Out / Swap Meal</button>
           <button type="button" data-ai-prompt="Analyze my workout today and tell me the exact weight and reps to hit on my next session for progressive overload." class="gemini-chip-btn px-2 py-1 rounded-lg bg-slate-950 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400/40 text-[0.625rem] font-bold text-purple-200 transition"> Next Week Overload</button>
@@ -33307,7 +33491,7 @@
 
       <!-- Input Row -->
       <div class="flex items-center gap-2 shrink-0">
-        <input id="gemini-user-input" name="gym_nonauth_coach_prompt" type="text" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Ask Coach AI about weights, form, or budget meals..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400" />
+        <input id="gemini-user-input" name="gym_nonauth_coach_prompt" type="text" aria-label="Ask Coach AI a question" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Ask Coach AI about weights, form, or budget meals..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-300 focus:outline-none focus:border-purple-400" />
         <button type="button" id="gemini-send-btn" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white text-xs font-extrabold shrink-0 transition">
           Send
         </button>
@@ -33323,7 +33507,7 @@
           <span id="coach-ai-bonus-active-day-label" class="shrink-0 text-[0.625rem] font-extrabold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-200 border border-emerald-400/35">Active Day</span>
         </div>
         <div id="ai-bonus-targets-panel" data-ai-bonus-grid="coach-modal" class="space-y-2">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <button type="button" data-bonus-target="Chest Focus" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-slate-100 text-[0.6875rem] font-extrabold text-center transition">Chest Focus</button>
             <button type="button" data-bonus-target="Back & Biceps" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-slate-100 text-[0.6875rem] font-extrabold text-center transition">Back &amp; Biceps</button>
             <button type="button" data-bonus-target="Legs & Calves" class="ai-bonus-target-btn py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-slate-100 text-[0.6875rem] font-extrabold text-center transition">Legs &amp; Calves</button>
@@ -33456,15 +33640,15 @@
         <p id="biometric-sync-summary" class="text-[0.6875rem] text-slate-300 leading-relaxed">
           Sync Apple HealthKit or Google Health Connect. If sleep is under 5 hours, today&apos;s prescribed sets drop by 10% automatically.
         </p>
-        <div class="grid grid-cols-2 gap-1.5">
-          <button type="button" id="sync-apple-healthkit-btn" class="min-h-[38px] py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-100 text-[0.6875rem] font-bold transition">
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" id="sync-apple-healthkit-btn" class="min-h-[48px] py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-100 text-xs font-bold transition">
             Sync Apple HealthKit
           </button>
-          <button type="button" id="sync-google-healthconnect-btn" class="min-h-[38px] py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-100 text-[0.6875rem] font-bold transition">
+          <button type="button" id="sync-google-healthconnect-btn" class="min-h-[48px] py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-100 text-xs font-bold transition">
             Sync Health Connect
           </button>
         </div>
-        <button type="button" id="test-low-sleep-biometric-btn" class="w-full min-h-[38px] py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/55 text-amber-100 text-[0.6875rem] font-extrabold transition">
+        <button type="button" id="test-low-sleep-biometric-btn" class="w-full min-h-[48px] py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/55 text-amber-100 text-xs font-extrabold transition">
           Test Low Sleep (4.5h) → Lower Sets by 10%
         </button>
       </div>
@@ -33561,20 +33745,20 @@
         <video id="camera-ocr-video" autoplay playsinline muted class="hidden w-full h-44 object-cover rounded-lg"></video>
         <p id="camera-ocr-fallback-box" class="text-xs text-slate-300 leading-relaxed">Point your camera at a pin-loaded weight stack or nutrition facts label, or upload a photo below.</p>
       </div>
-      <input type="text" id="camera-ocr-hint-input" name="gym_nonauth_ocr_hint" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Optional OCR test text (e.g. Stack 125 LBS or Calories: 210, Protein: 26g)" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white" />
+      <input type="text" id="camera-ocr-hint-input" name="gym_nonauth_ocr_hint" aria-label="Optional OCR test text" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="Optional OCR test text (e.g. Stack 125 LBS or Calories: 210, Protein: 26g)" class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white placeholder-slate-300" />
       <div class="grid grid-cols-2 gap-2">
-        <button type="button" id="camera-ocr-capture-btn" class="min-h-[42px] py-2 px-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-extrabold transition">
+        <button type="button" id="camera-ocr-capture-btn" class="min-h-[48px] py-2 px-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-extrabold transition">
           📷 Scan Now
         </button>
-        <label class="min-h-[42px] py-2 px-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-bold flex items-center justify-center cursor-pointer">
+        <label class="min-h-[48px] py-2 px-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-bold flex items-center justify-center cursor-pointer">
           Upload Photo
           <input type="file" id="camera-ocr-file-input" accept="image/*" capture="environment" class="hidden" />
         </label>
       </div>
       <div id="camera-ocr-result-box" class="hidden rounded-xl border border-emerald-500/50 bg-emerald-950/40 p-3 space-y-2">
         <div id="camera-ocr-result-summary" class="text-xs font-extrabold text-emerald-200"></div>
-        <button type="button" id="camera-ocr-apply-btn" class="w-full min-h-[40px] py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold transition">
-          Auto-Fill Input
+        <button type="button" id="camera-ocr-apply-btn" class="w-full min-h-[48px] py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold transition">
+          Use Scanned Value
         </button>
       </div>
     </div>

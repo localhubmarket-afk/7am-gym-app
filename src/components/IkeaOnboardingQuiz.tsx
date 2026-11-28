@@ -233,10 +233,10 @@ export const IkeaOnboardingQuiz: React.FC<IkeaOnboardingQuizProps> = ({
                   type="button"
                   aria-pressed={selected}
                   onClick={() => setAnswers((p) => ({ ...p, baseDiet: diet }))}
-                  className={`min-h-[44px] rounded-xl border-2 px-3 py-2 text-left text-xs font-extrabold transition ${
+                  className={`min-h-[48px] rounded-xl border-2 px-3 py-2.5 text-left text-sm font-extrabold transition ${
                     selected
                       ? 'border-emerald-400 bg-emerald-600/20 text-white'
-                      : 'border-slate-700 bg-slate-950 text-slate-200'
+                      : 'border-slate-600 bg-slate-950 text-slate-200'
                   }`}
                 >
                   {selected ? '✓ ' : ''}
@@ -246,7 +246,7 @@ export const IkeaOnboardingQuiz: React.FC<IkeaOnboardingQuizProps> = ({
             })}
           </div>
           <div>
-            <div className="mb-2 text-xs font-bold text-slate-300">Optional allergies to block:</div>
+            <div className="mb-2 text-sm font-bold text-slate-200">Optional allergies to block:</div>
             <div className="flex flex-wrap gap-2">
               {INTOLERANCE_OPTIONS.map((item) => {
                 const selected = answers.intolerances.includes(item);
@@ -256,10 +256,10 @@ export const IkeaOnboardingQuiz: React.FC<IkeaOnboardingQuizProps> = ({
                     type="button"
                     aria-pressed={selected}
                     onClick={() => toggleIntolerance(item)}
-                    className={`min-h-[40px] rounded-lg border px-3 py-1.5 text-xs font-bold transition ${
+                    className={`min-h-[48px] min-w-[48px] rounded-xl border px-3.5 py-2 text-sm font-bold transition ${
                       selected
                         ? 'border-amber-400 bg-amber-600/25 text-amber-100'
-                        : 'border-slate-700 bg-slate-950 text-slate-300'
+                        : 'border-slate-600 bg-slate-950 text-slate-200'
                     }`}
                   >
                     {selected ? '✓ ' : ''}
@@ -361,7 +361,7 @@ export const IkeaOnboardingQuiz: React.FC<IkeaOnboardingQuizProps> = ({
         <button
           type="button"
           onClick={onReturningUserLogin}
-          className="mt-3 w-full py-2 text-center text-xs font-bold text-sky-300 underline hover:text-sky-200"
+          className="mt-3 min-h-[48px] w-full rounded-xl py-2.5 text-center text-sm font-bold text-sky-300 underline hover:text-sky-200"
         >
           Already have an account? Sign in instead
         </button>

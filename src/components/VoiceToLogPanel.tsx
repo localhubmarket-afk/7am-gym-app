@@ -173,7 +173,7 @@ export const VoiceToLogPanel: React.FC<VoiceToLogPanelProps> = ({
             value={manualPhrase}
             onChange={(e) => setManualPhrase(e.target.value)}
             placeholder='Try: "Did 10 reps at 45 pounds"'
-            className="min-h-[48px] flex-1 rounded-xl border border-slate-600 bg-slate-950 px-3.5 py-2 text-sm font-semibold text-white placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+            className="min-h-[48px] flex-1 rounded-xl border border-slate-500 bg-slate-950 px-3.5 py-2 text-base font-semibold text-white placeholder:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
           />
           <button
             type="submit"

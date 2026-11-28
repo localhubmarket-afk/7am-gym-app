@@ -102,9 +102,9 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
         </span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="flex-1 min-w-[6rem] space-y-1">
-          <span className="block text-xs font-bold text-slate-300">Weight ({unit})</span>
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="flex-1 min-w-[6.5rem] space-y-1">
+          <span className="block text-sm font-bold text-slate-200">Weight ({unit})</span>
           <input
             type="text"
             inputMode="decimal"
@@ -120,12 +120,12 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
               if (errorMessage) setErrorMessage(null);
             }}
             aria-label={`Set ${setNumber} weight in ${unit}`}
-            className="w-full min-h-[48px] rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-sm font-bold text-white"
+            className="w-full min-h-[48px] rounded-xl border border-slate-500 bg-slate-950 px-3 py-2 text-base font-bold text-white"
           />
         </label>
 
-        <label className="flex-1 min-w-[5rem] space-y-1">
-          <span className="block text-xs font-bold text-slate-300">Reps</span>
+        <label className="flex-1 min-w-[5.5rem] space-y-1">
+          <span className="block text-sm font-bold text-slate-200">Reps</span>
           <input
             type="text"
             inputMode="numeric"
@@ -141,7 +141,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
               if (errorMessage) setErrorMessage(null);
             }}
             aria-label={`Set ${setNumber} reps`}
-            className="w-full min-h-[48px] rounded-xl border border-slate-600 bg-slate-950 px-3 py-2 text-sm font-bold text-white"
+            className="w-full min-h-[48px] rounded-xl border border-slate-500 bg-slate-950 px-3 py-2 text-base font-bold text-white"
           />
         </label>
 
@@ -149,10 +149,10 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
           type="button"
           onClick={handleToggleLog}
           aria-pressed={isDone}
-          className={`min-h-[48px] min-w-[96px] px-4 py-2 rounded-xl text-sm font-extrabold transition ${
+          className={`min-h-[48px] min-w-[104px] flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-base font-extrabold transition ${
             isDone
               ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
-              : 'bg-sky-500 text-slate-950 hover:bg-sky-400'
+              : 'bg-sky-400 text-slate-950 hover:bg-sky-300'
           }`}
         >
           {isDone ? '✓ Logged' : 'Log Set'}
@@ -162,7 +162,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
       {errorMessage && (
         <div
           role="alert"
-          className="rounded-lg border border-amber-400/70 bg-amber-500/15 px-3 py-2 text-xs font-bold text-amber-100 leading-relaxed"
+          className="rounded-xl border border-amber-400/80 bg-amber-500/15 px-3 py-2.5 text-sm font-bold text-amber-100 leading-relaxed"
         >
           {errorMessage}
         </div>

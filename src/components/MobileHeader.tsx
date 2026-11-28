@@ -114,7 +114,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
           </div>
         </div>
 
-        <nav aria-label="Header quick actions" className="flex shrink-0 items-center gap-1.5">
+        <nav aria-label="Header quick actions" className="flex flex-wrap shrink-0 items-center gap-2">
           {showInstallButton && <PWAInstallButton />}
 
           {onOpenAiCoach && (
@@ -122,7 +122,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
               type="button"
               onClick={onOpenAiCoach}
               aria-label="Open AI Workout Coach"
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-purple-400/40 bg-purple-500/20 px-2.5 py-2 text-[0.6875rem] font-extrabold text-purple-200 transition hover:bg-purple-500/30 focus:outline-none focus:ring-2 focus:ring-purple-300"
+              className="flex min-h-[48px] min-w-[48px] items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-purple-400/60 bg-purple-500/20 px-2.5 py-2 text-xs font-extrabold text-purple-200 transition hover:bg-purple-500/30 focus:outline-none focus:ring-2 focus:ring-purple-300"
             >
               <span>AI</span>
             </button>
@@ -133,7 +133,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
               type="button"
               onClick={onOpenWatchModal}
               aria-label="Open Watch and Heart Rate settings"
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-rose-400/40 bg-rose-500/15 px-2.5 py-2 text-[0.6875rem] font-extrabold text-rose-200 transition hover:bg-rose-500/25 focus:outline-none focus:ring-2 focus:ring-rose-300"
+              className="flex min-h-[48px] min-w-[48px] items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-rose-400/60 bg-rose-500/15 px-2.5 py-2 text-xs font-extrabold text-rose-200 transition hover:bg-rose-500/25 focus:outline-none focus:ring-2 focus:ring-rose-300"
             >
               <span>Watch</span>
             </button>
@@ -147,7 +147,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
               aria-label={headerAuth.ariaLabel}
               data-testid="mobile-header-auth-loading"
               data-auth-state="loading"
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-700 bg-slate-900/90 px-2.5 py-2 text-[0.6875rem] font-bold text-slate-300"
+              className="flex min-h-[48px] min-w-[48px] items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-600 bg-slate-900/90 px-2.5 py-2 text-xs font-bold text-slate-200"
             >
               <span
                 aria-hidden="true"
@@ -166,7 +166,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                   : 'Sign In & User Profile'
               }
               aria-label={headerAuth.ariaLabel}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-2.5 py-2 text-[0.6875rem] font-extrabold text-emerald-300 transition hover:bg-emerald-500/25 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              className="flex min-h-[48px] min-w-[48px] items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-emerald-400/60 bg-emerald-500/15 px-2.5 py-2 text-xs font-extrabold text-emerald-300 transition hover:bg-emerald-500/25 focus:outline-none focus:ring-2 focus:ring-emerald-300"
             >
               {headerAuth.status === 'authenticated' ? (
                 headerAuth.avatarUrl ? (
@@ -210,7 +210,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
               type="button"
               onClick={onOpenShareModal}
               aria-label="Share your workout plan"
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-sky-500/40 bg-sky-500/15 px-2.5 py-2 text-[0.6875rem] font-bold text-sky-300 transition hover:bg-sky-500/25 focus:outline-none focus:ring-2 focus:ring-sky-300"
+              className="flex min-h-[48px] min-w-[48px] items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-sky-500/60 bg-sky-500/15 px-2.5 py-2 text-xs font-bold text-sky-300 transition hover:bg-sky-500/25 focus:outline-none focus:ring-2 focus:ring-sky-300"
             >
               <span>Share</span>
             </button>

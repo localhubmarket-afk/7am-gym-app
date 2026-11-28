@@ -93,23 +93,25 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[38px] rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-200"
+            aria-label="Close camera scanner modal"
+            className="min-h-[48px] min-w-[48px] rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-100 hover:bg-slate-700"
           >
             ✕ Close
           </button>
         </div>
 
-        <div className="mt-3 overflow-hidden rounded-xl border border-slate-700 bg-slate-950 p-3">
+        <div className="mt-3 overflow-hidden rounded-xl border border-slate-600 bg-slate-950 p-3">
           {!cameraError ? (
             <video ref={videoRef} autoPlay playsInline muted className="h-44 w-full rounded-lg object-cover" />
           ) : (
-            <p className="text-xs leading-relaxed text-slate-300">{cameraError}</p>
+            <p className="text-base leading-relaxed text-slate-200">{cameraError}</p>
           )}
         </div>
 
         <input
           type="text"
           name="camera_ocr_label_note"
+          aria-label="Optional scanner test text"
           autoComplete="off"
           data-lpignore="true"
           data-1p-ignore="true"
@@ -122,14 +124,14 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
               ? 'Optional OCR text test (e.g. Stack 125 LBS)'
               : 'Optional label text test (e.g. Calories: 220, Protein: 26g)'
           }
-          className="mt-3 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs text-white"
+          className="mt-3 min-h-[48px] w-full rounded-xl border border-slate-600 bg-slate-950 px-3 py-2.5 text-base text-white placeholder-slate-300"
         />
 
         <div className="mt-3 flex gap-2">
           <button
             type="button"
             onClick={() => void runScan(null)}
-            className="min-h-[44px] flex-1 rounded-xl bg-sky-600 px-3 py-2 text-xs font-extrabold text-white hover:bg-sky-500"
+            className="min-h-[48px] flex-1 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-sky-500"
           >
             📷 Scan Now
           </button>
@@ -137,7 +139,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
 
         {scanResult && (
           <div className="mt-3 rounded-xl border border-emerald-500/50 bg-emerald-950/40 p-3">
-            <div className="text-xs font-extrabold text-emerald-200">
+            <div className="text-sm font-extrabold text-emerald-200">
               {scanResult.mode === 'weight_machine'
                 ? `✓ Detected Pin Weight: ${scanResult.detectedWeight} ${scanResult.unit.toUpperCase()}`
                 : `✓ Detected: ${scanResult.calories} kcal • ${scanResult.proteinGrams}g Protein`}
@@ -148,9 +150,9 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
                 onApplyResult(scanResult);
                 onClose();
               }}
-              className="mt-2.5 min-h-[42px] w-full rounded-lg bg-emerald-600 px-3 py-2 text-xs font-extrabold text-white hover:bg-emerald-500"
+              className="mt-2.5 min-h-[48px] w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-emerald-500"
             >
-              Auto-Fill Input
+              Use Scanned Value
             </button>
           </div>
         )}

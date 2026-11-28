@@ -11,23 +11,24 @@
  * ============================================================================ */
 
 :root {
-  --app-font-family: 'Lexend', 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
+  --app-font-family: 'Atkinson Hyperlegible', 'Lexend', system-ui, -apple-system, sans-serif;
   --app-line-height: 1.5;
-  /* Dark Mode Default: Matte Charcoal (#141414) + Off-White Ink (#F8F6F5) = 17.1:1 */
+  /* Dark Mode Default: Matte Charcoal (#141414) + Off-White Ink (#F8F6F5) = 17.1:1; UI Borders >= 4.16:1 */
   --bg-canvas: #141414;
   --bg-surface: #1E1E1E;
   --bg-surface-alt: #262626;
   --text-primary: #F8F6F5;
-  --text-secondary: #D8D8DE;
-  --border-subtle: #3D3D3D;
-  --border-strong: #767676;
+  --text-secondary: #E2E8F0;
+  --border-subtle: #7C8798;
+  --border-strong: #94A3B8;
   --accent-primary: #10B981;
   --accent-on-primary: #0E1A40;
-  --danger-bg: rgba(225, 29, 72, 0.22);
+  --danger-bg: rgba(225, 29, 72, 0.24);
   --danger-text: #FECDD3;
   --danger-border: #FB7185;
   --touch-target-min: 48px;
   --touch-target-gap: 0.5rem;
+  --sticky-header-height: 8.25rem;
 }
 
 html[data-theme="dark"],
@@ -36,12 +37,12 @@ html.dark {
   --bg-surface: #1E1E1E;
   --bg-surface-alt: #262626;
   --text-primary: #F8F6F5;
-  --text-secondary: #D8D8DE;
-  --border-subtle: #3D3D3D;
-  --border-strong: #767676;
+  --text-secondary: #E2E8F0;
+  --border-subtle: #7C8798;
+  --border-strong: #94A3B8;
 }
 
-/* Light Mode: Off-White Paper (#F7F7F7) + Deep Navy Ink (#0E1A40) = 15.8:1 */
+/* Light Mode: Off-White Paper (#F7F7F7) + Deep Navy Ink (#0E1A40) = 15.8:1; UI Borders >= 4.01:1 */
 html[data-theme="light"],
 html.light-theme {
   --bg-canvas: #F7F7F7;
@@ -49,16 +50,16 @@ html.light-theme {
   --bg-surface-alt: #EAECEF;
   --text-primary: #0E1A40;
   --text-secondary: #1E293B;
-  --border-subtle: #CBD5E1;
-  --border-strong: #475569;
+  --border-subtle: #64748B;
+  --border-strong: #334155;
 }
 
 html[data-font-mode="opendyslexic"],
 html.font-opendyslexic {
-  --app-font-family: 'OpenDyslexic', 'OpenDyslexic3', 'Lexend', 'Atkinson Hyperlegible', sans-serif;
+  --app-font-family: 'OpenDyslexic', 'OpenDyslexic3', 'Atkinson Hyperlegible', 'Lexend', sans-serif;
 }
 
-/* 1. Global Typography, Relative rem Scaling (>=200% Safe) & Strict Line-Height (>=1.5) */
+/* 1. Global Typography, Relative rem Scaling (>=200% Safe, >=1rem Body Text) & Strict Line-Height (>=1.5) */
 html {
   font-size: 100%;
   -webkit-text-size-adjust: 100%;
@@ -66,6 +67,8 @@ html {
   box-sizing: border-box;
   overflow-x: clip;
   max-width: 100vw;
+  scroll-padding-top: calc(var(--sticky-header-height, 8.25rem) + 4.25rem);
+  scroll-padding-bottom: 7.25rem;
 }
 
 *,
@@ -497,11 +500,15 @@ html[data-theme="light"] .border-slate-800,
 html.light-theme .border-slate-800,
 html[data-theme="light"] .border-slate-800\/90,
 html.light-theme .border-slate-800\/90,
+html[data-theme="light"] .border-slate-800\/80,
+html.light-theme .border-slate-800\/80,
 html[data-theme="light"] .border-slate-700,
 html.light-theme .border-slate-700,
+html[data-theme="light"] .border-slate-700\/80,
+html.light-theme .border-slate-700\/80,
 html[data-theme="light"] .border-slate-600,
 html.light-theme .border-slate-600 {
-  border-color: #94A3B8 !important;
+  border-color: #64748B !important;
 }
 
 html[data-theme="light"] .text-white,
@@ -520,6 +527,13 @@ html.light-theme .text-slate-300,
 html[data-theme="light"] .text-slate-400,
 html.light-theme .text-slate-400 {
   color: #1E293B !important;
+}
+
+html[data-theme="light"] .text-slate-500,
+html.light-theme .text-slate-500,
+html[data-theme="light"] .text-slate-600,
+html.light-theme .text-slate-600 {
+  color: #334155 !important;
 }
 
 html[data-theme="light"] .text-emerald-400,
@@ -752,10 +766,53 @@ html.light-theme textarea {
   }
 }
 
-/* Keyboard focus indicator (WCAG 2.2 Focus Appearance) */
+/* Keyboard focus indicator (WCAG 2.4.11 Focus Not Obscured & 2.4.13 Focus Appearance >= 3:1 Dual Halo) */
 :focus-visible {
-  outline: 3px solid #38BDF8;
-  outline-offset: 2px;
+  outline: 3px solid #FACC15 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 2px #0A0A0A, 0 0 0 5px #FACC15 !important;
+}
+
+html[data-theme="light"] :focus-visible,
+html.light-theme :focus-visible {
+  outline: 3px solid #0E1A40 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 5px #0E1A40 !important;
+}
+
+button,
+a[href],
+input,
+select,
+textarea,
+summary,
+[tabindex]:not([tabindex="-1"]) {
+  scroll-margin-top: calc(var(--sticky-header-height, 8.25rem) + 4.25rem);
+  scroll-margin-bottom: 7.25rem;
+}
+
+.skip-to-workout-link {
+  position: fixed;
+  top: -12rem;
+  left: 0.75rem;
+  z-index: 120;
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  background-color: #FACC15 !important;
+  color: #0E1A40 !important;
+  border: 2px solid #0E1A40 !important;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.5;
+  text-decoration: none;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+}
+
+.skip-to-workout-link:focus,
+.skip-to-workout-link:focus-visible {
+  top: 0.75rem;
 }
 
 /* ============================================================================
@@ -1083,14 +1140,14 @@ nav[aria-label="Bottom app navigation"] .nav-tab-btn {
     display: none !important;
   }
   header nav[aria-label="Primary header actions"] {
-    gap: 0.375rem !important;
+    gap: 0.5rem !important;
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-start;
   }
   header nav[aria-label="Primary header actions"] > button,
   header nav[aria-label="Primary header actions"] #header-nutrition-menu-btn {
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
+    padding-left: 0.625rem !important;
+    padding-right: 0.625rem !important;
   }
 }
 
@@ -1356,8 +1413,8 @@ html.light-theme .wcag-micro-start-adjacent-btn:hover {
 }
 
 .active-day-workout-container {
-  border: 2px solid rgba(56, 189, 248, 0.35);
-  background: rgba(15, 23, 42, 0.72);
+  border: 2px solid #38BDF8;
+  background: rgba(15, 23, 42, 0.82);
   border-radius: 1.25rem;
   padding: 0.75rem;
 }
@@ -1369,11 +1426,11 @@ html.light-theme .active-day-workout-container {
 
 .exercise-gear-chip,
 .arrival-locker-chip {
-  min-height: 44px !important;
-  min-width: 44px !important;
+  min-height: 48px !important;
+  min-width: 48px !important;
   background-color: #1E293B !important;
   color: #F8FAFC !important;
-  border: 1.5px solid #64748B !important;
+  border: 1.5px solid #94A3B8 !important;
 }
 .exercise-gear-chip[aria-pressed="true"],
 .arrival-locker-chip[aria-pressed="true"] {
@@ -1385,7 +1442,7 @@ html[data-theme="light"] .exercise-gear-chip,
 html.light-theme .exercise-gear-chip,
 html[data-theme="light"] .arrival-locker-chip,
 html.light-theme .arrival-locker-chip {
-  background-color: #F8FAFC !important;
+  background-color: #FFFFFF !important;
   color: #0E1A40 !important;
   border: 1.5px solid #64748B !important;
 }
@@ -1396,6 +1453,225 @@ html.light-theme .arrival-locker-chip[aria-pressed="true"] {
   background-color: #BBF7D0 !important;
   color: #052E16 !important;
   border: 1.5px solid #15803D !important;
+}
+
+/* ============================================================================
+ * 15. WCAG 2.2 AA Global Upgrades:
+ *     - Non-text UI borders & form fields >= 3.0:1 in Dark & Light modes (1.4.11)
+ *     - High-contrast placeholders & disabled controls >= 4.5:1 (1.4.3)
+ *     - Body text >= 1rem (16px via rem) & line-height >= 1.5 (Pillar 5)
+ *     - 390px Mobile-First Reflow, >= 8px Target Spacing & Thumb Ergonomics (Pillars 2 & 7)
+ *     - Sticky Active-Day HUD inside Phase 3 (#sticky-active-day-hud)
+ * ============================================================================ */
+body,
+p:not(#header-subtitle),
+li,
+dd,
+dt,
+blockquote,
+input,
+select,
+textarea {
+  font-size: 1rem;
+  line-height: 1.5 !important;
+}
+
+p,
+li,
+label,
+button,
+input,
+select,
+textarea {
+  line-height: 1.5;
+}
+
+/* Dark Mode UI Component Contrast >= 3.0:1 (WCAG 1.4.11) & Secondary Text >= 4.5:1 (WCAG 1.4.3) */
+html[data-theme="dark"] .border-slate-800,
+html.dark .border-slate-800,
+html[data-theme="dark"] .border-slate-800\/90,
+html.dark .border-slate-800\/90,
+html[data-theme="dark"] .border-slate-800\/80,
+html.dark .border-slate-800\/80,
+html[data-theme="dark"] .border-slate-700,
+html.dark .border-slate-700,
+html[data-theme="dark"] .border-slate-700\/80,
+html.dark .border-slate-700\/80,
+html[data-theme="dark"] .border-slate-600,
+html.dark .border-slate-600 {
+  border-color: #7C8798 !important;
+}
+
+html[data-theme="dark"] input:not(.workout-input):not(.pullup-weight-input):not(.pullup-rep-input),
+html.dark input:not(.workout-input):not(.pullup-weight-input):not(.pullup-rep-input),
+html[data-theme="dark"] select,
+html.dark select,
+html[data-theme="dark"] textarea,
+html.dark textarea {
+  border-color: #94A3B8 !important;
+  color: #F8F6F5 !important;
+}
+
+html[data-theme="dark"] .text-slate-400,
+html.dark .text-slate-400,
+html[data-theme="dark"] .text-slate-500,
+html.dark .text-slate-500 {
+  color: #CBD5E1 !important;
+}
+
+/* High-Contrast Placeholders (>= 4.5:1 in Dark & Light modes) */
+input:not(.workout-input):not(.pullup-weight-input):not(.pullup-rep-input)::placeholder,
+textarea::placeholder {
+  color: #CBD5E1 !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="light"] input:not(.workout-input):not(.pullup-weight-input):not(.pullup-rep-input)::placeholder,
+html.light-theme input:not(.workout-input):not(.pullup-weight-input):not(.pullup-rep-input)::placeholder,
+html[data-theme="light"] textarea::placeholder,
+html.light-theme textarea::placeholder {
+  color: #475569 !important;
+  opacity: 1 !important;
+}
+
+/* High-Contrast Disabled Controls (No low-contrast opacity wash-out) */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[aria-disabled="true"] {
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+  background-color: #262626 !important;
+  color: #CBD5E1 !important;
+  border: 2px dashed #94A3B8 !important;
+}
+
+html[data-theme="light"] button:disabled,
+html.light-theme button:disabled,
+html[data-theme="light"] input:disabled,
+html.light-theme input:disabled,
+html[data-theme="light"] select:disabled,
+html.light-theme select:disabled,
+html[data-theme="light"] textarea:disabled,
+html.light-theme textarea:disabled,
+html[data-theme="light"] [aria-disabled="true"],
+html.light-theme [aria-disabled="true"] {
+  background-color: #E2E8F0 !important;
+  color: #334155 !important;
+  border: 2px dashed #64748B !important;
+}
+
+/* Warning Action Button Contrast Fix (#diet-change-proceed-btn >= 9:1 in Dark & Light) */
+#diet-change-proceed-btn {
+  background-color: #451A03 !important;
+  color: #FEF08A !important;
+  border: 2px solid #FBBF24 !important;
+}
+html[data-theme="light"] #diet-change-proceed-btn,
+html.light-theme #diet-change-proceed-btn {
+  background-color: #FEF3C7 !important;
+  color: #78350F !important;
+  border: 2px solid #B45309 !important;
+}
+
+/* Minimum >= 8px (0.5rem) Interactive Spacing & Mobile Day Grids (Zero 390px Overflow) */
+#gym-zone-a-admin-row {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem !important;
+}
+
+#gym-zone-a-admin-row > button {
+  min-height: 48px !important;
+  min-width: 44px !important;
+  white-space: normal !important;
+  line-height: 1.3 !important;
+  padding: 0.375rem 0.5rem !important;
+  border-color: var(--border-subtle) !important;
+}
+
+#day-selector-grid,
+#vegan-day-selector-grid,
+#pullups-day-selector-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(44px, 1fr)) !important;
+  gap: 0.5rem !important;
+}
+
+@media (min-width: 640px) {
+  #day-selector-grid,
+  #vegan-day-selector-grid,
+  #pullups-day-selector-grid {
+    grid-template-columns: repeat(7, minmax(44px, 1fr)) !important;
+    gap: 0.5rem !important;
+  }
+}
+
+/* Sticky Active-Day & Quick Day-Management HUD inside Phase 3 */
+.sticky-active-day-hud {
+  position: sticky;
+  top: var(--sticky-header-height, 8.25rem);
+  z-index: 35;
+  background-color: rgba(20, 20, 20, 0.96);
+  backdrop-filter: blur(8px);
+  border: 2px solid #38BDF8;
+  border-radius: 1rem;
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+}
+
+html[data-theme="light"] .sticky-active-day-hud,
+html.light-theme .sticky-active-day-hud {
+  background-color: rgba(255, 255, 255, 0.97) !important;
+  border-color: #0284C7 !important;
+  color: #0E1A40 !important;
+  box-shadow: 0 8px 20px rgba(14, 26, 64, 0.12) !important;
+}
+
+/* 390px Phone View One-Handed Thumb Ergonomics */
+@media (max-width: 639px) {
+  .active-day-workout-container {
+    padding: 0.625rem;
+  }
+  .set-row-uncrushable-grid {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.625rem;
+  }
+  .set-row-meta-cell,
+  .set-row-stepper-cell,
+  .set-row-actions-cell {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .set-row-meta-cell {
+    justify-content: space-between;
+  }
+  .set-row-actions-cell {
+    justify-content: stretch;
+  }
+  .set-row-actions-cell .set-check-btn {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 48px !important;
+    font-size: 1rem !important;
+  }
+  .inline-set-count-adjust-bar {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+  }
+  .inline-set-count-adjust-bar .flex {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem !important;
+  }
+  .inline-set-count-adjust-bar .exercise-set-count-btn {
+    width: 100%;
+    min-height: 48px !important;
+  }
 }
 
 

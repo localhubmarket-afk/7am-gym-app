@@ -6,9 +6,9 @@ export const THEME_STORAGE_KEY = 'budget_gym_theme_mode_v1';
 export const FONT_MODE_STORAGE_KEY = 'budget_gym_font_mode_v1';
 
 export const DEFAULT_DYSLEXIA_FRIENDLY_FONT_STACK =
-  "'Lexend', 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif";
+  "'Atkinson Hyperlegible', 'Lexend', system-ui, -apple-system, sans-serif";
 export const OPENDYSLEXIC_FONT_STACK =
-  "'OpenDyslexic', 'OpenDyslexic3', 'Lexend', 'Atkinson Hyperlegible', sans-serif";
+  "'OpenDyslexic', 'OpenDyslexic3', 'Atkinson Hyperlegible', 'Lexend', sans-serif";
 
 export interface AccessibleThemeTokens {
   canvasBg: string;
@@ -45,15 +45,15 @@ export const ACCESSIBLE_THEME_TOKENS: Record<ResolvedTheme, AccessibleThemeToken
     surfaceBg: '#1E1E1E',
     surfaceAltBg: '#262626',
     textPrimary: '#F8F6F5',
-    textSecondary: '#D8D8DE',
-    borderSubtle: '#3D3D3D',
-    borderStrong: '#767676',
+    textSecondary: '#E2E8F0',
+    borderSubtle: '#7C8798',
+    borderStrong: '#94A3B8',
     accentPrimary: '#10B981',
     accentOnPrimary: '#0E1A40',
-    warningBg: 'rgba(217, 119, 6, 0.22)',
-    warningText: '#FDE68A',
-    warningBorder: '#D97706',
-    dangerBg: 'rgba(225, 29, 72, 0.22)',
+    warningBg: 'rgba(217, 119, 6, 0.24)',
+    warningText: '#FEF08A',
+    warningBorder: '#FBBF24',
+    dangerBg: 'rgba(225, 29, 72, 0.24)',
     dangerText: '#FECDD3',
     dangerBorder: '#FB7185',
     themeColorMeta: '#141414'
@@ -64,8 +64,8 @@ export const ACCESSIBLE_THEME_TOKENS: Record<ResolvedTheme, AccessibleThemeToken
     surfaceAltBg: '#EAECEF',
     textPrimary: '#0E1A40',
     textSecondary: '#1E293B',
-    borderSubtle: '#CBD5E1',
-    borderStrong: '#475569',
+    borderSubtle: '#64748B',
+    borderStrong: '#334155',
     accentPrimary: '#047857',
     accentOnPrimary: '#FFFFFF',
     warningBg: '#FEF3C7',

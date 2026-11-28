@@ -107,7 +107,7 @@ export const MealIngredientSwapList: React.FC<MealIngredientSwapListProps> = ({
                   </div>
                 </div>
               </div>
-              <span className="shrink-0 min-h-[36px] px-2.5 py-1 rounded-lg border border-emerald-400/50 bg-emerald-500/15 text-emerald-200 text-xs font-extrabold inline-flex items-center">
+              <span className="shrink-0 min-h-[44px] px-3 py-1.5 rounded-lg border border-emerald-400/60 bg-emerald-500/15 text-emerald-200 text-xs font-extrabold inline-flex items-center">
                 Swap ⇄
               </span>
             </button>

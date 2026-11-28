@@ -52,7 +52,7 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
       <div
         role="tablist"
         aria-label="Exercise Type Filter"
-        className="grid grid-cols-4 gap-1.5 rounded-2xl border border-slate-800 bg-slate-950 p-1.5"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-2xl border border-slate-700 bg-slate-950 p-1.5"
       >
         <button
           type="button"
@@ -60,7 +60,7 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
           aria-selected={activeTab === 'all'}
           aria-label={`Show all exercises, ${exercises.length} total`}
           onClick={() => setActiveTab('all')}
-          className={`min-h-[44px] min-w-[44px] rounded-xl px-2 py-2 text-xs font-extrabold transition ${
+          className={`min-h-[48px] min-w-[44px] rounded-xl px-2.5 py-2 text-xs font-extrabold transition ${
             activeTab === 'all'
               ? 'bg-sky-400 text-slate-950'
               : 'bg-slate-900 text-slate-200 hover:bg-slate-800'
@@ -74,7 +74,7 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
           aria-selected={activeTab === 'weightlifting'}
           aria-label={`Show weightlifting exercises, ${grouped.weightlifting.length} total`}
           onClick={() => setActiveTab('weightlifting')}
-          className={`min-h-[44px] min-w-[44px] rounded-xl px-2 py-2 text-xs font-extrabold transition ${
+          className={`min-h-[48px] min-w-[44px] rounded-xl px-2.5 py-2 text-xs font-extrabold transition ${
             activeTab === 'weightlifting'
               ? 'bg-sky-400 text-slate-950'
               : 'bg-slate-900 text-slate-200 hover:bg-slate-800'
@@ -88,7 +88,7 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
           aria-selected={activeTab === 'bodyweight'}
           aria-label={`Show bodyweight exercises, ${grouped.bodyweight.length} total`}
           onClick={() => setActiveTab('bodyweight')}
-          className={`min-h-[44px] min-w-[44px] rounded-xl px-2 py-2 text-xs font-extrabold transition ${
+          className={`min-h-[48px] min-w-[44px] rounded-xl px-2.5 py-2 text-xs font-extrabold transition ${
             activeTab === 'bodyweight'
               ? 'bg-emerald-400 text-slate-950'
               : 'bg-slate-900 text-slate-200 hover:bg-slate-800'
@@ -102,7 +102,7 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
           aria-selected={activeTab === 'cardio'}
           aria-label={`Show cardio sessions, ${grouped.cardio.length} total`}
           onClick={() => setActiveTab('cardio')}
-          className={`min-h-[44px] min-w-[44px] rounded-xl px-2 py-2 text-xs font-extrabold transition ${
+          className={`min-h-[48px] min-w-[44px] rounded-xl px-2.5 py-2 text-xs font-extrabold transition ${
             activeTab === 'cardio'
               ? 'bg-cyan-400 text-slate-950'
               : 'bg-slate-900 text-slate-200 hover:bg-slate-800'
@@ -204,13 +204,13 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
                         className="flex items-center justify-between rounded-xl border border-cyan-500/30 bg-slate-950 px-3 py-2"
                       >
                         <span className="text-xs font-extrabold text-cyan-200">Biking Type</span>
-                        <div className="grid grid-cols-2 gap-1 rounded-lg border border-slate-800 bg-slate-900 p-0.5">
+                        <div className="grid grid-cols-2 gap-2 rounded-lg border border-slate-700 bg-slate-900 p-1">
                           <button
                             type="button"
                             aria-pressed={activeEnv === 'indoor'}
                             aria-label="Set biking environment to Indoor"
                             onClick={() => handleBikingToggle(exId, 'indoor')}
-                            className={`min-h-[44px] min-w-[44px] rounded-md px-3 py-2 text-[0.6875rem] font-extrabold transition ${
+                            className={`min-h-[48px] min-w-[44px] rounded-md px-3 py-2 text-xs font-extrabold transition ${
                               activeEnv === 'indoor'
                                 ? 'bg-cyan-400 text-slate-950'
                                 : 'text-slate-300 hover:text-white'
@@ -223,7 +223,7 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
                             aria-pressed={activeEnv === 'outdoor'}
                             aria-label="Set biking environment to Outdoor"
                             onClick={() => handleBikingToggle(exId, 'outdoor')}
-                            className={`min-h-[44px] min-w-[44px] rounded-md px-3 py-2 text-[0.6875rem] font-extrabold transition ${
+                            className={`min-h-[48px] min-w-[44px] rounded-md px-3 py-2 text-xs font-extrabold transition ${
                               activeEnv === 'outdoor'
                                 ? 'bg-cyan-400 text-slate-950'
                                 : 'text-slate-300 hover:text-white'
@@ -240,22 +240,22 @@ export function ExerciseGroupView<T extends RoutineExerciseLike>({
               })}
             </div>
           ) : (
-            <p className="text-xs leading-relaxed text-slate-300">
+            <p className="text-sm leading-relaxed text-slate-200">
               No cardio added today. Pick a cardio session below to track live time or log past cardio.
             </p>
           )}
 
           {onQuickAddCardio && (
             <div className="space-y-1.5 pt-1">
-              <div className="text-[0.6875rem] font-bold text-cyan-200">Add Cardio Session</div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="text-xs font-bold text-cyan-200">Add Cardio Session</div>
+              <div className="flex flex-wrap gap-2">
                 {STANDARD_CARDIO_SESSIONS.map((preset) => (
                   <button
                     key={preset}
                     type="button"
                     aria-label={`Add ${preset} cardio session`}
                     onClick={() => onQuickAddCardio(preset)}
-                    className="min-h-[44px] min-w-[44px] rounded-xl border border-cyan-500/40 bg-slate-950 px-3 py-2 text-[0.6875rem] font-extrabold text-cyan-200 transition hover:bg-slate-800"
+                    className="min-h-[48px] min-w-[48px] rounded-xl border border-cyan-500/50 bg-slate-950 px-3.5 py-2 text-xs font-extrabold text-cyan-200 transition hover:bg-slate-800"
                   >
                     + {preset === 'Rowing Machine' ? 'Rowing' : preset}
                   </button>

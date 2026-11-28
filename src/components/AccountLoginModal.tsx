@@ -421,7 +421,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
           data-testid="auth-modal-scroll-body"
           className="flex max-h-[80vh] flex-col gap-2.5 overflow-y-auto px-4 py-3"
         >
-          <div className="grid grid-cols-2 gap-1 rounded-xl border border-slate-800 bg-slate-950 p-1">
+          <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-700 bg-slate-950 p-1">
             <button
               type="button"
               onClick={() => setMode('login')}
@@ -451,7 +451,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
               disabled={isSubmitting}
               onClick={() => handleProviderClick('apple')}
               aria-label="Continue with Apple Sign-In"
-              className="flex min-h-[48px] min-w-[48px] items-center justify-center gap-1.5 rounded-xl bg-white px-2.5 py-2 text-xs font-extrabold text-gray-900 shadow transition hover:bg-slate-100 disabled:opacity-60"
+              className="flex min-h-[48px] min-w-[48px] items-center justify-center gap-1.5 rounded-xl bg-white px-2.5 py-2 text-xs font-extrabold text-gray-900 shadow transition hover:bg-slate-100"
             >
               <span>Continue with Apple</span>
             </button>
@@ -460,7 +460,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
               disabled={isSubmitting}
               onClick={() => handleProviderClick('google')}
               aria-label="Continue with Google Sign-In"
-              className="flex min-h-[48px] min-w-[48px] items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-950 px-2.5 py-2 text-xs font-extrabold text-white transition hover:bg-slate-800 disabled:opacity-60"
+              className="flex min-h-[48px] min-w-[48px] items-center justify-center gap-1.5 rounded-xl border border-slate-600 bg-slate-950 px-2.5 py-2 text-xs font-extrabold text-white transition hover:bg-slate-800"
             >
               <span>Continue with Google</span>
             </button>
@@ -497,28 +497,28 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="min-h-[48px] w-full rounded-xl border border-slate-600 bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white placeholder-slate-400 focus-visible:border-sky-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+                className="min-h-[48px] w-full rounded-xl border border-slate-600 bg-slate-900 px-3 py-1.5 text-base font-semibold text-white placeholder-slate-300 focus-visible:border-sky-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
               />
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2">
               <button
                 type="button"
                 disabled={isSendingMagicLink || isSubmitting}
                 data-testid="send-magic-link-btn"
                 onClick={() => void handleSendMagicLink()}
-                className="min-h-[48px] min-w-[48px] w-full rounded-xl bg-green-700 px-3 py-2 text-xs font-extrabold text-white shadow transition hover:bg-green-800 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+                className="min-h-[48px] min-w-[48px] w-full rounded-xl bg-green-700 px-3 py-2 text-xs font-extrabold text-white shadow transition hover:bg-green-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
               >
                 {isSendingMagicLink ? 'Sending Magic Link...' : 'Email Me a One-Tap Magic Link'}
               </button>
 
-              <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <button
                   type="button"
                   disabled={isRunningPasskey || isSubmitting}
                   data-testid="signin-passkey-btn"
                   onClick={() => void handlePasskeySignIn()}
-                  className="min-h-[48px] min-w-[48px] w-full rounded-xl border border-sky-400/70 bg-sky-950/60 px-2.5 py-2 text-xs font-extrabold text-sky-100 transition hover:bg-sky-900/70 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+                  className="min-h-[48px] min-w-[48px] w-full rounded-xl border border-sky-400/70 bg-sky-950/60 px-2.5 py-2 text-xs font-extrabold text-sky-100 transition hover:bg-sky-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
                 >
                   {isRunningPasskey ? 'Checking...' : 'Sign In with FaceID / Fingerprint'}
                 </button>
@@ -528,7 +528,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
                   disabled={isRunningPasskey || isSubmitting}
                   data-testid="setup-passkey-btn"
                   onClick={() => void handlePasskeySetup()}
-                  className="min-h-[48px] min-w-[48px] w-full rounded-xl border border-indigo-400/70 bg-indigo-950/60 px-2.5 py-2 text-xs font-extrabold text-indigo-100 transition hover:bg-indigo-900/70 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+                  className="min-h-[48px] min-w-[48px] w-full rounded-xl border border-indigo-400/70 bg-indigo-950/60 px-2.5 py-2 text-xs font-extrabold text-indigo-100 transition hover:bg-indigo-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
                 >
                   {hasSavedPasskey ? 'Add Another Passkey' : 'Set Up FaceID / Fingerprint'}
                 </button>
@@ -549,7 +549,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
                 >
                   Optional: Enter 6-Digit Email Code for {magicLinkSentTo}
                 </label>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   <input
                     id="react-magic-link-otp"
                     data-testid="magic-link-otp-input"
@@ -560,14 +560,14 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value)}
                     placeholder="123456"
-                    className="min-h-[48px] flex-1 rounded-xl border border-slate-600 bg-slate-950 px-3 py-1.5 text-sm font-extrabold tracking-widest text-white placeholder-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+                    className="min-h-[48px] flex-1 rounded-xl border border-slate-600 bg-slate-950 px-3 py-1.5 text-base font-extrabold tracking-widest text-white placeholder-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
                   />
                   <button
                     type="button"
                     disabled={isVerifyingOtp}
                     data-testid="verify-magic-link-otp-btn"
                     onClick={() => void handleVerifyMagicLinkOtp()}
-                    className="min-h-[48px] min-w-[48px] rounded-xl bg-sky-400 px-3.5 py-1.5 text-xs font-extrabold text-slate-950 hover:bg-sky-300 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
+                    className="min-h-[48px] min-w-[48px] rounded-xl bg-sky-400 px-3.5 py-1.5 text-xs font-extrabold text-slate-950 hover:bg-sky-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
                   >
                     {isVerifyingOtp ? 'Checking...' : 'Verify Code'}
                   </button>
@@ -617,7 +617,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="Enter your first name"
-                  className="min-h-[48px] w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white placeholder-slate-400 focus:border-sky-400 focus:outline-none"
+                  className="min-h-[48px] w-full rounded-xl border border-slate-600 bg-slate-950 px-3 py-1.5 text-base font-semibold text-white placeholder-slate-300 focus:border-sky-400 focus:outline-none"
                 />
               </div>
             )}
@@ -635,7 +635,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="min-h-[48px] w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white placeholder-slate-400 focus:border-sky-400 focus:outline-none"
+                className="min-h-[48px] w-full rounded-xl border border-slate-600 bg-slate-950 px-3 py-1.5 text-base font-semibold text-white placeholder-slate-300 focus:border-sky-400 focus:outline-none"
               />
             </div>
 
@@ -650,7 +650,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
                   onClick={() => setShowPassword((prev) => !prev)}
                   aria-pressed={showPassword}
                   aria-label={showPassword ? 'Hide password characters' : 'Show password characters'}
-                  className="min-h-[48px] min-w-[48px] px-2 text-[0.6875rem] font-bold text-sky-400 hover:text-sky-300"
+                  className="min-h-[48px] min-w-[48px] px-2 text-xs font-bold text-sky-300 hover:text-sky-200"
                 >
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
@@ -664,12 +664,12 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                className="min-h-[48px] w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white placeholder-slate-400 focus:border-sky-400 focus:outline-none"
+                className="min-h-[48px] w-full rounded-xl border border-slate-600 bg-slate-950 px-3 py-1.5 text-base font-semibold text-white placeholder-slate-300 focus:border-sky-400 focus:outline-none"
               />
             </div>
 
             {errorMessage && (
-              <p role="alert" aria-live="polite" className="rounded-lg border border-rose-500/40 bg-rose-950/60 px-2.5 py-1.5 text-xs font-semibold text-rose-200">
+              <p role="alert" aria-live="polite" className="rounded-lg border border-rose-500/40 bg-rose-950/60 px-2.5 py-1.5 text-sm font-semibold text-rose-200">
                 {errorMessage}
               </p>
             )}
@@ -677,7 +677,7 @@ export const AccountLoginModal: React.FC<AccountLoginModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="min-h-[48px] min-w-[48px] w-full rounded-xl bg-sky-400 px-4 py-2 text-xs font-extrabold text-slate-950 shadow transition hover:bg-sky-300 disabled:opacity-60"
+              className="min-h-[48px] min-w-[48px] w-full rounded-xl bg-sky-400 px-4 py-2 text-sm font-extrabold text-slate-950 shadow transition hover:bg-sky-300"
             >
               {isSubmitting ? 'Checking Account...' : mode === 'signup' ? 'Create Account' : 'Log In'}
             </button>
