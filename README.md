@@ -22,4 +22,3 @@
 4. Back in Vercel, go to the **Deployments** tab -> click the **⋯** menu next to your deployment -> click **Redeploy** so your `/api/state` function picks up the new Supabase database variables.
 
 That's it! Every time you tap a day, log a weight, or check off a meal on your phone, `/api/state.js` automatically saves it to your Supabase Postgres database!
-Tray
